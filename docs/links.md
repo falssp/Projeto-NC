@@ -1,6 +1,5 @@
 # Links e IDs · NC Tool Unilever BR
 
-> Web App URLs serao adicionadas conforme forem levantadas.
 > IDs extraidos do Google Drive em 31/08/2026.
 
 ---
@@ -23,6 +22,15 @@
 |------|---------------|------|
 | Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0) |
 
+### Web App URLs — Pessoal
+
+| Fase | URL |
+|------|-----|
+| F3 — Validator | https://script.google.com/macros/s/AKfycbw7QryYGzik1bbT0Mf4N5JcpuuNVoHAudTAbrT2jfzzXnz0wkuJfBFLIeMNViDO4SE2/exec |
+| F4 — Accessories | https://script.google.com/macros/s/AKfycby6h6qvXqacFrf2TmcXYaflRQp7rvhklpnR27VWhIueh9pLxWvUCRYkFToJPxYezUN7cw/exec |
+| F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbym0772425DQEUrNQn9TZc6C-wdRuqU1_erQVSoWzV-MEBbyCN4DOfJkaSd90cdVZHjSA/exec |
+| Super App | https://script.google.com/macros/s/AKfycbyVRcaI7RHdRIasOIi5V6WKdU3QztcDYiIT4dJZpr1ptzYDfnoL_rlfSykkjxz4UnA-Sw/exec |
+
 ### Planilhas auxiliares — pasta raiz /Pessoal
 
 | Nome | Spreadsheet ID | Link |
@@ -33,15 +41,6 @@
 | Dicionario InfluencerName | `1PEBpspeDx8gFUYVoVYkdJgj3E5KU2GTvf7VqBBuG9hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1PEBpspeDx8gFUYVoVYkdJgj3E5KU2GTvf7VqBBuG9hQ) |
 | Inclusao Campaign Local | `1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc` | [Abrir](https://docs.google.com/spreadsheets/d/1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc) |
 | HUB Consolidado | `1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA` | [Abrir](https://docs.google.com/spreadsheets/d/1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA) |
-
-### Web App URLs — Pessoal
-
-| Fase | URL |
-|------|-----|
-| F3 — Validator | — (preencher) |
-| F4 — Accessories | — (preencher) |
-| F5 — FT Flashtalking | — (preencher) |
-| Super App | — (preencher) |
 
 ### Documentacao — pasta /Sistema
 
