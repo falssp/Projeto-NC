@@ -20,14 +20,14 @@ Planilha de gestão de IDs únicos por campanha/plataforma — ambiente Corp (Or
 | `AbaUsuario.gs` | Menu, criação de linhas, onEdit por aba, formatação |
 | `Geral.gs` | Formatação e sincronização da aba Geral |
 | `GeralSync.gs` | Consolidação de todas as abas de usuário na aba Geral |
-| `Setup.gs` | Carga inicial com usuários reais da StormX |
+| `Setup.gs` | Carga inicial com equipe real StormX e migração de abas |
 | `Plataformas.gs` | Cores brand, normalização e sugestão de plataforma |
 | `Seguranca.gs` | Proteção de abas estruturais |
 
-## Diferenças em relação ao Pessoal
+## Diferenças em relação ao ambiente Pessoal
 
-- `Setup.gs`: usuários reais (carolina.dobner, aline.calderan, felipe.lima, tiago.santos, marcos.santos, joao.braga)
-- Aprovador inicial: `carolina.dobner@stormx.com.br`
+- `Setup.gs`: dados reais da equipe StormX (carolina.dobner, aline.calderan, felipe.lima, tiago.santos, marcos.santos, joao.braga)
+- `aprovadoPor` inicial: carolina.dobner@stormx.com.br
 
 ## Abas da planilha
 
@@ -43,4 +43,4 @@ Planilha de gestão de IDs únicos por campanha/plataforma — ambiente Corp (Or
 3. Criar os arquivos `.gs` conforme listado acima
 4. Colar o conteúdo de cada arquivo
 5. Rodar `configurarTriggers()` uma vez
-6. Rodar `cargaInicial()` para popular usuários reais
+6. Rodar `cargaInicial()` para popular a equipe
