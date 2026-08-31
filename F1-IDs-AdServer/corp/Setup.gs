@@ -1,7 +1,7 @@
 /***************************************
  * 🚀 CARGA INICIAL
  * Rodar UMA VEZ em planilhas novas
- * Popula a aba Usuarios com os dados reais da StormX
+ * Popula a aba Usuarios com os dados reais da equipe StormX
  ***************************************/
 
 function cargaInicial() {
@@ -25,7 +25,7 @@ function cargaInicial() {
     ["felipe.lima",     "Felipe",   "Lima",     "felipe.lima@stormx.com.br",     "Dev",      "Ativo", aprovadoPor, "", ""],
     ["tiago.santos",    "Tiago",    "Santos",   "tiago.santos@stormx.com.br",    "Gerente",  "Ativo", aprovadoPor, "", ""],
     ["marcos.santos",   "Marcos",   "Santos",   "marcos.santos@stormx.com.br",   "Operador", "Ativo", aprovadoPor, "", ""],
-    ["joao.braga",      "João",     "Braga",    "joao.braga@stormx.com.br",      "Operador", "Ativo", aprovadoPor, "", ""],
+    ["joao.braga",      "Joao",     "Braga",    "joao.braga@stormx.com.br",      "Operador", "Ativo", aprovadoPor, "", ""],
   ];
 
   usuarios.getRange(2, 1, dados.length, 9).setValues(dados);
@@ -34,8 +34,8 @@ function cargaInicial() {
   formatarUsuarios();
   protegerEstrutura();
 
-  log("cargaInicial: " + dados.length + " usuários carregados.");
-  SpreadsheetApp.getUi().alert("Carga inicial concluída! " + dados.length + " usuários cadastrados.");
+  log("cargaInicial: " + dados.length + " usuarios carregados.");
+  SpreadsheetApp.getUi().alert("Carga inicial concluida! " + dados.length + " usuarios cadastrados.");
 }
 
 /***************************************
@@ -53,5 +53,5 @@ function migrarAbasExistentes() {
     log("migrarAbasExistentes: " + nome + " atualizada.");
   });
 
-  log("migrarAbasExistentes: concluída.");
+  log("migrarAbasExistentes: concluida.");
 }
