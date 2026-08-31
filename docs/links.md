@@ -1,11 +1,13 @@
 # Links e IDs · NC Tool Unilever BR
 
 > Web App URLs serao adicionadas conforme forem levantadas.
-> IDs de planilha extraidos diretamente do Google Drive em 31/08/2026.
+> IDs extraidos do Google Drive em 31/08/2026.
+
+---
 
 ## Pessoal (Backup) — falssp@gmail.com
 
-### Planilhas (pasta Fases)
+### Fases — pasta /Fases
 
 | Fase | Nome | Spreadsheet ID | Link |
 |------|------|---------------|------|
@@ -15,7 +17,13 @@
 | F4 | Accessories | `16OdPmc-SeqXn1VefT0xRsIQJ-LdICRfUZnahsARuw4w` | [Abrir](https://docs.google.com/spreadsheets/d/16OdPmc-SeqXn1VefT0xRsIQJ-LdICRfUZnahsARuw4w) |
 | F5 | FT Flashtalking Validator | `1YZ3tFDlt3yP5xtNVpSMhyS-cxG3QHBlN5nr_z-yJi2s` | [Abrir](https://docs.google.com/spreadsheets/d/1YZ3tFDlt3yP5xtNVpSMhyS-cxG3QHBlN5nr_z-yJi2s) |
 
-### Planilhas auxiliares (pasta raiz Pessoal)
+### Super App — pasta /Sistema
+
+| Nome | Spreadsheet ID | Link |
+|------|---------------|------|
+| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0) |
+
+### Planilhas auxiliares — pasta raiz /Pessoal
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
@@ -26,14 +34,34 @@
 | Inclusao Campaign Local | `1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc` | [Abrir](https://docs.google.com/spreadsheets/d/1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc) |
 | HUB Consolidado | `1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA` | [Abrir](https://docs.google.com/spreadsheets/d/1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA) |
 
-### Web App URLs
+### Web App URLs — Pessoal
 
-| Fase | Ambiente | URL |
-|------|----------|-----|
-| F3 | Pessoal | — (preencher) |
-| F4 | Pessoal | — (preencher) |
-| F5 | Pessoal | — (preencher) |
-| Super App | Pessoal | — (preencher) |
+| Fase | URL |
+|------|-----|
+| F3 — Validator | — (preencher) |
+| F4 — Accessories | — (preencher) |
+| F5 — FT Flashtalking | — (preencher) |
+| Super App | — (preencher) |
+
+### Documentacao — pasta /Sistema
+
+| Arquivo | ID Drive |
+|---------|----------|
+| NC_Tool_Documento_Master.docx | `1VpaGBENrx5gy-rRqF7hT233649zZg9mO` |
+| NC_Tool_Documentacao_Tecnica.md | `1YxSUF8sCwe6QtbvHrjNYmPrlsSblXjB4` |
+| NC_Tool_Documentacao_Tecnica_F3_Pessoal.md | `1W2XeSlUsdG3Yc7MAKip6nvHqnnM1JWCv` |
+| NC_Tool_Documentacao_Tecnica_F4.md | `1fnRNdNcONgUqkWjIw0yKXozVOAOLGsqR` |
+| NC_Tool_Documentacao_Tecnica_F5.md | `1sw2wdbRSOgcvvkRkBAXyLtnaEtepZ7Rq` |
+| NC_Tool_Manual_Usuario.md | `1WT-tyhbN6YcOzTA4krRWJ27W8VuGM1kI` |
+| NC_Tool_Manual_Usuario_F3_Pessoal.md | `15oA14YzAah1dyknkd_yg2Xj_0Auga5bE` |
+| NC_Tool_Manual_Usuario_F4.md | `1TWpkDTGvVyFqu36zWKgQhtzfRrMAu-iC` |
+| NC_Tool_Manual_Usuario_F5.md | `1fD_K0uTmo2A2gnnERuNHzq0a_HsUEp7j` |
+| NC_Tool_Dicionario_Dados.md | `1ExZz2-AcKVzu8QaA3QCP3FTtFLLvZ2fz` |
+| NC_Tool_Dicionario_Dados_F4.md | `1gGZ4cO02Dc9YROFvmVE9dt9duqvjSPyx` |
+| NC_Tool_Dicionario_Dados_F5.md | `1TaY3ZWrPWud46VfmzH2ichwJzdr37WLB` |
+| NC_Tool_Prompt_Sistema.md | `1x7OAUr6Qi-u1YW1jDKAFOcFKitr-7cdW` |
+
+---
 
 ## Corp (Original)
 
@@ -44,4 +72,4 @@
 | F3 | — (preencher) | — (preencher) |
 | F4 | — (preencher) | — (preencher) |
 | F5 | — (preencher) | — (preencher) |
-| Super App | — (preencher) | — (preencher) |
+| Super App / Capa | — (preencher) | — (preencher) |
