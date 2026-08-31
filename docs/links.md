@@ -20,7 +20,7 @@
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
-| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0) |
+| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0/edit?gid=613412184#gid=613412184) |
 
 ### Web App URLs — Pessoal
 
@@ -78,7 +78,7 @@
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
-| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ) |
+| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ/edit?gid=1113661480#gid=1113661480) |
 
 ### Web App URLs — Corp
 
@@ -87,4 +87,4 @@
 | F3 — Validator | https://script.google.com/macros/s/AKfycby9YQftWg586o1m1gPEaMyHMMYzyYUJ8MRWY0WRSv67kGAkeEX4TVPXeLbB4_I6Wv7neA/exec |
 | F4 — Accessories | https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec |
 | F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbwKsOut5TyYLf1pW_xm1He-zBvzZGYFM4KAEE5C6hssNZHsg9fL_QBXWjfF-zzIDxfXNQ/exec |
-| Super App | https://script.google.com/macros/s/AKfycbyVRcaI7RHdRIasOIi5V6WKdU3QztcDYiIT4dJZpr1ptzYDfnoL_rlfSykkjxz4UnA-Sw/exec |
+| Super App | https://script.google.com/macros/s/AKfycbxVQ5Q1jwxNXho2Nd6rCY3gklBYpm6mXYq-vXnSAskvLwctYK8-irUVZ9HLfHIAmttI/exec |
