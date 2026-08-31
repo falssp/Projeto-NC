@@ -62,13 +62,29 @@
 
 ---
 
-## Corp (Original)
+## Corp (Original) — felipe.lima@stormx.com.br
 
-| Fase | Spreadsheet ID | Web App URL |
-|------|---------------|-------------|
-| F1 | — (preencher) | — |
-| F2 | — (preencher) | — |
-| F3 | — (preencher) | — (preencher) |
-| F4 | — (preencher) | — (preencher) |
-| F5 | — (preencher) | — (preencher) |
-| Super App / Capa | — (preencher) | — (preencher) |
+### Fases — pasta /Corp
+
+| Fase | Nome | Spreadsheet ID | Link |
+|------|------|---------------|------|
+| F1 | IDs AdServer | `1VBaExPGHOVYxpTyzJymrb8RuWWe34_9WBE0aC3slETU` | [Abrir](https://docs.google.com/spreadsheets/d/1VBaExPGHOVYxpTyzJymrb8RuWWe34_9WBE0aC3slETU) |
+| F2 | Generator | `1_6SEjmDdYvSkxoLwLLpqORitM-QxX5flBpF8LoSX8Lc` | [Abrir](https://docs.google.com/spreadsheets/d/1_6SEjmDdYvSkxoLwLLpqORitM-QxX5flBpF8LoSX8Lc) |
+| F3 | Validator | `1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo` | [Abrir](https://docs.google.com/spreadsheets/d/1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo) |
+| F4 | Accessories | `1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI` | [Abrir](https://docs.google.com/spreadsheets/d/1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI) |
+| F5 | FT Flashtalking Validator | `1Y7_1NL7Uo9HgHn7bTIqnnVZhJCogCbXI3tgasxOTN_0` | [Abrir](https://docs.google.com/spreadsheets/d/1Y7_1NL7Uo9HgHn7bTIqnnVZhJCogCbXI3tgasxOTN_0) |
+
+### Super App — pasta /Sistema
+
+| Nome | Spreadsheet ID | Link |
+|------|---------------|------|
+| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ) |
+
+### Web App URLs — Corp
+
+| Fase | URL |
+|------|-----|
+| F3 — Validator | https://script.google.com/macros/s/AKfycby9YQftWg586o1m1gPEaMyHMMYzyYUJ8MRWY0WRSv67kGAkeEX4TVPXeLbB4_I6Wv7neA/exec |
+| F4 — Accessories | https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec |
+| F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbwKsOut5TyYLf1pW_xm1He-zBvzZGYFM4KAEE5C6hssNZHsg9fL_QBXWjfF-zzIDxfXNQ/exec |
+| Super App | https://script.google.com/macros/s/AKfycbyVRcaI7RHdRIasOIi5V6WKdU3QztcDYiIT4dJZpr1ptzYDfnoL_rlfSykkjxz4UnA-Sw/exec |
