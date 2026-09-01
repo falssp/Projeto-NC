@@ -31,6 +31,7 @@ function doGet(e) {
 
   if (action === 'contadores') return _getContadores();
   if (action === 'list')       return _listLinks();
+  if (action === 'ping')       return _jsonOut({ ok: true, pong: true });
 
   return HtmlService
     .createHtmlOutputFromFile('index')
@@ -615,4 +616,27 @@ function _jsonOut(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+/* ════════════════════════════════════════════════════════════
+   KEEP ALIVE — trigger a cada 20 min para manter o script quente
+════════════════════════════════════════════════════════════ */
+function keepAlive() {
+  // Chamada mínima para manter o script ativo — não grava nada
+  SpreadsheetApp.openById(CHEFE_SHEET_ID).getName();
+}
+
+/* ════════════════════════════════════════════════════════════
+   SETUP TRIGGER — rodar uma vez para instalar o trigger keepAlive
+   Menu: Apps Script → Executar → setupKeepAliveTrigger
+════════════════════════════════════════════════════════════ */
+function setupKeepAliveTrigger() {
+  // Remove triggers antigos de keepAlive para evitar duplicatas
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'keepAlive') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('keepAlive')
+    .timeBased()
+    .everyMinutes(20)
+    .create();
+  Logger.log('Trigger keepAlive instalado: a cada 20 minutos.');
 }
