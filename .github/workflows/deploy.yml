@@ -1,0 +1,34 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Write clasp credentials
+        run: echo '${{ secrets.CLASP_TOKEN }}' > ~/.clasprc.json
+
+      - name: Deploy changed folders
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -oP '^[^/]+/[^/]+' | sort -u)
+          for folder in $CHANGED; do
+            if [ -f "$folder/.clasp.json" ]; then
+              echo "Deploy: $folder"
+              cd "$folder" && clasp push --force && cd "$GITHUB_WORKSPACE"
+            fi
+          done
