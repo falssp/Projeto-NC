@@ -636,7 +636,7 @@ function setupKeepAliveTrigger() {
   });
   ScriptApp.newTrigger('keepAlive')
     .timeBased()
-    .everyMinutes(20)
+    .everyMinutes(30)
     .create();
   Logger.log('Trigger keepAlive instalado: a cada 20 minutos.');
 }
