@@ -1,6 +1,17 @@
 # Links e IDs · NC Tool Unilever BR
 
-> IDs extraidos do Google Drive em 31/08/2026.
+> IDs extraídos do Google Drive em 31/08/2026.
+
+---
+
+## GitHub Pages (frontend público)
+
+| Fase | Corp | Pessoal |
+|------|------|---------|
+| Hub / Super App | [nc-tool](https://falssp.github.io/nc-tool/) | — |
+| F4 — Acessórios | [f4-corp](https://falssp.github.io/nc-tool/f4-corp/) | [f4-pessoal](https://falssp.github.io/nc-tool/f4-pessoal/) |
+| F3 — Validador | Em breve | Em breve |
+| F5 — Flashtalking | Em breve | Em breve |
 
 ---
 
@@ -20,7 +31,7 @@
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
-| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0/edit?gid=613412184#gid=613412184) |
+| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0) |
 
 ### Web App URLs — Pessoal
 
@@ -42,24 +53,6 @@
 | Inclusao Campaign Local | `1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc` | [Abrir](https://docs.google.com/spreadsheets/d/1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc) |
 | HUB Consolidado | `1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA` | [Abrir](https://docs.google.com/spreadsheets/d/1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA) |
 
-### Documentacao — pasta /Sistema
-
-| Arquivo | ID Drive |
-|---------|----------|
-| NC_Tool_Documento_Master.docx | `1VpaGBENrx5gy-rRqF7hT233649zZg9mO` |
-| NC_Tool_Documentacao_Tecnica.md | `1YxSUF8sCwe6QtbvHrjNYmPrlsSblXjB4` |
-| NC_Tool_Documentacao_Tecnica_F3_Pessoal.md | `1W2XeSlUsdG3Yc7MAKip6nvHqnnM1JWCv` |
-| NC_Tool_Documentacao_Tecnica_F4.md | `1fnRNdNcONgUqkWjIw0yKXozVOAOLGsqR` |
-| NC_Tool_Documentacao_Tecnica_F5.md | `1sw2wdbRSOgcvvkRkBAXyLtnaEtepZ7Rq` |
-| NC_Tool_Manual_Usuario.md | `1WT-tyhbN6YcOzTA4krRWJ27W8VuGM1kI` |
-| NC_Tool_Manual_Usuario_F3_Pessoal.md | `15oA14YzAah1dyknkd_yg2Xj_0Auga5bE` |
-| NC_Tool_Manual_Usuario_F4.md | `1TWpkDTGvVyFqu36zWKgQhtzfRrMAu-iC` |
-| NC_Tool_Manual_Usuario_F5.md | `1fD_K0uTmo2A2gnnERuNHzq0a_HsUEp7j` |
-| NC_Tool_Dicionario_Dados.md | `1ExZz2-AcKVzu8QaA3QCP3FTtFLLvZ2fz` |
-| NC_Tool_Dicionario_Dados_F4.md | `1gGZ4cO02Dc9YROFvmVE9dt9duqvjSPyx` |
-| NC_Tool_Dicionario_Dados_F5.md | `1TaY3ZWrPWud46VfmzH2ichwJzdr37WLB` |
-| NC_Tool_Prompt_Sistema.md | `1x7OAUr6Qi-u1YW1jDKAFOcFKitr-7cdW` |
-
 ---
 
 ## Corp (Original) — felipe.lima@stormx.com.br
@@ -78,7 +71,7 @@
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
-| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ/edit?gid=1113661480#gid=1113661480) |
+| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ) |
 
 ### Web App URLs — Corp
 
@@ -88,3 +81,13 @@
 | F4 — Accessories | https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec |
 | F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbwKsOut5TyYLf1pW_xm1He-zBvzZGYFM4KAEE5C6hssNZHsg9fL_QBXWjfF-zzIDxfXNQ/exec |
 | Super App | https://script.google.com/macros/s/AKfycbxVQ5Q1jwxNXho2Nd6rCY3gklBYpm6mXYq-vXnSAskvLwctYK8-irUVZ9HLfHIAmttI/exec |
+
+### Tokens de acesso — GitHub Pages
+
+> Estes tokens protegem as chamadas do frontend (GitHub Pages) ao GAS.
+> Não compartilhar publicamente.
+
+| Ambiente | Token |
+|----------|-------|
+| Corp | `9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67` |
+| Pessoal | `3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5` |
