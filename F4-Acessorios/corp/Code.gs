@@ -26,12 +26,30 @@ function _dicAba() {
 }
 
 /* ── doGet ── */
+var ACCESS_TOKEN = '9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67';
+
+function _checkToken(e) {
+  // Aceita token via header X-NC-Token ou parâmetro token
+  var token = (e && e.parameter && e.parameter.token) || '';
+  return token === ACCESS_TOKEN;
+}
+
+function _corsOut(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doGet(e) {
   var action = e && e.parameter && e.parameter.action ? e.parameter.action : '';
 
-  if (action === 'contadores') return _getContadores();
-  if (action === 'list')       return _listLinks();
-  if (action === 'ping')       return _jsonOut({ ok: true, pong: true });
+  // Ping e ações autenticadas via token
+  if (action === 'ping') return _corsOut({ ok: true, pong: true });
+  if (action === 'contadores' || action === 'list') {
+    if (!_checkToken(e)) return _corsOut({ ok: false, error: 'Unauthorized' });
+    if (action === 'contadores') return _getContadores();
+    if (action === 'list')       return _listLinks();
+  }
 
   return HtmlService
     .createHtmlOutputFromFile('index')
@@ -45,6 +63,10 @@ function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action || '';
+
+    // Verificar token (exceto ping)
+    if (payload.token !== ACCESS_TOKEN)
+      return _corsOut({ ok: false, error: 'Unauthorized' });
 
     if (action === 'fillAdNames')        return fillAdNames(payload);
     if (action === 'getCLSheets')        return getCLSheets();
