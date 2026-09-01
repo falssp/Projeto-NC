@@ -1,6 +1,6 @@
 // ============================================================
 // NC Tool | Unilever BR x Grasp — Script F4
-// F4 - Acessórios · Apps Script Web App — ORIGINAL
+// F4 - Acessórios · Apps Script Web App — BACKUP
 //
 // ESTRUTURA DO PROJETO:
 //   Code.gs    ← este arquivo
@@ -15,7 +15,7 @@
 // ============================================================
 
 /* ── IDs das planilhas ── */
-var MINHA_SHEET_ID = '1qHDQx4rBJrb1bNrOIr_b_R_4qMND72ZsnyPWUSLoLkc';
+var MINHA_SHEET_ID = '16OdPmc-SeqXn1VefT0xRsIQJ-LdICRfUZnahsARuw4w';
 var CHEFE_SHEET_ID = '17reFaVIatWRvNa-KpnLPsFUEV8WnxrNC2fsEHO5lU6s';
 var CL_SHEET_ID    = '1dZ-TiUcFgjdc45Fpc9frztG1Bqsi9e0F0aAHQzXoHjw';
 var DIC_SHEET_ID   = '1HlWrUbQGstYtb6NZUHpDNmVYmXJFUOyJ';
@@ -31,6 +31,7 @@ function doGet(e) {
 
   if (action === 'contadores') return _getContadores();
   if (action === 'list')       return _listLinks();
+  if (action === 'ping')       return _jsonOut({ ok: true, pong: true });
 
   return HtmlService
     .createHtmlOutputFromFile('index')
@@ -124,7 +125,8 @@ function gerarIDs(payload) {
     var primeiraLinha = linhaMinha + 1;
     var resultado     = [];
 
-    // Acumula valores pra escrever em batch
+    // Acumula valores pra escrever em batch (só na planilha minha)
+    // O chefe lê via IMPORTRANGE — não gravar mais diretamente
     var batchMinha    = []; // [[linha, data, plat]]
 
     itens.forEach(function(item) {
@@ -143,10 +145,8 @@ function gerarIDs(payload) {
         batchMinha.push([linhaMinha, today, plat]);
       }
       resultado.push({ plataforma: plat, tipo: tipo, ids: ids });
-      // NÃO atualiza contador aqui — só após gravação bem-sucedida
+      // NÃO atualiza contador aqui — só após gravação
     });
-
-    // Escreve IDs na planilha do chefe em batch real (setValues por bloco contíguo)
 
     // Escreve data e plataforma na planilha minha em batch
     if (batchMinha.length) {
@@ -156,14 +156,6 @@ function gerarIDs(payload) {
       abaMinha.getRange(startMinha, 1, batchMinha.length, 1).setValues(datas);
       abaMinha.getRange(startMinha, 5, batchMinha.length, 1).setValues(plats);
     }
-
-    SpreadsheetApp.flush();
-
-    // Só atualiza contadores APÓS gravação bem-sucedida
-    resultado.forEach(function(r) {
-      var cont = contMap[r.tipo];
-      if (cont) cfg.getRange(cont.row, 4).setValue(cont.last);
-    });
 
     SpreadsheetApp.flush();
     // Atualiza contadores SÓ APÓS gravação confirmada
@@ -176,7 +168,7 @@ function gerarIDs(payload) {
     return _jsonOut({
       ok: true,
       resultado: resultado,
-      linhasGeradas: linhaChefe - primeiraLinha + 1,
+      linhasGeradas: linhaMinha - (primeiraLinha - 1),
       primeiraLinha: primeiraLinha
     });
 
@@ -256,13 +248,14 @@ function fillAdNames(payload) {
       salvos++;
     });
 
-    // Aplica escritas em batch — uma chamada por linha (inevitável pois linhas são dispersas)
-    // mas sem leituras adicionais dentro do loop
+    // Agrupa escritas de Ad Name por coluna contígua onde possível
+    // Para linhas dispersas, usa setValue individual (inevitável)
     writeAdName.forEach(function(w) { abaMinha.getRange(w[0], 4).setValue(w[1]); });
     writeID.forEach(function(w)     { abaMinha.getRange(w[0], w[1]).setValue(w[2]); });
 
     SpreadsheetApp.flush();
-    // Identificar órfãos
+
+    // Identificar órfãos: IDs gerados sem Ad Name
     var orfaos = [];
     itens.forEach(function(item) {
       var id = String(item.id || '').trim().toUpperCase();
@@ -274,6 +267,7 @@ function fillAdNames(payload) {
         orfaos.push({ id: item.id, linha: mapaID[id] });
       }
     });
+
     var resp = { ok: true, salvos: salvos, orfaos: orfaos };
     if (conflitos.length)
       resp.avisos = conflitos.length + ' conflito(s): ' + conflitos.slice(0, 3).join('; ');
@@ -622,4 +616,27 @@ function _jsonOut(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+/* ════════════════════════════════════════════════════════════
+   KEEP ALIVE — trigger a cada 20 min para manter o script quente
+════════════════════════════════════════════════════════════ */
+function keepAlive() {
+  // Chamada mínima para manter o script ativo — não grava nada
+  SpreadsheetApp.openById(CHEFE_SHEET_ID).getName();
+}
+
+/* ════════════════════════════════════════════════════════════
+   SETUP TRIGGER — rodar uma vez para instalar o trigger keepAlive
+   Menu: Apps Script → Executar → setupKeepAliveTrigger
+════════════════════════════════════════════════════════════ */
+function setupKeepAliveTrigger() {
+  // Remove triggers antigos de keepAlive para evitar duplicatas
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'keepAlive') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('keepAlive')
+    .timeBased()
+    .everyMinutes(20)
+    .create();
+  Logger.log('Trigger keepAlive instalado: a cada 20 minutos.');
 }
