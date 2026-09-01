@@ -638,5 +638,5 @@ function setupKeepAliveTrigger() {
     .timeBased()
     .everyMinutes(30)
     .create();
-  Logger.log('Trigger keepAlive instalado: a cada 20 minutos.');
+  Logger.log('Trigger keepAlive instalado: a cada 30 minutos.');
 }
