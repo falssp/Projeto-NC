@@ -574,6 +574,34 @@ var ID_COL = {'Google':'CY','Youtube':'DF','Meta e Tiktok':'DD','Programmatic':'
 var BRAND_COL  = {'Google':'F','Youtube':'G','Meta e Tiktok':'F','Programmatic':'G','Pinterest, Snapchat e Twitter':'F','Flashtalking':'F'};
 var S2P = {'Google':'google','Youtube':'youtube','Meta e Tiktok':'meta','Programmatic':'programatica','Pinterest, Snapchat e Twitter':'pinterest','Flashtalking':'flashtalking'};
 var DICT_ID = '17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok';
+
+// ── GAS API (GitHub Pages → GAS via fetch) ───────────────────
+var GAS_URL = 'https://script.google.com/macros/s/AKfycby6uFxVBlvGx2bC93m1NK9ixTG8Oa61CA2qeKCEc8FR9JnGJCv5m1AlOgoq4kmzbpS3/exec';
+
+function _gas(action, params) {
+  var url = GAS_URL + '?action=' + encodeURIComponent(action);
+  if (params) Object.keys(params).forEach(function(k) {
+    url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  });
+  return fetch(url)
+    .then(function(r) {
+      var ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error('Servidor indisponível');
+      return r.json();
+    });
+}
+
+function _gasPost(action, body) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(Object.assign({ action: action }, body))
+  }).then(function(r) {
+    var ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) throw new Error('Servidor indisponível');
+    return r.json();
+  });
+}
 var LOG_SHEET='1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ';
 
 // Mantidos os originais + adicionados termos exatos do extrator que
@@ -1248,7 +1276,7 @@ function valStr(str, platform, level) {
   if(idxs.market!==undefined&&parts[idxs.market]){
     var mkt=parts[idxs.market];
     if(mkt!=='br'&&mkt!=='na'&&!inD(mkt,D.market)&&!inD(mkt,D.brandName)){
-      errs.push({field:'Market (PCAT)',value:mkt,rule:'VAL-MKT',msg:'Market "'+mkt+'" nao esta no dicionario',fix:'Use um Market valido. Ex: bwprofhair, deo, wash&cre, hairund, skncrund...'});
+      errs.push({field:'Market (PCAT)',value:mkt,rule:'VAL-MKT',msg:'Market "'+mkt+'" não está no dicionário',fix:'Use um Market valido. Ex: bwprofhair, deo, wash&cre, hairund, skncrund...'});
     }
   }
 
@@ -1485,8 +1513,8 @@ function _mergeDict(base,incoming){var merged=base.slice();incoming.forEach(func
 
 function loadDynamicDict() {
   if(typeof google!=='undefined'&&google.script){
-    google.script.run.withSuccessHandler(function(vals){if(vals&&vals.length>5){D.campaignLocal=_mergeDict(D.campaignLocal,vals);setDictStatus('ok');}else{setDictStatus('partial');}}).withFailureHandler(function(){setDictStatus('partial');}).getDicionario('CampaignLocal');
-    google.script.run.withSuccessHandler(function(vals){if(vals&&vals.length>5)D.market=_mergeDict(D.market,vals);}).withFailureHandler(function(){}).getDicionario('Market');
+    _gas('getDicionario',{tipo:'CampaignLocal'}).then(function(d){var vals=d.vals||[];if(vals&&vals.length>5){D.campaignLocal=_mergeDict(D.campaignLocal,vals);setDictStatus('ok');}else{setDictStatus('partial');}}).catch(function(){setDictStatus('partial');});
+    _gas('getDicionario',{tipo:'Market'}).then(function(d){var vals=d.vals||[];if(vals&&vals.length>5)D.market=_mergeDict(D.market,vals);}).catch(function(){});
   } else {
     fetch('https://docs.google.com/spreadsheets/d/'+DICT_ID+'/gviz/tq?tqx=out:csv&sheet=CampaignLocal')
       .then(function(r){return r.ok?r.text():Promise.reject(r.status);})
@@ -1499,24 +1527,11 @@ function setDictStatus(s){var el=document.getElementById('dict-status');if(!el)r
 
 
 function loadExcecoes() {
-  if (typeof google === 'undefined' || !google.script) return;
-  google.script.run
-    .withSuccessHandler(function(lista) {
-      excecoes = lista || [];
-      // Recalcular score se já há resultados (exceções carregam async)
-      if (allRes.length > 0) { renderRes(allRes); updStats(allRes); }
-    })
-    .withFailureHandler(function() { excecoes = []; })
-    .getExcecoes();
+  _gas('getExcecoes').then(function(d){excecoes=d.lista||[];if(allRes.length>0){renderRes(allRes);updStats(allRes);}}).catch(function(){excecoes=[];});
 }
 
 function loadUserPerfil() {
-  if (typeof google === 'undefined' || !google.script) return;
-  // Tenta obter perfil via getPerfilUsuario (função pública simples)
-  google.script.run
-    .withSuccessHandler(function(p) { if (p) userPerfil = p; })
-    .withFailureHandler(function() {})
-    .getPerfilUsuario();
+  _gas('getPerfilUsuario').then(function(d){if(d.perfil)userPerfil=d.perfil;}).catch(function(){});
 }
 
 function isExcecaoAprovada(adName, plataforma) {
@@ -1759,37 +1774,14 @@ function enviarExcecao(adName, plataforma, estrutura) {
     motivo:motivo, dataEmail:dataEmailFull, remetente:remetente, assuntoEmail:assunto,
     adpArquivo: adpNome };
 
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(function(r) {
-        if (r.ok) {
-          excecoes.push({ adName:adName, plataforma:plataforma, estrutura:estrutura,
-            motivo:motivo, status:'Em Análise', txKey:r.txKey||'' });
-          renderRes(allRes);
-          // Substituir modal por confirmação visual (sem alert)
-          var bg = document.getElementById('exc-modal-bg');
-          if (bg) {
-            bg.querySelector('div').innerHTML = [
-              '<div style="text-align:center;padding:32px 24px">',
-              '<div style="font-size:36px;margin-bottom:16px">✅</div>',
-              '<h3 style="font-size:15px;font-weight:600;color:#0D7A4E;margin-bottom:10px">Solicitação enviada!</h3>',
-              '<p style="font-size:12.5px;color:#495057;margin-bottom:6px">Status: <strong>Em Análise</strong></p>',
-              '<p style="font-size:12px;color:#868E96;margin-bottom:20px">Um Admin ou Gerente receberá o e-mail e poderá aprovar ou rejeitar diretamente no F3 Validator.</p>',
-              '<button onclick="fecharModalExcecao()" style="padding:9px 24px;border:none;border-radius:7px;background:#1F36C7;color:#fff;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer">OK</button>',
-              '</div>'
-            ].join('');
-          }
-        } else {
-          fecharModalExcecao();
-          _toast('Erro ao enviar: ' + r.erro, 'err');
-        }
-      })
-      .withFailureHandler(function(e) { fecharModalExcecao(); _toast('Erro: ' + e.message, 'err'); })
-      .solicitarExcecao(dados);
-  } else {
-    fecharModalExcecao();
-    _toast('Disponível apenas na versão web app.','info');
-  }
+  _gasPost('solicitarExcecao',{dados:dados}).then(function(r){
+    if(r.ok){
+      excecoes.push({adName:adName,plataforma:plataforma,estrutura:estrutura,motivo:motivo,status:'Em Análise',txKey:r.txKey||''});
+      renderRes(allRes);
+      var bg=document.getElementById('exc-modal-bg');
+      if(bg){bg.querySelector('div').innerHTML=['<div style="text-align:center;padding:32px 24px">','<div style="font-size:36px;margin-bottom:16px">✅</div>','<h3 style="font-size:15px;font-weight:600;color:#0D7A4E;margin-bottom:10px">Solicitação enviada!</h3>','<p style="font-size:12.5px;color:#495057;margin-bottom:6px">Status: <strong>Em Análise</strong></p>','<p style="font-size:12px;color:#868E96;margin-bottom:20px">Um Admin ou Gerente receberá o e-mail e poderá aprovar ou rejeitar diretamente no F3 Validator.</p>','<button onclick="fecharModalExcecao()" style="padding:9px 24px;border:none;border-radius:7px;background:#1F36C7;color:#fff;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer">OK</button>','</div>'].join('');}
+    } else { fecharModalExcecao(); _toast('Erro ao enviar: '+r.erro,'err'); }
+  }).catch(function(e){fecharModalExcecao();_toast('Erro: '+e.message,'err');});
 }
 
 function resolverExcecaoUI(adName, plataforma, decisao) {
@@ -1841,18 +1833,10 @@ function _confirmarRejeitar() {
 }
 
 function _executarResolucao(exc, decisao, obs) {
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(function(r) {
-        if (r.ok) {
-          exc.status = r.status;
-          renderRes(allRes);
-          _toast(decisao === 'aprovar' ? 'Exceção aprovada!' : 'Exceção rejeitada.', decisao === 'aprovar' ? 'ok' : 'warn');
-        } else { _toast('Erro: ' + r.erro, 'err'); }
-      })
-      .withFailureHandler(function(e) { _toast('Erro: ' + e.message, 'err'); })
-      .resolverExcecao(exc.linha, decisao, obs);
-  }
+  _gasPost('resolverExcecao',{linha:exc.linha,decisao:decisao,obs:obs}).then(function(r){
+    if(r.ok){exc.status=r.status;renderRes(allRes);_toast(decisao==='aprovar'?'Exceção aprovada!':'Exceção rejeitada.',decisao==='aprovar'?'ok':'warn');}
+    else{_toast('Erro: '+r.erro,'err');}
+  }).catch(function(e){_toast('Erro: '+e.message,'err');});
 }
 
 function desbloquearExcecao(adName, plataforma) {
@@ -1860,21 +1844,10 @@ function desbloquearExcecao(adName, plataforma) {
     _toast('Apenas Admin ou Gerente podem desbloquear.', 'warn');
     return;
   }
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(function(r) {
-        if (r.ok) {
-          // Remover todas as exceções desta string da lista local
-          excecoes = excecoes.filter(function(e) {
-            return !(e.adName === adName && e.plataforma === plataforma);
-          });
-          renderRes(allRes);
-          _toast('String desbloqueada — nova solicitação liberada.', 'ok');
-        } else { _toast('Erro: ' + r.erro, 'err'); }
-      })
-      .withFailureHandler(function(e) { _toast('Erro: ' + e.message, 'err'); })
-      .desbloquearExcecao(adName, plataforma);
-  }
+  _gasPost('desbloquearExcecao',{adName:adName,plataforma:plataforma}).then(function(r){
+    if(r.ok){excecoes=excecoes.filter(function(e){return !(e.adName===adName&&e.plataforma===plataforma);});renderRes(allRes);_toast('String desbloqueada — nova solicitação liberada.','ok');}
+    else{_toast('Erro: '+r.erro,'err');}
+  }).catch(function(e){_toast('Erro: '+e.message,'err');});
 }
 
 function toggleSb(){var sb=document.getElementById('sb'),ov=document.getElementById('sb-overlay'),tog=document.getElementById('sb-toggle'),open=sb.classList.toggle('open');ov.classList.toggle('open',open);var spans=tog.querySelectorAll('span');if(open){spans[0].style.transform='translateY(7px) rotate(45deg)';spans[1].style.opacity='0';spans[2].style.transform='translateY(-7px) rotate(-45deg)';}else{spans[0].style.transform='';spans[1].style.opacity='';spans[2].style.transform='';}}
@@ -1891,12 +1864,11 @@ function saveLog(res){
   res.filter(function(r){return r.errors.length>0;}).slice(0,200).forEach(function(r){r.errors.forEach(function(e){detalhes.push({txKey:r.txKey||'',plataforma:r.platform,nivel:r.level,string:r.string,regra:e.rule,campo:e.field,valor:e.value||'',mensagem:e.msg,sugestao:e.fix||''});});});
   var payload={timestamp:new Date().toISOString(),fonte:mode==='adp'?'ADP Excel':mode==='dash'?'Dash/QA Painel':'Manual',arquivo:mode==='adp'?(document.getElementById('adp-drop').querySelector('h3').textContent||''):'',plataforma:plats.join(', '),total:total,corretos:total-errs,erros:errs,score:total?Math.round(((total-errs)/total)*100)+'%':'0%',detalhes:detalhes};
   var ls=document.getElementById('log-status');if(ls)ls.textContent='Salvando log...';
-  google.script.run.withSuccessHandler(function(r){if(ls)ls.textContent=r.ok?'Log salvo: '+r.logId:'Log: erro';}).withFailureHandler(function(){if(ls)ls.textContent='Log: falha';}).salvarLog(payload);
+  _gasPost('salvarLog',{payload:payload}).then(function(r){if(ls)ls.textContent=r.ok?'Log salvo: '+r.logId:'Log: erro';}).catch(function(){if(ls)ls.textContent='Log: falha';});
 }
 
 function loadHist(){
-  if(typeof google==='undefined'||!google.script){document.getElementById('hist-content').innerHTML='<div class="ib">Histórico disponível apenas na versão web app.</div>';return;}
-  google.script.run.withSuccessHandler(renderHist).withFailureHandler(function(e){document.getElementById('hist-content').innerHTML='<div class="ib" style="color:var(--err)">Erro: '+esc(e.message)+'</div>';}).getHistorico(30);
+  _gas('getHistorico',{limite:30}).then(function(d){renderHist(d.rows||[]);}).catch(function(e){document.getElementById('hist-content').innerHTML='<div class="ib" style="color:var(--err)">Erro: '+esc(e.message)+'</div>';});
 }
 
 function renderHist(rows){
@@ -1926,15 +1898,13 @@ function verifBuscarLog(){
   var h=(document.getElementById('verif-hash-input').value||'').trim();
   if(!h){_toast('Cole o hash primeiro.','warn');return;}
   showProg(true);
-  google.script.run
-    .withSuccessHandler(function(rows){
-      showProg(false);
-      if(!rows||!rows.length){_toast('Nenhum registro encontrado para este hash.','warn');return;}
-      document.getElementById('verif-log-input').value=JSON.stringify(rows,null,2);
-      _toast('Log carregado — clique em Verificar hash.','ok');
-    })
-    .withFailureHandler(function(e){showProg(false);_toast('Erro ao buscar: '+e.message,'err');})
-    .getLogPorHash(h);
+  _gas('getLogPorHash',{hash:h}).then(function(d){
+    showProg(false);
+    var rows=d.rows||[];
+    if(!rows.length){_toast('Nenhum registro encontrado para este hash.','warn');return;}
+    document.getElementById('verif-log-input').value=JSON.stringify(rows,null,2);
+    _toast('Log carregado — clique em Verificar hash.','ok');
+  }).catch(function(e){showProg(false);_toast('Erro ao buscar: '+e.message,'err');});
 }
 
 function verifRodar(){
@@ -2041,14 +2011,7 @@ function tkLoadFile(file,lado){
 var jiraConfig = { configurado: false, email: '' };
 
 function initJira() {
-  if (typeof google === 'undefined' || !google.script) return;
-  google.script.run
-    .withSuccessHandler(function(status) {
-      jiraConfig = status || { configurado: false, email: '' };
-      _atualizarStatusJira();
-    })
-    .withFailureHandler(function() {})
-    .jiraGetStatus();
+  _gas('jiraGetStatus').then(function(status){jiraConfig=status||{configurado:false,email:''};_atualizarStatusJira();}).catch(function(){});
 }
 
 function _atualizarStatusJira() {
@@ -2071,12 +2034,7 @@ function onBlurTicket(inputEl, tipo) {
     return;
   }
   if (spanStatus) { spanStatus.textContent = '🔄 Buscando...'; spanStatus.style.color = 'var(--g500)'; }
-  google.script.run
-    .withSuccessHandler(function(ticket) { _preencherTicket(ticket, tipo, spanStatus); })
-    .withFailureHandler(function(e) {
-      if (spanStatus) { spanStatus.textContent = '❌ ' + (e.message || 'Erro'); spanStatus.style.color = 'var(--err)'; }
-    })
-    .jiraGetTicket(val);
+  _gas('jiraGetTicket',{input:val}).then(function(ticket){_preencherTicket(ticket,tipo,spanStatus);}).catch(function(e){if(spanStatus){spanStatus.textContent='❌ '+(e.message||'Erro');spanStatus.style.color='var(--err)';}});
 }
 
 function _preencherTicket(ticket, tipo, spanStatus) {
