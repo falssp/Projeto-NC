@@ -2,7 +2,7 @@
 // Excecoes.gs — Gestão de Exceções do F3 Validator
 // ============================================================
 
-var LOG_SHEET_ID = '1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo';
+var LOG_SHEET_ID = '1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ';
 var NC_SHEET_ID  = '1VBaExPGHOVYxpTyzJymrb8RuWWe34_9WBE0aC3slETU';
 
 var EXC_COLS = {
