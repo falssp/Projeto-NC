@@ -2,7 +2,7 @@
 // NC Tool | F3 — Validator  ·  Setup.gs
 // ============================================================
 
-var SETUP_SHEET_ID = "1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ";
+var SETUP_SHEET_ID = "1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo";
 var SETUP_DICT_ID  = "17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok";
 
 var COR_HEADER  = '#0F1B6E'; // azul escuro — todos os headers de tabela
