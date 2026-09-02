@@ -1,15 +1,57 @@
 # Setup Clasp — Deploy GAS via GitHub
 
-## Pré-requisitos
+## Visão geral
+
+O clasp sincroniza este repositório com os projetos Google Apps Script.
+Um push no `main` dispara o workflow que faz `clasp push` automaticamente
+nas pastas que mudaram.
+
+---
+
+## 1. Instalar o clasp
 
 ```bash
 npm install -g @google/clasp
-clasp login   # autenticar com a conta Pessoal (falssp@gmail.com)
 ```
 
 ---
 
-## scriptIds por pasta
+## 2. Autenticar as duas contas
+
+O projeto tem dois ambientes (Corp e Pessoal) com contas Google separadas.
+O clasp guarda uma credencial por vez — autentique e salve cada uma.
+
+**Pessoal (falssp@gmail.com):**
+```bash
+clasp login
+# Autenticar com falssp@gmail.com no browser
+cat ~/.clasprc.json   # copiar o conteúdo
+```
+
+**Corp (felipe.lima@stormx.com.br):**
+```bash
+clasp login --no-localhost
+# Autenticar com felipe.lima@stormx.com.br
+cat ~/.clasprc.json   # copiar o conteúdo
+```
+
+> A conta Corp exige que a Apps Script API esteja habilitada:
+> https://script.google.com/home/usersettings
+
+---
+
+## 3. Adicionar secrets no GitHub
+
+**github.com/falssp/Projeto-NC → Settings → Secrets and variables → Actions**
+
+| Secret | Valor |
+|--------|-------|
+| `CLASP_TOKEN_PESSOAL` | conteúdo do `.clasprc.json` da conta Pessoal |
+| `CLASP_TOKEN_CORP` | conteúdo do `.clasprc.json` da conta Corp |
+
+---
+
+## 4. scriptIds por pasta
 
 Todos já preenchidos nos `.clasp.json` de cada pasta.
 
@@ -30,56 +72,24 @@ Todos já preenchidos nos `.clasp.json` de cada pasta.
 
 ---
 
-## Deploy manual
+## 5. Deploy manual (quando necessário)
 
 ```bash
-# Autenticar na conta correta antes de cada push
-clasp login   # Pessoal
-# ou
-clasp login --no-localhost   # Corp (abre browser para trocar conta)
-
 cd F4-Acessorios/corp
 clasp push --force
 ```
 
 ---
 
-## Deploy automático (GitHub Actions)
+## 6. Keep Alive (F4)
 
-O workflow `.github/workflows/deploy.yml` já está configurado.
-
-**Secrets necessários (já configurados):**
-
-| Secret | Conta |
-|--------|-------|
-| `CLASP_TOKEN_CORP` | felipe.lima@stormx.com.br |
-| `CLASP_TOKEN_PESSOAL` | falssp@gmail.com |
-
-Qualquer push no `main` que altere arquivos em uma pasta com `.clasp.json` dispara o deploy automático naquela pasta.
-
-**Renovar tokens (quando expirar):**
-
-```bash
-clasp login   # loga com a conta desejada
-cat ~/.clasprc.json   # copia o conteúdo
-# GitHub → Settings → Secrets → atualizar CLASP_TOKEN_CORP ou CLASP_TOKEN_PESSOAL
-```
+O F4 tem um trigger de keep alive que mantém o script quente.
+Para instalar: Apps Script → Executar → `setupKeepAliveTrigger`
+Rodar uma vez em cada ambiente (Corp e Pessoal).
 
 ---
 
-## KeepAlive trigger
+## Renovar tokens
 
-O F4 tem um trigger de 30 em 30 minutos que mantém o GAS aquecido.
-Para instalar/reinstalar: Apps Script → Executar → `setupKeepAliveTrigger`
-
----
-
-## Fluxo recomendado
-
-```
-Edita no GAS → testa → (Claude gera ou você edita local)
-      ↓
-git commit + push
-      ↓
-GitHub Actions → clasp push automático
-```
+Os `refresh_token` são permanentes. Se o workflow falhar por autenticação,
+basta refazer o `clasp login` na conta correspondente e atualizar o secret.
