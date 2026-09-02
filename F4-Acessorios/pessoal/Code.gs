@@ -64,8 +64,9 @@ function doPost(e) {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action || '';
 
-    // Verificar token (exceto ping)
-    if (payload.token !== ACCESS_TOKEN)
+    // Verificar token: se token vier no payload, deve ser válido
+    // Se não vier token, é chamada interna do GAS (sem restrição)
+    if (payload.token && payload.token !== ACCESS_TOKEN)
       return _corsOut({ ok: false, error: 'Unauthorized' });
 
     if (action === 'fillAdNames')        return fillAdNames(payload);
