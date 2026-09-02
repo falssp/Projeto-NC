@@ -15,12 +15,62 @@ var DICT_COLS = {
 
 // ── WEB APP ──────────────────────────────────────────────────
 function doGet(e) {
-  return HtmlService
-    .createHtmlOutputFromFile('index')
-    .setTitle('F3 Validator · NC Tool Unilever BR')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  var action = e && e.parameter && e.parameter.action;
+
+  // Sem action → entrega o HTML (acesso direto pelo link GAS)
+  if (!action) {
+    return HtmlService
+      .createHtmlOutputFromFile('index')
+      .setTitle('F3 Validator · NC Tool Unilever BR')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  // Com action → responde JSON (chamado pelo GitHub Pages)
+  var result;
+  try {
+    if      (action === 'ping')           result = { ok: true, env: 'corp' };
+    else if (action === 'getDicionario')  result = getDicionario(e.parameter.tipo || 'CampaignLocal');
+    else if (action === 'getExcecoes')    result = getExcecoes();
+    else if (action === 'getPerfilUsuario') result = getPerfilUsuario();
+    else if (action === 'getHistorico')   result = getHistorico(parseInt(e.parameter.limite) || 30);
+    else if (action === 'getLogPorHash')  result = getLogPorHash(e.parameter.hash || '');
+    else if (action === 'jiraGetStatus')  result = jiraGetStatus();
+    else if (action === 'jiraGetTicket')  result = jiraGetTicket(e.parameter.input || '');
+    else if (action === 'fetchSheet')     result = { data: fetchSheet(e.parameter.url || '') };
+    else if (action === 'getSheetTabs')   result = getSheetTabs(e.parameter.url || '');
+    else if (action === 'fetchSheetByGid') result = { data: fetchSheetByGid(e.parameter.url || '', parseInt(e.parameter.gid)) };
+    else if (action === 'getDictStatus')  result = getDictStatus();
+    else                                  result = { ok: false, erro: 'Action desconhecida: ' + action };
+  } catch(err) {
+    result = { ok: false, erro: err.message };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
+
+function doPost(e) {
+  var result;
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var action = body.action;
+
+    if      (action === 'salvarLog')        result = salvarLog(body.payload);
+    else if (action === 'solicitarExcecao') result = solicitarExcecao(body.dados);
+    else if (action === 'resolverExcecao')  result = resolverExcecao(body.linha, body.decisao, body.observacao);
+    else if (action === 'desbloquearExcecao') result = desbloquearExcecao(body.adName, body.plataforma);
+    else                                    result = { ok: false, erro: 'Action desconhecida: ' + action };
+  } catch(err) {
+    result = { ok: false, erro: err.message };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 
 // ── MENU ─────────────────────────────────────────────────────
 function onOpen() {
