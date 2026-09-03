@@ -48,6 +48,8 @@ const COR_ZEBRA  = '#f0f4ff';
    ════════════════════════════════════════ */
 function doGet(e) {
   const action = e && e.parameter && e.parameter.action;
+  if (action === 'ping')           return jsonResponse(handlePing());
+  if (action === 'stats')          return jsonResponse(handleStats());
   if (action === 'loadHist')       return jsonResponse(loadHist(e));
   if (action === 'loadUserPerfil') return jsonResponse(loadUserPerfil());
   if (action === 'loadExcecoes')   return jsonResponse(loadExcecoes());
@@ -70,6 +72,57 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse({ ok: false, error: err.message });
   }
+}
+
+/* ════════════════════════════════════════
+   ping / stats
+   ════════════════════════════════════════ */
+function handlePing() {
+  return {
+    status: 'ok',
+    fase:   'F5',
+    env:    ADMIN_EMAILS[0].includes('falssp') ? 'pessoal' : 'corp',
+    ts:     new Date().toISOString()
+  };
+}
+
+function handleStats() {
+  const ss   = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const abaC = ss.getSheetByName(ABA_CONSOLIDADO);
+
+  // totals
+  const totalOp = abaC && abaC.getLastRow() > 1 ? abaC.getLastRow() - 1 : 0;
+
+  // total do mês atual
+  const agora = new Date();
+  const anoMes = agora.getFullYear() * 100 + (agora.getMonth() + 1);
+  let totalMes = 0, totalErros = 0;
+  let ultimaData = null, ultimaHora = null, ultimoUsuario = null;
+
+  if (abaC && abaC.getLastRow() > 1) {
+    const dados = abaC.getRange(2, 1, abaC.getLastRow() - 1, HDR_CONSOLIDADO.length).getValues();
+    dados.forEach(r => {
+      const ts = r[1] ? new Date(r[1]) : null;
+      if (ts) {
+        const am = ts.getFullYear() * 100 + (ts.getMonth() + 1);
+        if (am === anoMes) totalMes++;
+        // ultima validação = última linha (mais recente)
+        if (!ultimaData || ts > new Date(ultimaData + 'T' + (ultimaHora||'00:00'))) {
+          ultimaData    = Utilities.formatDate(ts, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+          ultimaHora    = Utilities.formatDate(ts, Session.getScriptTimeZone(), 'HH:mm');
+          ultimoUsuario = r[2] || '—';
+        }
+      }
+      totalErros += Number(r[5]) || 0;
+    });
+  }
+
+  return {
+    ultimaValidacao: { data: ultimaData || '—', hora: ultimaHora || '—', usuario: ultimoUsuario || '—' },
+    totalMes:        totalMes,
+    totalOperacoes:  totalOp,
+    totalErros:      totalErros
+  };
 }
 
 function jsonResponse(obj) {
