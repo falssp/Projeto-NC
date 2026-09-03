@@ -11,7 +11,7 @@
 | Hub / Super App | [nc-tool](https://falssp.github.io/nc-tool/) | — |
 | F4 — Acessórios | [f4-corp](https://falssp.github.io/nc-tool/f4-corp/) | [f4-pessoal](https://falssp.github.io/nc-tool/f4-pessoal/) |
 | F3 — Validador | Em breve | Em breve |
-| F5 — Flashtalking | Em breve | Em breve |
+| F5 — Flashtalking | [f5-corp](https://falssp.github.io/nc-tool/f5-corp/) | [f5-pessoal](https://falssp.github.io/nc-tool/f5-pessoal/) |
 
 ---
 
