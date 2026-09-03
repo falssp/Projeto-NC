@@ -1,17 +1,6 @@
 # Links e IDs · NC Tool Unilever BR
 
-> IDs extraídos do Google Drive em 31/08/2026.
-
----
-
-## GitHub Pages (frontend público)
-
-| Fase | Corp | Pessoal |
-|------|------|---------|
-| Hub / Super App | [nc-tool](https://falssp.github.io/nc-tool/) | — |
-| F4 — Acessórios | [f4-corp](https://falssp.github.io/nc-tool/f4-corp/) | [f4-pessoal](https://falssp.github.io/nc-tool/f4-pessoal/) |
-| F3 — Validador | Em breve | Em breve |
-| F5 — Flashtalking | [f5-corp](https://falssp.github.io/nc-tool/f5-corp/) | [f5-pessoal](https://falssp.github.io/nc-tool/f5-pessoal/) |
+> Atualizado em 03/09/2026.
 
 ---
 
@@ -31,7 +20,7 @@
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
-| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0) |
+| Capa (Super App) | `1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0` | [Abrir](https://docs.google.com/spreadsheets/d/1BGPVx-4hdGh5g-K3mDsUXZhfXXF2uSSwAO4yThnmTQ0/edit?gid=613412184) |
 
 ### Web App URLs — Pessoal
 
@@ -53,6 +42,24 @@
 | Inclusao Campaign Local | `1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc` | [Abrir](https://docs.google.com/spreadsheets/d/1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc) |
 | HUB Consolidado | `1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA` | [Abrir](https://docs.google.com/spreadsheets/d/1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA) |
 
+### Documentacao — pasta /Sistema (Drive IDs)
+
+| Arquivo | ID Drive |
+|---------|----------|
+| NC_Tool_Documento_Master.docx | `1VpaGBENrx5gy-rRqF7hT233649zZg9mO` |
+| NC_Tool_Documentacao_Tecnica.md | `1YxSUF8sCwe6QtbvHrjNYmPrlsSblXjB4` |
+| NC_Tool_Documentacao_Tecnica_F3_Pessoal.md | `1W2XeSlUsdG3Yc7MAKip6nvHqnnM1JWCv` |
+| NC_Tool_Documentacao_Tecnica_F4.md | `1fnRNdNcONgUqkWjIw0yKXozVOAOLGsqR` |
+| NC_Tool_Documentacao_Tecnica_F5.md | `1sw2wdbRSOgcvvkRkBAXyLtnaEtepZ7Rq` |
+| NC_Tool_Manual_Usuario.md | `1WT-tyhbN6YcOzTA4krRWJ27W8VuGM1kI` |
+| NC_Tool_Manual_Usuario_F3_Pessoal.md | `15oA14YzAah1dyknkd_yg2Xj_0Auga5bE` |
+| NC_Tool_Manual_Usuario_F4.md | `1TWpkDTGvVyFqu36zWKgQhtzfRrMAu-iC` |
+| NC_Tool_Manual_Usuario_F5.md | `1fD_K0uTmo2A2gnnERuNHzq0a_HsUEp7j` |
+| NC_Tool_Dicionario_Dados.md | `1ExZz2-AcKVzu8QaA3QCP3FTtFLLvZ2fz` |
+| NC_Tool_Dicionario_Dados_F4.md | `1gGZ4cO02Dc9YROFvmVE9dt9duqvjSPyx` |
+| NC_Tool_Dicionario_Dados_F5.md | `1TaY3ZWrPWud46VfmzH2ichwJzdr37WLB` |
+| NC_Tool_Prompt_Sistema.md | `1x7OAUr6Qi-u1YW1jDKAFOcFKitr-7cdW` |
+
 ---
 
 ## Corp (Original) — felipe.lima@stormx.com.br
@@ -71,7 +78,7 @@
 
 | Nome | Spreadsheet ID | Link |
 |------|---------------|------|
-| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ) |
+| Capa (Super App) | `1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ` | [Abrir](https://docs.google.com/spreadsheets/d/1kqYJ6AGbTZOsv-uwN4Hr9lI0gJSL71C4F49mMLv04hQ/edit?gid=1113661480) |
 
 ### Web App URLs — Corp
 
@@ -82,34 +89,13 @@
 | F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbwKsOut5TyYLf1pW_xm1He-zBvzZGYFM4KAEE5C6hssNZHsg9fL_QBXWjfF-zzIDxfXNQ/exec |
 | Super App | https://script.google.com/macros/s/AKfycbxVQ5Q1jwxNXho2Nd6rCY3gklBYpm6mXYq-vXnSAskvLwctYK8-irUVZ9HLfHIAmttI/exec |
 
-### Tokens de acesso — GitHub Pages
-
-> Estes tokens protegem as chamadas do frontend (GitHub Pages) ao GAS.
-> Não compartilhar publicamente.
-
-| Ambiente | Token |
-|----------|-------|
-| Corp | `9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67` |
-| Pessoal | `3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5` |
-
 ---
 
-## F4 — Acessórios
+## Portal e Infraestrutura
 
-### Corp
-- **GitHub Pages:** https://falssp.github.io/nc-tool/f4-corp/
-- **GAS Web App:** https://script.google.com/a/macros/stormx.com.br/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec
-- **Planilha principal:** https://docs.google.com/spreadsheets/d/1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI
-- **Planilha do chefe:** https://docs.google.com/spreadsheets/d/1qHDQx4rBJrb1bNrOIr_b_R_4qMND72ZsnyPWUSLoLkc
-- **Ping:** ...exec?action=ping
-- **Stats:** ...exec?action=stats
-- **NC_TOKEN:** `9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67`
-
-### Pessoal
-- **GitHub Pages:** https://falssp.github.io/nc-tool/f4-pessoal/
-- **GAS Web App:** https://script.google.com/macros/s/AKfycby6h6qvXqacFrf2TmcXYaflRQp7rvhklpnR27VWhIueh9pLxWvUCRYkFToJPxYezUN7cw/exec
-- **Planilha principal:** https://docs.google.com/spreadsheets/d/16OdPmc-SeqXn1VefT0xRsIQJ-LdICRfUZnahsARuw4w
-- **Planilha do chefe:** https://docs.google.com/spreadsheets/d/17reFaVIatWRvNa-KpnLPsFUEV8WnxrNC2fsEHO5lU6s
-- **Ping:** ...exec?action=ping
-- **Stats:** ...exec?action=stats
-- **NC_TOKEN:** `3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5`
+| Recurso | URL |
+|---------|-----|
+| Portal NC Tool | https://falssp.github.io/nc-tool/ |
+| Cloudflare Workers Proxy | https://nc-proxy.falssp.workers.dev/ |
+| Repo codigo (privado) | https://github.com/falssp/Projeto-NC |
+| Repo portal (publico) | https://github.com/falssp/nc-tool |
