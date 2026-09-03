@@ -47,7 +47,8 @@ function doGet(e) {
   var action = e && e.parameter && e.parameter.action ? e.parameter.action : '';
 
   // Ping e ações autenticadas via token
-  if (action === 'ping') return _corsOut({ ok: true, pong: true });
+  if (action === 'ping')       return _corsOut(_getPing());
+  if (action === 'stats')      return _corsOut(_getStats());
   if (action === 'contadores' || action === 'list') {
     if (!_checkToken(e)) return _corsOut({ ok: false, error: 'Unauthorized' });
     if (action === 'contadores') return _getContadores();
