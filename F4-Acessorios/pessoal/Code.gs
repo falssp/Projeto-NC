@@ -667,3 +667,40 @@ function setupKeepAliveTrigger() {
     .create();
   Logger.log('Trigger keepAlive instalado: a cada 30 minutos.');
 }
+
+
+/* ════ PING ════ */
+function _getPing() {
+  return {
+    ok:   true,
+    fase: 'F4',
+    env:  Session.getActiveUser().getEmail().indexOf('stormx') !== -1 ? 'corp' : 'pessoal',
+    ts:   new Date().toISOString()
+  };
+}
+
+/* ════ STATS ════ */
+function _getStats() {
+  try {
+    var ss = SpreadsheetApp.openById(MINHA_SHEET_ID);
+    var sh = ss.getSheetByName('Histórico');
+    if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
+    var dados = sh.getDataRange().getValues();
+    var agora = new Date(), mes = agora.getMonth(), ano = agora.getFullYear();
+    var total = 0, ultima = null;
+    for (var i = 1; i < dados.length; i++) {
+      if (!dados[i][0]) continue;
+      var d = new Date(dados[i][0]);
+      if (d.getMonth() === mes && d.getFullYear() === ano) total++;
+      ultima = dados[i];
+    }
+    var out = { ok: true, totalMes: total, totalOperacoes: total };
+    if (ultima) out.ultimaOperacao = {
+      data:    Utilities.formatDate(new Date(ultima[0]), 'America/Sao_Paulo', 'dd/MM/yyyy'),
+      hora:    String(ultima[1]||'').trim(),
+      usuario: String(ultima[2]||'').trim(),
+      modulo:  String(ultima[3]||'').trim()
+    };
+    return out;
+  } catch(e) { return { ok: false, error: e.message }; }
+}
