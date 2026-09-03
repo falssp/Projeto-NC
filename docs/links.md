@@ -91,3 +91,25 @@
 |----------|-------|
 | Corp | `9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67` |
 | Pessoal | `3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5` |
+
+---
+
+## F4 — Acessórios
+
+### Corp
+- **GitHub Pages:** https://falssp.github.io/nc-tool/f4-corp/
+- **GAS Web App:** https://script.google.com/a/macros/stormx.com.br/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec
+- **Planilha principal:** https://docs.google.com/spreadsheets/d/1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI
+- **Planilha do chefe:** https://docs.google.com/spreadsheets/d/1qHDQx4rBJrb1bNrOIr_b_R_4qMND72ZsnyPWUSLoLkc
+- **Ping:** ...exec?action=ping
+- **Stats:** ...exec?action=stats
+- **NC_TOKEN:** `9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67`
+
+### Pessoal
+- **GitHub Pages:** https://falssp.github.io/nc-tool/f4-pessoal/
+- **GAS Web App:** https://script.google.com/macros/s/AKfycby6h6qvXqacFrf2TmcXYaflRQp7rvhklpnR27VWhIueh9pLxWvUCRYkFToJPxYezUN7cw/exec
+- **Planilha principal:** https://docs.google.com/spreadsheets/d/16OdPmc-SeqXn1VefT0xRsIQJ-LdICRfUZnahsARuw4w
+- **Planilha do chefe:** https://docs.google.com/spreadsheets/d/17reFaVIatWRvNa-KpnLPsFUEV8WnxrNC2fsEHO5lU6s
+- **Ping:** ...exec?action=ping
+- **Stats:** ...exec?action=stats
+- **NC_TOKEN:** `3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5`
