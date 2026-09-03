@@ -674,7 +674,7 @@ function _getPing() {
   return {
     ok:   true,
     fase: 'F4',
-    env:  Session.getActiveUser().getEmail().indexOf('stormx') !== -1 ? 'corp' : 'pessoal',
+    env:  'pessoal',
     ts:   new Date().toISOString()
   };
 }
