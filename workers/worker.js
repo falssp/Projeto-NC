@@ -3,9 +3,9 @@
 // Resolve CORS entre GitHub Pages e Google Apps Script
 // Parametros: ?fase=f3&env=corp&action=stats
 //
-// Variaveis de ambiente (configurar em Settings → Variables no Cloudflare):
+// Variaveis de ambiente (Settings → Variables no Cloudflare):
 // F3_CORP, F3_PES, F4_CORP, F4_PES, F5_CORP, F5_PES
-// Se nao configuradas, usa as URLs hardcoded como fallback.
+// Se nao configuradas, usa URLs hardcoded como fallback.
 
 const URLS_FALLBACK = {
   f3_corp: 'https://script.google.com/macros/s/AKfycbzKKuKhr111DFtk5jAhx3ofQzZL78sQvliDKtxDj_FlBZmbPaLuufd6-oHxq7Tsr9sp_w/exec',
@@ -22,9 +22,26 @@ const CORS = {
   'Content-Type': 'application/json',
 };
 
-// Rate limiting: max 30 requests/minuto por IP
-const RATE_LIMIT    = 30;
-const RATE_WINDOW   = 60; // segundos
+const RATE_LIMIT  = 30;
+const RATE_WINDOW = 60;
+
+function getGasUrl(env, fase, envParam) {
+  // Monta a chave: ex f3_corp ou f3_pes
+  const key = fase + '_' + envParam;
+
+  // Tenta variavel de ambiente primeiro
+  // Mapeamento direto das variaveis
+  const envVarMap = {
+    f3_corp: env.F3_CORP,
+    f3_pes:  env.F3_PES,
+    f4_corp: env.F4_CORP,
+    f4_pes:  env.F4_PES,
+    f5_corp: env.F5_CORP,
+    f5_pes:  env.F5_PES,
+  };
+
+  return envVarMap[key] || URLS_FALLBACK[key] || null;
+}
 
 export default {
   async fetch(request, env) {
@@ -33,10 +50,10 @@ export default {
       return new Response(null, { status: 204, headers: CORS });
     }
 
-    // Rate limiting via KV (se KV estiver configurado)
+    // Rate limiting via KV
     if (env.RATE_KV) {
       const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
-      const key = `rate:${ip}:${Math.floor(Date.now() / (RATE_WINDOW * 1000))}`;
+      const key = 'rate:' + ip + ':' + Math.floor(Date.now() / (RATE_WINDOW * 1000));
       const cur = parseInt(await env.RATE_KV.get(key) || '0');
       if (cur >= RATE_LIMIT) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
@@ -46,20 +63,21 @@ export default {
       await env.RATE_KV.put(key, String(cur + 1), { expirationTtl: RATE_WINDOW * 2 });
     }
 
-    const url    = new URL(request.url);
-    const fase   = url.searchParams.get('fase');
-    const env_p  = url.searchParams.get('env');
-    const action = url.searchParams.get('action') || 'stats';
-    const key    = fase + '_' + env_p;
+    const url      = new URL(request.url);
+    const fase     = url.searchParams.get('fase');
+    const envParam = url.searchParams.get('env');
+    const action   = url.searchParams.get('action') || 'stats';
 
-    // Usa variavel de ambiente se disponivel, fallback para hardcoded
-    const envKey  = key.toUpperCase().replace('_', '_');
-    const gasUrl  = (env && env[envKey.replace('f3_corp','F3_CORP').replace('f3_pes','F3_PES')
-      .replace('f4_corp','F4_CORP').replace('f4_pes','F4_PES')
-      .replace('f5_corp','F5_CORP').replace('f5_pes','F5_PES')]) || URLS_FALLBACK[key];
+    if (!fase || !envParam) {
+      return new Response(JSON.stringify({ error: 'Parametros fase e env sao obrigatorios' }), {
+        status: 400, headers: CORS
+      });
+    }
+
+    const gasUrl = getGasUrl(env, fase, envParam);
 
     if (!gasUrl) {
-      return new Response(JSON.stringify({ error: 'Fase/env invalido: ' + key }), {
+      return new Response(JSON.stringify({ error: 'Fase/env invalido: ' + fase + '_' + envParam }), {
         status: 400, headers: CORS
       });
     }
@@ -67,13 +85,16 @@ export default {
     try {
       const resp = await fetch(gasUrl + '?action=' + action, { redirect: 'follow' });
       const text = await resp.text();
-      // Verifica se retornou HTML em vez de JSON (redirect do GAS para login)
+
+      // Detecta HTML (redirect para login do Google)
       if (text.trim().startsWith('<')) {
         return new Response(JSON.stringify({ error: 'GAS retornou HTML — verificar deployment' }), {
           status: 502, headers: CORS
         });
       }
+
       return new Response(text, { status: 200, headers: CORS });
+
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), {
         status: 502, headers: CORS
