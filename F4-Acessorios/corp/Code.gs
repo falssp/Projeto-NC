@@ -682,7 +682,7 @@ function _getPing() {
 /* ════ STATS ════ */
 function _getStats() {
   try {
-    var ss = SpreadsheetApp.openById(MINHA_SHEET_ID);
+    var ss = SpreadsheetApp.openById('1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI');
     var sh = ss.getSheetByName('📋 Histórico');
     if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
     var dados = sh.getDataRange().getValues();
