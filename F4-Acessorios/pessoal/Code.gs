@@ -645,7 +645,7 @@ function _jsonOut(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 /* ════════════════════════════════════════════════════════════
-   KEEP ALIVE — trigger a cada 20 min para manter o script quente
+   KEEP ALIVE — trigger a cada 30 min para manter o script quente
 ════════════════════════════════════════════════════════════ */
 function keepAlive() {
   // Chamada mínima para manter o script ativo — não grava nada
