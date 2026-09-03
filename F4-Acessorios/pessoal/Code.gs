@@ -29,8 +29,11 @@ function _dicAba() {
 var ACCESS_TOKEN = '3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5';
 
 function _checkToken(e) {
-  // Aceita token via header X-NC-Token ou parâmetro token
+  // Sem token: aceita (chamada interna do GAS)
+  // Token presente e correto: aceita (Pages)
+  // Token presente e errado: rejeita
   var token = (e && e.parameter && e.parameter.token) || '';
+  if (!token) return true;
   return token === ACCESS_TOKEN;
 }
 
