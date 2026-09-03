@@ -29,7 +29,8 @@ function doGet(e) {
   // Com action → responde JSON (chamado pelo GitHub Pages)
   var result;
   try {
-    if      (action === 'ping')           result = { ok: true, env: 'corp' };
+    if      (action === 'ping')           result = { ok: true, status: 'online', fase: 'F3', env: 'corp', ts: new Date().toISOString() };
+    else if (action === 'stats')          result = _getStats();
     else if (action === 'getDicionario')  result = getDicionario(e.parameter.tipo || 'CampaignLocal');
     else if (action === 'getExcecoes')    result = getExcecoes();
     else if (action === 'getPerfilUsuario') result = getPerfilUsuario();
@@ -621,6 +622,80 @@ function abrirAmbienteStatus() {
   var html = HtmlService.createHtmlOutputFromFile('StatusAmbiente')
     .setWidth(1050).setHeight(720);
   SpreadsheetApp.getUi().showModalDialog(html, '📡 Status do Ambiente');
+}
+
+// ── STATS para portal ────────────────────────────────────────
+function _getStats() {
+  try {
+    var ss  = SpreadsheetApp.openById(LOG_SHEET_ID);
+    var log = ss.getSheetByName('Log');
+
+    // Saúde do dicionário
+    var dictStatus = getDictStatus();
+    var diasSemMerge = 0;
+    var totalSlugs   = dictStatus.totalSlugs || 0;
+    var saudeStatus  = 'critico';
+    if (dictStatus.lastMerge) {
+      diasSemMerge = Math.floor((new Date() - new Date(dictStatus.lastMerge)) / 86400000);
+      saudeStatus  = diasSemMerge <= 3 ? 'ok' : diasSemMerge <= 8 ? 'aviso' : 'critico';
+    }
+
+    if (!log || log.getLastRow() < 2) {
+      return {
+        ok: true,
+        ultimaValidacao: null,
+        totalMes: 0,
+        totalStrings: 0,
+        totalErros: 0,
+        saude: { diasSemMerge: diasSemMerge, totalSlugs: totalSlugs, status: saudeStatus }
+      };
+    }
+
+    var lastRow = log.getLastRow();
+    var data    = log.getRange(2, 1, lastRow - 1, 11).getValues();
+
+    // Mês corrente
+    var agora = new Date();
+    var mesAtual = agora.getFullYear() + '-' + ('0' + (agora.getMonth() + 1)).slice(-2);
+
+    var totalMes     = 0;
+    var totalStrings = 0;
+    var totalErros   = 0;
+    var ultimaLinha  = null;
+
+    for (var i = data.length - 1; i >= 0; i--) {
+      var row = data[i];
+      var ts  = row[1] ? String(row[1]).slice(0, 7) : '';
+      if (ts === mesAtual) {
+        totalMes++;
+        totalStrings += parseInt(row[7]) || 0;
+        totalErros   += parseInt(row[9]) || 0;
+      }
+      if (!ultimaLinha && row[0]) ultimaLinha = row;
+    }
+
+    var ultimaValidacao = null;
+    if (ultimaLinha) {
+      var tsRaw = ultimaLinha[1] ? String(ultimaLinha[1]) : '';
+      ultimaValidacao = {
+        data:    tsRaw.slice(0, 10),
+        hora:    tsRaw.slice(11, 16),
+        usuario: String(ultimaLinha[2] || '')
+      };
+    }
+
+    return {
+      ok:             true,
+      ultimaValidacao: ultimaValidacao,
+      totalMes:       totalMes,
+      totalStrings:   totalStrings,
+      totalErros:     totalErros,
+      saude:          { diasSemMerge: diasSemMerge, totalSlugs: totalSlugs, status: saudeStatus }
+    };
+  } catch(e) {
+    Logger.log('_getStats ERRO: ' + e.message);
+    return { ok: false, erro: e.message };
+  }
 }
 
 // ── HELPER ────────────────────────────────────────────────────
