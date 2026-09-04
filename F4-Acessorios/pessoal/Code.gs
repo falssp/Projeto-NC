@@ -169,18 +169,22 @@ function gerarIDs(payload) {
         var id = tipo + String(cont.last).padStart(cont.size, '0') + cont.suffix;
         ids.push(id);
         linhaMinha++;
-        batchMinha.push([linhaMinha, today, plat]);
+        batchMinha.push([linhaMinha, today, plat, id, tipo]);
       }
       resultado.push({ plataforma: plat, tipo: tipo, ids: ids });
       // NÃO atualiza contador aqui — só após gravação
     });
 
-    // Escreve data e plataforma na planilha minha em batch
+    // Escreve data, IDs e plataforma na planilha minha em batch
     if (batchMinha.length) {
       var startMinha = batchMinha[0][0];
-      var datas = batchMinha.map(function(r) { return [r[1]]; });
-      var plats = batchMinha.map(function(r) { return [r[2]]; });
+      var datas  = batchMinha.map(function(r) { return [r[1]]; });
+      var plats  = batchMinha.map(function(r) { return [r[2]]; });
+      var idsSX  = batchMinha.map(function(r) { return [r[4] === 'SX'  ? r[3] : '']; });
+      var idsAMZ = batchMinha.map(function(r) { return [r[4] === 'AMZ' ? r[3] : '']; });
       abaMinha.getRange(startMinha, 1, batchMinha.length, 1).setValues(datas);
+      abaMinha.getRange(startMinha, 2, batchMinha.length, 1).setValues(idsSX);
+      abaMinha.getRange(startMinha, 3, batchMinha.length, 1).setValues(idsAMZ);
       abaMinha.getRange(startMinha, 5, batchMinha.length, 1).setValues(plats);
     }
 
