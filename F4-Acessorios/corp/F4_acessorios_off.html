@@ -3033,37 +3033,20 @@ function ansParseFiles(){
         var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:true,cellHTML:false,raw:false});
         wb.SheetNames.forEach(function(sn){
           var key=ansFindMapKey(sn);if(!key)return;
-          var ws=wb.Sheets[sn];
+          var m=ANS_EXCEL_MAP[key],ws=wb.Sheets[sn];
           var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
-          // Encontrar Placement ID dinamicamente — Ad Name é sempre a coluna anterior
-          var idCol=-1,adCol=-1,dataStart=-1;
-          for(var hi=0;hi<rows.length;hi++){
-            var row=rows[hi];
-            for(var ci=0;ci<row.length;ci++){
-              var cell=String(row[ci]||'').trim().toLowerCase();
-              if(cell.indexOf('placement id')!==-1&&cell.indexOf('não editar')!==-1){
-                idCol=ci;
-                adCol=ci-1; // Ad Name é sempre a coluna imediatamente anterior
-                dataStart=hi+1;
-                break;
-              }
-            }
-            if(idCol!==-1)break;
-          }
-          if(idCol===-1||adCol<0||dataStart===-1)return;
           var seen={};
-          for(var ri=dataStart;ri<rows.length;ri++){
-            var row=rows[ri];
-            var idv=String(row[idCol]||'').trim().toUpperCase().replace(/[\s]/g,'');
-            var adv=String(row[adCol]||'').trim();
-            if(!idv||!adv||idv.length<3)continue;
-            if(/^(123456789|0)$/.test(idv))continue;
-            if(/PLACEMENT|STORMX|FLASHTALKING|PREENCHIMENTO/i.test(idv))continue;
-            if(adv.startsWith('=')||adv==='#N/A'||adv==='#REF!'||adv===''||adv==='Ad Name'||adv==='Creative/Ad')continue;
-            if(seen[idv])continue;seen[idv]=true;
+          rows.forEach(function(row,ri){
+            var idv=String(row[m.id]||'').trim().toUpperCase().replace(/[\s]/g,'');
+            var adv=String(row[m.ad]||'').trim();
+            if(!idv||!adv||idv.length<3)return;
+            if(/^(123456789|0)$/.test(idv))return;
+            if(/PLACEMENT|STORMX|FLASHTALKING|PREENCHIMENTO/i.test(idv))return;
+            if(adv.startsWith('=')||adv==='#N/A'||adv==='#REF!'||adv==='Ad name'||adv==='Creative/Ad'||adv==='Ad Name')return;
+            if(seen[idv])return;seen[idv]=true;
             if(!ansParsedData[sn])ansParsedData[sn]=[];
             ansParsedData[sn].push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
-          }
+          });
         });
       }catch(e){console.error(e);}
       done++;if(done===ansUploadedFiles.length){ansRenderParseInfo();ansCheckReady();}
