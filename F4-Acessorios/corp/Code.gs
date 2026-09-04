@@ -226,27 +226,28 @@ function fillAdNames(payload) {
     var abaMinha = _getOrCreateAba(ssMinha, anoAtual);
     var lastRow  = abaChefe.getLastRow();
 
-    // Monta mapa ID → número de linha a partir das cols B e C da aba do chefe
+    // Monta mapa ID → número de linha a partir das cols B e C da planilha do usuário (fonte primária)
+    // Fallback: cols B e C da aba do chefe (para IDs mais antigos)
     var mapaID = {};
-    if (lastRow >= 2) {
-      abaChefe.getRange(2, 2, lastRow - 1, 2).getValues().forEach(function(row, ri) {
-        var b = String(row[0] || '').trim().toUpperCase();
-        var c = String(row[1] || '').trim().toUpperCase();
-        if (b) mapaID[b] = ri + 2;
-        if (c) mapaID[c] = ri + 2;
-      });
-    }
-
-    // Lê abaMinha inteira em batch (cols B, C, D) — UMA chamada só
     var lastMinha = abaMinha.getLastRow();
     var minhaData = {};
     if (lastMinha >= 2) {
       abaMinha.getRange(2, 2, lastMinha - 1, 3).getValues().forEach(function(row, ri) {
-        minhaData[ri + 2] = {
-          b: String(row[0] || '').trim().toUpperCase(),
-          c: String(row[1] || '').trim().toUpperCase(),
-          d: String(row[2] || '').trim()
-        };
+        var b = String(row[0] || '').trim().toUpperCase();
+        var c = String(row[1] || '').trim().toUpperCase();
+        var d = String(row[2] || '').trim();
+        if (b) mapaID[b] = ri + 2;
+        if (c) mapaID[c] = ri + 2;
+        minhaData[ri + 2] = { b: b, c: c, d: d };
+      });
+    }
+    // Fallback: chefe (IDs antigos que ainda não estão na planilha do usuário)
+    if (lastRow >= 2) {
+      abaChefe.getRange(2, 2, lastRow - 1, 2).getValues().forEach(function(row, ri) {
+        var b = String(row[0] || '').trim().toUpperCase();
+        var c = String(row[1] || '').trim().toUpperCase();
+        if (b && !mapaID[b]) mapaID[b] = ri + 2;
+        if (c && !mapaID[c]) mapaID[c] = ri + 2;
       });
     }
 
