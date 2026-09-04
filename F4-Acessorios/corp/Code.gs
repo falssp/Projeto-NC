@@ -1,6 +1,6 @@
 // ============================================================
 // NC Tool | Unilever BR x Grasp — Script F4
-// F4 - Acessórios · Apps Script Web App — ORIGINAL
+// F4 - Acessórios · Apps Script Web App — CORP
 //
 // ESTRUTURA DO PROJETO:
 //   Code.gs    ← este arquivo
@@ -15,10 +15,10 @@
 // ============================================================
 
 /* ── IDs das planilhas ── */
-var MINHA_SHEET_ID = '1qHDQx4rBJrb1bNrOIr_b_R_4qMND72ZsnyPWUSLoLkc';
-var CHEFE_SHEET_ID = '17reFaVIatWRvNa-KpnLPsFUEV8WnxrNC2fsEHO5lU6s';
-var CL_SHEET_ID    = '1dZ-TiUcFgjdc45Fpc9frztG1Bqsi9e0F0aAHQzXoHjw';
-var DIC_SHEET_ID   = '1HlWrUbQGstYtb6NZUHpDNmVYmXJFUOyJ';
+var MINHA_SHEET_ID = '1WZf3wiiZYoMqr7XH5UlUpzHggIwUTQE0JlTlhLr-46o';
+var CHEFE_SHEET_ID = '1kcW8wlRXFua9RV24BI7c7FqbsMN-90ywxq7VCmQoQXI';
+var CL_SHEET_ID    = '1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc';
+var DIC_SHEET_ID   = '1PEBpspeDx8gFUYVoVYkdJgj3E5KU2GTvf7VqBBuG9hQ';
 
 /* ── Aba corrente do Dicionário ── */
 function _dicAba() {
@@ -682,7 +682,7 @@ function _getPing() {
 /* ════ STATS ════ */
 function _getStats() {
   try {
-    var ss = SpreadsheetApp.openById('1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI');
+    var ss = SpreadsheetApp.openById('1WZf3wiiZYoMqr7XH5UlUpzHggIwUTQE0JlTlhLr-46o');
     var sh = ss.getSheetByName('📋 Histórico');
     if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
     var dados = sh.getDataRange().getValues();
