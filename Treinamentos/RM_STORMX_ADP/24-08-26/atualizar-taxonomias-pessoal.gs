@@ -74,6 +74,23 @@ function garantirImportRange() {
     );
   }
 
+  // Oculta a aba (invisível para usuários comuns)
+  aba.hideSheet();
+
+  // Protege a aba: bloqueia edição e deleção para todos exceto o dono do script
+  const protecoes = aba.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+  if(protecoes.length === 0) {
+    const prot = aba.protect();
+    prot.setDescription('Dados de taxonomia — gerenciado pelo NC Tool');
+    // Remove todos os editores exceto o dono
+    const me = Session.getEffectiveUser();
+    prot.addEditor(me);
+    prot.removeEditors(prot.getEditors().filter(e => e.getEmail() !== me.getEmail()));
+    // Se for planilha de domínio, bloqueia edição para o domínio também
+    if(prot.canDomainEdit()) prot.setDomainEdit(false);
+    Logger.log('Aba protegida e oculta.');
+  }
+
   return aba;
 }
 
