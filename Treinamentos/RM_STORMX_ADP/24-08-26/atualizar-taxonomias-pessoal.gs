@@ -12,7 +12,7 @@
 
 const GITHUB_TOKEN = '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';
 const SOURCE_ID    = '1qIJIAz8UnYxHsRk1I5eRl1S9oPbewJhi7l7PjDnvgs0';
-const ABA          = 'Galielo e Freetext';
+const ABA          = 'Galileo e Freetext';
 
 const TARGETS = [
   { owner: 'falssp', repo: 'nc-tool',    path: 'treinamentos/RM_STORMX_ADP/24-08-26/taxonomias-ul.html' },
