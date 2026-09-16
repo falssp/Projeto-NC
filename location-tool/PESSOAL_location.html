@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Location Taxonomy — Pessoal</title>
+<style>
+:root{
+  --bg:#0F1117;--surface:#181B24;--border:#272B38;
+  --accent:#3B82F6;--accent-lo:#1D3461;
+  --text:#E8EAF0;--muted:#8892A4;--success:#22C55E;
+  --cid:#60A5FA;--est:#A78BFA;--reg:#34D399;--nac:#FBBF24;
+  --mono:'JetBrains Mono','Fira Code','Courier New',monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --r:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100vh;padding:24px 20px 48px;}
+
+.header{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+.badge{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:4px;background:var(--accent-lo);color:var(--accent);letter-spacing:.04em;}
+h1{font-size:18px;font-weight:600;}
+
+.section{margin-bottom:18px;}
+.slabel{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
+
+/* type tabs */
+.type-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.ttab{padding:7px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:13px;cursor:pointer;transition:all .15s;}
+.ttab:hover{border-color:var(--accent);color:var(--text);}
+.ttab.a-nac{border-color:var(--nac);color:var(--nac);background:rgba(251,191,36,.1);}
+.ttab.a-reg{border-color:var(--reg);color:var(--reg);background:rgba(52,211,153,.1);}
+.ttab.a-est{border-color:var(--est);color:var(--est);background:rgba(167,139,250,.1);}
+.ttab.a-cid{border-color:var(--cid);color:var(--cid);background:rgba(96,165,250,.1);}
+
+/* filter row */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.fsel{flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;}
+.fsel:focus{border-color:var(--accent);}
+.fsel option{background:var(--surface);}
+
+/* search */
+.search-wrap{position:relative;margin-bottom:10px;}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px 9px 34px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;transition:border-color .15s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--muted);}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:32px;align-items:center;}
+.chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-family:var(--mono);font-size:12px;cursor:default;user-select:none;}
+.chip.cid{background:rgba(96,165,250,.15);color:var(--cid);border:1px solid rgba(96,165,250,.3);}
+.chip-x{opacity:.5;font-size:14px;cursor:pointer;}
+.chip-x:hover{opacity:1;}
+.chip-hint{font-size:11px;color:var(--muted);}
+
+/* list */
+.rlist{max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.ritem{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.ritem:last-child{border-bottom:none;}
+.ritem:hover{background:rgba(255,255,255,.04);}
+.ritem.dis{opacity:.3;cursor:default;pointer-events:none;}
+.rsig{font-family:var(--mono);font-size:11px;min-width:80px;color:var(--muted);}
+.rlbl{font-size:13px;}
+.iata-dot{width:6px;height:6px;border-radius:50%;background:var(--cid);margin-left:auto;flex-shrink:0;}
+
+/* output */
+.out-wrap{position:relative;}
+.out-val{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 110px 14px 16px;color:var(--muted);font-family:var(--mono);font-size:16px;min-height:52px;word-break:break-all;transition:border-color .2s,color .2s;}
+.out-val.live{border-color:var(--accent);color:var(--accent);}
+.out-val.live-nac{border-color:var(--nac);color:var(--nac);}
+.copy-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 14px;border-radius:4px;border:none;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;transition:all .15s;}
+.copy-btn:hover{background:#2563EB;}
+.copy-btn.ok{background:var(--success);}
+.copy-btn:disabled{opacity:.35;cursor:default;}
+
+.reset-btn{background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);padding:6px 14px;font-size:12px;cursor:pointer;margin-top:12px;transition:all .15s;}
+.reset-btn:hover{border-color:var(--muted);color:var(--text);}
+
+hr{border:none;border-top:1px solid var(--border);margin:18px 0;}
+
+.state{text-align:center;padding:12px 0;color:var(--muted);font-size:13px;}
+.err{color:#F87171;}
+
+.legend{font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:6px;}
+.legend-dot{width:6px;height:6px;border-radius:50%;background:var(--cid);}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="badge">PESSOAL</span>
+  <h1>Location Taxonomy</h1>
+</div>
+
+<!-- 1. Tipo -->
+<div class="section">
+  <div class="slabel">1 · Tipo</div>
+  <div class="type-tabs">
+    <button class="ttab" data-t="nac" onclick="setType('nac')">🟡 Nacional</button>
+    <button class="ttab" data-t="reg" onclick="setType('reg')">🟢 Região</button>
+    <button class="ttab" data-t="est" onclick="setType('est')">🟣 Estado</button>
+    <button class="ttab" data-t="cid" onclick="setType('cid')">🔵 Cidade</button>
+  </div>
+</div>
+
+<!-- 2. Filtros (reg/est/cid) -->
+<div class="section" id="filterSection" style="display:none">
+  <div class="slabel" id="filterLabel">2 · Filtrar</div>
+  <div class="filter-row" id="filterRow"></div>
+</div>
+
+<!-- 3. Busca + seleção (só cid) -->
+<div class="section" id="searchSection" style="display:none">
+  <div class="slabel">3 · Selecionar cidade <span id="selHint" style="color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(até 3)</span></div>
+  <div class="search-wrap">
+    <span class="si">⌕</span>
+    <input id="searchInput" type="text" placeholder="Buscar por nome ou sigla…" oninput="filterList()">
+  </div>
+  <div class="chips" id="chips" style="margin-bottom:8px"></div>
+  <div class="rlist" id="rlist"></div>
+  <div class="legend"><span class="legend-dot"></span> ponto azul = aeroporto com código IATA</div>
+</div>
+
+<!-- Seleção de estados (até 3) -->
+<div class="section" id="estSection" style="display:none">
+  <div class="slabel">2 · Selecionar estado <span style="color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(até 3)</span></div>
+  <div class="chips" id="estChips" style="margin-bottom:8px"></div>
+  <div class="rlist" id="estList"></div>
+</div>
+
+<!-- Seleção de regiões (até 3) -->
+<div class="section" id="regSection" style="display:none">
+  <div class="slabel">2 · Selecionar região <span style="color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0">(até 3)</span></div>
+  <div class="chips" id="regChips" style="margin-bottom:8px"></div>
+  <div class="rlist" id="regList"></div>
+</div>
+
+<hr>
+
+<!-- Output -->
+<div class="section">
+  <div class="slabel">Valor gerado</div>
+  <div class="out-wrap">
+    <div class="out-val" id="outVal">—</div>
+    <button class="copy-btn" id="copyBtn" onclick="copyVal()" disabled>Copiar</button>
+  </div>
+</div>
+<button class="reset-btn" onclick="resetAll()">↺ Limpar</button>
+
+<div id="stateMsg" class="state">Carregando municípios…</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────
+let DB = null;          // dados carregados do JSON
+let TYPE = null;        // 'nac'|'reg'|'est'|'cid'
+let SEL = [];           // [{s,l,i,kind}]  kind='cid'|'est'|'reg'
+const MAX = {cid:3, est:3, reg:3};
+
+// ── BOOT ──────────────────────────────────────────────────
+window.onload = () => {
+  // Tenta carregar municipios.json (GitHub Pages / servidor)
+  // Se falhar (file://) usa mock mínimo para preview
+  fetch('municipios.json')
+    .then(r => { if(!r.ok) throw new Error(); return r.json(); })
+    .then(data => { DB = data; hide('stateMsg'); })
+    .catch(() => {
+      // Mock mínimo para abrir localmente sem servidor
+      DB = {
+        reg:{no:'Norte',ne:'Nordeste',co:'Centro-Oeste',se:'Sudeste',su:'Sul'},
+        est:{SP:'São Paulo',RJ:'Rio de Janeiro',MG:'Minas Gerais',BA:'Bahia',PR:'Paraná',RS:'Rio Grande do Sul',SC:'Santa Catarina',PE:'Pernambuco',CE:'Ceará',GO:'Goiás'},
+        er:{SP:'se',RJ:'se',MG:'se',BA:'ne',PR:'su',RS:'su',SC:'su',PE:'ne',CE:'ne',GO:'co'},
+        d:{
+          se:{SP:[{s:'gru',l:'São Paulo',i:true},{s:'vcp',l:'Campinas',i:true},{s:'sjk',l:'São José dos Campos',i:true},{s:'sao-sebastiao',l:'São Sebastião',i:false}],
+              RJ:[{s:'rio',l:'Rio de Janeiro',i:true},{s:'cfb',l:'Cabo Frio',i:true}],
+              MG:[{s:'cnf',l:'Belo Horizonte',i:true},{s:'ubd',l:'Uberlândia',i:true}]},
+          ne:{BA:[{s:'ssa',l:'Salvador',i:true},{s:'bps',l:'Porto Seguro',i:true}],
+              PE:[{s:'rec',l:'Recife',i:true}],
+              CE:[{s:'for',l:'Fortaleza',i:true}]},
+          co:{GO:[{s:'gyn',l:'Goiânia',i:true}]},
+          su:{PR:[{s:'cwb',l:'Curitiba',i:true},{s:'igu',l:'Foz do Iguaçu',i:true}],
+              RS:[{s:'poa',l:'Porto Alegre',i:true}],
+              SC:[{s:'fln',l:'Florianópolis',i:true}]}
+        }
+      };
+      hide('stateMsg');
+      document.getElementById('stateMsg').textContent = '⚠ Modo preview — hospede com municipios.json para lista completa.';
+      show('stateMsg');
+    });
+};
+
+// ── HELPERS ───────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const show = id => $(id).style.display = '';
+const hide = id => $(id).style.display = 'none';
+function nn(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+
+// ── TYPE SELECTION ────────────────────────────────────────
+function setType(t){
+  TYPE = t; SEL = [];
+  // tabs
+  document.querySelectorAll('.ttab').forEach(b => b.className = 'ttab' + (b.dataset.t===t?' a-'+t:''));
+  // hide all panels
+  ['filterSection','searchSection','estSection','regSection'].forEach(hide);
+  $('chips').innerHTML = ''; $('estChips').innerHTML = ''; $('regChips').innerHTML = '';
+  $('rlist').innerHTML = ''; $('estList').innerHTML = ''; $('regList').innerHTML = '';
+  $('searchInput').value = '';
+
+  if(t === 'nac'){ updateOut(); return; }
+
+  if(t === 'reg'){
+    show('regSection');
+    renderRegList();
+  }
+  if(t === 'est'){
+    show('estSection');
+    renderEstList(null); // todos os estados, ordem alfa
+  }
+  if(t === 'cid'){
+    show('filterSection');
+    buildFilters();
+    show('searchSection');
+    filterList();
+  }
+  updateOut();
+}
+
+// ── FILTROS (para cidades) ────────────────────────────────
+let F = {reg: '', est: ''};
+
+function buildFilters(){
+  F = {reg:'', est:''};
+  const row = $('filterRow');
+  row.innerHTML = '';
+
+  // Região
+  const sr = document.createElement('select');
+  sr.className = 'fsel'; sr.id = 'fReg';
+  sr.innerHTML = '<option value="">Todas as regiões</option>';
+  Object.entries(DB.reg).sort((a,b)=>a[1].localeCompare(b[1],'pt')).forEach(([k,v])=>{
+    sr.innerHTML += `<option value="${k}">${v}</option>`;
+  });
+  sr.onchange = () => { F.reg = sr.value; F.est = ''; buildEstFilter(); filterList(); };
+  row.appendChild(sr);
+
+  // Estado
+  const se = document.createElement('select');
+  se.className = 'fsel'; se.id = 'fEst';
+  se.innerHTML = '<option value="">Todos os estados</option>';
+  Object.entries(DB.est).sort((a,b)=>a[1].localeCompare(b[1],'pt')).forEach(([k,v])=>{
+    se.innerHTML += `<option value="${k}">${v} (${k})</option>`;
+  });
+  se.onchange = () => { F.est = se.value; if(se.value) F.reg = DB.er[se.value]||''; filterList(); };
+  row.appendChild(se);
+}
+
+function buildEstFilter(){
+  const se = $('fEst');
+  if(!se) return;
+  se.innerHTML = '<option value="">Todos os estados</option>';
+  const entries = Object.entries(DB.est)
+    .filter(([k])=> !F.reg || DB.er[k]===F.reg)
+    .sort((a,b)=>a[1].localeCompare(b[1],'pt'));
+  entries.forEach(([k,v])=>{
+    se.innerHTML += `<option value="${k}">${v} (${k})</option>`;
+  });
+  F.est = '';
+}
+
+// ── CIDADE LIST ───────────────────────────────────────────
+function filterList(){
+  const q = nn($('searchInput').value.trim());
+  const selSet = new Set(SEL.map(s=>s.s));
+  const maxHit = SEL.length >= MAX.cid;
+
+  // reúne cidades das regiões/estados filtrados
+  let cidades = [];
+  Object.entries(DB.d).forEach(([reg, ests])=>{
+    if(F.reg && reg !== F.reg) return;
+    Object.entries(ests).forEach(([uf, arr])=>{
+      if(F.est && uf !== F.est) return;
+      arr.forEach(c => cidades.push({...c, uf}));
+    });
+  });
+
+  // filtra por busca
+  if(q) cidades = cidades.filter(c => nn(c.l).includes(q) || c.s.includes(q));
+
+  // ordena: com IATA primeiro, depois alfa
+  cidades.sort((a,b)=>{
+    if(a.i !== b.i) return b.i - a.i;
+    return nn(a.l).localeCompare(nn(b.l),'pt');
+  });
+
+  const list = $('rlist');
+  list.innerHTML = '';
+  cidades.slice(0,80).forEach(c=>{
+    const sel = selSet.has(c.s);
+    const dis = !sel && maxHit;
+    const div = document.createElement('div');
+    div.className = 'ritem' + (sel||dis?' dis':'');
+    div.innerHTML = `<span class="rsig">cid-${c.s}</span><span class="rlbl">${c.l} <small style="color:var(--muted)">(${c.uf})</small></span>${c.i?'<span class="iata-dot" title="IATA"></span>':''}`;
+    if(!sel && !dis) div.onclick = ()=>addCid(c);
+    list.appendChild(div);
+  });
+}
+
+function addCid(c){
+  if(SEL.length >= MAX.cid) return;
+  if(SEL.find(s=>s.s===c.s)) return;
+  SEL.push({...c, kind:'cid'});
+  renderChips(); filterList(); updateOut();
+}
+
+function renderChips(){
+  const area = $('chips');
+  area.innerHTML = '';
+  SEL.forEach(s=>{
+    const chip = document.createElement('span');
+    chip.className = 'chip cid';
+    chip.innerHTML = `cid-${s.s} — ${s.l} <span class="chip-x" onclick="removeSel('${s.s}')">×</span>`;
+    area.appendChild(chip);
+  });
+  const rem = MAX.cid - SEL.length;
+  if(rem > 0){
+    const h = document.createElement('span');
+    h.className = 'chip-hint';
+    h.textContent = rem + ' vaga' + (rem>1?'s':'');
+    area.appendChild(h);
+  }
+}
+
+function removeSel(sigla){
+  SEL = SEL.filter(s=>s.s!==sigla);
+  renderChips(); filterList(); updateOut();
+}
+
+// ── ESTADO LIST ───────────────────────────────────────────
+function renderEstList(regFilter){
+  const list = $('estList');
+  list.innerHTML = '';
+  const selSet = new Set(SEL.map(s=>s.s));
+  const maxHit = SEL.length >= MAX.est;
+
+  const entries = Object.entries(DB.est)
+    .filter(([k])=> !regFilter || DB.er[k]===regFilter)
+    .sort((a,b)=>a[1].localeCompare(b[1],'pt'));
+
+  entries.forEach(([uf, label])=>{
+    const sel = selSet.has('est-'+uf.toLowerCase());
+    const dis = !sel && maxHit;
+    const div = document.createElement('div');
+    div.className = 'ritem' + (sel||dis?' dis':'');
+    div.innerHTML = `<span class="rsig">est-${uf.toLowerCase()}</span><span class="rlbl">${label}</span>`;
+    if(!sel && !dis) div.onclick = ()=>addEst(uf, label);
+    list.appendChild(div);
+  });
+}
+
+function addEst(uf, label){
+  const s = 'est-'+uf.toLowerCase();
+  if(SEL.length >= MAX.est || SEL.find(x=>x.s===s)) return;
+  SEL.push({s, l:label, kind:'est'});
+  renderEstChips(); renderEstList(null); updateOut();
+}
+
+function renderEstChips(){
+  const area = $('estChips');
+  area.innerHTML = '';
+  SEL.forEach(s=>{
+    const chip = document.createElement('span');
+    chip.className = 'chip cid';
+    chip.style.cssText = 'background:rgba(167,139,250,.15);color:var(--est);border-color:rgba(167,139,250,.3)';
+    chip.innerHTML = `${s.s} — ${s.l} <span class="chip-x" onclick="removeEstSel('${s.s}')">×</span>`;
+    area.appendChild(chip);
+  });
+  const rem = MAX.est - SEL.length;
+  if(rem > 0){
+    const h = document.createElement('span');
+    h.className = 'chip-hint';
+    h.textContent = rem + ' vaga' + (rem>1?'s':'');
+    area.appendChild(h);
+  }
+}
+
+function removeEstSel(sigla){
+  SEL = SEL.filter(s=>s.s!==sigla);
+  renderEstChips(); renderEstList(null); updateOut();
+}
+
+// ── REGIÃO LIST ───────────────────────────────────────────
+function renderRegList(){
+  const list = $('regList');
+  list.innerHTML = '';
+  const selSet = new Set(SEL.map(s=>s.s));
+  const maxHit = SEL.length >= MAX.reg;
+
+  Object.entries(DB.reg)
+    .sort((a,b)=>a[1].localeCompare(b[1],'pt'))
+    .forEach(([k,v])=>{
+      const sig = 'reg-'+k;
+      const sel = selSet.has(sig);
+      const dis = !sel && maxHit;
+      const div = document.createElement('div');
+      div.className = 'ritem' + (sel||dis?' dis':'');
+      div.innerHTML = `<span class="rsig">${sig}</span><span class="rlbl">${v}</span>`;
+      if(!sel && !dis) div.onclick = ()=>addReg(k,v);
+      list.appendChild(div);
+    });
+}
+
+function addReg(k, label){
+  const s = 'reg-'+k;
+  if(SEL.length >= MAX.reg || SEL.find(x=>x.s===s)) return;
+  SEL.push({s, l:label, kind:'reg'});
+  renderRegChips(); renderRegList(); updateOut();
+}
+
+function renderRegChips(){
+  const area = $('regChips');
+  area.innerHTML = '';
+  SEL.forEach(s=>{
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.style.cssText = 'background:rgba(52,211,153,.15);color:var(--reg);border:1px solid rgba(52,211,153,.3)';
+    chip.innerHTML = `${s.s} — ${s.l} <span class="chip-x" onclick="removeRegSel('${s.s}')">×</span>`;
+    area.appendChild(chip);
+  });
+  const rem = MAX.reg - SEL.length;
+  if(rem > 0){
+    const h = document.createElement('span');
+    h.className = 'chip-hint';
+    h.textContent = rem + ' vaga' + (rem>1?'s':'');
+    area.appendChild(h);
+  }
+}
+
+function removeRegSel(sigla){
+  SEL = SEL.filter(s=>s.s!==sigla);
+  renderRegChips(); renderRegList(); updateOut();
+}
+
+// ── OUTPUT ────────────────────────────────────────────────
+function updateOut(){
+  const el = $('outVal');
+  const btn = $('copyBtn');
+  let val = '';
+
+  if(TYPE==='nac') val = 'nac';
+  else if(TYPE==='reg' && SEL.length) val = SEL.map(s=>s.s).join('-').replace(/reg-/g,'reg-').replace(/(reg-\w+)-reg-/g,'$1-');
+  else if(TYPE==='est' && SEL.length) val = SEL.map(s=>s.s).join('-');
+  else if(TYPE==='cid' && SEL.length){
+    const parts = SEL.map(s=>'cid-'+s.s);
+    // mescla: cid-sao + cid-rio → cid-sao-rio
+    val = 'cid-' + SEL.map(s=>s.s).join('-');
+  }
+
+  // fix para reg: reg-se + reg-ne → reg-se-ne
+  if(TYPE==='reg' && SEL.length) val = 'reg-' + SEL.map(s=>s.s.replace('reg-','')).join('-');
+  // fix para est: est-sp + est-rj → est-sp-est-rj (mantém cada prefixo)
+  if(TYPE==='est' && SEL.length) val = SEL.map(s=>s.s).join('-');
+
+  if(val){
+    el.textContent = val;
+    el.className = 'out-val' + (TYPE==='nac'?' live-nac':' live');
+    btn.disabled = false; btn.textContent = 'Copiar'; btn.className = 'copy-btn';
+  } else {
+    el.textContent = '—'; el.className = 'out-val';
+    btn.disabled = true;
+  }
+}
+
+function copyVal(){
+  const v = $('outVal').textContent;
+  if(v==='—') return;
+  navigator.clipboard.writeText(v).then(()=>{
+    const b = $('copyBtn');
+    b.textContent = '✓ Copiado'; b.className = 'copy-btn ok';
+    setTimeout(()=>{ b.textContent='Copiar'; b.className='copy-btn'; }, 2000);
+  });
+}
+
+// ── RESET ─────────────────────────────────────────────────
+function resetAll(){
+  TYPE = null; SEL = [];
+  document.querySelectorAll('.ttab').forEach(b=>b.className='ttab');
+  ['filterSection','searchSection','estSection','regSection'].forEach(hide);
+  $('chips').innerHTML=''; $('estChips').innerHTML=''; $('regChips').innerHTML='';
+  $('rlist').innerHTML=''; $('estList').innerHTML=''; $('regList').innerHTML='';
+  $('searchInput').value='';
+  updateOut();
+}
+</script>
+</body>
+</html>
