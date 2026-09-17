@@ -311,6 +311,24 @@
   }
 
 
+
+  /* Filtro plataforma */
+  .plat-wrap { position: relative; }
+  .plat-btn { height: 34px; padding: 0 12px; font-size: 13px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface2); color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: border-color .12s; }
+  .plat-btn:hover { border-color: var(--accent); }
+  .plat-btn.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent-text); }
+  .plat-badge-count { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 6px; }
+  .plat-dropdown { position: absolute; top: calc(100% + 6px); right: 0; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: .5rem; min-width: 210px; z-index: 200; display: none; }
+  .plat-dropdown.open { display: block; }
+  .plat-dropdown-header { display: flex; justify-content: space-between; align-items: center; padding: 2px 6px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .plat-dropdown-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
+  .plat-clear { font-size: 11px; color: var(--accent-text); cursor: pointer; }
+  .plat-clear:hover { text-decoration: underline; }
+  .plat-option { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; transition: background .1s; }
+  .plat-option:hover { background: var(--surface2); }
+  .plat-option input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+  .plat-option label { font-size: 12.5px; color: var(--text2); cursor: pointer; }
+
   /* Plataformas no card */
   .card-plats { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
   .card-plat  { font-size: 10px; padding: 1px 6px; border-radius: 10px;
@@ -405,9 +423,11 @@ function render(){
 
   keys.forEach(k => {
     const items = D[k]
-      .filter(it => !term ||
-        it.v.toLowerCase().includes(term) ||
-        (it.s && it.s.toLowerCase().includes(term)))
+      .filter(it => {
+        if(activePlats.size > 0 && !(it.p && it.p.some(p => activePlats.has(p)))) return false;
+        if(!term) return true;
+        return it.v.toLowerCase().includes(term) || (it.s && it.s.toLowerCase().includes(term));
+      })
       .slice()
       .sort((a,b) => {
         const na = ['na','n-a','-','none'].includes((a.v||'').toLowerCase());
@@ -546,8 +566,59 @@ document.addEventListener('keydown', e=>{
   if(e.ctrlKey&&e.shiftKey&&['i','j','c'].includes(e.key.toLowerCase())) e.preventDefault();
 });
 
+
+// ── FILTRO DE PLATAFORMA ─────────────────────────────────────
+const PLAT_LIST = ["Amazon DSP", "Compra Direta", "DV360 — Programática", "DV360 — TradeDesk", "DV360 — YouTube Auction", "DV360 — YouTube Reserva", "Flashtalking", "Google Others", "Google Pmax", "Google Search", "Google Video", "Meta", "Pinterest", "TikTok", "Twitter", "Twitter — Amplify"];
+let activePlats = new Set();
+
+function buildPlatOptions(){
+  const wrap = document.getElementById('plat-options');
+  if(!wrap) return;
+  PLAT_LIST.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'plat-option';
+    const pid = p.replace(/[^a-z0-9]/gi,'-');
+    div.innerHTML = `<input type="checkbox" id="po-${pid}" data-plat="${p}"><label for="po-${pid}">${p}</label>`;
+    div.querySelector('input').onchange = e => {
+      if(e.target.checked) activePlats.add(p);
+      else activePlats.delete(p);
+      updatePlatBtn();
+      galRender();
+    };
+    wrap.appendChild(div);
+  });
+}
+
+function togglePlatDrop(){
+  document.getElementById('plat-dropdown').classList.toggle('open');
+}
+
+function clearPlatFilter(){
+  activePlats.clear();
+  document.querySelectorAll('.plat-option input').forEach(i => i.checked = false);
+  updatePlatBtn();
+  galRender();
+}
+
+function updatePlatBtn(){
+  const n = activePlats.size;
+  const btn = document.getElementById('plat-btn');
+  const badge = document.getElementById('plat-badge');
+  btn.classList.toggle('active', n > 0);
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
+  badge.textContent = n;
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('plat-wrap');
+  if(wrap && !wrap.contains(e.target))
+    document.getElementById('plat-dropdown').classList.remove('open');
+});
+
+buildPlatOptions();
 buildSidebar();
-render();
+galRender();
 
 window.addEventListener('load', ()=>{ window.scrollTo({top:0,behavior:'instant'}); });
 </script>
