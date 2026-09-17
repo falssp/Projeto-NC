@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UL · Taxonomia Location</title>
+<style>
+:root{
+  --ul-blue:#003087;--ul-blue-l:#E8EDF5;--ul-blue-m:#002470;
+  --ul-red:#E4002B;--ul-red-l:#FDEAED;
+  --bg:#F2F4F8;--surface:#FFF;--border:#D8DCE8;
+  --text:#0D1117;--sub:#5A6478;
+  --green:#16864A;--r:8px;--sh:0 1px 3px rgba(0,40,120,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 40px;font-size:14px;}
+
+/* HEADER */
+.header{background:var(--ul-blue);padding:16px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.header-logo{width:36px;height:36px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.header-title{color:#fff;font-size:16px;font-weight:700;letter-spacing:-.2px;}
+.header-sub{color:rgba(255,255,255,.65);font-size:12px;margin-top:1px;}
+.header-bar{width:4px;height:36px;background:var(--ul-red);border-radius:2px;flex-shrink:0;}
+
+.wrap-inner{padding:0 16px;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);padding:16px 18px;margin-bottom:14px;}
+.card-lbl{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--sub);margin-bottom:12px;}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:14px;}
+.step{display:flex;gap:12px;align-items:flex-start;}
+
+.snum{width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s;}
+.snum.idle{background:#ECEEF3;color:#B0B7C8;}
+.snum.active{background:var(--ul-blue-l);color:var(--ul-blue);}
+.snum.done{background:var(--ul-blue);color:#fff;}
+.snum.active-red{background:var(--ul-red-l);color:var(--ul-red);}
+.snum.done-red{background:var(--ul-red);color:#fff;}
+
+.sbody{flex:1;min-width:0;}
+.stitle{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.stitle.idle{color:var(--sub);}
+
+/* NACIONAL */
+.nac-tog{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;background:var(--bg);}
+.nac-tog:hover{border-color:var(--ul-blue);background:var(--ul-blue-l);}
+.nac-tog.on{border-color:var(--ul-blue);background:var(--ul-blue-l);}
+.nac-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s;flex-shrink:0;}
+.nac-tog.on .nac-dot{background:var(--ul-blue);border-color:var(--ul-blue);}
+.nac-lbl{font-size:13px;font-weight:600;color:var(--sub);}
+.nac-tog.on .nac-lbl{color:var(--ul-blue);}
+.nac-tag{font-family:monospace;font-size:11px;font-weight:700;background:var(--ul-blue);color:#fff;padding:2px 7px;border-radius:3px;margin-left:auto;}
+
+/* SELECT */
+.sel-wrap{position:relative;}
+.sel-wrap select{width:100%;padding:9px 32px 9px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--bg);outline:none;appearance:none;cursor:pointer;transition:border-color .15s,background .15s;}
+.sel-wrap select:focus{border-color:var(--ul-blue);background:#fff;}
+.sel-wrap select:disabled{opacity:.35;cursor:not-allowed;}
+.sel-arr{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--sub);font-size:12px;}
+
+/* CIDADES */
+.cid-slots{display:flex;flex-direction:column;gap:8px;}
+.cid-row{display:flex;gap:8px;align-items:center;}
+.cid-idx{width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--ul-blue-l);color:var(--ul-blue);}
+.iwrap{position:relative;flex:1;}
+.iwrap input{width:100%;padding:8px 12px 8px 30px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s,background .15s;}
+.iwrap input:focus{border-color:var(--ul-blue);background:#fff;}
+.iwrap input:disabled{opacity:.35;cursor:not-allowed;}
+.ico{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#9BA3B5;font-size:12px;pointer-events:none;}
+.clr{background:none;border:none;cursor:pointer;color:#9BA3B5;font-size:13px;padding:4px;opacity:0;transition:opacity .15s,color .15s;flex-shrink:0;}
+.clr.on{opacity:1;}.clr:hover{color:var(--ul-red);}
+.drop{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:200;display:none;}
+.drop.open{display:block;}
+.di{padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;}
+.di:hover,.di.hi{background:var(--ul-blue-l);}
+.dsig{font-family:monospace;font-size:10px;font-weight:700;background:var(--ul-blue);color:#fff;padding:2px 5px;border-radius:3px;flex-shrink:0;}
+.de{padding:12px;font-size:13px;color:var(--sub);text-align:center;}
+.cid-hint{font-size:11.5px;color:var(--sub);margin-top:4px;}
+
+/* LOADING */
+.loading{display:flex;align-items:center;gap:10px;padding:20px;font-size:13px;color:var(--sub);}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--ul-blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* RESULTADO */
+.res-empty{font-size:13px;color:var(--sub);text-align:center;padding:18px 0;}
+.res-show{display:none;}
+.res-box{background:var(--ul-blue);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.res-val{font-size:22px;font-weight:800;font-family:monospace;flex:1;word-break:break-all;letter-spacing:.3px;color:#fff;}
+.cpy{background:#fff;color:var(--ul-blue);border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;flex-shrink:0;}
+.cpy:hover{background:var(--ul-blue-l);}
+.cpy.ok{background:var(--green);color:#fff;}
+.res-bc{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;margin-top:2px;}
+.bc-item{display:flex;align-items:center;gap:4px;}
+.bc-dot{width:6px;height:6px;border-radius:50%;}
+.bc-dot.nac,.bc-dot.est,.bc-dot.cid{background:var(--ul-blue);}
+.bc-dot.reg{background:var(--ul-red);}
+.bc-lbl{color:var(--sub);}
+.bc-sep{color:#D1D5DB;font-size:10px;}
+
+/* ACENTO VERMELHO no step de região */
+.snum.active-red{background:var(--ul-red-l);color:var(--ul-red);}
+.snum.done-red{background:var(--ul-red);color:#fff;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(50px);background:#0D1117;color:#fff;padding:9px 20px;border-radius:7px;font-size:13px;font-weight:500;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .25s;opacity:0;pointer-events:none;z-index:999;}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">📍</div>
+  <div class="header-bar"></div>
+  <div>
+    <div class="header-title">Taxonomia · Location</div>
+    <div class="header-sub">Unilever · Nacional → Região → Estado → Cidade</div>
+  </div>
+</div>
+
+<div class="wrap-inner">
+
+  <!-- LOADING (visível até o GAS responder) -->
+  <div class="card" id="loading-card">
+    <div class="loading"><div class="spinner"></div>Carregando dados...</div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="card" id="main-card" style="display:none">
+    <div class="card-lbl">Selecione a localidade</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="snum idle" id="sn-nac">1</div>
+        <div class="sbody">
+          <div class="stitle idle" id="st-nac">Nacional (independente)</div>
+          <div class="nac-tog" id="nac-tog" onclick="toggleNac()">
+            <div class="nac-dot"></div>
+            <span class="nac-lbl">Abrangência nacional</span>
+            <span class="nac-tag">nac</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="snum idle" id="sn-reg">2</div>
+        <div class="sbody">
+          <div class="stitle idle" id="st-reg">Região</div>
+          <div class="sel-wrap">
+            <select id="sel-reg" onchange="onReg()" disabled>
+              <option value="">— selecione a região —</option>
+            </select>
+            <span class="sel-arr">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="snum idle" id="sn-est">3</div>
+        <div class="sbody">
+          <div class="stitle idle" id="st-est">Estado</div>
+          <div class="sel-wrap">
+            <select id="sel-est" onchange="onEst()" disabled>
+              <option value="">— selecione o estado —</option>
+            </select>
+            <span class="sel-arr">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="snum idle" id="sn-cid">4</div>
+        <div class="sbody">
+          <div class="stitle idle" id="st-cid">Cidade</div>
+          <div class="cid-slots" id="cid-slots"></div>
+          <div class="cid-hint" id="cid-hint" style="display:none">↑↓ navega · Enter seleciona · Esc fecha · até 3 cidades</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="card">
+    <div class="card-lbl">Resultado</div>
+    <div class="res-empty" id="res-empty">Faça uma seleção acima</div>
+    <div class="res-show" id="res-show">
+      <div class="res-box">
+        <div class="res-val" id="res-val"></div>
+        <button class="cpy" id="cpy-btn" onclick="copiarRes()">Copiar</button>
+      </div>
+      <div class="res-bc" id="res-bc"></div>
+    </div>
+  </div>
+
+</div><!-- /wrap-inner -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DADOS (injetados pelo GAS ou fallback embutido) ───────────────────────────
+const UF_REG = {
+  AC:"no",AM:"no",AP:"no",PA:"no",RO:"no",RR:"no",TO:"no",
+  AL:"ne",BA:"ne",CE:"ne",MA:"ne",PB:"ne",PE:"ne",PI:"ne",RN:"ne",SE:"ne",
+  DF:"co",GO:"co",MS:"co",MT:"co",
+  ES:"se",MG:"se",RJ:"se",SP:"se",
+  PR:"su",RS:"su",SC:"su"
+};
+
+let DB = { nacional:[], região:[], estado:[], cidade:[] };
+let nacOn=false, regSel=null, estSel=null, cidSels=[null,null,null];
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+function init(dados) {
+  DB = dados;
+  document.getElementById('loading-card').style.display = 'none';
+  document.getElementById('main-card').style.display = 'block';
+
+  // Popular regiões
+  const sr = document.getElementById('sel-reg');
+  (DB.região || []).sort((a,b)=>a.label.localeCompare(b.label,'pt')).forEach(r => {
+    const o = document.createElement('option');
+    o.value=r.sigla; o.textContent=r.label; sr.appendChild(o);
+  });
+  sr.disabled = false;
+  setStep('reg','active');
+  buildCidSlots();
+}
+
+function onErro(e) {
+  document.getElementById('loading-card').innerHTML =
+    `<div style="padding:16px;text-align:center;font-size:13px;color:#C0392B">
+      Erro ao carregar dados.<br><small>${e.message||e}</small><br>
+      <button onclick="location.reload()" style="margin-top:8px;padding:6px 14px;border:1px solid #D8DCE8;border-radius:6px;cursor:pointer;font-size:12px">Tentar novamente</button>
+    </div>`;
+}
+
+// Tenta GAS; se não estiver disponível usa dados embutidos
+if (typeof google !== 'undefined' && google.script) {
+  google.script.run.withSuccessHandler(init).withFailureHandler(onErro).getDados();
+} else {
+  // Fallback standalone (dados embutidos — substitua por fetch ao JSON do Git)
+  init({
+    nacional: [{sigla:'nac',label:'Nacional'}],
+    região: [
+      {sigla:'co',label:'Centro-Oeste'},{sigla:'ne',label:'Nordeste'},
+      {sigla:'no',label:'Norte'},{sigla:'se',label:'Sudeste'},{sigla:'su',label:'Sul'}
+    ],
+    estado: [
+      {sigla:'ac',label:'Acre'},{sigla:'al',label:'Alagoas'},{sigla:'am',label:'Amazonas'},
+      {sigla:'ap',label:'Amapá'},{sigla:'ba',label:'Bahia'},{sigla:'ce',label:'Ceará'},
+      {sigla:'df',label:'Distrito Federal'},{sigla:'es',label:'Espírito Santo'},
+      {sigla:'go',label:'Goiás'},{sigla:'ma',label:'Maranhão'},{sigla:'mg',label:'Minas Gerais'},
+      {sigla:'ms',label:'Mato Grosso do Sul'},{sigla:'mt',label:'Mato Grosso'},
+      {sigla:'pa',label:'Pará'},{sigla:'pb',label:'Paraíba'},{sigla:'pe',label:'Pernambuco'},
+      {sigla:'pi',label:'Piauí'},{sigla:'pr',label:'Paraná'},{sigla:'rj',label:'Rio de Janeiro'},
+      {sigla:'rn',label:'Rio Grande do Norte'},{sigla:'ro',label:'Rondônia'},
+      {sigla:'rr',label:'Roraima'},{sigla:'rs',label:'Rio Grande do Sul'},
+      {sigla:'sc',label:'Santa Catarina'},{sigla:'se',label:'Sergipe'},
+      {sigla:'sp',label:'São Paulo'},{sigla:'to',label:'Tocantins'}
+    ],
+    cidade: [
+      {sigla:'aju',label:'Aracaju',uf:'SE'},{sigla:'apg',label:'Apucarana',uf:'PR'},
+      {sigla:'aps',label:'Aparecida de Goiânia',uf:'GO'},{sigla:'bel',label:'Belém',uf:'PA'},
+      {sigla:'bhz',label:'Belo Horizonte',uf:'MG'},{sigla:'bnu',label:'Blumenau',uf:'SC'},
+      {sigla:'brb',label:'Brasília',uf:'DF'},{sigla:'cau',label:'Caruaru',uf:'PE'},
+      {sigla:'cax',label:'Caxias do Sul',uf:'RS'},{sigla:'cgb',label:'Cuiabá',uf:'MT'},
+      {sigla:'cgr',label:'Campo Grande',uf:'MS'},{sigla:'con',label:'Contagem',uf:'MG'},
+      {sigla:'cpq',label:'Campinas',uf:'SP'},{sigla:'cwb',label:'Curitiba',uf:'PR'},
+      {sigla:'fec',label:'Feira de Santana',uf:'BA'},{sigla:'fln',label:'Florianópolis',uf:'SC'},
+      {sigla:'for',label:'Fortaleza',uf:'CE'},{sigla:'gru',label:'Guarulhos',uf:'SP'},
+      {sigla:'gyn',label:'Goiânia',uf:'GO'},{sigla:'imp',label:'Imperatriz',uf:'MA'},
+      {sigla:'jdf',label:'Juiz de Fora',uf:'MG'},{sigla:'jdo',label:'Juazeiro do Norte',uf:'CE'},
+      {sigla:'joi',label:'Joinville',uf:'SC'},{sigla:'jpa',label:'João Pessoa',uf:'PB'},
+      {sigla:'ldb',label:'Londrina',uf:'PR'},{sigla:'mao',label:'Manaus',uf:'AM'},
+      {sigla:'mcz',label:'Maceió',uf:'AL'},{sigla:'mgf',label:'Maringá',uf:'PR'},
+      {sigla:'nat',label:'Natal',uf:'RN'},{sigla:'nig',label:'Nova Iguaçu',uf:'RJ'},
+      {sigla:'nit',label:'Niterói',uf:'RJ'},{sigla:'osa',label:'Osasco',uf:'SP'},
+      {sigla:'pet',label:'Pelotas',uf:'RS'},{sigla:'pnz',label:'Petrolina/Juazeiro',uf:'PE'},
+      {sigla:'poa',label:'Porto Alegre',uf:'RS'},{sigla:'rao',label:'Ribeirão Preto',uf:'SP'},
+      {sigla:'rec',label:'Recife',uf:'PE'},{sigla:'rio',label:'Rio de Janeiro',uf:'RJ'},
+      {sigla:'sao',label:'São Paulo',uf:'SP'},{sigla:'sbc',label:'São Bernardo do Campo',uf:'SP'},
+      {sigla:'slz',label:'São Luís',uf:'MA'},{sigla:'sod',label:'Sorocaba',uf:'SP'},
+      {sigla:'ssa',label:'Salvador',uf:'BA'},{sigla:'ssz',label:'Santos',uf:'SP'},
+      {sigla:'stm',label:'Santarém',uf:'PA'},{sigla:'the',label:'Teresina',uf:'PI'},
+      {sigla:'udi',label:'Uberlândia',uf:'MG'},{sigla:'vix',label:'Vitória',uf:'ES'}
+    ]
+  });
+}
+
+// ── STEP STATE ────────────────────────────────────────────────────────────────
+function setStep(step, state) {
+  const n = document.getElementById(`sn-${step}`);
+  const t = document.getElementById(`st-${step}`);
+  const isReg = step === 'reg';
+  n.className = 'snum ' + (
+    state==='idle'   ? 'idle' :
+    state==='active' ? (isReg?'active-red':'active') :
+    state==='done'   ? (isReg?'done-red':'done') : 'idle'
+  );
+  t.className = 'stitle' + (state==='idle'?' idle':'');
+}
+
+// ── NACIONAL ──────────────────────────────────────────────────────────────────
+function toggleNac() {
+  nacOn = !nacOn;
+  document.getElementById('nac-tog').classList.toggle('on', nacOn);
+  setStep('nac', nacOn?'done':'active');
+  if (nacOn) {
+    resetFromReg(false);
+    document.getElementById('sel-reg').disabled = true;
+    setStep('reg','idle'); setStep('est','idle'); setStep('cid','idle');
+    showRes('nac', [{label:'Nacional'}]);
+  } else {
+    document.getElementById('sel-reg').disabled = false;
+    setStep('reg','active');
+    clearRes();
+  }
+}
+
+// ── REGIÃO ────────────────────────────────────────────────────────────────────
+function onReg() {
+  const val = document.getElementById('sel-reg').value;
+  resetFromEst(false);
+  if (!val) { regSel=null; setStep('reg','active'); clearRes(); return; }
+  regSel = (DB.região||[]).find(r=>r.sigla===val);
+  setStep('reg','done');
+
+  const selEst = document.getElementById('sel-est');
+  selEst.innerHTML = '<option value="">— selecione o estado —</option>';
+  const ufsDaReg = Object.entries(UF_REG).filter(([,r])=>r===val).map(([uf])=>uf);
+  (DB.estado||[])
+    .filter(e => ufsDaReg.includes(e.sigla.toUpperCase()))
+    .sort((a,b)=>a.label.localeCompare(b.label,'pt'))
+    .forEach(e => {
+      const o=document.createElement('option');
+      o.value=e.sigla; o.textContent=e.label; selEst.appendChild(o);
+    });
+  selEst.disabled = false;
+  setStep('est','active');
+  showRes('reg', [{label:regSel.label,cls:'reg'}], `reg-${val}`);
+}
+
+// ── ESTADO ────────────────────────────────────────────────────────────────────
+function onEst() {
+  const val = document.getElementById('sel-est').value;
+  resetFromCid();
+  if (!val) {
+    estSel=null; setStep('est','active');
+    if(regSel) showRes('reg',[{label:regSel.label,cls:'reg'}],`reg-${regSel.sigla}`);
+    return;
+  }
+  estSel = (DB.estado||[]).find(e=>e.sigla===val);
+  setStep('est','done'); setStep('cid','active');
+  document.getElementById('cid-hint').style.display='block';
+  habilitarSlot(1);
+  showRes('est',
+    [{label:regSel?regSel.label:'',cls:'reg'},{label:estSel.label,cls:'est'}],
+    `est-${val}`
+  );
+}
+
+// ── CIDADES ───────────────────────────────────────────────────────────────────
+function buildCidSlots() {
+  const c = document.getElementById('cid-slots');
+  c.innerHTML = '';
+  for(let s=1;s<=3;s++){
+    const row=document.createElement('div');
+    row.className='cid-row'; row.id=`crow-${s}`; row.style.display='none';
+    row.innerHTML=`
+      <div class="cid-idx">${s}</div>
+      <div class="iwrap">
+        <span class="ico">⌕</span>
+        <input type="text" id="ci-${s}" placeholder="Buscar cidade${s>1?' (opcional)':''}..." autocomplete="off" disabled>
+        <div class="drop" id="cd-${s}"></div>
+      </div>
+      <button class="clr" id="cc-${s}" onclick="clearCid(${s})">✕</button>`;
+    c.appendChild(row);
+    bindCid(s);
+  }
+}
+
+function habilitarSlot(s) {
+  document.getElementById(`crow-${s}`).style.display='flex';
+  const inp=document.getElementById(`ci-${s}`);
+  inp.disabled=false; inp.value='';
+  cidSels[s-1]=null;
+  document.getElementById(`cc-${s}`).classList.remove('on');
+}
+
+function bindCid(s) {
+  const inp=document.getElementById(`ci-${s}`);
+  inp.addEventListener('input',()=>{
+    if(cidSels[s-1]&&inp.value!==cidSels[s-1].label){
+      cidSels[s-1]=null; document.getElementById(`cc-${s}`).classList.remove('on'); atualizarCid();
+    }
+    renderCidDrop(s,inp.value.trim());
+  });
+  inp.addEventListener('focus',()=>renderCidDrop(s,inp.value.trim()));
+  inp.addEventListener('keydown',e=>{
+    const d=document.getElementById(`cd-${s}`);
+    const items=[...d.querySelectorAll('.di')];
+    let idx=items.findIndex(el=>el.classList.contains('hi'));
+    if(e.key==='ArrowDown'){e.preventDefault();if(idx<items.length-1){if(idx>=0)items[idx].classList.remove('hi');items[idx+1].classList.add('hi');items[idx+1].scrollIntoView({block:'nearest'});}}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(idx>0){items[idx].classList.remove('hi');items[idx-1].classList.add('hi');items[idx-1].scrollIntoView({block:'nearest'});}}
+    else if(e.key==='Enter'){e.preventDefault();const hi=d.querySelector('.di.hi');if(hi)hi.dispatchEvent(new Event('mousedown'));}
+    else if(e.key==='Escape'){closeDrps();}
+  });
+}
+
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+
+function renderCidDrop(s,q){
+  const d=document.getElementById(`cd-${s}`);
+  const uf=estSel?estSel.sigla.toUpperCase():null;
+  const usadas=new Set(cidSels.filter(Boolean).map(x=>x.sigla));
+  let lista=(DB.cidade||[])
+    .filter(c=>(!uf||c.uf===uf)&&(!usadas.has(c.sigla)||(cidSels[s-1]&&cidSels[s-1].sigla===c.sigla)));
+  if(q){const nq=norm(q);lista=lista.filter(c=>norm(c.label).includes(nq)||norm(c.sigla).includes(nq));}
+  lista=lista.slice(0,50);
+  d.innerHTML='';
+  if(!lista.length){d.innerHTML='<div class="de">Nenhuma cidade encontrada</div>';d.classList.add('open');return;}
+  for(const c of lista){
+    const it=document.createElement('div');
+    it.className='di';
+    it.innerHTML=`<span class="dsig">cid-${c.sigla}</span>${c.label}`;
+    it.addEventListener('mousedown',e=>{e.preventDefault();selCid(s,c);});
+    d.appendChild(it);
+  }
+  d.classList.add('open');
+}
+
+function selCid(s,c){
+  cidSels[s-1]=c;
+  document.getElementById(`ci-${s}`).value=c.label;
+  document.getElementById(`cc-${s}`).classList.add('on');
+  closeDrps();
+  if(s<3) habilitarSlot(s+1);
+  atualizarCid();
+}
+
+function clearCid(s){
+  cidSels[s-1]=null;
+  document.getElementById(`ci-${s}`).value='';
+  document.getElementById(`cc-${s}`).classList.remove('on');
+  for(let i=s+1;i<=3;i++){
+    cidSels[i-1]=null;
+    document.getElementById(`crow-${i}`).style.display='none';
+    document.getElementById(`ci-${i}`).value='';
+    document.getElementById(`cc-${i}`).classList.remove('on');
+  }
+  atualizarCid();
+}
+
+function atualizarCid(){
+  const ativas=cidSels.filter(Boolean);
+  if(!ativas.length){
+    setStep('cid','active');
+    if(estSel) showRes('est',[
+      {label:regSel?regSel.label:'',cls:'reg'},{label:estSel.label,cls:'est'}
+    ],`est-${estSel.sigla}`);
+    return;
+  }
+  setStep('cid','done');
+  const valor='cid-'+ativas.map(c=>c.sigla).join('-');
+  const bc=[
+    regSel?{label:regSel.label,cls:'reg'}:null,
+    estSel?{label:estSel.label,cls:'est'}:null,
+    ...ativas.map(c=>({label:c.label,cls:'cid'}))
+  ].filter(Boolean);
+  showRes('cid',bc,valor);
+}
+
+// ── RESETS ────────────────────────────────────────────────────────────────────
+function resetFromReg(reativar=true){
+  regSel=null; document.getElementById('sel-reg').value='';
+  if(reativar) setStep('reg','active');
+  resetFromEst(false);
+  document.getElementById('sel-est').innerHTML='<option value="">— selecione o estado —</option>';
+  document.getElementById('sel-est').disabled=true;
+  setStep('est','idle');
+}
+function resetFromEst(reativar=true){
+  estSel=null; document.getElementById('sel-est').value='';
+  if(reativar) setStep('est','active');
+  resetFromCid(); setStep('cid','idle');
+  document.getElementById('cid-hint').style.display='none';
+}
+function resetFromCid(){
+  cidSels=[null,null,null];
+  for(let i=1;i<=3;i++){
+    const row=document.getElementById(`crow-${i}`);
+    if(row) row.style.display='none';
+    const inp=document.getElementById(`ci-${i}`);
+    if(inp){inp.value='';inp.disabled=true;}
+    const cc=document.getElementById(`cc-${i}`);
+    if(cc) cc.classList.remove('on');
+  }
+}
+
+function closeDrps(){document.querySelectorAll('.drop').forEach(d=>d.classList.remove('open'));}
+
+// ── RESULTADO ─────────────────────────────────────────────────────────────────
+function showRes(cls, bc, valor) {
+  document.getElementById('res-empty').style.display='none';
+  document.getElementById('res-show').style.display='block';
+  document.getElementById('res-val').textContent=valor;
+  const btn=document.getElementById('cpy-btn');
+  btn.textContent='Copiar'; btn.classList.remove('ok');
+  document.getElementById('res-bc').innerHTML=(bc||[]).filter(b=>b.label).map((b,i)=>`
+    ${i>0?'<span class="bc-sep">›</span>':''}
+    <span class="bc-item"><span class="bc-dot ${b.cls||cls}"></span><span class="bc-lbl">${b.label}</span></span>`).join('');
+}
+function clearRes(){
+  document.getElementById('res-empty').style.display='block';
+  document.getElementById('res-show').style.display='none';
+}
+function copiarRes(){cpClip(document.getElementById('res-val').textContent,'cpy-btn');}
+
+function cpClip(t,btnId){
+  navigator.clipboard.writeText(t).then(()=>{
+    if(btnId){const b=document.getElementById(btnId);const o=b.textContent;b.textContent='Copiado ✓';b.classList.add('ok');setTimeout(()=>{b.textContent=o;b.classList.remove('ok');},2000);}
+    showToast(`"${t}" copiado`);
+  });
+}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200);}
+document.addEventListener('click',e=>{if(!e.target.closest('.iwrap'))closeDrps();});
+</script>
+</body>
+</html>
