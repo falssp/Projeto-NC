@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -3031,19 +3030,16 @@ function ansParseFiles(){
     var rd=new FileReader();
     rd.onload=function(ev){
       try{
-        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:true,cellHTML:false,raw:false});
+        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:false,cellHTML:false,raw:true});
         wb.SheetNames.forEach(function(sn){
           var key=ansFindMapKey(sn);if(!key)return;
           var m=ANS_EXCEL_MAP[key],ws=wb.Sheets[sn];
-          var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+          var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
           var seen={};
           rows.forEach(function(row,ri){
             var idv=String(row[m.id]||'').trim().toUpperCase().replace(/[\s]/g,'');
             var adv=String(row[m.ad]||'').trim();
-            if(!idv||!adv||idv.length<3)return;
-            if(/^(123456789|0)$/.test(idv))return;
-            if(/PLACEMENT|STORMX|FLASHTALKING|PREENCHIMENTO/i.test(idv))return;
-            if(adv.startsWith('=')||adv==='#N/A'||adv==='#REF!'||adv==='Ad name'||adv==='Creative/Ad'||adv==='Ad Name')return;
+            if(!idv||!adv||!/^(SX|AMZ)/i.test(idv))return;
             if(seen[idv])return;seen[idv]=true;
             if(!ansParsedData[sn])ansParsedData[sn]=[];
             ansParsedData[sn].push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
@@ -3322,6 +3318,11 @@ function ansShowSt(el,type,msg){el.className='ans-sbar '+type;el.innerHTML=msg;}
 
 /* ══ GERADOR DE IDs ══ */
 var GID_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
+var NC_TOKEN=(window.location.hostname==='falssp.github.io')?'9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67':'';
+function gidWarmUp(){
+  // Ping silencioso para manter o GAS aquecido
+  fetch(GID_PROXY+'?action=ping').catch(function(){});
+}
 var F4_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
 var GID_PLATAFORMAS=[
   {cat:"🛒 E-commerce"},
@@ -3400,6 +3401,7 @@ function gidInit(){
   _gidRenderTabs();
   _gidShowTabContent(null);
   gidCarregarContadores();
+  gidWarmUp();
   sbgInit();
 }
 function _gidAllPlats(){return GID_PLATAFORMAS.filter(function(p){return!p.cat;});}
@@ -3539,31 +3541,41 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('O servidor de IDs está indisponível ou expirou. Nenhum ID foi criado. Tente novamente em instantes.');return r.json();})
-    .then(function(data){
-      clearInterval(progInt);fill.style.width='100%';
-      setTimeout(function(){
-        prog.classList.remove('show');
-        if(data.error){
-          gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
-          return;
+  (function gidFetchComRetry(tentativa){
+    if(tentativa>1) gidShowSt(document.getElementById('gid-st3'),'info','⏳ Tentativa '+tentativa+' de 3...');
+    fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+      .then(function(r){
+        var ct=r.headers.get('content-type')||'';
+        if(!ct.includes('json')){
+          if(tentativa<3){setTimeout(function(){gidFetchComRetry(tentativa+1);},2500);return null;}
+          throw new Error('Servidor não respondeu após 3 tentativas. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');
         }
-        gidResultado=data.resultado||[];
-        gidRenderResultado(gidResultado);
-        // mostra Exportar sempre que houver resultado
-        if(gidResultado.length){
-          document.getElementById('gid-exp-wrap').style.display='';
-          var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
-        }
-        gidShowSt(document.getElementById('gid-st3'),'ok',
-          '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
-      },300);
-    })
-    .catch(function(e){
-      clearInterval(progInt);prog.classList.remove('show');
-      gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-    });
+        return r.json();
+      })
+      .then(function(data){
+        if(!data)return;
+        clearInterval(progInt);fill.style.width='100%';
+        setTimeout(function(){
+          prog.classList.remove('show');
+          if(data.error){
+            gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
+            return;
+          }
+          gidResultado=data.resultado||[];
+          gidRenderResultado(gidResultado);
+          if(gidResultado.length){
+            document.getElementById('gid-exp-wrap').style.display='';
+            var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
+          }
+          gidShowSt(document.getElementById('gid-st3'),'ok',
+            '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
+        },300);
+      })
+      .catch(function(e){
+        clearInterval(progInt);prog.classList.remove('show');
+        gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+      });
+  })(1);
 }
 
 function gidRenderResultado(resultado){
