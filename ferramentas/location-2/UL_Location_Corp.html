@@ -213,16 +213,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span class="acc-arrow">▾</span>
       </div>
       <div class="acc-body">
-        <!-- Filtro por região (opcional) -->
-        <div class="sel-wrap" style="margin-bottom:10px">
-          <select id="filt-reg-est" onchange="filtrarEstados()">
-            <option value="">Filtrar por região (opcional)</option>
-          </select>
-          <span class="sel-arr">▾</span>
-        </div>
-        <div class="est-slots" id="est-slots"></div>
+        <div class="cid-slots" id="est-slots"></div>
         <button class="add-btn" id="add-est-btn" onclick="addEstSlot()" style="display:none">+ Adicionar estado</button>
-        <div class="hint">↑↓ navega nos dropdowns · até 3 estados</div>
+        <div class="hint">Filtro de região é opcional · até 3 estados</div>
       </div>
     </div>
 
@@ -320,13 +313,6 @@ function init(dados){
     rl.appendChild(d);
   });
 
-  // Filtro de região para estados
-  const fr=document.getElementById('filt-reg-est');
-  DB.regiao.forEach(r=>{
-    const o=document.createElement('option');
-    o.value=r.sigla; o.textContent=r.label; fr.appendChild(o);
-  });
-
   // Primeiro slot de cada tipo
   criarEstSlot(0);
   criarCidSlot(0);
@@ -410,82 +396,129 @@ function clickReg(sigla,label){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ESTADO
+// ESTADO — estrutura idêntica a Cidade
+// [filtro região] + [busca estado] por slot
 // ─────────────────────────────────────────────────────────────────────────────
 function criarEstSlot(idx){
   const container=document.getElementById('est-slots');
+  const wrap=document.createElement('div');
+  wrap.id=`est-wrap-${idx}`;
+
   const row=document.createElement('div');
-  row.className='slot-row'; row.id=`est-row-${idx}`;
+  row.className='slot-row';
 
+  const num=document.createElement('div');
+  num.className='slot-n'; num.textContent=idx+1;
+
+  // Filtro de região (opcional) — igual select de estado em cidade
+  const regSel=document.createElement('div');
+  regSel.className='cid-est-sel';
+  const regSelect=document.createElement('select');
+  regSelect.id=`er-${idx}`;
+  regSelect.innerHTML='<option value="">— região —</option>';
+  DB.regiao.forEach(r=>{
+    const o=document.createElement('option');
+    o.value=r.sigla; o.textContent=r.label; regSelect.appendChild(o);
+  });
+  const regArr=document.createElement('span');
+  regArr.className='sel-arr'; regArr.textContent='▾';
+  regSel.appendChild(regSelect); regSel.appendChild(regArr);
+
+  // Input de busca de estado
   const sw=document.createElement('div');
-  sw.className='sel-wrap'; sw.style.flex='1'; sw.style.margin='0';
-  const sel=document.createElement('select');
-  sel.id=`est-sel-${idx}`;
-  sel.innerHTML='<option value="">— selecione o estado —</option>';
-  const arr=document.createElement('span');
-  arr.className='sel-arr'; arr.textContent='▾';
-  sw.appendChild(sel); sw.appendChild(arr);
+  sw.className='search-wrap';
+  const ico=document.createElement('span');
+  ico.className='search-ico'; ico.textContent='⌕';
+  const inp=document.createElement('input');
+  inp.type='text'; inp.id=`ei-${idx}`;
+  inp.placeholder='Buscar estado...';
+  inp.autocomplete='off';
+  const drop=document.createElement('div');
+  drop.className='sdrop'; drop.id=`ed-${idx}`;
+  sw.appendChild(ico); sw.appendChild(inp); sw.appendChild(drop);
 
+  // Botão limpar
   const clr=document.createElement('button');
   clr.className='clr-btn'; clr.textContent='✕';
   clr.onclick=()=>limparEstSlot(idx);
 
-  row.appendChild(sw); row.appendChild(clr);
-  container.appendChild(row);
+  row.appendChild(num);
+  row.appendChild(regSel);
+  row.appendChild(sw);
+  row.appendChild(clr);
+  wrap.appendChild(row);
+  container.appendChild(wrap);
 
-  popularEstSelect(sel, idx);
+  // Filtro de região — só muda a lista, não zera seleção válida
+  regSelect.addEventListener('change',()=>{
+    drop.classList.remove('open'); drop.innerHTML='';
+    // Mantém estado selecionado mesmo que não seja da região filtrada
+    renderEstDrop(idx, inp.value.trim());
+  });
 
-  sel.addEventListener('change',()=>{
-    const val=sel.value;
-    if(val){
-      estSels[idx]=DB.estado.find(e=>e.uf===val)||null;
-      clr.classList.add('show');
-      nivel='est'; limparOutros('est');
-      const totalSel = estSels.filter(Boolean).length;
-      // Mostrar + só se selecionou no último slot, há espaço e não chegou no limite
-      const podeAddEst = totalSel < 3 && estCount < 3 && idx === estCount-1;
-      document.getElementById('add-est-btn').style.display = podeAddEst ? 'block' : 'none';
-    } else {
+  // Busca de estado
+  inp.addEventListener('input',()=>{
+    if(estSels[idx]&&inp.value!==estSels[idx].label){
       estSels[idx]=null; clr.classList.remove('show');
-      document.getElementById('add-est-btn').style.display='none';
-      if(!estSels.filter(Boolean).length) nivel=null;
+      if(!estSels.filter(Boolean).length&&nivel==='est'){ nivel=null; desbloquearTodos(); }
+      renderRes();
     }
-    renderRes();
+    renderEstDrop(idx, inp.value.trim());
+  });
+  inp.addEventListener('focus',()=>renderEstDrop(idx, inp.value.trim()));
+  inp.addEventListener('keydown',e=>{
+    const items=[...drop.querySelectorAll('.sdi')];
+    let hi=items.findIndex(el=>el.classList.contains('hi'));
+    if(e.key==='ArrowDown'){e.preventDefault();if(hi<items.length-1){if(hi>=0)items[hi].classList.remove('hi');items[hi+1].classList.add('hi');items[hi+1].scrollIntoView({block:'nearest'});}}
+    else if(e.key==='ArrowUp'){e.preventDefault();if(hi>0){items[hi].classList.remove('hi');items[hi-1].classList.add('hi');items[hi-1].scrollIntoView({block:'nearest'});}}
+    else if(e.key==='Enter'){e.preventDefault();const h=drop.querySelector('.sdi.hi');if(h)h.dispatchEvent(new Event('mousedown'));}
+    else if(e.key==='Escape'){drop.classList.remove('open');}
   });
 }
 
-function popularEstSelect(sel, idx){
-  const filt=document.getElementById('filt-reg-est').value;
-  const cur=sel.value;
-  sel.innerHTML='<option value="">— selecione o estado —</option>';
-  DB.estado
-    .filter(e=>!filt||UF_REG[e.uf]===filt)
-    .forEach(e=>{
-      const o=document.createElement('option');
-      o.value=e.uf; o.textContent=e.label; sel.appendChild(o);
-    });
-  if(cur&&(!filt||UF_REG[cur]===filt)) sel.value=cur;
+function renderEstDrop(idx, q){
+  const drop=document.getElementById(`ed-${idx}`);
+  const regFilt=document.getElementById(`er-${idx}`)?.value||'';
+  const usadas=new Set(estSels.filter(Boolean).map(e=>e.uf));
+
+  let lista=DB.estado.filter(e=>{
+    if(usadas.has(e.uf)&&!(estSels[idx]&&estSels[idx].uf===e.uf)) return false;
+    if(regFilt&&UF_REG[e.uf]!==regFilt) return false;
+    return true;
+  });
+  if(q){const nq=norm(q);lista=lista.filter(e=>norm(e.label).includes(nq)||e.uf.toLowerCase().includes(nq));}
+
+  drop.innerHTML='';
+  if(!lista.length){
+    drop.innerHTML='<div class="sdi-empty">Nenhum estado encontrado</div>';
+    drop.classList.add('open'); return;
+  }
+  lista.forEach(e=>{
+    const d=document.createElement('div'); d.className='sdi';
+    d.innerHTML=`<span class="sdi-tag b">est-${e.uf.toLowerCase()}</span>${e.label}`;
+    d.addEventListener('mousedown',ev=>{ev.preventDefault();selecionarEst(idx,e);});
+    drop.appendChild(d);
+  });
+  drop.classList.add('open');
 }
 
-function filtrarEstados(){
-  // Filtro é só facilitador de busca — não zera seleções já feitas
-  for(let i=0;i<estCount;i++){
-    const sel=document.getElementById(`est-sel-${i}`);
-    if(!sel) continue;
-    const cur=estSels[i]?estSels[i].uf:'';
-    popularEstSelect(sel,i);
-    // Restaurar seleção existente mesmo que não esteja no filtro atual
-    // (o estado já selecionado continua válido — apenas o dropdown filtra)
-    if(cur) sel.value=cur;
-  }
+function selecionarEst(idx, e){
+  estSels[idx]=e;
+  document.getElementById(`ei-${idx}`).value=e.label;
+  document.querySelector(`#est-wrap-${idx} .clr-btn`).classList.add('show');
+  document.getElementById(`ed-${idx}`).classList.remove('open');
+  nivel='est'; limparOutros('est');
+  const totalSel=estSels.filter(Boolean).length;
+  const podeAdd=totalSel<3&&estCount<3&&idx===estCount-1;
+  document.getElementById('add-est-btn').style.display=podeAdd?'block':'none';
   renderRes();
 }
 
 function limparEstSlot(idx){
   estSels[idx]=null;
-  const sel=document.getElementById(`est-sel-${idx}`);
-  if(sel) sel.value='';
-  document.querySelector(`#est-row-${idx} .clr-btn`)?.classList.remove('show');
+  document.getElementById(`ei-${idx}`).value='';
+  document.querySelector(`#est-wrap-${idx} .clr-btn`)?.classList.remove('show');
+  document.getElementById(`ed-${idx}`).classList.remove('open');
   document.getElementById('add-est-btn').style.display='none';
   if(!estSels.filter(Boolean).length&&nivel==='est'){ nivel=null; desbloquearTodos(); }
   renderRes();
@@ -764,7 +797,7 @@ function resetTudo(){
   cidSels=[null,null,null]; cidCount=1;
   document.getElementById('nac-btn').classList.remove('on');
   document.querySelectorAll('.reg-opt').forEach(el=>el.classList.remove('on'));
-  document.getElementById('filt-reg-est').value='';
+
   document.getElementById('est-slots').innerHTML=''; criarEstSlot(0);
   document.getElementById('add-est-btn').style.display='none';
   document.getElementById('cid-slots').innerHTML=''; criarCidSlot(0);
