@@ -329,6 +329,26 @@
   .plat-option input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
   .plat-option label { font-size: 12.5px; color: var(--text2); cursor: pointer; }
 
+
+  /* Filtro plataforma */
+  .plat-filter-wrap{position:relative;}
+  .plat-filter-btn{height:34px;padding:0 12px;font-size:12px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:border-color .12s;}
+  .plat-filter-btn:hover,.plat-filter-btn.active{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-text);}
+  .plat-filter-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;min-width:16px;text-align:center;}
+  .plat-dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:.5rem;min-width:220px;z-index:200;display:none;}
+  .plat-dropdown.open{display:block;}
+  .plat-dropdown-header{display:flex;justify-content:space-between;align-items:center;padding:2px 6px 6px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+  .plat-dropdown-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;}
+  .plat-dropdown-clear{font-size:11px;color:var(--accent-text);cursor:pointer;}
+  .plat-dropdown-clear:hover{text-decoration:underline;}
+  .plat-option{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;transition:background .1s;}
+  .plat-option:hover{background:var(--surface2);}
+  .plat-option input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+  .plat-option label{font-size:12px;color:var(--text2);cursor:pointer;}
+  /* Card plat badges clicáveis */
+  .card-plat{cursor:pointer;}
+  .card-plat:hover{background:var(--accent-border);color:var(--accent-text);}
+
   /* Plataformas no card */
   .card-plats { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
   .card-plat  { font-size: 10px; padding: 1px 6px; border-radius: 10px;
@@ -375,7 +395,21 @@
       <button class="expand-btn" onclick="expandAll()">⊞ Expandir</button>
       <button class="expand-btn" onclick="collapseAll()">⊟ Recolher</button>
     </div>
-    <button class="faq-btn" onclick="document.getElementById('faq-overlay').classList.add('open')" title="Como usar">?</button>
+    <div class="plat-filter-wrap" id="plat-wrap">
+    <button class="plat-filter-btn" id="plat-filter-btn" onclick="togglePlatFilter()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+      Plataforma
+      <span class="plat-filter-badge" id="plat-badge" style="display:none">0</span>
+    </button>
+    <div class="plat-dropdown" id="plat-dropdown">
+      <div class="plat-dropdown-header">
+        <span class="plat-dropdown-label">Filtrar por plataforma</span>
+        <span class="plat-dropdown-clear" onclick="clearPlatFilter()">limpar</span>
+      </div>
+      <div id="plat-options"></div>
+    </div>
+  </div>
+  <button class="faq-btn" onclick="document.getElementById('faq-overlay').classList.add('open')" title="Como usar">?</button>
     <span class="meta hidden" id="meta"></span>
   </div>
 </header>
@@ -405,6 +439,7 @@ const DESC = {"Country-Code":"Código do país de veiculação.","Language":"Idi
 const KEYS = Object.keys(D).sort((a,b)=>a.localeCompare(b,'pt-BR'));
 
 let activeFields = new Set();
+let activePlats = new Set();
 let openCards = new Set();
 let q = '';
 
@@ -621,6 +656,74 @@ buildSidebar();
 galRender();
 
 window.addEventListener('load', ()=>{ window.scrollTo({top:0,behavior:'instant'}); });
+
+const ALL_PLATS = ["Amazon DSP", "Compra Direta", "DV360 — Programática", "DV360 — TradeDesk", "DV360 — YouTube Auction", "DV360 — YouTube Reserva", "Flashtalking", "Google Others", "Google Pmax", "Google Search", "Google Video", "Meta", "Pinterest", "TikTok", "Twitter", "Twitter — Amplify"];
+
+function buildPlatFilter(){
+  const wrap = document.getElementById('plat-options');
+  ALL_PLATS.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'plat-option';
+    const id = 'pp-'+p.replace(/[^a-z0-9]/gi,'-');
+    div.innerHTML = `<input type="checkbox" id="${id}" data-plat="${p}">
+      <label for="${id}">${p}</label>`;
+    div.querySelector('input').onchange = e => {
+      if(e.target.checked) activePlats.add(p);
+      else activePlats.delete(p);
+      updatePlatBtn();
+      render();
+    };
+    wrap.appendChild(div);
+  });
+}
+
+function togglePlatFilter(){
+  document.getElementById('plat-dropdown').classList.toggle('open');
+}
+
+function clearPlatFilter(){
+  activePlats.clear();
+  document.querySelectorAll('#plat-options input').forEach(i => i.checked = false);
+  updatePlatBtn();
+  render();
+}
+
+function updatePlatBtn(){
+  const n = activePlats.size;
+  const btn = document.getElementById('plat-filter-btn');
+  const badge = document.getElementById('plat-badge');
+  btn.classList.toggle('active', n > 0);
+  badge.style.display = n > 0 ? 'inline-block' : 'none';
+  badge.textContent = n;
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('plat-wrap');
+  if(wrap && !wrap.contains(e.target))
+    document.getElementById('plat-dropdown').classList.remove('open');
+});
+
+// Cards: clicar em plat badge filtra por ela
+document.addEventListener('click', e => {
+  if(e.target.classList.contains('card-plat')){
+    e.stopPropagation();
+    const p = e.target.textContent;
+    if(activePlats.has(p)){
+      activePlats.delete(p);
+    } else {
+      activePlats.clear();
+      activePlats.add(p);
+    }
+    // Sincronizar checkboxes
+    document.querySelectorAll('#plat-options input').forEach(i => {
+      i.checked = activePlats.has(i.dataset.plat);
+    });
+    updatePlatBtn();
+    render();
+  }
+});
+
 </script>
 </body>
 </html>
