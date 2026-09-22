@@ -32,7 +32,7 @@ header{flex-shrink:0;height:56px;background:var(--ul);display:flex;align-items:c
 aside{width:210px;flex-shrink:0;background:var(--w);border-right:1px solid var(--g200);display:flex;flex-direction:column}
 .sb-top{padding:16px 0 0;flex:1}
 .sb-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);padding:0 16px 8px}
-.sb-btn{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--g700);cursor:pointer;border-left:3px solid transparent;transition:all .15s;user-select:none}
+.sb-btn{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--g700);cursor:pointer;border-left:3px solid transparent;transition:color .2s,background .2s,border-color .2s;user-select:none}
 .sb-btn:hover{background:var(--g50);color:var(--ul)}
 .sb-btn.on{background:var(--ul-lt);color:var(--ul);border-left-color:var(--ul);font-weight:600}
 .sb-ico{font-size:20px;flex-shrink:0}
@@ -49,13 +49,15 @@ main{flex:1;overflow-y:auto;padding:28px 36px;position:relative;height:100%}
 .landing-title{font-size:32px;font-weight:700;color:var(--g900);letter-spacing:-.02em}
 .landing-sub{font-size:16px;color:var(--g500);max-width:480px;line-height:1.7}
 .landing-types{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:16px}
-.landing-type{padding:10px 22px;border:1.5px solid var(--g200);border-radius:24px;font-size:14px;font-weight:500;color:var(--g700);background:var(--w);cursor:pointer;transition:all .15s}
-.landing-type:hover{border-color:var(--ul);color:var(--ul);background:var(--ul-lt)}
+.landing-type{padding:10px 22px;border:1.5px solid var(--g200);border-radius:24px;font-size:14px;font-weight:500;color:var(--g700);background:var(--w);cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.landing-type:hover{border-color:var(--ul);color:var(--ul);background:var(--ul-lt);box-shadow:0 2px 8px rgba(0,102,204,.12);transform:translateY(-1px)}
 
 /* CARDS */
 .card{background:var(--w);border:1px solid var(--g200);border-radius:10px;padding:20px;margin-bottom:14px}
 .clabel{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g500);margin-bottom:12px}
 .hidden{display:none!important}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--g900);color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:100;white-space:nowrap}
+.toast.show{opacity:1}
 .ptitle{font-size:20px;font-weight:700;margin-bottom:2px}
 .psub{font-size:13px;color:var(--g500);margin-bottom:22px}
 
@@ -66,10 +68,13 @@ select:focus{border-color:var(--ul)}
 
 /* SEARCH */
 .swrap{position:relative}
-.swrap input{width:100%;background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:9px 12px 9px 32px;font-family:var(--fn);font-size:13px;color:var(--g900);outline:none}
+.swrap input{width:100%;background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:9px 32px 9px 32px;font-family:var(--fn);font-size:13px;color:var(--g900);outline:none}
 .swrap input:focus{border-color:var(--ul);background:var(--w)}
 .swrap input::placeholder{color:var(--g500)}
 .sico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g500);pointer-events:none;font-size:14px}
+.sclear{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--g500);cursor:pointer;font-size:16px;line-height:1;display:none;background:none;border:none;padding:0}
+.sclear:hover{color:var(--g900)}
+.sclear.vis{display:block}
 
 /* CHIPS */
 .chips{display:flex;flex-wrap:wrap;gap:6px;min-height:26px;align-items:center;margin:10px 0 6px}
@@ -184,7 +189,7 @@ select:focus{border-color:var(--ul)}
     </div>
     <div class="card hidden" id="pCid">
       <div class="clabel">Selecionar cidade <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">(até 3)</span></div>
-      <div class="swrap"><span class="sico">⌕</span><input id="srch" type="text" placeholder="Buscar por nome ou sigla…" oninput="renderCids()"></div>
+      <div class="swrap"><span class="sico">⌕</span><input id="srch" type="text" placeholder="Buscar por nome ou sigla…" oninput="onSrch()"><button class="sclear" id="sclear" onclick="clearSrch()">×</button></div>
       <div class="chips" id="chipsCid"></div>
       <div class="rlist" id="listCid"></div>
       <div class="leg"><span class="leg-dot"></span>ponto azul = código IATA</div>
@@ -251,7 +256,7 @@ fetch('municipios.json')
     };
   });
 
-function setType(t){
+function _setType(t){
   TYPE=t; SEL=[]; F={reg:'',est:''};
   document.querySelectorAll('.sb-btn[data-t]').forEach(b=>b.className='sb-btn'+(b.dataset.t==='faq'?' sb-faq':'')+(b.dataset.t===t?' on':''));
   PANELS.forEach(hide);
@@ -382,6 +387,35 @@ function resetAll(){
   ['chipsCid','chipsEst','chipsReg','listCid','listEst','listReg'].forEach(id=>$(id).innerHTML='');
   $('srch').value='';
 }
+function onSrch(){
+  const v=$('srch').value;
+  $('sclear').className='sclear'+(v?'  vis':'');
+  renderCids();
+}
+function clearSrch(){
+  $('srch').value='';
+  $('sclear').className='sclear';
+  renderCids();
+  $('srch').focus();
+}
+
+let toastTimer=null;
+function showToast(msg){
+  const t=$('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// Sobrescreve setType para avisar quando há seleção ativa
+const _setType=setType;
+function setType(t){
+  if(TYPE&&TYPE!=='faq'&&TYPE!==t&&SEL.length>0){
+    showToast('Seleção anterior removida');
+  }
+  _setType(t);
+}
+
 function ft(btn){
   const a=btn.nextElementSibling;
   const open=a.classList.contains('on');
@@ -390,5 +424,6 @@ function ft(btn){
   if(!open){btn.classList.add('on');a.classList.add('on');}
 }
 </script>
+<div class="toast" id="toast"></div>
 </body>
 </html>
