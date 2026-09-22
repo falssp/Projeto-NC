@@ -302,6 +302,10 @@ tr:hover td{background:#191d2e;}
       <select id="filtAgencia" onchange="renderizar()"><option value="">Todas as agências</option></select>
     </div>
     <div class="filter-group">
+      <div class="filter-label">Plataforma</div>
+      <select id="filtPlataforma" onchange="cascataPlataforma()"><option value="">Todas</option></select>
+    </div>
+    <div class="filter-group">
       <div class="filter-label">Veículo</div>
       <select id="filtVeiculo" onchange="renderizar()"><option value="">Todos</option></select>
     </div>
@@ -310,12 +314,14 @@ tr:hover td{background:#191d2e;}
       <select id="filtStatusAdp" onchange="renderizar()"><option value="">Todos</option></select>
     </div>
     <div class="filter-group">
-      <div class="filter-label">Plataforma</div>
-      <select id="filtPlataforma" onchange="renderizar()"><option value="">Todas</option></select>
-    </div>
-    <div class="filter-group">
-      <div class="filter-label">Status</div>
+      <div class="filter-label">Status Jira</div>
       <select id="filtStatus" onchange="renderizar()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group" style="align-self:flex-end;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--txt2);padding:6px 0;">
+        <input type="checkbox" id="filtIncompletos" onchange="renderizar()" style="accent-color:var(--org);width:14px;height:14px;">
+        Só incompletos
+      </label>
     </div>
   </div>
   <div class="date-sep">
@@ -564,7 +570,55 @@ function popularMarcas() {
     el.appendChild(o);
   });
 }
-function cascataBU() {
+function cascataPlataforma() {
+  // Ao mudar plataforma, filtra veículos compatíveis
+  var pl = document.getElementById('filtPlataforma').value;
+  var curVe = document.getElementById('filtVeiculo').value;
+  if (!pl) {
+    // Sem filtro de plataforma — mostra todos os veículos
+    preencheSelect('filtVeiculo', unicos('VEÍCULO'), 'Todos');
+  } else {
+    // Filtra veículos que aparecem junto com essa plataforma
+    var veSet = {};
+    (dados.rows || []).forEach(function(r) {
+      var plVal = gS(r,'PLATAFORMA');
+      var plParts = plVal.split('|').map(function(p){ return p.trim(); });
+      if (plParts.indexOf(pl) !== -1) {
+        var ve = gS(r,'VEÍCULO');
+        if (ve && !ve.startsWith('⚠️')) veSet[ve] = true;
+      }
+    });
+    var ves = Object.keys(veSet).sort(function(a,b){ return a.localeCompare(b,'pt-BR',{sensitivity:'base'}); });
+    preencheSelect('filtVeiculo', ves, 'Todos');
+    // Mantém seleção se ainda válida
+    if (veSet[curVe]) document.getElementById('filtVeiculo').value = curVe;
+  }
+  renderizar();
+}
+
+function _ehIncompleto(r) {
+  // Ticket incompleto = Veículo não mapeado OU QTD TAX vazia
+  var ve  = gS(r,'VEÍCULO');
+  var qtd = r['QTD TAX.'];
+  var veVazio  = !ve || ve.startsWith('⚠️');
+  var qtdVazio = qtd === null || qtd === undefined || qtd === '';
+  return veVazio || qtdVazio;
+}
+
+function _camposVazios(r) {
+  var vazios = [];
+  var ve  = gS(r,'VEÍCULO');
+  var qtd = r['QTD TAX.'];
+  var pl  = gS(r,'PLATAFORMA');
+  var bu  = gS(r,'BU');
+  var mk  = gS(r,'MARCA (JIRA)');
+  if (!ve || ve.startsWith('⚠️'))  vazios.push('Veículo');
+  if (qtd === null || qtd === undefined || qtd === '') vazios.push('QTD TAX');
+  if (!pl || pl === '') vazios.push('Plataforma');
+  if (!bu || bu.startsWith('⚠️'))  vazios.push('BU');
+  if (!mk || mk.startsWith('⚠️'))  vazios.push('Marca');
+  return vazios.length > 0 ? '⚠️ ' + vazios.join(', ') : '✅ Completo';
+}
   document.getElementById('filtMarca').value = '';
   limparCampanha(); limparFilho();
   popularMarcas();
@@ -743,6 +797,8 @@ function limparFiltros() {
     .forEach(function(id){ document.getElementById(id).value=''; });
   ['dateDe','dateAte'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('filtMarca').value = '';
+  var cb = document.getElementById('filtIncompletos');
+  if (cb) cb.checked = false;
   limparCampanha();
   limparFilho();
   popularMarcas();
@@ -794,6 +850,8 @@ function filtrado() {
       if (kpiFiltroAtivo==='qa' && !sts.includes('qa')) return false;
       if (kpiFiltroAtivo==='pendente' && !(sts.includes('aguard')||sts==='backlog'||sts==='em andamento')) return false;
     }
+    var soIncompletos = document.getElementById('filtIncompletos') && document.getElementById('filtIncompletos').checked;
+    if (soIncompletos && !_ehIncompleto(r)) return false;
     return true;
   });
 }
@@ -937,7 +995,18 @@ function renderizar() {
           +'</tr></thead><tbody>';
         Object.keys(arvore[bu][ag][mk]).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); }).forEach(function(camp){
           var campRows=arvore[bu][ag][mk][camp];
-          var totCamp=ticketsUnicos(campRows).length;
+          // Badge de completude
+          var unicosCamp = ticketsUnicos(campRows);
+          var totalCamp  = unicosCamp.length;
+          var completosCamp = unicosCamp.filter(function(r){ return !_ehIncompleto(r); }).length;
+          var badgeCompletude = '';
+          if (totalCamp > 0) {
+            var corBadge = completosCamp === totalCamp ? '#16a34a' : completosCamp === 0 ? '#dc2626' : '#d97706';
+            var bgBadge  = completosCamp === totalCamp ? '#f0fdf4' : completosCamp === 0 ? '#fef2f2' : '#fffbeb';
+            var bdBadge  = completosCamp === totalCamp ? '#86efac' : completosCamp === 0 ? '#fca5a5' : '#fcd34d';
+            badgeCompletude = '<span style="margin-left:8px;font-size:10px;padding:1px 7px;border-radius:3px;background:'+bgBadge+';color:'+corBadge+';border:1px solid '+bdBadge+';font-weight:700;">'+completosCamp+'/'+totalCamp+' completos</span>';
+          }
+          var totCamp=totalCamp;
           var campMidia=gS(campRows[0],'CAMP. MÍDIA');
           var statusAdp=norm(gS(campRows[0],'STATUS ADP (PAI)'));
           var isSolo=campRows.length===1&&gS(campRows[0],'SUMMARY (FILHO)')==='(sem subtarefas)';
@@ -962,6 +1031,7 @@ function renderizar() {
             +paiKeyLabel
             +'<span style="color:'+cor+';font-size:9px;margin-right:5px;">◆</span>'
             +'<span class="camp-sep-name">'+camp+(isSolo?'<span class="solo-badge" style="margin-left:6px;">solo</span>':'')+'</span>'
+            +badgeCompletude
             +taxLabel
             +(campMidia?'<span class="camp-tag" style="margin-left:6px;font-size:10px;padding:1px 6px;border-radius:3px;background:var(--surf2);color:var(--txt2);border:1px solid var(--brd);">📺 '+campMidia+'</span>':'')
             +(statusAdp&&statusAdp!=='Não Identificado'?'<span class="camp-tag" style="margin-left:4px;font-size:10px;padding:1px 6px;border-radius:3px;background:var(--surf2);color:var(--txt2);border:1px solid var(--brd);">'+statusAdp+'</span>':'')
@@ -1163,15 +1233,23 @@ function executarExporte() {
   var url_plan = document.getElementById('expUrl').value.trim();
   var nome     = document.getElementById('expNome').value.trim();
   var checks   = document.querySelectorAll('#colsGrid input:checked');
-  var colunas  = checks.length ? Array.from(checks).map(function(c){ return c.value; }) : [];
+  var colunasSel = checks.length ? Array.from(checks).map(function(c){ return c.value; }) : TODAS_COLUNAS.slice();
   var rows     = filtrado();
   var btn = document.getElementById('btnExportar');
   btn.disabled = true;
   btn.textContent = 'Exportando...';
+  // Adiciona coluna CAMPOS_VAZIOS automaticamente
+  var colsExport = colunasSel.concat(['CAMPOS_VAZIOS']);
+  var rowsExport = rows.map(function(r) {
+    var linha = {};
+    colunasSel.forEach(function(c){ linha[c] = r[c] !== undefined ? r[c] : ''; });
+    linha['CAMPOS_VAZIOS'] = _camposVazios(r);
+    return linha;
+  });
   fetch(WEBAPP_URL + '?fmt=json&acao=exportar', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ url: url_plan, nomeAba: nome, colunas: colunas, linhas: rows })
+    body: JSON.stringify({ url: url_plan, nomeAba: nome, colunas: colsExport, linhas: rowsExport })
   })
     .then(function(r){ return r.json(); })
     .then(function(res) {
