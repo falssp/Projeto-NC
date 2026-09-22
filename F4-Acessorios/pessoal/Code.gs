@@ -186,16 +186,6 @@ function gerarIDs(payload) {
       abaMinha.getRange(startMinha, 2, batchMinha.length, 1).setValues(idsSX);
       abaMinha.getRange(startMinha, 3, batchMinha.length, 1).setValues(idsAMZ);
       abaMinha.getRange(startMinha, 5, batchMinha.length, 1).setValues(plats);
-
-      // Escreve data e IDs também na planilha do chefe (cols A=data, B=SX, C=AMZ)
-      var abaChefe = ssChefe.getSheetByName('2026') || ssChefe.getSheets()[0];
-      var linhaChefe = abaChefe.getLastRow() + 1;
-      var datasChefe = batchMinha.map(function(r) { return [r[1]]; });
-      var sxChefe    = batchMinha.map(function(r) { return [r[4] === 'SX'  ? r[3] : '']; });
-      var amzChefe   = batchMinha.map(function(r) { return [r[4] === 'AMZ' ? r[3] : '']; });
-      abaChefe.getRange(linhaChefe, 1, batchMinha.length, 1).setValues(datasChefe);
-      abaChefe.getRange(linhaChefe, 2, batchMinha.length, 1).setValues(sxChefe);
-      abaChefe.getRange(linhaChefe, 3, batchMinha.length, 1).setValues(amzChefe);
     }
 
     SpreadsheetApp.flush();
