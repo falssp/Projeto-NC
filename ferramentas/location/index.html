@@ -56,6 +56,21 @@ main{flex:1;overflow-y:auto;padding:28px 36px;position:relative;height:100%}
 .card{background:var(--w);border:1px solid var(--g200);border-radius:10px;padding:20px;margin-bottom:14px}
 .clabel{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g500);margin-bottom:12px}
 .hidden{display:none!important}
+
+/* HISTÓRICO */
+.hist-wrap{margin-top:14px;border-top:1px solid var(--g100);padding-top:12px}
+.hist-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g500);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.hist-clear{font-size:11px;color:var(--g500);cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0}
+.hist-clear:hover{color:var(--err,#c0392b)}
+.hist-list{display:flex;flex-direction:column;gap:4px}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--g50);border-radius:var(--r);font-family:var(--mo);font-size:12px;color:var(--g700);cursor:pointer;transition:background .15s}
+.hist-item:hover{background:var(--ul-lt);color:var(--ul)}
+.hist-item span{font-size:10px;color:var(--g500);margin-left:8px;font-family:var(--fn)}
+.hist-empty{font-size:12px;color:var(--g500);text-align:center;padding:8px 0}
+/* EXPORTAR */
+.export-btn{display:flex;align-items:center;gap:6px;margin-top:10px;background:none;border:1px solid var(--g200);border-radius:var(--r);color:var(--g700);padding:6px 14px;font-size:12px;font-family:var(--fn);cursor:pointer;transition:all .15s}
+.export-btn:hover{border-color:var(--ul);color:var(--ul)}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--g900);color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:100;white-space:nowrap}
 .toast.show{opacity:1}
 .ptitle{font-size:20px;font-weight:700;margin-bottom:2px}
@@ -210,7 +225,14 @@ select:focus{border-color:var(--ul)}
         <div class="oval" id="oval">—</div>
         <button class="cbtn" id="cbtn" onclick="copyVal()" disabled>Copiar</button>
       </div>
-      <button class="rbtn" onclick="resetAll()">↺ Limpar seleção</button>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="rbtn" onclick="resetAll()" style="margin-top:0">↺ Limpar seleção</button>
+        <button class="export-btn" id="exportBtn" onclick="exportSession()" style="display:none">⬇ Exportar sessão</button>
+      </div>
+      <div class="hist-wrap" id="histWrap" style="display:none">
+        <div class="hist-label">Histórico da sessão <span class="hist-clear" onclick="clearHistory()">limpar</span></div>
+        <div class="hist-list" id="histList"></div>
+      </div>
     </div>
 
     <!-- FAQ -->
@@ -372,12 +394,66 @@ function updateOut(){
   if(v){el.textContent=v;el.className='oval'+(TYPE==='nac'?' nac':' live');btn.disabled=false;btn.textContent='Copiar';btn.className='cbtn';}
   else{el.textContent='—';el.className='oval';btn.disabled=true;}
 }
+// ── HISTÓRICO ────────────────────────────────────────
+let SESSION = [];
+
 function copyVal(){
   const v=$('oval').textContent;if(v==='—')return;
   navigator.clipboard.writeText(v).then(()=>{
     $('cbtn').textContent='✓ Copiado';$('cbtn').className='cbtn ok';
     setTimeout(()=>{$('cbtn').textContent='Copiar';$('cbtn').className='cbtn';},2000);
+    addToHistory(v);
   });
+}
+
+function addToHistory(val){
+  // Evita duplicata consecutiva
+  if(SESSION.length && SESSION[0].v === val) return;
+  const label = TYPE==='nac'?'Nacional':TYPE==='reg'?'Região':TYPE==='est'?'Estado':'Cidade';
+  SESSION.unshift({v:val, label, ts: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
+  if(SESSION.length > 10) SESSION.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  const list = $('histList');
+  const wrap = $('histWrap');
+  const exp  = $('exportBtn');
+  if(!SESSION.length){
+    wrap.style.display='none';
+    exp.style.display='none';
+    return;
+  }
+  wrap.style.display='';
+  exp.style.display='';
+  list.innerHTML='';
+  SESSION.forEach(h=>{
+    const d=document.createElement('div');
+    d.className='hist-item';
+    d.innerHTML=`<span style="font-family:var(--mo)">${h.v}</span><span>${h.label} · ${h.ts}</span>`;
+    d.onclick=()=>{
+      navigator.clipboard.writeText(h.v);
+      showToast('Copiado: '+h.v);
+    };
+    list.appendChild(d);
+  });
+}
+
+function clearHistory(){
+  SESSION=[];renderHistory();
+}
+
+function exportSession(){
+  if(!SESSION.length)return;
+  const lines=['Valor,Tipo,Hora',...SESSION.map(h=>`${h.v},${h.label},${h.ts}`)];
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='location_taxonomy_sessao.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exportado com sucesso');
 }
 function resetAll(){
   TYPE=null;SEL=[];F={reg:'',est:''};
