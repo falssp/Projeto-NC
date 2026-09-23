@@ -706,6 +706,12 @@ function _jsonOut(obj) {
 /* ════════════════════════════════════════════════════════════
    KEEP ALIVE — trigger a cada 30 min para manter o script quente
 ════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════
+   WRAPPERS PÚBLICOS — expostos ao google.script.run
+   (funções com _ não são acessíveis via google.script.run)
+════════════════════════════════════════════════════════════ */
+function getContadores()  { return _getContadores(); }
+
 function keepAlive() {
   // Chamada mínima para manter o script ativo — não grava nada
   SpreadsheetApp.openById(CHEFE_SHEET_ID).getName();
