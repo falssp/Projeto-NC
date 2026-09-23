@@ -111,7 +111,7 @@ function _getContadores() {
     }
     lock.releaseLock();
   } catch (e) { out.ok = false; out.error = e.message; }
-  return _jsonOut(out);
+  return out; // google.script.run precisa de objeto
 }
 
 /* ════════════════════════════════════════════════════════════
