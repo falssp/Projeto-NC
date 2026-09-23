@@ -3546,38 +3546,45 @@ function gidConfirmarGerar(){
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
   (function gidFetchComRetry(tentativa){
     if(tentativa>1) gidShowSt(document.getElementById('gid-st3'),'info','⏳ Tentativa '+tentativa+' de 3...');
-    fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-      .then(function(r){
-        var ct=r.headers.get('content-type')||'';
-        if(!ct.includes('json')){
-          if(tentativa<3){setTimeout(function(){gidFetchComRetry(tentativa+1);},2500);return null;}
-          throw new Error('Servidor não respondeu após 3 tentativas. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');
+    // Detecta ambiente: GAS usa google.script.run; Pages usa fetch com warmup
+  var _gidOnSuccess=function(data){
+      clearInterval(progInt);fill.style.width='100%';
+      setTimeout(function(){
+        prog.classList.remove('show');
+        if(data.error){
+          gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
+          return;
         }
-        return r.json();
-      })
-      .then(function(data){
-        if(!data)return;
-        clearInterval(progInt);fill.style.width='100%';
-        setTimeout(function(){
-          prog.classList.remove('show');
-          if(data.error){
-            gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
-            return;
-          }
-          gidResultado=data.resultado||[];
-          gidRenderResultado(gidResultado);
-          if(gidResultado.length){
-            document.getElementById('gid-exp-wrap').style.display='';
-            var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
-          }
-          gidShowSt(document.getElementById('gid-st3'),'ok',
-            '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
-        },300);
-      })
-      .catch(function(e){
-        clearInterval(progInt);prog.classList.remove('show');
-        gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-      });
+        gidResultado=data.resultado||[];
+        gidRenderResultado(gidResultado);
+        if(gidResultado.length){
+          document.getElementById('gid-exp-wrap').style.display='';
+          var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
+        }
+        gidShowSt(document.getElementById('gid-st3'),'ok',
+          '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
+      },300);
+  };
+  var _gidOnError=function(e){
+    clearInterval(progInt);prog.classList.remove('show');
+    gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+  };
+  if(typeof google!=='undefined'&&google.script&&google.script.run){
+    google.script.run
+      .withSuccessHandler(_gidOnSuccess)
+      .withFailureHandler(_gidOnError)
+      .gerarIDs({itens:gidLote});
+  }else{
+    var _doPost=function(){
+      return fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+        .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor não respondeu. Verifique a planilha antes de tentar novamente.');return r.json();});
+    };
+    fetch(GID_PROXY+'?action=ping').catch(function(){})
+      .then(function(){return new Promise(function(res){setTimeout(res,1500);});})
+      .then(_doPost)
+      .catch(function(){return new Promise(function(res){setTimeout(res,3000);}).then(_doPost);})
+      .then(_gidOnSuccess).catch(_gidOnError);
+  }
   })(1);
 }
 
