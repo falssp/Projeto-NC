@@ -121,99 +121,153 @@ function _getContadores() {
 ════════════════════════════════════════════════════════════ */
 function gerarIDs(payload) {
   var itens = payload.itens || [];
-  if (!itens.length) return _jsonOut({ ok: false, error: 'Nenhum item.' });
+  if (!itens.length) return { ok: false, error: 'Nenhum item.' };
 
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000))
-    return _jsonOut({ ok: false, error: 'Sistema ocupado. Tente novamente.' });
+    return { ok: false, error: 'Outro usuário está gerando IDs agora. Aguarde.' };
 
   try {
-    var ssChefe = SpreadsheetApp.openById(CHEFE_SHEET_ID);
-    var ssMinha = SpreadsheetApp.openById(MINHA_SHEET_ID);
-    var cfg     = ssChefe.getSheetByName('Config');
-    var dados   = cfg.getDataRange().getValues();
+    var ssChefe  = SpreadsheetApp.openById(CHEFE_SHEET_ID);
+    var ssMinha  = SpreadsheetApp.openById(MINHA_SHEET_ID);
+    var chefeSH  = ssChefe.getSheetByName('IDs da Unilever');
+    var configSH = ssChefe.getSheetByName('Config');
 
-    // Mapa de contadores indexado por prefix
-    var contMap = {};
-    for (var i = 1; i < dados.length; i++) {
-      var prefix = String(dados[i][0] || '').trim();
-      if (prefix) contMap[prefix] = {
-        row:    i + 1,
-        suffix: String(dados[i][1] || '').trim(),
-        size:   parseInt(dados[i][2]) || 5,
-        last:   parseInt(dados[i][3]) || 0
+    if (!chefeSH)  { lock.releaseLock(); return { ok: false, error: 'Aba IDs da Unilever não encontrada.' }; }
+    if (!configSH) { lock.releaseLock(); return { ok: false, error: 'Aba Config não encontrada.' }; }
+
+    var anoAtual = new Date().getFullYear().toString();
+    var minhaSH  = ssMinha.getSheetByName(anoAtual);
+    if (!minhaSH) {
+      minhaSH = ssMinha.insertSheet(anoAtual);
+      minhaSH.getRange(1,1,1,5).setValues([['Data','ID SX','ID AMZ','Ad Name','Plataforma']]);
+      minhaSH.setFrozenRows(1);
+    }
+
+    // Lê contadores dentro do lock
+    var configData = configSH.getDataRange().getValues();
+    var cfg = {};
+    for (var i = 1; i < configData.length; i++) {
+      var pref = String(configData[i][0] || '').trim();
+      if (!pref) continue;
+      cfg[pref] = {
+        sufixo:    String(configData[i][1] || ''),
+        tamanho:   parseInt(configData[i][2]) || 6,
+        ultimo:    parseInt(configData[i][3]) || 0,
+        configRow: i + 1
       };
     }
 
-    var anoAtual      = new Date().getFullYear().toString();
-    var abaMinha      = _getOrCreateAba(ssMinha, anoAtual);
-    var today         = _hoje();
-    var linhaMinha    = abaMinha.getLastRow();
-    var primeiraLinha = linhaMinha + 1;
-    var resultado     = [];
+    var PLAT_SX  = ['Meta','TikTok','YouTube','Search','Google Ads','DV360',
+                    'Pinterest','Snapchat','Twitter/X','LinkedIn','Spotify','Compra Direta',
+                    'Programmatic','Display','CTV / OTT','Kwai','Reddit','Twitch',
+                    'Bluesky','Discord','Telegram','Threads','Triller','Kick','Rumble',
+                    'Taboola','Outbrain','Terra','UOL','Band','SBT','Record','Globo','ChatGPT','BeReal'];
+    var PLAT_AMZ = ['Amazon'];
 
-    // Acumula valores pra escrever em batch (só na planilha minha)
-    // O chefe lê via IMPORTRANGE — não gravar mais diretamente
-    var batchMinha    = []; // [[linha, data, plat]]
+    var minhaProxLinha = minhaSH.getLastRow() + 1;
+    var chefeUltimaB   = _ultimaLinhaChefe(chefeSH, 2);
+    var chefeUltimaC   = _ultimaLinhaChefe(chefeSH, 3);
+
+    var resultado   = [];
+    var batchMinha  = [];
+    var batchChefeB = [];
+    var batchChefeC = [];
+    var hoje = _hoje();
+    var contadorSX  = cfg['SX']  ? cfg['SX'].ultimo  : 0;
+    var contadorAMZ = cfg['AMZ'] ? cfg['AMZ'].ultimo  : 0;
+    var linhaChefe  = Math.max(chefeUltimaB, chefeUltimaC);
 
     itens.forEach(function(item) {
-      var plat = item.plataforma;
-      var qtd  = parseInt(item.qtd) || 1;
-      var tipo = _tipoPorPlat(plat);
-      var cont = contMap[tipo];
-      if (!cont) return;
+      var plat  = item.plataforma;
+      var qtd   = parseInt(item.qtd) || 0;
+      if (!qtd) return;
+      var isSX  = PLAT_SX.indexOf(plat)  !== -1;
+      var isAMZ = PLAT_AMZ.indexOf(plat) !== -1;
+      var ids   = [];
 
-      var ids = [];
-      for (var k = 0; k < qtd; k++) {
-        cont.last++;
-        var id = tipo + String(cont.last).padStart(cont.size, '0') + cont.suffix;
+      for (var j = 0; j < qtd; j++) {
+        var id = '';
+        linhaChefe++;
+        if (isSX) {
+          contadorSX++;
+          id = 'SX' + String(contadorSX).padStart(cfg['SX'] ? cfg['SX'].tamanho : 8, '0');
+          batchChefeB.push([linhaChefe, id]);
+        } else if (isAMZ) {
+          contadorAMZ++;
+          var suf = cfg['AMZ'] ? cfg['AMZ'].sufixo : 'H';
+          id = 'AMZ' + String(contadorAMZ).padStart(cfg['AMZ'] ? cfg['AMZ'].tamanho : 6, '0') + suf;
+          batchChefeC.push([linhaChefe, id]);
+        }
         ids.push(id);
-        linhaMinha++;
-        batchMinha.push([linhaMinha, today, plat, id, tipo]);
+        batchMinha.push([hoje, isSX ? id : '', isAMZ ? id : '', '', plat]);
       }
-      resultado.push({ plataforma: plat, tipo: tipo, ids: ids });
-      // NÃO atualiza contador aqui — só após gravação
+      resultado.push({ plataforma: plat, ids: ids, tipo: isSX ? 'SX' : 'AMZ' });
     });
 
-    // Escreve data, IDs e plataforma na planilha minha em batch
+    // Escreve na nossa planilha
     if (batchMinha.length) {
-      var startMinha = batchMinha[0][0];
-      var datas  = batchMinha.map(function(r) { return [r[1]]; });
-      var plats  = batchMinha.map(function(r) { return [r[2]]; });
-      var idsSX  = batchMinha.map(function(r) { return [r[4] === 'SX'  ? r[3] : '']; });
-      var idsAMZ = batchMinha.map(function(r) { return [r[4] === 'AMZ' ? r[3] : '']; });
-      abaMinha.getRange(startMinha, 1, batchMinha.length, 1).setValues(datas);
-      abaMinha.getRange(startMinha, 2, batchMinha.length, 1).setValues(idsSX);
-      abaMinha.getRange(startMinha, 3, batchMinha.length, 1).setValues(idsAMZ);
-      abaMinha.getRange(startMinha, 5, batchMinha.length, 1).setValues(plats);
+      var rng = minhaSH.getRange(minhaProxLinha, 1, batchMinha.length, 5);
+      rng.setValues(batchMinha);
+      minhaSH.getRange(minhaProxLinha, 1, batchMinha.length, 1).setNumberFormat('dd/MM/yyyy');
+      _formatarColunaEGas(minhaSH, minhaProxLinha, batchMinha);
     }
 
-    SpreadsheetApp.flush();
-    // Atualiza contadores SÓ APÓS gravação confirmada
-    resultado.forEach(function(r) {
-      var cont = contMap[r.tipo];
-      if (cont) cfg.getRange(cont.row, 4).setValue(cont.last);
-    });
+    // Escreve IDs no chefe
+    if (batchChefeB.length) {
+      var startB = batchChefeB[0][0];
+      chefeSH.getRange(startB, 2, batchChefeB.length, 1)
+             .setValues(batchChefeB.map(function(r){return [r[1]];}));
+    }
+    if (batchChefeC.length) {
+      var startC = batchChefeC[0][0];
+      chefeSH.getRange(startC, 3, batchChefeC.length, 1)
+             .setValues(batchChefeC.map(function(r){return [r[1]];}));
+    }
+
+    // Atualiza contadores
+    if (cfg['SX'])  configSH.getRange(cfg['SX'].configRow,  4).setValue(contadorSX);
+    if (cfg['AMZ']) configSH.getRange(cfg['AMZ'].configRow, 4).setValue(contadorAMZ);
+
     SpreadsheetApp.flush();
     lock.releaseLock();
-    return _jsonOut({
-      ok: true,
-      resultado: resultado,
-      linhasGeradas: linhaMinha - (primeiraLinha - 1),
-      primeiraLinha: primeiraLinha
-    });
+
+    return { ok: true, resultado: resultado, linhasGeradas: batchMinha.length, primeiraLinha: minhaProxLinha };
 
   } catch (err) {
     try { lock.releaseLock(); } catch(e2) {}
-    return _jsonOut({ ok: false, error: err.message });
+    return { ok: false, error: err.message };
   }
 }
 
-/* ════════════════════════════════════════════════════════════
-   FILL AD NAMES (Passo 4 do Gerador de IDs)
-   Otimização: lê abaMinha inteira em batch uma vez só,
-   acumula todas as escritas e aplica em setValues único.
-════════════════════════════════════════════════════════════ */
+function _ultimaLinhaChefe(sheet, col) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 1;
+  var vals = sheet.getRange(2, col, lastRow - 1, 1).getValues();
+  var last = 1;
+  for (var i = 0; i < vals.length; i++) {
+    if (vals[i][0] !== '') last = i + 2;
+  }
+  return last;
+}
+
+function _formatarColunaEGas(sh, startRow, linhas) {
+  var cores = {
+    'Meta':{'bg':'#0866FF','font':'#ffffff'},'TikTok':{'bg':'#FF0050','font':'#ffffff'},
+    'Amazon':{'bg':'#FF9900','font':'#000000'},'Search':{'bg':'#4285F4','font':'#ffffff'},
+    'YouTube':{'bg':'#FF0000','font':'#ffffff'},'Google Ads':{'bg':'#34A853','font':'#ffffff'},
+    'DV360':{'bg':'#1967D2','font':'#ffffff'},'Pinterest':{'bg':'#E60023','font':'#ffffff'},
+    'Snapchat':{'bg':'#FFFC00','font':'#000000'},'Twitter/X':{'bg':'#000000','font':'#ffffff'},
+    'LinkedIn':{'bg':'#0A66C2','font':'#ffffff'},'Spotify':{'bg':'#1DB954','font':'#000000'},
+    'Compra Direta':{'bg':'#6B7280','font':'#ffffff'},'Programmatic':{'bg':'#7C3AED','font':'#ffffff'}
+  };
+  var bgs=[],fonts=[],weights=[];
+  linhas.forEach(function(l){var c=cores[l[4]];bgs.push([c?c.bg:null]);fonts.push([c?c.font:null]);weights.push(['bold']);});
+  var rangeE=sh.getRange(startRow,5,linhas.length,1);
+  rangeE.setBackgrounds(bgs);rangeE.setFontColors(fonts);rangeE.setFontWeights(weights);
+}
+
+
 function fillAdNames(payload) {
   var itens = payload.itens || [];
   if (!itens.length) return _jsonOut({ ok: false, error: 'Nenhum item.' });
