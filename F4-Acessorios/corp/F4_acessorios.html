@@ -3539,8 +3539,17 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('O servidor de IDs está indisponível ou expirou. Nenhum ID foi criado. Tente novamente em instantes.');return r.json();})
+  // Warmup + retry: faz ping primeiro para acordar o GAS, depois gera
+  var _gidDoPost=function(){
+    return fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+      .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor não respondeu. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');return r.json();});
+  };
+  fetch(GID_PROXY+'?action=ping').catch(function(){}).then(function(){
+    return new Promise(function(res){setTimeout(res,1500);});
+  }).then(_gidDoPost).catch(function(){
+    // Segunda tentativa após 3s
+    return new Promise(function(res){setTimeout(res,3000);}).then(_gidDoPost);
+  })
     .then(function(data){
       clearInterval(progInt);fill.style.width='100%';
       setTimeout(function(){
