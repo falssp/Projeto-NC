@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | NC Tool</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --azul:#1F36C7; --escuro:#1a237e; --muted:#9fa8da;
+      --borda:#d6dbf2; --bg:#f0f2ff;
+      --ok:#2e7d32; --ok-bg:#e8f5e9;
+      --aviso:#e65100; --aviso-bg:#fff8e1;
+      --erro:#c62828; --erro-bg:#ffebee;
+      --f1:#5c35c7; --f1-bg:#ede7f6;
+      --f2:#1565c0; --f2-bg:#e3f2fd;
+      --f3:#2e7d32; --f3-bg:#e8f5e9;
+      --f4:#e65100; --f4-bg:#fff8e1;
+      --f5:#bf360c; --f5-bg:#fbe9e7;
+    }
+    html, body { height:100%; }
+    body {
+      font-family:'Segoe UI',Arial,sans-serif;
+      background:var(--bg); min-height:100vh;
+      display:flex; flex-direction:column;
+    }
+
+    /* Header */
+    .header {
+      background:#fff; border-bottom:1px solid var(--borda);
+      padding:14px 24px; display:flex; align-items:center; gap:16px;
+      position:sticky; top:0; z-index:100;
+    }
+    .header-logo { font-size:1rem; font-weight:800; color:var(--escuro); }
+    .header-badge { padding:3px 10px; border-radius:20px; background:#e8eaf6; color:#3949ab; font-size:.72rem; font-weight:700; }
+    .header-spacer { flex:1; }
+    .env-toggle { display:flex; gap:4px; background:var(--bg); border-radius:8px; padding:3px; }
+    .env-btn { padding:5px 14px; border:none; border-radius:6px; font-size:.78rem; font-weight:600; cursor:pointer; color:var(--muted); background:transparent; transition:all .2s; }
+    .env-btn.active { background:var(--azul); color:#fff; }
+    .btn-refresh-all { padding:6px 14px; border:1px solid var(--borda); border-radius:8px; background:#fff; color:var(--escuro); font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s; }
+    .btn-refresh-all:hover { border-color:var(--azul); color:var(--azul); }
+    .last-update { font-size:.72rem; color:var(--muted); }
+    .back-link { font-size:.78rem; color:var(--muted); text-decoration:none; }
+    .back-link:hover { color:var(--azul); }
+
+    /* Main */
+    .main { flex:1; padding:24px; overflow-y:auto; }
+
+    /* Status row */
+    .status-row {
+      display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:24px;
+    }
+    .status-card {
+      background:#fff; border:1px solid var(--borda); border-radius:12px;
+      padding:14px 16px; display:flex; align-items:center; gap:12px;
+      transition:box-shadow .2s;
+    }
+    .status-card:hover { box-shadow:0 4px 16px rgba(31,54,199,.08); }
+    .status-icon {
+      width:38px; height:38px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+      flex-shrink:0;
+    }
+    .status-info { flex:1; min-width:0; }
+    .status-fase { font-size:.68rem; font-weight:700; letter-spacing:.8px; text-transform:uppercase; }
+    .status-name { font-size:.85rem; font-weight:700; color:var(--escuro); }
+    .status-badge {
+      display:flex; align-items:center; gap:4px;
+      font-size:.7rem; font-weight:600; padding:3px 8px;
+      border-radius:20px; background:#f5f5f5; color:var(--muted);
+      white-space:nowrap;
+    }
+    .status-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); }
+    .status-badge.ok { background:var(--ok-bg); color:var(--ok); }
+    .status-badge.ok .status-dot { background:var(--ok); animation:pulse 2s infinite; }
+    .status-badge.erro { background:var(--erro-bg); color:var(--erro); }
+    .status-badge.erro .status-dot { background:var(--erro); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* Métricas principais */
+    .metrics-grid {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;
+    }
+    .metric-card {
+      background:#fff; border:1px solid var(--borda); border-radius:12px; padding:18px 20px;
+    }
+    .metric-val { font-size:2rem; font-weight:800; color:var(--azul); line-height:1; }
+    .metric-label { font-size:.72rem; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+    .metric-sub { font-size:.75rem; color:var(--muted); margin-top:6px; }
+
+    /* Seções */
+    .section-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+    .section-card { background:#fff; border:1px solid var(--borda); border-radius:14px; overflow:hidden; }
+    .section-header { padding:14px 20px; border-bottom:1px solid var(--borda); display:flex; align-items:center; gap:10px; }
+    .section-title { font-size:.88rem; font-weight:800; color:var(--escuro); flex:1; }
+    .section-badge { padding:2px 8px; border-radius:20px; font-size:.68rem; font-weight:700; }
+    .section-body { padding:16px 20px; }
+
+    /* Barra de plataformas */
+    .plat-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .plat-name { font-size:.78rem; color:#444; width:120px; flex-shrink:0; }
+    .plat-bar-wrap { flex:1; background:var(--bg); border-radius:4px; height:8px; }
+    .plat-bar { height:100%; border-radius:4px; transition:width .6s; }
+    .plat-count { font-size:.75rem; font-weight:700; color:var(--escuro); width:36px; text-align:right; }
+
+    /* Timeline */
+    .timeline { display:flex; flex-direction:column; gap:10px; }
+    .timeline-item { display:flex; align-items:flex-start; gap:12px; }
+    .timeline-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+    .timeline-content { flex:1; }
+    .timeline-text { font-size:.8rem; color:var(--escuro); }
+    .timeline-meta { font-size:.72rem; color:#888; margin-top:2px; }
+
+    /* Saúde do dicionário */
+    .saude-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--borda); font-size:.82rem; }
+    .saude-row:last-child { border-bottom:none; }
+    .saude-label { color:#888; }
+    .saude-val { font-weight:700; color:var(--escuro); }
+    .saude-val.ok { color:var(--ok); }
+    .saude-val.aviso { color:var(--aviso); }
+    .saude-val.erro { color:var(--erro); }
+
+    /* Full width */
+    .full-card { background:#fff; border:1px solid var(--borda); border-radius:14px; overflow:hidden; margin-bottom:16px; }
+
+    /* Tabela recentes */
+    .mini-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+    .mini-table th { background:var(--bg); color:var(--escuro); padding:8px 12px; text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid var(--borda); }
+    .mini-table td { padding:8px 12px; border-bottom:1px solid var(--borda); color:#444; }
+    .mini-table tr:last-child td { border-bottom:none; }
+    .mini-table tr:hover td { background:var(--bg); }
+
+    /* Score badge */
+    .score-ok   { color:var(--ok);    font-weight:700; }
+    .score-med  { color:var(--aviso); font-weight:700; }
+    .score-bad  { color:var(--erro);  font-weight:700; }
+
+    .empty-state { text-align:center; padding:24px; color:var(--muted); font-size:.82rem; }
+    .loading { text-align:center; padding:24px; color:var(--muted); }
+    .spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--borda); border-top-color:var(--azul); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .hidden { display:none; }
+
+    footer { padding:16px 24px; font-size:.72rem; color:var(--muted); text-align:center; border-top:1px solid var(--borda); background:#fff; }
+
+    @media(max-width:900px) {
+      .status-row { grid-template-columns:repeat(3,1fr); }
+      .metrics-grid { grid-template-columns:1fr 1fr; }
+      .section-grid { grid-template-columns:1fr; }
+    }
+    @media(max-width:600px) {
+      .status-row { grid-template-columns:1fr 1fr; }
+      .metrics-grid { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">NC Tool</div>
+  <div class="header-badge">Dashboard</div>
+  <div class="header-spacer"></div>
+  <div class="env-toggle">
+    <button class="env-btn active" onclick="setEnv('corp')">Corp</button>
+    <button class="env-btn" onclick="setEnv('pessoal')">Pessoal</button>
+  </div>
+  <button class="btn-refresh-all" onclick="carregarTudo()">&#8635; Atualizar</button>
+  <span class="last-update" id="last-update"></span>
+  <a class="back-link" href="/Projeto-NC/">&#8592; Portal</a>
+</div>
+
+<div class="main">
+
+  <!-- Status das fases -->
+  <div class="status-row" id="status-row">
+    <div class="status-card"><div class="status-icon" style="background:#ede7f6">&#128273;</div><div class="status-info"><div class="status-fase" style="color:#5c35c7">F1</div><div class="status-name">IDs AdServer</div></div><div class="status-badge" id="st-f1"><span class="status-dot"></span>—</div></div>
+    <div class="status-card"><div class="status-icon" style="background:#e3f2fd">&#128196;</div><div class="status-info"><div class="status-fase" style="color:#1565c0">F2</div><div class="status-name">Gerador NC</div></div><div class="status-badge" id="st-f2"><span class="status-dot"></span>—</div></div>
+    <div class="status-card"><div class="status-icon" style="background:#e8f5e9">&#128269;</div><div class="status-info"><div class="status-fase" style="color:#2e7d32">F3</div><div class="status-name">Validator</div></div><div class="status-badge" id="st-f3"><span class="status-dot"></span>—</div></div>
+    <div class="status-card"><div class="status-icon" style="background:#fff8e1">&#128295;</div><div class="status-info"><div class="status-fase" style="color:#e65100">F4</div><div class="status-name">Acessórios</div></div><div class="status-badge" id="st-f4"><span class="status-dot"></span>—</div></div>
+    <div class="status-card"><div class="status-icon" style="background:#fbe9e7">&#128218;</div><div class="status-info"><div class="status-fase" style="color:#bf360c">F5</div><div class="status-name">Flashtalking</div></div><div class="status-badge" id="st-f5"><span class="status-dot"></span>—</div></div>
+  </div>
+
+  <!-- Métricas principais -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-val" id="m-ids-mes">—</div>
+      <div class="metric-label">IDs gerados este mês</div>
+      <div class="metric-sub" id="m-ids-total">Total: —</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="m-val-mes">—</div>
+      <div class="metric-label">Validações este mês</div>
+      <div class="metric-sub" id="m-val-score">Score médio: —</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="m-op-mes">—</div>
+      <div class="metric-label">Operações F4 este mês</div>
+      <div class="metric-sub" id="m-op-ultima">Última: —</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="m-dict-slugs">—</div>
+      <div class="metric-label">Slugs no dicionário</div>
+      <div class="metric-sub" id="m-dict-dias">Último merge: —</div>
+    </div>
+  </div>
+
+  <!-- Seções -->
+  <div class="section-grid">
+
+    <!-- IDs por plataforma -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">&#128273; IDs por Plataforma</div>
+        <div class="section-badge" style="background:#ede7f6;color:#5c35c7">F1</div>
+      </div>
+      <div class="section-body" id="plat-bars">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Saúde do dicionário -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">&#128214; Dicionário F3</div>
+        <div class="section-badge" style="background:#e8f5e9;color:#2e7d32">F3</div>
+      </div>
+      <div class="section-body" id="dict-saude">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Últimas validações -->
+  <div class="full-card">
+    <div class="section-header">
+      <div class="section-title">&#128269; Últimas Validações</div>
+      <div class="section-badge" style="background:#e8f5e9;color:#2e7d32">F3</div>
+    </div>
+    <div id="ultimas-validacoes">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Últimas operações F4 -->
+  <div class="full-card">
+    <div class="section-header">
+      <div class="section-title">&#128295; Últimas Operações</div>
+      <div class="section-badge" style="background:#fff8e1;color:#e65100">F4</div>
+    </div>
+    <div id="ultimas-operacoes">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>NC Tool Dashboard &copy; 2026 &mdash; Unilever BR &times; Grasp</footer>
+
+<script>
+var PROXY = 'https://nc-proxy.falssp.workers.dev/';
+var env   = 'corp';
+var dados = {};
+
+var COR_PLAT = {
+  'Amazon DSP':'#FF9900','Compra Direta':'#6B7280','DV360':'#1967D2',
+  'Google Ads':'#34A853','Meta':'#0866FF','TikTok':'#FF0050',
+  'YouTube':'#FF0000','Search':'#4285F4','Pinterest':'#E60023',
+  'Snapchat':'#FFFC00','Twitter/X':'#000000','Flashtalking':'#E8461E',
+};
+
+function setEnv(e) {
+  env = e;
+  document.querySelectorAll('.env-btn').forEach(function(b) {
+    b.classList.toggle('active', b.textContent.toLowerCase() === e);
+  });
+  carregarTudo();
+}
+
+function envKey() { return env === 'pessoal' ? 'pes' : env; }
+
+function gas(fase, action) {
+  var url = PROXY + '?fase=' + fase + '&env=' + envKey() + '&action=' + action;
+  return fetch(url).then(function(r) { return r.json(); }).catch(function() { return { error: 'offline' }; });
+}
+
+function setStatus(id, state, label) {
+  var el = document.getElementById(id);
+  el.className = 'status-badge ' + (state || '');
+  el.innerHTML = '<span class="status-dot"></span>' + label;
+}
+
+function carregarTudo() {
+  document.getElementById('last-update').textContent = 'Atualizando...';
+  dados = {};
+
+  // Ping todas as fases
+  ['f1','f2','f3','f4','f5'].forEach(function(f) {
+    gas(f, 'ping').then(function(d) {
+      var ok = !d.error;
+      setStatus('st-' + f, ok ? 'ok' : 'erro', ok ? 'Online' : 'Offline');
+    });
+  });
+
+  // Stats F1
+  gas('f1', 'stats').then(function(d) {
+    if (d.error) return;
+    document.getElementById('m-ids-mes').textContent   = d.totalMes    || '—';
+    document.getElementById('m-ids-total').textContent = 'Total: ' + (d.totalSlugs || '—');
+    renderPlatBars(d.porPlataforma || {});
+  });
+
+  // Stats F3
+  gas('f3', 'stats').then(function(d) {
+    if (d.error) return;
+    document.getElementById('m-val-mes').textContent   = d.totalMes || '—';
+    if (d.ultimaValidacao) {
+      document.getElementById('m-val-score').textContent = 'Última: ' + (d.ultimaValidacao.data || '') + ' ' + (d.ultimaValidacao.hora || '');
+    }
+    renderDictSaude(d.saude || {});
+    renderUltimasValidacoes(d.historico || []);
+  });
+
+  // Stats F4
+  gas('f4', 'stats').then(function(d) {
+    if (d.error) return;
+    document.getElementById('m-op-mes').textContent = d.totalMes || '—';
+    if (d.ultimaOperacao) {
+      document.getElementById('m-op-ultima').textContent = (d.ultimaOperacao.modulo || '') + ' · ' + (d.ultimaOperacao.data || '');
+    }
+    renderUltimasOperacoes(d.historico || []);
+  });
+
+  document.getElementById('last-update').textContent =
+    'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function renderPlatBars(plats) {
+  var div = document.getElementById('plat-bars');
+  var entries = Object.entries(plats).sort(function(a,b) { return b[1]-a[1]; });
+  if (!entries.length) { div.innerHTML = '<div class="empty-state">Sem dados de plataforma</div>'; return; }
+  var max = entries[0][1] || 1;
+  div.innerHTML = entries.slice(0,8).map(function(p) {
+    var cor = COR_PLAT[p[0]] || '#9e9e9e';
+    var pct = Math.round((p[1]/max)*100);
+    return '<div class="plat-row">' +
+      '<div class="plat-name">' + p[0] + '</div>' +
+      '<div class="plat-bar-wrap"><div class="plat-bar" style="width:' + pct + '%;background:' + cor + '"></div></div>' +
+      '<div class="plat-count">' + p[1] + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderDictSaude(s) {
+  var div = document.getElementById('dict-saude');
+  if (!s || !Object.keys(s).length) { div.innerHTML = '<div class="empty-state">Aguardando dados do F3</div>'; return; }
+  var dias   = s.diasSemMerge || 0;
+  var cls    = dias <= 7 ? 'ok' : dias <= 14 ? 'aviso' : 'erro';
+  var slugs  = s.totalSlugs || 0;
+  div.innerHTML =
+    '<div class="saude-row"><span class="saude-label">Total de slugs</span><span class="saude-val">' + slugs.toLocaleString('pt-BR') + '</span></div>' +
+    '<div class="saude-row"><span class="saude-label">Dias sem merge</span><span class="saude-val ' + cls + '">' + dias + 'd</span></div>' +
+    '<div class="saude-row"><span class="saude-label">Status</span><span class="saude-val ' + cls + '">' + (cls === 'ok' ? '✓ Atualizado' : cls === 'aviso' ? '⚠ Atenção' : '✗ Desatualizado') + '</span></div>' +
+    (s.lastMerge ? '<div class="saude-row"><span class="saude-label">Último merge</span><span class="saude-val">' + new Date(s.lastMerge).toLocaleDateString('pt-BR') + '</span></div>' : '');
+}
+
+function renderUltimasValidacoes(hist) {
+  var div = document.getElementById('ultimas-validacoes');
+  if (!hist.length) {
+    div.innerHTML = '<div class="empty-state">Sem histórico de validações</div>';
+    return;
+  }
+  var rows = hist.slice(0,8).map(function(v) {
+    var score = parseFloat(v.score || v[10] || 0);
+    var cls   = score >= 95 ? 'score-ok' : score >= 70 ? 'score-med' : 'score-bad';
+    return '<tr>' +
+      '<td>' + (v.data || v[1] || '—') + '</td>' +
+      '<td>' + (v.usuario || v[2] || '—') + '</td>' +
+      '<td>' + (v.plataforma || v[6] || '—') + '</td>' +
+      '<td>' + (v.total || v[7] || '—') + '</td>' +
+      '<td>' + (v.erros || v[9] || '—') + '</td>' +
+      '<td class="' + cls + '">' + (v.score || v[10] || '—') + '</td>' +
+      '</tr>';
+  }).join('');
+  div.innerHTML = '<table class="mini-table"><thead><tr><th>Data</th><th>Usuário</th><th>Plataforma</th><th>Total</th><th>Erros</th><th>Score</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function renderUltimasOperacoes(hist) {
+  var div = document.getElementById('ultimas-operacoes');
+  if (!hist.length) {
+    div.innerHTML = '<div class="empty-state">Sem histórico de operações</div>';
+    return;
+  }
+  var rows = hist.slice(0,8).map(function(v) {
+    return '<tr>' +
+      '<td>' + (v.data || '—') + '</td>' +
+      '<td>' + (v.hora || '—') + '</td>' +
+      '<td>' + (v.usuario || '—') + '</td>' +
+      '<td>' + (v.modulo || '—') + '</td>' +
+      '</tr>';
+  }).join('');
+  div.innerHTML = '<table class="mini-table"><thead><tr><th>Data</th><th>Hora</th><th>Usuário</th><th>Módulo</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+// Carrega ao iniciar e a cada 5 min
+carregarTudo();
+setInterval(carregarTudo, 5 * 60 * 1000);
+</script>
+</body>
+</html>
