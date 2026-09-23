@@ -171,7 +171,7 @@ function _gravarPainel(ss, pais, filhos) {
   // Sem filtro de data — PAINEL contém histórico completo (igual ao Jira)
 
   const H = ['PAI_KEY','PAI_SUMMARY','BU','AGÊNCIA','MARCA (JIRA)','CAMP. MÍDIA','STATUS ADP (PAI)',
-             'FILHO_KEY','SUMMARY (FILHO)','VEÍCULO','STATUS','RESPONSÁVEL','RELATOR',
+             'FILHO_KEY','SUMMARY (FILHO)','VEÍCULO','STATUS','RESPONSÁVEL','RESP_PAI','RELATOR',
              'QTD TAX.','PLATAFORMA','DATA LIMITE','ÚLT. ATU.'];
   const mapaPai = {};
   pais.forEach(p => {
@@ -194,7 +194,7 @@ function _gravarPainel(ss, pais, filhos) {
     if (!fd.length) {
       rows.push([pai.key,pai.summary,pai.bu||'⚠️ vazio',pai.agencia||'⚠️ vazio',
         pai.marcaJira||'⚠️ vazio',pai.campMidia||'',pai.statusAdp||'⚠️ vazio',
-        '','(sem subtarefas)','',pai.status,pai.assignee,pai.relator,
+        '','(sem subtarefas)','',pai.status,pai.assignee,pai.assignee,pai.relator,
         pai.qtdTax||'',pai.plataforma||'',pai.duedate||'',pai.updated||'']);
     } else {
       fd.forEach(f => {
@@ -207,7 +207,8 @@ function _gravarPainel(ss, pais, filhos) {
         const sum=ff.summary||'';
         const vv=_extrairTokens(sum,dv); if(!vv.length) vv.push('⚠️ Não mapeado');
         vv.forEach(vei => rows.push([pai.key,pai.summary,bu,ag,mk,cm,sa,
-          f.key,sum,vei,(ff.status||{}).name||'',(ff.assignee||{}).displayName||'',rl,qt,pl,dd,upd]));
+          f.key,sum,vei,(ff.status||{}).name||'',(ff.assignee||{}).displayName||'',
+          pai.assignee,rl,qt,pl,dd,upd]));
       });
     }
   });
@@ -217,12 +218,12 @@ function _gravarPainel(ss, pais, filhos) {
     const vv=_extrairTokens(sum,dv); if(!vv.length) vv.push('⚠️ Não mapeado');
     vv.forEach(vei => rows.push(['','(sem pai)',cf.bu||'⚠️ vazio',cf.agencia||'⚠️ vazio',
       cf.marcaJira||'⚠️ vazio',cf.campMidia||'',cf.statusAdp||'⚠️ vazio',
-      f.key,sum,vei,(ff.status||{}).name||'',(ff.assignee||{}).displayName||'',cf.relator||'',
+      f.key,sum,vei,(ff.status||{}).name||'',(ff.assignee||{}).displayName||'','',cf.relator||'',
       cf.qtdTax||'',cf.plataforma||'',cf.duedate||'',_fmt(ff.updated)]));
   });
   sh.getRange(1,1,rows.length,H.length).setValues(rows);
   _estilizarSheet(sh, rows.length, H.length, true);
-  [80,340,115,115,120,115,115,80,320,115,115,155,155,55,100,90,90].forEach((w,i)=>sh.setColumnWidth(i+1,w));
+  [80,340,115,115,120,115,115,80,320,115,115,155,155,155,55,100,90,90].forEach((w,i)=>sh.setColumnWidth(i+1,w));
   sh.setFrozenRows(1); sh.setFrozenColumns(2);
   _alinharColunas(sh, H, rows.length);
   _wrapColunas(sh, H, rows.length);
