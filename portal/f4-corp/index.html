@@ -3375,25 +3375,36 @@ function gidCarregarContadores(tentativa){
   tentativa=tentativa||1;
   var bar=document.getElementById('gid-counters-bar');
   if(tentativa===1)bar.innerHTML='⏳ Carregando contadores...';
-  fetch(GID_PROXY+'?action=contadores')
-    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível');return r.json();})
-    .then(function(d){
-      if(!d.ok)throw new Error(d.error);
-      gidContadores=d.contadores;
-      var html='Contadores atuais: ';
-      Object.keys(gidContadores).forEach(function(k){
-        html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
-      });
-      bar.innerHTML=html;
-    })
-    .catch(function(e){
-      if(tentativa<3){
-        setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
-        bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
-      } else {
-        bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
-      }
+
+  function _onSuccess(d){
+    if(!d.ok)throw new Error(d.error||'Erro');
+    gidContadores=d.contadores;
+    var html='Contadores atuais: ';
+    Object.keys(gidContadores).forEach(function(k){
+      html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
     });
+    bar.innerHTML=html;
+  }
+  function _onError(){
+    if(tentativa<3){
+      setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
+      bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
+    } else {
+      bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
+    }
+  }
+
+  if(typeof google!=='undefined'&&google.script&&google.script.run){
+    google.script.run
+      .withSuccessHandler(function(d){try{_onSuccess(d);}catch(e){_onError();}})
+      .withFailureHandler(_onError)
+      ._getContadores();
+  }else{
+    fetch(GID_PROXY+'?action=contadores')
+      .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('err');return r.json();})
+      .then(_onSuccess)
+      .catch(_onError);
+  }
 }
 
 function gidInit(){
