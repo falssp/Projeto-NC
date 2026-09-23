@@ -3380,25 +3380,36 @@ function gidCarregarContadores(tentativa){
   tentativa=tentativa||1;
   var bar=document.getElementById('gid-counters-bar');
   if(tentativa===1)bar.innerHTML='⏳ Carregando contadores...';
-  fetch(GID_PROXY+'?action=contadores')
-    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível');return r.json();})
-    .then(function(d){
-      if(!d.ok)throw new Error(d.error);
-      gidContadores=d.contadores;
-      var html='Contadores atuais: ';
-      Object.keys(gidContadores).forEach(function(k){
-        html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
-      });
-      bar.innerHTML=html;
-    })
-    .catch(function(e){
-      if(tentativa<3){
-        setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
-        bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
-      } else {
-        bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
-      }
+
+  function _onSuccess(d){
+    if(!d.ok)throw new Error(d.error||'Erro');
+    gidContadores=d.contadores;
+    var html='Contadores atuais: ';
+    Object.keys(gidContadores).forEach(function(k){
+      html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
     });
+    bar.innerHTML=html;
+  }
+  function _onError(){
+    if(tentativa<3){
+      setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
+      bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
+    } else {
+      bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
+    }
+  }
+
+  if(typeof google!=='undefined'&&google.script&&google.script.run){
+    google.script.run
+      .withSuccessHandler(function(d){try{_onSuccess(d);}catch(e){_onError();}})
+      .withFailureHandler(_onError)
+      ._getContadores();
+  }else{
+    fetch(GID_PROXY+'?action=contadores')
+      .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('err');return r.json();})
+      .then(_onSuccess)
+      .catch(_onError);
+  }
 }
 
 function gidInit(){
@@ -3544,8 +3555,9 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  // Detecta ambiente: GAS usa google.script.run; Pages usa fetch com warmup
-  var _gidOnSuccess=function(data){
+  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('O servidor de IDs está indisponível ou expirou. Nenhum ID foi criado. Tente novamente em instantes.');return r.json();})
+    .then(function(data){
       clearInterval(progInt);fill.style.width='100%';
       setTimeout(function(){
         prog.classList.remove('show');
@@ -3555,6 +3567,7 @@ function gidConfirmarGerar(){
         }
         gidResultado=data.resultado||[];
         gidRenderResultado(gidResultado);
+        // mostra Exportar sempre que houver resultado
         if(gidResultado.length){
           document.getElementById('gid-exp-wrap').style.display='';
           var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
@@ -3562,27 +3575,11 @@ function gidConfirmarGerar(){
         gidShowSt(document.getElementById('gid-st3'),'ok',
           '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
       },300);
-  };
-  var _gidOnError=function(e){
-    clearInterval(progInt);prog.classList.remove('show');
-    gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-  };
-  if(typeof google!=='undefined'&&google.script&&google.script.run){
-    google.script.run
-      .withSuccessHandler(_gidOnSuccess)
-      .withFailureHandler(_gidOnError)
-      .gerarIDs({itens:gidLote});
-  }else{
-    var _doPost=function(){
-      return fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-        .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor não respondeu. Verifique a planilha antes de tentar novamente.');return r.json();});
-    };
-    fetch(GID_PROXY+'?action=ping').catch(function(){})
-      .then(function(){return new Promise(function(res){setTimeout(res,1500);});})
-      .then(_doPost)
-      .catch(function(){return new Promise(function(res){setTimeout(res,3000);}).then(_doPost);})
-      .then(_gidOnSuccess).catch(_gidOnError);
-  }
+    })
+    .catch(function(e){
+      clearInterval(progInt);prog.classList.remove('show');
+      gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+    });
 }
 
 function gidRenderResultado(resultado){
