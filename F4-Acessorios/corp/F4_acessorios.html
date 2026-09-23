@@ -3539,18 +3539,8 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  // Warmup + retry: faz ping primeiro para acordar o GAS, depois gera
-  var _gidDoPost=function(){
-    return fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-      .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor não respondeu. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');return r.json();});
-  };
-  fetch(GID_PROXY+'?action=ping').catch(function(){}).then(function(){
-    return new Promise(function(res){setTimeout(res,1500);});
-  }).then(_gidDoPost).catch(function(){
-    // Segunda tentativa após 3s
-    return new Promise(function(res){setTimeout(res,3000);}).then(_gidDoPost);
-  })
-    .then(function(data){
+  // Detecta ambiente: GAS usa google.script.run; Pages usa fetch com warmup
+  var _gidOnSuccess=function(data){
       clearInterval(progInt);fill.style.width='100%';
       setTimeout(function(){
         prog.classList.remove('show');
@@ -3560,7 +3550,6 @@ function gidConfirmarGerar(){
         }
         gidResultado=data.resultado||[];
         gidRenderResultado(gidResultado);
-        // mostra Exportar sempre que houver resultado
         if(gidResultado.length){
           document.getElementById('gid-exp-wrap').style.display='';
           var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
@@ -3568,11 +3557,27 @@ function gidConfirmarGerar(){
         gidShowSt(document.getElementById('gid-st3'),'ok',
           '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
       },300);
-    })
-    .catch(function(e){
-      clearInterval(progInt);prog.classList.remove('show');
-      gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-    });
+  };
+  var _gidOnError=function(e){
+    clearInterval(progInt);prog.classList.remove('show');
+    gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+  };
+  if(typeof google!=='undefined'&&google.script&&google.script.run){
+    google.script.run
+      .withSuccessHandler(_gidOnSuccess)
+      .withFailureHandler(_gidOnError)
+      .gerarIDs({itens:gidLote});
+  }else{
+    var _doPost=function(){
+      return fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+        .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor não respondeu. Verifique a planilha antes de tentar novamente.');return r.json();});
+    };
+    fetch(GID_PROXY+'?action=ping').catch(function(){})
+      .then(function(){return new Promise(function(res){setTimeout(res,1500);});})
+      .then(_doPost)
+      .catch(function(){return new Promise(function(res){setTimeout(res,3000);}).then(_doPost);})
+      .then(_gidOnSuccess).catch(_gidOnError);
+  }
 }
 
 function gidRenderResultado(resultado){
