@@ -13,10 +13,12 @@ function protegerEstrutura() {
   log("protegerEstrutura: proteções aplicadas.");
 }
 
+// Filtra só e-mails válidos do Google antes de proteger
 function _adminsValidos(admins) {
   return admins.filter(e => e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
 }
 
+// ── Geral: todos veem, ninguém edita ──
 function _protegerGeral(ss, admins) {
   try {
     const geral = ss.getSheetByName(CONFIG.abas.geral);
@@ -30,6 +32,7 @@ function _protegerGeral(ss, admins) {
   } catch(err) { log("_protegerGeral erro: " + err.message); }
 }
 
+// ── Painel: somente leitura ──
 function _protegerPainel(ss, admins) {
   try {
     const painel = ss.getSheetByName(CONFIG.abas.painel);
@@ -43,6 +46,7 @@ function _protegerPainel(ss, admins) {
   } catch(err) { log("_protegerPainel erro: " + err.message); }
 }
 
+// ── Usuarios: somente Admin ──
 function _protegerUsuarios(ss, admins) {
   try {
     const usuarios = ss.getSheetByName(CONFIG.abas.usuarios);
