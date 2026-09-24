@@ -4,20 +4,14 @@
 
 function criarMenuUsuario() {
   SpreadsheetApp.getUi()
-    .createMenu("NC Tool")
-    .addItem("📊 Dashboard Operador",    "abrirDashboardOperador")
-    .addItem("📄 Exportar Painel PDF",   "exportarPainelPDF")
+    .createMenu("Criar Linhas")
+    .addItem("Amazon",             "criarLinhasAmazon")
+    .addItem("Meta",               "criarLinhasMeta")
+    .addItem("Search",             "criarLinhasSearch")
+    .addItem("TikTok",             "criarLinhasTikTok")
+    .addItem("YouTube",            "criarLinhasYouTube")
     .addSeparator()
-    .addSubMenu(
-      SpreadsheetApp.getUi().createMenu("Criar Linhas")
-        .addItem("Amazon",             "criarLinhasAmazon")
-        .addItem("Meta",               "criarLinhasMeta")
-        .addItem("Search",             "criarLinhasSearch")
-        .addItem("TikTok",             "criarLinhasTikTok")
-        .addItem("YouTube",            "criarLinhasYouTube")
-        .addSeparator()
-        .addItem("Planejamento Livre", "planejamentoLivre")
-    )
+    .addItem("Planejamento Livre", "planejamentoLivre")
     .addToUi();
 }
 
@@ -115,6 +109,7 @@ function planejamentoLivre() {
 
   // Aplica formatação por grupo de cor em batch
   Object.values(corMap).forEach(({ cor, indices }) => {
+    // Agrupa índices contíguos para usar setValues em ranges
     indices.forEach(i => {
       const rangeE = sh.getRange(startRow + i, 5);
       rangeE.setFontWeight("bold");
@@ -234,6 +229,7 @@ function destacarDuplicados(sheet) {
   const range  = sheet.getRange(2, 2, lastRow - 1, 2);
   const values = range.getValues();
 
+  // Verifica se há IDs na mesma leitura
   const temIds = values.some(r => r[0] || r[1]);
   if (!temIds) return;
 
