@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -3321,11 +3322,6 @@ function ansShowSt(el,type,msg){el.className='ans-sbar '+type;el.innerHTML=msg;}
 
 /* ══ GERADOR DE IDs ══ */
 var GID_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
-var NC_TOKEN=(window.location.hostname==='falssp.github.io')?'9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67':'';
-function gidWarmUp(){
-  // Ping silencioso para manter o GAS aquecido
-  fetch(GID_PROXY+'?action=ping').catch(function(){});
-}
 var F4_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
 var GID_PLATAFORMAS=[
   {cat:"🛒 E-commerce"},
@@ -3379,43 +3375,31 @@ function gidCarregarContadores(tentativa){
   tentativa=tentativa||1;
   var bar=document.getElementById('gid-counters-bar');
   if(tentativa===1)bar.innerHTML='⏳ Carregando contadores...';
-
-  function _onSuccess(d){
-    if(!d.ok)throw new Error(d.error||'Erro');
-    gidContadores=d.contadores;
-    var html='Contadores atuais: ';
-    Object.keys(gidContadores).forEach(function(k){
-      html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
+  fetch(GID_PROXY+'?action=contadores')
+    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível');return r.json();})
+    .then(function(d){
+      if(!d.ok)throw new Error(d.error);
+      gidContadores=d.contadores;
+      var html='Contadores atuais: ';
+      Object.keys(gidContadores).forEach(function(k){
+        html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
+      });
+      bar.innerHTML=html;
+    })
+    .catch(function(e){
+      if(tentativa<3){
+        setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
+        bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
+      } else {
+        bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
+      }
     });
-    bar.innerHTML=html;
-  }
-  function _onError(){
-    if(tentativa<3){
-      setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
-      bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
-    } else {
-      bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
-    }
-  }
-
-  if(typeof google!=='undefined'&&google.script&&google.script.run){
-    google.script.run
-      .withSuccessHandler(function(d){try{_onSuccess(d);}catch(e){_onError();}})
-      .withFailureHandler(_onError)
-      .getContadores();
-  }else{
-    fetch(GID_PROXY+'?action=contadores')
-      .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('err');return r.json();})
-      .then(_onSuccess)
-      .catch(_onError);
-  }
 }
 
 function gidInit(){
   _gidRenderTabs();
   _gidShowTabContent(null);
   gidCarregarContadores();
-  gidWarmUp();
   sbgInit();
 }
 function _gidAllPlats(){return GID_PLATAFORMAS.filter(function(p){return!p.cat;});}
@@ -3555,41 +3539,31 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  (function gidFetchComRetry(tentativa){
-    if(tentativa>1) gidShowSt(document.getElementById('gid-st3'),'info','⏳ Tentativa '+tentativa+' de 3...');
-    fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-      .then(function(r){
-        var ct=r.headers.get('content-type')||'';
-        if(!ct.includes('json')){
-          if(tentativa<3){setTimeout(function(){gidFetchComRetry(tentativa+1);},2500);return null;}
-          throw new Error('Servidor não respondeu após 3 tentativas. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');
+  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('O servidor de IDs está indisponível ou expirou. Nenhum ID foi criado. Tente novamente em instantes.');return r.json();})
+    .then(function(data){
+      clearInterval(progInt);fill.style.width='100%';
+      setTimeout(function(){
+        prog.classList.remove('show');
+        if(data.error){
+          gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
+          return;
         }
-        return r.json();
-      })
-      .then(function(data){
-        if(!data)return;
-        clearInterval(progInt);fill.style.width='100%';
-        setTimeout(function(){
-          prog.classList.remove('show');
-          if(data.error){
-            gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
-            return;
-          }
-          gidResultado=data.resultado||[];
-          gidRenderResultado(gidResultado);
-          if(gidResultado.length){
-            document.getElementById('gid-exp-wrap').style.display='';
-            var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
-          }
-          gidShowSt(document.getElementById('gid-st3'),'ok',
-            '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
-        },300);
-      })
-      .catch(function(e){
-        clearInterval(progInt);prog.classList.remove('show');
-        gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-      });
-  })(1);
+        gidResultado=data.resultado||[];
+        gidRenderResultado(gidResultado);
+        // mostra Exportar sempre que houver resultado
+        if(gidResultado.length){
+          document.getElementById('gid-exp-wrap').style.display='';
+          var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
+        }
+        gidShowSt(document.getElementById('gid-st3'),'ok',
+          '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
+      },300);
+    })
+    .catch(function(e){
+      clearInterval(progInt);prog.classList.remove('show');
+      gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+    });
 }
 
 function gidRenderResultado(resultado){
