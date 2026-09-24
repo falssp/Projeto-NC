@@ -13,6 +13,7 @@ function atualizarGeral() {
   abas.forEach(sheet => {
     const nome = sheet.getName();
 
+    // Ignora abas estruturais
     if (nome === CONFIG.abas.geral)    return;
     if (nome === CONFIG.abas.painel)   return;
     if (nome === CONFIG.abas.usuarios) return;
@@ -29,16 +30,19 @@ function atualizarGeral() {
       const idSX       = l[col.aba.idSX - 1];
       const plataforma = l[col.aba.plataforma - 1];
 
+      // Só sincroniza linhas com data, adName e plataforma preenchidos
       if (data && adName && plataforma) {
         dados.push([data, idSX, idAMZ, adName, plataforma, nome]);
       }
     });
   });
 
+  // Escreve primeiro, limpa depois — evita perda em caso de erro
   if (dados.length) {
     geral.getRange(2, 1, dados.length, 6).setValues(dados);
     geral.getRange(2, 1, dados.length, 1).setNumberFormat("dd/MM/yyyy");
 
+    // Limpa apenas o excedente abaixo dos novos dados
     const totalLinhas  = geral.getMaxRows();
     const proximaLinha = dados.length + 2;
     if (totalLinhas >= proximaLinha) {
@@ -51,6 +55,8 @@ function atualizarGeral() {
     }
   }
 
+  // Aplica formatação após sync
   formatarGeral();
+
   log("atualizarGeral: " + dados.length + " linhas sincronizadas.");
 }
