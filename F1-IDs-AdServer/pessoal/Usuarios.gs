@@ -11,69 +11,118 @@ function formatarUsuarios() {
   _configurarValidacoesUsuarios(usuarios);
   _atualizarDropdownAcessoExtra(usuarios);
 
+  // Garante sem freeze de colunas
   usuarios.setFrozenColumns(0);
   usuarios.setFrozenRows(1);
 
   log("formatarUsuarios: formatação aplicada.");
 }
 
+/***************************************
+ * 🎨 CABEÇALHO
+ ***************************************/
+
 function _formatarCabecalhoUsuarios(usuarios) {
-  const cabecalhos = ["Login","Nome","Sobrenome","E-mail","Perfil","Status","Aprovado por","Acesso Extra","Aprovado por"];
+  const cabecalhos = [
+    "Login",
+    "Nome",
+    "Sobrenome",
+    "E-mail",
+    "Perfil",
+    "Status",
+    "Aprovado por",
+    "Acesso Extra",
+    "Aprovado por"
+  ];
 
   const headerRange = usuarios.getRange(1, 1, 1, cabecalhos.length);
   headerRange.setValues([cabecalhos]);
-  headerRange.setBackground("#1F36C7").setFontColor("#FFFFFF")
-    .setFontSize(11).setFontWeight("bold")
-    .setHorizontalAlignment("center").setVerticalAlignment("middle");
+  headerRange.setBackground("#1F36C7");
+  headerRange.setFontColor("#FFFFFF");
+  headerRange.setFontSize(11);
+  headerRange.setFontWeight("bold");
+  headerRange.setHorizontalAlignment("center");
+  headerRange.setVerticalAlignment("middle");
   usuarios.setRowHeight(1, 34);
   usuarios.setFrozenColumns(0);
   usuarios.setFrozenRows(1);
 
+  // Filtro automático
   if (usuarios.getFilter()) usuarios.getFilter().remove();
   usuarios.getRange(1, 1, 1, 9).createFilter();
 
+  // Remove colunas excedentes além de I (9)
   if (usuarios.getMaxColumns() > 9) {
     usuarios.deleteColumns(10, usuarios.getMaxColumns() - 9);
   }
 }
 
+/***************************************
+ * 📐 COLUNAS
+ ***************************************/
+
 function _configurarColunasUsuarios(usuarios) {
-  usuarios.setColumnWidth(1, 140);
-  usuarios.setColumnWidth(2, 120);
-  usuarios.setColumnWidth(3, 140);
-  usuarios.setColumnWidth(4, 300);
-  usuarios.setColumnWidth(5, 110);
-  usuarios.setColumnWidth(6, 110);
-  usuarios.setColumnWidth(7, 280);
-  usuarios.setColumnWidth(8, 200);
-  usuarios.setColumnWidth(9, 280);
+  usuarios.setColumnWidth(1, 140); // Login
+  usuarios.setColumnWidth(2, 120); // Nome
+  usuarios.setColumnWidth(3, 140); // Sobrenome
+  usuarios.setColumnWidth(4, 300); // E-mail
+  usuarios.setColumnWidth(5, 110); // Perfil
+  usuarios.setColumnWidth(6, 110); // Status
+  usuarios.setColumnWidth(7, 280); // Aprovado por (ativação)
+  usuarios.setColumnWidth(8, 200); // Acesso Extra
+  usuarios.setColumnWidth(9, 280); // Aprovado por (acesso extra)
 }
+
+/***************************************
+ * ✅ VALIDAÇÕES (dropdowns)
+ ***************************************/
 
 function _configurarValidacoesUsuarios(usuarios) {
   const maxRows = usuarios.getMaxRows();
   const col     = CONFIG.colunas.usuarios;
 
+  // Perfil — dropdown
   usuarios.getRange(2, col.perfil, maxRows - 1, 1)
     .setDataValidation(
       SpreadsheetApp.newDataValidation()
-        .requireValueInList([CONFIG.perfis.admin, CONFIG.perfis.dev, CONFIG.perfis.gerente, CONFIG.perfis.operador], true)
-        .setAllowInvalid(false).build()
+        .requireValueInList([
+          CONFIG.perfis.admin,
+          CONFIG.perfis.dev,
+          CONFIG.perfis.gerente,
+          CONFIG.perfis.operador
+        ], true)
+        .setAllowInvalid(false)
+        .build()
     );
 
+  // Status — dropdown
   usuarios.getRange(2, col.status, maxRows - 1, 1)
     .setDataValidation(
       SpreadsheetApp.newDataValidation()
-        .requireValueInList([CONFIG.status.ativo, CONFIG.status.inativo, CONFIG.status.pendente], true)
-        .setAllowInvalid(false).build()
+        .requireValueInList([
+          CONFIG.status.ativo,
+          CONFIG.status.inativo,
+          CONFIG.status.pendente
+        ], true)
+        .setAllowInvalid(false)
+        .build()
     );
 }
+
+/***************************************
+ * 🔄 DROPDOWN ACESSO EXTRA
+ * Chamado separadamente após ter dados
+ ***************************************/
 
 function _atualizarDropdownAcessoExtra(usuarios) {
   const col     = CONFIG.colunas.usuarios;
   const lastRow = usuarios.getLastRow();
   let   logins  = [];
 
+  log("_atualizarDropdownAcessoExtra: col.acessoExtra=" + col.acessoExtra + " lastRow=" + lastRow);
+
   if (lastRow >= 2) {
+    // Lê só colunas Login (1) e Status (6) — mais rápido
     const colsNecessarias = Math.max(col.login, col.status);
     const dados = usuarios.getRange(2, 1, lastRow - 1, colsNecessarias).getValues();
     logins = dados
@@ -81,15 +130,21 @@ function _atualizarDropdownAcessoExtra(usuarios) {
       .map(u => u[col.login - 1].toString());
   }
 
+  // Só aplica se houver logins ativos
   if (!logins.length) return;
 
   usuarios.getRange(2, col.acessoExtra, usuarios.getMaxRows() - 1, 1)
     .setDataValidation(
       SpreadsheetApp.newDataValidation()
         .requireValueInList(logins, true)
-        .setAllowInvalid(true).build()
+        .setAllowInvalid(true)
+        .build()
     );
 }
+
+/***************************************
+ * ⚡ ON EDIT — Usuarios
+ ***************************************/
 
 function onEditUsuarios(e) {
   if (!e) return;
@@ -108,6 +163,7 @@ function onEditUsuarios(e) {
   const status = dados[colCfg.status - 1];
   const login  = dados[colCfg.login - 1];
 
+  // ── E-mail preenchido: gera login automático ──
   if (col === colCfg.email && email) {
     const loginGerado = extrairLoginDoEmail(email);
     if (loginGerado && !login) {
@@ -115,6 +171,7 @@ function onEditUsuarios(e) {
     }
   }
 
+  // ── Status alterado ──
   if (col === colCfg.status && email) {
     const aprovador = Session.getActiveUser().getEmail();
     const nome      = dados[colCfg.nome - 1] + " " + dados[colCfg.sobrenome - 1];
@@ -131,6 +188,7 @@ function onEditUsuarios(e) {
     atualizarUsuarios();
   }
 
+  // ── Acesso Extra: registra aprovador ou limpa se vazio ──
   if (col === colCfg.acessoExtra) {
     if (dados[colCfg.acessoExtra - 1]) {
       const aprovador = Session.getActiveUser().getEmail();
@@ -140,6 +198,10 @@ function onEditUsuarios(e) {
     }
   }
 }
+
+/***************************************
+ * ⏱️ ESCALONAMENTO DE PENDENTES
+ ***************************************/
 
 function verificarPendentes() {
   const ss       = SpreadsheetApp.getActiveSpreadsheet();
@@ -170,52 +232,93 @@ function verificarPendentes() {
       const proxima = cadeia.find(c => c.prioridade > priAtual);
       if (proxima) {
         _emailEscalonamento(proxima.email, nome, email);
-        usuarios.getRange(i + 2, col.aprovadoPor).setValue(agora + "|" + proxima.prioridade);
+        usuarios.getRange(i + 2, col.aprovadoPor)
+          .setValue(agora + "|" + proxima.prioridade);
         log("verificarPendentes: escalonado " + nome + " para prioridade " + proxima.prioridade);
       }
     }
   });
 }
 
-function _emailsBloqueados() { return true; }
+/***************************************
+ * 🔕 BLOQUEIO DE E-MAILS
+ ***************************************/
+
+function _emailsBloqueados() {
+  // E-mails desabilitados até segunda ordem
+  return true;
+}
+
+/***************************************
+ * 📧 E-MAILS
+ ***************************************/
 
 function _emailAdmins(assunto, corpo) {
   if (_emailsBloqueados()) return;
   const cadeia = obterCadeiaAprovacao();
   if (!cadeia.length) return;
-  MailApp.sendEmail({ to: cadeia.map(c => c.email).join(","), subject: assunto, body: corpo + "\n\nStormX" });
+  MailApp.sendEmail({
+    to:      cadeia.map(c => c.email).join(","),
+    subject: assunto,
+    body:    corpo + "\n\nStormX"
+  });
 }
 
 function _emailAtivacao(emailUsuario, nome, aprovador) {
   try {
     if (_emailsBloqueados()) return;
-    MailApp.sendEmail({ to: emailUsuario, subject: "✅ Acesso liberado — StormX x Unilever",
-      body: "Olá " + nome + ",\n\nSeu acesso foi liberado por " + aprovador + ".\n\nBem-vindo ao time!\n\nStormX" });
+    MailApp.sendEmail({
+      to:      emailUsuario,
+      subject: "✅ Acesso liberado — StormX x Unilever",
+      body:    "Olá " + nome + ",\n\nSeu acesso foi liberado por " + aprovador + ".\n\nBem-vindo ao time!\n\nStormX"
+    });
     _emailAdmins("Usuário ativado: " + nome, nome + " (" + emailUsuario + ") foi ativado por " + aprovador + ".");
-  } catch(err) { log("_emailAtivacao erro: " + err.message); }
+    log("_emailAtivacao: e-mail enviado para " + emailUsuario);
+  } catch(err) {
+    log("_emailAtivacao erro: " + err.message);
+  }
 }
 
 function _emailEscalonamento(emailDestino, nomeUsuario, emailUsuario) {
   try {
     if (_emailsBloqueados()) return;
-    MailApp.sendEmail({ to: emailDestino, subject: "⏳ Aprovação pendente — " + nomeUsuario,
-      body: "Há um usuário aguardando aprovação:\n\nNome: " + nomeUsuario + "\nE-mail: " + emailUsuario + "\n\nStormX" });
-  } catch(err) { log("_emailEscalonamento erro: " + err.message); }
+    MailApp.sendEmail({
+      to:      emailDestino,
+      subject: "⏳ Aprovação pendente — " + nomeUsuario,
+      body:    "Há um usuário aguardando aprovação há mais de 2 horas:\n\nNome: " + nomeUsuario +
+               "\nE-mail: " + emailUsuario + "\n\nAcesse a aba Usuarios e atualize o status.\n\nStormX"
+    });
+    log("_emailEscalonamento: escalonado para " + emailDestino);
+  } catch(err) {
+    log("_emailEscalonamento erro: " + err.message);
+  }
 }
 
 function _emailInativacao(emailUsuario, nome, aprovador) {
   try {
     if (_emailsBloqueados()) return;
-    MailApp.sendEmail({ to: emailUsuario, subject: "⛔ Acesso suspenso — StormX x Unilever",
-      body: "Olá " + nome + ",\n\nSeu acesso foi suspenso por " + aprovador + ".\n\nStormX" });
+    MailApp.sendEmail({
+      to:      emailUsuario,
+      subject: "⛔ Acesso suspenso — StormX x Unilever",
+      body:    "Olá " + nome + ",\n\nSeu acesso foi suspenso por " + aprovador + ".\n\nEm caso de dúvidas, entre em contato com o seu gestor.\n\nStormX"
+    });
     _emailAdmins("Usuário inativado: " + nome, nome + " (" + emailUsuario + ") foi inativado por " + aprovador + ".");
-  } catch(err) { log("_emailInativacao erro: " + err.message); }
+    log("_emailInativacao: e-mail enviado para " + emailUsuario);
+  } catch(err) {
+    log("_emailInativacao erro: " + err.message);
+  }
 }
 
 function _emailNovoPendente(nome, emailUsuario) {
   try {
     if (_emailsBloqueados()) return;
-    _emailAdmins("⏳ Novo usuário aguardando aprovação: " + nome,
-      "Um novo usuário está aguardando aprovação:\n\nNome: " + nome + "\nE-mail: " + emailUsuario + "\n\nStormX");
-  } catch(err) { log("_emailNovoPendente erro: " + err.message); }
+    _emailAdmins(
+      "⏳ Novo usuário aguardando aprovação: " + nome,
+      "Um novo usuário está aguardando aprovação:\n\nNome: " + nome +
+      "\nE-mail: " + emailUsuario + "\n\nAcesse a aba Usuarios para aprovar ou rejeitar.\n\nStormX"
+    );
+    log("_emailNovoPendente: e-mail enviado para admins sobre " + nome);
+  } catch(err) {
+    log("_emailNovoPendente erro: " + err.message);
+  }
 }
