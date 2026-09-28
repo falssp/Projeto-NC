@@ -1,5 +1,5 @@
 /***************************************
- * 🌐 WEB APP — F1 IDs AdServer · Corp
+ * 🌐 WEB APP — F1 IDs AdServer · Pessoal
  * Endpoints para o portal e dashboard
  ***************************************/
 
@@ -13,7 +13,7 @@ function doGet(e) {
     let result;
     switch (action) {
       case 'ping':
-        result = _ping('corp');
+        result = _ping('pes');
         break;
       case 'stats':
         result = _stats(ss);
@@ -129,7 +129,7 @@ function _stats(ss) {
 
   return {
     fase:           'F1',
-    env:            'corp',
+    env:            'pes',
     totalSlugs:     totalSlugs,
     totalMes:       totalMes,
     totalSX:        totalSX,
@@ -142,7 +142,7 @@ function _stats(ss) {
 
 function _statsVazio() {
   return {
-    fase:'F1', env:'pessoal', totalSlugs:0, totalMes:0, totalSX:0, totalAMZ:0,
+    fase:'F1', env:'pes', totalSlugs:0, totalMes:0, totalSX:0, totalAMZ:0,
     porPlataforma:{}, ultimaEntrada:null, ts:new Date().toISOString()
   };
 }
