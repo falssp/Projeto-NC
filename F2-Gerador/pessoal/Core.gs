@@ -318,6 +318,7 @@ function syncListas(silent) {
       var lo=uq(64); if(lo.length){writeListRaw(ls,'Location',lo);changed++;logInfo('Location: '+lo.length);}
     } catch(de){ logAviso('Dicionário inacessível — Publisher/CampaignLocal/Location mantidos.'); }
     logInfo(changed+' listas sincronizadas.');
+    try { PropertiesService.getScriptProperties().setProperty('LAST_SYNC', new Date().toISOString()); } catch(pe){}
     if(!silent) SpreadsheetApp.openById(SPREADSHEET_ID).toast(changed+' listas atualizadas','Listas',4);
   } catch(e){
     logErro('syncListas: '+e);
