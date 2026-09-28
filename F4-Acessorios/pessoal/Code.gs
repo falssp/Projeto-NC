@@ -674,7 +674,7 @@ function _getPing() {
   return {
     ok:   true,
     fase: 'F4',
-    env:  'pessoal',
+    env:  'pes',
     ts:   new Date().toISOString()
   };
 }

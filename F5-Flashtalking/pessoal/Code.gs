@@ -80,9 +80,9 @@ function doPost(e) {
    ════════════════════════════════════════ */
 function handlePing() {
   return {
-    status: 'ok',
+    ok:     true,
     fase:   'F5',
-    env:    ADMIN_EMAILS[0].includes('falssp') ? 'pessoal' : 'corp',
+    env:    'pes',
     ts:     new Date().toISOString()
   };
 }

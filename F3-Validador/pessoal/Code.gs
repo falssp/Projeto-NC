@@ -27,7 +27,7 @@ function doGet(e) {
 
   var result;
   try {
-    if      (action === 'ping')           result = { ok: true, status: 'online', fase: 'F3', env: 'pessoal', ts: new Date().toISOString() };
+    if      (action === 'ping')           result = { ok: true, status: 'online', fase: 'F3', env: 'pes', ts: new Date().toISOString() };
     else if (action === 'stats')          result = _getStats();
     else if (action === 'getDicionario')  result = getDicionario(e.parameter.tipo || 'CampaignLocal');
     else if (action === 'getExcecoes')    result = getExcecoes();
