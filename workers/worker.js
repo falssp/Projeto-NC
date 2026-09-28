@@ -9,8 +9,8 @@
 const URLS_FALLBACK = {
   f1_corp: 'https://script.google.com/macros/s/AKfycbwiSVKGOHSLcHNIzGA2qSEgLnihBx1XpRCyEkQbPHww4qt3N5WAzpIERwW2zYOYQIne/exec',
   f1_pes:  'https://script.google.com/macros/s/AKfycbwqt2bwyjT1FksI5rjqfoEhp5kgn1JpadAkkkxZuatyK-63kdV5kEqVOjMn5vUTCLB9/exec',
-  f2_corp: null,
-  f2_pes:  null,
+  f2_corp: 'https://script.google.com/macros/s/AKfycbyBmcUj5m5XoELKlpNfIgoNtE_Cv_D5bN9mxb_BCkVU1YKmMtZM1fn8VaUThw_zSacp/exec',
+  f2_pes:  'https://script.google.com/macros/s/AKfycbwx63YdYT67K6KaIqixw-KVh8_lqsDcrpgbAShrHjfZ0iSzYZf3V8zyi_FLbcmaYJKl9A/exec',
   f3_corp: 'https://script.google.com/macros/s/AKfycbzKKuKhr111DFtk5jAhx3ofQzZL78sQvliDKtxDj_FlBZmbPaLuufd6-oHxq7Tsr9sp_w/exec',
   f3_pes:  'https://script.google.com/macros/s/AKfycby6uFxVBlvGx2bC93m1NK9ixTG8Oa61CA2qeKCEc8FR9JnGJCv5m1AlOgoq4kmzbpS3/exec',
   f4_corp: 'https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec',

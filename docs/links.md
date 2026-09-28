@@ -27,6 +27,7 @@
 | Fase | URL |
 |------|-----|
 | F1 — IDs AdServer | https://script.google.com/macros/s/AKfycbwqt2bwyjT1FksI5rjqfoEhp5kgn1JpadAkkkxZuatyK-63kdV5kEqVOjMn5vUTCLB9/exec |
+| F2 — Generator | https://script.google.com/macros/s/AKfycbwx63YdYT67K6KaIqixw-KVh8_lqsDcrpgbAShrHjfZ0iSzYZf3V8zyi_FLbcmaYJKl9A/exec |
 | F3 — Validator | https://script.google.com/macros/s/AKfycby6uFxVBlvGx2bC93m1NK9ixTG8Oa61CA2qeKCEc8FR9JnGJCv5m1AlOgoq4kmzbpS3/exec |
 | F4 — Accessories | https://script.google.com/macros/s/AKfycby6h6qvXqacFrf2TmcXYaflRQp7rvhklpnR27VWhIueh9pLxWvUCRYkFToJPxYezUN7cw/exec |
 | F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbym0772425DQEUrNQn9TZc6C-wdRuqU1_erQVSoWzV-MEBbyCN4DOfJkaSd90cdVZHjSA/exec |
@@ -86,6 +87,7 @@
 | Fase | URL |
 |------|-----|
 | F1 — IDs AdServer | https://script.google.com/macros/s/AKfycbwiSVKGOHSLcHNIzGA2qSEgLnihBx1XpRCyEkQbPHww4qt3N5WAzpIERwW2zYOYQIne/exec |
+| F2 — Generator | https://script.google.com/macros/s/AKfycbyBmcUj5m5XoELKlpNfIgoNtE_Cv_D5bN9mxb_BCkVU1YKmMtZM1fn8VaUThw_zSacp/exec |
 | F3 — Validator | https://script.google.com/macros/s/AKfycbzKKuKhr111DFtk5jAhx3ofQzZL78sQvliDKtxDj_FlBZmbPaLuufd6-oHxq7Tsr9sp_w/exec |
 | F4 — Accessories | https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec |
 | F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbwKsOut5TyYLf1pW_xm1He-zBvzZGYFM4KAEE5C6hssNZHsg9fL_QBXWjfF-zzIDxfXNQ/exec |
