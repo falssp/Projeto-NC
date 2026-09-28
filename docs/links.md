@@ -26,7 +26,7 @@
 
 | Fase | URL |
 |------|-----|
-| F2 — Generator | https://script.google.com/macros/s/AKfycbwqt2bwyjT1FksI5rjqfoEhp5kgn1JpadAkkkxZuatyK-63kdV5kEqVOjMn5vUTCLB9/exec |
+| F1 — IDs AdServer | https://script.google.com/macros/s/AKfycbwqt2bwyjT1FksI5rjqfoEhp5kgn1JpadAkkkxZuatyK-63kdV5kEqVOjMn5vUTCLB9/exec |
 | F3 — Validator | https://script.google.com/macros/s/AKfycby6uFxVBlvGx2bC93m1NK9ixTG8Oa61CA2qeKCEc8FR9JnGJCv5m1AlOgoq4kmzbpS3/exec |
 | F4 — Accessories | https://script.google.com/macros/s/AKfycby6h6qvXqacFrf2TmcXYaflRQp7rvhklpnR27VWhIueh9pLxWvUCRYkFToJPxYezUN7cw/exec |
 | F5 — FT Flashtalking | https://script.google.com/macros/s/AKfycbym0772425DQEUrNQn9TZc6C-wdRuqU1_erQVSoWzV-MEBbyCN4DOfJkaSd90cdVZHjSA/exec |
