@@ -7,16 +7,16 @@ para a equipe StormX / Unilever BR.
 
 | Arquivo | Formato | Obs |
 |---------|---------|-----|
-| `StormX_-_AdServer_v1.pptx` | PPTX | Versão inicial |
-| `StormX_-_AdServer_v2.pptx` | PPTX | |
-| `StormX_-_AdServer_v2.pdf` | PDF | Exportação em PDF da v2 |
-| `StormX_-_AdServer_v3.pptx` | PPTX | |
-| `StormX_-_AdServer_v4.pptx` | PPTX | |
-| `StormX_-_AdServer_v5.pptx` | PPTX | |
-| `StormX_-_AdServer_v6.pptx` | PPTX | |
-| `StormX_-_AdServer_v7.pptx` | PPTX | |
-| `StormX_-_AdServer_v8.pptx` | PPTX | |
-| `StormX_-_AdServer_v9.pptx` | PPTX | |
+| `StormX_-_AdServer_v01.pptx` | PPTX | Versão inicial |
+| `StormX_-_AdServer_v02.pptx` | PPTX | |
+| `StormX_-_AdServer_v02.pdf` | PDF | Exportação em PDF da v02 |
+| `StormX_-_AdServer_v03.pptx` | PPTX | |
+| `StormX_-_AdServer_v04.pptx` | PPTX | |
+| `StormX_-_AdServer_v05.pptx` | PPTX | |
+| `StormX_-_AdServer_v06.pptx` | PPTX | |
+| `StormX_-_AdServer_v07.pptx` | PPTX | |
+| `StormX_-_AdServer_v08.pptx` | PPTX | |
+| `StormX_-_AdServer_v09.pptx` | PPTX | |
 | `StormX_-_AdServer_v10.pptx` | PPTX | |
 | `StormX_-_AdServer_v11.pptx` | PPTX | |
 | `StormX_-_AdServer_v12.pptx` | PPTX | |
