@@ -10,7 +10,7 @@ Todas são aplicações HTML standalone — sem dependências externas, abertas 
 | Ferramenta | Descrição | Abrir |
 |---|---|---|
 | **Creative Taxonomy** | Gera taxonomia de criativos (Plataforma + Brainsuite) a partir dos campos do asset | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/creative-taxonomy/creative-taxonomy.html) |
-| **Galileo IDs** | Consulta IDs e abreviações do sistema Galileo por campo (Brand, PCat, Audience etc.) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/galileo-ids/galileo-ul.html) |
+| **Galileo IDs** | Consulta IDs e abreviações do sistema Galileo por campo (Brand, PCat, Audience etc.) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/galileo-ids/) |
 | **Grasp Naming** | Estrutura de naming por plataforma (Campaign / Ad Group / Ad Name) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/grasp-naming/grasp-naming.html) |
 | **Location** | Gera o campo Location do naming (cidade, estado, região, nacional) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location/index.html) |
 | **Dicionário de Taxonomias UL** | Dicionário interativo de todos os parâmetros Galileo e Freetext com siglas e descrições | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ul-taxonomias/taxonomias-ul.html) |
