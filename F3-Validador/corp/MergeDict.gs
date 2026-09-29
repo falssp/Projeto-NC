@@ -191,9 +191,7 @@ function instalarTriggerMerge() {
     .onWeekDay(ScriptApp.WeekDay.SUNDAY)
     .atHour(3)
     .create();
-  SpreadsheetApp.getUi().alert(
-    'Trigger instalado!\n' +
-    'mergeDict() roda todo domingo às 3h.\n' +
-    'Use "NC Tool > Atualizar Dicionário Agora" para forçar.'
-  );
+  var msg = 'Trigger instalado! mergeDict() roda todo domingo às 3h.';
+  Logger.log(msg);
+  try { SpreadsheetApp.getUi().alert(msg); } catch(e) {}
 }
