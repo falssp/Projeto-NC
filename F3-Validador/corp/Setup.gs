@@ -97,7 +97,29 @@ function instalarTriggerArquivamento() {
     if (t.getHandlerFunction() === 'arquivarLogsAntigos') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('arquivarLogsAntigos').timeBased().onMonthDay(1).atHour(3).create();
-  SpreadsheetApp.getUi().alert('Trigger instalado!');
+  SpreadsheetApp.getUi().alert('Trigger instalado!\narquivarLogsAntigos() roda todo dia 1 às 3h.');
+}
+
+// ── CORRIGIR TRIGGER MERGE (remove menuMergeDict, instala mergeDict) ──
+function corrigirTriggerMerge() {
+  var removidos = 0;
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    var fn = t.getHandlerFunction();
+    if (fn === 'menuMergeDict' || fn === 'mergeDict') {
+      ScriptApp.deleteTrigger(t);
+      removidos++;
+    }
+  });
+  ScriptApp.newTrigger('mergeDict')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.SUNDAY)
+    .atHour(3)
+    .create();
+  SpreadsheetApp.getUi().alert(
+    'Trigger corrigido!\n' +
+    removidos + ' trigger(s) antigo(s) removido(s).\n' +
+    'mergeDict() agora roda todo domingo às 3h.'
+  );
 }
 
 // ── HELPERS ──────────────────────────────────────────────────
