@@ -85,7 +85,7 @@ function exportarRelatorioHTML() {
   .setHeight(520);
 
   SpreadsheetApp.getUi().showModalDialog(html, 'Exportar Relatorio PDF');
-  log('exportarRelatorioHTML: relatorio gerado — ' + id);
+  Logger.log('exportarRelatorioHTML: relatorio gerado — ' + id);
 }
 
 function exportarUltimasValidacoes() {

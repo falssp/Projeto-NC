@@ -81,14 +81,6 @@ function instalarTriggerArquivamento() {
   SpreadsheetApp.getUi().alert('Trigger instalado!');
 }
 
-function instalarTriggerMerge() {
-  ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'menuMergeDict') ScriptApp.deleteTrigger(t);
-  });
-  ScriptApp.newTrigger('menuMergeDict').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(3).create();
-  SpreadsheetApp.getUi().alert('Trigger semanal instalado!');
-}
-
 // ── HELPERS ──────────────────────────────────────────────────
 function _limitarColunas(aba, manter) {
   SpreadsheetApp.flush();
