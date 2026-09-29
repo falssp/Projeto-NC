@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -1911,9 +1910,11 @@ https://www.tiktok.com/@perfil" style="width:100%;box-sizing:border-box;font-fam
 
         <div class="ib">
           <strong>Critério:</strong> cada aba tem linhas fixas de exemplo no topo, que <strong>não entram</strong> na contagem —
-          <strong>Google, Programmatic, Youtube e Flashtalking:</strong> linhas 15 e 16 ·
-          <strong>Meta e Tiktok e Pinterest, Snapchat e Twitter:</strong> linhas 15 a 19.
-          A partir da linha seguinte (17 ou 20, dependendo da aba), toda linha com a <strong>coluna D preenchida</strong> conta como válida.
+          <strong>Google, Programmatic e Youtube:</strong> linhas 15 e 16 ·
+          <strong>Flashtalking:</strong> linha 15 ·
+          <strong>Meta e Tiktok:</strong> linhas 15 a 18 ·
+          <strong>Pinterest, Snapchat e Twitter:</strong> linhas 15 a 17.
+          A primeira linha válida começa em 17 (Google/Prog./YT), 16 (Flashtalking), 19 (Meta e Tiktok) ou 18 (Pinterest).
         </div>
 
         <div class="ans-uz" id="cnt-drop"
@@ -2992,13 +2993,13 @@ var ANS_PROXY='https://script.google.com/macros/s/AKfycbzzyai0QuTCT8EFTf3k9wHYHv
 
 function ansColIdx(l){l=l.toUpperCase();var n=0;for(var i=0;i<l.length;i++)n=n*26+l.charCodeAt(i)-64;return n-1;}
 var ANS_EXCEL_MAP={
-  'google':{id:ansColIdx('BG'),ad:ansColIdx('CZ')},
-  'programmatic':{id:ansColIdx('BJ'),ad:ansColIdx('DH')},
-  'youtube':{id:ansColIdx('BH'),ad:ansColIdx('DG')},
-  'meta e tiktok':{id:ansColIdx('BI'),ad:ansColIdx('DE')},
-  'pinterest, snapchat e twitter':{id:ansColIdx('BE'),ad:ansColIdx('DA')},
-  'pinterest, snapchat e x':{id:ansColIdx('BE'),ad:ansColIdx('DA')},
-  'flashtalking':{id:ansColIdx('BB'),ad:ansColIdx('DB')}
+  'google':{id:ansColIdx('BG'),ad:ansColIdx('BF')},
+  'programmatic':{id:ansColIdx('BJ'),ad:ansColIdx('BI')},
+  'youtube':{id:ansColIdx('BH'),ad:ansColIdx('BG')},
+  'meta e tiktok':{id:ansColIdx('BI'),ad:ansColIdx('BH')},
+  'pinterest, snapchat e twitter':{id:ansColIdx('BE'),ad:ansColIdx('BD')},
+  'pinterest, snapchat e x':{id:ansColIdx('BE'),ad:ansColIdx('BD')},
+  'flashtalking':{id:ansColIdx('BB'),ad:ansColIdx('AY')}
 };
 function ansFindMapKey(name){
   var n=name.toLowerCase().replace(/tik\s*tok/g,'tiktok').replace(/meta\s*e\s*tiktok/,'meta e tiktok').replace(/^yt$/,'youtube').trim();
@@ -3037,40 +3038,20 @@ function ansParseFiles(){
     var rd=new FileReader();
     rd.onload=function(ev){
       try{
-        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:true,cellHTML:false,raw:false});
+        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:false,cellHTML:false,raw:true});
         wb.SheetNames.forEach(function(sn){
           var key=ansFindMapKey(sn);if(!key)return;
-          var ws=wb.Sheets[sn];
-          var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
-          // Encontrar Placement ID dinamicamente — Ad Name é sempre a coluna anterior
-          var idCol=-1,adCol=-1,dataStart=-1;
-          for(var hi=0;hi<rows.length;hi++){
-            var row=rows[hi];
-            for(var ci=0;ci<row.length;ci++){
-              var cell=String(row[ci]||'').trim().toLowerCase();
-              if(cell.indexOf('placement id')!==-1&&cell.indexOf('não editar')!==-1){
-                idCol=ci;
-                adCol=ci-1; // Ad Name é sempre a coluna imediatamente anterior
-                dataStart=hi+1;
-                break;
-              }
-            }
-            if(idCol!==-1)break;
-          }
-          if(idCol===-1||adCol<0||dataStart===-1)return;
+          var m=ANS_EXCEL_MAP[key],ws=wb.Sheets[sn];
+          var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
           var seen={};
-          for(var ri=dataStart;ri<rows.length;ri++){
-            var row=rows[ri];
-            var idv=String(row[idCol]||'').trim().toUpperCase().replace(/[\s]/g,'');
-            var adv=String(row[adCol]||'').trim();
-            if(!idv||!adv||idv.length<3)continue;
-            if(/^(123456789|0)$/.test(idv))continue;
-            if(/PLACEMENT|STORMX|FLASHTALKING|PREENCHIMENTO/i.test(idv))continue;
-            if(adv.startsWith('=')||adv==='#N/A'||adv==='#REF!'||adv===''||adv==='Ad Name'||adv==='Creative/Ad')continue;
-            if(seen[idv])continue;seen[idv]=true;
+          rows.forEach(function(row,ri){
+            var idv=String(row[m.id]||'').trim().toUpperCase().replace(/[\s]/g,'');
+            var adv=String(row[m.ad]||'').trim();
+            if(!idv||!adv||!/^(SX|AMZ)/i.test(idv))return;
+            if(seen[idv])return;seen[idv]=true;
             if(!ansParsedData[sn])ansParsedData[sn]=[];
             ansParsedData[sn].push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
-          }
+          });
         });
       }catch(e){console.error(e);}
       done++;if(done===ansUploadedFiles.length){ansRenderParseInfo();ansCheckReady();}
@@ -4785,9 +4766,9 @@ var CNT_ABA_CFG = {
   'Google':                        {dataStart: 16},
   'Programmatic':                  {dataStart: 16},
   'Youtube':                       {dataStart: 16},
-  'Meta e Tiktok':                 {dataStart: 19},
-  'Pinterest, Snapchat e Twitter': {dataStart: 19},
-  'Flashtalking':                  {dataStart: 16},
+  'Meta e Tiktok':                 {dataStart: 18},
+  'Pinterest, Snapchat e Twitter': {dataStart: 17},
+  'Flashtalking':                  {dataStart: 15},
 };
 var CNT_ABA_KEYS = Object.keys(CNT_ABA_CFG);
 

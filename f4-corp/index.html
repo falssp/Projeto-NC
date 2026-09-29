@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -1905,9 +1904,11 @@ https://www.tiktok.com/@perfil" style="width:100%;box-sizing:border-box;font-fam
 
         <div class="ib">
           <strong>Critério:</strong> cada aba tem linhas fixas de exemplo no topo, que <strong>não entram</strong> na contagem —
-          <strong>Google, Programmatic, Youtube e Flashtalking:</strong> linhas 15 e 16 ·
-          <strong>Meta e Tiktok e Pinterest, Snapchat e Twitter:</strong> linhas 15 a 19.
-          A partir da linha seguinte (17 ou 20, dependendo da aba), toda linha com a <strong>coluna D preenchida</strong> conta como válida.
+          <strong>Google, Programmatic e Youtube:</strong> linhas 15 e 16 ·
+          <strong>Flashtalking:</strong> linha 15 ·
+          <strong>Meta e Tiktok:</strong> linhas 15 a 18 ·
+          <strong>Pinterest, Snapchat e Twitter:</strong> linhas 15 a 17.
+          A primeira linha válida começa em 17 (Google/Prog./YT), 16 (Flashtalking), 19 (Meta e Tiktok) ou 18 (Pinterest).
         </div>
 
         <div class="ans-uz" id="cnt-drop"
@@ -2986,13 +2987,13 @@ var ANS_PROXY='https://script.google.com/macros/s/AKfycbzzyai0QuTCT8EFTf3k9wHYHv
 
 function ansColIdx(l){l=l.toUpperCase();var n=0;for(var i=0;i<l.length;i++)n=n*26+l.charCodeAt(i)-64;return n-1;}
 var ANS_EXCEL_MAP={
-  'google':{id:ansColIdx('BG'),ad:ansColIdx('CZ')},
-  'programmatic':{id:ansColIdx('BJ'),ad:ansColIdx('DH')},
-  'youtube':{id:ansColIdx('BH'),ad:ansColIdx('DG')},
-  'meta e tiktok':{id:ansColIdx('BI'),ad:ansColIdx('DE')},
-  'pinterest, snapchat e twitter':{id:ansColIdx('BE'),ad:ansColIdx('DA')},
-  'pinterest, snapchat e x':{id:ansColIdx('BE'),ad:ansColIdx('DA')},
-  'flashtalking':{id:ansColIdx('BB'),ad:ansColIdx('DB')}
+  'google':{id:ansColIdx('BG'),ad:ansColIdx('BF')},
+  'programmatic':{id:ansColIdx('BJ'),ad:ansColIdx('BI')},
+  'youtube':{id:ansColIdx('BH'),ad:ansColIdx('BG')},
+  'meta e tiktok':{id:ansColIdx('BI'),ad:ansColIdx('BH')},
+  'pinterest, snapchat e twitter':{id:ansColIdx('BE'),ad:ansColIdx('BD')},
+  'pinterest, snapchat e x':{id:ansColIdx('BE'),ad:ansColIdx('BD')},
+  'flashtalking':{id:ansColIdx('BB'),ad:ansColIdx('AY')}
 };
 function ansFindMapKey(name){
   var n=name.toLowerCase().replace(/tik\s*tok/g,'tiktok').replace(/meta\s*e\s*tiktok/,'meta e tiktok').replace(/^yt$/,'youtube').trim();
@@ -3031,19 +3032,16 @@ function ansParseFiles(){
     var rd=new FileReader();
     rd.onload=function(ev){
       try{
-        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:true,cellHTML:false,raw:false});
+        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:false,cellHTML:false,raw:true});
         wb.SheetNames.forEach(function(sn){
           var key=ansFindMapKey(sn);if(!key)return;
           var m=ANS_EXCEL_MAP[key],ws=wb.Sheets[sn];
-          var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+          var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
           var seen={};
           rows.forEach(function(row,ri){
             var idv=String(row[m.id]||'').trim().toUpperCase().replace(/[\s]/g,'');
             var adv=String(row[m.ad]||'').trim();
-            if(!idv||!adv||idv.length<3)return;
-            if(/^(123456789|0)$/.test(idv))return;
-            if(/PLACEMENT|STORMX|FLASHTALKING|PREENCHIMENTO/i.test(idv))return;
-            if(adv.startsWith('=')||adv==='#N/A'||adv==='#REF!'||adv==='Ad name'||adv==='Creative/Ad'||adv==='Ad Name')return;
+            if(!idv||!adv||!/^(SX|AMZ)/i.test(idv))return;
             if(seen[idv])return;seen[idv]=true;
             if(!ansParsedData[sn])ansParsedData[sn]=[];
             ansParsedData[sn].push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
@@ -3322,6 +3320,11 @@ function ansShowSt(el,type,msg){el.className='ans-sbar '+type;el.innerHTML=msg;}
 
 /* ══ GERADOR DE IDs ══ */
 var GID_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
+var NC_TOKEN=(window.location.hostname==='falssp.github.io')?'9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67':'';
+function gidWarmUp(){
+  // Ping silencioso para manter o GAS aquecido
+  fetch(GID_PROXY+'?action=ping').catch(function(){});
+}
 var F4_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
 var GID_PLATAFORMAS=[
   {cat:"🛒 E-commerce"},
@@ -3400,6 +3403,7 @@ function gidInit(){
   _gidRenderTabs();
   _gidShowTabContent(null);
   gidCarregarContadores();
+  gidWarmUp();
   sbgInit();
 }
 function _gidAllPlats(){return GID_PLATAFORMAS.filter(function(p){return!p.cat;});}
@@ -3539,31 +3543,41 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('O servidor de IDs está indisponível ou expirou. Nenhum ID foi criado. Tente novamente em instantes.');return r.json();})
-    .then(function(data){
-      clearInterval(progInt);fill.style.width='100%';
-      setTimeout(function(){
-        prog.classList.remove('show');
-        if(data.error){
-          gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
-          return;
+  (function gidFetchComRetry(tentativa){
+    if(tentativa>1) gidShowSt(document.getElementById('gid-st3'),'info','⏳ Tentativa '+tentativa+' de 3...');
+    fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
+      .then(function(r){
+        var ct=r.headers.get('content-type')||'';
+        if(!ct.includes('json')){
+          if(tentativa<3){setTimeout(function(){gidFetchComRetry(tentativa+1);},2500);return null;}
+          throw new Error('Servidor não respondeu após 3 tentativas. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');
         }
-        gidResultado=data.resultado||[];
-        gidRenderResultado(gidResultado);
-        // mostra Exportar sempre que houver resultado
-        if(gidResultado.length){
-          document.getElementById('gid-exp-wrap').style.display='';
-          var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
-        }
-        gidShowSt(document.getElementById('gid-st3'),'ok',
-          '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
-      },300);
-    })
-    .catch(function(e){
-      clearInterval(progInt);prog.classList.remove('show');
-      gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-    });
+        return r.json();
+      })
+      .then(function(data){
+        if(!data)return;
+        clearInterval(progInt);fill.style.width='100%';
+        setTimeout(function(){
+          prog.classList.remove('show');
+          if(data.error){
+            gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
+            return;
+          }
+          gidResultado=data.resultado||[];
+          gidRenderResultado(gidResultado);
+          if(gidResultado.length){
+            document.getElementById('gid-exp-wrap').style.display='';
+            var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
+          }
+          gidShowSt(document.getElementById('gid-st3'),'ok',
+            '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
+        },300);
+      })
+      .catch(function(e){
+        clearInterval(progInt);prog.classList.remove('show');
+        gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+      });
+  })(1);
 }
 
 function gidRenderResultado(resultado){
@@ -4756,9 +4770,9 @@ var CNT_ABA_CFG = {
   'Google':                        {dataStart: 16},
   'Programmatic':                  {dataStart: 16},
   'Youtube':                       {dataStart: 16},
-  'Meta e Tiktok':                 {dataStart: 19},
-  'Pinterest, Snapchat e Twitter': {dataStart: 19},
-  'Flashtalking':                  {dataStart: 16},
+  'Meta e Tiktok':                 {dataStart: 18},
+  'Pinterest, Snapchat e Twitter': {dataStart: 17},
+  'Flashtalking':                  {dataStart: 15},
 };
 var CNT_ABA_KEYS = Object.keys(CNT_ABA_CFG);
 
