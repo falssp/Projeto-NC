@@ -6,7 +6,7 @@ function criarMenuUsuario() {
   const ui      = SpreadsheetApp.getUi();
   const email   = Session.getEffectiveUser().getEmail();
   const perfil  = _obterPerfilUsuario(email);
-  const isAdmin = perfil === CONFIG.perfis.admin || perfil === CONFIG.perfis.dev;
+  const isOperador = perfil === CONFIG.perfis.operador;
 
   // Menu "Criar Linhas" — visível para todos
   ui.createMenu("Criar Linhas")
@@ -19,8 +19,8 @@ function criarMenuUsuario() {
     .addItem("Planejamento Livre", "planejamentoLivre")
     .addToUi();
 
-  // Menu "NC Tool" — só Admin e Dev
-  if (isAdmin) {
+  // Menu "NC Tool" — oculto apenas para Operador
+  if (!isOperador) {
     ui.createMenu("NC Tool")
       .addItem("📊 Dashboard Operador",  "abrirDashboardOperador")
       .addItem("📄 Exportar Painel PDF", "exportarPainelPDF")
