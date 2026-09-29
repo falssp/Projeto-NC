@@ -183,7 +183,8 @@ function getMergeDictStatus() {
 
 function instalarTriggerMerge() {
   ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'mergeDict') ScriptApp.deleteTrigger(t);
+    var fn = t.getHandlerFunction();
+    if (fn === 'mergeDict' || fn === 'menuMergeDict') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('mergeDict')
     .timeBased()
