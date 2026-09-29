@@ -3,22 +3,45 @@
  ***************************************/
 
 function criarMenuUsuario() {
-  SpreadsheetApp.getUi()
-    .createMenu("NC Tool")
-    .addItem("📊 Dashboard Operador",    "abrirDashboardOperador")
-    .addItem("📄 Exportar Painel PDF",   "exportarPainelPDF")
+  const ui      = SpreadsheetApp.getUi();
+  const email   = Session.getEffectiveUser().getEmail();
+  const perfil  = _obterPerfilUsuario(email);
+  const isAdmin = perfil === CONFIG.perfis.admin || perfil === CONFIG.perfis.dev;
+
+  // Menu "Criar Linhas" — visível para todos
+  ui.createMenu("Criar Linhas")
+    .addItem("Amazon",             "criarLinhasAmazon")
+    .addItem("Meta",               "criarLinhasMeta")
+    .addItem("Search",             "criarLinhasSearch")
+    .addItem("TikTok",             "criarLinhasTikTok")
+    .addItem("YouTube",            "criarLinhasYouTube")
     .addSeparator()
-    .addSubMenu(
-      SpreadsheetApp.getUi().createMenu("Criar Linhas")
-        .addItem("Amazon",             "criarLinhasAmazon")
-        .addItem("Meta",               "criarLinhasMeta")
-        .addItem("Search",             "criarLinhasSearch")
-        .addItem("TikTok",             "criarLinhasTikTok")
-        .addItem("YouTube",            "criarLinhasYouTube")
-        .addSeparator()
-        .addItem("Planejamento Livre", "planejamentoLivre")
-    )
+    .addItem("Planejamento Livre", "planejamentoLivre")
     .addToUi();
+
+  // Menu "NC Tool" — só Admin e Dev
+  if (isAdmin) {
+    ui.createMenu("NC Tool")
+      .addItem("📊 Dashboard Operador",  "abrirDashboardOperador")
+      .addItem("📄 Exportar Painel PDF", "exportarPainelPDF")
+      .addToUi();
+  }
+}
+
+function _obterPerfilUsuario(email) {
+  try {
+    const ss       = SpreadsheetApp.getActiveSpreadsheet();
+    const usuarios = ss.getSheetByName(CONFIG.abas.usuarios);
+    if (!usuarios) return "";
+    const lastRow = usuarios.getLastRow();
+    if (lastRow < 2) return "";
+    const col   = CONFIG.colunas.usuarios;
+    const dados = usuarios.getRange(2, col.email, lastRow - 1, col.perfil - col.email + 1).getValues();
+    const row   = dados.find(r => r[0] && r[0].toLowerCase() === email.toLowerCase());
+    return row ? row[col.perfil - col.email] : "";
+  } catch(e) {
+    return "";
+  }
 }
 
 /***************************************
