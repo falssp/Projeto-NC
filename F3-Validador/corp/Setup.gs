@@ -23,11 +23,12 @@ function setupPlanilha() {
   _criarExcecoes(ss);
   _criarConfig(ss);
   _criarClientes(ss);
+  _criarUsuarios(ss);
 
   SpreadsheetApp.flush();
 
   // Reordenar abas
-  var ordem = ['Dashboard','Arquivo','Log','Erros','Exceções','Config','Clientes'];
+  var ordem = ['Dashboard','Arquivo','Log','Erros','Exceções','Config','Clientes','Usuarios'];
   for (var i = 0; i < ordem.length; i++) {
     var aba = ss.getSheetByName(ordem[i]);
     if (!aba) continue;
@@ -36,6 +37,24 @@ function setupPlanilha() {
   }
 
   ss.toast('✅ Setup concluído!', 'NC Tool', 5);
+}
+
+// ── USUARIOS ─────────────────────────────────────────────────
+function _criarUsuarios(ss) {
+  var sh = ss.getSheetByName('Usuarios');
+  if (!sh) {
+    sh = ss.insertSheet('Usuarios');
+    sh.getRange(1, 1, 1, 4).setValues([['ID','Nome','Email','Perfil']]);
+    sh.getRange(1, 1, 1, 4)
+      .setBackground(COR_HEADER)
+      .setFontColor('#FFFFFF')
+      .setFontWeight('bold');
+    sh.appendRow(['USR001', 'Felipe Lima', 'felipe.lima@stormx.com.br', 'admin']);
+    sh.setColumnWidth(1, 80);
+    sh.setColumnWidth(2, 160);
+    sh.setColumnWidth(3, 220);
+    sh.setColumnWidth(4, 100);
+  }
 }
 
 // ── RENOMEAR EXCECOES ────────────────────────────────────────

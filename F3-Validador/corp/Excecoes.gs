@@ -3,7 +3,7 @@
 // ============================================================
 
 var LOG_SHEET_ID = '1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo';
-var NC_SHEET_ID  = '1VBaExPGHOVYxpTyzJymrb8RuWWe34_9WBE0aC3slETU';
+var NC_SHEET_ID  = '1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo'; // mesmo que LOG_SHEET_ID — aba Usuarios criada por Setup
 
 var EXC_COLS = {
   txKey:         1,  // A

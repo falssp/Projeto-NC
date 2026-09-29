@@ -4,7 +4,7 @@
 
 var LOG_SHEET_ID = '1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo';
 var DICT_ID      = '17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok'; // dicionário merged (= DICT_ID_MERGE em MergeDict.gs)
-var NC_SHEET_ID  = '1vGM_se-b1rechwv91WnSw-SW2XQFJ4DN4FPWqrEMkq8';
+var NC_SHEET_ID  = '1fAQfNJ-UkDfhCHZ2GYcxDWpsAojg7z0VglQHeXtAfSo'; // mesmo que LOG_SHEET_ID — aba Usuarios criada por Setup
 
 var DICT_COLS = {
   'CampaignLocal': 7,
