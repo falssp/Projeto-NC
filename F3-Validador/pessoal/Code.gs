@@ -3,8 +3,8 @@
 // ============================================================
 
 var LOG_SHEET_ID = '1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ';
-var DICT_ID      = '1EpIBzL99_Dh03MySNE-hHiToeN4HiN5yeHSf6XLEEBw';
-var NC_SHEET_ID  = '1vGM_se-b1rechwv91WnSw-SW2XQFJ4DN4FPWqrEMkq8';
+var DICT_ID      = '17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok';
+var NC_SHEET_ID  = '1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ';
 
 var DICT_COLS = {
   'CampaignLocal': 7,

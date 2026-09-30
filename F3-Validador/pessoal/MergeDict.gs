@@ -7,7 +7,7 @@
 // ============================================================
 
 var RM_ID         = '144h_vGX9vBnxf1vENnsoseGGqt0pqxITuGuh72XbS-w';
-var DICT_ID_MERGE = '1EpIBzL99_Dh03MySNE-hHiToeN4HiN5yeHSf6XLEEBw';
+var DICT_ID_MERGE = '17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok';
 
 var RM_COL_CAMPAIGN_NAME = 87;
 var RM_COL_CAMPAIGN_ID   = 88;
@@ -190,16 +190,15 @@ function getMergeDictStatus() {
 
 function instalarTriggerMerge() {
   ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'mergeDict') ScriptApp.deleteTrigger(t);
+    var fn = t.getHandlerFunction();
+    if (fn === 'mergeDict' || fn === 'menuMergeDict') ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('mergeDict')
     .timeBased()
     .onWeekDay(ScriptApp.WeekDay.SUNDAY)
     .atHour(3)
     .create();
-  SpreadsheetApp.getUi().alert(
-    'Trigger instalado!\n' +
-    'mergeDict() roda todo domingo às 3h.\n' +
-    'Use "NC Tool > Atualizar Dicionário Agora" para forçar.'
-  );
+  var msg = 'Trigger instalado! mergeDict() roda todo domingo às 3h.';
+  Logger.log(msg);
+  try { SpreadsheetApp.getUi().alert(msg); } catch(e) {}
 }

@@ -3,7 +3,7 @@
 // ============================================================
 
 var SETUP_SHEET_ID = "1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ";
-var SETUP_DICT_ID  = "1EpIBzL99_Dh03MySNE-hHiToeN4HiN5yeHSf6XLEEBw";
+var SETUP_DICT_ID  = "17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok";
 
 var COR_HEADER  = '#0F1B6E'; // azul escuro — todos os headers de tabela
 var COR_SECAO   = '#E8ECFB'; // azul claro — seções do Dashboard/Config
@@ -23,11 +23,12 @@ function setupPlanilha() {
   _criarExcecoes(ss);
   _criarConfig(ss);
   _criarClientes(ss);
+  _criarUsuarios(ss);
 
   SpreadsheetApp.flush();
 
   // Reordenar abas
-  var ordem = ['Dashboard','Arquivo','Log','Erros','Exceções','Config','Clientes'];
+  var ordem = ['Dashboard','Arquivo','Log','Erros','Exceções','Config','Clientes','Usuarios'];
   for (var i = 0; i < ordem.length; i++) {
     var aba = ss.getSheetByName(ordem[i]);
     if (!aba) continue;
@@ -81,12 +82,35 @@ function instalarTriggerArquivamento() {
   SpreadsheetApp.getUi().alert('Trigger instalado!');
 }
 
-function instalarTriggerMerge() {
+// Corrige trigger antigo (menuMergeDict → mergeDict) — rodar uma vez se o trigger errado existir
+function corrigirTriggerMerge() {
   ScriptApp.getProjectTriggers().forEach(function(t) {
-    if (t.getHandlerFunction() === 'menuMergeDict') ScriptApp.deleteTrigger(t);
+    var fn = t.getHandlerFunction();
+    if (fn === 'menuMergeDict' || fn === 'mergeDict') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('menuMergeDict').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(3).create();
-  SpreadsheetApp.getUi().alert('Trigger semanal instalado!');
+  ScriptApp.newTrigger('mergeDict')
+    .timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(3).create();
+  SpreadsheetApp.getUi().alert('✅ Trigger corrigido! mergeDict() roda todo domingo às 3h.');
+}
+
+// ── ABA USUARIOS ─────────────────────────────────────────────
+function _criarUsuarios(ss) {
+  var aba = ss.getSheetByName('Usuarios') || ss.insertSheet('Usuarios');
+  // Só recria o cabeçalho — nunca apaga dados existentes
+  var hdr = ['ID','Nome','Sobrenome','Email','Perfil','Notas'];
+  aba.getRange(1, 1, 1, hdr.length).setValues([hdr]);
+  _hdrSetup(aba, hdr.length, COR_HEADER);
+  var ws = [80, 120, 120, 240, 90, 260];
+  ws.forEach(function(w, i){ aba.setColumnWidth(i+1, w); });
+  // Pré-popula com o usuário pessoal se a aba estiver vazia
+  if (aba.getLastRow() < 2) {
+    aba.appendRow(['U001','Felipe','Lima','falssp@gmail.com','Dev','Usuário pessoal']);
+    aba.getRange('E2:E50').setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(['Dev','Admin','Gerente','Operador'], true).build()
+    );
+  }
+  _limitarColunas(aba, hdr.length);
 }
 
 // ── HELPERS ──────────────────────────────────────────────────

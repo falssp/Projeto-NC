@@ -5,7 +5,7 @@
 // instalarTriggerNotificacaoDicionario()
 // ============================================================
 
-var ND_EMAIL_DESTINO = 'felipe.lima@stormx.com.br';
+var ND_EMAIL_DESTINO = 'falssp@gmail.com';
 var ND_DIAS_LIMITE   = 8; // alerta se último merge > X dias atrás
 
 function verificarDicionarioDesatualizado() {

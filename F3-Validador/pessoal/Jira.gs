@@ -21,7 +21,7 @@ function configurarTokenJira() {
   var ui    = SpreadsheetApp.getUi();
   var props = PropertiesService.getScriptProperties();
 
-  var emailAtual = props.getProperty(PROP_JIRA_EMAIL) || 'felipe.lima@stormx.com.br';
+  var emailAtual = props.getProperty(PROP_JIRA_EMAIL) || 'falssp@gmail.com';
   var respEmail  = ui.prompt(
     'Configurar Jira — Passo 1/2',
     'E-mail da conta Atlassian (Jira):\n\n' +

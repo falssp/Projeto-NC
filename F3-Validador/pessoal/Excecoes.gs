@@ -3,7 +3,7 @@
 // ============================================================
 
 var LOG_SHEET_ID = '1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ';
-var NC_SHEET_ID  = '1VBaExPGHOVYxpTyzJymrb8RuWWe34_9WBE0aC3slETU';
+var NC_SHEET_ID  = '1Dthsg7TWuYfQi-QU1yCkRJEhFdXKQ3I1wNO5Y90CCEQ';
 
 var EXC_COLS = {
   txKey:         1,  // A
@@ -30,7 +30,7 @@ var EXC_MOTIVOS = [
   'Padrão de time externo (Search/AdServer)'
 ];
 
-var EXC_EMAIL_DESTINO = 'felipe.lima@stormx.com.br';
+var EXC_EMAIL_DESTINO = 'falssp@gmail.com';
 
 // ── Obter usuário ativo ──────────────────────────────────────
 function _getUsuarioAtivo() {
