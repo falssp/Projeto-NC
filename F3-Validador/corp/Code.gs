@@ -114,9 +114,6 @@ function onOpen() {
         .addItem('🗑️ Limpar Aba Log', 'limparLog')
         .addItem('🔧 Repadronizar Abas', 'fixTodasAbas')
         .addSeparator()
-        .addItem('⏰ Instalar Trigger Arquivamento (Dia 1 do Mês)', 'instalarTriggerArquivamento')
-        .addItem('⏰ Instalar Trigger Semanal (Domingo 3h)', 'instalarTriggerMerge')
-        .addItem('🔧 Corrigir Trigger Merge', 'corrigirTriggerMerge')
         .addItem('🔔 Instalar Notificação Dicionário', 'instalarTriggerNotificacaoDicionario')
         .addItem('🔕 Remover Notificação Dicionário', 'removerTriggerNotificacaoDicionario');
     }
