@@ -2318,19 +2318,30 @@ function ansParseFiles(){
         var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:false,cellHTML:false,raw:true});
         wb.SheetNames.forEach(function(sn){
           var key=ansFindMapKey(sn);if(!key)return;
-          var m=ANS_EXCEL_MAP[key],ws=wb.Sheets[sn];
-          var colOffset=ws['!ref']?XLSX.utils.decode_range(ws['!ref']).s.c:0;
+          var ws=wb.Sheets[sn];
           var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
-          var items=[];
+          // Detecta colunas pelo header "Placement ID" e "Ad Name" na linha 14 (índice 13)
+          var hdr=rows[13]||[];
+          var idCol=-1,adCol=-1;
+          for(var ci=0;ci<hdr.length;ci++){
+            var h=String(hdr[ci]||'').toLowerCase().trim();
+            if(h.indexOf('placement id')!==-1&&idCol===-1)idCol=ci;
+            if(h==='ad name'&&adCol===-1)adCol=ci;
+          }
+          // fallback para mapa fixo se header não encontrado
+          if(idCol===-1||adCol===-1){var m=ANS_EXCEL_MAP[key];idCol=m.id;adCol=m.ad;}
+          var seen={};
           rows.forEach(function(row,ri){
-            var idv=String(row[m.id-colOffset]||'').trim().toUpperCase().replace(/\s/g,'');
-            var adv=String(row[m.ad-colOffset]||'').trim();
+            if(ri<14)return;// pula header e linhas acima
+            var idv=String(row[idCol]||'').trim().toUpperCase().replace(/[\s]/g,'');
+            var adv=String(row[adCol]||'').trim();
             if(!idv||!adv||!/^(SX|AMZ)/i.test(idv))return;
-            items.push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
+            if(seen[idv])return;seen[idv]=true;
+            if(!ansParsedData[sn])ansParsedData[sn]=[];
+            ansParsedData[sn].push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
           });
-          if(!ansParsedData[sn])ansParsedData[sn]=[];
-          ansParsedData[sn].push.apply(ansParsedData[sn],items);
-        });
+        });;
+
       }catch(e){console.error(e);}
       done++;if(done===ansUploadedFiles.length){ansRenderParseInfo();ansCheckReady();}
     };
