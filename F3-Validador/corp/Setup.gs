@@ -41,20 +41,20 @@ function setupPlanilha() {
 
 // ── USUARIOS ─────────────────────────────────────────────────
 function _criarUsuarios(ss) {
-  var sh = ss.getSheetByName('Usuarios');
-  if (!sh) {
-    sh = ss.insertSheet('Usuarios');
-    sh.getRange(1, 1, 1, 4).setValues([['ID','Nome','Email','Perfil']]);
-    sh.getRange(1, 1, 1, 4)
-      .setBackground(COR_HEADER)
-      .setFontColor('#FFFFFF')
-      .setFontWeight('bold');
-    sh.appendRow(['USR001', 'Felipe Lima', 'felipe.lima@stormx.com.br', 'admin']);
-    sh.setColumnWidth(1, 80);
-    sh.setColumnWidth(2, 160);
-    sh.setColumnWidth(3, 220);
-    sh.setColumnWidth(4, 100);
+  var sh = ss.getSheetByName('Usuarios') || ss.insertSheet('Usuarios');
+  var hdr = ['ID','Nome','Sobrenome','Email','Perfil','Notas'];
+  sh.getRange(1, 1, 1, hdr.length).setValues([hdr]);
+  _hdrSetup(sh, hdr.length, COR_HEADER);
+  var ws = [80, 120, 120, 240, 90, 260];
+  ws.forEach(function(w, i){ sh.setColumnWidth(i + 1, w); });
+  if (sh.getLastRow() < 2) {
+    sh.appendRow(['USR001','Felipe','Lima','felipe.lima@stormx.com.br','Admin','Usuário corp']);
+    sh.getRange('E2:E50').setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(['Dev','Admin','Gerente','Operador'], true).build()
+    );
   }
+  _limitarColunas(sh, hdr.length);
 }
 
 // ── RENOMEAR EXCECOES ────────────────────────────────────────
