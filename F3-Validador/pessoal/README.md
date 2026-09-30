@@ -31,9 +31,9 @@ Validador de Naming Conventions — ambiente Pessoal (Backup).
 | `StatusAmbiente.html` | HTML | Painel de status |
 | `Code.gs` | GAS | Backend principal (Pessoal) |
 | `Excecoes.gs` | GAS | Gestao de excecoes |
-| `Setup.gs` | GAS | Configuracao e triggers |
+| `Setup.gs` | GAS | Configuracao e triggers (incl. aba Usuarios) |
 | `AmbienteStatus.gs` | GAS | Status do ambiente Pessoal |
-| `MergeDict.gs` | GAS | Merge e cache do dicionario |
-| `NotificacaoDicionario.gs` | GAS | Notificacao dicionario desatualizado |
+| `MergeDict.gs` | GAS | Merge e cache do dicionario (Dicionário Merged) |
+| `NotificacaoDicionario.gs` | GAS | Notificacao diaria dicionario desatualizado |
 | `Jira.gs` | GAS | Integracao Jira REST API v3 |
 | `HealthCheck.gs` | GAS | Healthcheck Pessoal |

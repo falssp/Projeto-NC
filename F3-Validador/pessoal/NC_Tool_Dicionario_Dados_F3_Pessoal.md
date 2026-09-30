@@ -1,5 +1,5 @@
 # NC Tool | F3 — Validator
-## Dicionario de Dados · Corp
+## Dicionario de Dados · Pessoal (Backup)
 
 ## Aba Log
 
