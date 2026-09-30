@@ -131,9 +131,12 @@ code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:va
 .blk.collapsed .blk-body{display:none}
 .col-grp{border-top:1px solid #F3F4F6}
 .col-lbl{font-size:10px;font-weight:700;color:var(--ul);padding:6px 14px 3px;background:#FAFBFF;text-transform:uppercase;letter-spacing:.05em}
-.f-row{display:grid;grid-template-columns:80px 1fr;gap:10px;padding:6px 14px;border-top:1px solid #F9FAFB;align-items:start}
+.f-row{display:grid;grid-template-columns:80px 1fr auto;gap:10px;padding:6px 14px;border-top:1px solid #F9FAFB;align-items:start}
 .ref{font-family:var(--mo);font-size:10.5px;background:var(--g100);padding:2px 6px;border-radius:3px;color:var(--g500);white-space:nowrap;display:inline-block}
 .fc{font-family:var(--mo);font-size:11px;background:var(--g50);padding:5px 9px;border-radius:5px;border-left:3px solid var(--ul);word-break:break-word;white-space:pre-wrap;color:var(--g900);line-height:1.5}
+.copy-btn{background:none;border:1px solid var(--g200);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;color:var(--g500);font-family:var(--fn);transition:all .15s;white-space:nowrap;align-self:start;margin-top:3px}
+.copy-btn:hover{background:var(--ul-l);border-color:var(--ul);color:var(--ul)}
+.copy-btn.copied{background:var(--ok-b);border-color:var(--ok);color:var(--ok)}
 .empty-msg{padding:12px 14px;color:var(--g500);font-size:12px;font-style:italic}
 .search-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
 .search-bar input{flex:1;padding:7px 11px;border-radius:7px;border:1px solid var(--g300);font-family:var(--fn);font-size:12.5px;outline:none;transition:border-color .15s}
@@ -584,7 +587,7 @@ function renderResults(results) {
         data.byCol[col].forEach(function(item) {
           var f = item.formula;
           if (trunc && f.length > 200) f = f.substring(0, 200) + '…';
-          html += '<div class="f-row"><span class="ref">' + esc(item.addr) + '</span><div class="fc">' + esc(f) + '</div></div>';
+          html += '<div class="f-row"><span class="ref">' + esc(item.addr) + '</span><div class="fc">' + esc(f) + '</div><button class="copy-btn" onclick="copyFormula(this,' + JSON.stringify(item.formula) + ')">&#128203; Copiar</button></div>';
         });
         html += '</div>';
       });
@@ -723,6 +726,17 @@ function openFaq() { document.getElementById('faq-modal').classList.add('open');
 function closeFaq() { document.getElementById('faq-modal').classList.remove('open'); }
 function closeFaqOutside(e) { if (e.target === document.getElementById('faq-modal')) closeFaq(); }
 function toggleMfaq(btn) { btn.parentElement.classList.toggle('open'); }
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeFaq(); });
+
+function copyFormula(btn, formula) {
+  navigator.clipboard.writeText(formula).then(function() {
+    btn.textContent = '✓ Copiado';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.innerHTML = '&#128203; Copiar'; btn.classList.remove('copied'); }, 1800);
+  }).catch(function() {
+    toast('Erro ao copiar', 'err');
+  });
+}
 
 function toggleHelp() {
   var panel = document.getElementById('help-panel');
