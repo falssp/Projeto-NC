@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extractor de Fórmulas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#1F36C7;--ul-l:#E8ECFB;--ul-m:#4A5FD4;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FFFBEB;
+  --g50:#F8F9FA;--g100:#F1F3F5;--g200:#E9ECEF;--g300:#DEE2E6;
+  --g500:#868E96;--g700:#495057;--g900:#212529;
+  --sw:240px;
+  --fn:'DM Sans',system-ui,sans-serif;
+  --mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;display:flex}
+
+/* ── Sidebar ── */
+#sb{width:var(--sw);min-width:var(--sw);background:#0F1B6E;color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
+.logo{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.logo .badge{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;letter-spacing:.04em;color:#A5B4FC;margin-bottom:8px}
+.logo h1{font-size:14px;font-weight:600;line-height:1.3;color:#fff}
+.sb-s{padding:12px 10px 4px}
+.sb-s > label,.sb-faq > label{font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;display:block;padding:0 8px;margin-bottom:6px}
+.sb-file-row{padding:4px 8px 12px}
+.sb-fname{font-size:11.5px;font-weight:600;color:#fff;word-break:break-all;line-height:1.45;display:block}
+.sb-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 8px 4px}
+.sb-stat{background:rgba(255,255,255,.13);border-radius:8px;padding:10px 11px}
+.sb-stat-v{font-size:20px;font-weight:800;color:#fff;line-height:1;display:block}
+.sb-stat-v.ok{color:#6EE7B7}
+.sb-stat-l{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);margin-top:5px;display:block;line-height:1.2}
+.sb-div{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
+.sb-faq-btn{display:flex;align-items:center;gap:8px;width:calc(100% - 16px);margin:0 8px;padding:9px 12px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.7);font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;transition:all .15s;text-align:left}
+.sb-faq-btn:hover{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.22)}
+
+/* ── Modal FAQ ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:82vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.22)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--g200);position:sticky;top:0;background:#fff;z-index:1}
+.modal-head h3{font-size:15px;font-weight:700;color:var(--g900)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g500);line-height:1;padding:2px 6px;border-radius:5px}
+.modal-close:hover{background:var(--g100)}
+.modal-body{padding:4px 22px 22px}
+.mfaq-item{border-bottom:1px solid var(--g100)}
+.mfaq-item:last-child{border-bottom:none}
+.mfaq-q{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:none;padding:15px 0;cursor:pointer;font-family:var(--fn);font-size:14px;font-weight:600;color:var(--g900);text-align:left;gap:10px}
+.mfaq-q:hover{color:var(--ul)}
+.mfaq-arr{font-size:18px;color:var(--g300);transition:transform .2s;flex-shrink:0;line-height:1}
+.mfaq-item.open .mfaq-arr{transform:rotate(90deg);color:var(--ul)}
+.mfaq-a{display:none;padding:0 0 15px;font-size:13.5px;color:var(--g700);line-height:1.65}
+.mfaq-item.open .mfaq-a{display:block}
+.mfaq-a code{background:var(--ul-l);color:var(--ul);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:12px}
+.mfaq-a strong{color:var(--g900);font-weight:600}
+.sb-foot{margin-top:auto;padding:12px 10px;border-top:1px solid rgba(255,255,255,.08)}
+
+/* ── Main ── */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#tb{background:#fff;border-bottom:1px solid var(--g200);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+#tb h2{font-size:13.5px;font-weight:600}
+.tbr{display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff}.btn-p:hover{background:var(--ul-m)}
+.btn-p:disabled{opacity:.4;cursor:default}
+.btn-g{background:none;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.exp-wrap{position:relative}
+.exp-dd{position:absolute;top:calc(100% + 5px);right:0;background:#fff;border:1px solid var(--g200);border-radius:9px;box-shadow:0 4px 16px rgba(0,0,0,.1);min-width:170px;z-index:100;overflow:hidden;display:none}
+.exp-dd.open{display:block}
+.exp-dd button{display:flex;align-items:center;gap:9px;width:100%;padding:9px 14px;font-family:var(--fn);font-size:12.5px;border:none;background:none;cursor:pointer;color:var(--g900);transition:background .12s;white-space:nowrap}
+.exp-dd button:hover{background:var(--g50)}
+.exp-div{height:1px;background:var(--g200);margin:3px 0}
+
+#ct{flex:1;padding:20px 24px}
+
+/* ── Dropzone ── */
+.uz{border:2px dashed var(--g300);border-radius:11px;padding:44px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fff;margin-bottom:14px}
+.uz:hover,.uz.drag{border-color:var(--ul);background:var(--ul-l)}
+.uz.loaded{border-color:var(--ok);background:var(--ok-b);cursor:default}
+.uz .icon{font-size:32px;margin-bottom:10px}
+.uz h3{font-size:14px;font-weight:600;margin-bottom:5px}
+.uz p{font-size:12px;color:var(--g500)}
+.uz.loaded h3{color:var(--ok)}
+.uz.loaded p{color:var(--ok)}
+.uz input[type=file]{display:none}
+
+/* ── Chips ── */
+.sc{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.chip{padding:5px 13px;border-radius:18px;font-size:11.5px;font-weight:500;border:1px solid var(--g300);background:#fff;cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--g500)}
+.chip.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+.chip.has-formulas{border-color:#A5B4FC}
+.chip.has-formulas.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+
+/* ── Info banners ── */
+.ib{background:var(--ul-l);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:10px}
+.ib strong{font-weight:600}
+.ib-warn{background:var(--warn-b);border:1px solid #FDE68A;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--warn);margin-bottom:8px}
+.ib-warn strong{font-weight:600}
+.ib-ok{background:var(--ok-b);border:1px solid #A7F3D0;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ok);margin-bottom:10px}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+/* ── Options ── */
+.opts-row{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;align-items:center}
+.opt-item{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--g700);cursor:pointer;user-select:none}
+.opt-item input[type=checkbox]{accent-color:var(--ul);cursor:pointer;width:14px;height:14px}
+.sel-actions{display:flex;gap:6px;margin-bottom:10px}
+.sel-actions button{font-size:11.5px;padding:4px 11px;border-radius:6px;border:1px solid var(--g300);background:#fff;color:var(--g700);cursor:pointer;font-family:var(--fn)}
+.sel-actions button:hover{background:var(--g100)}
+
+/* ── Progress bar ── */
+.pb2{display:none;width:100%;height:3px;background:var(--g200);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.pb2.active{display:block}
+.pf2{height:100%;background:var(--ul);border-radius:2px;animation:pg 1.2s ease infinite}
+@keyframes pg{0%{width:0%}50%{width:70%}100%{width:100%}}
+
+/* ── Results ── */
+.blk{margin-bottom:10px;border-radius:9px;border:1px solid var(--g200);background:#fff;overflow:hidden}
+.blk-hdr{display:flex;align-items:center;gap:10px;padding:8px 13px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:11.5px;cursor:pointer;user-select:none}
+.blk-hdr:hover{background:var(--g100)}
+.blk-name{font-weight:600;flex:1}
+.blk-count{font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:4px;background:var(--ul-l);color:var(--ul)}
+.blk-count.zero{background:var(--g100);color:var(--g500)}
+.blk-toggle{font-size:11px;color:var(--g500);transition:transform .2s}
+.blk.collapsed .blk-toggle{transform:rotate(-90deg)}
+.blk.collapsed .blk-body{display:none}
+.col-grp{border-top:1px solid #F3F4F6}
+.col-lbl{font-size:10px;font-weight:700;color:var(--ul);padding:6px 14px 3px;background:#FAFBFF;text-transform:uppercase;letter-spacing:.05em}
+.f-row{display:grid;grid-template-columns:80px 1fr;gap:10px;padding:6px 14px;border-top:1px solid #F9FAFB;align-items:start}
+.ref{font-family:var(--mo);font-size:10.5px;background:var(--g100);padding:2px 6px;border-radius:3px;color:var(--g500);white-space:nowrap;display:inline-block}
+.fc{font-family:var(--mo);font-size:11px;background:var(--g50);padding:5px 9px;border-radius:5px;border-left:3px solid var(--ul);word-break:break-word;white-space:pre-wrap;color:var(--g900);line-height:1.5}
+.empty-msg{padding:12px 14px;color:var(--g500);font-size:12px;font-style:italic}
+.search-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.search-bar input{flex:1;padding:7px 11px;border-radius:7px;border:1px solid var(--g300);font-family:var(--fn);font-size:12.5px;outline:none;transition:border-color .15s}
+.search-bar input:focus{border-color:var(--ul)}
+.section-lbl{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g500);margin-bottom:8px}
+.divider{height:1px;background:var(--g200);margin:16px 0}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--g900);color:#fff;padding:10px 18px;border-radius:9px;font-size:12.5px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .25s;z-index:999}
+#toast.show{opacity:1}
+#toast.ok{background:var(--ok)}
+#toast.err{background:var(--err)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+
+@media(max-width:768px){
+  #sb{display:none}
+  #tb{padding:0 14px}
+  #ct{padding:14px}
+  .f-row{grid-template-columns:60px 1fr}
+}
+</style>
+</head>
+<body>
+
+<aside id="sb">
+  <div class="logo">
+    <div class="badge">Extractor</div>
+    <h1>Fórmulas<br>de Planilhas</h1>
+  </div>
+
+  <div class="sb-s">
+    <label>Arquivo carregado</label>
+    <div class="sb-file-row">
+      <span class="sb-fname" id="sb-file">Nenhum arquivo</span>
+    </div>
+    <div class="sb-stats">
+      <div class="sb-stat">
+        <span class="sb-stat-v" id="sb-total">—</span>
+        <span class="sb-stat-l">Abas totais</span>
+      </div>
+      <div class="sb-stat">
+        <span class="sb-stat-v" id="sb-sel">—</span>
+        <span class="sb-stat-l">Selecionadas</span>
+      </div>
+      <div class="sb-stat">
+        <span class="sb-stat-v ok" id="sb-fcount">—</span>
+        <span class="sb-stat-l">Com fórmulas</span>
+      </div>
+      <div class="sb-stat">
+        <span class="sb-stat-v ok" id="sb-unique">—</span>
+        <span class="sb-stat-l">Únicas extraídas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sb-div"></div>
+
+  <div class="sb-foot">
+    <button class="sb-faq-btn" onclick="openFaq()">
+      <span>&#9432;</span> Perguntas frequentes
+    </button>
+  </div>
+</aside>
+
+<!-- Modal FAQ -->
+<div class="modal-bg" id="faq-modal" onclick="closeFaqOutside(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>&#9432; Perguntas frequentes</h3>
+      <button class="modal-close" onclick="closeFaq()">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="mfaq-item">
+        <button class="mfaq-q" onclick="toggleMfaq(this)">
+          <span>Quais formatos são suportados?</span><span class="mfaq-arr">›</span>
+        </button>
+        <div class="mfaq-a">Arquivos <code>.xlsx</code>, <code>.xlsm</code> e <code>.xls</code>. Planilhas do Google Sheets precisam ser baixadas como <code>.xlsx</code> primeiro (Arquivo → Baixar → Microsoft Excel).</div>
+      </div>
+      <div class="mfaq-item">
+        <button class="mfaq-q" onclick="toggleMfaq(this)">
+          <span>Meus dados saem da máquina?</span><span class="mfaq-arr">›</span>
+        </button>
+        <div class="mfaq-a">Não. Todo o processamento ocorre inteiramente no seu navegador. Nenhum dado é enviado a servidores externos — o arquivo não sai da sua máquina.</div>
+      </div>
+      <div class="mfaq-item">
+        <button class="mfaq-q" onclick="toggleMfaq(this)">
+          <span>O que é deduplicar fórmulas?</span><span class="mfaq-arr">›</span>
+        </button>
+        <div class="mfaq-a">Fórmulas "arrastadas" que mudam só o número da linha (ex: <code>=VLOOKUP(C2,…)</code>, <code>=VLOOKUP(C3,…)</code>…) são reconhecidas como o mesmo padrão e exibidas uma única vez, evitando centenas de entradas idênticas. Desmarque a opção se suspeitar que alguma linha foi editada manualmente e quebrou o padrão.</div>
+      </div>
+      <div class="mfaq-item">
+        <button class="mfaq-q" onclick="toggleMfaq(this)">
+          <span>Como exportar os resultados?</span><span class="mfaq-arr">›</span>
+        </button>
+        <div class="mfaq-a">Após extrair, use o botão <strong>Exportar</strong> na barra superior. Você pode baixar como <strong>HTML navegável</strong> (abre direto no browser, com busca) ou <strong>JSON estruturado</strong> (para integrar com outros sistemas).</div>
+      </div>
+      <div class="mfaq-item">
+        <button class="mfaq-q" onclick="toggleMfaq(this)">
+          <span>Por que uma aba aparece sem fórmulas?</span><span class="mfaq-arr">›</span>
+        </button>
+        <div class="mfaq-a">Pode ser que a aba contenha só valores estáticos (fórmulas coladas como valor), esteja protegida no caso de arquivos <code>.xlsm</code>, ou as células usem formato de número em vez de fórmula.</div>
+      </div>
+      <div class="mfaq-item">
+        <button class="mfaq-q" onclick="toggleMfaq(this)">
+          <span>O que faz o "Truncar fórmulas longas"?</span><span class="mfaq-arr">›</span>
+        </button>
+        <div class="mfaq-a">Fórmulas muito compridas (vários <code>SE</code> aninhados, concatenações longas) aparecem cortadas em 200 caracteres na tela para não quebrar o layout. <strong>O arquivo exportado sempre traz a fórmula completa</strong>, sem corte.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="tb">
+    <h2>Extractor de Fórmulas</h2>
+    <div class="tbr">
+      <button class="btn btn-g" onclick="reset()">Limpar</button>
+      <div class="exp-wrap" id="exp-wrap" style="display:none">
+        <button class="btn btn-g" onclick="toggleExp(event)">Exportar &#9660;</button>
+        <div class="exp-dd" id="exp-dd">
+          <button onclick="doExport('html')">&#128196; HTML navegável</button>
+          <button onclick="doExport('json')">&#123;&#125; JSON estruturado</button>
+          <div class="exp-div"></div>
+          <button onclick="window.print()">&#128209; Imprimir</button>
+        </div>
+      </div>
+      <button class="btn btn-p" id="btn-ext" onclick="runExtract()" disabled>Extrair</button>
+    </div>
+  </div>
+
+  <div id="ct">
+    <div class="ib">
+      <strong>Como usar:</strong> Carregue qualquer <code>.xlsx</code> ou <code>.xlsm</code>, selecione as abas desejadas e clique em <strong>Extrair</strong>. Fórmulas repetidas por linha são deduplicadas automaticamente.
+    </div>
+
+    <div class="uz" id="dropzone"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="onDrop(event)">
+      <div class="icon">&#128202;</div>
+      <h3>Arraste o arquivo aqui</h3>
+      <p>ou clique para selecionar &middot; .xlsx .xlsm</p>
+      <input type="file" id="file-input" accept=".xlsx,.xlsm,.xls" onchange="loadFile(this)">
+    </div>
+
+    <div id="warnings-area"></div>
+
+    <div id="sheet-area" style="display:none">
+      <div class="section-lbl">Abas detectadas</div>
+      <div class="sel-actions">
+        <button onclick="selAll()">Todas</button>
+        <button onclick="selWithFormulas()">Só com fórmulas</button>
+        <button onclick="selNone()">Nenhuma</button>
+      </div>
+      <div class="sc" id="chips-area"></div>
+
+      <div class="divider"></div>
+      <div class="section-lbl" style="display:flex;align-items:center;gap:8px;justify-content:space-between">
+        <span>Opções de extração</span>
+        <button onclick="toggleHelp()" id="help-btn" style="font-size:11px;font-weight:500;color:var(--ul);background:var(--ul-l);border:none;padding:3px 10px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:4px">
+          &#9432; O que significa isso?
+        </button>
+      </div>
+      <div class="opts-row">
+        <label class="opt-item">
+          <input type="checkbox" id="opt-dedup" checked>
+          Deduplicar fórmulas repetidas por linha
+        </label>
+        <label class="opt-item">
+          <input type="checkbox" id="opt-truncate">
+          Truncar fórmulas longas (>200 chars) na tela
+        </label>
+      </div>
+
+      <div id="help-panel" style="display:none;background:var(--g50);border:1px solid var(--g200);border-radius:9px;padding:14px 16px;margin-bottom:16px;font-size:12.5px;line-height:1.6;color:var(--g700)">
+        <div style="margin-bottom:14px">
+          <strong style="color:var(--g900)">Deduplicar fórmulas repetidas por linha</strong>
+          <p style="margin-top:4px">Quando uma fórmula se repete em várias linhas mudando só o número da linha (ex: a mesma fórmula "arrastada" da linha 2 até a linha 500), o extractor entende que é o mesmo padrão e mostra <strong>apenas um exemplo</strong>, em vez de listar as 499 repetições.</p>
+          <div style="margin-top:8px;background:#fff;border:1px solid var(--g200);border-radius:6px;padding:8px 12px">
+            <div style="font-size:11px;color:var(--g500);margin-bottom:4px">Exemplo:</div>
+            <div style="font-family:var(--mo);font-size:11px;color:var(--g900)">D2: =VLOOKUP(C2,Tabela,2,0)</div>
+            <div style="font-family:var(--mo);font-size:11px;color:var(--g900)">D3: =VLOOKUP(C3,Tabela,2,0)</div>
+            <div style="font-family:var(--mo);font-size:11px;color:var(--g500)">... (497 linhas iguais)</div>
+            <div style="margin-top:6px;font-size:11px;color:var(--ok)">&#8594; Com a opção marcada: mostra só "D2: =VLOOKUP(C2,Tabela,2,0)"</div>
+            <div style="font-size:11px;color:var(--g500)">&#8594; Com a opção desmarcada: lista as 499 linhas</div>
+          </div>
+          <p style="margin-top:8px"><strong>Quando desmarcar:</strong> se você suspeitar que alguma linha quebrou o padrão (foi editada manualmente, tem erro, ou fórmula diferente), desmarque para ver célula por célula.</p>
+        </div>
+        <div>
+          <strong style="color:var(--g900)">Truncar fórmulas longas (>200 chars) na tela</strong>
+          <p style="margin-top:4px">Fórmulas muito compridas (com vários <code>SE</code> aninhados, concatenações longas, etc.) aparecem cortadas na tela para não quebrar o layout visual.</p>
+          <p style="margin-top:6px"><strong>Importante:</strong> isso afeta <u>apenas a exibição na tela</u>. O arquivo exportado (HTML ou JSON) sempre traz a fórmula completa, sem corte.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pb2" id="prog"><div class="pf2"></div></div>
+
+    <div id="results-area"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var wb = null;
+var filename = '';
+var sheetFormulaCounts = {};
+var selectedSheets = new Set();
+
+// ── File loading ──────────────────────────────────────────────────────────
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList.remove('drag');
+  var f = e.dataTransfer.files[0];
+  if (f) processFile(f);
+}
+function loadFile(inp) {
+  if (inp.files[0]) processFile(inp.files[0]);
+  inp.value = '';
+}
+function processFile(file) {
+  showProg(true);
+  filename = file.name;
+  var rd = new FileReader();
+  rd.onload = function(e) {
+    try {
+      wb = XLSX.read(e.target.result, { type: 'array', cellFormula: true, sheetStubs: true });
+      afterLoad(file);
+    } catch(ex) {
+      showProg(false);
+      toast('Erro ao ler arquivo: ' + ex.message, 'err');
+    }
+  };
+  rd.readAsArrayBuffer(file);
+}
+
+function afterLoad(file) {
+  // Count formulas per sheet
+  sheetFormulaCounts = {};
+  wb.SheetNames.forEach(function(name) {
+    var ws = wb.Sheets[name];
+    var n = 0;
+    for (var k in ws) { if (k[0] !== '!' && ws[k] && ws[k].f) n++; }
+    sheetFormulaCounts[name] = n;
+  });
+
+  // Update dropzone
+  var dz = document.getElementById('dropzone');
+  dz.classList.add('loaded');
+  dz.onclick = null;
+  dz.querySelector('h3').textContent = file.name;
+  dz.querySelector('p').textContent = wb.SheetNames.length + ' abas encontradas · ' + (file.size/1024).toFixed(0) + ' KB';
+
+  // Sidebar
+  document.getElementById('sb-file').textContent = file.name.replace(/\..+$/,'');
+  document.getElementById('sb-file').title = file.name;
+  document.getElementById('sb-total').textContent = wb.SheetNames.length;
+
+  buildChips();
+  document.getElementById('sheet-area').style.display = 'block';
+  document.getElementById('exp-wrap').style.display = 'none';
+  document.getElementById('results-area').innerHTML = '';
+  document.getElementById('warnings-area').innerHTML = '';
+  showProg(false);
+  updateBtns();
+}
+
+// ── Chips ─────────────────────────────────────────────────────────────────
+function buildChips() {
+  selectedSheets = new Set();
+  var cont = document.getElementById('chips-area');
+  cont.innerHTML = '';
+
+  // "Todas" chip
+  var all = document.createElement('button');
+  all.id = 'chip-all';
+  all.className = 'chip active';
+  all.textContent = 'Todas';
+  all.onclick = toggleAll;
+  cont.appendChild(all);
+
+  wb.SheetNames.forEach(function(name) {
+    var n = sheetFormulaCounts[name];
+    selectedSheets.add(name);
+    var c = document.createElement('button');
+    c.className = 'chip active' + (n > 0 ? ' has-formulas' : '');
+    c.dataset.sheet = name;
+    c.innerHTML = name + (n > 0 ? ' <span style="font-size:10px;opacity:.7">(' + n + ')</span>' : '');
+    c.title = name + ' — ' + n + ' fórmula(s)';
+    c.onclick = function() { toggleChip(c, name); };
+    cont.appendChild(c);
+  });
+  syncSidebar();
+}
+
+function toggleChip(chip, name) {
+  var on = chip.classList.toggle('active');
+  if (on) selectedSheets.add(name); else selectedSheets.delete(name);
+  syncAllChip();
+  syncSidebar();
+  updateBtns();
+}
+
+function toggleAll() {
+  var allOn = selectedSheets.size === wb.SheetNames.length;
+  if (allOn) { selNone(); } else { selAll(); }
+}
+
+function selAll() {
+  selectedSheets = new Set(wb.SheetNames);
+  document.querySelectorAll('#chips-area .chip').forEach(function(c) { c.classList.add('active'); });
+  syncSidebar(); updateBtns();
+}
+function selNone() {
+  selectedSheets.clear();
+  document.querySelectorAll('#chips-area .chip').forEach(function(c) { c.classList.remove('active'); });
+  syncSidebar(); updateBtns();
+}
+function selWithFormulas() {
+  selNone();
+  wb.SheetNames.forEach(function(name) {
+    if (sheetFormulaCounts[name] > 0) {
+      selectedSheets.add(name);
+      var chips = document.querySelectorAll('#chips-area .chip[data-sheet]');
+      chips.forEach(function(c) { if (c.dataset.sheet === name) c.classList.add('active'); });
+    }
+  });
+  syncAllChip(); syncSidebar(); updateBtns();
+}
+function syncAllChip() {
+  var btn = document.getElementById('chip-all');
+  if (!btn) return;
+  var allOn = selectedSheets.size === wb.SheetNames.length;
+  btn.classList.toggle('active', allOn);
+}
+function syncSidebar() {
+  document.getElementById('sb-sel').textContent = selectedSheets.size;
+  var withF = [...selectedSheets].filter(function(s) { return sheetFormulaCounts[s] > 0; }).length;
+  document.getElementById('sb-fcount').textContent = withF;
+  document.getElementById('sb-unique').textContent = '—';
+}
+function updateBtns() {
+  document.getElementById('btn-ext').disabled = selectedSheets.size === 0;
+}
+
+// ── Extraction ────────────────────────────────────────────────────────────
+function normalizePattern(f) { return f.replace(/\d+/g, 'N'); }
+
+function extractFromSheet(sheetName) {
+  var ws = wb.Sheets[sheetName];
+  if (!ws) return {};
+  var dedup = document.getElementById('opt-dedup').checked;
+  var seen = {};
+  for (var addr in ws) {
+    if (addr[0] === '!') continue;
+    var cell = ws[addr];
+    if (!cell || !cell.f) continue;
+    var col = addr.replace(/\d+/g, '');
+    var formula = '=' + cell.f;
+    var key = dedup ? (col + '||' + normalizePattern(formula)) : (col + '||' + formula);
+    if (!seen[key]) seen[key] = { col: col, addr: addr, formula: formula };
+  }
+  // Group by col, sort cols
+  var byCol = {};
+  Object.values(seen).forEach(function(item) {
+    if (!byCol[item.col]) byCol[item.col] = [];
+    byCol[item.col].push({ addr: item.addr, formula: item.formula });
+  });
+  return byCol;
+}
+
+function runExtract() {
+  if (!wb || selectedSheets.size === 0) return;
+  showProg(true);
+  document.getElementById('results-area').innerHTML = '';
+  document.getElementById('warnings-area').innerHTML = '';
+
+  setTimeout(function() {
+    try {
+      var results = {};
+      var warnHtml = '';
+      var totalUnique = 0;
+
+      selectedSheets.forEach(function(name) {
+        var byCol = extractFromSheet(name);
+        var count = Object.values(byCol).reduce(function(a, b) { return a + b.length; }, 0);
+        results[name] = { byCol: byCol, count: count };
+        totalUnique += count;
+        if (sheetFormulaCounts[name] > 0 && count === 0) {
+          warnHtml += '<div class="ib-warn">&#9888; Aba <strong>"' + esc(name) + '"</strong>: fórmulas detectadas no scan mas não extraídas (pode ser formato xlsm protegido).</div>';
+        }
+      });
+
+      document.getElementById('warnings-area').innerHTML = warnHtml;
+      renderResults(results);
+      document.getElementById('sb-unique').textContent = totalUnique;
+
+      document.getElementById('exp-wrap').style.display = '';
+      showProg(false);
+      toast(totalUnique + ' fórmulas únicas extraídas de ' + selectedSheets.size + ' aba(s)', 'ok');
+
+      // Store for export
+      window._lastResults = results;
+      window._lastFilename = filename;
+    } catch(ex) {
+      showProg(false);
+      toast('Erro na extração: ' + ex.message, 'err');
+    }
+  }, 30);
+}
+
+function renderResults(results) {
+  var trunc = document.getElementById('opt-truncate').checked;
+  var html = '';
+
+  // Summary bar
+  var totalU = 0, sheetsWithF = 0;
+  Object.entries(results).forEach(function(e) { totalU += e[1].count; if (e[1].count > 0) sheetsWithF++; });
+  html += '<div class="ib-ok" style="margin-bottom:14px">&#10003; <strong>' + totalU + ' fórmulas únicas</strong> extraídas de <strong>' + sheetsWithF + '</strong> aba(s) com fórmulas.</div>';
+
+  // Search bar
+  html += '<div class="search-bar"><input type="text" id="search-input" placeholder="&#128269; Buscar por aba, coluna ou fórmula..." oninput="filterResults(this.value)"></div>';
+
+  // Blocks per sheet
+  Object.entries(results).forEach(function(entry) {
+    var name = entry[0], data = entry[1];
+    var n = data.count;
+    var collapsed = n === 0 ? ' collapsed' : '';
+    html += '<div class="blk' + collapsed + '" data-block="' + esc(name) + '">';
+    html += '<div class="blk-hdr" onclick="this.parentElement.classList.toggle(\'collapsed\')">';
+    html += '<span class="blk-name">' + esc(name) + '</span>';
+    html += '<span class="blk-count' + (n === 0 ? ' zero' : '') + '">' + n + ' fórm. únicas</span>';
+    html += '<span class="blk-toggle" style="margin-left:8px;font-size:10px;color:var(--g500)">&#9660;</span>';
+    html += '</div><div class="blk-body">';
+
+    if (n === 0) {
+      html += '<div class="empty-msg">Nenhuma fórmula nesta aba.</div>';
+    } else {
+      var sortedCols = Object.keys(data.byCol).sort(function(a,b){
+        return a.replace(/[^A-Z]/g,'').localeCompare(b.replace(/[^A-Z]/g,''));
+      });
+      sortedCols.forEach(function(col) {
+        html += '<div class="col-grp"><div class="col-lbl">Coluna ' + esc(col) + '</div>';
+        data.byCol[col].forEach(function(item) {
+          var f = item.formula;
+          if (trunc && f.length > 200) f = f.substring(0, 200) + '…';
+          html += '<div class="f-row"><span class="ref">' + esc(item.addr) + '</span><div class="fc">' + esc(f) + '</div></div>';
+        });
+        html += '</div>';
+      });
+    }
+    html += '</div></div>';
+  });
+
+  document.getElementById('results-area').innerHTML = html;
+}
+
+function filterResults(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#results-area .blk').forEach(function(blk) {
+    var txt = blk.textContent.toLowerCase();
+    blk.style.display = txt.includes(q) ? '' : 'none';
+    if (q && txt.includes(q)) blk.classList.remove('collapsed');
+  });
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function toggleExp(e) {
+  e.stopPropagation();
+  document.getElementById('exp-dd').classList.toggle('open');
+}
+document.addEventListener('click', function() {
+  var dd = document.getElementById('exp-dd');
+  if (dd) dd.classList.remove('open');
+});
+
+function doExport(fmt) {
+  document.getElementById('exp-dd').classList.remove('open');
+  if (!window._lastResults) return;
+  if (fmt === 'html') exportHTML();
+  else if (fmt === 'json') exportJSON();
+}
+
+function exportHTML() {
+  var r = window._lastResults;
+  var ts = new Date().toLocaleString('pt-BR');
+  var totalU = 0; Object.values(r).forEach(function(d) { totalU += d.count; });
+  var fname = window._lastFilename;
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Fórmulas — ' + esc(fname) + '</title>' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0}' +
+    'body{font-family:system-ui,sans-serif;background:#F8F9FA;color:#212529}' +
+    'header{background:#0F1B6E;color:#fff;padding:18px 28px}' +
+    'header h1{font-size:1.05rem;font-weight:600}' +
+    'header p{font-size:.78rem;color:rgba(255,255,255,.5);margin-top:3px}' +
+    '.wrap{max-width:1080px;margin:0 auto;padding:20px 28px}' +
+    '.summary{background:#E8ECFB;border:1px solid #C5CEEE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1F36C7;margin-bottom:16px}' +
+    '.summary strong{font-weight:600}' +
+    '.search{margin-bottom:14px}' +
+    '.search input{width:100%;padding:8px 13px;border:1px solid #DEE2E6;border-radius:7px;font-size:.85rem;outline:none}' +
+    '.blk{background:#fff;border:1px solid #E9ECEF;border-radius:9px;margin-bottom:10px;overflow:hidden}' +
+    '.blk-hdr{display:flex;align-items:center;gap:10px;padding:9px 14px;background:#F8F9FA;border-bottom:1px solid #E9ECEF;cursor:pointer;user-select:none}' +
+    '.blk-hdr:hover{background:#F1F3F5}' +
+    '.blk-name{font-weight:600;font-size:13px;flex:1}' +
+    '.blk-count{font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:#E8ECFB;color:#1F36C7}' +
+    '.blk-count.zero{background:#F1F3F5;color:#868E96}' +
+    '.col-grp{border-top:1px solid #F3F4F6}' +
+    '.col-lbl{font-size:9.5px;font-weight:700;color:#1F36C7;padding:5px 14px 2px;background:#FAFBFF;text-transform:uppercase;letter-spacing:.05em}' +
+    '.f-row{display:grid;grid-template-columns:75px 1fr;gap:8px;padding:5px 14px;border-top:1px solid #F9FAFB;align-items:start}' +
+    '.ref{font-family:monospace;font-size:10px;background:#F1F3F5;padding:2px 5px;border-radius:3px;color:#868E96;white-space:nowrap}' +
+    '.fc{font-family:monospace;font-size:10.5px;background:#F8F9FA;padding:5px 8px;border-radius:4px;border-left:3px solid #1F36C7;word-break:break-word;white-space:pre-wrap;color:#212529;line-height:1.5}' +
+    '.empty-msg{padding:10px 14px;color:#868E96;font-size:11.5px;font-style:italic}' +
+    '.collapsed .blk-body{display:none}' +
+    '.tog{font-size:9px;color:#868E96;transition:transform .2s}' +
+    '.collapsed .tog{transform:rotate(-90deg)}' +
+    '</style></head><body>' +
+    '<header><h1>Fórmulas — ' + esc(fname) + '</h1>' +
+    '<p>Gerado em ' + ts + ' · ' + Object.keys(r).length + ' abas · ' + totalU + ' fórmulas únicas</p></header>' +
+    '<div class="wrap">' +
+    '<div class="summary"><strong>' + totalU + ' fórmulas únicas</strong> de ' + Object.keys(r).length + ' aba(s) selecionada(s).</div>' +
+    '<div class="search"><input type="text" placeholder="🔍 Buscar..." oninput="filt(this.value)"></div>';
+
+  Object.entries(r).forEach(function(entry) {
+    var name = entry[0], data = entry[1];
+    var n = data.count;
+    var collapsed = n === 0 ? ' collapsed' : '';
+    html += '<div class="blk' + collapsed + '" data-block>' +
+      '<div class="blk-hdr" onclick="this.parentElement.classList.toggle(\'collapsed\')">' +
+      '<span class="blk-name">' + esc(name) + '</span>' +
+      '<span class="blk-count' + (n===0?' zero':'') + '">' + n + ' fórm. únicas</span>' +
+      '<span class="tog" style="margin-left:6px">▼</span></div><div class="blk-body">';
+    if (n === 0) {
+      html += '<div class="empty-msg">Nenhuma fórmula nesta aba.</div>';
+    } else {
+      Object.keys(data.byCol).sort().forEach(function(col) {
+        html += '<div class="col-grp"><div class="col-lbl">Coluna ' + esc(col) + '</div>';
+        data.byCol[col].forEach(function(item) {
+          html += '<div class="f-row"><span class="ref">' + esc(item.addr) + '</span><div class="fc">' + esc(item.formula) + '</div></div>';
+        });
+        html += '</div>';
+      });
+    }
+    html += '</div></div>';
+  });
+
+  html += '</div><script>function filt(q){q=q.toLowerCase();document.querySelectorAll(".blk").forEach(function(b){var t=b.textContent.toLowerCase();b.style.display=t.includes(q)?"":"none";if(q&&t.includes(q))b.classList.remove("collapsed")})};<\/script></body></html>';
+
+  download(html, fname.replace(/\.xlsx?$/i, '') + '_formulas.html', 'text/html');
+  toast('HTML exportado', 'ok');
+}
+
+function exportJSON() {
+  var r = window._lastResults;
+  var fname = window._lastFilename;
+  var out = {
+    arquivo: fname,
+    gerado_em: new Date().toISOString(),
+    abas: {}
+  };
+  Object.entries(r).forEach(function(entry) {
+    out.abas[entry[0]] = {
+      total_formulas_unicas: entry[1].count,
+      colunas: entry[1].byCol
+    };
+  });
+  download(JSON.stringify(out, null, 2), fname.replace(/\.xlsx?$/i, '') + '_formulas.json', 'application/json');
+  toast('JSON exportado', 'ok');
+}
+
+function download(content, fname, mime) {
+  var blob = new Blob([content], { type: mime });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function openFaq() { document.getElementById('faq-modal').classList.add('open'); }
+function closeFaq() { document.getElementById('faq-modal').classList.remove('open'); }
+function closeFaqOutside(e) { if (e.target === document.getElementById('faq-modal')) closeFaq(); }
+function toggleMfaq(btn) { btn.parentElement.classList.toggle('open'); }
+
+function toggleHelp() {
+  var panel = document.getElementById('help-panel');
+  var btn = document.getElementById('help-btn');
+  var open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  btn.innerHTML = open ? '&#9432; O que significa isso?' : '&#9650; Fechar explicação';
+}
+
+function reset() {
+  wb = null; filename = ''; sheetFormulaCounts = {}; selectedSheets.clear();
+  var dz = document.getElementById('dropzone');
+  dz.classList.remove('loaded');
+  dz.onclick = function(){ document.getElementById('file-input').click(); };
+  dz.querySelector('h3').textContent = 'Arraste o arquivo aqui';
+  dz.querySelector('p').textContent = 'ou clique para selecionar · .xlsx .xlsm';
+  document.getElementById('sheet-area').style.display = 'none';
+  document.getElementById('results-area').innerHTML = '';
+  document.getElementById('warnings-area').innerHTML = '';
+  document.getElementById('exp-wrap').style.display = 'none';
+  document.getElementById('chips-area').innerHTML = '';
+  document.getElementById('btn-ext').disabled = true;
+  document.getElementById('sb-file').textContent = 'Nenhum arquivo';
+  ['sb-total','sb-sel','sb-fcount','sb-unique'].forEach(function(id){ document.getElementById(id).textContent='—'; });
+  window._lastResults = null;
+}
+
+function showProg(v) { document.getElementById('prog').classList.toggle('active', v); }
+
+var _toastTimer;
+function toast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (tipo ? ' ' + tipo : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.className = ''; }, 3000);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
