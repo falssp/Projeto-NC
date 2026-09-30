@@ -1,15 +1,23 @@
 @echo off
 chcp 65001 >nul
-cd /d "C:\Users\falsp\Projeto-NC"
 
-:: Detecta ano atual e garante que as pastas existem
+set REPO=C:\Users\falsp\Projeto-NC
+set ORIGEM=C:\Users\falsp\OneDrive\Documentos\Profissional\Stormx\Unilever
+
+:: Ano atual
 for /f "tokens=2 delims==" %%a in ('wmic os get localdatetime /value') do set dt=%%a
 set ANO=%dt:~0,4%
 
-if not exist "Arquivos\%ANO%\ADP" mkdir "Arquivos\%ANO%\ADP"
-if not exist "Arquivos\%ANO%\RM"  mkdir "Arquivos\%ANO%\RM"
+:: Garante que as pastas de destino existem no repo
+if not exist "%REPO%\Arquivos\%ANO%\ADP" mkdir "%REPO%\Arquivos\%ANO%\ADP"
+if not exist "%REPO%\Arquivos\%ANO%\RM"  mkdir "%REPO%\Arquivos\%ANO%\RM"
 
-:: Adiciona e commita ADP e RM
+:: Copia arquivos novos do OneDrive para o repo (não sobrescreve existentes)
+xcopy "%ORIGEM%\%ANO%\ADP\*" "%REPO%\Arquivos\%ANO%\ADP\" /S /Y /D
+xcopy "%ORIGEM%\%ANO%\RM\*"  "%REPO%\Arquivos\%ANO%\RM\"  /S /Y /D
+
+:: Commit e push
+cd /d "%REPO%"
 git add "Arquivos\%ANO%\ADP\" "Arquivos\%ANO%\RM\"
 git diff --cached --quiet
 if %errorlevel%==0 (
