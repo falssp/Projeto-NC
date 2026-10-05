@@ -16,15 +16,26 @@
   --fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:20px}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:20px;display:flex;flex-direction:column}
 .header{max-width:1400px;margin:0 auto 20px;display:flex;align-items:center;gap:12px}
 .header .ico{width:38px;height:38px;border-radius:10px;background:var(--ul-l);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .header h1{font-size:16px;font-weight:600}
 .header p{font-size:12px;color:var(--g500);margin-top:2px}
-.card{max-width:1400px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden;margin-bottom:16px}
+.card{max-width:1400px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden;margin-bottom:16px;flex:1;display:flex;flex-direction:column}
+.card.has-result{flex:unset}
 .card-hdr{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--g200)}
 .card-hdr h2{font-size:13.5px;font-weight:600;flex:1}
-.card-body{padding:16px 18px 18px}
+.card-body{padding:16px 18px 18px;flex:1;display:flex;flex-direction:column}
+.card-body>.ext-tabs{flex-shrink:0}
+#ext-single{flex:1;display:flex;flex-direction:column}
+#ext-single .ext-input-row{flex-shrink:0}
+.card.has-result #ext-single{flex:unset}
+#ext-batch{flex:1;display:flex;flex-direction:column}
+#ext-batch .ib{flex-shrink:0}
+#ext-batch .ext-batch-footer{flex-shrink:0}
+#ext-urls{flex:1;min-height:160px;height:unset}
+.card.has-result #ext-batch{flex:unset}
+.card.has-result #ext-urls{flex:unset;height:160px}
 .ext-tabs{display:flex;gap:6px;margin-bottom:12px}
 .ext-tab{padding:5px 16px;border-radius:16px;font-size:12px;font-weight:500;border:1px solid var(--g300);background:#fff;cursor:pointer;font-family:var(--fn);transition:all .15s}
 .ext-tab.active{background:var(--ul);color:#fff;border-color:var(--ul)}
@@ -166,6 +177,7 @@ function setExtTab(mode,el){
   el.classList.add('active');
   document.getElementById('ext-single').style.display=mode==='single'?'':'none';
   document.getElementById('ext-batch').style.display=mode==='batch'?'':'none';
+  document.querySelector('.card').classList.remove('has-result');
 }
 
 function extSingleRun(){
@@ -181,9 +193,10 @@ function extSingleRun(){
     return;
   }
   var url=tokens.length===1?tokens[0]:normalizeUrl(raw.trim());
-  if(!url||!isValidUrl(url)){res.style.display='none';return;}
+  if(!url||!isValidUrl(url)){res.style.display='none';document.querySelector('.card').classList.remove('has-result');return;}
   var handle=extractHandle(url),net=detectNet(url);
   res.style.display='';
+  document.querySelector('.card').classList.add('has-result');
   res.innerHTML='<div class="ext-handle-box">'+
     '<span class="ext-net-badge '+(NET_COLORS[net]||'net-xx')+'">'+esc(net)+'</span>'+
     '<span class="ext-handle-val" id="ext-handle-val">'+esc(handle||'—')+'</span>'+
@@ -205,7 +218,7 @@ function extPassToLote(){
   document.getElementById('ext-single-result').style.display='none';
 }
 
-function extClearSingle(){document.getElementById('ext-url').value='';document.getElementById('ext-single-result').style.display='none';}
+function extClearSingle(){document.getElementById('ext-url').value='';document.getElementById('ext-single-result').style.display='none';document.querySelector('.card').classList.remove('has-result');}
 
 function extBatchCount(){
   var raw=document.getElementById('ext-urls').value.trim();
@@ -214,7 +227,7 @@ function extBatchCount(){
   document.getElementById('ext-batch-count').textContent=lines.length+' linha'+(lines.length!==1?'s':'')+' · '+valid+' válida'+(valid!==1?'s':'');
 }
 
-function extClearBatch(){document.getElementById('ext-urls').value='';extBatchCount();document.getElementById('ext-batch-result').innerHTML='';}
+function extClearBatch(){document.getElementById('ext-urls').value='';extBatchCount();document.getElementById('ext-batch-result').innerHTML='';document.querySelector('.card').classList.remove('has-result');}
 
 function extBatchRun(){
   var raw=document.getElementById('ext-urls').value.trim();
@@ -247,6 +260,7 @@ function extBatchRun(){
     '<button class="btn btn-g" onclick="extCopyTableTSV()">⎘ Copiar Tabela (TSV)</button>'+
     '</div></div>';
   document.getElementById('ext-batch-result').innerHTML=html;
+  document.querySelector('.card').classList.add('has-result');
 }
 
 function extCopyTable(){
