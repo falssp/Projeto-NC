@@ -19,6 +19,16 @@ Consulta todos os parâmetros de naming (Galileo e Freetext) com siglas, descri�
 
 ---
 
+## Como usar
+
+1. Acesse o link acima
+2. Digite qualquer termo na barra de busca (campo, sigla, descrição ou plataforma)
+3. Use a sidebar para filtrar por parâmetro (Galileo / Freetext) ou por plataforma
+4. Clique em um card para expandir e ver todos os valores do campo
+5. Use **Expandir todos** para ver tudo de uma vez
+
+---
+
 ## Funcionalidades
 
 - Busca em tempo real (campo, opção, sigla, descrição)
