@@ -1,0 +1,246 @@
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contador ADP · NC Tools</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#1F36C7;--ul-l:#E8ECFB;--ul-m:#4A5FD4;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F8F9FA;--g100:#F1F3F5;--g200:#E9ECEF;--g300:#DEE2E6;
+  --g400:#CED4DA;--g500:#868E96;--g700:#495057;--g900:#212529;
+  --fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:24px 16px}
+.page-wrap{max-width:860px;margin:0 auto}
+
+/* header */
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.page-header .ico{width:40px;height:40px;border-radius:10px;background:var(--ul-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.page-header h1{font-size:18px;font-weight:700;color:var(--g900)}
+.page-header p{font-size:12px;color:var(--g500);margin-top:2px}
+.back-link{margin-left:auto;font-size:12px;color:var(--ul);text-decoration:none;font-weight:500}
+.back-link:hover{text-decoration:underline}
+
+/* card */
+.tool-card{background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden}
+.tool-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.tool-title{font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:1px}
+.tool-desc{font-size:11px;color:var(--g500)}
+.tool-actions{margin-left:auto;display:flex;gap:8px}
+.tool-body{padding:18px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-g{background:none;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+/* info box */
+.ib{background:var(--ul-l);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:14px;line-height:1.55}
+.ib strong{font-weight:600}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+/* upload zone */
+.uz{border:2px dashed var(--g300);border-radius:10px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;background:#fff}
+.uz:hover,.uz.drag{border-color:var(--ul);background:var(--ul-l)}
+.uz-icon{font-size:32px;margin-bottom:10px}
+.uz h3{font-size:14px;font-weight:600;color:var(--g700);margin-bottom:5px}
+.uz p{font-size:12px;color:var(--g500)}
+.uz input[type=file]{display:none}
+
+/* file info */
+.fitem{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--g50);border:1px solid var(--g200);border-radius:7px;font-size:12px}
+.fitem .fn{font-weight:600;color:var(--g700);font-family:var(--mo);font-size:11px;flex:1}
+.fitem .fsz{font-size:11px;color:var(--g500)}
+
+/* result */
+.totals{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.tot-card{flex:1;min-width:120px;background:#fff;border:2px solid var(--ul-l);border-radius:10px;padding:14px 16px}
+.tot-card.ok{border-color:var(--ok-b)}
+.tot-num{font-size:28px;font-weight:700;color:var(--ul);margin-bottom:3px}
+.tot-card.ok .tot-num{color:var(--ok)}
+.tot-lbl{font-size:10.5px;color:var(--g500);font-weight:500}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{padding:10px 14px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.05em;color:var(--g500);border-bottom:1px solid var(--g200);background:var(--g50)}
+thead th.r{text-align:right}
+tbody td{padding:9px 14px;border-bottom:1px solid var(--g100)}
+tbody td.r{text-align:right;font-weight:700;color:var(--ok)}
+tbody td.muted{font-size:11px;color:var(--g500)}
+.tbl-wrap{overflow-x:auto;border-radius:9px;border:1px solid var(--g200);background:#fff}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="ico">🔢</div>
+    <div>
+      <h1>Contador ADP</h1>
+      <p>Conta linhas válidas por aba em arquivos ADP</p>
+    </div>
+    <a class="back-link" href="https://falssp.github.io/Projeto-NC/">← NC Tools</a>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-hdr">
+      <div style="flex:1">
+        <div class="tool-title">Contador de Linhas — ADP</div>
+        <div class="tool-desc">Lê as 6 abas do ADP e conta linhas válidas vs. linhas de exemplo por aba</div>
+      </div>
+      <div class="tool-actions">
+        <button class="btn btn-g" onclick="cntReset()">Limpar</button>
+      </div>
+    </div>
+    <div class="tool-body">
+
+      <div class="ib">
+        <strong>Critério:</strong> cada aba tem linhas fixas de exemplo no topo, que <strong>não entram</strong> na contagem —
+        <strong>Google, Programmatic e Youtube:</strong> linhas 15 e 16 ·
+        <strong>Flashtalking:</strong> linha 15 ·
+        <strong>Meta e Tiktok:</strong> linhas 15 a 18 ·
+        <strong>Pinterest, Snapchat e Twitter:</strong> linhas 15 a 17.
+        A contagem usa a coluna D (Ad Name) para validar se a linha tem conteúdo.
+        Múltiplos arquivos podem ser carregados de uma vez.
+      </div>
+
+      <div class="uz" id="cnt-drop"
+        onclick="document.getElementById('cnt-file-input').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="cntHandleDrop(event)">
+        <div class="uz-icon">📊</div>
+        <h3>Clique ou arraste o arquivo ADP</h3>
+        <p>Múltiplos arquivos suportados · .xlsx .xls</p>
+        <input type="file" id="cnt-file-input" accept=".xlsx,.xls" multiple onchange="cntHandleFiles(this.files)">
+      </div>
+
+      <div id="cnt-file-info" style="display:none;margin-bottom:16px" class="fitem">
+        <span>📊</span>
+        <span class="fn" id="cnt-file-name"></span>
+        <span class="fsz" id="cnt-file-abas"></span>
+      </div>
+
+      <div id="cnt-result" style="display:none">
+        <div class="totals" id="cnt-totals"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Aba</th>
+                <th class="r">Válidas</th>
+                <th>Arquivo</th>
+              </tr>
+            </thead>
+            <tbody id="cnt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script>
+var CNT_ABA_CFG = {
+  'Google':                        {dataStart: 16},
+  'Programmatic':                  {dataStart: 16},
+  'Youtube':                       {dataStart: 16},
+  'Meta e Tiktok':                 {dataStart: 19},
+  'Pinterest, Snapchat e Twitter': {dataStart: 19},
+  'Flashtalking':                  {dataStart: 16}
+};
+var CNT_ABA_KEYS = Object.keys(CNT_ABA_CFG);
+
+function cntDetectAba(name) {
+  var n = name.toLowerCase().trim();
+  if (n === 'google' || n === 'google ads') return 'Google';
+  if (n === 'programmatic' || n === 'prog') return 'Programmatic';
+  if (n === 'youtube' || n === 'yt') return 'Youtube';
+  if (n === 'meta e tiktok' || n === 'meta & tiktok') return 'Meta e Tiktok';
+  if (n === 'pinterest, snapchat e twitter' || n === 'pinterest, snapchat e x') return 'Pinterest, Snapchat e Twitter';
+  if (n === 'flashtalking' || n === 'flash talking' || n === 'flash') return 'Flashtalking';
+  return null;
+}
+
+function cntHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('cnt-drop').classList.remove('drag');
+  if (e.dataTransfer.files.length) cntHandleFiles(e.dataTransfer.files);
+}
+
+function cntHandleFiles(files) {
+  if (!files || !files.length) return;
+  var fileArr = Array.from(files);
+  var done = 0, rows = [];
+
+  fileArr.forEach(function(f) {
+    var r = new FileReader();
+    r.onload = function(ev) {
+      try {
+        var wb = XLSX.read(ev.target.result, {type: 'binary', sheetStubs: false});
+        wb.SheetNames.forEach(function(sn) {
+          var abaKey = cntDetectAba(sn);
+          if (!abaKey) return;
+          var cfg = CNT_ABA_CFG[abaKey];
+          var ws = wb.Sheets[sn];
+          if (!ws) return;
+          var data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: '', raw: false});
+          var validas = 0;
+          for (var i = cfg.dataStart; i < data.length; i++) {
+            var colD = String(data[i][3] || '').trim();
+            if (colD) validas++;
+          }
+          rows.push({aba: abaKey, shName: sn, validas: validas, file: f.name});
+        });
+      } catch(e) { console.error(e); }
+      done++;
+      if (done === fileArr.length) cntRenderResult(rows, fileArr);
+    };
+    r.readAsBinaryString(f);
+  });
+}
+
+function cntRenderResult(rows, fileArr) {
+  if (!rows.length) return;
+
+  rows.sort(function(a, b) {
+    return CNT_ABA_KEYS.indexOf(a.aba) - CNT_ABA_KEYS.indexOf(b.aba);
+  });
+
+  var totalValidas = rows.reduce(function(s, r) { return s + r.validas; }, 0);
+
+  document.getElementById('cnt-totals').innerHTML =
+    '<div class="tot-card"><div class="tot-num">' + rows.length + '</div><div class="tot-lbl">Abas lidas</div></div>' +
+    '<div class="tot-card ok"><div class="tot-num">' + totalValidas + '</div><div class="tot-lbl">Total válidas</div></div>';
+
+  document.getElementById('cnt-tbody').innerHTML = rows.map(function(r) {
+    return '<tr>' +
+      '<td style="font-weight:500">' + r.aba + '</td>' +
+      '<td class="r">' + r.validas + '</td>' +
+      '<td class="muted">' + r.file + '</td>' +
+      '</tr>';
+  }).join('');
+
+  document.getElementById('cnt-file-info').style.display = 'flex';
+  document.getElementById('cnt-file-name').textContent = fileArr.length === 1 ? fileArr[0].name : fileArr.length + ' arquivos';
+  document.getElementById('cnt-file-abas').textContent = rows.length + ' aba(s) detectada(s)';
+  document.getElementById('cnt-result').style.display = 'block';
+}
+
+function cntReset() {
+  document.getElementById('cnt-file-input').value = '';
+  document.getElementById('cnt-file-info').style.display = 'none';
+  document.getElementById('cnt-result').style.display = 'none';
+  document.getElementById('cnt-totals').innerHTML = '';
+  document.getElementById('cnt-tbody').innerHTML = '';
+  document.getElementById('cnt-drop').classList.remove('loaded');
+}
+</script>
+</body>
+</html>

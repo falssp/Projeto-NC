@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extrator de Links · NC Tools</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#1F36C7;--ul-l:#E8ECFB;--ul-m:#4A5FD4;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F8F9FA;--g100:#F1F3F5;--g200:#E9ECEF;--g300:#DEE2E6;
+  --g500:#868E96;--g700:#495057;--g900:#212529;
+  --fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:20px}
+.header{max-width:860px;margin:0 auto 20px;display:flex;align-items:center;gap:12px}
+.header .ico{width:38px;height:38px;border-radius:10px;background:var(--ul-l);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.header h1{font-size:16px;font-weight:600}
+.header p{font-size:12px;color:var(--g500);margin-top:2px}
+.card{max-width:860px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden;margin-bottom:16px}
+.card-hdr{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.card-hdr h2{font-size:13.5px;font-weight:600;flex:1}
+.card-body{padding:16px 18px 18px}
+.ext-tabs{display:flex;gap:6px;margin-bottom:12px}
+.ext-tab{padding:5px 16px;border-radius:16px;font-size:12px;font-weight:500;border:1px solid var(--g300);background:#fff;cursor:pointer;font-family:var(--fn);transition:all .15s}
+.ext-tab.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+.ext-input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.ext-input-row input{flex:1;padding:8px 12px;border:1px solid var(--g300);border-radius:7px;font-family:var(--mo);font-size:12px;outline:none;background:#fff;color:var(--g900);transition:border-color .15s}
+.ext-input-row input:focus{border-color:var(--ul)}
+.ext-single-result{margin-top:10px}
+.ext-handle-box{display:inline-flex;align-items:center;gap:10px;background:var(--g50);border:1px solid var(--g200);border-radius:8px;padding:10px 14px}
+.ext-net-badge{font-size:11px;font-weight:600;color:#fff;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.ext-handle-val{font-family:var(--mo);font-size:14px;font-weight:600;color:var(--g900)}
+.ext-copy-btn{background:none;border:1px solid var(--g300);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:13px;color:var(--g500);transition:all .15s}
+.ext-copy-btn:hover{background:var(--g100);color:var(--g900)}
+.ext-copy-btn.copied{background:var(--ok-b);border-color:var(--ok);color:var(--ok)}
+#ext-urls{width:100%;height:160px;border:1px solid var(--g300);border-radius:7px;padding:9px 12px;font-family:var(--mo);font-size:11px;resize:vertical;outline:none;background:#fff;line-height:1.7;color:var(--g900);transition:border-color .15s}
+#ext-urls:focus{border-color:var(--ul)}
+.ext-batch-footer{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.mf-count{font-size:10.5px;color:var(--g500)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff}.btn-p:hover{background:var(--ul-m)}
+.btn-g{background:none;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.ext-tbl-wrap{overflow-x:auto;border-radius:9px;border:1px solid var(--g200);margin-top:14px}
+.ext-tbl-wrap table{width:100%;border-collapse:collapse;font-size:12px}
+.ext-tbl-wrap th{padding:8px 13px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.04em;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200);white-space:nowrap}
+.ext-tbl-wrap td{padding:7px 13px;border-bottom:1px solid var(--g100);vertical-align:middle}
+.ext-tbl-wrap tr:last-child td{border-bottom:none}
+.ext-tbl-wrap tr:hover td{background:var(--g50)}
+.ext-net-chip{display:inline-block;font-size:10px;font-weight:600;color:#fff;padding:1px 7px;border-radius:4px;white-space:nowrap}
+.net-ig{background:#C13584}.net-tt{background:#010101;color:#fff}.net-yt{background:#FF0000}
+.net-tw{background:#1DA1F2}.net-fb{background:#1877F2}.net-li{background:#0A66C2}
+.net-pi{background:#E60023}.net-sc{background:#FFFC00;color:#000}.net-tv{background:#9146FF}
+.net-kw{background:#FF6500}.net-xx{background:#888}
+.ext-handle-mono{font-family:var(--mo);font-size:11.5px}
+.ext-url-short{font-family:var(--mo);font-size:10.5px;color:var(--g500);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
+.ib{background:var(--ul-l);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:14px;line-height:1.55}
+.ib strong{font-weight:600}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="ico">🔗</div>
+  <div>
+    <h1>Extrator de Links de Influencer</h1>
+    <p>Cole links de redes sociais, remove duplicatas e extrai perfil por plataforma</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-hdr">
+    <h2>Extrair</h2>
+  </div>
+  <div class="card-body">
+    <div class="ext-tabs">
+      <button class="ext-tab active" onclick="setExtTab('single',this)">Um por vez</button>
+      <button class="ext-tab" onclick="setExtTab('batch',this)">Em lote</button>
+    </div>
+
+    <div id="ext-single">
+      <div class="ext-input-row">
+        <input type="text" id="ext-url" placeholder="https://www.instagram.com/fulano/?hl=pt-br" oninput="extSingleRun()" />
+        <button class="btn btn-g" onclick="extClearSingle()">Limpar</button>
+      </div>
+      <div id="ext-single-result" class="ext-single-result" style="display:none"></div>
+    </div>
+
+    <div id="ext-batch" style="display:none">
+      <div class="ib"><strong>Em lote:</strong> Cole um ou mais links por linha. Duplicatas (pela URL canônica) são removidas automaticamente na cópia para Sheets.</div>
+      <textarea id="ext-urls" placeholder="Cole os links aqui, um por linha…" oninput="extBatchCount()"></textarea>
+      <div class="ext-batch-footer">
+        <span class="mf-count" id="ext-batch-count">0 linhas</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-g" onclick="extClearBatch()">Limpar</button>
+          <button class="btn btn-p" onclick="extBatchRun()">🔗 Extrair</button>
+        </div>
+      </div>
+      <div id="ext-batch-result"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var NET_COLORS={Instagram:'net-ig',TikTok:'net-tt',YouTube:'net-yt','Twitter/X':'net-tw',Facebook:'net-fb',LinkedIn:'net-li',Pinterest:'net-pi',Snapchat:'net-sc',Twitch:'net-tv',Kwai:'net-kw',Outro:'net-xx'};
+
+function detectNet(url){
+  if(/instagram\.com/i.test(url))return'Instagram';if(/tiktok\.com/i.test(url))return'TikTok';
+  if(/youtube\.com|youtu\.be/i.test(url))return'YouTube';if(/twitter\.com|x\.com/i.test(url))return'Twitter/X';
+  if(/facebook\.com/i.test(url))return'Facebook';if(/linkedin\.com/i.test(url))return'LinkedIn';
+  if(/pinterest\.com/i.test(url))return'Pinterest';if(/snapchat\.com/i.test(url))return'Snapchat';
+  if(/twitch\.tv/i.test(url))return'Twitch';if(/kwai\.com/i.test(url))return'Kwai';
+  if(/chatgpt\.com|chat\.openai\.com/i.test(url))return'ChatGPT';if(/threads\.net/i.test(url))return'Threads';
+  if(/bsky\.app/i.test(url))return'Bluesky';if(/t\.me/i.test(url))return'Telegram';
+  if(/bereal\.com/i.test(url))return'BeReal';if(/triller\.co/i.test(url))return'Triller';
+  if(/rumble\.com/i.test(url))return'Rumble';if(/kick\.com/i.test(url))return'Kick';
+  if(/discord\.(?:com|gg)/i.test(url))return'Discord';if(/reddit\.com/i.test(url))return'Reddit';
+  return'Outro';
+}
+
+function extractHandle(url){
+  url=url.trim();if(!url)return'';
+  var h='';
+  var mIG=url.match(/instagram\.com\/([^/?#]+)/i);
+  if(mIG){h=mIG[1];}
+  else{var mYC=url.match(/youtube\.com\/(?:c|user)\/([^/?#]+)/i);
+    if(mYC){h=mYC[1];}
+    else{var mAt=url.match(/@([^/?#&\s]+)/);
+      if(mAt){h=mAt[1];}
+      else{var mGen=url.match(/(?:facebook\.com|linkedin\.com\/in|linkedin\.com\/company|pinterest\.com)\/([^/?#]+)/i);
+        if(mGen){h=mGen[1];}}}}
+  return h.replace(/[^A-Za-z0-9._-]/g,'');
+}
+
+function canonicalUrl(url){
+  url=url.trim().toLowerCase();
+  url=url.replace(/^https?:\/\/(www\.)?/,'');
+  url=url.replace(/[?#].*$/,'');
+  url=url.replace(/\/+$/,'');
+  return url;
+}
+
+function isValidUrl(s){
+  s=s.trim();
+  var md=s.match(/\[.*?\]\((https?:\/\/[^\)]+)\)/);if(md)s=md[1];
+  if(!s||s.toLowerCase()==='na'||s.toLowerCase()==='n/a')return false;
+  if(/^https?:\/\//i.test(s))return true;
+  if(/^(www\.|instagram\.|tiktok\.|youtube\.|twitter\.|x\.|facebook\.|linkedin\.|pinterest\.)/i.test(s))return true;
+  return false;
+}
+
+function normalizeUrl(s){
+  s=s.trim();
+  var md=s.match(/\[.*?\]\((https?:\/\/[^\)]+)\)/);if(md)return md[1];
+  if(/^https?:\/\//i.test(s))return s;
+  return 'https://'+s;
+}
+
+function setExtTab(mode,el){
+  document.querySelectorAll('.ext-tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('ext-single').style.display=mode==='single'?'':'none';
+  document.getElementById('ext-batch').style.display=mode==='batch'?'':'none';
+}
+
+function extSingleRun(){
+  var raw=document.getElementById('ext-url').value;
+  var res=document.getElementById('ext-single-result');
+  var tokens=raw.split(/[\n\s]+/).map(function(t){return t.trim();}).filter(isValidUrl).map(normalizeUrl);
+  if(tokens.length>1){
+    res.style.display='';
+    res.innerHTML='<div class="ib" style="background:var(--warn-b);border-color:#e0c070;color:var(--warn);margin-top:8px">'+
+      '<strong>'+tokens.length+' links detectados.</strong> O modo "Um por vez" aceita apenas um link. '+
+      '<button class="btn btn-g" style="margin-left:8px;padding:3px 10px;font-size:11.5px" '+
+      'onclick="extPassToLote()">Usar em lote →</button></div>';
+    return;
+  }
+  var url=tokens.length===1?tokens[0]:normalizeUrl(raw.trim());
+  if(!url||!isValidUrl(url)){res.style.display='none';return;}
+  var handle=extractHandle(url),net=detectNet(url);
+  res.style.display='';
+  res.innerHTML='<div class="ext-handle-box">'+
+    '<span class="ext-net-badge '+(NET_COLORS[net]||'net-xx')+'">'+esc(net)+'</span>'+
+    '<span class="ext-handle-val" id="ext-handle-val">'+esc(handle||'—')+'</span>'+
+    '<button class="ext-copy-btn" onclick="extCopy(\'ext-handle-val\',this)" title="Copiar">⎘</button>'+
+    '</div>';
+}
+
+function extPassToLote(){
+  var raw=document.getElementById('ext-url').value;
+  var tokens=raw.split(/[\n\s]+/).map(function(t){return t.trim();}).filter(isValidUrl);
+  document.getElementById('ext-urls').value=tokens.join('\n');
+  extBatchCount();
+  var tabs=document.querySelectorAll('.ext-tab');
+  tabs.forEach(function(t){t.classList.remove('active');});
+  tabs[1].classList.add('active');
+  document.getElementById('ext-single').style.display='none';
+  document.getElementById('ext-batch').style.display='';
+  document.getElementById('ext-url').value='';
+  document.getElementById('ext-single-result').style.display='none';
+}
+
+function extClearSingle(){document.getElementById('ext-url').value='';document.getElementById('ext-single-result').style.display='none';}
+
+function extBatchCount(){
+  var raw=document.getElementById('ext-urls').value.trim();
+  var lines=raw?raw.split('\n').map(function(l){return l.trim();}).filter(Boolean):[];
+  var valid=lines.filter(isValidUrl).length;
+  document.getElementById('ext-batch-count').textContent=lines.length+' linha'+(lines.length!==1?'s':'')+' · '+valid+' válida'+(valid!==1?'s':'');
+}
+
+function extClearBatch(){document.getElementById('ext-urls').value='';extBatchCount();document.getElementById('ext-batch-result').innerHTML='';}
+
+function extBatchRun(){
+  var raw=document.getElementById('ext-urls').value.trim();
+  var lines=raw?raw.split('\n').map(function(l){return l.trim();}).filter(Boolean):[];
+  var valid=lines.filter(isValidUrl).map(normalizeUrl);
+  if(!valid.length)return;
+  var html='';
+  html+='<div class="ext-tbl-wrap"><table><thead><tr><th>#</th><th>Link</th><th>Plataforma</th><th>Perfil</th></tr></thead><tbody>';
+  valid.forEach(function(url,i){
+    var handle=extractHandle(url),net=detectNet(url);
+    var chip='<span class="ext-net-chip '+(NET_COLORS[net]||'net-xx')+'">'+esc(net)+'</span>';
+    var short=url.replace(/^https?:\/\/(www\.)?/,'');
+    if(short.length>55)short=short.slice(0,53)+'…';
+    html+='<tr><td style="color:var(--g500);font-size:11px">'+(i+1)+'</td>'+
+      '<td><span class="ext-url-short" title="'+esc(url)+'">'+esc(short)+'</span></td>'+
+      '<td>'+chip+'</td>'+
+      '<td><span class="ext-handle-mono">'+esc(handle||'—')+'</span></td></tr>';
+  });
+  html+='</tbody></table></div>';
+  var seen={},uniqueCount=0;
+  valid.forEach(function(url){var k=canonicalUrl(url);if(!seen[k]){seen[k]=true;uniqueCount++;}});
+  var dupCount=valid.length-uniqueCount;
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px">'+
+    '<span style="font-size:11px;color:var(--g500)">'+valid.length+' linha'+(valid.length!==1?'s':'')+
+    ' · <strong>'+uniqueCount+' único'+(uniqueCount!==1?'s':'')+' para o Sheets</strong>'+
+    (dupCount?' · '+dupCount+' duplicata'+(dupCount>1?'s':'')+' serão removidas na cópia':'')+
+    '</span>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn btn-g" onclick="extCopyTable()">⎘ Copiar Perfis (únicos)</button>'+
+    '<button class="btn btn-g" onclick="extCopyTableTSV()">⎘ Copiar Tabela (TSV)</button>'+
+    '</div></div>';
+  document.getElementById('ext-batch-result').innerHTML=html;
+}
+
+function extCopyTable(){
+  var raw=document.getElementById('ext-urls').value.trim();
+  var lines=raw?raw.split('\n').map(function(l){return l.trim();}).filter(isValidUrl).map(normalizeUrl):[];
+  var seen={},handles=[];
+  lines.forEach(function(url){var k=canonicalUrl(url);if(!seen[k]){seen[k]=true;handles.push(extractHandle(url));}});
+  navigator.clipboard.writeText(handles.join('\n')).then(function(){
+    var btns=document.querySelectorAll('[onclick="extCopyTable()"]');
+    btns.forEach(function(b){b.textContent='✓ Copiado';setTimeout(function(){b.textContent='⎘ Copiar Perfis (únicos)';},2000);});
+  });
+}
+
+function extCopyTableTSV(){
+  var raw=document.getElementById('ext-urls').value.trim();
+  var lines=raw?raw.split('\n').map(function(l){return l.trim();}).filter(isValidUrl).map(normalizeUrl):[];
+  var rows=lines.map(function(url){return[url,detectNet(url),extractHandle(url)].join('\t');});
+  navigator.clipboard.writeText(rows.join('\n')).then(function(){
+    var btns=document.querySelectorAll('[onclick="extCopyTableTSV()"]');
+    btns.forEach(function(b){b.textContent='✓ Copiado';setTimeout(function(){b.textContent='⎘ Copiar Tabela (TSV)';},2000);});
+  });
+}
+
+function extCopy(id,btn){
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(function(){
+    btn.classList.add('copied');btn.textContent='✓';
+    setTimeout(function(){btn.classList.remove('copied');btn.textContent='⎘';},2000);
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,783 @@
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de IDs · NC Tools</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#1F36C7;--ul-l:#E8ECFB;--ul-m:#4A5FD4;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F8F9FA;--g100:#F1F3F5;--g200:#E9ECEF;--g300:#DEE2E6;
+  --g400:#CED4DA;--g500:#868E96;--g700:#495057;--g900:#212529;
+  --fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:24px 16px}
+.page-wrap{max-width:900px;margin:0 auto}
+
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.page-header .ico{width:40px;height:40px;border-radius:10px;background:var(--ul-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.page-header h1{font-size:18px;font-weight:700}
+.page-header p{font-size:12px;color:var(--g500);margin-top:2px}
+.back-link{margin-left:auto;font-size:12px;color:var(--ul);text-decoration:none;font-weight:500}
+.back-link:hover{text-decoration:underline}
+
+.tool-card{background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden}
+.tool-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.tool-title{font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:1px}
+.tool-desc{font-size:11px;color:var(--g500)}
+.tool-body{padding:18px}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff}.btn-p:hover{background:var(--ul-m)}
+.btn-g{background:none;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.btn-danger{background:#C0392B;color:#fff}.btn-danger:hover{background:#a93226}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+.ib{background:var(--ul-l);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:14px;line-height:1.55}
+.ib.warn{background:var(--warn-b);border-color:#e0c070;color:var(--warn)}
+.ib strong{font-weight:600}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+/* steps */
+.gid-steps{display:flex;align-items:center;margin-bottom:20px}
+.gid-step{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--g400)}
+.gid-step.done{color:var(--ok)}.gid-step.active{color:var(--g900);font-weight:500}
+.gid-sn{width:24px;height:24px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.gid-step.done .gid-sn{background:var(--ok-b);border-color:var(--ok);color:var(--ok)}
+.gid-step.active .gid-sn{background:var(--ul);border-color:var(--ul);color:#fff}
+.gid-ssep{flex:1;max-width:40px;height:1.5px;background:var(--g300);margin:0 8px}
+.gid-sec{display:none}.gid-sec.active{display:block}
+
+/* card */
+.gid-card{background:#fff;border:1px solid var(--g200);border-radius:11px;padding:20px 22px;margin-bottom:14px}
+
+/* plataforma grid */
+.gid-plat-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.gid-tabs{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.gid-tab{padding:5px 12px;border-radius:6px;border:1px solid var(--g200);font-size:12px;cursor:pointer;background:transparent;color:var(--g500);font-weight:500;font-family:var(--fn);transition:all .15s}
+.gid-tab:hover{background:var(--g100)}
+.gid-tab.active{background:var(--ul);color:#fff;border-color:transparent}
+.gid-search-wrap{position:relative;min-width:160px}
+.gid-search-wrap input{width:100%;padding:6px 10px 6px 30px;border:1px solid var(--g200);border-radius:6px;font-size:12px;background:var(--g50);outline:none}
+.gid-search-wrap input:focus{border-color:var(--ul)}
+.gid-search-ico{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--g400);font-size:13px;pointer-events:none}
+.gid-search-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.gid-tab-empty{text-align:center;padding:24px;color:var(--g400);font-size:13px}
+.gid-plat-btn{border:none;border-radius:8px;padding:16px 12px;cursor:pointer;text-align:center;transition:all .15s;width:100%}
+.gid-plat-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.gid-plat-btn .pname{font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* lote */
+.gid-lote-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--g100);border-radius:8px;margin-bottom:5px}
+.gid-lote-plat{display:flex;align-items:center;gap:7px;flex:1;font-size:13px;font-weight:500}
+.gid-badge{display:inline-flex;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mo)}
+.gid-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.gid-lote-qty{display:flex;align-items:center;gap:6px}
+.gid-qty-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--g300);background:#fff;cursor:pointer;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;color:var(--g700)}
+.gid-qty-btn:hover{background:var(--g100)}
+.gid-qty-val{width:52px;text-align:center;font-size:13px;font-weight:600;border:1px solid var(--g300);border-radius:5px;padding:3px 4px;font-family:var(--mo)}
+.gid-lote-remove{background:none;border:none;cursor:pointer;color:var(--g400);font-size:16px;padding:2px 4px}
+.gid-lote-remove:hover{color:var(--err)}
+.gid-lote-empty{text-align:center;padding:24px;color:var(--g400);font-size:13px;border:2px dashed var(--g200);border-radius:8px}
+
+/* resumo cards */
+.gid-resumo{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.gid-rcard{background:#fff;border:2px solid var(--g200);border-radius:10px;padding:14px 16px;flex:1;min-width:100px}
+.gid-rcard .num{font-size:26px;font-weight:700;margin-bottom:3px}
+.gid-rcard .lbl{font-size:11px;color:var(--g500);font-weight:500}
+.gid-rcard.ct{border-color:var(--ul-l)}.gid-rcard.ct .num{color:var(--ul)}
+.gid-rcard.cs{border-color:var(--ok-b)}.gid-rcard.cs .num{color:var(--ok)}
+.gid-rcard.ca{border-color:#FFF3D4}.gid-rcard.ca .num{color:#B45309}
+
+/* table */
+.gid-ptw{overflow-x:auto;border-radius:9px;border:1px solid var(--g200);background:#fff;margin-bottom:14px}
+.gid-ptw table{width:100%;border-collapse:collapse;font-size:12px}
+.gid-ptw th{padding:9px 14px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.05em;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200)}
+.gid-ptw td{padding:8px 14px;border-bottom:1px solid var(--g100);vertical-align:middle}
+.gid-ptw tr:last-child td{border-bottom:none}
+.cm{font-family:var(--mo);font-size:11px}
+
+/* progress */
+.gid-prog-wrap{display:none;margin:12px 0}
+.gid-prog-wrap.show{display:block}
+.gid-prog-bar{height:6px;background:var(--g200);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.gid-prog-fill{height:100%;background:var(--ul);border-radius:3px;transition:width .4s;width:0%}
+.gid-prog-txt{font-size:12px;color:var(--g500);text-align:center}
+
+/* status bar */
+.gid-sbar{display:none;align-items:center;gap:8px;padding:10px 14px;border-radius:7px;font-size:12.5px;margin-bottom:12px;line-height:1.4}
+.gid-sbar.ok{display:flex;background:var(--ok-b);color:var(--ok)}
+.gid-sbar.err{display:flex;background:var(--err-b);color:var(--err)}
+.gid-sbar.warn{display:flex;background:var(--warn-b);color:var(--warn)}
+.gid-sbar.info{display:flex;background:var(--ul-l);color:var(--ul)}
+
+.gid-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0;margin-bottom:8px}
+
+/* IDs resultado */
+.gid-res-section{margin-bottom:14px}
+.gid-res-section h3{font-size:12px;font-weight:600;color:var(--g700);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.gid-ids-grid{display:flex;flex-direction:column;gap:4px}
+.gid-id-row{display:flex;align-items:center;gap:10px;padding:7px 12px;background:var(--g50);border:1px solid var(--g200);border-radius:8px;font-family:var(--mo);font-size:12px}
+.gid-id-row .id-val{flex:1;font-weight:500}
+.gid-id-row .id-plat{font-size:10px;color:var(--g500)}
+.gid-copy-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:500;background:var(--g100);border:1px solid var(--g200);cursor:pointer;color:var(--g700);font-family:var(--fn)}
+.gid-copy-btn:hover{background:var(--g200)}
+.gid-copy-btn.copied{background:var(--ok-b);color:var(--ok);border-color:var(--ok-b)}
+
+.gid-adname-ok{color:var(--ok);font-weight:600}
+.gid-adname-warn{color:var(--warn);font-weight:600}
+.gid-adname-err{color:var(--err);font-weight:600}
+
+/* export dropdown */
+.gid-exp-wrap{position:relative}
+.gid-exp-dd{position:fixed;background:#fff;border:1px solid var(--g200);border-radius:9px;box-shadow:0 4px 20px rgba(0,0,0,.2);min-width:200px;z-index:9999;overflow:hidden;display:none}
+.gid-exp-dd.open{display:block}
+.gid-exp-dd button{display:flex;align-items:center;gap:9px;width:100%;padding:10px 14px;font-family:var(--fn);font-size:13px;border:none;background:none;cursor:pointer;color:var(--g900)}
+.gid-exp-dd button:hover{background:var(--g50)}
+
+/* modal */
+.gid-modal-bg{position:fixed;inset:0;background:rgba(10,15,50,.55);backdrop-filter:blur(2px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.gid-modal-bg.open{display:flex}
+.gid-modal{background:#fff;border-radius:16px;padding:32px 28px 24px;max-width:400px;width:100%;box-shadow:0 16px 60px rgba(0,0,0,.25);text-align:center}
+.gid-modal .mi{font-size:44px;margin-bottom:14px}
+.gid-modal h3{font-size:17px;font-weight:700;margin-bottom:10px}
+.gid-modal p{font-size:13px;color:var(--g700);line-height:1.6;margin-bottom:4px}
+.gid-modal .sub{font-size:12px;color:var(--g500);margin-bottom:24px;margin-top:6px}
+.gid-modal .ma{display:flex;gap:10px;justify-content:center}
+.gid-modal .ma .btn{flex:1;justify-content:center;padding:11px 18px;font-size:14px}
+
+/* PL wrap */
+.gid-pl-wrap{background:var(--g100);border-radius:8px;padding:12px 14px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="ico">🪪</div>
+    <div>
+      <h1>Gerador de IDs</h1>
+      <p>Cria linhas e IDs SX/AMZ nas planilhas em uma operação</p>
+    </div>
+    <a class="back-link" href="https://falssp.github.io/Projeto-NC/">← NC Tools</a>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-hdr">
+      <div style="flex:1">
+        <div class="tool-title">Gerador de IDs</div>
+        <div class="tool-desc">Seleciona plataformas, confirma o lote e gera IDs SX/AMZ nas planilhas via GAS</div>
+      </div>
+    </div>
+    <div class="tool-body">
+
+      <div class="ib warn">
+        <strong>⚙️ Configuração necessária:</strong> edite as constantes <code>GID_PROXY</code> e <code>NC_TOKEN</code> no início do script com os valores do seu ambiente.
+      </div>
+
+      <div class="gid-steps">
+        <div class="gid-step active" id="gid-s1"><div class="gid-sn">1</div>Montar lote</div>
+        <div class="gid-ssep"></div>
+        <div class="gid-step" id="gid-s2"><div class="gid-sn">2</div>Confirmar</div>
+        <div class="gid-ssep"></div>
+        <div class="gid-step" id="gid-s3"><div class="gid-sn">3</div>IDs gerados</div>
+        <div class="gid-ssep"></div>
+        <div class="gid-step" id="gid-s4"><div class="gid-sn">4</div>Colar Ad Names</div>
+        <div class="gid-ssep"></div>
+        <div class="gid-step" id="gid-s5"><div class="gid-sn">5</div>Concluído</div>
+      </div>
+
+      <!-- SEC 1 -->
+      <div class="gid-sec active" id="gid-sec1">
+        <div class="gid-card">
+          <div class="ib" id="gid-counters-bar">⟳ Carregando contadores...</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <p style="font-size:11px;font-weight:700;color:var(--g700);letter-spacing:.05em;text-transform:uppercase">Selecione a plataforma</p>
+            <button class="btn btn-p" style="font-size:12px;padding:7px 14px" onclick="gidAbrirPL()">📋 Planejamento Livre</button>
+          </div>
+          <div id="gid-plat-grid"></div>
+
+          <div id="gid-pl-wrap" style="display:none" class="gid-pl-wrap">
+            <p style="font-size:11px;font-weight:700;color:var(--g700);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Planejamento Livre</p>
+            <p style="font-size:12px;color:var(--g500);margin-bottom:10px">Cole as plataformas separadas por espaço, vírgula ou quebra de linha.<br>Ex: <code>TikTok TikTok Meta Meta YouTube</code></p>
+            <textarea id="gid-pl-input" rows="4" placeholder="TikTok TikTok Meta YouTube..."
+              style="width:100%;border:1px solid var(--g300);border-radius:7px;padding:8px 10px;font-family:var(--mo);font-size:12px;resize:vertical;outline:none"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-p" style="font-size:12px" onclick="gidProcessarPL()">Adicionar à seleção</button>
+              <button class="btn btn-g" style="font-size:12px" onclick="gidFecharPL()">Cancelar</button>
+            </div>
+            <div class="gid-sbar" id="gid-st-pl" style="margin-top:8px"></div>
+          </div>
+
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span style="font-size:11px;font-weight:700;color:var(--g700);letter-spacing:.05em;text-transform:uppercase">Seleção</span>
+              <button class="btn btn-g" style="font-size:11px;padding:3px 10px" onclick="gidLimparLote()">✕ Limpar</button>
+            </div>
+            <div id="gid-lote-list"><div class="gid-lote-empty">Selecione uma plataforma para começar</div></div>
+          </div>
+        </div>
+        <div class="gid-sbar" id="gid-st1"></div>
+        <div class="gid-actions">
+          <button class="btn btn-p" id="gid-btn1" onclick="gidGoPreview()" disabled>Ver resumo →</button>
+        </div>
+      </div>
+
+      <!-- SEC 2 -->
+      <div class="gid-sec" id="gid-sec2">
+        <div class="gid-card">
+          <div class="gid-resumo" id="gid-resumo-grid"></div>
+          <div class="gid-ptw">
+            <table>
+              <thead><tr>
+                <th>Plataforma</th>
+                <th style="width:60px;text-align:center">Qtd</th>
+                <th>Tipo ID</th>
+                <th>Próximo ID</th>
+              </tr></thead>
+              <tbody id="gid-preview-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="gid-sbar" id="gid-st2"></div>
+        <div class="gid-actions">
+          <button class="btn btn-g" onclick="gidGoStep(1)">← Voltar</button>
+          <button class="btn btn-danger" onclick="gidAbrirModal()">Gerar IDs agora</button>
+        </div>
+      </div>
+
+      <!-- SEC 3 -->
+      <div class="gid-sec" id="gid-sec3">
+        <div class="gid-card">
+          <div class="gid-resumo" id="gid-res-resumo"></div>
+          <div class="gid-sbar" id="gid-st3"></div>
+          <div class="gid-prog-wrap" id="gid-prog-wrap">
+            <div class="gid-prog-bar"><div class="gid-prog-fill" id="gid-prog-fill"></div></div>
+            <div class="gid-prog-txt" id="gid-prog-txt">Gerando IDs...</div>
+          </div>
+          <div class="gid-actions">
+            <div class="gid-exp-wrap" id="gid-exp-wrap" style="display:none">
+              <button class="btn btn-g" onclick="gidToggleExp(event)">Exportar ▾</button>
+              <div class="gid-exp-dd" id="gid-exp-dd">
+                <button onclick="gidDoExp('csv')">📄 Exportar CSV</button>
+                <button onclick="gidDoExp('copy')">⎘ Copiar todos os IDs</button>
+                <button onclick="gidDoExp('sx')">⎘ Copiar só SX</button>
+                <button onclick="gidDoExp('amz')">⎘ Copiar só AMZ</button>
+              </div>
+            </div>
+            <button class="btn btn-p" onclick="gidIrPasso4()">Colar Ad Names →</button>
+            <button class="btn btn-g" onclick="gidNovoLote()">↺ Nova seleção</button>
+          </div>
+          <div id="gid-res-ids"></div>
+        </div>
+        <div class="gid-actions">
+          <button class="btn btn-p" onclick="gidIrPasso4()">Colar Ad Names →</button>
+          <button class="btn btn-g" onclick="gidNovoLote()">↺ Nova seleção</button>
+        </div>
+      </div>
+
+      <!-- SEC 4 -->
+      <div class="gid-sec" id="gid-sec4">
+        <div class="gid-card">
+          <div class="ib">Cole os Ad Names abaixo — um por linha. Se o ID estiver no texto (ex: <code>-SX00004310</code>), é detectado automaticamente. Caso contrário, os IDs do lote atual são associados em ordem.</div>
+          <div class="gid-sbar" id="gid-st4"></div>
+          <textarea id="gid-adnames-input" rows="10" placeholder="jhe-energia-protagonista_infeed_retail_amazoncore_17s-SX00004310"
+            style="width:100%;font-family:var(--mo);font-size:12px;padding:10px 12px;border:1px solid var(--g300);border-radius:8px;resize:vertical;line-height:1.6;outline:none"></textarea>
+          <div id="gid-adnames-preview" style="margin-top:16px;display:none">
+            <div style="font-size:12px;font-weight:600;color:var(--g500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Associação detectada</div>
+            <div class="gid-ptw">
+              <table>
+                <thead><tr><th>Ad Name</th><th>ID detectado</th><th>Status</th></tr></thead>
+                <tbody id="gid-adnames-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="gid-actions">
+          <button class="btn btn-g" onclick="gidGoStep(3)">← Voltar</button>
+          <button class="btn btn-g" onclick="gidProcessarAdNames()">Verificar</button>
+          <button class="btn btn-p" id="gid-btn4-enviar" style="display:none" onclick="gidEnviarAdNames()">Salvar na planilha</button>
+          <button class="btn btn-g" onclick="gidNovoLote()">↺ Nova seleção</button>
+        </div>
+      </div>
+
+      <!-- SEC 5 -->
+      <div class="gid-sec" id="gid-sec5">
+        <div class="gid-card"><div id="gid-s5-resumo"></div><div id="gid-s5-orfaos" style="display:none;margin-top:16px"></div></div>
+        <div class="gid-actions"><button class="btn btn-p" onclick="gidNovoLote()">↺ Nova seleção</button></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="gid-modal-bg" id="gid-modal-bg">
+  <div class="gid-modal">
+    <div class="mi">⚠️</div>
+    <h3>Confirmar geração?</h3>
+    <p id="gid-modal-txt"></p>
+    <p class="sub">As linhas serão criadas nas duas planilhas. Não pode ser desfeito.</p>
+    <div class="ma">
+      <button class="btn btn-danger" onclick="gidConfirmarGerar()">Sim, gerar</button>
+      <button class="btn btn-g" onclick="gidFecharModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURAÇÃO ──────────────────────────────────────────────
+var GID_PROXY = 'https://script.google.com/macros/s/AKfycbxsWwjHesITTTtSefT8ALksQn50ap1DUb2BrR_JNfvjooBKgIKSVGFeshOIG1BTwzy4FQ/exec';
+var NC_TOKEN  = '9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67';
+// ─────────────────────────────────────────────────────────────
+
+var GID_PLATAFORMAS=[
+  {cat:"🛒 E-commerce"},
+  {nome:"Amazon",tipo:"AMZ",bg:"#FF9900",font:"#000"},
+  {nome:"Compra Direta",tipo:"SX",bg:"#6B7280",font:"#fff"},
+  {cat:"🎯 Performance / Programmatic"},
+  {nome:"CTV / OTT",tipo:"SX",bg:"#1A1A2E",font:"#fff"},
+  {nome:"Display",tipo:"SX",bg:"#0F9D58",font:"#fff"},
+  {nome:"DV360",tipo:"SX",bg:"#1967D2",font:"#fff"},
+  {nome:"Google Ads",tipo:"SX",bg:"#34A853",font:"#fff"},
+  {nome:"Programmatic",tipo:"SX",bg:"#7C3AED",font:"#fff"},
+  {nome:"Search",tipo:"SX",bg:"#4285F4",font:"#fff"},
+  {cat:"📱 Redes Sociais"},
+  {nome:"BeReal",tipo:"SX",bg:"#000000",font:"#fff"},
+  {nome:"Bluesky",tipo:"SX",bg:"#0085FF",font:"#fff"},
+  {nome:"ChatGPT",tipo:"SX",bg:"#10A37F",font:"#fff"},
+  {nome:"Discord",tipo:"SX",bg:"#5865F2",font:"#fff"},
+  {nome:"Facebook",tipo:"SX",bg:"#1877F2",font:"#fff"},
+  {nome:"Instagram",tipo:"SX",bg:"#E1306C",font:"#fff"},
+  {nome:"Kick",tipo:"SX",bg:"#53FC18",font:"#000"},
+  {nome:"Kwai",tipo:"SX",bg:"#FF5700",font:"#fff"},
+  {nome:"LinkedIn",tipo:"SX",bg:"#0A66C2",font:"#fff"},
+  {nome:"Meta",tipo:"SX",bg:"#0866FF",font:"#fff"},
+  {nome:"Pinterest",tipo:"SX",bg:"#E60023",font:"#fff"},
+  {nome:"Reddit",tipo:"SX",bg:"#FF4500",font:"#fff"},
+  {nome:"Rumble",tipo:"SX",bg:"#85C742",font:"#fff"},
+  {nome:"Snapchat",tipo:"SX",bg:"#FFFC00",font:"#000"},
+  {nome:"Telegram",tipo:"SX",bg:"#2AABEE",font:"#fff"},
+  {nome:"Threads",tipo:"SX",bg:"#000000",font:"#fff"},
+  {nome:"TikTok",tipo:"SX",bg:"#FF0050",font:"#fff"},
+  {nome:"Triller",tipo:"SX",bg:"#FF0050",font:"#fff"},
+  {nome:"Twitch",tipo:"SX",bg:"#9146FF",font:"#fff"},
+  {nome:"Twitter/X",tipo:"SX",bg:"#000000",font:"#fff"},
+  {nome:"YouTube",tipo:"SX",bg:"#FF0000",font:"#fff"},
+  {cat:"🎵 Streaming"},
+  {nome:"Spotify",tipo:"SX",bg:"#1DB954",font:"#000"},
+  {cat:"📺 TV / Broadcast"},
+  {nome:"Band",tipo:"SX",bg:"#005CA9",font:"#fff"},
+  {nome:"Globo",tipo:"SX",bg:"#E1001A",font:"#fff"},
+  {nome:"Record",tipo:"SX",bg:"#CC0000",font:"#fff"},
+  {nome:"SBT",tipo:"SX",bg:"#009B3A",font:"#fff"},
+  {cat:"🌐 Portais / Native Ads"},
+  {nome:"Outbrain",tipo:"SX",bg:"#FF6000",font:"#fff"},
+  {nome:"Taboola",tipo:"SX",bg:"#1D6AC9",font:"#fff"},
+  {nome:"Terra",tipo:"SX",bg:"#00A8E0",font:"#fff"},
+  {nome:"UOL",tipo:"SX",bg:"#FF6600",font:"#fff"}
+];
+
+var gidLote=[],gidContadores={},gidResultado=[],gidAdnamesParaEnviar=[];
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function gidInit(){
+  _gidRenderTabs();
+  _gidShowTabContent(null);
+  gidCarregarContadores();
+  fetch(GID_PROXY+'?action=ping').catch(function(){});
+}
+
+function gidCarregarContadores(tentativa){
+  tentativa=tentativa||1;
+  var bar=document.getElementById('gid-counters-bar');
+  if(tentativa===1)bar.innerHTML='⏳ Carregando contadores...';
+  fetch(GID_PROXY+'?action=contadores&token='+NC_TOKEN)
+    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível');return r.json();})
+    .then(function(d){
+      if(!d.ok)throw new Error(d.error);
+      gidContadores=d.contadores;
+      var html='Contadores atuais: ';
+      Object.keys(gidContadores).forEach(function(k){
+        html+='<strong>'+k+'</strong> → último: <strong>'+gidContadores[k].ultimo+'</strong> &nbsp;';
+      });
+      bar.innerHTML=html;
+    })
+    .catch(function(e){
+      if(tentativa<3){
+        setTimeout(function(){gidCarregarContadores(tentativa+1);},2000);
+        bar.innerHTML='⏳ Tentativa '+tentativa+'/3...';
+      }else{
+        bar.innerHTML='⚠️ Servidor indisponível. <button class="btn btn-g" style="font-size:11px;padding:2px 8px;margin-left:8px" onclick="gidCarregarContadores(1)">🔄 Tentar novamente</button> <span style="color:var(--g400);font-size:11px">— você ainda pode gerar IDs normalmente</span>';
+      }
+    });
+}
+
+function _gidAllPlats(){return GID_PLATAFORMAS.filter(function(p){return!p.cat;});}
+function _gidCats(){var cats=[];GID_PLATAFORMAS.forEach(function(p){if(p.cat)cats.push(p.cat);});return cats;}
+
+function _gidRenderTabs(){
+  var g=document.getElementById('gid-plat-grid');
+  var html='<div class="gid-plat-header"><div class="gid-tabs" id="gid-tabs">';
+  _gidCats().forEach(function(cat,i){
+    html+='<button class="gid-tab" data-cat-idx="'+i+'" onclick="gidSwitchTab(this)">'+esc(cat)+'</button>';
+  });
+  html+='</div><div class="gid-search-wrap"><span class="gid-search-ico">🔍</span><input type="text" placeholder="Buscar..." oninput="gidBuscar(this.value)" id="gid-search-inp"></div></div>';
+  html+='<div id="gid-tab-body"></div>';
+  g.innerHTML=html;
+}
+
+function gidSwitchTab(btn){
+  var wasActive=btn.classList.contains('active');
+  document.querySelectorAll('.gid-tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('gid-search-inp').value='';
+  if(wasActive){_gidShowTabContent(null);return;}
+  btn.classList.add('active');
+  _gidShowTabContent(_gidCats()[parseInt(btn.getAttribute('data-cat-idx'))]);
+}
+
+function _gidShowTabContent(cat){
+  var body=document.getElementById('gid-tab-body');
+  if(!cat){body.innerHTML='<div class="gid-tab-empty">Selecione uma categoria ou busque uma plataforma acima</div>';return;}
+  var plats=[],inCat=false;
+  GID_PLATAFORMAS.forEach(function(p){if(p.cat){inCat=(p.cat===cat);}else if(inCat)plats.push(p);});
+  body.innerHTML=_gidBuildGrid(plats);
+}
+
+function gidBuscar(q){
+  var body=document.getElementById('gid-tab-body');
+  document.querySelectorAll('.gid-tab').forEach(function(t){t.classList.remove('active');});
+  q=q.trim().toLowerCase();
+  if(!q){_gidShowTabContent(null);return;}
+  var found=_gidAllPlats().filter(function(p){return p.nome.toLowerCase().indexOf(q)!==-1;});
+  body.innerHTML=found.length?_gidBuildGrid(found):'<div class="gid-tab-empty">Nenhuma plataforma encontrada</div>';
+}
+
+function _gidBuildGrid(plats){
+  if(!plats.length)return'<div class="gid-tab-empty">Nenhuma plataforma nesta categoria</div>';
+  var allPlats=_gidAllPlats();
+  return'<div class="gid-search-results">'+plats.map(function(p){
+    var idx=allPlats.indexOf(p);
+    return'<button class="gid-plat-btn" onclick="gidAdicionarPlat('+idx+')" style="background:'+p.bg+';color:'+p.font+'"><span class="pname">'+esc(p.nome)+'</span></button>';
+  }).join('')+'</div>';
+}
+
+function gidAdicionarPlat(idx){
+  var p=_gidAllPlats()[idx];if(!p)return;
+  gidLote.push({plataforma:p.nome,tipo:p.tipo,qtd:1});
+  gidRenderLote();gidCheckReady();
+}
+
+function gidAlterarQtd(idx,delta){gidLote[idx].qtd=Math.max(1,gidLote[idx].qtd+delta);gidRenderLote();}
+function gidSetQtd(idx,val){var n=parseInt(val,10);if(!isNaN(n)&&n>=1)gidLote[idx].qtd=n;gidCheckReady();}
+function gidRemoverLote(idx){gidLote.splice(idx,1);gidRenderLote();gidCheckReady();}
+function gidLimparLote(){gidLote=[];gidRenderLote();gidCheckReady();}
+
+function gidRenderLote(){
+  var el=document.getElementById('gid-lote-list');
+  if(!gidLote.length){el.innerHTML='<div class="gid-lote-empty">Selecione uma plataforma para começar</div>';return;}
+  el.innerHTML=gidLote.map(function(item,i){
+    var p=GID_PLATAFORMAS.find(function(x){return x.nome===item.plataforma;});
+    var cor=p?p.bg:'#888',font=p?p.font:'#fff';
+    return'<div class="gid-lote-row">'+
+      '<div class="gid-lote-plat"><span class="gid-dot" style="background:'+cor+'"></span>'+
+      '<span>'+esc(item.plataforma)+'</span>'+
+      '<span class="gid-badge" style="background:'+cor+';color:'+font+'">'+esc(p?p.tipo:'')+'</span></div>'+
+      '<div class="gid-lote-qty">'+
+      '<button class="gid-qty-btn" onclick="gidAlterarQtd('+i+',-1)">−</button>'+
+      '<input class="gid-qty-val" type="number" min="1" value="'+item.qtd+'" onchange="gidSetQtd('+i+',this.value)" oninput="gidSetQtd('+i+',this.value)">'+
+      '<button class="gid-qty-btn" onclick="gidAlterarQtd('+i+',1)">+</button></div>'+
+      '<button class="gid-lote-remove" onclick="gidRemoverLote('+i+')">✕</button></div>';
+  }).join('');
+}
+
+function gidCheckReady(){
+  document.getElementById('gid-btn1').disabled=!gidLote.reduce(function(s,l){return s+l.qtd;},0);
+}
+
+function gidGoPreview(){
+  if(!gidLote.length)return;
+  var totalLinhas=gidLote.reduce(function(s,l){return s+l.qtd;},0);
+  var totalSX=gidLote.filter(function(l){return gidTipo(l.plataforma)==='SX';}).reduce(function(s,l){return s+l.qtd;},0);
+  var totalAMZ=gidLote.filter(function(l){return gidTipo(l.plataforma)==='AMZ';}).reduce(function(s,l){return s+l.qtd;},0);
+  document.getElementById('gid-resumo-grid').innerHTML=
+    '<div class="gid-rcard ct"><div class="num">'+totalLinhas+'</div><div class="lbl">Linhas a criar</div></div>'+
+    '<div class="gid-rcard cs"><div class="num">'+totalSX+'</div><div class="lbl">IDs SX</div></div>'+
+    '<div class="gid-rcard ca"><div class="num">'+totalAMZ+'</div><div class="lbl">IDs AMZ</div></div>';
+  var cntSX=gidContadores['SX']?gidContadores['SX'].ultimo:0;
+  var cntAMZ=gidContadores['AMZ']?gidContadores['AMZ'].ultimo:0;
+  document.getElementById('gid-preview-body').innerHTML=gidLote.map(function(item){
+    var tipo=gidTipo(item.plataforma),proxID='';
+    if(tipo==='SX'){cntSX++;proxID='SX'+cntSX.toString().padStart(8,'0');}
+    if(tipo==='AMZ'){cntAMZ++;proxID='AMZ'+cntAMZ.toString().padStart(6,'0')+'H';}
+    var p=GID_PLATAFORMAS.find(function(x){return x.nome===item.plataforma;});
+    return'<tr>'+
+      '<td><span class="gid-badge" style="background:'+(p?p.bg:'#888')+';color:'+(p?p.font:'#fff')+'">'+esc(item.plataforma)+'</span></td>'+
+      '<td style="text-align:center;font-weight:600">'+item.qtd+'</td>'+
+      '<td><span class="cm">'+tipo+'</span></td>'+
+      '<td><span class="cm" style="color:var(--ul)">'+proxID+(item.qtd>1?' … +'+item.qtd:'')+'</span></td></tr>';
+  }).join('');
+  gidGoStep(2);
+}
+
+function gidAbrirModal(){
+  var total=gidLote.reduce(function(s,l){return s+l.qtd;},0);
+  document.getElementById('gid-modal-txt').innerHTML='<strong>'+total+' linha'+(total>1?'s':'')+' serão criadas</strong> nas duas planilhas.';
+  document.getElementById('gid-modal-bg').classList.add('open');
+}
+function gidFecharModal(){document.getElementById('gid-modal-bg').classList.remove('open');}
+
+function gidConfirmarGerar(){
+  gidFecharModal();gidGoStep(3);
+  var totalLinhas=gidLote.reduce(function(s,l){return s+l.qtd;},0);
+  var totalSX=gidLote.filter(function(l){return gidTipo(l.plataforma)==='SX';}).reduce(function(s,l){return s+l.qtd;},0);
+  var totalAMZ=gidLote.filter(function(l){return gidTipo(l.plataforma)==='AMZ';}).reduce(function(s,l){return s+l.qtd;},0);
+  document.getElementById('gid-res-resumo').innerHTML=
+    '<div class="gid-rcard ct"><div class="num">'+totalLinhas+'</div><div class="lbl">Linhas criadas</div></div>'+
+    '<div class="gid-rcard cs"><div class="num">'+totalSX+'</div><div class="lbl">IDs SX</div></div>'+
+    '<div class="gid-rcard ca"><div class="num">'+totalAMZ+'</div><div class="lbl">IDs AMZ</div></div>';
+  var prog=document.getElementById('gid-prog-wrap'),fill=document.getElementById('gid-prog-fill');
+  prog.classList.add('show');fill.style.width='0%';
+  var progInt=setInterval(function(){var cur=parseFloat(fill.style.width)||0;if(cur<85)fill.style.width=Math.min(cur+8,85)+'%';},250);
+  document.getElementById('gid-st3').className='gid-sbar';
+  document.getElementById('gid-res-ids').innerHTML='';
+  document.getElementById('gid-exp-wrap').style.display='none';
+  (function gidFetchComRetry(tentativa){
+    if(tentativa>1)gidShowSt(document.getElementById('gid-st3'),'info','⏳ Tentativa '+tentativa+' de 3...');
+    fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote,token:NC_TOKEN})})
+      .then(function(r){
+        var ct=r.headers.get('content-type')||'';
+        if(!ct.includes('json')){if(tentativa<3){setTimeout(function(){gidFetchComRetry(tentativa+1);},2500);return null;}
+          throw new Error('Servidor não respondeu após 3 tentativas.');}
+        return r.json();
+      })
+      .then(function(data){
+        if(!data)return;
+        clearInterval(progInt);fill.style.width='100%';
+        setTimeout(function(){
+          prog.classList.remove('show');
+          if(data.error){gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);return;}
+          gidResultado=data.resultado||[];
+          gidRenderResultado(gidResultado);
+          if(gidResultado.length)document.getElementById('gid-exp-wrap').style.display='';
+          gidShowSt(document.getElementById('gid-st3'),'ok','✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+'.');
+        },300);
+      })
+      .catch(function(e){
+        clearInterval(progInt);prog.classList.remove('show');
+        gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+      });
+  })(1);
+}
+
+function gidRenderResultado(resultado){
+  var el=document.getElementById('gid-res-ids');
+  if(!resultado.length){el.innerHTML='';return;}
+  el.innerHTML=resultado.map(function(r){
+    var p=GID_PLATAFORMAS.find(function(x){return x.nome===r.plataforma;});
+    return'<div class="gid-res-section">'+
+      '<h3><span class="gid-badge" style="background:'+(p?p.bg:'#888')+';color:'+(p?p.font:'#fff')+';font-size:11px;padding:3px 10px">'+esc(r.plataforma)+'</span></h3>'+
+      '<div class="gid-ids-grid">'+r.ids.map(function(id){
+        return'<div class="gid-id-row"><span class="id-val">'+esc(id)+'</span>'+
+          '<span class="id-plat">'+r.tipo+'</span>'+
+          '<button class="gid-copy-btn" onclick="gidCopiarID(this,\''+esc(id)+'\')">Copiar</button></div>';
+      }).join('')+'</div></div>';
+  }).join('');
+}
+
+function gidToggleExp(e){
+  e.stopPropagation();
+  var dd=document.getElementById('gid-exp-dd');
+  var rect=e.currentTarget.getBoundingClientRect();
+  dd.classList.toggle('open');
+  if(dd.classList.contains('open')){
+    dd.style.left=rect.left+'px';
+    var ddH=dd.offsetHeight,spaceBelow=window.innerHeight-rect.bottom;
+    dd.style.top=(spaceBelow>=ddH+8?rect.bottom+4:rect.top-ddH-4)+'px';
+  }
+}
+document.addEventListener('click',function(ev){
+  var wrap=document.getElementById('gid-exp-wrap'),dd=document.getElementById('gid-exp-dd');
+  if(dd&&wrap&&!wrap.contains(ev.target))dd.classList.remove('open');
+});
+
+function gidDoExp(fmt){
+  document.getElementById('gid-exp-dd').classList.remove('open');
+  var todos=[];
+  gidResultado.forEach(function(r){r.ids.forEach(function(id){todos.push({id:id,plat:r.plataforma,tipo:r.tipo});});});
+  if(fmt==='csv'){
+    var csv='ID,Plataforma,Tipo\n'+todos.map(function(x){return'"'+x.id+'","'+x.plat+'","'+x.tipo+'"';}).join('\n');
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));a.download='ids_gerados.csv';a.click();
+  }else{
+    var filtro=fmt==='sx'?'SX':fmt==='amz'?'AMZ':null;
+    var lista=filtro?todos.filter(function(x){return x.tipo===filtro;}):todos;
+    navigator.clipboard.writeText(lista.map(function(x){return x.id;}).join('\n')).then(function(){
+      gidShowSt(document.getElementById('gid-st3'),'ok','✓ '+lista.length+' IDs copiados.');
+      setTimeout(function(){document.getElementById('gid-st3').className='gid-sbar';},3000);
+    });
+  }
+}
+
+function gidCopiarID(btn,id){
+  navigator.clipboard.writeText(id).then(function(){
+    btn.textContent='✓';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='Copiar';btn.classList.remove('copied');},1500);
+  });
+}
+
+function gidGoStep(n){
+  document.querySelectorAll('.gid-sec').forEach(function(s,i){s.classList.toggle('active',i===n-1);});
+  ['gid-s1','gid-s2','gid-s3','gid-s4','gid-s5'].forEach(function(id,i){
+    var el=document.getElementById(id);
+    if(el)el.className='gid-step'+(i+1<n?' done':i+1===n?' active':'');
+  });
+}
+
+function gidNovoLote(){
+  gidLote=[];gidResultado=[];gidAdnamesParaEnviar=[];gidRenderLote();gidCheckReady();
+  document.getElementById('gid-res-ids').innerHTML='';
+  document.getElementById('gid-exp-wrap').style.display='none';
+  var ap=document.getElementById('gid-adnames-preview');if(ap)ap.style.display='none';
+  var ai=document.getElementById('gid-adnames-input');if(ai)ai.value='';
+  var b4=document.getElementById('gid-btn4-enviar');if(b4)b4.style.display='none';
+  ['gid-st1','gid-st2','gid-st3','gid-st4'].forEach(function(id){var el=document.getElementById(id);if(el)el.className='gid-sbar';});
+  gidGoStep(1);gidCarregarContadores();
+}
+
+function gidIrPasso4(){
+  document.getElementById('gid-adnames-input').value='';
+  document.getElementById('gid-adnames-preview').style.display='none';
+  document.getElementById('gid-btn4-enviar').style.display='none';
+  document.getElementById('gid-st4').className='gid-sbar';
+  gidAdnamesParaEnviar=[];gidGoStep(4);
+}
+
+function gidProcessarAdNames(){
+  var raw=document.getElementById('gid-adnames-input').value.trim();
+  if(!raw){gidShowSt(document.getElementById('gid-st4'),'warn','⚠ Cole ao menos um Ad Name.');return;}
+  var linhas=raw.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
+  var idsLote=[];
+  gidResultado.forEach(function(r){r.ids.forEach(function(id){idsLote.push(id);});});
+  gidAdnamesParaEnviar=[];var rows=[];var temSemID=false;
+  linhas.forEach(function(adName,i){
+    var match=adName.match(/(?:^|[^A-Z0-9])((?:SX\d{8}|AMZ\d{6}H))(?:[^A-Z0-9]|$)/i);
+    var idDetectado=match?match[1].toUpperCase():null;
+    var idAssociado=idDetectado||idsLote[i]||null;
+    var status,cls;
+    if(idDetectado){status='✅ ID no texto';cls='gid-adname-ok';}
+    else if(idsLote[i]){status='⚠ Associado por ordem ('+idsLote[i]+')';cls='gid-adname-warn';temSemID=true;}
+    else{status='❌ Sem ID — não será salvo';cls='gid-adname-err';idAssociado=null;}
+    rows.push('<tr>'+
+      '<td style="font-family:var(--mo);font-size:11px;word-break:break-all">'+esc(adName)+'</td>'+
+      '<td><span class="cm">'+esc(idAssociado||'—')+'</span></td>'+
+      '<td><span class="'+cls+'">'+status+'</span></td></tr>');
+    if(idAssociado)gidAdnamesParaEnviar.push({adName:adName,id:idAssociado});
+  });
+  document.getElementById('gid-adnames-tbody').innerHTML=rows.join('');
+  document.getElementById('gid-adnames-preview').style.display='';
+  var podeSalvar=gidAdnamesParaEnviar.length>0;
+  document.getElementById('gid-btn4-enviar').style.display=podeSalvar?'':'none';
+  gidShowSt(document.getElementById('gid-st4'),podeSalvar?'ok':'err',
+    podeSalvar?'✅ '+gidAdnamesParaEnviar.length+' Ad Name(s) prontos para salvar.'+(temSemID?' Associados pela ordem do lote.':''):
+    '❌ Nenhum Ad Name com ID reconhecível.');
+}
+
+function gidEnviarAdNames(){
+  if(!gidAdnamesParaEnviar.length)return;
+  var btn=document.getElementById('gid-btn4-enviar');btn.disabled=true;
+  gidShowSt(document.getElementById('gid-st4'),'info','⏳ Salvando na planilha...');
+  var _ctrl=new AbortController();
+  var _tid=setTimeout(function(){_ctrl.abort();},38000);
+  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'fillAdNames',itens:gidAdnamesParaEnviar,token:NC_TOKEN}),signal:_ctrl.signal})
+    .then(function(r){clearTimeout(_tid);var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível.');return r.json();})
+    .then(function(data){
+      btn.disabled=false;
+      if(data.error)gidShowSt(document.getElementById('gid-st4'),'err','❌ Erro: '+data.error);
+      else gidIrPasso5(data.salvos,data.orfaos||[]);
+    })
+    .catch(function(e){
+      clearTimeout(_tid);btn.disabled=false;
+      if(e.name==='AbortError'||e.message.indexOf('fetch')!==-1){
+        gidShowSt(document.getElementById('gid-st4'),'ok','✅ Ad Names enviados.');
+        setTimeout(function(){gidIrPasso5(gidAdnamesParaEnviar.length,[]);},1500);
+      }else gidShowSt(document.getElementById('gid-st4'),'err','❌ Erro: '+e.message);
+    });
+}
+
+function gidAbrirPL(){document.getElementById('gid-pl-wrap').style.display='';document.getElementById('gid-pl-input').focus();}
+function gidFecharPL(){document.getElementById('gid-pl-wrap').style.display='none';document.getElementById('gid-pl-input').value='';document.getElementById('gid-st-pl').className='gid-sbar';}
+
+function gidProcessarPL(){
+  var raw=document.getElementById('gid-pl-input').value.trim();if(!raw)return;
+  var tokens=raw.replace(/[\r\n,;]+/g,' ').split(/\s+/).map(function(t){return t.trim();}).filter(Boolean);
+  var invalidos=[];
+  tokens.forEach(function(t){
+    var plat=gidNormalizarPlat(t);
+    if(!plat){invalidos.push(t);return;}
+    gidLote.push({plataforma:plat,tipo:gidTipo(plat),qtd:1});
+  });
+  var consolidado=[];
+  gidLote.forEach(function(item){
+    var last=consolidado[consolidado.length-1];
+    if(last&&last.plataforma===item.plataforma)last.qtd+=item.qtd;
+    else consolidado.push({plataforma:item.plataforma,tipo:item.tipo,qtd:item.qtd});
+  });
+  gidLote=consolidado;gidRenderLote();gidCheckReady();
+  if(invalidos.length)gidShowSt(document.getElementById('gid-st-pl'),'warn','⚠ Não reconhecido(s): '+invalidos.join(', '));
+  else gidFecharPL();
+}
+
+function gidNormalizarPlat(texto){
+  if(!texto)return'';var t=texto.toLowerCase().trim();
+  if(/meta|facebook|fb|instagram|ig/.test(t))return'Meta';
+  if(/tiktok|tik.?tok|tt/.test(t))return'TikTok';
+  if(/amazon|amz/.test(t))return'Amazon';
+  if(/sa360|search.?ads/.test(t))return'Search';
+  if(/^search$|sem|gsearch/.test(t))return'Search';
+  if(/youtube|^yt$/.test(t))return'YouTube';
+  if(/google.?ads|googleads|gads/.test(t))return'Google Ads';
+  if(/dv.?360|display.?video/.test(t))return'DV360';
+  if(/pinterest|^pin$/.test(t))return'Pinterest';
+  if(/snapchat|snap/.test(t))return'Snapchat';
+  if(/twitter|twitter.?x|^tw$/.test(t))return'Twitter/X';
+  if(/linkedin|^lin$|^li$/.test(t))return'LinkedIn';
+  if(/spotify|spot/.test(t))return'Spotify';
+  if(/compra.?direta|direct.?buy|^cd$/.test(t))return'Compra Direta';
+  var found=GID_PLATAFORMAS.find(function(p){return p.nome&&p.nome.toLowerCase()===t;});
+  return found?found.nome:'';
+}
+
+function gidTipo(plat){var p=GID_PLATAFORMAS.find(function(x){return x.nome===plat;});return p?p.tipo:'SX';}
+function gidShowSt(el,type,msg){el.className='gid-sbar '+type;el.innerHTML=msg;}
+
+function gidIrPasso5(salvos,orfaos){
+  gidGoStep(5);
+  var totalIds=gidResultado?gidResultado.reduce(function(a,r){return a+(r.ids?r.ids.length:0);},0):0;
+  document.getElementById('gid-s5-resumo').innerHTML=
+    '<div style="text-align:center;padding:24px 0">'+
+    '<div style="font-size:48px;margin-bottom:8px">✅</div>'+
+    '<div style="font-size:20px;font-weight:700;margin-bottom:4px">Concluído!</div>'+
+    '<div style="font-size:14px;color:var(--g500);margin-top:8px">'+
+    '<span style="margin-right:24px">🔢 <strong>'+totalIds+'</strong> IDs criados</span>'+
+    '<span>📝 <strong>'+salvos+'</strong> Ad Name(s) salvos</span></div></div>';
+  var orfaosEl=document.getElementById('gid-s5-orfaos');
+  if(orfaos&&orfaos.length){
+    orfaosEl.innerHTML='<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:16px">'+
+      '<div style="font-weight:700;color:#92400E;margin-bottom:8px">⚠️ '+orfaos.length+' ID(s) sem Ad Name</div>'+
+      '<table style="width:100%;font-size:13px"><thead><tr><th style="text-align:left;padding:4px 8px;color:#92400E">ID</th><th style="text-align:left;padding:4px 8px;color:#92400E">Linha</th></tr></thead>'+
+      '<tbody>'+orfaos.map(function(o){return'<tr><td style="font-family:var(--mo);font-size:12px">'+esc(o.id)+'</td><td style="color:var(--g400);font-size:12px">'+esc(o.linha)+'</td></tr>';}).join('')+
+      '</tbody></table></div>';
+    orfaosEl.style.display='';
+  }else{orfaosEl.innerHTML='';orfaosEl.style.display='none';}
+}
+
+gidInit();
+</script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparador de Estruturas · NC Tools</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#1F36C7;--ul-l:#E8ECFB;--ul-m:#4A5FD4;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F8F9FA;--g100:#F1F3F5;--g200:#E9ECEF;--g300:#DEE2E6;
+  --g400:#CED4DA;--g500:#868E96;--g700:#495057;--g900:#212529;
+  --fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:20px}
+.header{max-width:960px;margin:0 auto 20px;display:flex;align-items:center;gap:12px}
+.header .ico{width:38px;height:38px;border-radius:10px;background:var(--ul-l);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.header h1{font-size:16px;font-weight:600}
+.header p{font-size:12px;color:var(--g500);margin-top:2px}
+.card{max-width:960px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden}
+.card-hdr{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.card-hdr h2{font-size:13.5px;font-weight:600;flex:1}
+.card-body{padding:0 18px 18px}
+.side-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;margin-top:16px}
+.mf{background:var(--g50);border:1px solid var(--g200);border-radius:9px;padding:13px 15px}
+.mf-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mf-title{font-size:10px;font-weight:700;color:var(--g700);letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:7px}
+.side-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.badge-a{background:var(--ul)}.badge-b{background:#6B3FA0}
+select.src-sel{padding:5px 9px;border-radius:6px;border:1px solid var(--g300);font-family:var(--fn);font-size:11.5px;background:#fff;outline:none;cursor:pointer;color:var(--g700)}
+select.src-sel:focus{border-color:var(--ul)}
+.mf textarea{width:100%;height:140px;border:1px solid var(--g300);border-radius:6px;padding:9px 11px;font-family:var(--mo);font-size:11px;resize:vertical;outline:none;background:#fff;transition:border-color .15s;line-height:1.7;color:var(--g900)}
+.mf textarea:focus{border-color:var(--ul)}
+textarea:disabled{background:var(--g100);color:var(--g500);cursor:not-allowed}
+.mf-count{font-size:10.5px;color:var(--g500);margin-top:6px}
+.ctrl-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ctrl-row label{font-size:10px;font-weight:700;color:var(--g700);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.sep-opts{display:flex;gap:6px}
+.chip{padding:4px 12px;border-radius:16px;font-size:11.5px;font-weight:500;border:1px solid var(--g300);background:#fff;cursor:pointer;transition:all .15s;font-family:var(--fn)}
+.chip.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+.ml-auto{margin-left:auto}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff}.btn-p:hover{background:var(--ul-m)}
+.btn-g{background:none;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.err-banner{display:none;background:var(--err-b);border:1px solid #F5C6C2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--err);align-items:center;gap:8px}
+.err-banner.visible{display:flex}
+.result-area{display:none}.result-area.visible{display:block}
+.sc2{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card2{flex:1;min-width:100px;background:#fff;border:2px solid var(--g200);border-radius:9px;padding:12px 14px;cursor:pointer;transition:all .15s;user-select:none;position:relative}
+.card2:hover{background:var(--g50)}
+.card2 .num{font-size:22px;font-weight:700;margin-bottom:2px}
+.card2 .lbl{font-size:10.5px;color:var(--g500);font-weight:500}
+.card2.ct .num{color:var(--ul)}.card2.co .num{color:var(--ok)}.card2.ce .num{color:var(--err)}.card2.cw .num{color:var(--warn)}
+.card2.fil{outline:2px solid currentColor;outline-offset:0}
+.card2.fil::after{content:'✕';position:absolute;top:6px;right:9px;font-size:10px;color:var(--g500)}
+.filter-hint{font-size:11px;color:var(--g500);margin-bottom:12px;min-height:16px}
+.progress-wrap{margin-bottom:14px}
+.progress-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.progress-label{font-size:11px;color:var(--g500);min-width:90px}
+.progress-bar{flex:1;height:6px;background:var(--g200);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.progress-pct{font-size:11.5px;font-weight:600;min-width:36px;text-align:right}
+.rtw{overflow-x:auto;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:8px 13px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.04em;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200);white-space:nowrap}
+td{padding:6px 13px;border-bottom:1px solid var(--g100);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--g50)}
+.row-blk{margin-bottom:8px;border-radius:9px;border:1px solid var(--g200);background:#fff;overflow:hidden}
+.row-blk.hidden{display:none}
+.row-blk-hdr{display:flex;align-items:center;gap:9px;padding:7px 13px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:11px;flex-wrap:wrap}
+.row-id{font-family:var(--mo);font-size:11px;font-weight:600;color:var(--ul);background:var(--ul-l);padding:2px 8px;border-radius:4px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-id.b{color:#6B3FA0;background:#F3E8FF}
+.pos-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:var(--g100);color:var(--g700);font-size:10px;font-weight:700}
+.cell-match{background:#E6F4EE;color:#0D7A4E;font-family:var(--mo);font-size:11px;padding:2px 7px;border-radius:4px;display:inline-block}
+.cell-diff{background:#FDECEA;color:#C0392B;font-family:var(--mo);font-size:11px;padding:2px 7px;border-radius:4px;display:inline-block}
+.cell-empty{color:var(--g300);font-size:11px;font-style:italic}
+.bok{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--ok-b);color:var(--ok);font-size:10.5px;font-weight:600}
+.bdif{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--err-b);color:var(--err);font-size:10.5px;font-weight:600}
+.bmis{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--g100);color:var(--g500);font-size:10.5px;font-weight:600}
+@media(max-width:600px){.side-grid{grid-template-columns:1fr;}.header{flex-direction:column;align-items:flex-start;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="ico">🔀</div>
+  <div>
+    <h1>Comparador de Estruturas</h1>
+    <p>Compare tokens entre duas strings lado a lado, posição por posição</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-hdr">
+    <h2>Comparar</h2>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-g" onclick="clearComp()">Limpar</button>
+      <button class="btn btn-p" onclick="runCompare()">🔀 Comparar</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="side-grid">
+      <div class="mf">
+        <div class="mf-hdr">
+          <div class="mf-title"><span class="side-badge badge-a">A</span><span id="label-a">— Origem A —</span></div>
+          <select class="src-sel" id="src-a" onchange="syncDrops('a')">
+            <option value="">— Origem A —</option>
+            <option value="ADP">ADP</option><option value="AdServer">AdServer</option>
+            <option value="Livre">Livre</option><option value="Planilha">Planilha</option>
+            <option value="Plataforma">Plataforma</option><option value="RM">RM</option>
+          </select>
+        </div>
+        <textarea id="ta-a" placeholder="Escolha uma origem acima para habilitar…" disabled oninput="updateCounts()"></textarea>
+        <div class="mf-count" id="count-a">0 linhas</div>
+      </div>
+      <div class="mf">
+        <div class="mf-hdr">
+          <div class="mf-title"><span class="side-badge badge-b">B</span><span id="label-b">— Origem B —</span></div>
+          <select class="src-sel" id="src-b" onchange="syncDrops('b')">
+            <option value="">— Origem B —</option>
+            <option value="ADP">ADP</option><option value="AdServer">AdServer</option>
+            <option value="Livre">Livre</option><option value="Planilha">Planilha</option>
+            <option value="Plataforma">Plataforma</option><option value="RM">RM</option>
+          </select>
+        </div>
+        <textarea id="ta-b" placeholder="Escolha uma origem acima para habilitar…" disabled oninput="updateCounts()"></textarea>
+        <div class="mf-count" id="count-b">0 linhas</div>
+      </div>
+    </div>
+    <div class="err-banner" id="err-banner"><span>⚠️</span><span id="err-msg"></span></div>
+    <div class="ctrl-row">
+      <label>Separador</label>
+      <div class="sep-opts">
+        <button class="chip active" onclick="setSep('both',this)">_ e |</button>
+        <button class="chip" onclick="setSep('under',this)">_ apenas</button>
+        <button class="chip" onclick="setSep('pipe',this)">| apenas</button>
+        <button class="chip" onclick="setSep('dash',this)">- apenas</button>
+      </div>
+    </div>
+    <div class="result-area" id="comp-result"></div>
+  </div>
+</div>
+
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var SEP='both';
+var SOURCES=['ADP','AdServer','Livre','Planilha','Plataforma','RM'];
+var activeFilter=null;
+var LIVRE='Livre';
+
+function syncDrops(changed){
+  var selA=document.getElementById('src-a'),selB=document.getElementById('src-b');
+  var taA=document.getElementById('ta-a'),taB=document.getElementById('ta-b');
+  if(selA.value&&selB.value&&selA.value===selB.value&&selA.value!==LIVRE){
+    var other=changed==='a'?selB:selA;
+    var taken=changed==='a'?selA.value:selB.value;
+    var next=SOURCES.find(function(s){return s!==taken;});
+    if(next)other.value=next;
+  }
+  rebuildOptions(selA,selB.value);rebuildOptions(selB,selA.value);
+  document.getElementById('label-a').textContent=selA.value||'— Origem A —';
+  document.getElementById('label-b').textContent=selB.value||'— Origem B —';
+  taA.disabled=!selA.value;
+  taB.disabled=!selB.value;
+}
+function rebuildOptions(sel,blocked){
+  var cur=sel.value;sel.innerHTML='';
+  var empty=document.createElement('option');empty.value='';empty.textContent=sel.id==='src-a'?'— Origem A —':'— Origem B —';sel.appendChild(empty);
+  SOURCES.forEach(function(s){if(s===blocked&&s!==LIVRE)return;var o=document.createElement('option');o.value=s;o.textContent=s;if(s===cur)o.selected=true;sel.appendChild(o);});
+  if(!cur)sel.value='';
+}
+function setSep(val,el){SEP=val;document.querySelectorAll('.sep-opts .chip').forEach(function(c){c.classList.remove('active');});el.classList.add('active');}
+function tokenize(str){if(SEP==='both')return str.split(/[_|]/);if(SEP==='under')return str.split('_');if(SEP==='pipe')return str.split('|');if(SEP==='dash')return str.split('-');return str.split(/[_|]/);}
+function updateCounts(){['a','b'].forEach(function(s){var lines=document.getElementById('ta-'+s).value.trim().split('\n').filter(function(l){return l.trim();});document.getElementById('count-'+s).textContent=lines.length+' linha'+(lines.length!==1?'s':'');});}
+function clearComp(){
+  document.getElementById('ta-a').value='';document.getElementById('ta-b').value='';
+  updateCounts();
+  document.getElementById('err-banner').classList.remove('visible');
+  var r=document.getElementById('comp-result');r.innerHTML='';r.classList.remove('visible');
+  activeFilter=null;
+}
+function setFilter(type){activeFilter=activeFilter===type?null:type;applyFilter();}
+function applyFilter(){
+  document.querySelectorAll('.card2').forEach(function(c){c.classList.remove('fil');});
+  var hint=document.getElementById('filter-hint');
+  if(activeFilter){var card=document.getElementById('card-'+activeFilter);if(card)card.classList.add('fil');if(hint)hint.textContent='Filtrando: '+{all:'Todos',match:'Idênticos',diff:'Divergentes',missing:'Ausentes'}[activeFilter]+' — clique novamente para remover.';}
+  else{if(hint)hint.textContent='';}
+  document.querySelectorAll('.row-blk').forEach(function(blk){if(!activeFilter||activeFilter==='all'){blk.classList.remove('hidden');return;}blk.classList.toggle('hidden',blk.getAttribute('data-type')!==activeFilter);});
+}
+function runCompare(){
+  var rawA=document.getElementById('ta-a').value.trim(),rawB=document.getElementById('ta-b').value.trim();
+  var srcA=document.getElementById('src-a').value||'A',srcB=document.getElementById('src-b').value||'B';
+  var linesA=rawA?rawA.split('\n').map(function(l){return l.trim();}).filter(Boolean):[];
+  var linesB=rawB?rawB.split('\n').map(function(l){return l.trim();}).filter(Boolean):[];
+  var errBanner=document.getElementById('err-banner'),errMsg=document.getElementById('err-msg');
+  if(!linesA.length&&!linesB.length){errMsg.innerHTML='<strong>Nenhum dado.</strong> Cole pelo menos um ID nos dois lados.';errBanner.classList.add('visible');return;}
+  if(linesA.length!==linesB.length){errMsg.innerHTML='<strong>Quantidades diferentes.</strong> Lado A: '+linesA.length+' / Lado B: '+linesB.length+'. O comparador exige 1 para 1.';errBanner.classList.add('visible');return;}
+  errBanner.classList.remove('visible');
+  var tokA=linesA.map(tokenize),tokB=linesB.map(tokenize);
+  var totalPos=0,matchPos=0,diffPos=0,missingPos=0,rows=[];
+  for(var i=0;i<linesA.length;i++){
+    var tA=tokA[i],tB=tokB[i],maxLen=Math.max(tA.length,tB.length);
+    var positions=[],hasDiff=false,hasMissing=false;
+    for(var p=0;p<maxLen;p++){
+      var vA=tA[p]!==undefined?tA[p]:null,vB=tB[p]!==undefined?tB[p]:null;totalPos++;
+      var st;if(vA===null||vB===null){st='missing';missingPos++;hasMissing=true;}else if(vA===vB){st='match';matchPos++;}else{st='diff';diffPos++;hasDiff=true;}
+      positions.push({vA:vA,vB:vB,status:st});
+    }
+    rows.push({lineA:linesA[i],lineB:linesB[i],positions:positions,blkType:hasDiff?'diff':hasMissing?'missing':'match'});
+  }
+  var matchPct=totalPos?Math.round((matchPos/totalPos)*100):0,diffPct=totalPos?Math.round((diffPos/totalPos)*100):0;
+  var html='<div class="sc2">';
+  html+='<div class="card2 ct" id="card-all" onclick="setFilter(\'all\')"><div class="num">'+rows.length+'</div><div class="lbl">Pares</div></div>';
+  html+='<div class="card2 co" id="card-match" onclick="setFilter(\'match\')"><div class="num">'+matchPos+'</div><div class="lbl">Posições idênticas</div></div>';
+  html+='<div class="card2 ce" id="card-diff" onclick="setFilter(\'diff\')"><div class="num">'+diffPos+'</div><div class="lbl">Posições divergentes</div></div>';
+  if(missingPos)html+='<div class="card2 cw" id="card-missing" onclick="setFilter(\'missing\')"><div class="num">'+missingPos+'</div><div class="lbl">Posições ausentes</div></div>';
+  html+='</div><div class="filter-hint" id="filter-hint"></div>';
+  html+='<div class="progress-wrap"><div class="progress-row"><span class="progress-label">Idênticas</span><div class="progress-bar"><div class="progress-fill" style="width:'+matchPct+'%;background:var(--ok)"></div></div><span class="progress-pct" style="color:var(--ok)">'+matchPct+'%</span></div>';
+  html+='<div class="progress-row"><span class="progress-label">Divergentes</span><div class="progress-bar"><div class="progress-fill" style="width:'+diffPct+'%;background:var(--err)"></div></div><span class="progress-pct" style="color:var(--err)">'+diffPct+'%</span></div></div>';
+  rows.forEach(function(row){
+    var rm=row.positions.filter(function(p){return p.status==='match';}).length,rt=row.positions.length,rp=rt?Math.round((rm/rt)*100):0;
+    var sc=rp===100?'var(--ok)':rp>=70?'var(--warn)':'var(--err)';
+    var sA=row.lineA.length>50?row.lineA.slice(0,48)+'…':row.lineA,sB=row.lineB.length>50?row.lineB.slice(0,48)+'…':row.lineB;
+    html+='<div class="row-blk" data-type="'+row.blkType+'"><div class="row-blk-hdr">';
+    html+='<span class="row-id" title="'+esc(row.lineA)+'">'+esc(srcA)+' · '+esc(sA)+'</span><span style="color:var(--g300);font-size:12px">↔</span>';
+    html+='<span class="row-id b" title="'+esc(row.lineB)+'">'+esc(srcB)+' · '+esc(sB)+'</span>';
+    html+='<span style="margin-left:auto;font-size:11px;font-weight:600;color:'+sc+'">'+rm+'/'+rt+' · '+rp+'%</span>';
+    html+='</div><div class="rtw"><table><thead><tr><th style="width:46px">Pos.</th><th>'+esc(srcA)+'</th><th>'+esc(srcB)+'</th><th style="width:110px">Status</th></tr></thead><tbody>';
+    row.positions.forEach(function(pos,pi){
+      var badge,rs='';
+      if(pos.status==='match')badge='<span class="bok">✓ Idêntico</span>';
+      else if(pos.status==='diff'){badge='<span class="bdif">✕ Diverge</span>';rs=' style="background:#FFF8F8"';}
+      else{badge='<span class="bmis">— Ausente</span>';rs=' style="background:var(--g50)"';}
+      function rc(v,st){if(v===null)return'<span class="cell-empty">—</span>';if(v==='')return'<span class="cell-empty">(vazio)</span>';return st==='match'?'<span class="cell-match">'+esc(v)+'</span>':'<span class="cell-diff">'+esc(v)+'</span>';}
+      html+='<tr'+rs+'><td><span class="pos-badge">P'+(pi+1)+'</span></td><td>'+rc(pos.vA,pos.status)+'</td><td>'+rc(pos.vB,pos.status)+'</td><td>'+badge+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  activeFilter=null;var r=document.getElementById('comp-result');r.innerHTML=html;r.classList.add('visible');
+}
+</script>
+</body>
+</html>
