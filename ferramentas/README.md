@@ -11,18 +11,18 @@ Rodam 100% no browser, sem configuração.
 
 | Ferramenta | Descrição | Link |
 |---|---|---|
-| [**Removedor de Caracteres**](char-cleaner/) | Remove/substitui caracteres especiais de textos de campanha | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
 | [**Comparador ADP**](comparador-adp/) | Compara estrutura de duas abas ADP e aponta divergências | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/comparador-adp/) |
 | [**Contador ADP**](contador-adp/) | Conta linhas por aba e plataforma em planilhas ADP | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/contador-adp/) |
 | [**Creative Taxonomy**](creative-taxonomy/) | Gera taxonomia de criativos (Plataforma + Brainsuite) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/creative-taxonomy/creative-taxonomy.html) |
 | [**Cruzador de IDs**](cruzador-ids/) | Cruza IDs ADP × RM e aponta divergências | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/cruzador-ids/) |
 | [**Extractor de Fórmulas**](extractor-formulas/) | Extrai e deduplica fórmulas de planilhas .xlsx/.xlsm por aba | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extractor-formulas/) |
+| [**Extrator de Links de Influencer**](link-extrator/) | Extrai links de perfil de influencers de planilhas | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/link-extrator/) |
 | [**Galileo IDs**](galileo-ids/) | Browser interativo de IDs e abreviações do sistema Galileo | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/galileo-ids/) |
 | [**Grasp Naming**](grasp-naming/) | Referência de estrutura de naming por plataforma | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/grasp-naming/grasp-naming.html) |
-| [**Extrator de Links de Influencer**](link-extrator/) | Extrai links de perfil de influencers de planilhas | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/link-extrator/) |
 | [**Location**](location/) | Gera o campo Location do naming (cidade, estado, região, nacional) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location/) |
 | [**Mapeador RM→ADP**](mapeador-rm/) | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/mapeador-rm/) |
 | [**Merge RM→ADP**](merge-rm-adp/) | Mescla dados do RM na estrutura ADP por plataforma | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/merge-rm-adp/) |
+| [**Removedor de Caracteres**](char-cleaner/) | Remove/substitui caracteres especiais de textos de campanha | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
 
 ---
 
