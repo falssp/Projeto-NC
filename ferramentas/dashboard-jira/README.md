@@ -2,7 +2,7 @@
 
 Dashboard operacional de taxonomias Unilever BR — Grasp x StormX.
 
-**🔗 Acesso:** https://falssp.github.io/Projeto-NC/dashboard-jira/
+**🔗 Acesso:** https://falssp.github.io/Projeto-NC/ferramentas/dashboard-jira/
 
 Sincroniza tickets do Jira (projeto UL) automaticamente e os organiza em um painel visual hospedado no GitHub Pages.
 
