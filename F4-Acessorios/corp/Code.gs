@@ -169,22 +169,18 @@ function gerarIDs(payload) {
         var id = tipo + String(cont.last).padStart(cont.size, '0') + cont.suffix;
         ids.push(id);
         linhaMinha++;
-        batchMinha.push([linhaMinha, today, plat, id, tipo]);
+        batchMinha.push([linhaMinha, today, plat]);
       }
       resultado.push({ plataforma: plat, tipo: tipo, ids: ids });
       // NÃO atualiza contador aqui — só após gravação
     });
 
-    // Escreve data, IDs e plataforma na planilha minha em batch
+    // Escreve data e plataforma na planilha minha em batch
     if (batchMinha.length) {
       var startMinha = batchMinha[0][0];
-      var datas  = batchMinha.map(function(r) { return [r[1]]; });
-      var plats  = batchMinha.map(function(r) { return [r[2]]; });
-      var idsSX  = batchMinha.map(function(r) { return [r[4] === 'SX'  ? r[3] : '']; });
-      var idsAMZ = batchMinha.map(function(r) { return [r[4] === 'AMZ' ? r[3] : '']; });
+      var datas = batchMinha.map(function(r) { return [r[1]]; });
+      var plats = batchMinha.map(function(r) { return [r[2]]; });
       abaMinha.getRange(startMinha, 1, batchMinha.length, 1).setValues(datas);
-      abaMinha.getRange(startMinha, 2, batchMinha.length, 1).setValues(idsSX);
-      abaMinha.getRange(startMinha, 3, batchMinha.length, 1).setValues(idsAMZ);
       abaMinha.getRange(startMinha, 5, batchMinha.length, 1).setValues(plats);
     }
 
@@ -226,28 +222,27 @@ function fillAdNames(payload) {
     var abaMinha = _getOrCreateAba(ssMinha, anoAtual);
     var lastRow  = abaChefe.getLastRow();
 
-    // Monta mapa ID → número de linha a partir das cols B e C da planilha do usuário (fonte primária)
-    // Fallback: cols B e C da aba do chefe (para IDs mais antigos)
+    // Monta mapa ID → número de linha a partir das cols B e C da aba do chefe
     var mapaID = {};
-    var lastMinha = abaMinha.getLastRow();
-    var minhaData = {};
-    if (lastMinha >= 2) {
-      abaMinha.getRange(2, 2, lastMinha - 1, 3).getValues().forEach(function(row, ri) {
-        var b = String(row[0] || '').trim().toUpperCase();
-        var c = String(row[1] || '').trim().toUpperCase();
-        var d = String(row[2] || '').trim();
-        if (b) mapaID[b] = ri + 2;
-        if (c) mapaID[c] = ri + 2;
-        minhaData[ri + 2] = { b: b, c: c, d: d };
-      });
-    }
-    // Fallback: chefe (IDs antigos que ainda não estão na planilha do usuário)
     if (lastRow >= 2) {
       abaChefe.getRange(2, 2, lastRow - 1, 2).getValues().forEach(function(row, ri) {
         var b = String(row[0] || '').trim().toUpperCase();
         var c = String(row[1] || '').trim().toUpperCase();
-        if (b && !mapaID[b]) mapaID[b] = ri + 2;
-        if (c && !mapaID[c]) mapaID[c] = ri + 2;
+        if (b) mapaID[b] = ri + 2;
+        if (c) mapaID[c] = ri + 2;
+      });
+    }
+
+    // Lê abaMinha inteira em batch (cols B, C, D) — UMA chamada só
+    var lastMinha = abaMinha.getLastRow();
+    var minhaData = {};
+    if (lastMinha >= 2) {
+      abaMinha.getRange(2, 2, lastMinha - 1, 3).getValues().forEach(function(row, ri) {
+        minhaData[ri + 2] = {
+          b: String(row[0] || '').trim().toUpperCase(),
+          c: String(row[1] || '').trim().toUpperCase(),
+          d: String(row[2] || '').trim()
+        };
       });
     }
 
@@ -685,27 +680,37 @@ function _getPing() {
 }
 
 /* ════ STATS ════ */
+// Histórico: Data/Hora (col0), Usuário (col1), Aba (col2), Célula (col3), Valor Anterior (col4), Valor Novo (col5)
 function _getStats() {
   try {
-    var ss = SpreadsheetApp.openById('1WZf3wiiZYoMqr7XH5UlUpzHggIwUTQE0JlTlhLr-46o');
-    var sh = ss.getSheetByName('📋 Histórico');
-    if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
+    var ss = SpreadsheetApp.openById('1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI');
+    var sheets = ss.getSheets().map(function(s){ return s.getName(); });
+    var sh = ss.getSheetByName('Histórico');
+    if (!sh) return { ok: false, error: 'Aba nao encontrada. Abas: ' + JSON.stringify(sheets) };
     var dados = sh.getDataRange().getValues();
     var agora = new Date(), mes = agora.getMonth(), ano = agora.getFullYear();
     var total = 0, ultima = null;
     for (var i = 1; i < dados.length; i++) {
       if (!dados[i][0]) continue;
-      var d = new Date(dados[i][0]);
-      if (d.getMonth() === mes && d.getFullYear() === ano) total++;
+      // col0 = "dd/MM/yyyy HH:mm:ss" (string) ou Date
+      var raw = dados[i][0];
+      var d = (raw instanceof Date) ? raw : new Date(String(raw).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'));
+      if (!isNaN(d) && d.getMonth() === mes && d.getFullYear() === ano) total++;
       ultima = dados[i];
     }
     var out = { ok: true, totalMes: total, totalOperacoes: total };
-    if (ultima) out.ultimaOperacao = {
-      data:    Utilities.formatDate(new Date(ultima[0]), 'America/Sao_Paulo', 'dd/MM/yyyy'),
-      hora:    String(ultima[1]||'').trim(),
-      usuario: String(ultima[2]||'').trim(),
-      modulo:  String(ultima[3]||'').trim()
-    };
+    if (ultima) {
+      var rawDate = ultima[0];
+      var dataStr = (rawDate instanceof Date)
+        ? Utilities.formatDate(rawDate, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm')
+        : String(rawDate).substring(0, 16);
+      out.ultimaOperacao = {
+        data:    dataStr,
+        hora:    '',
+        usuario: String(ultima[1]||'').trim(),
+        modulo:  String(ultima[2]||'').trim()   // Aba editada
+      };
+    }
     return out;
   } catch(e) { return { ok: false, error: e.message }; }
 }
