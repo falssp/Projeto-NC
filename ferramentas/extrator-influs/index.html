@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Extrator de Influs · NC Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--ul:#1946E6;--ok:#1A7A3E;--err:#CC2C2C;--warn:#856900;--g900:#0D0D0D;--g700:#333;--g500:#666;--g400:#888;--g300:#B8B8B8;--g200:#E0E0E0;--g100:#F2F2F2;--g50:#F9F9F9;--mo:'DM Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--g50);color:var(--g900);font-size:14px;line-height:1.5;min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 24px}
+h1{font-size:22px;font-weight:600;margin-bottom:4px}
+.subtitle{color:var(--g500);font-size:13px;margin-bottom:32px}
+/* cfg warn */
+.cfg-warn{background:#FFF9E6;border:1px solid #FFD966;border-radius:8px;padding:12px 16px;font-size:13px;color:var(--warn);margin-bottom:20px;display:flex;gap:10px;align-items:flex-start}
+.cfg-warn code{font-family:var(--mo);background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px}
+/* card */
+.card{background:#fff;border:1px solid var(--g200);border-radius:10px;padding:24px;margin-bottom:20px}
+.card-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);margin-bottom:16px}
+/* tabs */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:20px;border:1px solid var(--g200);background:#fff;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--g700);transition:.15s}
+.tab.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+.tab:hover:not(.active){border-color:var(--g300);background:var(--g50)}
+/* drop zone */
+.drop{border:2px dashed var(--g200);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:.15s;position:relative}
+.drop:hover,.drop.drag{border-color:var(--ul);background:#f0f4ff}
+.drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:28px;margin-bottom:8px}
+.drop-label{font-size:13px;color:var(--g500)}
+/* file info */
+.file-info{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--g50);border:1px solid var(--g200);border-radius:8px;font-size:13px;margin-top:10px}
+.file-name{font-family:var(--mo);font-size:12px;color:var(--g700);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-rows{font-size:12px;color:var(--g500);white-space:nowrap}
+/* status */
+.st{font-size:13px;margin-top:10px;min-height:20px;display:flex;align-items:center;gap:6px}
+.st-ok{color:var(--ok)}.st-err{color:var(--err)}.st-warn{color:var(--warn)}
+/* btns */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:7px;border:none;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--ul);color:#fff}.btn-primary:hover:not(:disabled){background:#1439c4}
+.btn-outline{background:#fff;color:var(--g700);border:1px solid var(--g200)}.btn-outline:hover:not(:disabled){border-color:var(--g300);background:var(--g50)}
+.btn-sm{padding:6px 14px;font-size:12px;border-radius:6px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+/* textarea */
+textarea{width:100%;border:1px solid var(--g200);border-radius:8px;padding:12px;font-family:var(--mo);font-size:12px;resize:vertical;outline:none;color:var(--g900);background:#fff;line-height:1.6}
+textarea:focus{border-color:var(--ul)}
+/* table */
+.table-wrap{overflow-x:auto;margin-top:16px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{padding:9px 12px;background:var(--g50);border-bottom:1px solid var(--g200);text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--g500);white-space:nowrap}
+td{padding:7px 12px;border-bottom:1px solid var(--g100);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--g50)}
+/* inline editable */
+.editable{outline:none;border-radius:4px;padding:2px 4px}
+.editable:focus{background:#f0f4ff;box-shadow:0 0 0 2px var(--ul)}
+/* badges */
+.nb{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.nb-tiktok{background:#010101;color:#fff}
+.nb-instagram{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff}
+.nb-youtube{background:#FF0000;color:#fff}
+.nb-pinterest{background:#E60023;color:#fff}
+.nb-x{background:#000;color:#fff}
+.nb-facebook{background:#1877F2;color:#fff}
+.nb-twitch{background:#6441A5;color:#fff}
+.nb-other{background:var(--g200);color:var(--g700)}
+.bok{color:var(--ok);font-size:11px;font-weight:600}
+.bwarn{color:var(--warn);font-size:11px;font-weight:600}
+.ber{color:var(--err);font-size:11px;font-weight:600}
+/* results section */
+#results-section{display:none}
+/* cards sumário */
+.summary-cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.sc{background:var(--g50);border:1px solid var(--g200);border-radius:8px;padding:12px 20px;min-width:90px;text-align:center}
+.sc-n{font-size:24px;font-weight:600}
+.sc-l{font-size:11px;color:var(--g500);margin-top:2px}
+/* row confirm */
+.row-confirm{background:var(--g50);border:1px solid var(--g200);border-radius:8px;padding:16px;margin-top:16px}
+.row-confirm label{font-size:13px;font-weight:500;display:block;margin-bottom:8px}
+.row-input-wrap{display:flex;gap:8px;align-items:center}
+.row-input-wrap input{width:90px;padding:7px 12px;border:1px solid var(--g200);border-radius:7px;font-family:var(--mo);font-size:14px;text-align:center;outline:none}
+.row-input-wrap input:focus{border-color:var(--ul)}
+/* pb */
+.pb-wrap{height:4px;background:var(--g100);border-radius:2px;margin-top:12px;overflow:hidden;display:none}
+.pb-wrap.active{display:block}
+.pb-fill{height:100%;background:var(--ul);border-radius:2px;transition:width .3s}
+/* existing links */
+.ex-links-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.existing-badge{display:none;padding:4px 10px;border-radius:20px;background:#f0f4ff;color:var(--ul);font-size:12px;font-weight:500}
+/* manual textarea */
+.manual-help{font-size:12px;color:var(--g400);margin-top:6px}
+/* separator */
+.sep{height:1px;background:var(--g100);margin:20px 0}
+.section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--g400);margin-bottom:8px}
+/* input inline */
+.inp-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.inp-inline input[type=text]{flex:1;min-width:200px;max-width:440px;padding:9px 14px;border:1px solid var(--g200);border-radius:8px;font-size:13px;outline:none}
+.inp-inline input[type=text]:focus{border-color:var(--ul)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Extrator de Influs</h1>
+  <p class="subtitle">Extrai links de influencers do RM ou ADP, calcula campos do Dicionário de Influs e exporta para colar na planilha.</p>
+
+  <div id="cfg-warn" class="cfg-warn" style="display:none">
+    ⚙️ Configure a URL do GAS em <code>F4_PROXY</code> e o token em <code>NC_TOKEN</code> para usar as funções de leitura de RM via link e verificação de duplicatas.
+  </div>
+
+  <!-- STEP 1: ENTRADA -->
+  <div class="card">
+    <div class="card-title">1 — Entrada</div>
+
+    <div class="tabs" id="input-tabs">
+      <button class="tab active" onclick="switchTab('rm',this)">RM (upload)</button>
+      <button class="tab" onclick="switchTab('adp',this)">ADP (upload)</button>
+      <button class="tab" onclick="switchTab('manual',this)">Manual / Links</button>
+    </div>
+
+    <!-- RM -->
+    <div id="tab-rm">
+      <div class="drop" id="drop-rm"
+        ondragover="ev(event)" ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event,'rm')">
+        <input type="file" accept=".xlsx,.xls" onchange="handleFile(this.files[0],'rm')">
+        <div class="drop-icon">📋</div>
+        <div class="drop-label">Arraste o arquivo RM aqui ou clique para selecionar</div>
+      </div>
+      <div class="file-info" id="fi-rm">
+        <span>📄</span>
+        <span class="file-name" id="fi-rm-name"></span>
+        <span class="file-rows" id="fi-rm-rows"></span>
+      </div>
+    </div>
+
+    <!-- ADP -->
+    <div id="tab-adp" style="display:none">
+      <div class="drop" id="drop-adp"
+        ondragover="ev(event)" ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event,'adp')">
+        <input type="file" accept=".xlsx,.xls" onchange="handleFile(this.files[0],'adp')">
+        <div class="drop-icon">📊</div>
+        <div class="drop-label">Arraste o arquivo ADP aqui ou clique para selecionar<br><small style="color:var(--g400)">Extrai linhas onde brand = inf / ugc</small></div>
+      </div>
+      <div class="file-info" id="fi-adp">
+        <span>📄</span>
+        <span class="file-name" id="fi-adp-name"></span>
+        <span class="file-rows" id="fi-adp-rows"></span>
+      </div>
+    </div>
+
+    <!-- Manual -->
+    <div id="tab-manual" style="display:none">
+      <div class="section-label">Cole os links (um por linha)</div>
+      <textarea id="manual-links" rows="6" placeholder="https://www.instagram.com/usuario&#10;https://www.tiktok.com/@usuario&#10;https://www.youtube.com/@canal"
+        oninput="countManual()"></textarea>
+      <div class="manual-help" id="manual-count">0 links</div>
+    </div>
+
+    <div class="st" id="st1"></div>
+
+    <!-- Links já cadastrados -->
+    <div class="sep"></div>
+    <div class="section-label">Links já cadastrados (para filtrar duplicatas)</div>
+    <textarea id="existing-links" rows="3" placeholder="Cole aqui os links já cadastrados no Dicionário (opcional)" oninput="parseExisting()"></textarea>
+    <div class="ex-links-row">
+      <span class="existing-badge" id="ex-badge"></span>
+      <button class="btn btn-outline btn-sm" onclick="clearExisting()">Limpar</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-step2" onclick="goStep2()" disabled>Extrair links →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: EDIÇÃO / PREVIEW -->
+  <div class="card" id="step2-card" style="display:none">
+    <div class="card-title">2 — Revisar e calcular</div>
+    <div class="st" id="st2"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>A — Nome</th>
+            <th>B — Nome Padrão</th>
+            <th>C — Influencer Name</th>
+            <th>D — Rede</th>
+            <th>E — Perfil</th>
+            <th>F — Handle Puro</th>
+            <th>G — Seguidores</th>
+            <th>H — URL</th>
+          </tr>
+        </thead>
+        <tbody id="edit-body"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-step3" onclick="goStep3()">Verificar duplicatas →</button>
+      <button class="btn btn-outline" onclick="resetTool()">Reiniciar</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: DUPLICATAS -->
+  <div class="card" id="step3-card" style="display:none">
+    <div class="card-title">3 — Duplicatas</div>
+    <div class="st" id="st3"></div>
+    <div id="dup-result" style="display:none">
+      <div class="summary-cards">
+        <div class="sc"><div class="sc-n" id="c-total">0</div><div class="sc-l">Total</div></div>
+        <div class="sc"><div class="sc-n" id="c-new" style="color:var(--ok)">0</div><div class="sc-l">Novos</div></div>
+        <div class="sc"><div class="sc-n" id="c-dup" style="color:var(--warn)">0</div><div class="sc-l">Já existentes</div></div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-step4" onclick="goStep4()" disabled>Copiar / Salvar →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: EXPORTAR -->
+  <div class="card" id="step4-card" style="display:none">
+    <div class="card-title">4 — Exportar</div>
+    <div class="row-confirm">
+      <label>Linha de início na planilha (para colar)</label>
+      <div class="row-input-wrap">
+        <input type="number" id="row-input" min="2" value="2" oninput="confirmRow()">
+        <button class="btn btn-outline btn-sm" onclick="confirmRow()">Confirmar linha</button>
+      </div>
+    </div>
+    <div class="st" id="st4"></div>
+    <div class="pb-wrap" id="pb-wrap"><div class="pb-fill" id="pb-fill" style="width:0%"></div></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-copy" onclick="copyForSheets()" disabled>📋 Copiar para colar (A–H)</button>
+      <button class="btn btn-outline" id="btn-copy-tsv" onclick="copyTsv()" disabled>Copiar TSV</button>
+      <button class="btn btn-outline" onclick="resetTool()">Nova extração</button>
+    </div>
+    <div id="results-section">
+      <div class="sep"></div>
+      <div class="section-label">Preview</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th></tr>
+          </thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────
+var F4_PROXY = 'https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
+var NC_TOKEN  = '9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67';
+// ─────────────────────────────────────────────────────────────────
+
+// DIC_ADP_MAP: col=InfluencerName (0-based), brand=InfluencerOrBrand, start=first data row
+var DIC_ADP_MAP = {
+  'Google':    {col:46, brand:45, start:16},
+  'Prog':      {col:45, brand:44, start:16},
+  'YT':        {col:43, brand:42, start:16},
+  'Meta':      {col:49, brand:48, start:19},
+  'Pinterest': {col:45, brand:44, start:19},
+  'Flash':     {col:39, brand:38, start:16}
+};
+var DIC_ADP_PLAT = {
+  'Google':    'https://www.instagram.com/',
+  'Prog':      'https://www.instagram.com/',
+  'YT':        'https://www.youtube.com/@',
+  'Meta':      'https://www.instagram.com/',
+  'Pinterest': 'https://www.pinterest.com/',
+  'Flash':     'https://www.instagram.com/'
+};
+var DIC_RM_MAP = {
+  'Google':                  36,
+  'Programmatic':            37,
+  'YouTube':                 34,
+  'Meta e Tiktok':           39,
+  'Pinterest, Snapchat e X': 38,
+  'Flashtalking':            33
+};
+
+// State
+var currentTab    = 'rm';
+var rmWorkbook    = null;
+var adpRows       = [];
+var resultado     = [];
+var existingSet   = new Set();
+var rowConfirmed  = false;
+var newOnly       = [];
+
+// show cfg warn if default proxy
+(function(){
+  var isDefault = F4_PROXY.indexOf('AKfycbxiWW0zVuFdRJCv') >= 0;
+  // hide warn — corp URL is valid default
+  document.getElementById('cfg-warn').style.display = 'none';
+})();
+
+function ev(e){e.preventDefault();e.currentTarget.classList.add('drag');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showSt(id,cls,msg){var el=document.getElementById(id);if(!el)return;el.className='st'+(cls?' st-'+cls:'');el.textContent=msg;}
+
+function switchTab(tab, btn){
+  currentTab = tab;
+  document.querySelectorAll('#input-tabs .tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  ['rm','adp','manual'].forEach(function(t){
+    var el=document.getElementById('tab-'+t);
+    if(el)el.style.display=t===tab?'':'none';
+  });
+  rmWorkbook=null; adpRows=[];
+  document.getElementById('btn-step2').disabled=true;
+  showSt('st1','','');
+}
+
+function handleDrop(e,type){
+  e.preventDefault();
+  document.getElementById('drop-'+type).classList.remove('drag');
+  var f=e.dataTransfer.files[0]; if(f)handleFile(f,type);
+}
+function handleFile(f,type){
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    try{
+      var wb=XLSX.read(ev.target.result,{type:'binary'});
+      if(type==='rm'){
+        rmWorkbook=wb;
+        var abas=wb.SheetNames.filter(function(n){return DIC_RM_MAP[n]!==undefined;});
+        showFileInfo('rm',f.name,abas.length+' aba(s): '+abas.join(', '));
+        document.getElementById('btn-step2').disabled=!abas.length;
+        showSt('st1',abas.length?'ok':'warn',abas.length?'✅ RM carregado.':'⚠ Nenhuma aba de mídia reconhecida.');
+      } else {
+        adpRows=extractAdp(wb);
+        showFileInfo('adp',f.name,adpRows.length+' handle(s) de influencer encontrado(s)');
+        document.getElementById('btn-step2').disabled=!adpRows.length;
+        showSt('st1',adpRows.length?'ok':'warn',adpRows.length?'✅ '+adpRows.length+' handle(s) extraído(s).':'⚠ Nenhum handle de influencer encontrado (brand=inf/ugc).');
+      }
+    }catch(e2){showSt('st1','err','❌ '+e2.message);}
+  };
+  r.readAsBinaryString(f);
+}
+function showFileInfo(type,name,rows){
+  var el=document.getElementById('fi-'+type);
+  document.getElementById('fi-'+type+'-name').textContent=name;
+  document.getElementById('fi-'+type+'-rows').textContent=rows;
+  el.style.display='flex';
+}
+
+function detectAbaKey(name){
+  var n=String(name).toLowerCase().trim();
+  if(n==='google'||n==='google ads')return'Google';
+  if(n==='programmatic'||n==='prog')return'Prog';
+  if(n==='youtube'||n==='yt')return'YT';
+  if(n==='meta e tiktok'||n==='meta & tiktok')return'Meta';
+  if(n.indexOf('pinterest')>=0||n.indexOf('snapchat')>=0)return'Pinterest';
+  if(n==='flashtalking'||n.indexOf('flash')===0)return'Flash';
+  return null;
+}
+
+function xlsxToArr(wb,shName){
+  var sh=wb.Sheets[shName];if(!sh)return null;
+  var ref=sh['!ref'],range=ref?XLSX.utils.decode_range(ref):null;
+  var opts={header:1,defval:'',raw:true};
+  if(range)opts.range=range;
+  return XLSX.utils.sheet_to_json(sh,opts);
+}
+
+function extractAdp(wb){
+  var rows=[],seen={};
+  wb.SheetNames.forEach(function(shName){
+    var abaKey=detectAbaKey(shName);if(!abaKey)return;
+    var map=DIC_ADP_MAP[abaKey];if(!map)return;
+    var data=xlsxToArr(wb,shName);if(!data)return;
+    for(var i=map.start;i<data.length;i++){
+      var brand=String(data[i][map.brand]||'').trim().toLowerCase();
+      if(brand!=='inf'&&brand!=='ugc'&&!/^inf-/.test(brand)&&!/^ugc-/.test(brand))continue;
+      var handle=String(data[i][map.col]||'').trim();
+      if(!handle||handle.toLowerCase()==='na'||/^[=]/.test(handle))continue;
+      if(handle.indexOf('-')!==-1)continue;
+      var key=abaKey+'|'+handle.toLowerCase();
+      if(seen[key])continue;
+      seen[key]=true;
+      var base=DIC_ADP_PLAT[abaKey]||'https://';
+      rows.push({handle:handle,url:base+handle,aba:shName});
+    }
+  });
+  return rows;
+}
+
+function countManual(){
+  var raw=document.getElementById('manual-links').value;
+  var links=extractLinks(raw);
+  var n=links.length;
+  document.getElementById('manual-count').textContent=n+' link'+(n!==1?'s':'');
+  document.getElementById('btn-step2').disabled=!n;
+}
+
+function extractLinks(raw){
+  return raw.split(/[\n\r]+/).map(function(l){
+    l=l.trim();
+    var md=l.match(/\[.*?\]\((https?:\/\/[^)]+)\)/);
+    if(md)return md[1];
+    if(/^https?:\/\//i.test(l))return l;
+    return null;
+  }).filter(Boolean);
+}
+
+function parseExisting(){
+  var raw=document.getElementById('existing-links').value;
+  existingSet=new Set();
+  raw.split(/[\n\r]+/).forEach(function(l){
+    var u=normalizeUrl(l.trim());
+    if(u)existingSet.add(u);
+  });
+  updateExBadge();
+}
+function clearExisting(){
+  document.getElementById('existing-links').value='';
+  existingSet=new Set();
+  updateExBadge();
+}
+function normalizeUrl(url){
+  if(!url)return'';
+  return url.toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/[?#].*/,'').replace(/\/+$/,'');
+}
+function updateExBadge(){
+  var n=existingSet.size,el=document.getElementById('ex-badge');
+  if(n>0){el.textContent=n+' link(s) carregado(s)';el.style.display='inline-flex';}
+  else el.style.display='none';
+}
+
+// ── Funções de cálculo ──
+function calcB(a){
+  if(!a)return'';
+  var s=a.trim().toLowerCase().replace(/(^|\s)([a-zà-ÿ])/g,function(m,sp,ch){return sp+ch.toUpperCase();});
+  s=s.replace(/\s+/g,'_').replace(/[._]+/g,'_').replace(/_$/,'');
+  return s;
+}
+function calcC(a){
+  if(!a)return'';
+  return a.trim().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x00-\x7F]/g,'').replace(/[!-\/:-@\[-`{-~]/g,'').replace(/\s+/g,'').toLowerCase();
+}
+function calcD(h){
+  if(!h)return'';
+  if(/facebook\.com/i.test(h))return'Facebook';
+  if(/instagram\.com/i.test(h))return'Instagram';
+  if(/tiktok\.com/i.test(h))return'TikTok';
+  if(/youtube\.com|youtu\.be/i.test(h))return'YouTube';
+  if(/x\.com|twitter\.com/i.test(h))return'X';
+  if(/pinterest\.com/i.test(h))return'Pinterest';
+  if(/linkedin\.com/i.test(h))return'LinkedIn';
+  if(/snapchat\.com/i.test(h))return'Snapchat';
+  if(/twitch\.tv/i.test(h))return'Twitch';
+  return'Verificar cadastro da mídia';
+}
+function calcE(h){
+  if(!h)return'';
+  var m;
+  if(/tiktok\.com/i.test(h)){m=h.match(/@([^/?&]+)/);if(m)return m[1];m=h.match(/tiktok\.com\/([^/?&@]+)/i);return m?m[1]:'';}
+  if(/youtube\.com/i.test(h)){m=h.match(/youtube\.com\/(?:c\/|channel\/|user\/|@)?([^/?&]+)/i);return m?m[1]:'';}
+  if(/instagram\.com/i.test(h)){m=h.match(/instagram\.com\/([^/?&]+)/i);return m?m[1]:'';}
+  if(/twitch\.tv/i.test(h)){m=h.match(/twitch\.tv\/([^/?&]+)/i);return m?m[1]:'';}
+  return'';
+}
+function calcF(e){return String(e||'').replace(/[^A-Za-z0-9]/g,'');}
+function calcRow(a,g,h){return{a:a,b:calcB(a),c:calcC(a),d:calcD(h),e:calcE(h),f:calcF(calcE(h)),g:g,h:h};}
+
+function netBadge(net){
+  var map={'TikTok':'nb-tiktok','Instagram':'nb-instagram','YouTube':'nb-youtube','Pinterest':'nb-pinterest','X':'nb-x','Facebook':'nb-facebook','LinkedIn':'nb-other','Snapchat':'nb-other','Twitch':'nb-twitch'};
+  return'<span class="nb '+(map[net]||'nb-other')+'">'+esc(net)+'</span>';
+}
+
+function goStep2(){
+  resultado=[];
+  var seen={};
+  function addUrl(url){
+    url=url.trim();
+    if(!url||!/^https?:\/\//i.test(url))return;
+    if(existingSet.has(normalizeUrl(url)))return;
+    if(seen[normalizeUrl(url)])return;
+    seen[normalizeUrl(url)]=true;
+    resultado.push(calcRow('','',url));
+  }
+  function addHandle(handle){
+    var key='handle:'+handle.toLowerCase();
+    if(seen[key])return;
+    seen[key]=true;
+    resultado.push(calcRow('','','')); // empty url, handle stored for edit
+    resultado[resultado.length-1]._handle=handle;
+  }
+
+  if(currentTab==='rm'){
+    if(!rmWorkbook){showSt('st1','err','❌ Carregue o RM.');return;}
+    rmWorkbook.SheetNames.forEach(function(shName){
+      var colIdx=DIC_RM_MAP[shName];if(colIdx===undefined)return;
+      var rows=xlsxToArr(rmWorkbook,shName);if(!rows)return;
+      for(var i=1;i<rows.length;i++){
+        var v=rows[i][colIdx];
+        if(v&&String(v).trim())addUrl(String(v).trim());
+      }
+    });
+  } else if(currentTab==='adp'){
+    adpRows.forEach(function(r){addHandle(r.handle);});
+  } else {
+    extractLinks(document.getElementById('manual-links').value).forEach(addUrl);
+  }
+
+  if(!resultado.length){showSt('st1','warn','⚠ Nenhum link encontrado.');return;}
+
+  // Render edit table
+  var tbody=document.getElementById('edit-body');
+  tbody.innerHTML=resultado.map(function(r,idx){
+    var hval=r._handle||r.h;
+    return'<tr id="er-'+idx+'">'+
+      '<td style="color:var(--g400);font-family:var(--mo);font-size:11px">'+(idx+1)+'</td>'+
+      '<td><span class="editable" contenteditable="true" data-idx="'+idx+'" data-col="a" onblur="editCell(this)">'+esc(r.a)+'</span></td>'+
+      '<td style="font-family:var(--mo);font-size:11px;color:var(--g500)" id="b-'+idx+'">'+esc(r.b)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px;color:var(--g500)" id="c-'+idx+'">'+esc(r.c)+'</td>'+
+      '<td id="d-'+idx+'">'+netBadge(r.d)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px;color:var(--g500)" id="e-'+idx+'">'+esc(r.e)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px;color:var(--g500)" id="f-'+idx+'">'+esc(r.f)+'</td>'+
+      '<td><span class="editable" contenteditable="true" data-idx="'+idx+'" data-col="g" onblur="editCell(this)">'+esc(r.g?r.g.toString():'')+'</span></td>'+
+      '<td><span class="editable" contenteditable="true" data-idx="'+idx+'" data-col="h" onblur="editCell(this)" style="font-family:var(--mo);font-size:11px">'+esc(hval)+'</span></td>'+
+      '</tr>';
+  }).join('');
+
+  document.getElementById('step2-card').style.display='';
+  document.getElementById('step2-card').scrollIntoView({behavior:'smooth',block:'start'});
+  showSt('st2','ok','✅ '+resultado.length+' linha(s). Edite A (nome), G (seguidores) e H (URL) conforme necessário.');
+}
+
+function editCell(el){
+  var idx=parseInt(el.dataset.idx),col=el.dataset.col,val=el.textContent.trim();
+  if(!resultado[idx])return;
+  resultado[idx][col]=val;
+  if(col==='a'||col==='h'){
+    var r=resultado[idx];
+    r.b=calcB(r.a);r.c=calcC(r.a);r.d=calcD(r.h);r.e=calcE(r.h);r.f=calcF(r.e);
+    document.getElementById('b-'+idx).textContent=r.b;
+    document.getElementById('c-'+idx).textContent=r.c;
+    document.getElementById('d-'+idx).innerHTML=netBadge(r.d);
+    document.getElementById('e-'+idx).textContent=r.e;
+    document.getElementById('f-'+idx).textContent=r.f;
+  }
+}
+
+function goStep3(){
+  document.getElementById('step3-card').style.display='';
+  document.getElementById('step3-card').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('dup-result').style.display='none';
+  document.getElementById('btn-step4').disabled=true;
+
+  // Local dedup against existingSet
+  newOnly=resultado.filter(function(r){return!existingSet.has(normalizeUrl(r.h));});
+  var dupCount=resultado.length-newOnly.length;
+
+  // Try GAS check
+  if(F4_PROXY&&NC_TOKEN){
+    showSt('st3','ok','⏳ Verificando duplicatas via GAS...');
+    var itens=resultado.map(function(r){return{h:r.h||'',f:r.f||'',d:r.d||''};}).filter(function(x){return x.h||x.f;});
+    fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'checkDicDuplicatas',itens:itens,token:NC_TOKEN})})
+      .then(function(res){return res.json();})
+      .then(function(d){
+        if(d.existing&&Array.isArray(d.existing)){
+          d.existing.forEach(function(u){existingSet.add(normalizeUrl(u));});
+          newOnly=resultado.filter(function(r){return!existingSet.has(normalizeUrl(r.h));});
+          dupCount=resultado.length-newOnly.length;
+        }
+        renderDupResult(dupCount);
+      })
+      .catch(function(){renderDupResult(dupCount);});
+  } else {
+    renderDupResult(dupCount);
+  }
+}
+
+function renderDupResult(dupCount){
+  document.getElementById('c-total').textContent=resultado.length;
+  document.getElementById('c-new').textContent=newOnly.length;
+  document.getElementById('c-dup').textContent=dupCount;
+  document.getElementById('dup-result').style.display='';
+  document.getElementById('btn-step4').disabled=false;
+  showSt('st3','ok','✅ '+newOnly.length+' novo(s), '+dupCount+' já existente(s).');
+}
+
+function goStep4(){
+  document.getElementById('step4-card').style.display='';
+  document.getElementById('step4-card').scrollIntoView({behavior:'smooth',block:'start'});
+  renderPreview();
+  confirmRow();
+}
+
+function renderPreview(){
+  var tbody=document.getElementById('preview-body');
+  tbody.innerHTML=(newOnly.length?newOnly:resultado).map(function(r,i){
+    return'<tr><td style="color:var(--g400);font-size:11px">'+(i+1)+'</td>'+
+      '<td>'+esc(r.a)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px">'+esc(r.b)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px">'+esc(r.c)+'</td>'+
+      '<td>'+netBadge(r.d)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px">'+esc(r.e)+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px">'+esc(r.f)+'</td>'+
+      '<td style="text-align:right;font-family:var(--mo);font-size:11px">'+esc(r.g?r.g.toString():'')+'</td>'+
+      '<td style="font-family:var(--mo);font-size:11px;color:var(--g500)">'+esc(r.h)+'</td></tr>';
+  }).join('');
+  document.getElementById('results-section').style.display='';
+}
+
+function confirmRow(){
+  var val=document.getElementById('row-input').value.trim();
+  var n=parseInt(val);
+  var rows=newOnly.length?newOnly:resultado;
+  if(!n||n<2){
+    showSt('st4','err','⚠ Informe um número de linha válido (mínimo 2).');
+    document.getElementById('btn-copy').disabled=true;
+    document.getElementById('btn-copy-tsv').disabled=true;
+    rowConfirmed=false;return;
+  }
+  var end=n+rows.length-1;
+  showSt('st4','ok','✓ Confirmado: cole a partir da linha '+n+(rows.length>1?' (até '+end+')':'')+'. Verifique que essas linhas estão vazias.');
+  rowConfirmed=true;
+  document.getElementById('btn-copy').disabled=false;
+  document.getElementById('btn-copy-tsv').disabled=false;
+}
+
+function copyForSheets(){
+  if(!rowConfirmed)return;
+  var rows=newOnly.length?newOnly:resultado;
+  var text=rows.map(function(r){return[r.a,r.b,r.c,r.d,r.e,r.f,r.g?r.g.toString():'',r.h].join('\t');}).join('\n');
+  navigator.clipboard.writeText(text).then(function(){
+    rows.forEach(function(r){if(r.h)existingSet.add(normalizeUrl(r.h));});
+    updateExBadge();
+    var btn=document.getElementById('btn-copy');
+    var orig=btn.innerHTML;btn.innerHTML='✓ Copiado!';
+    setTimeout(function(){btn.innerHTML=orig;},2500);
+  });
+}
+
+function copyTsv(){
+  if(!rowConfirmed)return;
+  var rows=newOnly.length?newOnly:resultado;
+  var text=rows.map(function(r){return[r.a,r.b,r.c,r.d,r.e,r.f,r.g?r.g.toString():'',r.h].join('\t');}).join('\n');
+  navigator.clipboard.writeText(text).then(function(){
+    var btn=document.getElementById('btn-copy-tsv');
+    var orig=btn.innerHTML;btn.innerHTML='✓ Copiado!';
+    setTimeout(function(){btn.innerHTML=orig;},2500);
+  });
+}
+
+function resetTool(){
+  rmWorkbook=null;adpRows=[];resultado=[];newOnly=[];rowConfirmed=false;
+  ['step2-card','step3-card','step4-card'].forEach(function(id){document.getElementById(id).style.display='none';});
+  document.getElementById('edit-body').innerHTML='';
+  document.getElementById('preview-body').innerHTML='';
+  document.getElementById('results-section').style.display='none';
+  document.getElementById('btn-step2').disabled=true;
+  ['fi-rm','fi-adp'].forEach(function(id){document.getElementById(id).style.display='none';});
+  document.getElementById('manual-links').value='';
+  ['st1','st2','st3','st4'].forEach(function(id){showSt(id,'','');});
+  document.getElementById('btn-copy').disabled=true;
+  document.getElementById('btn-copy-tsv').disabled=true;
+}
+</script>
+</body>
+</html>

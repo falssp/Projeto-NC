@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapeador RM → ADP · NC Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --ul:#0040CE;--ul-b:#E5ECFF;
+  --ok:#1A7F47;--ok-b:#E6F5EC;
+  --err:#C0352A;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;
+  --g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;
+  --sa:DM Sans,sans-serif;--mo:DM Mono,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sa);background:var(--g50);color:var(--g800);min-height:100vh}
+.wrap{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.header-icon{width:42px;height:42px;background:var(--ul-b);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.header h1{font-size:22px;font-weight:700}
+.header p{font-size:13px;color:var(--g500);margin-top:2px}
+
+/* Stepper */
+.stepper{display:flex;align-items:center;margin-bottom:28px;overflow-x:auto;padding-bottom:4px}
+.step-item{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--g200);color:var(--g500);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.2s}
+.step-label{font-size:12px;color:var(--g500);font-weight:500;transition:.2s}
+.step-line{width:28px;height:2px;background:var(--g200);flex-shrink:0}
+.step-item.active .step-num{background:var(--ul);color:#fff}
+.step-item.active .step-label{color:var(--ul);font-weight:600}
+.step-item.done .step-num{background:var(--ok);color:#fff}
+.step-item.done .step-label{color:var(--ok)}
+
+/* Cards */
+.card{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:22px;margin-bottom:18px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:14px}
+.info-box{background:var(--ul-b);border:1px solid #C3D4F8;border-radius:8px;padding:11px 14px;font-size:12.5px;color:#1a3a8f;margin-bottom:14px}
+
+/* Drop */
+.drop{border:2px dashed var(--g300);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:.2s;background:var(--g50)}
+.drop:hover,.drop.drag{border-color:var(--ul);background:var(--ul-b)}
+.drop-icon{font-size:26px;margin-bottom:8px}
+.drop h3{font-size:13px;font-weight:600;margin-bottom:4px}
+.drop p{font-size:12px;color:var(--g500)}
+.drop input[type=file]{display:none}
+.file-info{display:none;align-items:center;gap:10px;padding:9px 12px;background:var(--ok-b);border:1px solid var(--ok);border-radius:7px;margin-top:10px;font-size:12.5px}
+.file-info .fn{font-family:var(--mo);font-size:11.5px;font-weight:600;color:var(--ok)}
+.file-info .fsz{font-size:11.5px;color:var(--g500)}
+
+/* Aba config */
+.aba-block{border:1px solid var(--g200);border-radius:9px;overflow:hidden;margin-bottom:14px}
+.aba-block-header{background:var(--g50);padding:10px 14px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+.aba-block-title{font-weight:600;font-size:13px}
+.aba-block-body{padding:14px}
+.aba-hint{font-size:11.5px;color:var(--g500);margin-bottom:10px}
+.pair-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.pair-label{font-size:11px;font-weight:600;color:var(--g700);min-width:30px}
+.pair-input{width:72px;padding:7px 10px;border:1px solid var(--g300);border-radius:7px;font-family:var(--mo);font-size:13px;outline:none;text-transform:uppercase}
+.pair-input:focus{border-color:var(--ul)}
+.pair-arrow{color:var(--g400);font-size:16px}
+.pair-remove{background:none;border:none;cursor:pointer;color:var(--g400);font-size:18px;padding:0 4px;line-height:1}
+.pair-remove:hover{color:var(--err)}
+.add-pair-btn{background:none;border:1px dashed var(--g300);border-radius:7px;padding:6px 12px;font-size:12px;color:var(--g500);cursor:pointer;font-family:var(--sa)}
+.add-pair-btn:hover{border-color:var(--ul);color:var(--ul)}
+
+/* Status */
+.ans-sbar{font-size:12.5px;padding:9px 13px;border-radius:7px;margin-top:12px;display:none}
+.ans-sbar.ok{background:var(--ok-b);color:var(--ok);display:block}
+.ans-sbar.err{background:var(--err-b);color:var(--err);display:block}
+.ans-sbar.warn{background:var(--warn-b);color:var(--warn);display:block}
+.ans-sbar.inf{background:var(--ul-b);color:var(--ul);display:block}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;font-family:var(--sa);cursor:pointer;transition:.15s}
+.btn-primary{background:var(--ul);color:#fff}
+.btn-primary:hover{background:#0035b0}
+.btn-primary:disabled{background:var(--g300);cursor:not-allowed}
+.btn-secondary{background:#fff;color:var(--g700);border:1px solid var(--g300)}
+.btn-secondary:hover{border-color:var(--ul);color:var(--ul)}
+.btn-bar{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}
+
+/* Stats */
+.stats-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.stat-box{flex:1;min-width:100px;border-radius:8px;padding:12px 14px;text-align:center;border:2px solid}
+.stat-num{font-size:26px;font-weight:700}
+.stat-lbl{font-size:10.5px;margin-top:2px}
+
+/* Section */
+.section{display:none}
+.section.active{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="header-icon">🗺</div>
+    <div>
+      <h1>Mapeador RM → ADP</h1>
+      <p>Copia colunas do RM para o ADP nas linhas com status "Alterar" — funciona 100% offline</p>
+    </div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper">
+    <div class="step-item active" id="s-1"><div class="step-num">1</div><div class="step-label">RM</div></div>
+    <div class="step-line"></div>
+    <div class="step-item" id="s-2"><div class="step-num">2</div><div class="step-label">Mapeamento</div></div>
+    <div class="step-line"></div>
+    <div class="step-item" id="s-3"><div class="step-num">3</div><div class="step-label">ADP</div></div>
+    <div class="step-line"></div>
+    <div class="step-item" id="s-4"><div class="step-num">4</div><div class="step-label">Resultado</div></div>
+  </div>
+
+  <!-- Step 1: RM -->
+  <div class="section active" id="sec-1">
+    <div class="card">
+      <div class="card-title">📋 Arquivo RM</div>
+      <div class="info-box">Sobe o RM. As abas detectadas serão listadas para configurar o mapeamento.</div>
+      <div class="drop" id="drop-rm"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="mapDropRm(event)"
+        onclick="document.getElementById('file-rm').click()">
+        <div class="drop-icon">📋</div>
+        <h3>Clique ou arraste o arquivo RM</h3>
+        <p>Detecta automaticamente as 6 abas de mídia · .xlsx .xls</p>
+        <input type="file" id="file-rm" accept=".xlsx,.xls" onchange="mapLoadRm(this.files[0])">
+      </div>
+      <div class="file-info" id="rm-info">
+        <span>✅</span>
+        <span class="fn" id="rm-name"></span>
+        <span class="fsz" id="rm-abas"></span>
+      </div>
+      <div class="ans-sbar" id="st-1"></div>
+    </div>
+    <div class="btn-bar">
+      <button class="btn btn-primary" id="btn-1" disabled onclick="mapGoStep(2)">Configurar mapeamento →</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Mapeamento -->
+  <div class="section" id="sec-2">
+    <div class="card">
+      <div class="card-title">⚙️ Mapeamento de colunas</div>
+      <div class="info-box">Para cada aba, indique quais colunas do RM devem ser copiadas para o ADP. Use a letra da coluna (ex: <strong>AT</strong>). Apenas linhas com <strong>Alterar</strong> na coluna A do RM serão processadas.</div>
+      <div id="abas-config"></div>
+      <div class="ans-sbar" id="st-2"></div>
+    </div>
+    <div class="btn-bar">
+      <button class="btn btn-secondary" onclick="mapGoStep(1)">← Voltar</button>
+      <button class="btn btn-primary" id="btn-2" disabled onclick="mapGoStep(3)">Carregar ADP →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: ADP -->
+  <div class="section" id="sec-3">
+    <div class="card">
+      <div class="card-title">🔧 Arquivo ADP</div>
+      <div class="drop" id="drop-adp"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="mapDropAdp(event)"
+        onclick="document.getElementById('file-adp').click()">
+        <div class="drop-icon">🔧</div>
+        <h3>Clique ou arraste o arquivo ADP</h3>
+        <p>Será modificado apenas nas linhas com "Alterar" no RM · .xlsx</p>
+        <input type="file" id="file-adp" accept=".xlsx,.xls" onchange="mapLoadAdp(this.files[0])">
+      </div>
+      <div class="file-info" id="adp-info">
+        <span>✅</span>
+        <span class="fn" id="adp-name"></span>
+      </div>
+      <div class="ans-sbar" id="st-3"></div>
+    </div>
+    <div class="btn-bar">
+      <button class="btn btn-secondary" onclick="mapGoStep(2)">← Voltar</button>
+      <button class="btn btn-primary" id="btn-3" disabled onclick="mapProcessar()">▶ Processar</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Resultado -->
+  <div class="section" id="sec-4">
+    <div class="card">
+      <div class="card-title">✅ Resultado</div>
+      <div class="ans-sbar" id="st-4"></div>
+      <div class="stats-row" id="result-stats" style="margin-top:14px"></div>
+      <div id="result-table"></div>
+    </div>
+    <div class="btn-bar">
+      <button class="btn btn-primary" id="btn-download" disabled onclick="mapDownload()">⬇ Baixar ADP atualizado</button>
+      <button class="btn btn-secondary" onclick="mapReset()">↺ Novo mapeamento</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Estado ───
+var mapRmWb=null, mapAdpWb=null;
+var mapRmBytes=null, mapAdpBytes=null;
+var mapRmName='', mapAdpName='';
+var mapDetectedAbas=[];
+var mapResultAdpWb=null;
+var mapLog=[];
+
+var MAP_RM_TO_ADP_NAME={
+  'YouTube':'Youtube',
+  'Pinterest, Snapchat e X':'Pinterest, Snapchat e Twitter'
+};
+
+// ─── Utilidades ───
+function mapColIdx(l){
+  if(!l||!l.trim())return null;
+  l=l.trim().toUpperCase();var n=0;
+  for(var i=0;i<l.length;i++)n=n*26+(l.charCodeAt(i)-64);
+  return n-1;
+}
+function mapColLetter(idx){
+  var s='';idx++;
+  while(idx>0){var r=(idx-1)%26;s=String.fromCharCode(65+r)+s;idx=Math.floor((idx-1)/26);}
+  return s;
+}
+function mapDetectAba(name){
+  var n=(name||'').toLowerCase().trim();
+  if(n==='google'||n==='google ads')return'Google';
+  if(n==='programmatic'||n==='prog')return'Programmatic';
+  if(n==='youtube'||n==='yt')return'YouTube';
+  if(n==='meta e tiktok'||n==='meta & tiktok')return'Meta e Tiktok';
+  if(n==='pinterest, snapchat e twitter'||n==='pinterest, snapchat e x')return'Pinterest, Snapchat e X';
+  if(n==='flashtalking'||n==='flash')return'Flashtalking';
+  return null;
+}
+function _st(id,type,msg){
+  var el=document.getElementById(id);if(!el)return;
+  el.className='ans-sbar'+(type?' '+type:'');el.textContent=msg;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ─── Stepper ───
+function mapGoStep(n){
+  for(var i=1;i<=4;i++){
+    var sec=document.getElementById('sec-'+i);if(sec)sec.className='section'+(i===n?' active':'');
+    var si=document.getElementById('s-'+i);if(si)si.className='step-item'+(i===n?' active':i<n?' done':'');
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─── Drop ───
+function mapDropRm(e){e.preventDefault();document.getElementById('drop-rm').classList.remove('drag');var f=e.dataTransfer.files[0];if(f)mapLoadRm(f);}
+function mapDropAdp(e){e.preventDefault();document.getElementById('drop-adp').classList.remove('drag');var f=e.dataTransfer.files[0];if(f)mapLoadAdp(f);}
+
+// ─── Load RM ───
+function mapLoadRm(f){
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    var arr=new Uint8Array(ev.target.result);
+    mapRmWb=XLSX.read(arr,{type:'array',cellStyles:true});
+    mapRmBytes=arr;mapRmName=f.name;
+    mapDetectedAbas=mapRmWb.SheetNames.filter(function(sn){return!!mapDetectAba(sn);});
+    document.getElementById('rm-info').style.display='flex';
+    document.getElementById('rm-name').textContent=f.name;
+    document.getElementById('rm-abas').textContent=mapDetectedAbas.length+' aba(s) detectada(s)';
+    document.getElementById('btn-1').disabled=!mapDetectedAbas.length;
+    _st('st-1','ok','✅ '+mapDetectedAbas.length+' aba(s): '+mapDetectedAbas.join(', '));
+    mapBuildAbasConfig();
+  };
+  r.readAsArrayBuffer(f);
+}
+
+// ─── Load ADP ───
+function mapLoadAdp(f){
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    var arr=new Uint8Array(ev.target.result);
+    mapAdpWb=XLSX.read(arr,{type:'array',cellStyles:true});
+    mapAdpBytes=arr;mapAdpName=f.name;
+    document.getElementById('adp-info').style.display='flex';
+    document.getElementById('adp-name').textContent=f.name;
+    document.getElementById('btn-3').disabled=false;
+    _st('st-3','ok','✅ ADP carregado: '+f.name);
+  };
+  r.readAsArrayBuffer(f);
+}
+
+// ─── Configuração de mapeamento ───
+function mapBuildAbasConfig(){
+  var container=document.getElementById('abas-config');
+  container.innerHTML='';
+  mapDetectedAbas.forEach(function(sn){
+    var abaKey=mapDetectAba(sn);
+    var sid=abaKey.replace(/[^a-z0-9]/gi,'_');
+    var div=document.createElement('div');
+    div.className='aba-block';
+    div.innerHTML=
+      '<div class="aba-block-header">'+
+        '<span class="aba-block-title">'+esc(abaKey)+'</span>'+
+        '<button class="add-pair-btn" onclick="mapAddRow(\''+sid+'\')">+ Adicionar coluna</button>'+
+      '</div>'+
+      '<div class="aba-block-body">'+
+        '<div class="aba-hint">Cole as letras das colunas a copiar do RM para o ADP. A 1ª coluna também serve de chave de busca.</div>'+
+        '<div id="map-pairs-'+sid+'"></div>'+
+      '</div>';
+    container.appendChild(div);
+    mapAddRow(sid);
+  });
+  document.getElementById('btn-2').disabled=false;
+}
+
+function mapAddRow(sid){
+  var container=document.getElementById('map-pairs-'+sid);
+  var row=document.createElement('div');
+  row.className='pair-row';
+  row.innerHTML=
+    '<span class="pair-label">RM</span>'+
+    '<input type="text" placeholder="ex: AT" maxlength="3" class="pair-input map-col-rm" oninput="this.value=this.value.toUpperCase()">'+
+    '<span class="pair-arrow">→</span>'+
+    '<span class="pair-label">ADP</span>'+
+    '<input type="text" placeholder="ex: BF" maxlength="3" class="pair-input map-col-adp" oninput="this.value=this.value.toUpperCase()">'+
+    '<button class="pair-remove" onclick="this.parentNode.remove()">✕</button>';
+  container.appendChild(row);
+}
+
+function mapGetMappings(){
+  var result={};
+  mapDetectedAbas.forEach(function(sn){
+    var abaKey=mapDetectAba(sn);
+    var sid=abaKey.replace(/[^a-z0-9]/gi,'_');
+    var container=document.getElementById('map-pairs-'+sid);
+    if(!container)return;
+    var pairs=[];
+    container.querySelectorAll('.pair-row').forEach(function(row){
+      var rmInput=row.querySelector('.map-col-rm');
+      var adpInput=row.querySelector('.map-col-adp');
+      if(!rmInput||!adpInput)return;
+      var rm=rmInput.value.trim().toUpperCase();
+      var adp=adpInput.value.trim().toUpperCase();
+      if(rm&&adp)pairs.push({rm:rm,adp:adp,rmIdx:mapColIdx(rm),adpIdx:mapColIdx(adp)});
+    });
+    if(pairs.length)result[sn]={abaKey:abaKey,pairs:pairs};
+  });
+  return result;
+}
+
+// ─── Processar ───
+function mapProcessar(){
+  var mappings=mapGetMappings();
+  var abas=Object.keys(mappings);
+  if(!abas.length){_st('st-3','err','⚠ Nenhum mapeamento configurado. Volte e adicione pelo menos uma coluna.');return;}
+  mapLog=[];
+  var stats={ok:0,err:0};
+  mapResultAdpWb=mapAdpWb;
+
+  abas.forEach(function(rmShn){
+    var cfg=mappings[rmShn];
+    var adpShn=MAP_RM_TO_ADP_NAME[cfg.abaKey]||rmShn;
+    var rmWs=mapRmWb.Sheets[rmShn];
+    var adpWs=mapResultAdpWb.Sheets[adpShn];
+    if(!rmWs||!adpWs){
+      mapLog.push({sht:rmShn,act:'err',key:'—',reason:'Aba "'+adpShn+'" não encontrada no ADP'});
+      stats.err++;return;
+    }
+    var rmData=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''});
+    var keyPair=cfg.pairs[0];
+    var adpData=XLSX.utils.sheet_to_json(adpWs,{header:1,defval:''});
+    var adpIndex={};
+    for(var ri=1;ri<adpData.length;ri++){
+      var kv=String(adpData[ri][keyPair.adpIdx]||'').trim();
+      if(kv)adpIndex[kv]=ri;
+    }
+    for(var i=1;i<rmData.length;i++){
+      var status=String(rmData[i][0]||'').trim().toLowerCase();
+      if(status!=='alterar')continue;
+      var keyVal=String(rmData[i][keyPair.rmIdx]||'').trim();
+      var adpRow=adpIndex[keyVal];
+      if(adpRow===undefined){
+        mapLog.push({sht:rmShn,act:'err',key:keyVal||'linha '+(i+1),reason:'Não encontrado no ADP'});
+        stats.err++;continue;
+      }
+      cfg.pairs.forEach(function(pair){
+        var val=rmData[i][pair.rmIdx];
+        if(val===undefined||val==='')return;
+        var addr=XLSX.utils.encode_cell({r:adpRow,c:pair.adpIdx});
+        adpWs[addr]={t:typeof val==='number'?'n':'s',v:val};
+        var rng=XLSX.utils.decode_range(adpWs['!ref']||'A1');
+        if(pair.adpIdx>rng.e.c)rng.e.c=pair.adpIdx;
+        if(adpRow>rng.e.r)rng.e.r=adpRow;
+        adpWs['!ref']=XLSX.utils.encode_range(rng);
+      });
+      mapLog.push({sht:rmShn,act:'ok',key:keyVal,adpRow:adpRow+1});
+      stats.ok++;
+    }
+  });
+
+  // Stats cards
+  var statsHtml=
+    '<div class="stat-box" style="background:var(--ok-b);border-color:var(--ok)"><div class="stat-num" style="color:var(--ok)">'+stats.ok+'</div><div class="stat-lbl" style="color:var(--ok)">Linhas atualizadas</div></div>';
+  if(stats.err)statsHtml+=
+    '<div class="stat-box" style="background:var(--err-b);border-color:var(--err)"><div class="stat-num" style="color:var(--err)">'+stats.err+'</div><div class="stat-lbl" style="color:var(--err)">Erros</div></div>';
+  document.getElementById('result-stats').innerHTML=statsHtml;
+
+  // Table
+  var grouped={},order=[];
+  mapLog.forEach(function(r){if(!grouped[r.sht]){grouped[r.sht]=[];order.push(r.sht);}grouped[r.sht].push(r);});
+  var html='';
+  order.forEach(function(sht){
+    var sr=grouped[sht];
+    html+='<div style="margin-bottom:12px;border-radius:9px;border:1px solid var(--g200);background:#fff;overflow:hidden">'+
+      '<div style="background:var(--g50);padding:8px 14px;border-bottom:1px solid var(--g200);font-size:11px;font-weight:600">'+esc(sht)+' — '+sr.length+' linha(s)</div>'+
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+      '<thead><tr>'+
+      '<th style="padding:7px 12px;text-align:left;font-size:10px;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200)">Chave (1ª coluna RM)</th>'+
+      '<th style="padding:7px 12px;text-align:left;font-size:10px;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200)">Linha ADP</th>'+
+      '<th style="padding:7px 12px;text-align:left;font-size:10px;color:var(--g500);background:var(--g50);border-bottom:1px solid var(--g200)">Status</th></tr></thead><tbody>';
+    sr.forEach(function(r){
+      var badge=r.act==='ok'
+        ?'<span style="background:var(--ok-b);color:var(--ok);padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:600">✓ Atualizado</span>'
+        :'<span style="background:var(--err-b);color:var(--err);padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:600">✗ '+esc(r.reason||'Erro')+'</span>';
+      html+='<tr><td style="padding:7px 12px;border-bottom:1px solid var(--g100);font-family:var(--mo);font-size:11px">'+esc(r.key)+'</td>'+
+        '<td style="padding:7px 12px;border-bottom:1px solid var(--g100);color:var(--g500)">'+(r.adpRow||'—')+'</td>'+
+        '<td style="padding:7px 12px;border-bottom:1px solid var(--g100)">'+badge+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  document.getElementById('result-table').innerHTML=html||'<div style="color:var(--g500);font-size:13px;padding:20px">Nenhuma linha processada.</div>';
+  document.getElementById('btn-download').disabled=stats.ok===0;
+  _st('st-4',stats.err>0?'warn':'ok',(stats.ok?'✅ '+stats.ok+' linha(s) atualizada(s).':'')+(stats.err?' ⚠ '+stats.err+' erro(s).':''));
+  mapGoStep(4);
+}
+
+// ─── Download (ZIP-level patch) ───
+function mapDownload(){
+  if(!mapResultAdpWb||!mapAdpBytes)return;
+  var mappings=mapGetMappings();
+  var modifiedSheets=[];
+  Object.keys(mappings).forEach(function(sn){
+    var adpShn=MAP_RM_TO_ADP_NAME[mappings[sn].abaKey]||sn;
+    modifiedSheets.push(adpShn);
+  });
+  _mrgPatchAndDownload(mapAdpBytes,mapResultAdpWb,modifiedSheets,
+    mapAdpName.replace(/\.xlsx?$/i,'')+'_MAPEADO.xlsx');
+}
+
+// ─── ZIP patch (preserva formatação) ───
+function _mrgPatchAndDownload(origBytes,wb,modifiedSheetNames,filename){
+  JSZip.loadAsync(origBytes).then(function(zip){
+    return zip.file('xl/sharedStrings.xml').async('string').then(function(ssXml){
+      var ssItems=[],ssMap={};
+      var ssRe=/<si>([\s\S]*?)<\/si>/g,m;
+      while((m=ssRe.exec(ssXml))!==null){
+        var idx=ssItems.length;ssItems.push(m[0]);
+        var tMatch=m[0].match(/<t[^>]*>([\s\S]*?)<\/t>/);
+        if(tMatch){var val=tMatch[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');if(ssMap[val]===undefined)ssMap[val]=idx;}
+      }
+      var ssModified=false;
+      function getOrAddSS(val){
+        if(val===null||val===undefined||val==='')return null;
+        var s=String(val);if(ssMap[s]!==undefined)return ssMap[s];
+        var newIdx=ssItems.length;var esc2=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        ssItems.push('<si><t>'+esc2+'</t></si>');ssMap[s]=newIdx;ssModified=true;return newIdx;
+      }
+      return zip.file('xl/workbook.xml').async('string').then(function(wbXml){
+        return zip.file('xl/_rels/workbook.xml.rels').async('string').then(function(relsXml){
+          var relMap={};var re=/<Relationship\s[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g;
+          while((m=re.exec(relsXml))!==null)relMap[m[1]]=m[2];
+          var sheetMap={};var rs=/<sheet\s[^>]*name="([^"]*)"[^>]*r:id="([^"]+)"/g;
+          while((m=rs.exec(wbXml))!==null){
+            var name=m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+            sheetMap[name]='xl/'+relMap[m[2]];
+          }
+          var patchPromises=modifiedSheetNames.map(function(shName){
+            var path=sheetMap[shName];if(!path)return Promise.resolve();
+            var ws=wb.Sheets[shName];if(!ws)return Promise.resolve();
+            return zip.file(path).async('string').then(function(origXml){
+              var existingRows={};var rowRe=/<row r="(\d+)"[\s\S]*?<\/row>/g;
+              while((m=rowRe.exec(origXml))!==null)existingRows[parseInt(m[1])]=m[0];
+              var wsRange=XLSX.utils.decode_range(ws['!ref']||'A1');
+              // Patch cells nas linhas existentes
+              var newXml=origXml.replace(/<row r="(\d+)"([\s\S]*?)<\/row>/g,function(rowStr,rNum){
+                var rowIdx=parseInt(rNum)-1;
+                var cells=[];
+                for(var ci=wsRange.s.c;ci<=wsRange.e.c;ci++){
+                  var addr=XLSX.utils.encode_cell({r:rowIdx,c:ci});
+                  var cell=ws[addr];
+                  if(!cell||cell.v===undefined)continue;
+                  // Verificar se a célula foi modificada (existe no wb mas precisa atualizar o XML)
+                  // Para simplificar: substituir todas as células modificadas
+                  var cRe=new RegExp('<c r="'+addr+'"[^>]*>(?:<[^>]+>)*<\\/c>','g');
+                  var existingCell=rowStr.match(new RegExp('<c r="'+addr.replace(/([[\]()])/g,'\\$1')+'"[^/]*(?:\\/|>[\\s\\S]*?<\\/c)>'));
+                  var cellXml='';
+                  if(cell.t==='s'||typeof cell.v==='string'){
+                    var ssIdx=getOrAddSS(cell.v);
+                    if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';
+                  }else if(typeof cell.v==='number'){
+                    cellXml='<c r="'+addr+'"><v>'+cell.v+'</v></c>';
+                  }
+                  if(cellXml)cells.push({addr:addr,xml:cellXml,existing:!!existingCell});
+                }
+                // Inserir/substituir as células modificadas na row
+                var result=rowStr;
+                cells.forEach(function(c){
+                  if(c.existing){
+                    result=result.replace(new RegExp('<c r="'+c.addr.replace(/([[\]()])/g,'\\$1')+'"(?:[^>]*)(?:\\/|>[\\s\\S]*?<\\/c)>'),c.xml);
+                  }else{
+                    result=result.replace('</row>',c.xml+'</row>');
+                  }
+                });
+                return result;
+              });
+              zip.file(path,newXml);
+            });
+          });
+          return Promise.all(patchPromises).then(function(){
+            if(ssModified){
+              var newSsXml=ssXml.replace(/<\/sst>/,'').replace(/<sst[^>]*>/,'');
+              var count=ssItems.length;
+              var newSst='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+count+'" uniqueCount="'+count+'">'+ssItems.join('')+'</sst>';
+              zip.file('xl/sharedStrings.xml',newSst);
+            }
+            return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+          });
+        });
+      });
+    });
+  }).then(function(blob){
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);
+  }).catch(function(e){_st('st-4','err','❌ Erro ao gerar arquivo: '+e.message);});
+}
+
+// ─── Reset ───
+function mapReset(){
+  mapRmWb=null;mapAdpWb=null;mapResultAdpWb=null;
+  mapRmBytes=null;mapAdpBytes=null;mapRmName='';mapAdpName='';
+  mapDetectedAbas=[];mapLog=[];
+  document.getElementById('file-rm').value='';
+  document.getElementById('file-adp').value='';
+  document.getElementById('rm-info').style.display='none';
+  document.getElementById('adp-info').style.display='none';
+  document.getElementById('abas-config').innerHTML='';
+  document.getElementById('result-stats').innerHTML='';
+  document.getElementById('result-table').innerHTML='';
+  document.getElementById('btn-1').disabled=true;
+  document.getElementById('btn-2').disabled=true;
+  document.getElementById('btn-3').disabled=true;
+  document.getElementById('btn-download').disabled=true;
+  ['st-1','st-2','st-3','st-4'].forEach(function(id){var el=document.getElementById(id);if(el)el.className='ans-sbar';});
+  mapGoStep(1);
+}
+</script>
+</body>
+</html>
