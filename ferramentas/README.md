@@ -33,7 +33,7 @@ Dependem de Web App Google Apps Script. Endpoints configurados no topo de cada `
 | Ferramenta | Descrição | Link |
 |---|---|---|
 | [**Ad Name Sync**](ad-name-sync/) | Sincroniza Ad Names entre planilhas RM e ADP | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ad-name-sync/) |
-| [**Dashboard Jira**](dashboard-jira/) | Sincroniza subtasks do Jira com Google Sheets | — GAS only |
+| [**Dashboard Jira**](dashboard-jira/) | Sincroniza subtasks do Jira com Google Sheets | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/dashboard-jira/) |
 | [**Extrator de Campaign Local**](extrator-campanha/) | Extrai dados de Campaign Local das planilhas | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extrator-campanha/) |
 | [**Extrator de Influs**](extrator-influs/) | Extrai influencers do RM/ADP e valida duplicatas no dicionário | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extrator-influs/) |
 | [**Gerador de IDs UL**](gerador-ids-ul/) | Gera e registra IDs SX/AMZ nas planilhas em uma operação | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/gerador-ids-ul/) |
