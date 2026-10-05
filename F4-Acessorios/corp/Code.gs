@@ -680,9 +680,10 @@ function _getPing() {
 }
 
 /* ════ STATS ════ */
+// Histórico: Data/Hora (col0), Usuário (col1), Aba (col2), Célula (col3), Valor Anterior (col4), Valor Novo (col5)
 function _getStats() {
   try {
-    var ss = SpreadsheetApp.openById('1WZf3wiiZYoMqr7XH5UlUpzHggIwUTQE0JlTlhLr-46o');
+    var ss = SpreadsheetApp.openById('1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI');
     var sh = ss.getSheetByName('📋 Histórico');
     if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
     var dados = sh.getDataRange().getValues();
@@ -690,17 +691,25 @@ function _getStats() {
     var total = 0, ultima = null;
     for (var i = 1; i < dados.length; i++) {
       if (!dados[i][0]) continue;
-      var d = new Date(dados[i][0]);
-      if (d.getMonth() === mes && d.getFullYear() === ano) total++;
+      // col0 = "dd/MM/yyyy HH:mm:ss" (string) ou Date
+      var raw = dados[i][0];
+      var d = (raw instanceof Date) ? raw : new Date(String(raw).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'));
+      if (!isNaN(d) && d.getMonth() === mes && d.getFullYear() === ano) total++;
       ultima = dados[i];
     }
     var out = { ok: true, totalMes: total, totalOperacoes: total };
-    if (ultima) out.ultimaOperacao = {
-      data:    Utilities.formatDate(new Date(ultima[0]), 'America/Sao_Paulo', 'dd/MM/yyyy'),
-      hora:    String(ultima[1]||'').trim(),
-      usuario: String(ultima[2]||'').trim(),
-      modulo:  String(ultima[3]||'').trim()
-    };
+    if (ultima) {
+      var rawDate = ultima[0];
+      var dataStr = (rawDate instanceof Date)
+        ? Utilities.formatDate(rawDate, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm')
+        : String(rawDate).substring(0, 16);
+      out.ultimaOperacao = {
+        data:    dataStr,
+        hora:    '',
+        usuario: String(ultima[1]||'').trim(),
+        modulo:  String(ultima[2]||'').trim()   // Aba editada
+      };
+    }
     return out;
   } catch(e) { return { ok: false, error: e.message }; }
 }
