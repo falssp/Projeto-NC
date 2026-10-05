@@ -10,11 +10,12 @@ Todas são aplicações HTML standalone — sem dependências externas, abertas 
 | Ferramenta | Descrição | Abrir |
 |---|---|---|
 | **Creative Taxonomy** | Gera taxonomia de criativos (Plataforma + Brainsuite) a partir dos campos do asset | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/creative-taxonomy/creative-taxonomy.html) |
-| **Galileo IDs** | Consulta IDs e abreviações do sistema Galileo por campo (Brand, PCat, Audience etc.) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/galileo-ids/galileo-ul.html) |
+| **Galileo IDs** | Consulta IDs e abreviações do sistema Galileo por campo (Brand, PCat, Audience etc.) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/galileo-ids/) |
 | **Grasp Naming** | Estrutura de naming por plataforma (Campaign / Ad Group / Ad Name) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/grasp-naming/grasp-naming.html) |
 | **Location** | Gera o campo Location do naming (cidade, estado, região, nacional) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location/index.html) |
 | **Dicionário de Taxonomias UL** | Dicionário interativo de todos os parâmetros Galileo e Freetext com siglas e descrições | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ul-taxonomias/taxonomias-ul.html) |
 | **Dashboard Jira** | Web App GAS — sincroniza subtasks do Jira com Google Sheets | — GAS only |
+| **Extractor de Fórmulas** | Extrai e deduplica fórmulas de planilhas .xlsx/.xlsm por aba, 100% local | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extractor-formulas/) |
 
 ---
 
@@ -28,6 +29,7 @@ Todas são aplicações HTML standalone — sem dependências externas, abertas 
 | [`location/`](https://github.com/falssp/Projeto-NC/tree/main/ferramentas/location) | App HTML + GAS — Location |
 | [`ul-taxonomias/`](https://github.com/falssp/Projeto-NC/tree/main/ferramentas/ul-taxonomias) | App HTML + GAS — Dicionário de Taxonomias |
 | [`dashboard-jira/`](https://github.com/falssp/Projeto-NC/tree/main/ferramentas/dashboard-jira) | GAS — Dashboard Jira |
+| [`extractor-formulas/`](https://github.com/falssp/Projeto-NC/tree/main/ferramentas/extractor-formulas) | App HTML — Extractor de Fórmulas |
 
 ---
 

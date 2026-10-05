@@ -1,0 +1,701 @@
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merge RM → ADP · NC Tools</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#1F36C7;--ul-l:#E8ECFB;--ul-m:#4A5FD4;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F8F9FA;--g100:#F1F3F5;--g200:#E9ECEF;--g300:#DEE2E6;
+  --g400:#CED4DA;--g500:#868E96;--g700:#495057;--g900:#212529;
+  --fn:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:100vh;padding:24px 16px}
+.page-wrap{max-width:960px;margin:0 auto}
+
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}
+.page-header .ico{width:40px;height:40px;border-radius:10px;background:var(--ul-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.page-header h1{font-size:18px;font-weight:700}
+.page-header p{font-size:12px;color:var(--g500);margin-top:2px}
+.back-link{margin-left:auto;font-size:12px;color:var(--ul);text-decoration:none;font-weight:500}
+.back-link:hover{text-decoration:underline}
+
+.tool-card{background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden}
+.tool-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.tool-title{font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:1px}
+.tool-desc{font-size:11px;color:var(--g500)}
+.tool-actions{margin-left:auto;display:flex;gap:8px}
+.tool-body{padding:18px}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--fn);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff}.btn-p:hover{background:var(--ul-m)}
+.btn-g{background:none;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+.ib{background:var(--ul-l);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:14px;line-height:1.55}
+.ib strong{font-weight:600}
+.ib.warn{background:var(--warn-b);border-color:#e0c070;color:var(--warn)}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.uz{border:2px dashed var(--g300);border-radius:11px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--g50)}
+.uz:hover,.uz.drag{border-color:var(--ul);background:var(--ul-l)}
+.uz-label{display:block;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ul);margin-bottom:8px}
+.uz .icon{font-size:22px;margin-bottom:6px}
+.uz h3{font-size:12.5px;font-weight:600;margin-bottom:3px}
+.uz p{font-size:11px;color:var(--g500)}
+.uz input[type=file]{display:none}
+.uz.loaded{border-color:var(--ok);background:var(--ok-b)}
+.uz.loaded h3{color:var(--ok)}
+.uz.loaded p{color:#1a6040}
+
+.mrg-step{margin-bottom:16px}
+.mrg-step-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.mrg-step-num{width:22px;height:22px;border-radius:50%;background:var(--ul);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mrg-step-num.done{background:var(--ok)}
+.mrg-step-title{font-size:12.5px;font-weight:600}
+
+.sc{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chip{padding:4px 12px;border-radius:16px;font-size:11.5px;font-weight:500;border:1px solid var(--g300);background:#fff;cursor:pointer;transition:all .15s;font-family:var(--fn)}
+.chip.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+.chip.na{background:var(--g100);color:var(--g500);border-color:var(--g200);cursor:default;opacity:.55}
+
+.range-configs{margin-bottom:14px}
+.range-row{display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--g50);border:1px solid var(--g200);border-radius:8px;margin-bottom:7px;flex-wrap:wrap}
+.range-label{font-size:12px;font-weight:600;color:var(--g700);min-width:180px}
+.range-sep{font-size:12px;color:var(--g500)}
+.range-inp{width:68px;padding:5px 9px;border:1px solid var(--g300);border-radius:6px;font-family:var(--mo);font-size:12px;outline:none;background:#fff;color:var(--g900);transition:border-color .15s}
+.range-inp:focus{border-color:var(--ul)}
+.range-hint{font-size:10.5px;color:var(--g500)}
+
+.pb-wrap{height:6px;background:var(--g200);border-radius:3px;margin-top:12px;margin-bottom:14px;display:none}
+.pb-wrap.on{display:block}
+.pb-fill{height:100%;background:var(--ul);border-radius:3px;transition:width .4s ease}
+
+.sc2{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card{flex:1;min-width:100px;background:#fff;border:2px solid var(--g200);border-radius:9px;padding:12px 14px;user-select:none}
+.card .num{font-size:22px;font-weight:700;margin-bottom:2px}
+.card .lbl{font-size:10.5px;color:var(--g500);font-weight:500}
+.card.cn .num{color:var(--ok)}.card.cu .num{color:var(--ul)}.card.ce .num{color:var(--err)}.card.cs .num{color:var(--g500)}.card.cw .num{color:var(--warn)}
+
+.bok{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--ok-b);color:var(--ok);font-size:10.5px;font-weight:600}
+.bupd{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--ul-l);color:var(--ul);font-size:10.5px;font-weight:600}
+.bskip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--g100);color:var(--g500);font-size:10.5px;font-weight:600}
+.bdif{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--err-b);color:var(--err);font-size:10.5px;font-weight:600}
+.bmis{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--warn-b);color:var(--warn);font-size:10.5px;font-weight:600}
+.blk{margin-bottom:10px;border-radius:9px;border:1px solid var(--g200);background:#fff;overflow:hidden}
+.blk-hdr{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:11px;flex-wrap:wrap}
+.blk-id{font-family:var(--mo);font-size:11px;font-weight:600;color:var(--ul);background:var(--ul-l);padding:2px 8px;border-radius:4px}
+.lt{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--g100);color:var(--g700)}
+.cm{font-family:var(--mo);font-size:11px;word-break:break-all;max-width:320px;line-height:1.5}
+.rtw{overflow-x:auto}
+.rtw table{width:100%;border-collapse:collapse;font-size:12px}
+.rtw th{padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--g200);white-space:nowrap}
+.rtw td{padding:8px 10px;border-bottom:1px solid var(--g100)}
+.rtw tr:last-child td{border-bottom:none}
+.es{text-align:center;padding:48px 20px;color:var(--g500)}
+
+@media(max-width:600px){
+  .two-col{grid-template-columns:1fr}
+  .range-row{flex-wrap:wrap;gap:6px}
+  .cm{max-width:120px}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="ico">📥</div>
+    <div>
+      <h1>Merge RM → ADP</h1>
+      <p>Preenche o ADP a partir do RM — novas linhas e atualizações, por intervalo de linhas</p>
+    </div>
+    <a class="back-link" href="https://falssp.github.io/Projeto-NC/">← NC Tools</a>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-hdr">
+      <div style="flex:1">
+        <div class="tool-title">Merge RM → ADP</div>
+        <div class="tool-desc">Processa novas linhas (Solicitado para StormX), alterações e cancelamentos do RM para o ADP</div>
+      </div>
+      <div class="tool-actions">
+        <button class="btn btn-g" onclick="mrgReset()">Limpar</button>
+        <button class="btn btn-p" id="mrg-btn-run" disabled onclick="mrgRun()">▶ Processar</button>
+      </div>
+    </div>
+    <div class="tool-body">
+
+      <!-- STEP 1 -->
+      <div class="mrg-step" id="mrg-s1">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num1">1</div>
+          <div class="mrg-step-title">Carregar arquivos</div>
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="uz" id="mrg-drop-rm" onclick="document.getElementById('mrg-file-rm').click()"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="mrgDrop(event,'rm')">
+              <span class="uz-label">RM — Fonte</span>
+              <div class="icon" id="mrg-icon-rm">📋</div>
+              <h3 id="mrg-h3-rm">Arraste o RM aqui</h3>
+              <p id="mrg-p-rm">ou clique · .xlsx</p>
+              <input type="file" id="mrg-file-rm" accept=".xlsx,.xlsm,.xls" onchange="mrgLoad(this,'rm')">
+            </div>
+          </div>
+          <div>
+            <div class="uz" id="mrg-drop-adp" onclick="document.getElementById('mrg-file-adp').click()"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="mrgDrop(event,'adp')">
+              <span class="uz-label">ADP — Destino</span>
+              <div class="icon" id="mrg-icon-adp">🔧</div>
+              <h3 id="mrg-h3-adp">Arraste o ADP aqui</h3>
+              <p id="mrg-p-adp">ou clique · .xlsx</p>
+              <input type="file" id="mrg-file-adp" accept=".xlsx,.xlsm,.xls" onchange="mrgLoad(this,'adp')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="mrg-step" id="mrg-s2" style="display:none">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num2">2</div>
+          <div class="mrg-step-title">Selecionar abas e intervalo de linhas</div>
+        </div>
+        <div class="ib">Clique para incluir/excluir abas. Informe o intervalo de linhas a processar em cada aba (ex: <strong>2 até 61</strong>). Deixe em branco para ler tudo.</div>
+        <div class="sc" id="mrg-chips"></div>
+        <div class="range-configs" id="mrg-ranges"></div>
+        <div class="ib warn">
+          <strong>Regra:</strong> Status "Solicitado para StormX" = nova linha · "Alterar" = atualizar existente · "Cancelar" = marcar como cancelado<br>
+          Colunas <code>REVISAR</code> → fundo amarelo no ADP · Colunas <code>AGÊNCIA</code> e <code>GERADO</code> → nunca sobrescritas
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="mrg-step" id="mrg-s3" style="display:none">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num3">3</div>
+          <div class="mrg-step-title">Resultado</div>
+        </div>
+        <div class="pb-wrap" id="mrg-pb-wrap">
+          <div class="pb-fill" id="mrg-pb-fill" style="width:0%"></div>
+        </div>
+        <div id="mrg-pb-status-wrap" style="min-height:18px;margin-bottom:12px"></div>
+        <div id="mrg-result" style="display:none">
+          <div class="sc2" id="mrg-cards"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--g500)">
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--ok-b);border:1px solid var(--ok);margin-right:5px"></span>Nova linha</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--ul-l);border:1px solid var(--ul);margin-right:5px"></span>Atualizada</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--warn-b);border:1px solid #e0c070;margin-right:5px"></span>Célula revisar</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p" onclick="mrgDownload()">⬇ Baixar ADP</button>
+              <button class="btn btn-p" onclick="mrgDownloadRM()">⬇ Baixar RM</button>
+            </div>
+          </div>
+          <div id="mrg-table"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+var ADPRM_ADP=/^UNCC/i,ADPRM_RM=/^RM/i;
+
+function mrgC(l){
+  if(!l||l.trim()===''||l==='-')return null;
+  l=l.trim().toUpperCase();var n=0;
+  for(var i=0;i<l.length;i++)n=n*26+(l.charCodeAt(i)-64);
+  return n-1;
+}
+
+var MRG_RM_TO_ADP={'YouTube':'Youtube','Pinterest, Snapchat e X':'Pinterest, Snapchat e Twitter'};
+
+var MRG_COLS={
+  'Google':                        {rmKey:'AT', adpKey:'BE', adpSpc:'BG'},
+  'Programmatic':                  {rmKey:'AW', adpKey:'BH', adpSpc:'BJ'},
+  'Youtube':                       {rmKey:'AQ', adpKey:'BF', adpSpc:'BH'},
+  'Meta e Tiktok':                 {rmKey:'AS', adpKey:'BG', adpSpc:'BI'},
+  'Pinterest, Snapchat e Twitter': {rmKey:'AV', adpKey:'BC', adpSpc:'BE'},
+  'Flashtalking':                  {rmKey:'AR', adpKey:'AX', adpSpc:'BB'},
+};
+
+var MRG_MAPS={
+  'YouTube':[
+    {rm:'J',adp:'BD',t:'C'},{rm:'K',adp:'J',t:'C'},{rm:'L',adp:'K',t:'C'},{rm:'M',adp:'L',t:'C'},{rm:'N',adp:'M',t:'C'},{rm:'O',adp:'N',t:'C'},{rm:'P',adp:'O',t:'C'},{rm:'Q',adp:'P',t:'C'},{rm:'U',adp:'V',t:'C'},{rm:'W',adp:'X',t:'C'},{rm:'X',adp:'AF',t:'C'},{rm:'Y',adp:'AG',t:'C'},{rm:'Z',adp:'AN',t:'C'},{rm:'AA',adp:'AJ',t:'C'},{rm:'AC',adp:'AK',t:'C'},{rm:'AD',adp:'AL',t:'C'},{rm:'AE',adp:'AM',t:'C'},{rm:'AF',adp:'AH',t:'C'},{rm:'AI',adp:'AR',t:'C'},{rm:'AJ',adp:'AT',t:'C'},{rm:'AK',adp:'AT',t:'C'},{rm:'AL',adp:'AU',t:'C'},{rm:'AM',adp:'AV',t:'C'},{rm:'AN',adp:'AW',t:'C'},{rm:'AO',adp:'DC',t:'C'},{rm:'AQ',adp:'BG',t:'C'},
+    {rm:'H',adp:null,t:'R'},{rm:'I',adp:null,t:'R'},{rm:'R',adp:null,t:'R'},{rm:'S',adp:null,t:'R'},{rm:'T',adp:null,t:'R'},{rm:'V',adp:null,t:'R'},{rm:'AB',adp:null,t:'R'},{rm:'AG',adp:null,t:'R'},{rm:'AH',adp:null,t:'R'},
+  ],
+  'Google':[
+    {rm:'I',adp:'CW',t:'C'},{rm:'J',adp:'AK',t:'C'},{rm:'L',adp:'K',t:'C'},{rm:'M',adp:'L',t:'C'},{rm:'N',adp:'M',t:'C'},{rm:'O',adp:'N',t:'C'},{rm:'P',adp:'O',t:'C'},{rm:'Q',adp:'P',t:'C'},{rm:'R',adp:'Q',t:'C'},{rm:'S',adp:'R',t:'C'},{rm:'W',adp:'W',t:'C'},{rm:'X',adp:'X',t:'C'},{rm:'Y',adp:'Y',t:'C'},{rm:'AA',adp:'AA',t:'C'},{rm:'AB',adp:'AI',t:'C'},{rm:'AC',adp:'AJ',t:'C'},{rm:'AD',adp:'AM',t:'C'},{rm:'AE',adp:'AO',t:'C'},{rm:'AF',adp:'AP',t:'C'},{rm:'AG',adp:'AQ',t:'C'},{rm:'AH',adp:'AK',t:'C'},{rm:'AK',adp:'AU',t:'C'},{rm:'AT',adp:'BF',t:'C'},
+    {rm:'H',adp:null,t:'R'},{rm:'K',adp:null,t:'R'},{rm:'T',adp:null,t:'R'},{rm:'U',adp:null,t:'R'},{rm:'V',adp:null,t:'R'},{rm:'Z',adp:null,t:'R'},
+  ],
+  'Programmatic':[
+    {rm:'J',adp:'BG',t:'C'},{rm:'K',adp:'J',t:'C'},{rm:'L',adp:'U',t:'C'},{rm:'M',adp:'K',t:'C'},{rm:'N',adp:'L',t:'C'},{rm:'O',adp:'M',t:'C'},{rm:'P',adp:'N',t:'C'},{rm:'Q',adp:'O',t:'C'},{rm:'R',adp:'P',t:'C'},{rm:'V',adp:'W',t:'C'},{rm:'X',adp:'Y',t:'C'},{rm:'Y',adp:'Z',t:'C'},{rm:'Z',adp:'AH',t:'C'},{rm:'AA',adp:'AI',t:'C'},{rm:'AB',adp:'AP',t:'C'},{rm:'AC',adp:'AL',t:'C'},{rm:'AE',adp:'AM',t:'C'},{rm:'AF',adp:'AN',t:'C'},{rm:'AG',adp:'AO',t:'C'},{rm:'AI',adp:'AJ',t:'C'},{rm:'AL',adp:'AU',t:'C'},{rm:'AW',adp:'BJ',t:'C'},
+    {rm:'H',adp:null,t:'R'},{rm:'I',adp:null,t:'R'},{rm:'S',adp:null,t:'R'},{rm:'T',adp:null,t:'R'},{rm:'U',adp:null,t:'R'},{rm:'W',adp:null,t:'R'},
+  ],
+  'Meta e Tiktok':[
+    {rm:'I',adp:'DB',t:'C'},{rm:'J',adp:'BE',t:'C'},{rm:'K',adp:'V',t:'C'},{rm:'L',adp:'I',t:'C'},{rm:'M',adp:'J',t:'C'},{rm:'N',adp:'L',t:'C'},{rm:'P',adp:'M',t:'C'},{rm:'Q',adp:'N',t:'C'},{rm:'R',adp:'O',t:'C'},{rm:'S',adp:'P',t:'C'},{rm:'T',adp:'Q',t:'C'},{rm:'U',adp:'R',t:'C'},{rm:'Y',adp:'AA',t:'C'},{rm:'AA',adp:'X',t:'C'},{rm:'AB',adp:'X',t:'C'},{rm:'AC',adp:'AD',t:'C'},{rm:'AD',adp:'AL',t:'C'},{rm:'AE',adp:'AM',t:'C'},{rm:'AF',adp:'AO',t:'C'},{rm:'AG',adp:'AP',t:'C'},{rm:'AH',adp:'AQ',t:'C'},{rm:'AI',adp:'AR',t:'C'},{rm:'AJ',adp:'AS',t:'C'},{rm:'AM',adp:'AX',t:'C'},{rm:'AS',adp:'BH',t:'C'},
+    {rm:'H',adp:null,t:'R'},{rm:'O',adp:null,t:'R'},{rm:'V',adp:null,t:'R'},{rm:'W',adp:null,t:'R'},{rm:'X',adp:null,t:'R'},{rm:'Z',adp:null,t:'R'},
+  ],
+  'Pinterest, Snapchat e X':[
+    {rm:'I',adp:'CY',t:'C'},{rm:'J',adp:'BB',t:'C'},{rm:'K',adp:'U',t:'C'},{rm:'L',adp:'I',t:'C'},{rm:'M',adp:'J',t:'C'},{rm:'O',adp:'L',t:'C'},{rm:'P',adp:'M',t:'C'},{rm:'Q',adp:'N',t:'C'},{rm:'R',adp:'O',t:'C'},{rm:'S',adp:'P',t:'C'},{rm:'T',adp:'Q',t:'C'},{rm:'X',adp:'Y',t:'C'},{rm:'Z',adp:'W',t:'C'},{rm:'AA',adp:'W',t:'C'},{rm:'AB',adp:'AI',t:'C'},{rm:'AC',adp:'AJ',t:'C'},{rm:'AD',adp:'AL',t:'C'},{rm:'AE',adp:'AM',t:'C'},{rm:'AF',adp:'AN',t:'C'},{rm:'AG',adp:'AO',t:'C'},{rm:'AH',adp:'AP',t:'C'},{rm:'AL',adp:'AU',t:'C'},{rm:'AV',adp:'BE',t:'C'},
+    {rm:'H',adp:null,t:'R'},{rm:'N',adp:null,t:'R'},{rm:'U',adp:null,t:'R'},{rm:'V',adp:null,t:'R'},{rm:'W',adp:null,t:'R'},{rm:'Y',adp:null,t:'R'},
+  ],
+  'Flashtalking':[
+    {rm:'I',adp:'CX',t:'C'},{rm:'J',adp:'I',t:'C'},{rm:'K',adp:'J',t:'C'},{rm:'L',adp:'K',t:'C'},{rm:'M',adp:'L',t:'C'},{rm:'N',adp:'M',t:'C'},{rm:'O',adp:'N',t:'C'},{rm:'S',adp:'R',t:'C'},{rm:'U',adp:'Q',t:'C'},{rm:'V',adp:'Z',t:'C'},{rm:'W',adp:'AA',t:'C'},{rm:'X',adp:'AC',t:'C'},{rm:'Y',adp:'AE',t:'C'},{rm:'AA',adp:'AH',t:'C'},{rm:'AC',adp:'AI',t:'C'},{rm:'AE',adp:'AB',t:'C'},{rm:'AH',adp:'AM',t:'C'},{rm:'AR',adp:'AZ',t:'C'},
+    {rm:'H',adp:null,t:'R'},{rm:'P',adp:null,t:'R'},{rm:'Q',adp:null,t:'R'},{rm:'R',adp:null,t:'R'},{rm:'T',adp:null,t:'R'},{rm:'Z',adp:null,t:'R'},
+  ],
+};
+
+var MRG_IDX={};
+Object.keys(MRG_MAPS).forEach(function(s){
+  MRG_IDX[s]=MRG_MAPS[s].map(function(r){return{ri:mrgC(r.rm),ai:r.adp?mrgC(r.adp):null,t:r.t};});
+});
+
+var MRG_FILL_G={type:'pattern',patternType:'solid',fgColor:{rgb:'FFE6F4EE'}};
+var MRG_FILL_U={type:'pattern',patternType:'solid',fgColor:{rgb:'FFE8ECFB'}};
+var MRG_FILL_C={type:'pattern',patternType:'solid',fgColor:{rgb:'FFFDECEA'}};
+var MRG_FILL_Y={type:'pattern',patternType:'solid',fgColor:{rgb:'FFFEF3C7'}};
+
+var mrgRmWb=null,mrgAdpWb=null,mrgResultAdpWb=null,mrgResultRmWb=null,mrgAdpName='',mrgRmName='';
+var mrgAdpBytes=null,mrgRmBytes=null;
+var mrgSel=new Set(),mrgLog=[],mrgStats={n:0,u:0,can:0,s:0,err:0};
+var mrgProcessando=false;
+
+window.addEventListener('beforeunload',function(e){
+  if(mrgProcessando){e.preventDefault();e.returnValue='O Merge ainda está processando. Tem certeza que quer sair?';return e.returnValue;}
+});
+
+function adpRmVerificar(filename,esperado){
+  if(!filename)return null;
+  var isAdp=ADPRM_ADP.test(filename),isRm=ADPRM_RM.test(filename);
+  if(!isAdp&&!isRm)return null;
+  if(esperado==='adp'&&isRm)return 'rm';
+  if(esperado==='rm'&&isAdp)return 'adp';
+  return null;
+}
+
+function mrgDrop(e,w){e.preventDefault();document.getElementById('mrg-drop-'+w).classList.remove('drag');if(e.dataTransfer.files[0])mrgReadFile(e.dataTransfer.files[0],w);}
+function mrgLoad(inp,w){if(inp.files[0])mrgReadFile(inp.files[0],w);}
+function mrgReadFile(file,w){
+  var errado=adpRmVerificar(file.name,w);
+  if(errado){
+    var nomes={adp:'ADP (UNCC…)',rm:'RM (RM…)'};
+    if(confirm('⚠️ Arquivo detectado como '+nomes[errado]+', mas este slot espera '+nomes[w]+'.\n\nDeseja trocar de slot automaticamente?')){mrgReadFile(file,errado);return;}
+  }
+  var r=new FileReader();
+  r.onload=function(e){
+    var arr=new Uint8Array(e.target.result);
+    var wb=XLSX.read(arr,{type:'array',cellStyles:true});
+    if(w==='rm'){mrgRmWb=wb;mrgRmName=file.name;mrgRmBytes=arr;}
+    else{mrgAdpWb=wb;mrgAdpName=file.name;mrgAdpBytes=arr;}
+    var z=document.getElementById('mrg-drop-'+w);z.classList.add('loaded');
+    document.getElementById('mrg-icon-'+w).textContent='✅';
+    document.getElementById('mrg-h3-'+w).textContent=file.name;
+    document.getElementById('mrg-p-'+w).textContent='Carregado · clique para trocar';
+    if(mrgRmWb&&mrgAdpWb){document.getElementById('mrg-s2').style.display='block';mrgBuildChips();}
+    mrgUpdBtn();
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function mrgBuildChips(){
+  var chips=document.getElementById('mrg-chips'),ranges=document.getElementById('mrg-ranges');
+  chips.innerHTML='';ranges.innerHTML='';mrgSel=new Set();
+
+  var availableNames=Object.keys(MRG_MAPS).filter(function(name){
+    return mrgRmWb&&mrgRmWb.SheetNames.indexOf(name)!==-1;
+  });
+
+  var btnTodas=document.createElement('button');
+  btnTodas.className='chip';btnTodas.textContent='Todas';
+  btnTodas.onclick=function(){
+    var allSel=availableNames.every(function(n){return mrgSel.has(n);});
+    if(allSel){
+      availableNames.forEach(function(name){
+        mrgSel.delete(name);
+        var b=document.getElementById('mrg-btn-'+name.replace(/[^a-z0-9]/gi,'_'));if(b)b.classList.remove('active');
+        var r=document.getElementById('mrg-rr-'+name.replace(/[^a-z0-9]/gi,'_'));if(r)r.style.display='none';
+      });
+      btnTodas.classList.remove('active');
+      document.getElementById('mrg-range-global').style.display='none';
+    }else{
+      availableNames.forEach(function(name){
+        mrgSel.add(name);
+        var b=document.getElementById('mrg-btn-'+name.replace(/[^a-z0-9]/gi,'_'));if(b)b.classList.add('active');
+        var r=document.getElementById('mrg-rr-'+name.replace(/[^a-z0-9]/gi,'_'));if(r)r.style.display='flex';
+      });
+      btnTodas.classList.add('active');
+      document.getElementById('mrg-range-global').style.display='flex';
+      mrgAplicarRangeGlobal();
+    }
+    mrgUpdBtn();
+  };
+  chips.appendChild(btnTodas);
+
+  var divGlobal=document.createElement('div');
+  divGlobal.id='mrg-range-global';
+  divGlobal.style.cssText='display:none;align-items:center;gap:8px;padding:6px 10px;background:var(--ul-l);border:1px solid #C5CEEE;border-radius:8px;margin-bottom:8px;flex-wrap:wrap';
+  divGlobal.innerHTML=
+    '<span style="font-size:11px;font-weight:600;color:var(--ul)">Aplicar em todas:</span>'+
+    '<span class="range-sep">linhas</span>'+
+    '<input type="number" class="range-inp" id="mrg-rf-global" placeholder="2" min="1" oninput="mrgAplicarRangeGlobal()">'+
+    '<span class="range-sep">até</span>'+
+    '<input type="number" class="range-inp" id="mrg-rt-global" placeholder="(fim)" min="1" oninput="mrgAplicarRangeGlobal()">'+
+    '<span style="font-size:10.5px;color:var(--g500)">deixe em branco para ler tudo</span>';
+  ranges.appendChild(divGlobal);
+
+  Object.keys(MRG_MAPS).forEach(function(name){
+    var inRM=mrgRmWb&&mrgRmWb.SheetNames.indexOf(name)!==-1;
+    var btn=document.createElement('button');
+    var sid=name.replace(/[^a-z0-9]/gi,'_');
+    btn.className='chip'+(inRM?'':' na');
+    btn.id='mrg-btn-'+sid;
+    btn.textContent=name+(inRM?'':' (n/a)');
+    if(inRM){
+      btn.onclick=function(){
+        if(mrgSel.has(name)){
+          mrgSel.delete(name);btn.classList.remove('active');
+          document.getElementById('mrg-rr-'+sid).style.display='none';
+        }else{
+          mrgSel.add(name);btn.classList.add('active');
+          document.getElementById('mrg-rr-'+sid).style.display='flex';
+        }
+        var allSel=availableNames.every(function(n){return mrgSel.has(n);});
+        btnTodas.classList.toggle('active',allSel);
+        document.getElementById('mrg-range-global').style.display=allSel?'flex':'none';
+        mrgUpdBtn();
+      };
+      var div=document.createElement('div');
+      div.className='range-row';div.id='mrg-rr-'+sid;div.style.display='none';
+      div.innerHTML='<span class="range-label">'+esc(name)+'</span>'+
+        '<span class="range-sep">linhas</span>'+
+        '<input type="number" class="range-inp" id="mrg-rf-'+sid+'" placeholder="2" min="1">'+
+        '<span class="range-sep">até</span>'+
+        '<input type="number" class="range-inp" id="mrg-rt-'+sid+'" placeholder="(fim)" min="1">'+
+        '<span class="range-hint">deixe em branco para ler tudo</span>';
+      ranges.appendChild(div);
+    }
+    chips.appendChild(btn);
+  });
+  mrgUpdBtn();
+}
+
+function mrgAplicarRangeGlobal(){
+  var rfG=document.getElementById('mrg-rf-global'),rtG=document.getElementById('mrg-rt-global');
+  if(!rfG||!rtG)return;
+  mrgSel.forEach(function(name){
+    var sid=name.replace(/[^a-z0-9]/gi,'_');
+    var rf=document.getElementById('mrg-rf-'+sid),rt=document.getElementById('mrg-rt-'+sid);
+    if(rf)rf.value=rfG.value;if(rt)rt.value=rtG.value;
+  });
+}
+
+function mrgUpdBtn(){
+  document.getElementById('mrg-btn-run').disabled=!(mrgRmWb&&mrgAdpWb&&mrgSel.size>0)||mrgProcessando;
+}
+
+function mrgGetRange(name){
+  var sid=name.replace(/[^a-z0-9]/gi,'_');
+  var rfEl=document.getElementById('mrg-rf-'+sid),rtEl=document.getElementById('mrg-rt-'+sid);
+  var from=rfEl&&rfEl.value?parseInt(rfEl.value):null,to=rtEl&&rtEl.value?parseInt(rtEl.value):null;
+  return{from:from?from-1:1,to:to?to-1:null};
+}
+
+function mrgRun(){
+  mrgStats={n:0,u:0,can:0,s:0,err:0};mrgLog=[];
+  mrgProcessando=true;
+  document.getElementById('mrg-btn-run').disabled=true;
+  document.getElementById('mrg-s3').style.display='block';
+  document.getElementById('mrg-result').style.display='none';
+  var pb=document.getElementById('mrg-pb-wrap');
+  var fill=document.getElementById('mrg-pb-fill');
+  pb.classList.add('on');fill.style.width='0%';
+  var statusEl=document.getElementById('mrg-pb-status-wrap');
+  statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Preparando…</span>';
+  mrgResultAdpWb=mrgAdpWb;mrgResultRmWb=mrgRmWb;
+  setTimeout(function(){
+    fill.style.width='20%';
+    var shts=[];mrgSel.forEach(function(s){shts.push(s);});
+    var idx=0;
+    function processNext(){
+      if(idx>=shts.length){
+        fill.style.width='100%';
+        statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Montando resultado…</span>';
+        setTimeout(function(){
+          mrgRenderResult();
+          document.getElementById('mrg-result').style.display='block';
+          statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Concluído ✓</span>';
+          mrgProcessando=false;mrgUpdBtn();
+        },50);
+        return;
+      }
+      var s=shts[idx];
+      fill.style.width=(20+Math.round((idx/shts.length)*78))+'%';
+      statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Processando: '+s+' ('+(idx+1)+'/'+shts.length+')…</span>';
+      setTimeout(function(){
+        try{mrgProcessSheet(s);}catch(e){console.error('Erro em '+s,e);}
+        idx++;processNext();
+      },0);
+    }
+    processNext();
+  },60);
+}
+
+function mrgProcessSheet(shtRm){
+  var shtAdp=MRG_RM_TO_ADP[shtRm]||shtRm;
+  var rmWs=mrgResultRmWb.Sheets[shtRm],adpWs=mrgResultAdpWb.Sheets[shtAdp];
+  if(!rmWs||!adpWs)return;
+  var rmD=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''});
+  var adpD=XLSX.utils.sheet_to_json(adpWs,{header:1,defval:''});
+  var mp=MRG_IDX[shtRm]||[];
+  var cols=MRG_COLS[shtAdp]||{};
+  var rmKeyI=cols.rmKey?mrgC(cols.rmKey):null;
+  var adpKeyI=cols.adpKey?mrgC(cols.adpKey):null;
+  var adpSpcI=cols.adpSpc?mrgC(cols.adpSpc):null;
+  var adpMap={};
+  if(adpKeyI!==null){
+    for(var ri=1;ri<adpD.length;ri++){
+      var kval=String(adpD[ri][adpKeyI]||'').trim();
+      if(kval)adpMap[kval]=ri;
+    }
+  }
+  var nextR=adpD.length;
+  var rng=mrgGetRange(shtRm),rowFrom=rng.from,rowTo=rng.to!==null?rng.to:rmD.length-1;
+  for(var i=rowFrom;i<=rowTo&&i<rmD.length;i++){
+    var row=rmD[i];
+    if(row.every(function(v){return v===''||v===null||v===undefined;})){
+      mrgStats.s++;mrgLog.push({sht:shtRm,key:'linha '+(i+1),act:'skip',reason:'Linha vazia'});continue;
+    }
+    var statusRaw=String(row[0]||'').trim().toLowerCase();
+    var chave=rmKeyI!==null?String(row[rmKeyI]||'').trim():'';
+    if(statusRaw==='solicitado para stormx'){
+      var adpRow=nextR++;
+      mrgApplyRow(adpWs,row,adpRow,mp,MRG_FILL_G);
+      rmWs[XLSX.utils.encode_cell({r:i,c:0})]={t:'s',v:'Concluído Stormx'};
+      mrgStats.n++;mrgLog.push({sht:shtRm,key:chave||'linha '+(i+1),act:'new',adpRow:adpRow+1});
+    }else if(statusRaw==='alterar'){
+      if(!chave||adpMap[chave]===undefined){
+        mrgStats.err++;mrgLog.push({sht:shtRm,key:chave||'—',act:'err',reason:'Chave não encontrada no ADP'});continue;
+      }
+      var adpRow=adpMap[chave];
+      mrgApplyRow(adpWs,row,adpRow,mp,MRG_FILL_U);
+      if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRow,c:adpSpcI})]={t:'s',v:'Alterar'};
+      rmWs[XLSX.utils.encode_cell({r:i,c:0})]={t:'s',v:'Alterado'};
+      mrgStats.u++;mrgLog.push({sht:shtRm,key:chave,act:'upd',adpRow:adpRow+1});
+    }else if(statusRaw==='cancelar'){
+      if(!chave||adpMap[chave]===undefined){
+        mrgStats.err++;mrgLog.push({sht:shtRm,key:chave||'—',act:'err',reason:'Chave não encontrada no ADP'});continue;
+      }
+      var adpRow=adpMap[chave];
+      if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRow,c:adpSpcI})]={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
+      rmWs[XLSX.utils.encode_cell({r:i,c:0})]={t:'s',v:'Cancelado'};
+      mrgStats.can++;mrgLog.push({sht:shtRm,key:chave,act:'can',adpRow:adpRow+1});
+    }else{
+      mrgStats.s++;mrgLog.push({sht:shtRm,key:chave||'linha '+(i+1),act:'skip',reason:'Status: "'+row[0]+'"'});
+    }
+  }
+}
+
+function mrgApplyRow(ws,row,ri,mp,fill){
+  var rng=XLSX.utils.decode_range(ws['!ref']||'A1');
+  mp.forEach(function(rule){
+    if(rule.ri===null||rule.ai===null)return;if(rule.t!=='C'&&rule.t!=='R')return;
+    var val=row[rule.ri];if(val===undefined||val==='')return;
+    var addr=XLSX.utils.encode_cell({r:ri,c:rule.ai});
+    var existingStyle=(ws[addr]&&ws[addr].s)?ws[addr].s:{};
+    var useFill=rule.t==='R'?MRG_FILL_Y:fill;
+    var s=Object.assign({},existingStyle);if(useFill)s.fill=useFill;
+    ws[addr]={t:typeof val==='number'?'n':'s',v:val,s:s};
+    if(rule.ai>rng.e.c)rng.e.c=rule.ai;if(ri>rng.e.r)rng.e.r=ri;
+  });
+  ws['!ref']=XLSX.utils.encode_range(rng);
+}
+
+function mrgRenderResult(){
+  var cards=document.getElementById('mrg-cards'),tbl=document.getElementById('mrg-table');
+  cards.innerHTML=
+    '<div class="card cn"><div class="num">'+mrgStats.n+'</div><div class="lbl">Novas linhas</div></div>'+
+    '<div class="card cu"><div class="num">'+mrgStats.u+'</div><div class="lbl">Alteradas</div></div>'+
+    '<div class="card ce"><div class="num">'+mrgStats.can+'</div><div class="lbl">Canceladas</div></div>'+
+    '<div class="card cs"><div class="num">'+mrgStats.s+'</div><div class="lbl">Ignoradas</div></div>'+
+    (mrgStats.err?'<div class="card cw"><div class="num">'+mrgStats.err+'</div><div class="lbl">Erros</div></div>':'');
+  if(!mrgLog.length){tbl.innerHTML='<div class="es"><div style="font-size:26px">📭</div><p style="margin-top:8px">Nenhuma linha processada.</p></div>';return;}
+  var grouped={},order=[];
+  mrgLog.forEach(function(r){if(!grouped[r.sht]){grouped[r.sht]=[];order.push(r.sht);}grouped[r.sht].push(r);});
+  var html='';
+  order.forEach(function(sht){
+    var sr=grouped[sht];
+    var nn=sr.filter(function(r){return r.act==='new';}).length;
+    var nu=sr.filter(function(r){return r.act==='upd';}).length;
+    var nc=sr.filter(function(r){return r.act==='can';}).length;
+    var ns=sr.filter(function(r){return r.act==='skip';}).length;
+    var ne=sr.filter(function(r){return r.act==='err';}).length;
+    html+='<div class="blk"><div class="blk-hdr"><span class="blk-id">'+esc(sht)+'</span>'+
+      '<span class="lt">'+sr.length+' linha'+(sr.length!==1?'s':'')+'</span>'+
+      (nn?'<span class="bok">+'+nn+' nova'+(nn>1?'s':'')+'</span>':'')+
+      (nu?'<span class="bupd">↺ '+nu+' alterada'+(nu>1?'s':'')+'</span>':'')+
+      (nc?'<span class="bdif">✕ '+nc+' cancelada'+(nc>1?'s':'')+'</span>':'')+
+      (ns?'<span class="bskip">'+ns+' ignorada'+(ns>1?'s':'')+'</span>':'')+
+      (ne?'<span class="bmis">⚠ '+ne+' erro'+(ne>1?'s':'')+'</span>':'')+
+      '</div><div class="rtw"><table><thead><tr><th>#</th><th>Ação</th><th>Chave</th><th>Linha ADP</th><th>Obs.</th></tr></thead><tbody>';
+    sr.forEach(function(r,i){
+      var b=r.act==='new'?'<span class="bok">Nova</span>':r.act==='upd'?'<span class="bupd">Alterada</span>':r.act==='can'?'<span class="bdif">Cancelada</span>':r.act==='err'?'<span class="bmis">Erro</span>':'<span class="bskip">Ignorada</span>';
+      html+='<tr><td style="color:var(--g500);font-size:10.5px">'+(i+1)+'</td><td>'+b+'</td><td><span class="cm">'+esc(r.key)+'</span></td><td>'+(r.adpRow?'<span class="lt">'+r.adpRow+'</span>':'-')+'</td><td style="font-size:11px;color:var(--g500)">'+esc(r.reason||'')+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  tbl.innerHTML=html;
+}
+
+function _mrgPatchAndDownload(origBytes,wb,modifiedSheetNames,filename){
+  JSZip.loadAsync(origBytes).then(function(zip){
+    return zip.file('xl/sharedStrings.xml').async('string').then(function(ssXml){
+      var ssItems=[],ssMap={};
+      var ssRe=/<si>([\s\S]*?)<\/si>/g,m;
+      while((m=ssRe.exec(ssXml))!==null){
+        var idx=ssItems.length;ssItems.push(m[0]);
+        var tMatch=m[0].match(/<t[^>]*>([\s\S]*?)<\/t>/);
+        if(tMatch){var val=tMatch[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');if(ssMap[val]===undefined)ssMap[val]=idx;}
+      }
+      var ssModified=false;
+      function getOrAddSS(val){
+        if(val===null||val===undefined||val==='')return null;
+        var s=String(val);if(ssMap[s]!==undefined)return ssMap[s];
+        var newIdx=ssItems.length;
+        var e2=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        ssItems.push('<si><t>'+e2+'</t></si>');ssMap[s]=newIdx;ssModified=true;return newIdx;
+      }
+      return zip.file('xl/workbook.xml').async('string').then(function(wbXml){
+        return zip.file('xl/_rels/workbook.xml.rels').async('string').then(function(relsXml){
+          var relMap={};
+          var re=/<Relationship\s[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g;
+          while((m=re.exec(relsXml))!==null)relMap[m[1]]=m[2];
+          var sheetMap={};
+          var rs=/<sheet\s[^>]*name="([^"]*)"[^>]*r:id="([^"]+)"/g;
+          while((m=rs.exec(wbXml))!==null){
+            var name=m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+            sheetMap[name]='xl/'+relMap[m[2]];
+          }
+          var patchPromises=modifiedSheetNames.map(function(shName){
+            var path=sheetMap[shName];if(!path)return Promise.resolve();
+            var ws=wb.Sheets[shName];if(!ws)return Promise.resolve();
+            return zip.file(path).async('string').then(function(origXml){
+              var existingRows={};
+              var rowRe=/<row r="(\d+)"[\s\S]*?<\/row>/g;
+              while((m=rowRe.exec(origXml))!==null)existingRows[parseInt(m[1])]=m[0];
+              var origMaxRow=Object.keys(existingRows).reduce(function(mx,r){return Math.max(mx,parseInt(r));},0);
+              var wsRange=XLSX.utils.decode_range(ws['!ref']||'A1');
+              var wsMaxRow=wsRange.e.r+1;
+              var newRowsXml='';
+              for(var ri=origMaxRow+1;ri<=wsMaxRow;ri++){
+                var cells=[];
+                for(var ci=wsRange.s.c;ci<=wsRange.e.c;ci++){
+                  var addr=XLSX.utils.encode_cell({r:ri-1,c:ci});
+                  var cell=ws[addr];if(!cell||cell.v===undefined||cell.v===null||cell.v==='')continue;
+                  var cellXml='';
+                  if(cell.t==='s'||typeof cell.v==='string'){var ssIdx=getOrAddSS(cell.v);if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';}
+                  else if(cell.t==='n'||typeof cell.v==='number'){cellXml='<c r="'+addr+'"><v>'+cell.v+'</v></c>';}
+                  else if(cell.t==='b'){cellXml='<c r="'+addr+'" t="b"><v>'+(cell.v?1:0)+'</v></c>';}
+                  else if(cell.t==='d'){var ssIdx=getOrAddSS(cell.w||String(cell.v));if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';}
+                  if(cellXml)cells.push(cellXml);
+                }
+                if(cells.length>0)newRowsXml+='<row r="'+ri+'" spans="'+(wsRange.s.c+1)+':'+(wsRange.e.c+1)+'">'+cells.join('')+'</row>';
+              }
+              if(newRowsXml===''&&origMaxRow>=wsMaxRow){
+                for(var ri=1;ri<=wsMaxRow;ri++){
+                  var addr='A'+ri;var cell=ws[addr];
+                  if(!cell||!existingRows[ri])continue;
+                  if(cell.v!==undefined&&cell.v!==''){
+                    var ssIdx=getOrAddSS(cell.v);
+                    if(ssIdx!==null){
+                      var origRow=existingRows[ri];var newCellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';
+                      if(origRow.indexOf('r="'+addr+'"')!==-1){origRow=origRow.replace(/<c r="A\d+"[^>]*>[\s\S]*?<\/c>/,newCellXml);}
+                      else{origRow=origRow.replace(/^(<row[^>]*>)/,'$1'+newCellXml);}
+                      existingRows[ri]=origRow;
+                    }
+                  }
+                }
+              }
+              var allRowKeys=Object.keys(existingRows).map(Number).sort(function(a,b){return a-b;});
+              var allRowsXml=allRowKeys.map(function(r){return existingRows[r];}).join('')+newRowsXml;
+              var newMaxRow=Math.max(origMaxRow,wsMaxRow);
+              var newXml=origXml.replace(/<sheetData>[\s\S]*<\/sheetData>/,'<sheetData>'+allRowsXml+'</sheetData>');
+              if(newRowsXml){newXml=newXml.replace(/<dimension ref="[^"]*"/,'<dimension ref="'+XLSX.utils.encode_cell({r:wsRange.s.r,c:wsRange.s.c})+':'+XLSX.utils.encode_cell({r:newMaxRow-1,c:wsRange.e.c})+'"');}
+              zip.file(path,newXml);
+            });
+          });
+          return Promise.all(patchPromises).then(function(){
+            if(ssModified){
+              var header=ssXml.slice(0,ssXml.indexOf('<sst '));
+              var newSsXml=header+'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+ssItems.length+'" uniqueCount="'+ssItems.length+'">'+ssItems.join('')+'</sst>';
+              zip.file('xl/sharedStrings.xml',newSsXml);
+            }
+            return zip;
+          });
+        });
+      });
+    });
+  }).then(function(zip){
+    return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  }).then(function(blob){
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},5000);
+  }).catch(function(e){alert('Erro ao gerar arquivo: '+e.message);});
+}
+
+function mrgDownload(){
+  if(!mrgResultAdpWb||!mrgAdpBytes){alert('Nenhum resultado disponível.');return;}
+  var modified=[];mrgSel.forEach(function(s){modified.push(MRG_RM_TO_ADP[s]||s);});
+  _mrgPatchAndDownload(mrgAdpBytes,mrgResultAdpWb,modified,mrgAdpName.replace(/\.xlsx?$/i,'')+'_MERGED.xlsx');
+}
+function mrgDownloadRM(){
+  if(!mrgResultRmWb||!mrgRmBytes){alert('Nenhum resultado disponível.');return;}
+  var modified=[];mrgSel.forEach(function(s){modified.push(s);});
+  _mrgPatchAndDownload(mrgRmBytes,mrgResultRmWb,modified,mrgRmName.replace(/\.xlsx?$/i,'')+'_ATUALIZADO.xlsx');
+}
+
+function mrgReset(){
+  mrgRmWb=null;mrgAdpWb=null;mrgResultAdpWb=null;mrgResultRmWb=null;
+  mrgAdpName='';mrgRmName='';mrgAdpBytes=null;mrgRmBytes=null;mrgSel=new Set();mrgLog=[];mrgStats={n:0,u:0,can:0,s:0,err:0};
+  mrgProcessando=false;
+  ['rm','adp'].forEach(function(w){
+    var z=document.getElementById('mrg-drop-'+w);z.classList.remove('loaded');
+    document.getElementById('mrg-icon-'+w).textContent=w==='rm'?'📋':'🔧';
+    document.getElementById('mrg-h3-'+w).textContent=w==='rm'?'Arraste o RM aqui':'Arraste o ADP aqui';
+    document.getElementById('mrg-p-'+w).textContent='ou clique · .xlsx';
+    document.getElementById('mrg-file-'+w).value='';
+  });
+  document.getElementById('mrg-s2').style.display='none';
+  document.getElementById('mrg-s3').style.display='none';
+  document.getElementById('mrg-chips').innerHTML='';
+  document.getElementById('mrg-ranges').innerHTML='';
+  document.getElementById('mrg-cards').innerHTML='';
+  document.getElementById('mrg-table').innerHTML='';
+  document.getElementById('mrg-result').style.display='none';
+  document.getElementById('mrg-pb-fill').style.width='0%';
+  document.getElementById('mrg-pb-wrap').classList.remove('on');
+  document.getElementById('mrg-pb-status-wrap').innerHTML='';
+  document.getElementById('mrg-btn-run').disabled=true;
+}
+</script>
+</body>
+</html>
