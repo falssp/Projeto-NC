@@ -683,9 +683,10 @@ function _getPing() {
 // Histórico: Data/Hora (col0), Usuário (col1), Aba (col2), Célula (col3), Valor Anterior (col4), Valor Novo (col5)
 function _getStats() {
   try {
-    var ss = SpreadsheetApp.openById(CHEFE_SHEET_ID);
+    var ss = SpreadsheetApp.openById('1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI');
+    var sheets = ss.getSheets().map(function(s){ return s.getName(); });
     var sh = ss.getSheetByName('📋 Histórico');
-    if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
+    if (!sh) return { ok: false, error: 'Aba nao encontrada. Abas: ' + JSON.stringify(sheets) };
     var dados = sh.getDataRange().getValues();
     var agora = new Date(), mes = agora.getMonth(), ano = agora.getFullYear();
     var total = 0, ultima = null;
