@@ -148,7 +148,7 @@ function gerarIDs(payload) {
     var anoAtual      = new Date().getFullYear().toString();
     var abaMinha      = _getOrCreateAba(ssMinha, anoAtual);
     var today         = _hoje();
-    var linhaMinha    = abaMinha.getLastRow();
+    var linhaMinha    = _lastDataRow(abaMinha);
     var primeiraLinha = linhaMinha + 1;
     var resultado     = [];
 
@@ -609,6 +609,17 @@ function readRmSheet(payload) {
 /* ════════════════════════════════════════════════════════════
    UTILS
 ════════════════════════════════════════════════════════════ */
+// Retorna a última linha com valor real na col A (ignora linhas formatadas mas vazias)
+function _lastDataRow(sheet) {
+  var maxRow = sheet.getLastRow();
+  if (maxRow <= 1) return maxRow; // 0 ou só cabeçalho
+  var colA = sheet.getRange(1, 1, maxRow, 1).getValues();
+  for (var i = maxRow - 1; i >= 0; i--) {
+    if (String(colA[i][0] || '').trim() !== '') return i + 1;
+  }
+  return 1; // só cabeçalho sobrou
+}
+
 function _hoje() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
 }
