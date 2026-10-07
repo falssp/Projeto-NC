@@ -674,11 +674,14 @@ function clIrDuplicatas(){
         .then(function(r){
           var ct=r.headers.get('content-type')||'';
           if(!ct.includes('json')){
-            if(attempt<2){
-              _clShowSt('cl-st3','inf','⟳ Reconectando ao servidor (tentativa '+(attempt+1)+'/2)...');
-              return new Promise(function(res){setTimeout(function(){res(_fetchWithRetry(attempt+1));},3000);});
-            }
-            throw new Error('Servidor indisponível. Tente novamente em alguns instantes.');
+            return r.text().then(function(txt){
+              var preview=txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,200);
+              if(attempt<2){
+                _clShowSt('cl-st3','inf','⟳ Reconectando ao servidor (tentativa '+(attempt+1)+'/2)...');
+                return new Promise(function(res){setTimeout(function(){res(_fetchWithRetry(attempt+1));},3000);});
+              }
+              throw new Error('Servidor retornou: '+preview);
+            });
           }
           return r.json();
         })
