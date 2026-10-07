@@ -3824,14 +3824,33 @@ function _clDetectAgencia(filename){
   if(n.indexOf('_CAD_')>=0||n.indexOf('_CADASTRA_')>=0)return'Cadastra';
   return''; // não reconhecido
 }
-var CL_MAP={
-  'Google':    {b:32,d:33,f:5,g:7, pid:58},   // AG, AH, F, H
-  'Prog':      {b:31,d:32,f:6,g:8, pid:61},   // AF, AG, G, I
-  'YT':        {b:30,d:31,f:6,g:8, pid:59},   // AE, AF, G, I
-  'Meta':      {b:35,d:36,f:5,g:7, pid:60},   // AJ, AK, F, H
-  'Pinterest': {b:32,d:33,f:5,g:7, pid:56},   // AG, AH, F, H
-  'Flash':     {b:25,d:26,f:6,g:8, pid:53}    // Z,  AA, G, I
+// ─── Detecção dinâmica de colunas pelo nome no header ───
+var CL_MAP_FALLBACK={
+  'Google':    {b:32,d:33,f:5,g:7, pid:58},
+  'Prog':      {b:31,d:32,f:6,g:8, pid:61},
+  'YT':        {b:30,d:31,f:6,g:8, pid:59},
+  'Meta':      {b:35,d:36,f:5,g:7, pid:60},
+  'Pinterest': {b:32,d:33,f:5,g:7, pid:56},
+  'Flash':     {b:25,d:26,f:6,g:8, pid:53}
 };
+function _clBuildMap(headerRow,abaKey){
+  var map={b:-1,d:-1,f:-1,g:-1,pid:-1};
+  headerRow.forEach(function(val,i){
+    var v=String(val||'').toLowerCase().replace(/\s/g,'');
+    if(v==='campaignlocal')map.b=i;
+    if(v==='midiacampaignlocal-extra')map.d=i;
+    if(v==='brandname')map.f=i;
+    if(v.indexOf('placementid')===0)map.pid=i;
+    if(v.indexOf('campaignname')===0&&String(val||'').toLowerCase().indexOf('requires')>=0&&map.g===-1)map.g=i;
+  });
+  var fb=CL_MAP_FALLBACK[abaKey]||{};
+  if(map.b===-1)map.b=fb.b||0;
+  if(map.d===-1)map.d=fb.d||0;
+  if(map.f===-1)map.f=fb.f||0;
+  if(map.g===-1)map.g=fb.g||0;
+  if(map.pid===-1)map.pid=fb.pid||0;
+  return map;
+}
 function _clDetectAba(name){
   var n=name.toLowerCase().trim();
   // match exato ou prefixo curto — evita abas auxiliares como FT_GOOGLE_*, Flashtalking Values
@@ -3981,10 +4000,10 @@ function clGoStep2(){
       var seen={};
       clWorkbook.SheetNames.forEach(function(shName){
         var abaKey=_clDetectAba(shName);if(!abaKey)return;
-        var map=CL_MAP[abaKey];
         var rows=_clXlsxToArr(clWorkbook,shName);if(!rows)return;
-        var dataStart=14;
-        rows.forEach(function(r,i){var j=r.join('|').toLowerCase();if(j.indexOf('campaignlocal')>=0||j.indexOf('campaign local')>=0)dataStart=i+1;});
+        var dataStart=14;var headerRow=[];
+        rows.forEach(function(r,i){var j=r.join('|').toLowerCase();if(j.indexOf('campaignlocal')>=0||j.indexOf('campaign local')>=0){dataStart=i+1;headerRow=r;}});
+        var map=_clBuildMap(headerRow,abaKey);
         for(var i=dataStart;i<rows.length;i++){
           var row=rows[i];
           // pula linhas de exemplo: Placement ID vazio
