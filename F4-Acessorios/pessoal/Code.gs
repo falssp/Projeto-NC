@@ -148,7 +148,7 @@ function gerarIDs(payload) {
     var anoAtual      = new Date().getFullYear().toString();
     var abaMinha      = _getOrCreateAba(ssMinha, anoAtual);
     var today         = _hoje();
-    var linhaMinha    = abaMinha.getLastRow();
+    var linhaMinha    = _lastDataRow(abaMinha);
     var primeiraLinha = linhaMinha + 1;
     var resultado     = [];
 
@@ -169,22 +169,18 @@ function gerarIDs(payload) {
         var id = tipo + String(cont.last).padStart(cont.size, '0') + cont.suffix;
         ids.push(id);
         linhaMinha++;
-        batchMinha.push([linhaMinha, today, plat, id, tipo]);
+        batchMinha.push([linhaMinha, today, plat]);
       }
       resultado.push({ plataforma: plat, tipo: tipo, ids: ids });
       // NÃO atualiza contador aqui — só após gravação
     });
 
-    // Escreve data, IDs e plataforma na planilha minha em batch
+    // Escreve data e plataforma na planilha minha em batch
     if (batchMinha.length) {
       var startMinha = batchMinha[0][0];
-      var datas  = batchMinha.map(function(r) { return [r[1]]; });
-      var plats  = batchMinha.map(function(r) { return [r[2]]; });
-      var idsSX  = batchMinha.map(function(r) { return [r[4] === 'SX'  ? r[3] : '']; });
-      var idsAMZ = batchMinha.map(function(r) { return [r[4] === 'AMZ' ? r[3] : '']; });
+      var datas = batchMinha.map(function(r) { return [r[1]]; });
+      var plats = batchMinha.map(function(r) { return [r[2]]; });
       abaMinha.getRange(startMinha, 1, batchMinha.length, 1).setValues(datas);
-      abaMinha.getRange(startMinha, 2, batchMinha.length, 1).setValues(idsSX);
-      abaMinha.getRange(startMinha, 3, batchMinha.length, 1).setValues(idsAMZ);
       abaMinha.getRange(startMinha, 5, batchMinha.length, 1).setValues(plats);
     }
 
@@ -226,28 +222,27 @@ function fillAdNames(payload) {
     var abaMinha = _getOrCreateAba(ssMinha, anoAtual);
     var lastRow  = abaChefe.getLastRow();
 
-    // Monta mapa ID → número de linha a partir das cols B e C da planilha do usuário (fonte primária)
-    // Fallback: cols B e C da aba do chefe (para IDs mais antigos)
+    // Monta mapa ID → número de linha a partir das cols B e C da aba do chefe
     var mapaID = {};
-    var lastMinha = abaMinha.getLastRow();
-    var minhaData = {};
-    if (lastMinha >= 2) {
-      abaMinha.getRange(2, 2, lastMinha - 1, 3).getValues().forEach(function(row, ri) {
-        var b = String(row[0] || '').trim().toUpperCase();
-        var c = String(row[1] || '').trim().toUpperCase();
-        var d = String(row[2] || '').trim();
-        if (b) mapaID[b] = ri + 2;
-        if (c) mapaID[c] = ri + 2;
-        minhaData[ri + 2] = { b: b, c: c, d: d };
-      });
-    }
-    // Fallback: chefe (IDs antigos que ainda não estão na planilha do usuário)
     if (lastRow >= 2) {
       abaChefe.getRange(2, 2, lastRow - 1, 2).getValues().forEach(function(row, ri) {
         var b = String(row[0] || '').trim().toUpperCase();
         var c = String(row[1] || '').trim().toUpperCase();
-        if (b && !mapaID[b]) mapaID[b] = ri + 2;
-        if (c && !mapaID[c]) mapaID[c] = ri + 2;
+        if (b) mapaID[b] = ri + 2;
+        if (c) mapaID[c] = ri + 2;
+      });
+    }
+
+    // Lê abaMinha inteira em batch (cols B, C, D) — UMA chamada só
+    var lastMinha = abaMinha.getLastRow();
+    var minhaData = {};
+    if (lastMinha >= 2) {
+      abaMinha.getRange(2, 2, lastMinha - 1, 3).getValues().forEach(function(row, ri) {
+        minhaData[ri + 2] = {
+          b: String(row[0] || '').trim().toUpperCase(),
+          c: String(row[1] || '').trim().toUpperCase(),
+          d: String(row[2] || '').trim()
+        };
       });
     }
 
@@ -614,6 +609,17 @@ function readRmSheet(payload) {
 /* ════════════════════════════════════════════════════════════
    UTILS
 ════════════════════════════════════════════════════════════ */
+// Retorna a última linha com valor real na col A (ignora linhas formatadas mas vazias)
+function _lastDataRow(sheet) {
+  var maxRow = sheet.getLastRow();
+  if (maxRow <= 1) return maxRow; // 0 ou só cabeçalho
+  var colA = sheet.getRange(1, 1, maxRow, 1).getValues();
+  for (var i = maxRow - 1; i >= 0; i--) {
+    if (String(colA[i][0] || '').trim() !== '') return i + 1;
+  }
+  return 1; // só cabeçalho sobrou
+}
+
 function _hoje() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
 }
@@ -679,7 +685,7 @@ function _getPing() {
   return {
     ok:   true,
     fase: 'F4',
-    env:  'pessoal',
+    env:  'pes',
     ts:   new Date().toISOString()
   };
 }
