@@ -668,13 +668,29 @@ function clIrDuplicatas(){
       itens.push({b:r[2],d:d,g:r[7]});
     });
     var nUnicos=itens.length;
-    fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'checkDuplicatas',aba:aba,itens:itens,token:NC_TOKEN})})
-      .then(function(r){
-        var ct=r.headers.get('content-type')||'';
-        if(!ct.includes('json'))throw new Error('Servidor indisponível. Tente novamente.');
-        return r.json();
-      })
+    var _body=JSON.stringify({action:'checkDuplicatas',aba:aba,itens:itens,token:NC_TOKEN});
+    function _fetchWithRetry(attempt){
+      return fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:_body})
+        .then(function(r){
+          var ct=r.headers.get('content-type')||'';
+          if(!ct.includes('json')){
+            if(attempt<2){
+              _clShowSt('cl-st3','inf','⟳ Reconectando ao servidor (tentativa '+(attempt+1)+'/2)...');
+              return new Promise(function(res){setTimeout(function(){res(_fetchWithRetry(attempt+1));},3000);});
+            }
+            throw new Error('Servidor indisponível. Tente novamente em alguns instantes.');
+          }
+          return r.json();
+        })
+        .catch(function(e){
+          if(attempt<2&&!e.message.includes('Servidor')){
+            _clShowSt('cl-st3','inf','⟳ Reconectando ao servidor (tentativa '+(attempt+1)+'/2)...');
+            return new Promise(function(res){setTimeout(function(){res(_fetchWithRetry(attempt+1));},3000);});
+          }
+          throw e;
+        });
+    }
+    _fetchWithRetry(0)
       .then(function(d){
         document.getElementById('cl-st3').className='ans-sbar';
         if(!d.ok){_clShowSt('cl-st3','err','❌ '+(d.error||'Erro ao verificar duplicatas'));return;}
