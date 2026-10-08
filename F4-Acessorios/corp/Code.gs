@@ -17,7 +17,7 @@
 /* ── IDs das planilhas ── */
 var MINHA_SHEET_ID = '1WZf3wiiZYoMqr7XH5UlUpzHggIwUTQE0JlTlhLr-46o';
 var CHEFE_SHEET_ID = '1kcW8wlRXFua9RV24BI7c7FqbsMN-90ywxq7VCmQoQXI';
-var CL_SHEET_ID    = '1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc';
+var CL_SHEET_ID    = '1dZ-TiUcFgjdc45Fpc9frztG1Bqsi9e0F0aAHQzXoHjw';
 var DIC_SHEET_ID   = '1PEBpspeDx8gFUYVoVYkdJgj3E5KU2GTvf7VqBBuG9hQ';
 
 /* ── Aba corrente do Dicionário ── */
