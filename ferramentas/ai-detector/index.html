@@ -197,11 +197,22 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 .dz-ico{font-size:32px;margin-bottom:9px}
 .dz-title{font-size:14px;font-weight:600;color:var(--g700);margin-bottom:4px}
 .dz-sub{font-size:12px;color:var(--g500)}
-.dz-file{margin-top:12px;display:none;align-items:center;gap:8px;background:#fff;border:1px solid var(--g200);border-radius:8px;padding:9px 13px}
+
+/* file list (multi-file) */
+.dz-file-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.dz-file{display:none;align-items:center;gap:8px;background:#fff;border:1px solid var(--g200);border-radius:8px;padding:9px 13px}
 .dz-file.visible{display:flex}
 .dz-fname{font-family:var(--mo);font-size:11.5px;color:var(--g700);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dz-size{font-size:11px;color:var(--g500);flex-shrink:0}
-.dz-change{font-size:11px;color:var(--ul);cursor:pointer;text-decoration:underline;flex-shrink:0}
+.dz-remove{font-size:11px;color:var(--err);cursor:pointer;flex-shrink:0;background:none;border:none;font-family:var(--fn);padding:0 2px}
+.dz-remove:hover{text-decoration:underline}
+.dz-add{font-size:11px;color:var(--ul);cursor:pointer;text-decoration:underline;display:inline-block;margin-top:4px}
+
+/* wrong-type warning */
+.wrong-type-warn{display:none;background:var(--warn-b);border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--warn);margin-top:10px;align-items:center;gap:10px}
+.wrong-type-warn.visible{display:flex}
+.wrong-type-warn span{flex:1;line-height:1.45}
+.wrong-type-warn button{padding:5px 12px;border-radius:6px;border:none;background:var(--warn);color:#fff;font-family:var(--fn);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
 
 /* textarea */
 .txt-area{width:100%;min-height:150px;border:1.5px solid var(--g300);border-radius:9px;padding:13px;font-family:var(--fn);font-size:13.5px;resize:vertical;outline:none;transition:border-color .15s;line-height:1.7;color:var(--g900)}
@@ -344,17 +355,13 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
   <!-- ÁUDIO -->
   <div class="panel active" id="panel-audio">
     <div class="drop-zone" id="dz-audio" ondragover="dzDrag(event,'audio')" ondragleave="dzLeave('audio')" ondrop="dzDrop(event,'audio')">
-      <input type="file" accept="audio/*" onchange="fileChosen(this,'audio')">
+      <input type="file" accept="audio/*,video/*" multiple onchange="fileChosen(this,'audio')">
       <div class="dz-ico">🎵</div>
-      <div class="dz-title">Arraste um áudio ou clique para selecionar</div>
-      <div class="dz-sub">MP3 · WAV · AAC · OGG · FLAC · M4A</div>
+      <div class="dz-title">Arraste áudios ou clique para selecionar</div>
+      <div class="dz-sub">MP3 · WAV · AAC · OGG · FLAC · M4A · vários de uma vez</div>
     </div>
-    <div class="dz-file" id="dz-file-audio">
-      <span>🎵</span>
-      <span class="dz-fname" id="dz-fname-audio"></span>
-      <span class="dz-size" id="dz-size-audio"></span>
-      <span class="dz-change" onclick="clearFile('audio')">Trocar</span>
-    </div>
+    <div class="wrong-type-warn" id="wrong-audio"></div>
+    <div class="dz-file-list" id="dz-list-audio"></div>
     <div class="panel-no-key" id="no-key-audio">
       <span>Nenhuma API configurada para áudio.<br>Configure <strong>OpenAI</strong>, <strong>AssemblyAI</strong> ou <strong>ElevenLabs</strong>.</span>
       <button onclick="openCfg()">Configurar</button>
@@ -370,17 +377,13 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
   <!-- IMAGEM -->
   <div class="panel" id="panel-image">
     <div class="drop-zone" id="dz-image" ondragover="dzDrag(event,'image')" ondragleave="dzLeave('image')" ondrop="dzDrop(event,'image')">
-      <input type="file" accept="image/*" onchange="fileChosen(this,'image')">
+      <input type="file" accept="image/*" multiple onchange="fileChosen(this,'image')">
       <div class="dz-ico">🖼️</div>
-      <div class="dz-title">Arraste uma imagem ou clique para selecionar</div>
-      <div class="dz-sub">JPG · PNG · WebP · GIF · TIFF</div>
+      <div class="dz-title">Arraste imagens ou clique para selecionar</div>
+      <div class="dz-sub">JPG · PNG · WebP · GIF · TIFF · várias de uma vez</div>
     </div>
-    <div class="dz-file" id="dz-file-image">
-      <span>🖼️</span>
-      <span class="dz-fname" id="dz-fname-image"></span>
-      <span class="dz-size" id="dz-size-image"></span>
-      <span class="dz-change" onclick="clearFile('image')">Trocar</span>
-    </div>
+    <div class="wrong-type-warn" id="wrong-image"></div>
+    <div class="dz-file-list" id="dz-list-image"></div>
     <div class="panel-no-key" id="no-key-image">
       <span>Nenhuma API configurada para imagem.<br>Configure <strong>Google Gemini</strong>, <strong>OpenAI</strong> ou <strong>Anthropic Claude</strong>.</span>
       <button onclick="openCfg()">Configurar</button>
@@ -412,17 +415,13 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
   <!-- VÍDEO -->
   <div class="panel" id="panel-video">
     <div class="drop-zone" id="dz-video" ondragover="dzDrag(event,'video')" ondragleave="dzLeave('video')" ondrop="dzDrop(event,'video')">
-      <input type="file" accept="video/*" onchange="fileChosen(this,'video')">
+      <input type="file" accept="video/*,audio/*" multiple onchange="fileChosen(this,'video')">
       <div class="dz-ico">🎬</div>
-      <div class="dz-title">Arraste um vídeo ou clique para selecionar</div>
-      <div class="dz-sub">MP4 · MOV · AVI · MPEG — preferencialmente MP4</div>
+      <div class="dz-title">Arraste vídeos ou clique para selecionar</div>
+      <div class="dz-sub">MP4 · MOV · AVI · MPEG · vários de uma vez</div>
     </div>
-    <div class="dz-file" id="dz-file-video">
-      <span>🎬</span>
-      <span class="dz-fname" id="dz-fname-video"></span>
-      <span class="dz-size" id="dz-size-video"></span>
-      <span class="dz-change" onclick="clearFile('video')">Trocar</span>
-    </div>
+    <div class="wrong-type-warn" id="wrong-video"></div>
+    <div class="dz-file-list" id="dz-list-video"></div>
     <div class="panel-no-key" id="no-key-video">
       <span>Nenhuma API configurada para vídeo.<br>Configure <strong>Google Gemini</strong> ou <strong>OpenAI</strong>.</span>
       <button onclick="openCfg()">Configurar</button>
@@ -512,7 +511,16 @@ const MANUAL = [
 ];
 
 /* ═══════════════════════════════════════════════ STATE */
-const files = { video:null, image:null, audio:null };
+// files[tipo] = array of File objects
+const files = { video:[], image:[], audio:[] };
+
+// mime helpers
+const MIME_VIDEO = t => t.startsWith('video/');
+const MIME_AUDIO = t => t.startsWith('audio/');
+const MIME_IMAGE = t => t.startsWith('image/');
+const MIME_EXPECTED = { video: MIME_VIDEO, image: MIME_IMAGE, audio: MIME_AUDIO };
+const WRONG_TAB   = { video:'audio', audio:'video' }; // redirect target if wrong type dropped
+
 function getKey(id){ return localStorage.getItem('aid_'+id)||''; }
 function setKey(id,v){ v ? localStorage.setItem('aid_'+id,v) : localStorage.removeItem('aid_'+id); }
 function hasKey(id){ return !!getKey(id); }
@@ -547,8 +555,14 @@ function updateAllPanels(){ ['audio','image','text','video'].forEach(updatePanel
 function updatePanel(t){
   const hasApi = hasAnyKey(t);
   document.getElementById('no-key-'+t).classList.toggle('visible', !hasApi);
-  let hasContent = t==='text' ? document.getElementById('txt-input').value.trim().length>=50 : !!files[t];
+  let hasContent = t==='text' ? document.getElementById('txt-input').value.trim().length>=50 : files[t].length>0;
   document.getElementById('btn-'+t).disabled = !(hasApi && hasContent);
+  // update analyze button label with count
+  if(t!=='text'){
+    const n = files[t].length;
+    const btn = document.getElementById('btn-'+t);
+    btn.textContent = n>1 ? `🔍 Analisar ${n} arquivos` : '🔍 Analisar';
+  }
 }
 
 /* ═══════════════════════════════════════════════ CONFIG MODAL */
@@ -708,20 +722,69 @@ function switchTab(t){
 /* ═══════════════════════════════════════════════ FILES */
 function dzDrag(e,t){ e.preventDefault(); document.getElementById('dz-'+t).classList.add('drag'); }
 function dzLeave(t){ document.getElementById('dz-'+t).classList.remove('drag'); }
-function dzDrop(e,t){ e.preventDefault(); dzLeave(t); const f=e.dataTransfer.files[0]; if(f) setFile(t,f); }
-function fileChosen(input,t){ if(input.files[0]) setFile(t,input.files[0]); }
-function setFile(t,f){
-  files[t]=f;
-  document.getElementById('dz-fname-'+t).textContent=f.name;
-  document.getElementById('dz-size-'+t).textContent=fmtSize(f.size);
-  document.getElementById('dz-file-'+t).classList.add('visible');
+function dzDrop(e,t){ e.preventDefault(); dzLeave(t); addFiles(t, Array.from(e.dataTransfer.files)); }
+function fileChosen(input,t){ if(input.files.length) addFiles(t, Array.from(input.files)); input.value=''; }
+
+function addFiles(t, newFiles){
+  const wrongWarn = document.getElementById('wrong-'+t);
+  const wrongOnes = [], rightOnes = [];
+  newFiles.forEach(f => {
+    if(MIME_EXPECTED[t] && !MIME_EXPECTED[t](f.type)) wrongOnes.push(f);
+    else rightOnes.push(f);
+  });
+
+  // add valid files (deduplicate by name)
+  rightOnes.forEach(f => {
+    if(!files[t].find(x=>x.name===f.name)) files[t].push(f);
+  });
+
+  // wrong-type warning
+  if(wrongOnes.length && wrongWarn){
+    const redirect = WRONG_TAB[t];
+    const label = redirect==='video' ? 'Vídeo' : redirect==='audio' ? 'Áudio' : null;
+    if(label){
+      wrongWarn.innerHTML = `<span>⚠️ ${wrongOnes.length} arquivo(s) são do tipo <strong>${label}</strong> e foram ignorados.</span>
+        <button onclick="moveFilesToTab('${redirect}',[${wrongOnes.map((_,i)=>`wrongBuf_${t}[${i}]`).join(',')}])">Mover para ${label}</button>`;
+      // store reference
+      window['wrongBuf_'+t] = wrongOnes;
+      wrongWarn.classList.add('visible');
+    }
+  } else if(wrongWarn && wrongOnes.length===0){
+    wrongWarn.classList.remove('visible');
+  }
+
+  renderFileList(t);
   updatePanel(t);
 }
-function clearFile(t){
-  files[t]=null;
-  document.getElementById('dz-file-'+t).classList.remove('visible');
+
+function moveFilesToTab(target, fileArr){
+  // fileArr comes in as resolved File objects from window ref
+  if(!fileArr||!fileArr.length) return;
+  fileArr.forEach(f=>{ if(!files[target].find(x=>x.name===f.name)) files[target].push(f); });
+  renderFileList(target);
+  updatePanel(target);
+  switchTab(target);
+}
+
+function removeFile(t, idx){
+  files[t].splice(idx,1);
+  renderFileList(t);
   updatePanel(t);
 }
+
+function renderFileList(t){
+  const container = document.getElementById('dz-list-'+t);
+  if(!container) return;
+  const ico = {video:'🎬', image:'🖼️', audio:'🎵'}[t]||'📄';
+  container.innerHTML = files[t].map((f,i)=>`
+    <div class="dz-file visible">
+      <span>${ico}</span>
+      <span class="dz-fname">${f.name}</span>
+      <span class="dz-size">${fmtSize(f.size)}</span>
+      <button class="dz-remove" onclick="removeFile('${t}',${i})">✕ remover</button>
+    </div>`).join('');
+}
+
 function fmtSize(b){ return b>1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB'; }
 
 /* ═══════════════════════════════════════════════ TEXT */
@@ -733,8 +796,14 @@ function textInput(){
 
 /* ═══════════════════════════════════════════════ CLEAR */
 function clearPanel(t){
-  if(t!=='text') clearFile(t);
-  else{ document.getElementById('txt-input').value=''; document.getElementById('txt-count').textContent='0 caracteres · mínimo 50'; }
+  if(t!=='text'){
+    files[t]=[];
+    renderFileList(t);
+    const w=document.getElementById('wrong-'+t); if(w) w.classList.remove('visible');
+  } else{
+    document.getElementById('txt-input').value='';
+    document.getElementById('txt-count').textContent='0 caracteres · mínimo 50';
+  }
   const r=document.getElementById('result-'+t); r.classList.remove('visible'); r.innerHTML='';
   document.getElementById('loading-'+t).classList.remove('visible');
   updatePanel(t);
@@ -748,21 +817,42 @@ async function analyze(tipo){
   document.getElementById('result-'+tipo).classList.remove('visible');
   document.getElementById('result-'+tipo).innerHTML='';
   document.getElementById('btn-'+tipo).disabled=true;
-  const results=[];
-  for(const apiId of apis){
-    try{
-      updateLoadingMsg(tipo,`Consultando ${APIS.find(a=>a.id===apiId).name}...`);
-      let r;
-      if(tipo==='video') r=await analyzeVideo(apiId,files[tipo]);
-      if(tipo==='image') r=await analyzeImage(apiId,files[tipo]);
-      if(tipo==='audio') r=await analyzeAudio(apiId,files[tipo]);
-      if(tipo==='text')  r=await analyzeText(apiId,document.getElementById('txt-input').value);
-      results.push({apiId,...r});
-    }catch(err){ results.push({apiId,verdict:'error',label:'Erro',text:'⚠️ '+err.message}); }
+
+  if(tipo==='text'){
+    const results=[];
+    for(const apiId of apis){
+      try{
+        updateLoadingMsg(tipo,`Consultando ${APIS.find(a=>a.id===apiId).name}...`);
+        const r=await analyzeText(apiId,document.getElementById('txt-input').value);
+        results.push({apiId,...r});
+      }catch(err){ results.push({apiId,verdict:'error',label:'Erro',text:'⚠️ '+err.message}); }
+    }
+    hideLoading(tipo);
+    renderResults(tipo, results, null);
+  } else {
+    // multi-file: analyze each file across all APIs, render one section per file
+    const fileList = files[tipo];
+    const allSections = [];
+    for(let fi=0; fi<fileList.length; fi++){
+      const file = fileList[fi];
+      const results=[];
+      for(const apiId of apis){
+        try{
+          updateLoadingMsg(tipo,`[${fi+1}/${fileList.length}] ${file.name} — ${APIS.find(a=>a.id===apiId).name}...`);
+          let r;
+          if(tipo==='video') r=await analyzeVideo(apiId,file);
+          if(tipo==='image') r=await analyzeImage(apiId,file);
+          if(tipo==='audio') r=await analyzeAudio(apiId,file);
+          results.push({apiId,...r});
+        }catch(err){ results.push({apiId,verdict:'error',label:'Erro',text:'⚠️ '+err.message}); }
+      }
+      allSections.push({file,results});
+    }
+    hideLoading(tipo);
+    renderResultsMulti(tipo, allSections);
   }
-  hideLoading(tipo);
-  renderResults(tipo,results);
   document.getElementById('btn-'+tipo).disabled=false;
+  updatePanel(tipo);
 }
 
 /* ─── Video ─── */
@@ -958,45 +1048,77 @@ function parseLabel(t){
 }
 
 /* ═══════════════════════════════════════════════ RENDER RESULTS */
-function renderResults(tipo,results){
-  const container=document.getElementById('result-'+tipo);
+let cardCounter = 0;
+
+function verdictSummary(results){
+  const bm={ai:'badge-ai',warn:'badge-warn',ok:'badge-ok',error:'badge-err',skip:'badge-skip',unknown:'badge-skip'};
   const verdicts=results.map(r=>r.verdict).filter(v=>!['skip','error','unknown'].includes(v));
   let fv='verd-unknown',fi='❓',ft='Inconclusivo',fs='Não foi possível determinar com os dados disponíveis.';
   if(verdicts.includes('ai')){fv='verd-ai';fi='🤖';ft='IA detectada';fs='Uma ou mais análises identificaram indícios de conteúdo gerado por IA.';}
   else if(verdicts.includes('warn')){fv='verd-warn';fi='⚠️';ft='Suspeita de IA';fs='Há indícios que sugerem geração por IA, mas sem conclusão definitiva.';}
   else if(verdicts.length&&verdicts.every(v=>v==='ok')){fv='verd-ok';fi='✅';ft='Sem indícios de IA';fs='As análises não identificaram características de geração por IA.';}
   const apisUsed=results.filter(r=>r.verdict!=='skip').map(r=>APIS.find(a=>a.id===r.apiId).name).join(', ');
-  const bm={ai:'badge-ai',warn:'badge-warn',ok:'badge-ok',error:'badge-err',skip:'badge-skip',unknown:'badge-skip'};
+  const cards=results.map(r=>{
+    const api=APIS.find(a=>a.id===r.apiId);
+    const cid=cardCounter++;
+    return `<div class="api-result-card">
+      <div class="api-result-hdr" id="hdr-${cid}" onclick="toggleCard(${cid})">
+        <span style="width:9px;height:9px;border-radius:50%;background:${api.color};display:inline-block;flex-shrink:0"></span>
+        <h4>${api.name}</h4>
+        <span class="api-badge ${bm[r.verdict]||'badge-skip'}">${r.label||r.verdict}</span>
+        <span class="chevron" id="chev-${cid}">▼</span>
+      </div>
+      <div class="api-result-body" id="body-${cid}">${escHtml(r.text)}</div>
+    </div>`;
+  }).join('');
+  const firstCard = cardCounter - results.length;
+  return {fv,fi,ft,fs,apisUsed,cards,firstCard};
+}
+
+function renderResults(tipo, results){
+  cardCounter=0;
+  const container=document.getElementById('result-'+tipo);
+  const {fv,fi,ft,fs,apisUsed,cards,firstCard}=verdictSummary(results);
   container.innerHTML=`
     <div class="verdict-box ${fv}">
       <div class="verd-ico">${fi}</div>
-      <div>
-        <div class="verd-title">${ft}</div>
-        <div class="verd-sub">${fs}</div>
-        <div class="verd-apis">Análise por: ${apisUsed}</div>
-      </div>
+      <div><div class="verd-title">${ft}</div><div class="verd-sub">${fs}</div><div class="verd-apis">Análise por: ${apisUsed}</div></div>
     </div>
     <div class="api-results-label">Detalhes por API</div>
-    <div class="api-results">
-      ${results.map((r,i)=>{
-        const api=APIS.find(a=>a.id===r.apiId);
-        return `<div class="api-result-card">
-          <div class="api-result-hdr" id="hdr-${i}" onclick="toggleCard(${i})">
-            <span style="width:9px;height:9px;border-radius:50%;background:${api.color};display:inline-block;flex-shrink:0"></span>
-            <h4>${api.name}</h4>
-            <span class="api-badge ${bm[r.verdict]||'badge-skip'}">${r.label||r.verdict}</span>
-            <span class="chevron" id="chev-${i}">▼</span>
-          </div>
-          <div class="api-result-body" id="body-${i}">${escHtml(r.text)}</div>
-        </div>`;
-      }).join('')}
-    </div>`;
+    <div class="api-results">${cards}</div>`;
   container.classList.add('visible');
-  if(results.length) toggleCard(0);
+  if(results.length) toggleCard(firstCard);
+}
+
+function renderResultsMulti(tipo, sections){
+  cardCounter=0;
+  const container=document.getElementById('result-'+tipo);
+  const sep = sections.length>1 ? 'border-top:2px solid var(--g200);margin-top:20px;padding-top:16px;' : '';
+  container.innerHTML = sections.map((sec,si)=>{
+    const {fv,fi,ft,fs,apisUsed,cards,firstCard}=verdictSummary(sec.results);
+    const header = sections.length>1
+      ? `<div style="${si>0?sep:''}display:flex;align-items:center;gap:8px;margin-bottom:10px">
+           <span style="font-size:13px;font-weight:700;color:var(--g700);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(sec.file.name)}</span>
+           <span style="font-size:11px;color:var(--g500)">${fmtSize(sec.file.size)}</span>
+         </div>`
+      : '';
+    // store firstCard for auto-open
+    sec._firstCard=firstCard;
+    return `${header}
+      <div class="verdict-box ${fv}">
+        <div class="verd-ico">${fi}</div>
+        <div><div class="verd-title">${ft}</div><div class="verd-sub">${fs}</div><div class="verd-apis">Análise por: ${apisUsed}</div></div>
+      </div>
+      <div class="api-results-label">Detalhes por API</div>
+      <div class="api-results">${cards}</div>`;
+  }).join('');
+  container.classList.add('visible');
+  sections.forEach(sec=>{ if(sec.results.length) toggleCard(sec._firstCard); });
 }
 
 function toggleCard(i){
   const body=document.getElementById('body-'+i),chev=document.getElementById('chev-'+i),hdr=document.getElementById('hdr-'+i);
+  if(!body) return;
   const open=body.classList.toggle('open');
   chev.classList.toggle('open',open); hdr.classList.toggle('is-open',open);
 }
