@@ -11,6 +11,7 @@ Rodam 100% no browser, sem configuração.
 
 | Ferramenta | Descrição | Link |
 |---|---|---|
+| [**AI Detector**](ai-detector/) | Detecta conteúdo gerado por IA em vídeo, imagem, áudio e texto via APIs configuráveis | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ai-detector/) |
 | [**Comparador ADP**](comparador-adp/) | Compara estrutura de duas abas ADP e aponta divergências | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/comparador-adp/) |
 | [**Contador ADP**](contador-adp/) | Conta linhas por aba e plataforma em planilhas ADP | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/contador-adp/) |
 | [**Creative Taxonomy**](creative-taxonomy/) | Gera taxonomia de criativos (Plataforma + Brainsuite) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/creative-taxonomy/creative-taxonomy.html) |
