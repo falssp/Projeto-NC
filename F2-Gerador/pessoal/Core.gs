@@ -1,11 +1,10 @@
 // ============================================================
 // NC Tool | Unilever BR x Grasp -- F2 v4 -- Arquivo 1: CORE
-// Ambiente: PESSOAL (Backup)
 // ============================================================
 
 var SOURCE_ID      = '17vc4UfMz-o2Oz0unAnJlErhHd_2n34tvlFxFnPgTIok';
 var CN_SOURCE_ID   = '144h_vGX9vBnxf1vENnsoseGGqt0pqxITuGuh72XbS-w';
-var SPREADSHEET_ID = '1fOPF6JLH29rY15Obb-QC88jVGuR1t0c4wuB4SyDmqyc';  // planilha Pessoal
+var SPREADSHEET_ID = '1fOPF6JLH29rY15Obb-QC88jVGuR1t0c4wuB4SyDmqyc';  // planilha backup
 var LISTAS = 'Dados';
 var LOG    = '📋 Log';
 var INICIO = '📋 Início';
@@ -196,7 +195,7 @@ function _atualizarBarraInicio(current,total,stepName) {
 }
 
 // ============================================================
-// MENU -- so aparece para admins
+// MENU -- só aparece para admins
 // ============================================================
 function onOpen() {
   if(!_isAdmin()) return;
@@ -237,6 +236,9 @@ function setupTriggers() {
   if(ex.indexOf('weeklySyncAll')<0) ScriptApp.newTrigger('weeklySyncAll').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(8).create();
 }
 
+// ============================================================
+// OCULTAR E PROTEGER
+// ============================================================
 function hideAndProtectSystemSheets() {
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
   [LOG,LISTAS].forEach(function(name){
@@ -280,6 +282,9 @@ function showLog() {
   if(s){s.showSheet();ss.setActiveSheet(s);}
 }
 
+// ============================================================
+// SYNC LISTAS
+// ============================================================
 function syncListas(silent) {
   var changed=0;
   try {
@@ -307,6 +312,47 @@ function syncListas(silent) {
       ['Flat-Fee/Time-Based','flf-tb'],['vCPM','vcpm'],['Zero-cost','zcost']];
     writeListRaw(ls,'BuyingType',_names(bt));
     writeListRaw(ls,'BuyingTypeShort',_shorts(bt));
+    var pos=[['App-Campaign','appcamp'],['AudioEverywhere-NonSkippable','audevrynoskp'],
+      ['AudioEverywhere-Skippable','audevryskp'],['Binge-Ads-Display','bngead'],
+      ['Branded-Effect','beffect'],['Branded-Mission','bmission'],
+      ['Bumper-NonSkippable','bump'],['Bumper-TargetFrequency-NonSkippable','bumptfnonskip'],
+      ['Bumper-TargetFrequency-Skippable','bumptfskip'],['CuttingEdge-Display','cuttedge'],
+      ['Demand-Gen','dgen'],['Destaque-Premium-Globoplay-Display','dstqprgplay'],
+      ['Diaria-Display','diariadsply'],['EyeMax-Skippable','eymx'],
+      ['Feed-Display','fed-dply'],['Feed-Stories','fed-stor'],
+      ['Feed-Stories-Reels','fed-stor-reel'],['Feed-Video-NonSkippable','feednskp'],
+      ['Feed-Video-Skippable','feedskp'],['FirstScreenAdTile-Dynamic','fstscradtl'],
+      ['FirstScreenImmersivePlus-Dynamic','fstscrimmplus'],
+      ['FirstScreenImmesiveMasthead-Dynamic','fstscrimmmast'],
+      ['FrameAds-Globoplay-Display','framegplay'],
+      ['InStream-NonSkippable','instm-nskipyt'],
+      ['InStream-OutStream-NonSkippable','inoutnoskp'],
+      ['InStream-OutStream-Skippable','inoutskp'],
+      ['InStream-Skippable','instm-skipyt'],['Mosaico-Globoplay-Display','mscogplay'],
+      ['Multiple','Multi'],['Native-Display','ntvdsply'],
+      ['Native-Video-NonSkippable','ntvnoskp'],['Native-Video-Skippable','ntvskp'],
+      ['PauseAds-Globoplay-Display','pseadsgplay'],['PauseAds-Skippable','psadskp'],
+      ['Pmax','pmax'],['Primeirissima-Globoplay-Skippable','primgplay'],
+      ['Reels','reel'],['Reels-Stories','reels-stor'],
+      ['Rewarded-Video-NonSkippable','rwdnoskip'],['Rewarded-Video-Skippable','rwrdskp'],
+      ['RichMedia-Display','richdsply'],['Segundissima-Globoplay-Skippable','segungplay'],
+      ['Standard-Display-IAB','standdisply'],['Stories','stor'],
+      ['TikTok-Pulse-Skippable','tkpulsesk'],['TikTok-Shop-Skippable','tkshopsk'],
+      ['Top-Feed-Skippable','tfeed'],['Top-View-Skippable','tview'],
+      ['Video-NonSkippable','vidnonskip'],['Video-Outstream-NonSkippable','outsnsk'],
+      ['Video-Outstream-Skippable','outssk'],
+      ['Video-PartnershipAds-NonSkippable','prtnradsnskip'],
+      ['Video-PartnershipAds-Skippable','prtnradsskip'],['Video-Skippable','vidskip'],
+      ['Video-SponsorshipAds-NonSkippable','spnsradsnskip'],
+      ['Video-SponsorshipAds-Skippable','spnsradsskip'],
+      ['VRC-NonSkippable','vrcnskip'],['VRC-Shorts-NonSkippable','vrcshtnskip'],
+      ['VRC-Shorts-Skippable','vrcshtskip'],['VRC-Skippable','vrcskip'],
+      ['VVC-NonSkippable','vvcnskip'],['VVC-Shorts-NonSkippable','vvcshtnskip'],
+      ['VVC-Shorts-Skippable','vvcshtskip'],['VVC-Skippable','vvcskip'],
+      ['YouTube-Masthead-Skippable','mstdyt'],['YT-Shorts-NonSkippable','ytshortsnskip'],
+      ['YT-Shorts-Skippable','ytshorts']];
+    writeListRaw(ls,'Position',_names(pos));
+    writeListRaw(ls,'PositionShort',_shorts(pos));
     changed+=8; logInfo('Listas embutidas OK');
     try {
       var src=SpreadsheetApp.openById(SOURCE_ID);
@@ -318,7 +364,6 @@ function syncListas(silent) {
       var lo=uq(64); if(lo.length){writeListRaw(ls,'Location',lo);changed++;logInfo('Location: '+lo.length);}
     } catch(de){ logAviso('Dicionário inacessível — Publisher/CampaignLocal/Location mantidos.'); }
     logInfo(changed+' listas sincronizadas.');
-    try { PropertiesService.getScriptProperties().setProperty('LAST_SYNC', new Date().toISOString()); } catch(pe){}
     if(!silent) SpreadsheetApp.openById(SPREADSHEET_ID).toast(changed+' listas atualizadas','Listas',4);
   } catch(e){
     logErro('syncListas: '+e);
@@ -326,6 +371,9 @@ function syncListas(silent) {
   }
 }
 
+// ============================================================
+// SYNC CN CODE
+// ============================================================
 function syncCNCode(silent) {
   try {
     var pairs={}, seen={};
@@ -386,6 +434,9 @@ function syncCNCode(silent) {
   }
 }
 
+// ============================================================
+// LISTAS SHEET
+// ============================================================
 function _nukeDados() {
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
   var names=['Dados','__LISTAS__','__LISTAS__migrar__','__dados_old__','__dados_tmp__'];
@@ -405,6 +456,15 @@ function setupListasSheet() {
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
   var _ini=ss.getSheetByName(INICIO); if(_ini) try{ss.setActiveSheet(_ini);}catch(e){}
   _nukeDados();
+  var _dadosCheck=ss.getSheetByName(LISTAS);
+  if(_dadosCheck&&_dadosCheck.getLastRow()>1){
+    try{
+      _dadosCheck.getRange(2,1,_dadosCheck.getLastRow()-1,_dadosCheck.getMaxColumns()).clearDataValidations();
+      _dadosCheck.getRange(2,1,_dadosCheck.getLastRow()-1,_dadosCheck.getMaxColumns()).clearContent();
+    }catch(e){logAviso('Limpeza Dados: '+e);}
+  }
+  var oldLegacy=ss.getSheetByName('__LISTAS__');
+  if(oldLegacy){try{oldLegacy.setName('__LISTAS__migrar__');}catch(e){}}
   var existing=ss.getSheetByName(LISTAS);
   var s;
   if(existing){
@@ -419,6 +479,11 @@ function setupListasSheet() {
       try{s.getRange(1,1,s.getMaxRows(),s.getMaxColumns()).clearDataValidations();}catch(e){}
       s.clearContents();s.clearFormats();
     }
+  } else if(oldLegacy){
+    try{oldLegacy.setName(LISTAS);s=oldLegacy;}catch(e){}
+    if(!s) s=ss.insertSheet(LISTAS);
+    try{s.getRange(1,1,s.getMaxRows(),s.getMaxColumns()).clearDataValidations();}catch(e){}
+    s.clearContents();s.clearFormats();
   } else {
     s=ss.insertSheet(LISTAS);
   }
@@ -432,6 +497,15 @@ function setupListasSheet() {
   var headerRow=[];
   for(var ci=1;ci<=totalCols;ci++) headerRow.push(headers[ci]||'');
   s.getRange(1,1,1,totalCols).setValues([headerRow]);
+  var maxNeededRows=10000;
+  var curRows=s.getMaxRows();
+  if(curRows>maxNeededRows+1){try{s.deleteRows(maxNeededRows+2,curRows-maxNeededRows-1);}catch(e){}}
+  if(s.getMaxRows()>1){
+    try{
+      s.getRange(2,1,s.getMaxRows()-1,totalCols).clearDataValidations();
+      s.getRange(2,1,s.getMaxRows()-1,totalCols).clearContent();
+    }catch(e){logAviso('Clear Dados rows: '+e);}
+  }
   SpreadsheetApp.flush();
   var staticLists=[
     ['Language',['br','en','es','pt']],
@@ -440,7 +514,7 @@ function setupListasSheet() {
     ['BuyModel',['Auction','OMP','OMP & PMP','Preferred Deal','PMP','Programmatic Guaranteed','Reach&Frequency','Reservation Buy','TrueView Instant Reserve']],
     ['DeviceType',['All','Connected TV','Desktop','Mobile','Tablet']],
     ['KeywordType',['Brand','Brand Generic','Brand Product','Competitor','Dynamic Search Ads','Generic','Generic Product']],
-    ['KeywordMatch',['Broad Match','Exact Match','Phrase Match']],
+    ['KeywordMatch',['Broad Match','Dynamic Search Ads + Broad','Dynamic Search Ads + Broad + Exact','Dynamic Search Ads + Broad + Phrase','Dynamic Search Ads + Exact','Dynamic Search Ads + Phrase','Dynamic Search Ads + Phrase + Exact','Exact Match','Exact Match + Broad','Exact Match + Broad + Phrase','Exact Match + Phrase','Phrase Match','Phrase Match + Broad']],
     ['Brandlift',['brdlft-n','brdlft-y']],
     ['CollabAds',['Brand | Non shoppable','Brand | Shoppable']],
     ['IHAMP',['com-IHAMP','sem-IHAMP']],
@@ -451,7 +525,7 @@ function setupListasSheet() {
     ['InfPostType',['Dark Post','Organic','Paid','Spark Ads','Whitelist']],
     ['AddOn',['n/a','Spark Ads','TikTok Pulse','TopView']],
     ['CrExchange',['n/a','TCE']],
-    ['FormatGroup',['Audio','Carrossel','Display','DOOH-Display','DOOH-Video','Video','Widget-Count']],
+    ['FormatGroup',['Audio','Carrossel','Cpas-Rmkt','Display','DOOH-Display','DOOH-Video','E-mail-Marketing','GIF','html','Immersive-Banner','InApp','InstantExperience','Insterscroller','N-A','Playable','Produto-Patrocinado','Rec','Rec-1P','ResponsiveEcom','Sponsored-Brand-Product-Collection','Sponsored-Brand-Store-Spotlight','Sponsored-Brand-Video','Sponsored-Brands','Sponsored-Display','Sponsored-Products','Texto','TP-Checkout','TP-Search','Video','Widget-Count','Widget-Countdown']],
     ['TipodeTag',['audio','audio-pixel','html','multi-tracker','na','native','pixel','vast','video-pixel','vpaid']],
     ['Market',['BR']],
     ['Brand',['AXE',"Ben & Jerry's",'Closeup','Comfort','Dove',"Hellmann's",'Knorr','Lifebuoy','Lux','Mãe Terra','Maizena','Omo',"Pond's",'Rexona','Sim','Skip','Sorriso','Sunsilk','TRESemmé','Unilever']],
@@ -502,6 +576,9 @@ function listColIndex(name){
   return -1;
 }
 
+// ============================================================
+// onEdit
+// ============================================================
 function onEdit(e){
   if(!e||!e.range) return;
   var s=e.range.getSheet(),col=e.range.getColumn(),row=e.range.getRow();
@@ -533,7 +610,7 @@ function onEdit(e){
   if(freeH.indexOf(hdr)>=0) validateFree(e.range,val,hdr);
 }
 function validateFree(range,val,hdr){
-  if(/[\s@#$%&*()+={}\[\]\\/;'"<>?!~^`,]/.test(val)){
+  if(/[\s@#$%&*()+={}\[\]\\\/;'"<>?!~^`,]/.test(val)){
     range.setBackground('#ffcccc');
     SpreadsheetApp.openById(SPREADSHEET_ID).toast('AVISO "'+hdr+'": sem espacos ou caracteres especiais.','Erro',5);
   } else { range.setBackground(null); }
@@ -550,6 +627,9 @@ function validateFS(range,val){
   range.setBackground(null);
 }
 
+// ============================================================
+// LOG
+// ============================================================
 var _LOG_COLS={
   ERRO: {bg:'#fce4e4',fg:'#c62828',icon:'🔴'},
   AVISO:{bg:'#fff8e1',fg:'#e65100',icon:'🟡'},
@@ -607,6 +687,9 @@ function log(msg){
   else logInfo(msg);
 }
 
+// ============================================================
+// UTIL
+// ============================================================
 function colLetter(col){
   var l='';
   while(col>0){var r=(col-1)%26;l=String.fromCharCode(65+r)+l;col=Math.floor((col-1)/26);}
@@ -616,37 +699,45 @@ function sh(col,row){
   var c=col+row;
   return 'IF(ISERROR(FIND(":";TO_TEXT('+c+')));TO_TEXT('+c+');MID(TO_TEXT('+c+');FIND(":";TO_TEXT('+c+'))+1;100))';
 }
-function pp(col,row){var c=col+row;return '&IF(TO_TEXT('+c+')<>"";"\ | \"&TO_TEXT('+c+');\"\")';}
-function uu(col,row){var c=col+row;return '&IF(TO_TEXT('+c+')<>"";"\_\"&TO_TEXT('+c+');\"\")';}
+function pp(col,row){var c=col+row;return '&IF(TO_TEXT('+c+')<>"";\"| \"&TO_TEXT('+c+');\"\")'}
+function uu(col,row){var c=col+row;return '&IF(TO_TEXT('+c+')<>"";\"_\"&TO_TEXT('+c+');\"\")'}
 function age(lc,uc,row){
   var l=lc+row,u=uc+row;
-  return 'IF(TO_TEXT('+l+')<>"";IF(TO_TEXT('+u+')<>"";TO_TEXT('+l+')&\"-\"&TO_TEXT('+u+');TO_TEXT('+l+'));\"\")';}
+  return 'IF(TO_TEXT('+l+')<>"";IF(TO_TEXT('+u+')<>"";TO_TEXT('+l+')&\"-\"&TO_TEXT('+u+');TO_TEXT('+l+'));\"\")';
+}
 function fsVsSeconds(fsCol,secCol,tagCol,row){
   var fs=fsCol+row,sec=secCol+row,tag=tagCol+row;
-  return 'IF(OR(LOWER(TO_TEXT('+tag+'))=\"vast\";LOWER(TO_TEXT('+tag+'))=\"vpaid\");'+
-    'IF(TO_TEXT('+sec+')<>\"\";\"_\"&TO_TEXT('+sec+');\"\")'+ 
-    ';IF(TO_TEXT('+fs+')<>\"\";\"_\"&TO_TEXT('+fs+');\"\")'+')';}
-var ERR_MSG = '\"⚠️ Verificar colunas\"';
-function iferrNaming(formula){return 'IFERROR('+formula+';'+ERR_MSG+')';}
+  return 'IF(OR(LOWER(TO_TEXT('+tag+'))="vast";LOWER(TO_TEXT('+tag+'))="vpaid");'+
+    'IF(TO_TEXT('+sec+')<>"";\"_\"&TO_TEXT('+sec+');\"\");'+
+    'IF(TO_TEXT('+fs+')<>"";\"_\"&TO_TEXT('+fs+');\"\"))';
+}
+// Wrapper de erro amigável para fórmulas de naming
+var ERR_MSG = '"⚠️ Verificar colunas"';
+function iferrNaming(formula){
+  return 'IFERROR('+formula+';'+ERR_MSG+')';
+}
 
+// ============================================================
+// FÓRMULAS
+// ============================================================
 function _dadosRef(colName){
   var L=colLetter(LISTAS_COL[colName]);
-  return 'INDIRECT("\'''Dados\'\''!$'+L+'$2:$'+L+'$9999")';
+  return 'INDIRECT("\'Dados\'!$'+L+'$2:$'+L+'$9999")';
 }
 function cnFml(inputCol,row){
   var cell=inputCol+row;
   var nR=_dadosRef('CNCode_Name'),iR=_dadosRef('CNCode_ID');
-  return 'IFERROR(IF(TO_TEXT('+cell+')=\"\";\"\";IFERROR(INDEX('+iR+';MATCH(TO_TEXT('+cell+');'+nR+';0));\"CN nao encontrado\"));'+ERR_MSG+')';
+  return 'IFERROR(IF(TO_TEXT('+cell+')="";"";IFERROR(INDEX('+iR+';MATCH(TO_TEXT('+cell+');'+nR+';0));"CN nao encontrado"));'+ERR_MSG+')';
 }
 function objShortFml(inputCol,row){
   var cell=inputCol+row;
   var nR=_dadosRef('ObjectiveName'),sR=_dadosRef('ObjectiveShort');
-  return 'IFERROR(IF(TO_TEXT('+cell+')=\"\";\"\";IFERROR(INDEX('+sR+';MATCH(TO_TEXT('+cell+');'+nR+';0));\"\"));'+ERR_MSG+')';
+  return 'IFERROR(IF(TO_TEXT('+cell+')="";"";IFERROR(INDEX('+sR+';MATCH(TO_TEXT('+cell+');'+nR+';0));""));'+ERR_MSG+')';
 }
 function objOtimFml(inputCol,row){
   var cell=inputCol+row;
   var nR=_dadosRef('ObjOtimizacaoName'),sR=_dadosRef('ObjOtimizacaoShort');
-  return 'IFERROR(IF(TO_TEXT('+cell+')=\"\";\"\";IFERROR(INDEX('+sR+';MATCH(TO_TEXT('+cell+');'+nR+';0));\"\"));'+ERR_MSG+')';
+  return 'IFERROR(IF(TO_TEXT('+cell+')="";"";IFERROR(INDEX('+sR+';MATCH(TO_TEXT('+cell+');'+nR+';0));""));'+ERR_MSG+')';
 }
 function batchCol(sheet,col,startRow,numRows,fn){
   var formulas=[];
@@ -654,6 +745,9 @@ function batchCol(sheet,col,startRow,numRows,fn){
   sheet.getRange(startRow,col,numRows,1).setFormulas(formulas);
 }
 
+// ============================================================
+// CORE SHEET BUILDER
+// ============================================================
 var LVL={
   camp:{bg:'#1a1a2e',fg:'#ffffff',label:'Campaign / Insertion Order'},
   ag:  {bg:'#16213e',fg:'#e2e2e2',label:'AdGroup / Line Item'},
@@ -681,6 +775,18 @@ function buildSheet(name,cols){
   var s=ss.getSheetByName(name)||ss.insertSheet(name);
   var hasData=_sheetHasData(s);
   var headersMatch=_sheetHeadersMatch(s,cols);
+  if(hasData&&!headersMatch){
+    var canAsk=false;
+    try{SpreadsheetApp.getUi();canAsk=true;}catch(ex){canAsk=false;}
+    if(canAsk){
+      var ui=SpreadsheetApp.getUi();
+      var resp=ui.alert('Atenção: '+name,'A aba "'+name+'" tem dados e a estrutura de colunas mudou. Recriar vai apagar os dados. Continuar?',ui.ButtonSet.YES_NO);
+      if(resp!==ui.Button.YES) return s;
+    } else {
+      logAviso('Aba "'+name+'" tem dados e estrutura mudou. Ignorado em trigger -- recriar manualmente.');
+      return s;
+    }
+  }
   if(hasData&&headersMatch){_refreshFormulasOnly(s,cols);return s;}
   s.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function(p){p.remove();});
   s.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(function(p){p.remove();});
@@ -698,6 +804,7 @@ function buildSheet(name,cols){
 }
 function _refreshFormulasOnly(s,cols){
   _buildHeaders(s,cols);_buildValidations(s,cols);
+  logInfo('Aba "'+s.getName()+'" com dados: headers e validacoes atualizados.');
 }
 function _buildHeaders(s,cols){
   var n=cols.length; if(!n) return;
@@ -719,6 +826,21 @@ function _buildHeaders(s,cols){
   });
   s.getRange(2,1,1,n).setValues([row2vals]).setBackgrounds([row2bgs]).setFontColors([row2fgs])
     .setFontWeight('bold').setHorizontalAlignment('center').setWrap(true);
+  var drBgs=[],drFgs=[];
+  for(var r=0;r<NROWS;r++){
+    var bgRow=[],fgRow=[];
+    cols.forEach(function(col){
+      if(col.type==='cn_result')    {bgRow.push('#e3f2fd');fgRow.push('#1565c0');}
+      else if(col.type==='formula') {bgRow.push('#e8f5e9');fgRow.push('#1b5e20');}
+      else if(col.type==='note')    {bgRow.push('#fffde7');fgRow.push(LVL.note.fg);}
+      else                          {bgRow.push(null);fgRow.push(null);}
+    });
+    drBgs.push(bgRow);drFgs.push(fgRow);
+  }
+  s.getRange(3,1,NROWS,n).setBackgrounds(drBgs).setFontColors(drFgs);
+  cols.forEach(function(col,i){
+    if(col.type==='note'&&col.noteText) s.getRange(3,i+1).setNote(col.noteText);
+  });
 }
 function _buildValidations(s,cols){
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -743,12 +865,17 @@ function _buildValidations(s,cols){
             .setAllowInvalid(true).build();
         }
       }
+      s.getRange(3,colIdx).setNote('Selecione pelo nome da campanha.');
     } else if(col.type==='drop'&&col.list){
-      if(!ls)return;
+      if(!ls){logAviso('Aba Dados nao encontrada: '+col.h+' em '+s.getName());return;}
       var vals=getList(col.list);
       if(vals.length){
+        var valsToUse=vals.length>500?vals.slice(0,500):vals;
+        if(valsToUse.length<vals.length) logAviso('Lista "'+col.list+'" truncada para 500 itens.');
         rule=SpreadsheetApp.newDataValidation()
-          .requireValueInList(vals.length>500?vals.slice(0,500):vals,true).setAllowInvalid(false).build();
+          .requireValueInList(valsToUse,true).setAllowInvalid(false).build();
+      } else {
+        logAviso('Lista "'+col.list+'" vazia — drop "'+col.h+'" sem opcoes.');
       }
     } else if(col.type==='free'){
       if(col.h==='Age Lower'){
@@ -757,6 +884,8 @@ function _buildValidations(s,cols){
       } else if(col.h==='Age Upper'){
         rule=SpreadsheetApp.newDataValidation()
           .requireValueInList(AGE_UPPER_VALS,true).setAllowInvalid(false).build();
+      } else {
+        s.getRange(3,colIdx).setNote('Campo livre. Sem espacos ou caracteres especiais.');
       }
     }
     if(rule) dr.setDataValidation(rule);
@@ -786,6 +915,9 @@ function protectCols(sheet,colIndexes){
   });
 }
 
+// ============================================================
+// TAB LIST
+// ============================================================
 var TABS=[
   'Amazon DSP','Compra Direta','DV360 - Programática','DV360 - TradeDesk',
   'DV360 - YT Auction','DV360 - YT Reserva','Flashtalking',
@@ -806,7 +938,6 @@ function deleteOldTabs(){
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
   var keep=TABS.concat([LISTAS,'__LISTAS__',LOG,INICIO]);
   var tmp=ss.getSheetByName('__tmp__')||ss.insertSheet('__tmp__');
-  SpreadsheetApp.flush();
   ss.getSheets().forEach(function(s){
     if(s.getName()==='__tmp__') return;
     if(keep.indexOf(s.getName())<0) try{ss.deleteSheet(s);}catch(e){}
@@ -818,14 +949,60 @@ function setupIndiceSheet(){
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
   var s=ss.getSheetByName(INICIO)||ss.insertSheet(INICIO);
   s.clearContents();s.clearFormats();s.setTabColor('#0f3460');
+  var maxC=s.getMaxColumns();if(maxC>6)try{s.deleteColumns(7,maxC-6);}catch(e){}
+  var maxR=s.getMaxRows();if(maxR>22)try{s.deleteRows(23,maxR-22);}catch(e){}
+  s.setColumnWidth(1,36);s.setColumnWidth(2,210);s.setColumnWidth(3,250);
+  s.setColumnWidth(4,390);s.setColumnWidth(5,210);s.setColumnWidth(6,184);
+  s.setRowHeight(1,4);s.setRowHeight(2,58);s.setRowHeight(3,26);
+  s.setRowHeight(4,4);s.setRowHeight(5,6);s.setRowHeight(6,30);
+  for(var ri=7;ri<=20;ri++) s.setRowHeight(ri,38);
+  s.setRowHeight(21,4);s.setRowHeight(22,24);
+  s.getRange(1,1,1,6).setBackground('#0a0f1e');
   s.getRange(2,1,1,6).merge().setValue('NC Tool  |  Unilever BR x Grasp')
     .setFontFamily('Arial').setFontSize(22).setFontWeight('bold')
     .setFontColor('#ffffff').setBackground('#0a0f1e')
     .setHorizontalAlignment('center').setVerticalAlignment('middle');
-  s.getRange(3,1,1,6).merge().setValue('F2  —  Naming Convention Generator  [Pessoal]')
+  s.getRange(3,1,1,6).merge().setValue('F2  —  Naming Convention Generator')
     .setFontFamily('Arial').setFontSize(11).setFontStyle('italic')
     .setFontColor('#e94560').setBackground('#0a0f1e')
     .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  s.getRange(4,1,1,6).merge().setBackground('#e94560');
+  s.getRange(5,1,1,6).setBackground('#ffffff');
+  s.getRange(6,1,1,6).setValues([['#','Plataforma','Nível de Naming','Descrição','Tipo de Compra','Publisher / Canal']])
+    .setFontFamily('Arial').setFontSize(10).setFontWeight('bold')
+    .setFontColor('#ffffff').setBackground('#16213e')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  var plats=[
+    ['Amazon DSP','Campaign / Insertion Order / Ad','Display e Video programático','Programática (DSP)','Amazon DSP'],
+    ['Compra Direta','Campaign / AdGroup / Ad','Compra direta de espaços de mídia','Compra Direta','Vários publishers'],
+    ['DV360 - Programática','Campaign / Line-Item / Ad','Display & Video 360 programático','Programática (DSP)','DV360'],
+    ['DV360 - TradeDesk','Campaign / Line-Item / Ad','DV360 via The Trade Desk','Programática (DSP)','Trade Desk / DV360'],
+    ['DV360 - YT Auction','Campaign / Line-Item / Ad','YouTube via leilão programático','Programática (Leilão)','YouTube'],
+    ['DV360 - YT Reserva','Campaign / Line-Item / Ad','YouTube reserva e masthead','Reserva / Masthead','YouTube'],
+    ['Flashtalking','Campaign / Ad','Ad server independente Flashtalking','Ad Server','Flashtalking'],
+    ['Google Others','Campaign / AdGroup / Ad','Google Ads outros formatos','Leilão','Google Ads'],
+    ['Google Search','Campaign / AdGroup / Ad','Busca paga com keywords','Leilão (CPC)','Google Search'],
+    ['Google Video','Campaign / AdGroup / Ad','Vídeo via Google Ads','Leilão','YouTube / GDN'],
+    ['Meta','Campaign / AdGroup / Ad','Facebook e Instagram Ads','Leilão / Reserva','Meta Ads'],
+    ['Pinterest','Campaign / AdGroup / Ad','Pinterest Ads','Leilão','Pinterest'],
+    ['TikTok','Campaign / AdGroup / Ad','TikTok Ads','Leilão / Reserva','TikTok'],
+    ['Twitter','Campaign / AdGroup / Ad','Twitter / X Ads','Leilão','Twitter / X']
+  ];
+  plats.forEach(function(p,i){
+    var row=7+i,bg=(i%2===0)?'#f4f6fb':'#ffffff';
+    s.getRange(row,1).setValue(i+1).setFontFamily('Arial').setFontSize(10).setFontColor('#9099aa').setBackground(bg).setHorizontalAlignment('center').setVerticalAlignment('middle');
+    s.getRange(row,2).setValue(p[0]).setFontFamily('Arial').setFontSize(10).setFontWeight('bold').setFontColor('#0d2050').setBackground(bg).setHorizontalAlignment('left').setVerticalAlignment('middle');
+    s.getRange(row,3).setValue(p[1]).setFontFamily('Arial').setFontSize(9).setFontColor('#333333').setBackground(bg).setHorizontalAlignment('left').setVerticalAlignment('middle');
+    s.getRange(row,4).setValue(p[2]).setFontFamily('Arial').setFontSize(9).setFontColor('#333333').setBackground(bg).setHorizontalAlignment('left').setVerticalAlignment('middle');
+    s.getRange(row,5).setValue(p[3]).setFontFamily('Arial').setFontSize(9).setFontColor('#333333').setBackground(bg).setHorizontalAlignment('left').setVerticalAlignment('middle');
+    s.getRange(row,6).setValue(p[4]).setFontFamily('Arial').setFontSize(9).setFontStyle('italic').setFontColor('#666677').setBackground(bg).setHorizontalAlignment('left').setVerticalAlignment('middle');
+  });
+  s.getRange(21,1,1,6).merge().setBackground('#16213e');
+  s.getRange(22,1,1,6).merge().setValue('')
+    .setFontFamily('Arial').setFontSize(10).setFontWeight('bold')
+    .setFontColor('#555555').setBackground('#f8f9fc')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  s.setHiddenGridlines(true);s.setFrozenRows(0);s.setFrozenColumns(0);
 }
 function setupIndiceLinks(){
   var ss=SpreadsheetApp.openById(SPREADSHEET_ID);
