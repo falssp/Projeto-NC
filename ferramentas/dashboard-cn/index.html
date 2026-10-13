@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[UL] Dashboard Campaign Local</title>
+<script>
+// ── CONFIGURAÇÃO ──────────────────────────────────────────────
+// Cole aqui a URL do Web App (Publicar → Implantar como Web App)
+var WEBAPP_URL = 'COLE_AQUI_A_URL_DO_WEB_APP';
+// ─────────────────────────────────────────────────────────────
+
+var dados = { rows: [] };
+var kpiFiltroAtivo = null;
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#0f1117;--surf:#181c27;--surf2:#1e2333;--brd:#2a3050;
+  --acc:#4f7ef8;--acc2:#7c5ff5;--grn:#2ecc71;--ylw:#f1c40f;
+  --org:#e67e22;--red:#e74c3c;--mut:#6b7a9e;--txt:#e8ecf4;--txt2:#a0aabf;
+  --radius:10px;--ul:#0040CE;--ul-b:#E5ECFF;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;font-size:13px;min-height:100vh;}
+
+/* TOPBAR */
+.topbar{background:var(--surf);border-bottom:1px solid var(--brd);padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;}
+.topbar-logo{font-size:16px;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar-sub{color:var(--mut);font-size:11px;margin-top:2px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sync-info{display:flex;align-items:center;gap:6px;background:var(--surf2);border:1px solid var(--brd);border-radius:20px;padding:5px 11px;font-size:11px;color:var(--txt2);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);flex-shrink:0;}
+.sync-dot.loading{background:var(--ylw);animation:pulse-dot 1s infinite;}
+.sync-dot.error{background:var(--red);}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+.btn-ghost{background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;}
+.btn-ghost:hover{border-color:var(--acc);color:var(--acc);}
+
+/* FILTERS */
+.filters{padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--brd);}
+.filters-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 10px;margin-bottom:6px;}
+.filter-group{display:flex;flex-direction:column;gap:3px;}
+.filter-label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
+select,input[type=text],input[type=date]{background:var(--surf2);border:1px solid var(--brd);color:var(--txt);border-radius:6px;padding:5px 9px;font-size:12px;outline:none;transition:border-color .2s;width:100%;}
+select:focus,input:focus{border-color:var(--acc);}
+input[type=date]{color-scheme:dark;}
+.btn-limpar{width:100%;background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s;grid-column:1/-1;}
+.btn-limpar:hover{border-color:var(--acc);color:var(--acc);}
+
+/* KPIs */
+.summary-bar{padding:10px 20px;display:flex;gap:6px;align-items:stretch;}
+.kpi{background:var(--surf);border:1px solid var(--brd);border-radius:var(--radius);padding:10px 14px;cursor:pointer;transition:border-color .2s,background .2s;user-select:none;flex:1;min-width:0;}
+.kpi:hover{border-color:var(--acc);background:var(--surf2);}
+.kpi.active{border-color:var(--acc);background:#1a2240;box-shadow:0 0 0 2px rgba(79,126,248,.25);}
+.kpi.no-action{cursor:default;}
+.kpi.no-action:hover{border-color:var(--brd);background:var(--surf);}
+.kpi-value{font-size:20px;font-weight:700;line-height:1;}
+.kpi-label{font-size:10px;color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
+.kpi-value.green{color:var(--grn);}
+.kpi-value.yellow{color:var(--ylw);}
+.kpi-value.orange{color:var(--org);}
+.kpi-value.red{color:var(--red);}
+.kpi-value.muted{color:var(--mut);}
+.kpi-filter-banner{background:#1a2240;border:1px solid var(--acc);border-radius:6px;padding:6px 14px;margin:0 20px 8px;font-size:11px;color:var(--txt2);display:none;align-items:center;gap:8px;}
+.kpi-filter-banner.show{display:flex;}
+.kpi-filter-banner button{background:transparent;border:none;color:var(--acc);cursor:pointer;font-size:11px;font-weight:700;margin-left:auto;}
+
+/* AVISO SECTIONS */
+.aviso-section{margin:0 20px 12px;border-radius:10px;overflow:hidden;}
+.aviso-header{padding:9px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.aviso-header:hover{opacity:.85;}
+.aviso-title{font-size:12px;font-weight:700;flex:1;}
+.aviso-count{font-size:11px;font-weight:700;margin-left:auto;}
+.aviso-arr{font-size:11px;transition:transform .2s;margin-left:6px;}
+.aviso-body{display:none;border-top:1px solid;}
+.aviso-body.show{display:block;}
+
+/* Verificar Campanha */
+.vc-section{border:1px solid #5a3a10;}
+.vc-header{background:#1e1408;}
+.vc-title{color:#f1c40f;}
+.vc-count{color:#f1c40f;}
+.vc-body{border-color:#5a3a10;background:#160f04;}
+.vc-row{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid #2a1e08;font-size:12px;}
+.vc-row:last-child{border-bottom:none;}
+.vc-row:hover{background:#1e1408;}
+.vc-cn{color:var(--ylw);font-size:11px;font-weight:700;flex-shrink:0;}
+.vc-camp{color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vc-brand{font-size:10px;color:var(--mut);flex-shrink:0;}
+
+/* Duplicatas */
+.dup-section{border:1px solid #5a2030;}
+.dup-header{background:#1e0f18;}
+.dup-title{color:#f9a8c0;}
+.dup-count{color:#f9a8c0;}
+.dup-body{border-color:#5a2030;background:#160b12;}
+.dup-row{display:flex;align-items:flex-start;gap:10px;padding:7px 14px;border-bottom:1px solid #2a1020;font-size:12px;}
+.dup-row:last-child{border-bottom:none;}
+.dup-row:hover{background:#1e0f18;}
+.dup-badge{background:#7c1d3a;color:#f9a8c0;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;flex-shrink:0;}
+.dup-data{color:var(--txt2);font-size:11px;flex:1;}
+.dup-campo{font-weight:600;color:var(--txt);}
+.dup-linhas{font-size:10px;color:var(--mut);}
+
+/* TABLE */
+.main{padding:0 20px 40px;}
+.state-msg{text-align:center;padding:60px 20px;color:var(--mut);}
+.state-msg .icon{font-size:36px;margin-bottom:10px;}
+.state-msg h3{color:var(--txt2);margin-bottom:6px;}
+.table-wrap{overflow-x:auto;border:1px solid var(--brd);border-radius:var(--radius);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{background:#0e1220;color:var(--mut);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--brd);white-space:nowrap;}
+td{padding:7px 10px;border-bottom:1px solid #1e2333;vertical-align:middle;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#191d2e;}
+tr.dup-highlight td{background:#1e0a0f;}
+tr.dup-highlight:hover td{background:#260f18;}
+.tag-vc{background:#2d1e0a;color:var(--org);font-size:10px;padding:1px 6px;border-radius:3px;}
+.tag-ok{background:#1a3a2a;color:var(--grn);font-size:10px;padding:1px 6px;border-radius:3px;}
+.tag-dup{background:#3a0020;color:#f9a8c0;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;}
+.table-footer{padding:8px 14px;font-size:11px;color:var(--mut);border-top:1px solid var(--brd);background:var(--surf);}
+
+/* SETUP BANNER */
+.setup-banner{background:#1a2a3a;border:1px solid var(--acc);border-radius:8px;padding:12px 16px;margin:16px 20px;font-size:12px;color:var(--txt2);}
+.setup-banner code{background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--acc);}
+.setup-banner strong{color:var(--txt);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-logo">📋 [UL] Dashboard Campaign Local</div>
+    <div class="topbar-sub">Unilever BR · Cadastra x StormX</div>
+  </div>
+  <div class="topbar-right">
+    <div class="sync-info">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span id="syncLabel">Carregando...</span>
+    </div>
+    <button class="btn-ghost" onclick="recarregar()" style="padding:4px 10px;font-size:11px;">↺ Recarregar</button>
+  </div>
+</div>
+
+<div id="setupBanner" class="setup-banner" style="display:none">
+  <strong>⚙️ Configure o Web App</strong><br>
+  Abra o <code>index.html</code> e substitua <code>COLE_AQUI_A_URL_DO_WEB_APP</code> pela URL do Web App gerada ao publicar <code>WEBAPP_CN.gs</code> na planilha.
+</div>
+
+<div class="filters">
+  <div class="filters-grid">
+    <div class="filter-group">
+      <div class="filter-label">Brand Name</div>
+      <select id="filtBrand" onchange="renderizar()"><option value="">Todas as marcas</option></select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Agência</div>
+      <select id="filtAgencia" onchange="renderizar()"><option value="">Todas as agências</option></select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Responsável</div>
+      <select id="filtResponsavel" onchange="renderizar()"><option value="">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Ano</div>
+      <select id="filtAno" onchange="renderizar()"><option value="">Todos os anos</option></select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Busca livre</div>
+      <input type="text" id="filtBusca" placeholder="Campaign, CN Code..." oninput="renderizar()">
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:auto auto auto 1fr;gap:6px 10px;align-items:flex-end;">
+    <div class="filter-group">
+      <div class="filter-label">Status CN CODE</div>
+      <select id="filtStatus" onchange="renderizar()">
+        <option value="">Todos</option>
+        <option value="ok">✅ OK</option>
+        <option value="verificar">⚠️ Verificar Campanha</option>
+        <option value="vazio">— Vazio</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Apenas duplicatas</div>
+      <select id="filtDup" onchange="renderizar()">
+        <option value="">Todos</option>
+        <option value="sim">Mostrar duplicatas</option>
+      </select>
+    </div>
+    <div class="filter-group" style="align-self:flex-end;">
+      <button class="btn-limpar" onclick="limparFiltros()" style="grid-column:auto;">Limpar filtros</button>
+    </div>
+  </div>
+</div>
+
+<div class="summary-bar" id="kpiBar">
+  <div class="kpi no-action"><div class="kpi-value muted" id="kpiTotal">—</div><div class="kpi-label">Total de entradas</div></div>
+  <div class="kpi no-action"><div class="kpi-value green" id="kpiOK">—</div><div class="kpi-label">CN Code OK</div></div>
+  <div class="kpi" id="kpiCardVC" onclick="toggleKpi('verificar')"><div class="kpi-value orange" id="kpiVC">—</div><div class="kpi-label">Verificar Campanha</div></div>
+  <div class="kpi" id="kpiCardDup" onclick="toggleKpi('duplicata')"><div class="kpi-value red" id="kpiDup">—</div><div class="kpi-label">Possíveis duplicatas</div></div>
+</div>
+
+<div id="kpiBanner" class="kpi-filter-banner">
+  <span id="kpiBannerText"></span>
+  <button onclick="limparKpi()">✕ Limpar filtro</button>
+</div>
+
+<!-- Verificar Campanha -->
+<div id="vcSection" class="aviso-section vc-section" style="display:none">
+  <div class="aviso-header vc-header" onclick="toggleSection('vcBody','vcArr')">
+    <span style="font-size:16px">⚠️</span>
+    <span class="aviso-title vc-title">Campaigns sem CN Code mapeado</span>
+    <span class="aviso-count vc-count" id="vcCount"></span>
+    <span class="aviso-arr vc-arr" id="vcArr">▾</span>
+  </div>
+  <div class="aviso-body vc-body show" id="vcBody"></div>
+</div>
+
+<!-- Duplicatas -->
+<div id="dupSection" class="aviso-section dup-section" style="display:none">
+  <div class="aviso-header dup-header" onclick="toggleSection('dupBody','dupArr')">
+    <span style="font-size:16px">🔁</span>
+    <span class="aviso-title dup-title">Possíveis entradas duplicadas</span>
+    <span class="aviso-count dup-count" id="dupCount"></span>
+    <span class="aviso-arr dup-arr" id="dupArr">▾</span>
+  </div>
+  <div class="aviso-body dup-body show" id="dupBody"></div>
+</div>
+
+<div class="main" id="mainContent">
+  <div class="state-msg"><div class="icon">⏳</div><h3>Carregando dados...</h3></div>
+</div>
+
+<script>
+// ── UTILS ─────────────────────────────────────────────────────
+function gS(r, key) { var v = r[key]; return (v !== undefined && v !== null) ? String(v) : ''; }
+
+function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+function unicos(campo) {
+  var set = {}, arr = [];
+  dados.rows.forEach(function(r) { var v = gS(r, campo); if (v) set[v] = true; });
+  Object.keys(set).sort(function(a,b){ return a.localeCompare(b,'pt-BR',{sensitivity:'base'}); }).forEach(function(v){ arr.push(v); });
+  return arr;
+}
+
+function preencheSelect(id, vals, ph) {
+  var el = document.getElementById(id), cur = el.value;
+  el.innerHTML = '<option value="">'+ph+'</option>';
+  vals.forEach(function(v) {
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (v === cur) o.selected = true;
+    el.appendChild(o);
+  });
+}
+
+// ── KPI FILTER ────────────────────────────────────────────────
+function toggleKpi(tipo) {
+  kpiFiltroAtivo = (kpiFiltroAtivo === tipo) ? null : tipo;
+  atualizarBannerKpi();
+  renderizar();
+}
+function limparKpi() {
+  kpiFiltroAtivo = null;
+  atualizarBannerKpi();
+  renderizar();
+}
+function atualizarBannerKpi() {
+  var banner = document.getElementById('kpiBanner');
+  var txt    = document.getElementById('kpiBannerText');
+  var labels = { verificar: 'Verificar Campanha', duplicata: 'Possíveis duplicatas' };
+  if (kpiFiltroAtivo && labels[kpiFiltroAtivo]) {
+    txt.textContent = '🔍 Filtro ativo: ' + labels[kpiFiltroAtivo];
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+  ['kpiCardVC','kpiCardDup'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('active', (id==='kpiCardVC' && kpiFiltroAtivo==='verificar') || (id==='kpiCardDup' && kpiFiltroAtivo==='duplicata'));
+  });
+}
+
+// ── COLLAPSE ─────────────────────────────────────────────────
+function toggleSection(bodyId, arrId) {
+  var body = document.getElementById(bodyId);
+  var arr  = document.getElementById(arrId);
+  body.classList.toggle('show');
+  arr.textContent = body.classList.contains('show') ? '▾' : '▸';
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function getFiltered() {
+  var brand      = document.getElementById('filtBrand').value;
+  var agencia    = document.getElementById('filtAgencia').value;
+  var resp       = document.getElementById('filtResponsavel').value;
+  var ano        = document.getElementById('filtAno').value;
+  var busca      = document.getElementById('filtBusca').value.trim().toLowerCase();
+  var status     = document.getElementById('filtStatus').value;
+  var dup        = document.getElementById('filtDup').value;
+
+  return dados.rows.filter(function(r) {
+    if (brand   && gS(r,'Brand Name')  !== brand)   return false;
+    if (agencia && gS(r,'Agência')     !== agencia)  return false;
+    if (resp    && gS(r,'Responsável') !== resp)     return false;
+    if (ano     && gS(r,'_ano')        !== ano)      return false;
+    if (dup === 'sim' && !r['_duplicata'])            return false;
+
+    var cn = gS(r,'CN CODE');
+    if (status === 'ok'       && (cn === 'Verificar Campanha' || cn === '')) return false;
+    if (status === 'verificar' && cn !== 'Verificar Campanha')               return false;
+    if (status === 'vazio'     && cn !== '')                                  return false;
+
+    if (kpiFiltroAtivo === 'verificar' && cn !== 'Verificar Campanha')       return false;
+    if (kpiFiltroAtivo === 'duplicata' && !r['_duplicata'])                   return false;
+
+    if (busca) {
+      var haystack = [
+        gS(r,'Novo Campaign Local'), gS(r,'Campaign Name'), gS(r,'CN CODE'),
+        gS(r,'Brand Name'), gS(r,'Agência'), gS(r,'Responsável'), gS(r,'Obs')
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(busca)) return false;
+    }
+    return true;
+  });
+}
+
+function limparFiltros() {
+  ['filtBrand','filtAgencia','filtResponsavel','filtAno','filtStatus','filtDup'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('filtBusca').value = '';
+  limparKpi();
+  renderizar();
+}
+
+// ── AVISOS ────────────────────────────────────────────────────
+function renderizarVC() {
+  var vcRows = dados.rows.filter(function(r) { return gS(r,'CN CODE') === 'Verificar Campanha'; });
+  var sec  = document.getElementById('vcSection');
+  var body = document.getElementById('vcBody');
+  var cnt  = document.getElementById('vcCount');
+  if (!vcRows.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  cnt.textContent = vcRows.length + ' entr' + (vcRows.length===1?'ada':'adas');
+
+  // Agrupa por Campaign Name
+  var grupos = {};
+  vcRows.forEach(function(r) {
+    var camp = gS(r,'Campaign Name') || '(sem campanha)';
+    if (!grupos[camp]) grupos[camp] = [];
+    grupos[camp].push(r);
+  });
+
+  var html = '';
+  Object.keys(grupos).sort().forEach(function(camp) {
+    var items = grupos[camp];
+    html += '<div class="vc-row">';
+    html += '<span class="vc-cn">⚠️ Verificar</span>';
+    html += '<span class="vc-camp">' + esc(camp) + '</span>';
+    html += '<span class="vc-brand">' + esc(gS(items[0],'Brand Name')) + ' · ' + items.length + 'x</span>';
+    html += '</div>';
+  });
+  body.innerHTML = html;
+}
+
+function renderizarDup() {
+  var dupRows = dados.rows.filter(function(r) { return r['_duplicata']; });
+  var sec  = document.getElementById('dupSection');
+  var body = document.getElementById('dupBody');
+  var cnt  = document.getElementById('dupCount');
+  if (!dupRows.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  cnt.textContent = dupRows.length + ' entr' + (dupRows.length===1?'ada':'adas');
+
+  // Agrupa por _dupKey
+  var grupos = {};
+  dupRows.forEach(function(r) {
+    var k = r['_dupKey'];
+    if (!grupos[k]) grupos[k] = [];
+    grupos[k].push(r);
+  });
+
+  var html = '';
+  Object.values(grupos).sort(function(a,b){ return b.length - a.length; }).forEach(function(items) {
+    var linhas = items.map(function(r){ return 'L'+r['_linha']+'('+r['_ano']+')'; }).join(', ');
+    var brand  = gS(items[0],'Brand Name');
+    var resp   = gS(items[0],'Responsável');
+    var ag     = gS(items[0],'Agência');
+    var novo   = gS(items[0],'Novo Campaign Local');
+    html += '<div class="dup-row">';
+    html += '<span class="dup-badge">×'+items.length+'</span>';
+    html += '<span class="dup-data">';
+    html += '<span class="dup-campo">' + esc(novo || '(sem nome)') + '</span><br>';
+    html += '<span class="dup-linhas">' + esc(brand) + (ag?' · '+esc(ag):'') + (resp?' · '+esc(resp):'') + ' — linhas: ' + esc(linhas) + '</span>';
+    html += '</span>';
+    html += '</div>';
+  });
+  body.innerHTML = html;
+}
+
+// ── TABELA ────────────────────────────────────────────────────
+var COLS = [
+  { key:'_ano',                label:'Ano',         w:50 },
+  { key:'Data de Inclusão',    label:'Data',        w:60 },
+  { key:'Novo Campaign Local', label:'Novo Campaign Local', w:200 },
+  { key:'Brand Name',          label:'Brand',       w:100 },
+  { key:'Campaign Name',       label:'Campaign Name',w:200 },
+  { key:'CN CODE',             label:'CN Code',     w:130 },
+  { key:'Responsável',         label:'Responsável', w:100 },
+  { key:'Agência',             label:'Agência',     w:80  },
+  { key:'EXTRA',               label:'Extra',       w:80  },
+  { key:'DE/PARA EXTRA',       label:'DE/PARA Extra',w:120 },
+  { key:'Obs',                 label:'Obs',         w:160 },
+];
+
+function renderizarTabela(rows) {
+  var main = document.getElementById('mainContent');
+  if (!rows.length) {
+    main.innerHTML = '<div class="state-msg"><div class="icon">🔍</div><h3>Nenhum resultado</h3><p>Ajuste os filtros para ver registros.</p></div>';
+    return;
+  }
+
+  var html = '<div class="table-wrap"><table><thead><tr>';
+  COLS.forEach(function(c) {
+    html += '<th style="min-width:'+c.w+'px">'+esc(c.label)+'</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    var isDup = r['_duplicata'];
+    var cn    = gS(r,'CN CODE');
+    html += '<tr' + (isDup ? ' class="dup-highlight"' : '') + '>';
+    COLS.forEach(function(c) {
+      var v = gS(r, c.key);
+      if (c.key === 'CN CODE') {
+        if (v === 'Verificar Campanha') {
+          html += '<td><span class="tag-vc">⚠️ Verificar</span></td>';
+        } else if (v) {
+          html += '<td><span class="tag-ok">' + esc(v) + '</span>' + (isDup ? '<span class="tag-dup">DUP</span>':'') + '</td>';
+        } else {
+          html += '<td><span style="color:var(--mut)">—</span>' + (isDup ? '<span class="tag-dup">DUP</span>':'') + '</td>';
+        }
+      } else if (c.key === 'Novo Campaign Local' && isDup) {
+        html += '<td>' + esc(v) + '<span class="tag-dup">DUP</span></td>';
+      } else {
+        html += '<td>' + (v ? esc(v) : '<span style="color:var(--mut)">—</span>') + '</td>';
+      }
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  html += '<div class="table-footer">Exibindo '+rows.length+' de '+dados.rows.length+' registros</div>';
+  html += '</div>';
+  main.innerHTML = html;
+}
+
+// ── RENDERIZAR ────────────────────────────────────────────────
+function renderizar() {
+  var rows = getFiltered();
+
+  // KPIs (sempre sobre todos os dados, não filtrados)
+  document.getElementById('kpiTotal').textContent = dados.rows.length;
+  var nOK      = dados.rows.filter(function(r){ var cn=gS(r,'CN CODE'); return cn && cn!=='Verificar Campanha'; }).length;
+  var nVC      = dados.rows.filter(function(r){ return gS(r,'CN CODE')==='Verificar Campanha'; }).length;
+  var nDup     = dados.rows.filter(function(r){ return r['_duplicata']; }).length;
+  document.getElementById('kpiOK').textContent  = nOK;
+  document.getElementById('kpiVC').textContent  = nVC;
+  document.getElementById('kpiDup').textContent = nDup;
+
+  renderizarTabela(rows);
+}
+
+// ── POPULAR FILTROS ───────────────────────────────────────────
+function popularFiltros() {
+  preencheSelect('filtBrand',      unicos('Brand Name'),  'Todas as marcas');
+  preencheSelect('filtAgencia',    unicos('Agência'),     'Todas as agências');
+  preencheSelect('filtResponsavel',unicos('Responsável'), 'Todos');
+  preencheSelect('filtAno',        unicos('_ano'),        'Todos os anos');
+}
+
+// ── CARGA DE DADOS ────────────────────────────────────────────
+function recarregar() {
+  var dot   = document.getElementById('syncDot');
+  var label = document.getElementById('syncLabel');
+  dot.className = 'sync-dot loading';
+  label.textContent = 'Carregando...';
+
+  if (WEBAPP_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') {
+    document.getElementById('setupBanner').style.display = '';
+    dot.className = 'sync-dot error';
+    label.textContent = 'Web App não configurado';
+    document.getElementById('mainContent').innerHTML =
+      '<div class="state-msg"><div class="icon">⚙️</div><h3>Configure o Web App</h3><p>Veja o banner acima para instruções.</p></div>';
+    return;
+  }
+
+  var script = document.createElement('script');
+  var cb     = '_cb_' + Date.now();
+  window[cb] = function(payload) {
+    delete window[cb];
+    document.getElementById('setupBanner').style.display = 'none';
+    dados = payload;
+    if (!dados.rows) dados.rows = [];
+    popularFiltros();
+    renderizarVC();
+    renderizarDup();
+    renderizar();
+
+    // Sync info
+    var t = new Date(payload.sync);
+    var hm = ('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
+    label.textContent = 'Atualizado às ' + hm;
+    dot.className = 'sync-dot';
+    document.body.removeChild(script);
+  };
+  script.onerror = function() {
+    dot.className = 'sync-dot error';
+    label.textContent = 'Erro ao carregar dados';
+    document.getElementById('mainContent').innerHTML =
+      '<div class="state-msg"><div class="icon">❌</div><h3>Erro de conexão</h3><p>Verifique a URL do Web App ou tente recarregar.</p></div>';
+    delete window[cb];
+    document.body.removeChild(script);
+  };
+  script.src = WEBAPP_URL + '?callback=' + cb + '&t=' + Date.now();
+  document.body.appendChild(script);
+}
+
+recarregar();
+</script>
+</body>
+</html>
