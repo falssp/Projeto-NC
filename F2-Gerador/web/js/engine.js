@@ -40,9 +40,12 @@ async function init() {
     badge.dataset.env = ENV.id;
   }
 
-  // Load lists first
+  // Load fallback lists (always load first)
   const listsResp = await fetch('config/lists.json');
   LISTS = await listsResp.json();
+
+  // Try to load dynamic lists from GAS
+  await _loadGasLists();
 
   // Load all platform configs
   const platPromises = PLATFORM_IDS.map(id =>
@@ -52,6 +55,72 @@ async function init() {
 
   buildSidebar();
   selectPlatform(PLATFORMS[0]);
+}
+
+// ─── GAS Dynamic Lists ────────────────────────────────────────────────────────
+async function _loadGasLists() {
+  if (!ENV.gasUrl) return;
+
+  // Show loading indicator
+  _setGasStatus('loading');
+
+  try {
+    const resp = await fetch(`${ENV.gasUrl}?action=listarOpcoes`, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (!data.ok || !data.campos) throw new Error(data.error || 'resposta inválida');
+
+    // Merge GAS campos into LISTS
+    // GAS returns flat arrays; ObjectiveShort and ObjOtimizacaoShort stay from fallback (they are maps)
+    const campos = data.campos;
+    const SKIP_MERGE = new Set(['ObjectiveShort','ObjOtimizacaoShort','AgeLower','AgeUpper','FsBlocked']);
+
+    for (const [key, vals] of Object.entries(campos)) {
+      if (SKIP_MERGE.has(key)) continue;
+      if (Array.isArray(vals) && vals.length > 0) {
+        LISTS[key] = vals;
+      }
+    }
+
+    // Build ObjectiveShort / ObjOtimizacaoShort maps from GAS if available
+    if (campos.Objective && campos.ObjectiveShort) {
+      const map = {};
+      campos.Objective.forEach((n, i) => { if (campos.ObjectiveShort[i]) map[n] = campos.ObjectiveShort[i]; });
+      if (Object.keys(map).length) LISTS.ObjectiveShort = map;
+    }
+    if (campos.ObjOtimizacao && campos.ObjOtimizacaoShort) {
+      const map = {};
+      campos.ObjOtimizacao.forEach((n, i) => { if (campos.ObjOtimizacaoShort[i]) map[n] = campos.ObjOtimizacaoShort[i]; });
+      if (Object.keys(map).length) LISTS.ObjOtimizacaoShort = map;
+    }
+
+    // CN Codes — nome → id map
+    if (campos.CNCode_Name && campos.CNCode_ID) {
+      const cnMap = {};
+      campos.CNCode_Name.forEach((n, i) => { if (campos.CNCode_ID[i]) cnMap[n] = campos.CNCode_ID[i]; });
+      LISTS.CNCode_Name = campos.CNCode_Name;
+      LISTS.CNCode_ID = campos.CNCode_ID;
+      LISTS.CNCode_Map = cnMap;
+    }
+
+    _setGasStatus('ok');
+  } catch (err) {
+    console.warn('[F2] GAS lists unavailable, using fallback:', err.message);
+    _setGasStatus('fallback');
+  }
+}
+
+function _setGasStatus(state) {
+  const badge = document.getElementById('gas-status');
+  if (!badge) return;
+  const states = {
+    loading:  { text: '⟳ GAS',      cls: 'gas-loading'  },
+    ok:       { text: '● GAS',       cls: 'gas-ok'       },
+    fallback: { text: '○ Offline',   cls: 'gas-fallback' },
+  };
+  const s = states[state] || states.fallback;
+  badge.textContent = s.text;
+  badge.className = `gas-status ${s.cls}`;
 }
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -173,12 +242,26 @@ function buildField(col, lvl) {
 
   switch (col.type) {
     case 'cn_drop': {
-      // Dropdown of campaign names (from CN codes — for now a free text)
       input = document.createElement('input');
       input.type = 'text';
       input.className = 'field-input';
       input.placeholder = 'Nome da campanha...';
       input.value = val;
+      // Attach datalist if CN Codes are loaded
+      const cnNames = LISTS.CNCode_Name || [];
+      if (cnNames.length > 0) {
+        const dlId = 'dl-cn-' + Math.random().toString(36).slice(2);
+        const dl = document.createElement('datalist');
+        dl.id = dlId;
+        cnNames.forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = n;
+          dl.appendChild(opt);
+        });
+        wrapper.appendChild(dl);
+        input.setAttribute('list', dlId);
+        input.placeholder = 'Buscar campanha...';
+      }
       input.addEventListener('input', () => { saveField(lvl, col.col, input.value); updateResults(); });
       break;
     }
@@ -358,6 +441,13 @@ function objShort(val) {
 /** Lookup obj otimizacao short code */
 function objOtimShort(val) {
   return (LISTS.ObjOtimizacaoShort || {})[val] || val || '';
+}
+
+/** Lookup CN Code ID from campaign name */
+function cnLookup(name) {
+  if (!name) return '';
+  const map = LISTS.CNCode_Map || {};
+  return map[name] || '';
 }
 
 // ─── Formula Evaluation ───────────────────────────────────────────────────────
@@ -557,12 +647,11 @@ function computeCNResults(platform, rowData) {
     const lvl = col.level;
 
     if (header.includes('CN Code')) {
-      // CN Code = the Campaign Name field (cn_drop) value — pass through for now
-      // In real GAS, this is the campaign number from a registry — we skip for web
       const cnDropCol = platform.columns.find(c => c.type === 'cn_drop');
       if (cnDropCol) {
-        const val = getCol(cnDropCol.col, rowData);
-        setComputedCol(col.col, lvl, val, rowData);
+        const name = getCol(cnDropCol.col, rowData);
+        const id = cnLookup(name);
+        setComputedCol(col.col, lvl, id || name, rowData);
       }
     } else if (header.includes('Objective-Short')) {
       // Look for Objective col
