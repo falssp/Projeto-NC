@@ -9,6 +9,7 @@ let PLATFORMS = [];
 let currentPlatform = null;
 let rows = []; // each row = { camp: {colValues}, ag: {colValues}, ad: {colValues} }
 let currentRowIndex = 0;
+let ENV = { id: 'corp', label: 'Corp', gasUrl: '' };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const PLATFORM_IDS = [
@@ -18,8 +19,27 @@ const PLATFORM_IDS = [
   'meta','pinterest','tiktok','twitter'
 ];
 
+// ─── Env Detection ────────────────────────────────────────────────────────────
+function detectEnv() {
+  const params = new URLSearchParams(window.location.search);
+  const envParam = (params.get('env') || 'corp').toLowerCase();
+  return envParam === 'pes' ? 'pes' : 'corp';
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
+  // Load env config
+  const envId = detectEnv();
+  const envResp = await fetch(`config/env.${envId}.json`);
+  ENV = await envResp.json();
+
+  // Update header env badge
+  const badge = document.getElementById('env-badge');
+  if (badge) {
+    badge.textContent = ENV.label;
+    badge.dataset.env = ENV.id;
+  }
+
   // Load lists first
   const listsResp = await fetch('config/lists.json');
   LISTS = await listsResp.json();
@@ -745,5 +765,6 @@ window.F2Engine = {
   getAllResults,
   get currentPlatform() { return currentPlatform; },
   get rows() { return rows; },
-  get PLATFORMS() { return PLATFORMS; }
+  get PLATFORMS() { return PLATFORMS; },
+  get ENV() { return ENV; }
 };
