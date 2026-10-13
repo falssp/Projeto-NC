@@ -186,6 +186,16 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
   <span class="kpi-banner-close" onclick="toggleKpi(null)">✕</span>
 </div>
 
+<!-- BANNER SETUP -->
+<div id="setupBanner" style="display:none;background:#1a2240;border:1px solid #4f7ef8;border-radius:8px;padding:12px 16px;margin:12px 20px;font-size:12px;color:var(--txt2);line-height:1.8;">
+  <strong style="color:var(--txt)">⚙️ Web App não configurada</strong><br>
+  Instale <code style="background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:1px 6px;font-family:monospace">WEBAPP_CN.gs</code>
+  na planilha corp → <em>Extensions &gt; Apps Script</em>.<br>
+  <em>Deploy &gt; New deployment &gt; Web App</em> · Execute as: <strong style="color:var(--txt)">Me</strong> · Access: <strong style="color:var(--txt)">Anyone</strong>.<br>
+  Cole a URL gerada em <code style="background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:1px 6px;font-family:monospace">index.html</code>
+  na variável <code style="background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:1px 6px;font-family:monospace">WEBAPP_URL</code>.
+</div>
+
 <!-- FILTROS -->
 <div class="filters-wrap">
   <div class="filters-row">
@@ -312,10 +322,13 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
 
 <script>
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────
-var SHEET_ID     = '1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc';
-var PRIMEIRO_ANO = 2024;
+// 1. Instale WEBAPP_CN.gs na planilha corp (Extensions > Apps Script)
+// 2. Deploy > New deployment > Web App
+//    Execute as: Me  |  Who has access: Anyone
+// 3. Cole a URL gerada abaixo (termina em /exec)
+var WEBAPP_URL = 'COLE_AQUI_A_URL_DO_WEB_APP';
 
-// Índices das colunas gviz (0-based, cols A-K)
+// Índices das colunas (0-based, cols A-K) — usados apenas no render
 var COL = {
   DATA:       0,  // A — Data de Inclusão
   NOVO:       1,  // B — Novo Campaign Local
@@ -345,97 +358,52 @@ var sectionsOpen   = { vc: false, dup: false };
 window.addEventListener('DOMContentLoaded', carregarTudo);
 
 function carregarTudo() {
-  todasLinhas   = [];
-  anosPendentes = {};
+  if (!WEBAPP_URL || WEBAPP_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') {
+    setSyncState('erro', 'Web App não configurada');
+    document.getElementById('loadingWrap').classList.remove('show');
+    // mostra banner de instrução
+    var b = document.getElementById('setupBanner');
+    if (b) b.style.display = '';
+    return;
+  }
+
+  todasLinhas = [];
   document.getElementById('loadingWrap').classList.add('show');
   setSyncState('loading', 'Carregando...');
 
-  var anoAtual = new Date().getFullYear();
-  var anos = [];
-  for (var a = PRIMEIRO_ANO; a <= anoAtual + 1; a++) anos.push(String(a));
+  var url = WEBAPP_URL + (WEBAPP_URL.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
 
-  anos.forEach(function(ano) { anosPendentes[ano] = 'wait'; });
-
-  anos.forEach(function(ano) {
-    var ts    = Date.now();
-    var rnd   = Math.random().toString(36).slice(2, 7);
-    var cbName = '_gviz_' + ano + '_' + ts + '_' + rnd;
-
-    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-            + '/gviz/tq?sheet=' + encodeURIComponent(ano)
-            + '&headers=1&tq=select+*&callback=' + cbName;
-
-    window[cbName] = (function(a, cb) {
-      return function(resp) {
-        try { processarGviz(a, resp); anosPendentes[a] = 'ok'; }
-        catch(e) { anosPendentes[a] = 'err'; }
-        delete window[cb];
-        verificarFim();
-      };
-    })(ano, cbName);
-
-    var s = document.createElement('script');
-    s.src = url;
-    s.onerror = (function(a, cb) {
-      return function() {
-        anosPendentes[a] = 'err';
-        delete window[cb];
-        verificarFim();
-      };
-    })(ano, cbName);
-    document.body.appendChild(s);
-  });
+  fetch(url)
+    .then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      if (!data.ok) throw new Error(data.error || 'Erro na Web App');
+      processarRows(data.rows || []);
+      document.getElementById('loadingWrap').classList.remove('show');
+      marcarDuplicatas();
+      popularFiltros();
+      renderizar();
+      setSyncState('ok', todasLinhas.length + ' linhas · atualizado ' + fmtHora());
+    })
+    .catch(function(err) {
+      document.getElementById('loadingWrap').classList.remove('show');
+      setSyncState('erro', 'Erro: ' + err.message);
+    });
 }
 
 function recarregar() { carregarTudo(); }
 
-function verificarFim() {
-  var pendente = Object.keys(anosPendentes).some(function(k){ return anosPendentes[k] === 'wait'; });
-  if (pendente) return;
-
-  document.getElementById('loadingWrap').classList.remove('show');
-
-  marcarDuplicatas();
-  popularFiltros();
-  renderizar();
-
-  var total  = todasLinhas.length;
-  var okQtd  = Object.keys(anosPendentes).filter(function(k){ return anosPendentes[k] === 'ok'; }).length;
-  if (total > 0) {
-    setSyncState('ok', total + ' linhas · ' + okQtd + ' aba(s) · atualizado ' + fmtHora());
-  } else {
-    setSyncState('erro', 'Sem dados — verifique compartilhamento da planilha');
-  }
-}
-
-// ── GVIZ ─────────────────────────────────────────────────────
-function processarGviz(ano, resp) {
-  if (!resp || !resp.table) return;
-  var rows = resp.table.rows || [];
-
-  rows.forEach(function(row) {
-    if (!row.c) return;
-    var vals = row.c.map(function(cell) {
-      if (!cell) return '';
-      var v = cell.v;
-      if (v === null || v === undefined) {
-        // Tenta formatted
-        return (cell.f !== null && cell.f !== undefined) ? String(cell.f) : '';
-      }
-      // Data: gviz retorna como "Date(yyyy,m,d)" ou Date nativo
-      if (typeof v === 'string' && v.indexOf('Date(') === 0) {
-        var parts = v.slice(5, -1).split(',').map(Number);
-        return fmtData(new Date(parts[0], parts[1], parts[2]));
-      }
-      if (v instanceof Date) return fmtData(v);
-      return String(v);
-    });
-
-    // Filtra linha vazia (row 2 da planilha = linha de filtro)
-    var temDado = vals.slice(1).some(function(v){ return v.trim() !== ''; });
-    if (!temDado) return;
-
-    todasLinhas.push({ ano: ano, vals: vals, _dup: false });
+// ── WEB APP ───────────────────────────────────────────────────
+function processarRows(rows) {
+  var campoNomes = ['Data de Inclusão','Novo Campaign Local','DE/PARA Campaign Local',
+                    'EXTRA','DE/PARA EXTRA','Brand Name','Campaign Name',
+                    'CN CODE','Responsável','Agência','Obs'];
+  rows.forEach(function(obj) {
+    // converte objeto da Web App para array de vals na ordem das colunas
+    var vals = campoNomes.map(function(h){ return (obj[h] || '').trim(); });
+    todasLinhas.push({ ano: obj['_ano'] || '', vals: vals, _dup: false });
   });
 }
 
