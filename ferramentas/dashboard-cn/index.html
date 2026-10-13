@@ -2,296 +2,492 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>[UL] Dashboard Campaign Local</title>
-<script>
-// ── CONFIGURAÇÃO ──────────────────────────────────────────────
-// Cole aqui o ID da planilha (está na URL do Google Sheets)
-// Ex.: https://docs.google.com/spreadsheets/d/ESTE_TRECHO_AQUI/edit
-var SHEET_ID    = '1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc';
-var PRIMEIRO_ANO = 2026;
-// A planilha precisa estar compartilhada como "qualquer pessoa com o link pode visualizar"
-// ─────────────────────────────────────────────────────────────
-
-var CAMPOS = [
-  'Data de Inclusão',       // A 0
-  'Novo Campaign Local',    // B 1
-  'DE/PARA Campaign Local', // C 2
-  'EXTRA',                  // D 3
-  'DE/PARA EXTRA',          // E 4
-  'Brand Name',             // F 5
-  'Campaign Name',          // G 6
-  'CN CODE',                // H 7
-  'Responsável',            // I 8
-  'Agência',                // J 9
-  'Obs'                     // K 10
-];
-// Índices excluídos da chave de duplicata: EXTRA(3), Campaign Name(6), CN CODE(7)
-var EXCLUIR_DUP = {3:1, 6:1, 7:1};
-
-var todos = [];
-var kpiFiltroAtivo = null;
-</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — Campaign Local</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 :root{
   --bg:#0f1117;--surf:#181c27;--surf2:#1e2333;--brd:#2a3050;
   --acc:#4f7ef8;--acc2:#7c5ff5;--grn:#2ecc71;--ylw:#f1c40f;
   --org:#e67e22;--red:#e74c3c;--mut:#6b7a9e;--txt:#e8ecf4;--txt2:#a0aabf;
-  --radius:10px;
+  --pink:#e91e8c;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;font-size:13px;min-height:100vh;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
 
-/* TOPBAR */
-.topbar{background:var(--surf);border-bottom:1px solid var(--brd);padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;}
-.topbar-logo{font-size:16px;font-weight:700;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.topbar-sub{color:var(--mut);font-size:11px;margin-top:2px;}
-.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-.sync-info{display:flex;align-items:center;gap:6px;background:var(--surf2);border:1px solid var(--brd);border-radius:20px;padding:5px 11px;font-size:11px;color:var(--txt2);}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);flex-shrink:0;}
-.sync-dot.loading{background:var(--ylw);animation:pulse-dot 1s infinite;}
-.sync-dot.error{background:var(--red);}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
-.btn-ghost{background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;}
-.btn-ghost:hover{border-color:var(--acc);color:var(--acc);}
+/* ── TOPBAR ─────────────────────────────────────────────────── */
+.topbar{display:flex;align-items:center;gap:12px;padding:0 20px;height:52px;background:var(--surf);border-bottom:1px solid var(--brd);position:sticky;top:0;z-index:100}
+.topbar-title{font-weight:700;font-size:15px;color:var(--txt);white-space:nowrap}
+.topbar-title span{color:var(--acc);margin-right:6px}
+.sync-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);margin-left:4px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.sync-dot.ok{background:var(--grn)}
+.sync-dot.loading{background:var(--ylw);animation:pulse .9s infinite}
+.sync-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.topbar-spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;border:1px solid var(--brd);background:var(--surf2);color:var(--txt2);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--acc);color:var(--txt);background:#232a42}
+.btn-icon{font-size:13px}
 
-/* SETUP BANNER */
-.setup-banner{background:#0d1f2d;border:1px solid var(--acc);border-radius:8px;padding:14px 18px;margin:14px 20px;font-size:12px;color:var(--txt2);line-height:1.7;}
-.setup-banner strong{color:var(--txt);}
-.setup-banner code{background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:11px;color:var(--acc);}
+/* ── KPIS ───────────────────────────────────────────────────── */
+.kpi-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px;border-bottom:1px solid var(--brd)}
+.kpi-card{background:var(--surf);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:all .15s}
+.kpi-card.clickable{cursor:pointer}
+.kpi-card.clickable:hover{border-color:var(--acc);background:#1c2035}
+.kpi-card.active{border-color:var(--acc)!important;background:#1a2240!important}
+.kpi-label{font-size:11px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
+.kpi-sub{font-size:11px;color:var(--mut)}
+.kpi-card.total .kpi-val{color:var(--acc)}
+.kpi-card.ok .kpi-val{color:var(--grn)}
+.kpi-card.warn .kpi-val{color:var(--ylw)}
+.kpi-card.dup .kpi-val{color:var(--pink)}
 
-/* FILTERS */
-.filters{padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--brd);}
-.filters-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 10px;margin-bottom:6px;}
-.filter-group{display:flex;flex-direction:column;gap:3px;}
-.filter-label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
-select,input[type=text]{background:var(--surf2);border:1px solid var(--brd);color:var(--txt);border-radius:6px;padding:5px 9px;font-size:12px;outline:none;transition:border-color .2s;width:100%;}
-select:focus,input:focus{border-color:var(--acc);}
-.btn-limpar{width:100%;background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s;}
-.btn-limpar:hover{border-color:var(--acc);color:var(--acc);}
+/* ── BANNER KPI ─────────────────────────────────────────────── */
+.kpi-banner{display:none;align-items:center;justify-content:space-between;padding:7px 20px;background:#1a2240;border-bottom:1px solid var(--acc);font-size:12px;color:var(--acc)}
+.kpi-banner.show{display:flex}
+.kpi-banner-close{cursor:pointer;opacity:.6;font-size:16px;line-height:1}
+.kpi-banner-close:hover{opacity:1}
 
-/* KPIs */
-.summary-bar{padding:10px 20px;display:flex;gap:6px;align-items:stretch;}
-.kpi{background:var(--surf);border:1px solid var(--brd);border-radius:var(--radius);padding:10px 14px;cursor:pointer;transition:border-color .2s,background .2s;user-select:none;flex:1;min-width:0;}
-.kpi:hover{border-color:var(--acc);background:var(--surf2);}
-.kpi.active{border-color:var(--acc);background:#1a2240;box-shadow:0 0 0 2px rgba(79,126,248,.25);}
-.kpi.no-action{cursor:default;}
-.kpi.no-action:hover{border-color:var(--brd);background:var(--surf);}
-.kpi-value{font-size:20px;font-weight:700;line-height:1;}
-.kpi-label{font-size:10px;color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
-.kpi-value.green{color:var(--grn);}
-.kpi-value.yellow{color:var(--ylw);}
-.kpi-value.orange{color:var(--org);}
-.kpi-value.red{color:var(--red);}
-.kpi-value.muted{color:var(--mut);}
-.kpi-filter-banner{background:#1a2240;border:1px solid var(--acc);border-radius:6px;padding:6px 14px;margin:0 20px 8px;font-size:11px;color:var(--txt2);display:none;align-items:center;gap:8px;}
-.kpi-filter-banner.show{display:flex;}
-.kpi-filter-banner button{background:transparent;border:none;color:var(--acc);cursor:pointer;font-size:11px;font-weight:700;margin-left:auto;}
+/* ── FILTROS ────────────────────────────────────────────────── */
+.filters-wrap{padding:14px 20px;border-bottom:1px solid var(--brd);display:flex;flex-direction:column;gap:10px}
+.filters-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.filter-group{display:flex;flex-direction:column;gap:3px}
+.filter-label{font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+select.filt,input.filt{background:var(--surf2);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:6px 10px;outline:none;transition:border-color .15s;height:34px}
+select.filt{min-width:140px;cursor:pointer}
+input.filt{min-width:200px}
+select.filt:focus,input.filt:focus{border-color:var(--acc)}
+.btn-limpar{background:transparent;border:1px dashed var(--brd);color:var(--mut);font-size:12px;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;height:34px}
+.btn-limpar:hover{border-color:var(--red);color:var(--red)}
 
-/* AVISO SECTIONS */
-.aviso-section{margin:0 20px 12px;border-radius:10px;overflow:hidden;}
-.aviso-header{padding:9px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
-.aviso-header:hover{opacity:.85;}
-.aviso-title{font-size:12px;font-weight:700;flex:1;}
-.aviso-count{font-size:11px;font-weight:700;margin-left:auto;}
-.aviso-arr{font-size:11px;transition:transform .2s;margin-left:6px;}
-.aviso-body{display:none;border-top:1px solid;}
-.aviso-body.show{display:block;}
+/* ── SEÇÕES DE AVISO ────────────────────────────────────────── */
+.warn-section{margin:14px 20px 0;border-radius:10px;border:1px solid;overflow:hidden}
+.warn-section.vc{border-color:#533a00;background:#1a1200}
+.warn-section.dup{border-color:#4a0f2e;background:#1a0010;margin-top:10px}
+.warn-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none}
+.warn-section.vc .warn-header{background:#251c00}
+.warn-section.dup .warn-header{background:#250010}
+.warn-title{font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px}
+.warn-section.vc .warn-title{color:var(--ylw)}
+.warn-section.dup .warn-title{color:var(--pink)}
+.warn-count{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700}
+.warn-section.vc .warn-count{background:#533a00;color:#ffdd57}
+.warn-section.dup .warn-count{background:#4a0f2e;color:#ff6ec7}
+.warn-chevron{font-size:11px;transition:transform .2s;color:var(--mut)}
+.warn-body{padding:0 14px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
+.warn-body.open{max-height:380px;padding:10px 14px;overflow-y:auto}
+.warn-table-mini{width:100%;border-collapse:collapse;font-size:12px}
+.warn-table-mini th{padding:5px 8px;text-align:left;color:var(--mut);font-weight:600;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--brd);white-space:nowrap}
+.warn-table-mini td{padding:5px 8px;border-bottom:1px solid #ffffff08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
 
-/* Verificar Campanha */
-.vc-section{border:1px solid #5a3a10;}
-.vc-header{background:#1e1408;}
-.vc-title{color:#f1c40f;}
-.vc-count{color:#f1c40f;}
-.vc-body{border-color:#5a3a10;background:#160f04;}
-.vc-row{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid #2a1e08;font-size:12px;}
-.vc-row:last-child{border-bottom:none;}
-.vc-row:hover{background:#1e1408;}
-.vc-cn{color:var(--ylw);font-size:11px;font-weight:700;flex-shrink:0;}
-.vc-camp{color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.vc-brand{font-size:10px;color:var(--mut);flex-shrink:0;}
+/* ── TABELA PRINCIPAL ───────────────────────────────────────── */
+.main-wrap{padding:14px 20px 40px}
+.table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.table-title{font-size:12px;font-weight:600;color:var(--mut)}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--brd)}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead th{background:var(--surf2);padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd);position:sticky;top:52px;z-index:10}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{color:var(--txt)}
+.sort-icon{margin-left:4px;opacity:.4;font-size:10px}
+thead th.sorted .sort-icon{opacity:1;color:var(--acc)}
+tbody tr{border-bottom:1px solid #ffffff06;transition:background .1s}
+tbody tr:hover{background:#ffffff05}
+tbody tr.dup-row{background:#1a001080}
+tbody td{padding:8px 12px;font-size:13px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-ok{background:#0d3a20;color:#2ecc71;border:1px solid #1a5c33}
+.badge-warn{background:#3a2d00;color:#f1c40f;border:1px solid #5c4700}
+.badge-new{background:#0a2040;color:#4f7ef8;border:1px solid #1a3a6a}
+.badge-no{background:#222;color:#a0aabf;border:1px solid #333}
+.cn-code{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.3px}
+.ano-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--surf2);color:var(--mut);border:1px solid var(--brd)}
+.dup-badge{display:inline-block;width:16px;height:16px;border-radius:50%;background:#4a0f2e;color:var(--pink);font-size:9px;font-weight:700;text-align:center;line-height:16px;margin-right:4px;vertical-align:middle}
 
-/* Duplicatas */
-.dup-section{border:1px solid #5a2030;}
-.dup-header{background:#1e0f18;}
-.dup-title{color:#f9a8c0;}
-.dup-count{color:#f9a8c0;}
-.dup-body{border-color:#5a2030;background:#160b12;}
-.dup-row{display:flex;align-items:flex-start;gap:10px;padding:7px 14px;border-bottom:1px solid #2a1020;font-size:12px;}
-.dup-row:last-child{border-bottom:none;}
-.dup-row:hover{background:#1e0f18;}
-.dup-badge{background:#7c1d3a;color:#f9a8c0;font-size:10px;font-weight:700;padding:1px 7px;border-radius:3px;flex-shrink:0;}
-.dup-data{color:var(--txt2);font-size:11px;flex:1;}
-.dup-campo{font-weight:600;color:var(--txt);}
-.dup-linhas{font-size:10px;color:var(--mut);}
+/* ── EMPTY / LOADING ────────────────────────────────────────── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--mut)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.loading-wrap{height:3px;overflow:hidden;position:fixed;top:0;left:0;right:0;z-index:200;display:none}
+.loading-wrap.show{display:block}
+.loading-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc));background-size:200%;animation:load 1.4s linear infinite}
+@keyframes load{0%{background-position:100%}100%{background-position:-100%}}
 
-/* TABLE */
-.main{padding:0 20px 40px;}
-.state-msg{text-align:center;padding:60px 20px;color:var(--mut);}
-.state-msg .icon{font-size:36px;margin-bottom:10px;}
-.state-msg h3{color:var(--txt2);margin-bottom:6px;}
-.table-wrap{overflow-x:auto;border:1px solid var(--brd);border-radius:var(--radius);}
-table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:#0e1220;color:var(--mut);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--brd);white-space:nowrap;}
-td{padding:7px 10px;border-bottom:1px solid #1e2333;vertical-align:middle;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-tr:last-child td{border-bottom:none;}
-tr:hover td{background:#191d2e;}
-tr.dup-highlight td{background:#1e0a0f;}
-tr.dup-highlight:hover td{background:#260f18;}
-.tag-vc{background:#2d1e0a;color:var(--org);font-size:10px;padding:1px 6px;border-radius:3px;}
-.tag-ok{background:#1a3a2a;color:var(--grn);font-size:10px;padding:1px 6px;border-radius:3px;}
-.tag-dup{background:#3a0020;color:#f9a8c0;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;}
-.table-footer{padding:8px 14px;font-size:11px;color:var(--mut);border-top:1px solid var(--brd);background:var(--surf);}
+/* ── EXPORT MODAL ───────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:#00000085;z-index:300;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surf);border:1px solid var(--brd);border-radius:12px;padding:24px;width:440px;max-width:95vw}
+.modal h3{font-size:15px;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--txt2);margin-bottom:14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn-primary{background:var(--acc);border:none;color:#fff;padding:8px 18px;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:11px;padding:8px;resize:none;outline:none;margin-bottom:12px}
+
+/* ── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--mut)}
+
+@media(max-width:768px){
+  .kpi-bar{grid-template-columns:1fr 1fr}
+  .filters-row{flex-direction:column;align-items:stretch}
+  select.filt,input.filt{width:100%}
+}
 </style>
 </head>
 <body>
 
+<div class="loading-wrap" id="loadingWrap"><div class="loading-bar"></div></div>
+
+<!-- TOPBAR -->
 <div class="topbar">
-  <div>
-    <div class="topbar-logo">📋 [UL] Dashboard Campaign Local</div>
-    <div class="topbar-sub">Unilever BR · Cadastra x StormX</div>
+  <div class="topbar-title"><span>📋</span>Campaign Local</div>
+  <div class="sync-wrap">
+    <div class="sync-dot loading" id="syncDot"></div>
+    <span id="syncInfo">Carregando...</span>
   </div>
-  <div class="topbar-right">
-    <div class="sync-info">
-      <div class="sync-dot loading" id="syncDot"></div>
-      <span id="syncLabel">Carregando...</span>
-    </div>
-    <button class="btn-ghost" onclick="iniciar()" style="padding:4px 10px;font-size:11px;">↺ Recarregar</button>
+  <div class="topbar-spacer"></div>
+  <button class="btn" onclick="expandirTudo()"><span class="btn-icon">↓</span>Expandir avisos</button>
+  <button class="btn" onclick="abrirExport()"><span class="btn-icon">⬇</span>Exportar CSV</button>
+  <button class="btn" onclick="recarregar()" title="Recarregar dados"><span class="btn-icon">↻</span>Atualizar</button>
+</div>
+
+<!-- KPI BAR -->
+<div class="kpi-bar">
+  <div class="kpi-card total" id="kpiTotal">
+    <div class="kpi-label">Total de linhas</div>
+    <div class="kpi-val" id="kpiTotalVal">—</div>
+    <div class="kpi-sub" id="kpiTotalSub">carregando...</div>
+  </div>
+  <div class="kpi-card ok" id="kpiOk">
+    <div class="kpi-label">CN Code OK</div>
+    <div class="kpi-val" id="kpiOkVal">—</div>
+    <div class="kpi-sub" id="kpiOkSub">com CN Code preenchido</div>
+  </div>
+  <div class="kpi-card warn clickable" id="kpiVc" onclick="toggleKpi('vc')">
+    <div class="kpi-label">Verificar Campanha</div>
+    <div class="kpi-val" id="kpiVcVal">—</div>
+    <div class="kpi-sub">CN Code em branco — clique p/ filtrar</div>
+  </div>
+  <div class="kpi-card dup clickable" id="kpiDup" onclick="toggleKpi('dup')">
+    <div class="kpi-label">Duplicatas</div>
+    <div class="kpi-val" id="kpiDupVal">—</div>
+    <div class="kpi-sub">mesmos campos-chave — clique p/ filtrar</div>
   </div>
 </div>
 
-<div id="setupBanner" class="setup-banner" style="display:none">
-  <strong>⚙️ Configure o ID da planilha</strong><br>
-  Abra o <code>index.html</code> e substitua <code>COLE_AQUI_O_ID_DA_PLANILHA</code> pelo ID real da planilha.<br>
-  O ID está na URL do Google Sheets: <code>docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit</code><br>
-  A planilha precisa estar compartilhada como <strong>"qualquer pessoa com o link pode visualizar"</strong>.
+<!-- BANNER KPI ATIVO -->
+<div class="kpi-banner" id="kpiBanner">
+  <span id="kpiBannerText"></span>
+  <span class="kpi-banner-close" onclick="toggleKpi(null)">✕</span>
 </div>
 
-<div class="filters">
-  <div class="filters-grid">
+<!-- FILTROS -->
+<div class="filters-wrap">
+  <div class="filters-row">
     <div class="filter-group">
       <div class="filter-label">Brand Name</div>
-      <select id="filtBrand" onchange="renderizar()"><option value="">Todas as marcas</option></select>
+      <select class="filt" id="filtBrand" onchange="renderizar()"><option value="">Todas as marcas</option></select>
     </div>
     <div class="filter-group">
       <div class="filter-label">Agência</div>
-      <select id="filtAgencia" onchange="renderizar()"><option value="">Todas as agências</option></select>
+      <select class="filt" id="filtAgencia" onchange="renderizar()"><option value="">Todas as agências</option></select>
     </div>
     <div class="filter-group">
       <div class="filter-label">Responsável</div>
-      <select id="filtResponsavel" onchange="renderizar()"><option value="">Todos</option></select>
+      <select class="filt" id="filtResp" onchange="renderizar()"><option value="">Todos</option></select>
     </div>
     <div class="filter-group">
       <div class="filter-label">Ano</div>
-      <select id="filtAno" onchange="renderizar()"><option value="">Todos os anos</option></select>
+      <select class="filt" id="filtAno" onchange="renderizar()"><option value="">Todos os anos</option></select>
     </div>
     <div class="filter-group">
-      <div class="filter-label">Busca livre</div>
-      <input type="text" id="filtBusca" placeholder="Campaign, CN Code..." oninput="renderizar()">
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:auto auto auto 1fr;gap:6px 10px;align-items:flex-end;">
-    <div class="filter-group">
-      <div class="filter-label">Status CN CODE</div>
-      <select id="filtStatus" onchange="renderizar()">
+      <div class="filter-label">Status CN Code</div>
+      <select class="filt" id="filtCN" onchange="renderizar()">
         <option value="">Todos</option>
-        <option value="ok">✅ OK</option>
-        <option value="verificar">⚠️ Verificar Campanha</option>
-        <option value="vazio">— Vazio</option>
+        <option value="ok">✅ Preenchido</option>
+        <option value="vazio">⚠ Em branco</option>
       </select>
     </div>
     <div class="filter-group">
       <div class="filter-label">Novo Campaign</div>
-      <select id="filtNovo" onchange="renderizar()">
+      <select class="filt" id="filtNovo" onchange="renderizar()">
         <option value="">Todos</option>
-        <option value="SIM">Sim</option>
-        <option value="NÃO">Não</option>
+        <option value="sim">Sim</option>
+        <option value="nao">Não / em branco</option>
       </select>
     </div>
     <div class="filter-group">
       <div class="filter-label">Duplicatas</div>
-      <select id="filtDup" onchange="renderizar()">
-        <option value="">Todos</option>
-        <option value="sim">Apenas duplicatas</option>
+      <select class="filt" id="filtDup" onchange="renderizar()">
+        <option value="">Todas</option>
+        <option value="dup">Somente duplicadas</option>
+        <option value="unico">Somente únicas</option>
       </select>
     </div>
-    <div class="filter-group" style="align-self:flex-end;">
-      <button class="btn-limpar" onclick="limparFiltros()">Limpar filtros</button>
+    <button class="btn-limpar" onclick="limparFiltros()">✕ Limpar</button>
+  </div>
+  <div class="filters-row">
+    <div class="filter-group" style="flex:1">
+      <div class="filter-label">Busca livre</div>
+      <input class="filt" id="filtBusca" placeholder="Brand, Campaign Name, CN Code, Responsável…" oninput="renderizar()" style="min-width:340px;width:100%">
     </div>
   </div>
 </div>
 
-<div class="summary-bar">
-  <div class="kpi no-action"><div class="kpi-value muted" id="kpiTotal">—</div><div class="kpi-label">Total de entradas</div></div>
-  <div class="kpi no-action"><div class="kpi-value green" id="kpiOK">—</div><div class="kpi-label">CN Code OK</div></div>
-  <div class="kpi" id="kpiCardVC" onclick="toggleKpi('verificar')"><div class="kpi-value orange" id="kpiVC">—</div><div class="kpi-label">Verificar Campanha</div></div>
-  <div class="kpi" id="kpiCardDup" onclick="toggleKpi('duplicata')"><div class="kpi-value red" id="kpiDup">—</div><div class="kpi-label">Possíveis duplicatas</div></div>
-</div>
-
-<div id="kpiBanner" class="kpi-filter-banner">
-  <span id="kpiBannerText"></span>
-  <button onclick="limparKpi()">✕ Limpar filtro</button>
-</div>
-
-<!-- Verificar Campanha -->
-<div id="vcSection" class="aviso-section vc-section" style="display:none">
-  <div class="aviso-header vc-header" onclick="toggleSection('vcBody','vcArr')">
-    <span style="font-size:16px">⚠️</span>
-    <span class="aviso-title vc-title">Campaigns sem CN Code mapeado</span>
-    <span class="aviso-count vc-count" id="vcCount"></span>
-    <span class="aviso-arr vc-arr" id="vcArr">▾</span>
+<!-- AVISO: VERIFICAR CAMPANHA -->
+<div class="warn-section vc" id="vcSection" style="display:none">
+  <div class="warn-header" onclick="toggleSection('vc')">
+    <div class="warn-title">⚠️ Verificar Campanha — CN Code em branco <span class="warn-count" id="vcCount">0</span></div>
+    <span class="warn-chevron" id="vcChev">▼</span>
   </div>
-  <div class="aviso-body vc-body show" id="vcBody"></div>
-</div>
-
-<!-- Duplicatas -->
-<div id="dupSection" class="aviso-section dup-section" style="display:none">
-  <div class="aviso-header dup-header" onclick="toggleSection('dupBody','dupArr')">
-    <span style="font-size:16px">🔁</span>
-    <span class="aviso-title dup-title">Possíveis entradas duplicadas</span>
-    <span class="aviso-count dup-count" id="dupCount"></span>
-    <span class="aviso-arr dup-arr" id="dupArr">▾</span>
+  <div class="warn-body" id="vcBody">
+    <table class="warn-table-mini">
+      <thead><tr><th>Data</th><th>Brand</th><th>Campaign Name</th><th>Responsável</th><th>Agência</th></tr></thead>
+      <tbody id="vcTableBody"></tbody>
+    </table>
   </div>
-  <div class="aviso-body dup-body show" id="dupBody"></div>
 </div>
 
-<div class="main" id="mainContent">
-  <div class="state-msg"><div class="icon">⏳</div><h3>Carregando dados...</h3></div>
+<!-- AVISO: DUPLICATAS -->
+<div class="warn-section dup" id="dupSection" style="display:none">
+  <div class="warn-header" onclick="toggleSection('dup')">
+    <div class="warn-title">🔁 Possíveis Duplicatas <span class="warn-count" id="dupCount">0</span></div>
+    <span class="warn-chevron" id="dupChev">▼</span>
+  </div>
+  <div class="warn-body" id="dupBody">
+    <table class="warn-table-mini">
+      <thead><tr><th>Ano</th><th>Data</th><th>Brand</th><th>Campaign Name</th><th>CN Code</th><th>Agência</th></tr></thead>
+      <tbody id="dupTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TABELA PRINCIPAL -->
+<div class="main-wrap">
+  <div class="table-header">
+    <div class="table-title" id="tableInfo">—</div>
+  </div>
+  <div class="table-wrap">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th class="sortable" onclick="sortBy('ano')">Ano<span class="sort-icon" id="sort-ano">↕</span></th>
+          <th class="sortable" onclick="sortBy('data')">Data<span class="sort-icon" id="sort-data">↕</span></th>
+          <th>Novo Campaign</th>
+          <th class="sortable" onclick="sortBy('brand')">Brand<span class="sort-icon" id="sort-brand">↕</span></th>
+          <th>Campaign Name</th>
+          <th>CN Code</th>
+          <th class="sortable" onclick="sortBy('resp')">Responsável<span class="sort-icon" id="sort-resp">↕</span></th>
+          <th class="sortable" onclick="sortBy('agencia')">Agência<span class="sort-icon" id="sort-agencia">↕</span></th>
+          <th>DE/PARA Campaign</th>
+          <th>EXTRA</th>
+          <th>DE/PARA EXTRA</th>
+          <th>Obs</th>
+        </tr>
+      </thead>
+      <tbody id="mainBody">
+        <tr><td colspan="12"><div class="empty-state"><div class="empty-icon">⏳</div><div>Carregando dados...</div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL EXPORT -->
+<div class="modal-overlay" id="exportModal" onclick="if(event.target===this)fecharExport()">
+  <div class="modal">
+    <h3>Exportar dados filtrados</h3>
+    <p>CSV com as linhas visíveis na tabela atual. Cole no Google Sheets ou Excel.</p>
+    <textarea class="modal-csv" id="exportCsv" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="fecharExport()">Fechar</button>
+      <button class="btn-primary" onclick="copiarCsv()">📋 Copiar CSV</button>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── UTILS ─────────────────────────────────────────────────────
-function gS(r, key) {
-  var v = r[key];
-  return (v !== undefined && v !== null) ? String(v) : '';
+// ── CONFIGURAÇÃO ──────────────────────────────────────────────
+var SHEET_ID     = '1SfrPlVwEhRw2IAtAOCVv_Itx-znz4XB3I25FoUbFdcc';
+var PRIMEIRO_ANO = 2024;
+
+// Índices das colunas gviz (0-based, cols A-K)
+var COL = {
+  DATA:       0,  // A — Data de Inclusão
+  NOVO:       1,  // B — Novo Campaign Local
+  DEPARA_CAM: 2,  // C — DE/PARA Campaign Local
+  EXTRA:      3,  // D — EXTRA
+  DEPARA_EXT: 4,  // E — DE/PARA EXTRA
+  BRAND:      5,  // F — Brand Name
+  CAMPAIGN:   6,  // G — Campaign Name
+  CN_CODE:    7,  // H — CN CODE
+  RESP:       8,  // I — Responsável
+  AGENCIA:    9,  // J — Agência
+  OBS:       10   // K — Obs
+};
+
+// Colunas EXCLUÍDAS da chave de duplicata (EXTRA, Campaign Name, CN CODE)
+var EXCLUIR_DUP = { 3: 1, 6: 1, 7: 1 };
+
+// ── ESTADO ───────────────────────────────────────────────────
+var todasLinhas    = [];
+var anosPendentes  = {};
+var sortCol        = 'data';
+var sortAsc        = false;
+var kpiFiltroAtivo = null;
+var sectionsOpen   = { vc: false, dup: false };
+
+// ── BOOT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', carregarTudo);
+
+function carregarTudo() {
+  todasLinhas   = [];
+  anosPendentes = {};
+  document.getElementById('loadingWrap').classList.add('show');
+  setSyncState('loading', 'Carregando...');
+
+  var anoAtual = new Date().getFullYear();
+  var anos = [];
+  for (var a = PRIMEIRO_ANO; a <= anoAtual + 1; a++) anos.push(String(a));
+
+  anos.forEach(function(ano) { anosPendentes[ano] = 'wait'; });
+
+  anos.forEach(function(ano) {
+    var ts    = Date.now();
+    var rnd   = Math.random().toString(36).slice(2, 7);
+    var cbName = '_gviz_' + ano + '_' + ts + '_' + rnd;
+
+    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+            + '/gviz/tq?sheet=' + encodeURIComponent(ano)
+            + '&headers=1&tq=select+*&callback=' + cbName;
+
+    window[cbName] = (function(a, cb) {
+      return function(resp) {
+        try { processarGviz(a, resp); anosPendentes[a] = 'ok'; }
+        catch(e) { anosPendentes[a] = 'err'; }
+        delete window[cb];
+        verificarFim();
+      };
+    })(ano, cbName);
+
+    var s = document.createElement('script');
+    s.src = url;
+    s.onerror = (function(a, cb) {
+      return function() {
+        anosPendentes[a] = 'err';
+        delete window[cb];
+        verificarFim();
+      };
+    })(ano, cbName);
+    document.body.appendChild(s);
+  });
 }
 
-function esc(s) {
-  var d = document.createElement('div');
-  d.appendChild(document.createTextNode(String(s)));
-  return d.innerHTML;
+function recarregar() { carregarTudo(); }
+
+function verificarFim() {
+  var pendente = Object.keys(anosPendentes).some(function(k){ return anosPendentes[k] === 'wait'; });
+  if (pendente) return;
+
+  document.getElementById('loadingWrap').classList.remove('show');
+
+  marcarDuplicatas();
+  popularFiltros();
+  renderizar();
+
+  var total  = todasLinhas.length;
+  var okQtd  = Object.keys(anosPendentes).filter(function(k){ return anosPendentes[k] === 'ok'; }).length;
+  if (total > 0) {
+    setSyncState('ok', total + ' linhas · ' + okQtd + ' aba(s) · atualizado ' + fmtHora());
+  } else {
+    setSyncState('erro', 'Sem dados — verifique compartilhamento da planilha');
+  }
 }
 
-function cel(c) {
-  if (!c || c.v === null || c.v === undefined) return '';
-  // Datas: gviz retorna como "Date(2026,3,15)" — converte para DD/MM/AAAA
-  if (c.f) return String(c.f);
-  return String(c.v);
+// ── GVIZ ─────────────────────────────────────────────────────
+function processarGviz(ano, resp) {
+  if (!resp || !resp.table) return;
+  var rows = resp.table.rows || [];
+
+  rows.forEach(function(row) {
+    if (!row.c) return;
+    var vals = row.c.map(function(cell) {
+      if (!cell) return '';
+      var v = cell.v;
+      if (v === null || v === undefined) {
+        // Tenta formatted
+        return (cell.f !== null && cell.f !== undefined) ? String(cell.f) : '';
+      }
+      // Data: gviz retorna como "Date(yyyy,m,d)" ou Date nativo
+      if (typeof v === 'string' && v.indexOf('Date(') === 0) {
+        var parts = v.slice(5, -1).split(',').map(Number);
+        return fmtData(new Date(parts[0], parts[1], parts[2]));
+      }
+      if (v instanceof Date) return fmtData(v);
+      return String(v);
+    });
+
+    // Filtra linha vazia (row 2 da planilha = linha de filtro)
+    var temDado = vals.slice(1).some(function(v){ return v.trim() !== ''; });
+    if (!temDado) return;
+
+    todasLinhas.push({ ano: ano, vals: vals, _dup: false });
+  });
 }
 
-function unicos(campo) {
-  var set = {}, arr = [];
-  todos.forEach(function(r) { var v = gS(r, campo); if (v) set[v] = true; });
-  Object.keys(set).sort(function(a,b){ return a.localeCompare(b,'pt-BR',{sensitivity:'base'}); })
-    .forEach(function(v){ arr.push(v); });
-  return arr;
+// ── DUPLICATAS ────────────────────────────────────────────────
+function marcarDuplicatas() {
+  var mapa = {};
+  todasLinhas.forEach(function(linha) {
+    var chave = linha.vals.map(function(v, i){
+      return EXCLUIR_DUP[i] ? '' : v.trim().toLowerCase();
+    }).join('\x00');
+    if (!mapa[chave]) mapa[chave] = [];
+    mapa[chave].push(linha);
+  });
+  Object.keys(mapa).forEach(function(k) {
+    if (mapa[k].length > 1) mapa[k].forEach(function(l){ l._dup = true; });
+  });
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function unicos(colIdx) {
+  var set = {};
+  todasLinhas.forEach(function(l){
+    var v = l.vals[colIdx];
+    if (v && v.trim()) set[v.trim()] = true;
+  });
+  return Object.keys(set).sort(function(a,b){
+    return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+  });
+}
+
+function popularFiltros() {
+  preencheSelect('filtBrand',   unicos(COL.BRAND),   'Todas as marcas');
+  preencheSelect('filtAgencia', unicos(COL.AGENCIA),  'Todas as agências');
+  preencheSelect('filtResp',    unicos(COL.RESP),     'Todos');
+
+  var set = {};
+  todasLinhas.forEach(function(l){ set[l.ano] = true; });
+  var sel = document.getElementById('filtAno');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">Todos os anos</option>';
+  Object.keys(set).sort().forEach(function(a){
+    var o = document.createElement('option');
+    o.value = a; o.textContent = a;
+    if (a === cur) o.selected = true;
+    sel.appendChild(o);
+  });
 }
 
 function preencheSelect(id, vals, ph) {
   var el = document.getElementById(id), cur = el.value;
   el.innerHTML = '<option value="">'+ph+'</option>';
-  vals.forEach(function(v) {
+  vals.forEach(function(v){
     var o = document.createElement('option');
     o.value = v; o.textContent = v;
     if (v === cur) o.selected = true;
@@ -299,349 +495,274 @@ function preencheSelect(id, vals, ph) {
   });
 }
 
-// ── KPI FILTER ────────────────────────────────────────────────
-function toggleKpi(tipo) {
-  kpiFiltroAtivo = (kpiFiltroAtivo === tipo) ? null : tipo;
-  atualizarBannerKpi();
-  renderizar();
-}
-function limparKpi() {
+function limparFiltros() {
+  ['filtBrand','filtAgencia','filtResp','filtAno','filtCN','filtNovo','filtDup'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('filtBusca').value = '';
   kpiFiltroAtivo = null;
   atualizarBannerKpi();
   renderizar();
 }
-function atualizarBannerKpi() {
-  var banner = document.getElementById('kpiBanner');
-  var txt    = document.getElementById('kpiBannerText');
-  var labels = { verificar: 'Verificar Campanha', duplicata: 'Possíveis duplicatas' };
-  if (kpiFiltroAtivo && labels[kpiFiltroAtivo]) {
-    txt.textContent = '🔍 Filtro ativo: ' + labels[kpiFiltroAtivo];
-    banner.classList.add('show');
-  } else {
-    banner.classList.remove('show');
-  }
-  ['kpiCardVC','kpiCardDup'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.classList.toggle('active',
-      (id==='kpiCardVC'  && kpiFiltroAtivo==='verificar') ||
-      (id==='kpiCardDup' && kpiFiltroAtivo==='duplicata'));
-  });
-}
 
-// ── COLLAPSE ─────────────────────────────────────────────────
-function toggleSection(bodyId, arrId) {
-  var body = document.getElementById(bodyId);
-  var arr  = document.getElementById(arrId);
-  body.classList.toggle('show');
-  arr.textContent = body.classList.contains('show') ? '▾' : '▸';
-}
-
-// ── FILTROS ───────────────────────────────────────────────────
-function getFiltered() {
+// ── FILTRAGEM ─────────────────────────────────────────────────
+function linhasFiltradas() {
   var brand   = document.getElementById('filtBrand').value;
   var agencia = document.getElementById('filtAgencia').value;
-  var resp    = document.getElementById('filtResponsavel').value;
+  var resp    = document.getElementById('filtResp').value;
   var ano     = document.getElementById('filtAno').value;
-  var busca   = document.getElementById('filtBusca').value.trim().toLowerCase();
-  var status  = document.getElementById('filtStatus').value;
-  var dup     = document.getElementById('filtDup').value;
+  var cn      = document.getElementById('filtCN').value;
   var novo    = document.getElementById('filtNovo').value;
+  var dup     = document.getElementById('filtDup').value;
+  var busca   = document.getElementById('filtBusca').value.toLowerCase().trim();
 
-  return todos.filter(function(r) {
-    if (brand   && gS(r,'Brand Name')         !== brand)   return false;
-    if (agencia && gS(r,'Agência')            !== agencia) return false;
-    if (resp    && gS(r,'Responsável')        !== resp)    return false;
-    if (ano     && gS(r,'_ano')              !== ano)     return false;
-    if (dup === 'sim' && !r['_dup'])                        return false;
-    if (novo    && gS(r,'Novo Campaign Local') !== novo)    return false;
-
-    var cn = gS(r,'CN CODE');
-    if (status === 'ok'        && (cn === 'Verificar Campanha' || cn === '')) return false;
-    if (status === 'verificar' && cn !== 'Verificar Campanha')               return false;
-    if (status === 'vazio'     && cn !== '')                                  return false;
-
-    if (kpiFiltroAtivo === 'verificar' && cn !== 'Verificar Campanha')       return false;
-    if (kpiFiltroAtivo === 'duplicata' && !r['_dup'])                         return false;
-
+  return todasLinhas.filter(function(l) {
+    var v = l.vals;
+    if (brand   && v[COL.BRAND].trim()   !== brand)   return false;
+    if (agencia && v[COL.AGENCIA].trim() !== agencia)  return false;
+    if (resp    && v[COL.RESP].trim()    !== resp)     return false;
+    if (ano     && l.ano                 !== ano)      return false;
+    if (cn === 'ok'    && !v[COL.CN_CODE].trim())  return false;
+    if (cn === 'vazio' &&  v[COL.CN_CODE].trim())  return false;
+    if (novo === 'sim' && v[COL.NOVO].trim().toLowerCase() !== 'sim') return false;
+    if (novo === 'nao' && v[COL.NOVO].trim().toLowerCase() === 'sim') return false;
+    if (dup === 'dup'   && !l._dup) return false;
+    if (dup === 'unico' &&  l._dup) return false;
+    if (kpiFiltroAtivo === 'vc'  &&  v[COL.CN_CODE].trim()) return false;
+    if (kpiFiltroAtivo === 'dup' && !l._dup)               return false;
     if (busca) {
-      var hay = [
-        gS(r,'Novo Campaign Local'), gS(r,'Campaign Name'), gS(r,'CN CODE'),
-        gS(r,'Brand Name'), gS(r,'Agência'), gS(r,'Responsável'), gS(r,'Obs')
-      ].join(' ').toLowerCase();
-      if (!hay.includes(busca)) return false;
+      var txt = v.join(' ').toLowerCase();
+      if (txt.indexOf(busca) === -1) return false;
     }
     return true;
   });
 }
 
-function limparFiltros() {
-  ['filtBrand','filtAgencia','filtResponsavel','filtAno','filtStatus','filtDup','filtNovo']
-    .forEach(function(id){ document.getElementById(id).value = ''; });
-  document.getElementById('filtBusca').value = '';
-  limparKpi();
+// ── RENDER ────────────────────────────────────────────────────
+var sortFns = {
+  ano:     function(l){ return l.ano; },
+  data:    function(l){ return l.vals[COL.DATA] || ''; },
+  brand:   function(l){ return l.vals[COL.BRAND] || ''; },
+  resp:    function(l){ return l.vals[COL.RESP] || ''; },
+  agencia: function(l){ return l.vals[COL.AGENCIA] || ''; }
+};
+
+function sortBy(col) {
+  sortAsc = (sortCol === col) ? !sortAsc : true;
+  sortCol = col;
+  ['ano','data','brand','resp','agencia'].forEach(function(c){
+    var el = document.getElementById('sort-'+c);
+    if (!el) return;
+    el.textContent = (sortCol === c) ? (sortAsc ? '↑' : '↓') : '↕';
+    var th = el.parentElement;
+    th.classList.toggle('sorted', sortCol === c);
+  });
   renderizar();
 }
 
-// ── AVISOS ────────────────────────────────────────────────────
-function renderizarVC() {
-  var vcRows = todos.filter(function(r){ return gS(r,'CN CODE') === 'Verificar Campanha'; });
-  var sec  = document.getElementById('vcSection');
-  var body = document.getElementById('vcBody');
-  var cnt  = document.getElementById('vcCount');
-  if (!vcRows.length) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-  cnt.textContent = vcRows.length + (vcRows.length===1?' entrada':' entradas');
-
-  var grupos = {};
-  vcRows.forEach(function(r) {
-    var camp = gS(r,'Campaign Name') || '(sem campanha)';
-    if (!grupos[camp]) grupos[camp] = [];
-    grupos[camp].push(r);
-  });
-
-  var html = '';
-  Object.keys(grupos).sort().forEach(function(camp) {
-    var items = grupos[camp];
-    html += '<div class="vc-row">';
-    html += '<span class="vc-cn">⚠️ Verificar</span>';
-    html += '<span class="vc-camp">' + esc(camp) + '</span>';
-    html += '<span class="vc-brand">' + esc(gS(items[0],'Brand Name')) + ' · ' + items.length + 'x</span>';
-    html += '</div>';
-  });
-  body.innerHTML = html;
-}
-
-function renderizarDup() {
-  var dupRows = todos.filter(function(r){ return r['_dup']; });
-  var sec  = document.getElementById('dupSection');
-  var body = document.getElementById('dupBody');
-  var cnt  = document.getElementById('dupCount');
-  if (!dupRows.length) { sec.style.display = 'none'; return; }
-  sec.style.display = '';
-  cnt.textContent = dupRows.length + (dupRows.length===1?' entrada':' entradas');
-
-  var grupos = {};
-  dupRows.forEach(function(r) {
-    var k = r['_dupKey'];
-    if (!grupos[k]) grupos[k] = [];
-    grupos[k].push(r);
-  });
-
-  var html = '';
-  Object.values(grupos).sort(function(a,b){ return b.length - a.length; }).forEach(function(items) {
-    var linhas = items.map(function(r){ return 'L'+r['_linha']+'('+r['_ano']+')'; }).join(', ');
-    var brand  = gS(items[0],'Brand Name');
-    var resp   = gS(items[0],'Responsável');
-    var ag     = gS(items[0],'Agência');
-    var novo   = gS(items[0],'Novo Campaign Local');
-    html += '<div class="dup-row">';
-    html += '<span class="dup-badge">×'+items.length+'</span>';
-    html += '<span class="dup-data">';
-    html += '<span class="dup-campo">' + esc(novo || '(sem nome)') + '</span><br>';
-    html += '<span class="dup-linhas">' + esc(brand) + (ag?' · '+esc(ag):'') + (resp?' · '+esc(resp):'') + ' — linhas: ' + esc(linhas) + '</span>';
-    html += '</span></div>';
-  });
-  body.innerHTML = html;
-}
-
-// ── TABELA ────────────────────────────────────────────────────
-var COLS = [
-  { key:'_ano',                  label:'Ano',              w:50  },
-  { key:'Data de Inclusão',      label:'Data',             w:70  },
-  { key:'Novo Campaign Local',   label:'Novo Campaign',    w:90  },
-  { key:'Brand Name',            label:'Brand',            w:100 },
-  { key:'Campaign Name',         label:'Campaign Name',    w:200 },
-  { key:'CN CODE',               label:'CN Code',          w:130 },
-  { key:'Responsável',           label:'Responsável',      w:100 },
-  { key:'Agência',               label:'Agência',          w:80  },
-  { key:'DE/PARA Campaign Local',label:'DE/PARA Campaign', w:160 },
-  { key:'EXTRA',                 label:'Extra',            w:80  },
-  { key:'DE/PARA EXTRA',         label:'DE/PARA Extra',    w:120 },
-  { key:'Obs',                   label:'Obs',              w:160 },
-];
-
-function renderizarTabela(rows) {
-  var main = document.getElementById('mainContent');
-  if (!rows.length) {
-    main.innerHTML = '<div class="state-msg"><div class="icon">🔍</div><h3>Nenhum resultado</h3><p>Ajuste os filtros para ver registros.</p></div>';
-    return;
-  }
-
-  var html = '<div class="table-wrap"><table><thead><tr>';
-  COLS.forEach(function(c) { html += '<th style="min-width:'+c.w+'px">'+esc(c.label)+'</th>'; });
-  html += '</tr></thead><tbody>';
-
-  rows.forEach(function(r) {
-    var isDup = r['_dup'];
-    html += '<tr' + (isDup ? ' class="dup-highlight"' : '') + '>';
-    COLS.forEach(function(c) {
-      var v = gS(r, c.key);
-      if (c.key === 'CN CODE') {
-        if (v === 'Verificar Campanha') {
-          html += '<td><span class="tag-vc">⚠️ Verificar</span></td>';
-        } else if (v) {
-          html += '<td><span class="tag-ok">' + esc(v) + '</span>' + (isDup?'<span class="tag-dup">DUP</span>':'') + '</td>';
-        } else {
-          html += '<td><span style="color:var(--mut)">—</span>' + (isDup?'<span class="tag-dup">DUP</span>':'') + '</td>';
-        }
-      } else if (c.key === 'Novo Campaign Local' && isDup) {
-        html += '<td>' + esc(v||'—') + '<span class="tag-dup">DUP</span></td>';
-      } else {
-        html += '<td>' + (v ? esc(v) : '<span style="color:var(--mut)">—</span>') + '</td>';
-      }
-    });
-    html += '</tr>';
-  });
-
-  html += '</tbody></table>';
-  html += '<div class="table-footer">Exibindo ' + rows.length + ' de ' + todos.length + ' registros</div>';
-  html += '</div>';
-  main.innerHTML = html;
-}
-
-// ── RENDERIZAR ────────────────────────────────────────────────
 function renderizar() {
-  var rows = getFiltered();
+  var filtradas = linhasFiltradas();
 
-  document.getElementById('kpiTotal').textContent = todos.length;
-  var nOK  = todos.filter(function(r){ var cn=gS(r,'CN CODE'); return cn && cn!=='Verificar Campanha'; }).length;
-  var nVC  = todos.filter(function(r){ return gS(r,'CN CODE')==='Verificar Campanha'; }).length;
-  var nDup = todos.filter(function(r){ return r['_dup']; }).length;
-  document.getElementById('kpiOK').textContent  = nOK;
-  document.getElementById('kpiVC').textContent  = nVC;
-  document.getElementById('kpiDup').textContent = nDup;
-
-  renderizarTabela(rows);
-}
-
-function popularFiltros() {
-  preencheSelect('filtBrand',       unicos('Brand Name'),  'Todas as marcas');
-  preencheSelect('filtAgencia',     unicos('Agência'),     'Todas as agências');
-  preencheSelect('filtResponsavel', unicos('Responsável'), 'Todos');
-  preencheSelect('filtAno',         unicos('_ano'),        'Todos os anos');
-}
-
-// ── PROCESSAMENTO GVIZ ────────────────────────────────────────
-function processarGviz(anoStr, table) {
-  if (!table || !table.rows) return;
-  table.rows.forEach(function(row, idx) {
-    var vals = (row.c || []).map(cel);
-    // Pula linhas completamente vazias (ex: linha 2 filtro)
-    var temDado = vals.slice(1).some(function(v){ return v.trim() !== ''; });
-    if (!temDado) return;
-
-    var obj = {};
-    CAMPOS.forEach(function(h, i){ obj[h] = vals[i] || ''; });
-    obj['_ano']   = anoStr;
-    obj['_linha'] = idx + 2; // linha 1 = header (consumido pelo gviz); linha 2 em diante = dados
-
-    // Chave de duplicata
-    var partes = [];
-    CAMPOS.forEach(function(h, i){
-      if (!EXCLUIR_DUP[i]) partes.push((vals[i]||'').trim().toLowerCase());
-    });
-    obj['_dupKey'] = partes.join('|');
-    obj['_dup']    = false;
-    todos.push(obj);
+  // Sort
+  var fn = sortFns[sortCol] || sortFns['data'];
+  filtradas.sort(function(a, b){
+    var c = (fn(a) || '').localeCompare(fn(b) || '', 'pt-BR', {sensitivity:'base'});
+    return sortAsc ? c : -c;
   });
-}
 
-function marcarDuplicatas() {
-  var map = {};
-  todos.forEach(function(r, i){
-    var k = r['_dupKey'];
-    if (!map[k]) map[k] = [];
-    map[k].push(i);
-  });
-  Object.values(map).forEach(function(indices){
-    if (indices.length > 1) indices.forEach(function(i){ todos[i]['_dup'] = true; });
-  });
-}
+  // KPIs (sobre total de dados, não filtrado)
+  var total = todasLinhas.length;
+  var comCN = todasLinhas.filter(function(l){ return !!l.vals[COL.CN_CODE].trim(); }).length;
+  var semCN = total - comCN;
+  var dups  = todasLinhas.filter(function(l){ return l._dup; }).length;
 
-// ── CARGA POR ANO (GVIZ) ─────────────────────────────────────
-function carregarAnos() {
-  var anoAtual  = new Date().getFullYear();
-  var anos      = [];
-  for (var a = PRIMEIRO_ANO; a <= anoAtual + 1; a++) anos.push(String(a));
+  document.getElementById('kpiTotalVal').textContent = total;
+  document.getElementById('kpiTotalSub').textContent = filtradas.length + ' exibida' + (filtradas.length===1?'':'s');
+  document.getElementById('kpiOkVal').textContent    = comCN;
+  document.getElementById('kpiOkSub').textContent    = (total ? Math.round(comCN/total*100) : 0) + '% do total';
+  document.getElementById('kpiVcVal').textContent    = semCN;
+  document.getElementById('kpiDupVal').textContent   = dups;
 
-  var pendentes = {};
-  anos.forEach(function(a){ pendentes[a] = 'wait'; });
+  // Seções aviso
+  renderVcSection(todasLinhas.filter(function(l){ return !l.vals[COL.CN_CODE].trim(); }));
+  renderDupSection(todasLinhas.filter(function(l){ return l._dup; }));
 
-  function verificarFim() {
-    var pronto = Object.values(pendentes).every(function(v){ return v !== 'wait'; });
-    if (!pronto) return;
+  // Tabela
+  var info = document.getElementById('tableInfo');
+  info.textContent = filtradas.length + ' linha' + (filtradas.length===1?'':'s') + ' exibida' + (filtradas.length===1?'':'s');
 
-    marcarDuplicatas();
-    popularFiltros();
-    renderizarVC();
-    renderizarDup();
-    renderizar();
-
-    var dot   = document.getElementById('syncDot');
-    var label = document.getElementById('syncLabel');
-    var agora = new Date();
-    var hm    = ('0'+agora.getHours()).slice(-2)+':'+('0'+agora.getMinutes()).slice(-2);
-    dot.className   = 'sync-dot';
-    label.textContent = 'Atualizado às ' + hm + ' · ' + todos.length + ' registros';
-  }
-
-  anos.forEach(function(anoStr) {
-    var cbName = '_gviz_' + anoStr + '_' + Date.now();
-    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
-            + '/gviz/tq?sheet=' + encodeURIComponent(anoStr)
-            + '&headers=1&tq=select+*&callback=' + cbName;
-
-    window[cbName] = function(resp) {
-      delete window[cbName];
-      var s = document.querySelector('script[data-gviz="'+anoStr+'"]');
-      if (s) document.body.removeChild(s);
-      if (resp && resp.table) processarGviz(anoStr, resp.table);
-      pendentes[anoStr] = 'done';
-      verificarFim();
-    };
-
-    var script = document.createElement('script');
-    script.dataset.gviz = anoStr;
-    script.onerror = function() {
-      delete window[cbName];
-      var s = document.querySelector('script[data-gviz="'+anoStr+'"]');
-      if (s && s.parentNode) s.parentNode.removeChild(s);
-      pendentes[anoStr] = 'skip';
-      verificarFim();
-    };
-    script.src = url;
-    document.body.appendChild(script);
-  });
-}
-
-// ── INICIAR ───────────────────────────────────────────────────
-function iniciar() {
-  todos = [];
-  kpiFiltroAtivo = null;
-  atualizarBannerKpi();
-
-  var dot   = document.getElementById('syncDot');
-  var label = document.getElementById('syncLabel');
-  dot.className     = 'sync-dot loading';
-  label.textContent = 'Carregando...';
-  document.getElementById('mainContent').innerHTML =
-    '<div class="state-msg"><div class="icon">⏳</div><h3>Carregando dados...</h3></div>';
-
-  if (SHEET_ID === 'COLE_AQUI_O_ID_DA_PLANILHA') {
-    document.getElementById('setupBanner').style.display = '';
-    dot.className     = 'sync-dot error';
-    label.textContent = 'Planilha não configurada';
-    document.getElementById('mainContent').innerHTML =
-      '<div class="state-msg"><div class="icon">⚙️</div><h3>Configure o ID da planilha</h3><p>Veja o banner acima para instruções.</p></div>';
+  var tbody = document.getElementById('mainBody');
+  if (filtradas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">🔍</div><div>Nenhuma linha para os filtros selecionados</div></div></td></tr>';
     return;
   }
 
-  document.getElementById('setupBanner').style.display = 'none';
-  carregarAnos();
+  var html = '';
+  filtradas.forEach(function(l) {
+    var v   = l.vals;
+    var cn  = v[COL.CN_CODE].trim();
+    var nov = v[COL.NOVO].trim();
+
+    var cnBadge  = cn
+      ? '<span class="badge badge-ok cn-code">' + esc(cn) + '</span>'
+      : '<span class="badge badge-warn">—</span>';
+    var novoBadge = nov.toLowerCase() === 'sim'
+      ? '<span class="badge badge-new">Sim</span>'
+      : '<span class="badge badge-no">—</span>';
+    var dupMark = l._dup ? '<span class="dup-badge" title="Duplicata">2</span>' : '';
+
+    html += '<tr' + (l._dup ? ' class="dup-row"' : '') + '>'
+      + '<td><span class="ano-badge">'+esc(l.ano)+'</span></td>'
+      + '<td>'+esc(v[COL.DATA])+'</td>'
+      + '<td>'+novoBadge+'</td>'
+      + '<td title="'+esc(v[COL.BRAND])+'">'+dupMark+esc(v[COL.BRAND])+'</td>'
+      + '<td title="'+esc(v[COL.CAMPAIGN])+'">'+esc(v[COL.CAMPAIGN])+'</td>'
+      + '<td>'+cnBadge+'</td>'
+      + '<td title="'+esc(v[COL.RESP])+'">'+esc(v[COL.RESP])+'</td>'
+      + '<td title="'+esc(v[COL.AGENCIA])+'">'+esc(v[COL.AGENCIA])+'</td>'
+      + '<td title="'+esc(v[COL.DEPARA_CAM])+'">'+esc(v[COL.DEPARA_CAM])+'</td>'
+      + '<td title="'+esc(v[COL.EXTRA])+'">'+esc(v[COL.EXTRA])+'</td>'
+      + '<td title="'+esc(v[COL.DEPARA_EXT])+'">'+esc(v[COL.DEPARA_EXT])+'</td>'
+      + '<td title="'+esc(v[COL.OBS])+'">'+esc(v[COL.OBS])+'</td>'
+      + '</tr>';
+  });
+  tbody.innerHTML = html;
 }
 
-iniciar();
+// ── SEÇÕES AVISO ──────────────────────────────────────────────
+function renderVcSection(linhas) {
+  var sec = document.getElementById('vcSection');
+  document.getElementById('vcCount').textContent = linhas.length;
+  sec.style.display = linhas.length ? '' : 'none';
+  if (!linhas.length) return;
+
+  var html = '';
+  linhas.slice(0, 60).forEach(function(l) {
+    var v = l.vals;
+    html += '<tr>'
+      + '<td>'+esc(v[COL.DATA])+'</td>'
+      + '<td>'+esc(v[COL.BRAND])+'</td>'
+      + '<td title="'+esc(v[COL.CAMPAIGN])+'">'+esc(v[COL.CAMPAIGN])+'</td>'
+      + '<td>'+esc(v[COL.RESP])+'</td>'
+      + '<td>'+esc(v[COL.AGENCIA])+'</td>'
+      + '</tr>';
+  });
+  if (linhas.length > 60) {
+    html += '<tr><td colspan="5" style="color:var(--mut);font-style:italic;padding:8px">… e mais '+(linhas.length-60)+' linhas</td></tr>';
+  }
+  document.getElementById('vcTableBody').innerHTML = html;
+}
+
+function renderDupSection(linhas) {
+  var sec = document.getElementById('dupSection');
+  document.getElementById('dupCount').textContent = linhas.length;
+  sec.style.display = linhas.length ? '' : 'none';
+  if (!linhas.length) return;
+
+  var html = '';
+  linhas.slice(0, 60).forEach(function(l) {
+    var v = l.vals;
+    html += '<tr>'
+      + '<td>'+esc(l.ano)+'</td>'
+      + '<td>'+esc(v[COL.DATA])+'</td>'
+      + '<td>'+esc(v[COL.BRAND])+'</td>'
+      + '<td title="'+esc(v[COL.CAMPAIGN])+'">'+esc(v[COL.CAMPAIGN])+'</td>'
+      + '<td class="cn-code">'+esc(v[COL.CN_CODE])+'</td>'
+      + '<td>'+esc(v[COL.AGENCIA])+'</td>'
+      + '</tr>';
+  });
+  if (linhas.length > 60) {
+    html += '<tr><td colspan="6" style="color:var(--mut);font-style:italic;padding:8px">… e mais '+(linhas.length-60)+' linhas</td></tr>';
+  }
+  document.getElementById('dupTableBody').innerHTML = html;
+}
+
+function toggleSection(tipo) {
+  sectionsOpen[tipo] = !sectionsOpen[tipo];
+  var body = document.getElementById(tipo + 'Body');
+  var chev = document.getElementById(tipo + 'Chev');
+  body.classList.toggle('open', sectionsOpen[tipo]);
+  chev.textContent = sectionsOpen[tipo] ? '▲' : '▼';
+}
+
+function expandirTudo() {
+  ['vc','dup'].forEach(function(t) {
+    if (document.getElementById(t+'Section').style.display !== 'none') {
+      sectionsOpen[t] = true;
+      document.getElementById(t+'Body').classList.add('open');
+      document.getElementById(t+'Chev').textContent = '▲';
+    }
+  });
+}
+
+// ── KPI FILTRO ────────────────────────────────────────────────
+function toggleKpi(tipo) {
+  kpiFiltroAtivo = (kpiFiltroAtivo === tipo) ? null : tipo;
+  atualizarBannerKpi();
+  renderizar();
+}
+
+function atualizarBannerKpi() {
+  var banner = document.getElementById('kpiBanner');
+  var txt    = document.getElementById('kpiBannerText');
+  var labels = { vc: 'CN Code em branco', dup: 'Duplicatas detectadas' };
+  if (kpiFiltroAtivo && labels[kpiFiltroAtivo]) {
+    txt.textContent = '🔍 Filtro KPI ativo: ' + labels[kpiFiltroAtivo];
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+  document.getElementById('kpiVc').classList.toggle('active', kpiFiltroAtivo === 'vc');
+  document.getElementById('kpiDup').classList.toggle('active', kpiFiltroAtivo === 'dup');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function abrirExport() {
+  var filtradas = linhasFiltradas();
+  var cols = ['Ano','Data','Novo Campaign','Brand Name','Campaign Name','CN Code','Responsável','Agência','DE/PARA Campaign','EXTRA','DE/PARA EXTRA','Obs'];
+  var linhasCsv = [cols.join(';')];
+  filtradas.forEach(function(l) {
+    var v = l.vals;
+    var row = [l.ano, v[0], v[1], v[5], v[6], v[7], v[8], v[9], v[2], v[3], v[4], v[10]];
+    linhasCsv.push(row.map(function(c){ return '"'+(c||'').replace(/"/g,'""')+'"'; }).join(';'));
+  });
+  document.getElementById('exportCsv').value = linhasCsv.join('\n');
+  document.getElementById('exportModal').classList.add('show');
+}
+
+function fecharExport() { document.getElementById('exportModal').classList.remove('show'); }
+
+function copiarCsv() {
+  var ta = document.getElementById('exportCsv');
+  ta.select();
+  document.execCommand('copy');
+  alert('CSV copiado — cole no Google Sheets ou Excel!');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtData(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+  return String(d.getDate()).padStart(2,'0') + '/'
+       + String(d.getMonth()+1).padStart(2,'0') + '/'
+       + d.getFullYear();
+}
+
+function fmtHora() {
+  var n = new Date();
+  return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+
+function setSyncState(state, msg) {
+  document.getElementById('syncDot').className  = 'sync-dot ' + state;
+  document.getElementById('syncInfo').textContent = msg;
+}
 </script>
 </body>
 </html>
