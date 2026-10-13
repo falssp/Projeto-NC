@@ -2,6 +2,8 @@
 
 Versão web do F2 Gerador — mesma lógica do Sheets, roda no browser, sem depender do Google.
 
+🔗 **https://nc-tool-f2.pages.dev**
+
 ## Estrutura
 
 ```
