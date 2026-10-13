@@ -388,6 +388,108 @@
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #444; }
 
+    /* ── ADP Import Modal ── */
+    #adp-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #adp-modal-overlay.open { display: flex; }
+    #adp-modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: min(580px, 96vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,.6);
+    }
+    #adp-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #adp-modal-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    #adp-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text2);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    #adp-modal-close:hover { color: var(--text); }
+    #adp-modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    #adp-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+    #adp-drop-zone:hover, #adp-drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(108,99,255,.06);
+    }
+    #adp-drop-zone p { color: var(--text2); font-size: 14px; margin-top: 8px; }
+    #adp-drop-zone .drop-icon { font-size: 32px; }
+    #adp-file-input { display: none; }
+    #adp-import-status {
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    #adp-import-status.info  { background: rgba(108,99,255,.1); color: var(--accent2); display: block; }
+    #adp-import-status.ok    { background: rgba(34,197,94,.1);  color: #4ade80; display: block; }
+    #adp-import-status.error { background: rgba(239,68,68,.1);  color: var(--error); display: block; }
+    #adp-platform-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .adp-plat-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .adp-plat-name { font-size: 13px; font-weight: 600; }
+    .adp-plat-count { font-size: 12px; color: var(--text2); }
+    #adp-modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ── ADP Import row badge on tabs ── */
+    .row-tab.adp-imported { border-color: #f59e0b; color: #f59e0b; }
+    .row-tab.adp-imported.active { background: #f59e0b; color: #000; border-color: #f59e0b; }
+
     /* ── Loading ── */
     #loading {
       position: fixed; inset: 0;
@@ -426,6 +528,7 @@
   </div>
   <div class="header-actions">
     <span id="gas-status" class="gas-status gas-loading">⟳ GAS</span>
+    <button class="btn btn-ghost" onclick="openAdpModal()">↑ ADP</button>
     <button class="btn btn-ghost" onclick="window.F2Download.exportToCSV()">↓ CSV</button>
     <button class="btn btn-primary" onclick="window.F2Download.exportToXLSX()">↓ Excel</button>
   </div>
@@ -463,15 +566,175 @@
   </div>
 </div>
 
+<!-- ADP Import Modal -->
+<div id="adp-modal-overlay">
+  <div id="adp-modal">
+    <div id="adp-modal-header">
+      <h3>↑ Importar ADP</h3>
+      <button id="adp-modal-close" onclick="closeAdpModal()">×</button>
+    </div>
+    <div id="adp-modal-body">
+      <div id="adp-drop-zone" onclick="document.getElementById('adp-file-input').click()">
+        <div class="drop-icon">📂</div>
+        <p><strong>Arraste o ADP aqui</strong> ou clique para selecionar</p>
+        <p style="font-size:12px;margin-top:4px;">Arquivo XLSX — UNCC Digital Platform String Tool</p>
+      </div>
+      <input type="file" id="adp-file-input" accept=".xlsx,.xls" />
+      <div id="adp-import-status"></div>
+      <div id="adp-platform-list"></div>
+    </div>
+    <div id="adp-modal-footer">
+      <button class="btn btn-ghost" onclick="closeAdpModal()">Cancelar</button>
+      <button class="btn btn-primary" id="adp-confirm-btn" onclick="confirmAdpImport()" style="display:none;">
+        Carregar no F2
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="js/engine.js"></script>
 <script src="js/download.js"></script>
+<script src="js/adp-import.js"></script>
 <script>
   window.F2Engine.init().then(() => {
     document.getElementById('loading').style.display = 'none';
+    initAdpModal();
   }).catch(err => {
     document.getElementById('loading').innerHTML =
       `<p style="color:var(--error)">Erro ao carregar: ${err.message}</p>`;
   });
+
+  // ─── ADP Modal ───────────────────────────────────────────────────────────────
+  let _adpPendingImport = null; // Map: platformId → rows[]
+
+  function initAdpModal() {
+    const overlay = document.getElementById('adp-modal-overlay');
+    const dropZone = document.getElementById('adp-drop-zone');
+    const fileInput = document.getElementById('adp-file-input');
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeAdpModal();
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) processAdpFile(file);
+    });
+
+    // File input change
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) processAdpFile(file);
+    });
+  }
+
+  function openAdpModal() {
+    _adpPendingImport = null;
+    document.getElementById('adp-import-status').className = '';
+    document.getElementById('adp-import-status').textContent = '';
+    document.getElementById('adp-platform-list').innerHTML = '';
+    document.getElementById('adp-confirm-btn').style.display = 'none';
+    document.getElementById('adp-file-input').value = '';
+    document.getElementById('adp-modal-overlay').classList.add('open');
+  }
+
+  function closeAdpModal() {
+    document.getElementById('adp-modal-overlay').classList.remove('open');
+  }
+
+  function setAdpStatus(type, msg) {
+    const el = document.getElementById('adp-import-status');
+    el.className = type;
+    el.textContent = msg;
+  }
+
+  async function processAdpFile(file) {
+    setAdpStatus('info', `⟳ Lendo ${file.name}…`);
+    document.getElementById('adp-platform-list').innerHTML = '';
+    document.getElementById('adp-confirm-btn').style.display = 'none';
+    _adpPendingImport = null;
+
+    try {
+      const platforms = window.F2Engine.PLATFORMS;
+      const byPlatform = await window.F2AdpImport.importAdpFile(file, platforms);
+
+      _adpPendingImport = byPlatform;
+
+      // Build summary list
+      const listEl = document.getElementById('adp-platform-list');
+      listEl.innerHTML = '';
+
+      let totalRows = 0;
+      for (const [platId, adpRows] of byPlatform.entries()) {
+        const platform = platforms.find(p => p.id === platId);
+        const div = document.createElement('div');
+        div.className = 'adp-plat-item';
+        div.style.borderLeftColor = platform ? platform.color : '#6c63ff';
+        div.style.borderLeftWidth = '3px';
+        div.innerHTML = `
+          <span class="adp-plat-name">${platform ? platform.name : platId}</span>
+          <span class="adp-plat-count">${adpRows.length} linha${adpRows.length !== 1 ? 's' : ''}</span>
+        `;
+        listEl.appendChild(div);
+        totalRows += adpRows.length;
+      }
+
+      setAdpStatus('ok', `✓ ${file.name} — ${totalRows} linha${totalRows !== 1 ? 's' : ''} encontrada${totalRows !== 1 ? 's' : ''} em ${byPlatform.size} plataforma${byPlatform.size !== 1 ? 's' : ''}`);
+      document.getElementById('adp-confirm-btn').style.display = '';
+
+    } catch (err) {
+      setAdpStatus('error', `✗ ${err.message}`);
+    }
+  }
+
+  function confirmAdpImport() {
+    if (!_adpPendingImport) return;
+
+    const platforms = window.F2Engine.PLATFORMS;
+
+    // Load the first platform found
+    let firstPlatformId = null;
+
+    for (const [platId, adpRows] of _adpPendingImport.entries()) {
+      if (!firstPlatformId) firstPlatformId = platId;
+      break;
+    }
+
+    if (!firstPlatformId) return;
+
+    const platform = platforms.find(p => p.id === firstPlatformId);
+    if (!platform) return;
+
+    const adpRows = _adpPendingImport.get(firstPlatformId);
+    window.F2Engine.loadPlatformWithRows(platform, adpRows);
+
+    closeAdpModal();
+
+    // Notify if multiple platforms found
+    if (_adpPendingImport.size > 1) {
+      const names = [..._adpPendingImport.keys()]
+        .map(id => platforms.find(p => p.id === id)?.name || id)
+        .join(', ');
+      setTimeout(() => {
+        alert(
+          `⚠️ O ADP contém ${_adpPendingImport.size} plataformas: ${names}.\n\n` +
+          `Carregada: ${platform.name} (${adpRows.length} linha${adpRows.length !== 1 ? 's' : ''}).\n\n` +
+          `Para ver outra plataforma, clique em "↑ ADP" novamente.`
+        );
+      }, 100);
+    }
+  }
 </script>
 </body>
 </html>

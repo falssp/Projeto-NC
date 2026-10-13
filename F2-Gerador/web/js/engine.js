@@ -846,10 +846,34 @@ function getAllResults() {
   });
 }
 
+// ─── Load ADP rows into current platform ─────────────────────────────────────
+/**
+ * Selects a platform and loads pre-built rows (from ADP import).
+ * @param {Object} platform - platform config object
+ * @param {Array}  importedRows - array of { camp:{}, ag:{}, ad:{} }
+ */
+function loadPlatformWithRows(platform, importedRows) {
+  currentPlatform = platform;
+  rows = importedRows.length > 0 ? importedRows : [newRow()];
+  currentRowIndex = 0;
+
+  document.querySelectorAll('.platform-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.id === platform.id);
+  });
+
+  document.getElementById('platform-title').textContent = platform.name;
+  document.getElementById('platform-header').style.borderColor = platform.color;
+
+  renderForm();
+  renderRowTabs();
+  updateResults();
+}
+
 // ─── Export interface ─────────────────────────────────────────────────────────
 window.F2Engine = {
   init,
   selectPlatform,
+  loadPlatformWithRows,
   addRow,
   getAllResults,
   get currentPlatform() { return currentPlatform; },
