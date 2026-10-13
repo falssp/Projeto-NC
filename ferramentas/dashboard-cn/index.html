@@ -53,8 +53,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font
 
 /* ── FILTROS ────────────────────────────────────────────────── */
 .filters-wrap{padding:12px 20px;border-bottom:1px solid var(--brd);display:flex;flex-direction:column;gap:8px}
-.filters-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
-.filter-group{display:flex;flex-direction:column;gap:3px;position:relative}
+.filters-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;width:100%}
+.filter-group{display:flex;flex-direction:column;gap:3px;position:relative;flex:1;min-width:120px}
 .filter-label{font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
 /* search input com dropdown */
 .filter-search{background:var(--surf2);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:6px 10px;outline:none;transition:border-color .15s;height:34px;width:100%;min-width:140px}
@@ -72,6 +72,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font
 .search-wrap{position:relative;flex:1;min-width:220px}
 .search-wrap::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none}
 /* pill toggles */
+.filter-group.no-grow{flex:0 0 auto}
 .pill-group{display:flex;gap:4px;flex-wrap:wrap}
 .pill{background:var(--surf2);border:1px solid var(--brd);color:var(--txt2);font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;font-family:inherit;transition:all .13s;white-space:nowrap;height:34px;display:flex;align-items:center}
 .pill:hover{border-color:var(--acc);color:var(--txt)}
@@ -82,7 +83,7 @@ input.filt:focus{border-color:var(--acc)}
 .btn-limpar:hover{border-color:var(--red);color:var(--red)}
 
 /* ── SEÇÕES DE AVISO ────────────────────────────────────────── */
-.warn-section{margin:14px 20px 0;border-radius:10px;border:1px solid;overflow:hidden}
+.warn-section{margin:14px 20px 0;border-radius:10px;border:1px solid;overflow:hidden;position:relative;z-index:15}
 .warn-section.vc{border-color:#533a00;background:#1a1200}
 .warn-section.dup{border-color:#4a0f2e;background:#1a0010;margin-top:10px}
 .warn-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none}
@@ -171,6 +172,7 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
   <div class="topbar-spacer"></div>
   <button class="btn" onclick="expandirTudo()"><span class="btn-icon">↓</span>Expandir avisos</button>
   <button class="btn" onclick="abrirExport()"><span class="btn-icon">⬇</span>Exportar CSV</button>
+  <button class="btn" onclick="window.print()" title="Imprimir ou salvar como PDF"><span class="btn-icon">🖨</span>PDF</button>
   <button class="btn" onclick="recarregar()" title="Recarregar dados"><span class="btn-icon">↻</span>Atualizar</button>
 </div>
 
@@ -253,7 +255,7 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
       <input type="hidden" id="filtAno">
       <div class="filter-dropdown" id="filtAnoDD"></div>
     </div>
-    <div class="filter-group">
+    <div class="filter-group no-grow">
       <div class="filter-label">CN Code</div>
       <div class="pill-group">
         <button class="pill" id="pilCN0" onclick="setPill('CN','')">Todos</button>
@@ -262,7 +264,7 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
       </div>
       <input type="hidden" id="filtCN">
     </div>
-    <div class="filter-group">
+    <div class="filter-group no-grow">
       <div class="filter-label">Novo Campaign</div>
       <div class="pill-group">
         <button class="pill" id="pilNovo0" onclick="setPill('Novo','')">Todos</button>
@@ -271,7 +273,7 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
       </div>
       <input type="hidden" id="filtNovo">
     </div>
-    <div class="filter-group">
+    <div class="filter-group no-grow">
       <div class="filter-label">Duplicatas</div>
       <div class="pill-group">
         <button class="pill" id="pilDup0" onclick="setPill('Dup','')">Todas</button>
@@ -436,6 +438,19 @@ function carregarTudo() {
 function recarregar() { carregarTudo(); }
 
 // ── WEB APP ───────────────────────────────────────────────────
+function titleCase(s) {
+  if (!s) return '';
+  return s.replace(/\b\S/g, function(c){ return c.toUpperCase(); });
+}
+function fmtIso(s) {
+  if (!s) return '';
+  var d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return String(d.getDate()).padStart(2,'0') + '/'
+       + String(d.getMonth()+1).padStart(2,'0') + '/'
+       + d.getFullYear();
+}
+
 function processarRows(rows) {
   // g() tenta múltiplos nomes de coluna (variações de typo entre abas)
   function g(obj, keys) {
@@ -447,16 +462,16 @@ function processarRows(rows) {
   }
   rows.forEach(function(obj) {
     var vals = [
-      g(obj, ['Data de Inclusão']),
+      fmtIso(g(obj, ['Data de Inclusão'])),
       g(obj, ['Novo Campaign Local', 'Novo Campaing Local']),
       g(obj, ['DE/PARA Campaign Local', 'DE/PARA Campaing Local']),
       g(obj, ['EXTRA']),
       g(obj, ['DE/PARA EXTRA']),
-      g(obj, ['Brand Name', 'Brand Name ']),
+      titleCase(g(obj, ['Brand Name', 'Brand Name '])),
       g(obj, ['Campaign Name', 'Campaing Name']),
       g(obj, ['CN CODE']),
       g(obj, ['Responsável']),
-      g(obj, ['Agência']),
+      titleCase(g(obj, ['Agência'])),
       g(obj, ['Obs'])
     ];
     // ignora linhas totalmente vazias
@@ -483,12 +498,15 @@ function marcarDuplicatas() {
 
 // ── FILTROS ───────────────────────────────────────────────────
 function unicos(colIdx) {
-  var set = {};
+  var map = {};
   todasLinhas.forEach(function(l){
     var v = l.vals[colIdx];
-    if (v && v.trim()) set[v.trim()] = true;
+    if (v && v.trim()) {
+      var key = v.trim().toLowerCase();
+      if (!map[key]) map[key] = v.trim(); // guarda primeira ocorrência (já em titleCase)
+    }
   });
-  return Object.keys(set).sort(function(a,b){
+  return Object.values(map).sort(function(a,b){
     return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
   });
 }
@@ -573,9 +591,12 @@ var pillCfg = {
 
 function setPill(k, val) {
   var cfg = pillCfg[k];
-  document.getElementById(cfg.hid).value = val;
+  var cur = document.getElementById(cfg.hid).value;
+  // clicou no mesmo pill ativo (não-Todos) → volta para Todos
+  var newVal = (cur === val && val !== '') ? '' : val;
+  document.getElementById(cfg.hid).value = newVal;
   cfg.ids.forEach(function(id, i){
-    document.getElementById(id).classList.toggle('active', cfg.vals[i] === val);
+    document.getElementById(id).classList.toggle('active', cfg.vals[i] === newVal);
   });
   renderizar();
 }
@@ -593,9 +614,9 @@ function linhasFiltradas() {
 
   return todasLinhas.filter(function(l) {
     var v = l.vals;
-    if (brand   && v[COL.BRAND].trim()   !== brand)   return false;
-    if (agencia && v[COL.AGENCIA].trim() !== agencia)  return false;
-    if (resp    && v[COL.RESP].trim()    !== resp)     return false;
+    if (brand   && v[COL.BRAND].trim().toLowerCase()   !== brand.toLowerCase())   return false;
+    if (agencia && v[COL.AGENCIA].trim().toLowerCase() !== agencia.toLowerCase()) return false;
+    if (resp    && v[COL.RESP].trim().toLowerCase()    !== resp.toLowerCase())    return false;
     if (ano     && l.ano                 !== ano)      return false;
     if (cn === 'ok'    && !v[COL.CN_CODE].trim())  return false;
     if (cn === 'vazio' &&  v[COL.CN_CODE].trim())  return false;
