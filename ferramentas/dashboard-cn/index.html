@@ -6,11 +6,30 @@
 <title>[UL] Dashboard Campaign Local</title>
 <script>
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────
-// Cole aqui a URL do Web App (Publicar → Implantar como Web App)
-var WEBAPP_URL = 'COLE_AQUI_A_URL_DO_WEB_APP';
+// Cole aqui o ID da planilha (está na URL do Google Sheets)
+// Ex.: https://docs.google.com/spreadsheets/d/ESTE_TRECHO_AQUI/edit
+var SHEET_ID    = 'COLE_AQUI_O_ID_DA_PLANILHA';
+var PRIMEIRO_ANO = 2026;
+// A planilha precisa estar compartilhada como "qualquer pessoa com o link pode visualizar"
 // ─────────────────────────────────────────────────────────────
 
-var dados = { rows: [] };
+var CAMPOS = [
+  'Data de Inclusão',       // A 0
+  'Novo Campaign Local',    // B 1
+  'DE/PARA Campaign Local', // C 2
+  'EXTRA',                  // D 3
+  'DE/PARA EXTRA',          // E 4
+  'Brand Name',             // F 5
+  'Campaign Name',          // G 6
+  'CN CODE',                // H 7
+  'Responsável',            // I 8
+  'Agência',                // J 9
+  'Obs'                     // K 10
+];
+// Índices excluídos da chave de duplicata: EXTRA(3), Campaign Name(6), CN CODE(7)
+var EXCLUIR_DUP = {3:1, 6:1, 7:1};
+
+var todos = [];
 var kpiFiltroAtivo = null;
 </script>
 <style>
@@ -19,7 +38,7 @@ var kpiFiltroAtivo = null;
   --bg:#0f1117;--surf:#181c27;--surf2:#1e2333;--brd:#2a3050;
   --acc:#4f7ef8;--acc2:#7c5ff5;--grn:#2ecc71;--ylw:#f1c40f;
   --org:#e67e22;--red:#e74c3c;--mut:#6b7a9e;--txt:#e8ecf4;--txt2:#a0aabf;
-  --radius:10px;--ul:#0040CE;--ul-b:#E5ECFF;
+  --radius:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;font-size:13px;min-height:100vh;}
@@ -37,15 +56,19 @@ body{background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-
 .btn-ghost{background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600;}
 .btn-ghost:hover{border-color:var(--acc);color:var(--acc);}
 
+/* SETUP BANNER */
+.setup-banner{background:#0d1f2d;border:1px solid var(--acc);border-radius:8px;padding:14px 18px;margin:14px 20px;font-size:12px;color:var(--txt2);line-height:1.7;}
+.setup-banner strong{color:var(--txt);}
+.setup-banner code{background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:11px;color:var(--acc);}
+
 /* FILTERS */
 .filters{padding:10px 20px;background:var(--surf);border-bottom:1px solid var(--brd);}
 .filters-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px 10px;margin-bottom:6px;}
 .filter-group{display:flex;flex-direction:column;gap:3px;}
 .filter-label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:600;}
-select,input[type=text],input[type=date]{background:var(--surf2);border:1px solid var(--brd);color:var(--txt);border-radius:6px;padding:5px 9px;font-size:12px;outline:none;transition:border-color .2s;width:100%;}
+select,input[type=text]{background:var(--surf2);border:1px solid var(--brd);color:var(--txt);border-radius:6px;padding:5px 9px;font-size:12px;outline:none;transition:border-color .2s;width:100%;}
 select:focus,input:focus{border-color:var(--acc);}
-input[type=date]{color-scheme:dark;}
-.btn-limpar{width:100%;background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s;grid-column:1/-1;}
+.btn-limpar{width:100%;background:transparent;border:1px solid var(--brd);color:var(--txt2);border-radius:6px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s;}
 .btn-limpar:hover{border-color:var(--acc);color:var(--acc);}
 
 /* KPIs */
@@ -120,11 +143,6 @@ tr.dup-highlight:hover td{background:#260f18;}
 .tag-ok{background:#1a3a2a;color:var(--grn);font-size:10px;padding:1px 6px;border-radius:3px;}
 .tag-dup{background:#3a0020;color:#f9a8c0;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:3px;}
 .table-footer{padding:8px 14px;font-size:11px;color:var(--mut);border-top:1px solid var(--brd);background:var(--surf);}
-
-/* SETUP BANNER */
-.setup-banner{background:#1a2a3a;border:1px solid var(--acc);border-radius:8px;padding:12px 16px;margin:16px 20px;font-size:12px;color:var(--txt2);}
-.setup-banner code{background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:2px 6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--acc);}
-.setup-banner strong{color:var(--txt);}
 </style>
 </head>
 <body>
@@ -139,13 +157,15 @@ tr.dup-highlight:hover td{background:#260f18;}
       <div class="sync-dot loading" id="syncDot"></div>
       <span id="syncLabel">Carregando...</span>
     </div>
-    <button class="btn-ghost" onclick="recarregar()" style="padding:4px 10px;font-size:11px;">↺ Recarregar</button>
+    <button class="btn-ghost" onclick="iniciar()" style="padding:4px 10px;font-size:11px;">↺ Recarregar</button>
   </div>
 </div>
 
 <div id="setupBanner" class="setup-banner" style="display:none">
-  <strong>⚙️ Configure o Web App</strong><br>
-  Abra o <code>index.html</code> e substitua <code>COLE_AQUI_A_URL_DO_WEB_APP</code> pela URL do Web App gerada ao publicar <code>WEBAPP_CN.gs</code> na planilha.
+  <strong>⚙️ Configure o ID da planilha</strong><br>
+  Abra o <code>index.html</code> e substitua <code>COLE_AQUI_O_ID_DA_PLANILHA</code> pelo ID real da planilha.<br>
+  O ID está na URL do Google Sheets: <code>docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit</code><br>
+  A planilha precisa estar compartilhada como <strong>"qualquer pessoa com o link pode visualizar"</strong>.
 </div>
 
 <div class="filters">
@@ -182,19 +202,27 @@ tr.dup-highlight:hover td{background:#260f18;}
       </select>
     </div>
     <div class="filter-group">
-      <div class="filter-label">Apenas duplicatas</div>
+      <div class="filter-label">Novo Campaign</div>
+      <select id="filtNovo" onchange="renderizar()">
+        <option value="">Todos</option>
+        <option value="SIM">Sim</option>
+        <option value="NÃO">Não</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Duplicatas</div>
       <select id="filtDup" onchange="renderizar()">
         <option value="">Todos</option>
-        <option value="sim">Mostrar duplicatas</option>
+        <option value="sim">Apenas duplicatas</option>
       </select>
     </div>
     <div class="filter-group" style="align-self:flex-end;">
-      <button class="btn-limpar" onclick="limparFiltros()" style="grid-column:auto;">Limpar filtros</button>
+      <button class="btn-limpar" onclick="limparFiltros()">Limpar filtros</button>
     </div>
   </div>
 </div>
 
-<div class="summary-bar" id="kpiBar">
+<div class="summary-bar">
   <div class="kpi no-action"><div class="kpi-value muted" id="kpiTotal">—</div><div class="kpi-label">Total de entradas</div></div>
   <div class="kpi no-action"><div class="kpi-value green" id="kpiOK">—</div><div class="kpi-label">CN Code OK</div></div>
   <div class="kpi" id="kpiCardVC" onclick="toggleKpi('verificar')"><div class="kpi-value orange" id="kpiVC">—</div><div class="kpi-label">Verificar Campanha</div></div>
@@ -234,14 +262,29 @@ tr.dup-highlight:hover td{background:#260f18;}
 
 <script>
 // ── UTILS ─────────────────────────────────────────────────────
-function gS(r, key) { var v = r[key]; return (v !== undefined && v !== null) ? String(v) : ''; }
+function gS(r, key) {
+  var v = r[key];
+  return (v !== undefined && v !== null) ? String(v) : '';
+}
 
-function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+function esc(s) {
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(s)));
+  return d.innerHTML;
+}
+
+function cel(c) {
+  if (!c || c.v === null || c.v === undefined) return '';
+  // Datas: gviz retorna como "Date(2026,3,15)" — converte para DD/MM/AAAA
+  if (c.f) return String(c.f);
+  return String(c.v);
+}
 
 function unicos(campo) {
   var set = {}, arr = [];
-  dados.rows.forEach(function(r) { var v = gS(r, campo); if (v) set[v] = true; });
-  Object.keys(set).sort(function(a,b){ return a.localeCompare(b,'pt-BR',{sensitivity:'base'}); }).forEach(function(v){ arr.push(v); });
+  todos.forEach(function(r) { var v = gS(r, campo); if (v) set[v] = true; });
+  Object.keys(set).sort(function(a,b){ return a.localeCompare(b,'pt-BR',{sensitivity:'base'}); })
+    .forEach(function(v){ arr.push(v); });
   return arr;
 }
 
@@ -280,7 +323,9 @@ function atualizarBannerKpi() {
   ['kpiCardVC','kpiCardDup'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
-    el.classList.toggle('active', (id==='kpiCardVC' && kpiFiltroAtivo==='verificar') || (id==='kpiCardDup' && kpiFiltroAtivo==='duplicata'));
+    el.classList.toggle('active',
+      (id==='kpiCardVC'  && kpiFiltroAtivo==='verificar') ||
+      (id==='kpiCardDup' && kpiFiltroAtivo==='duplicata'));
   });
 }
 
@@ -294,44 +339,45 @@ function toggleSection(bodyId, arrId) {
 
 // ── FILTROS ───────────────────────────────────────────────────
 function getFiltered() {
-  var brand      = document.getElementById('filtBrand').value;
-  var agencia    = document.getElementById('filtAgencia').value;
-  var resp       = document.getElementById('filtResponsavel').value;
-  var ano        = document.getElementById('filtAno').value;
-  var busca      = document.getElementById('filtBusca').value.trim().toLowerCase();
-  var status     = document.getElementById('filtStatus').value;
-  var dup        = document.getElementById('filtDup').value;
+  var brand   = document.getElementById('filtBrand').value;
+  var agencia = document.getElementById('filtAgencia').value;
+  var resp    = document.getElementById('filtResponsavel').value;
+  var ano     = document.getElementById('filtAno').value;
+  var busca   = document.getElementById('filtBusca').value.trim().toLowerCase();
+  var status  = document.getElementById('filtStatus').value;
+  var dup     = document.getElementById('filtDup').value;
+  var novo    = document.getElementById('filtNovo').value;
 
-  return dados.rows.filter(function(r) {
-    if (brand   && gS(r,'Brand Name')  !== brand)   return false;
-    if (agencia && gS(r,'Agência')     !== agencia)  return false;
-    if (resp    && gS(r,'Responsável') !== resp)     return false;
-    if (ano     && gS(r,'_ano')        !== ano)      return false;
-    if (dup === 'sim' && !r['_duplicata'])            return false;
+  return todos.filter(function(r) {
+    if (brand   && gS(r,'Brand Name')         !== brand)   return false;
+    if (agencia && gS(r,'Agência')            !== agencia) return false;
+    if (resp    && gS(r,'Responsável')        !== resp)    return false;
+    if (ano     && gS(r,'_ano')              !== ano)     return false;
+    if (dup === 'sim' && !r['_dup'])                        return false;
+    if (novo    && gS(r,'Novo Campaign Local') !== novo)    return false;
 
     var cn = gS(r,'CN CODE');
-    if (status === 'ok'       && (cn === 'Verificar Campanha' || cn === '')) return false;
+    if (status === 'ok'        && (cn === 'Verificar Campanha' || cn === '')) return false;
     if (status === 'verificar' && cn !== 'Verificar Campanha')               return false;
     if (status === 'vazio'     && cn !== '')                                  return false;
 
     if (kpiFiltroAtivo === 'verificar' && cn !== 'Verificar Campanha')       return false;
-    if (kpiFiltroAtivo === 'duplicata' && !r['_duplicata'])                   return false;
+    if (kpiFiltroAtivo === 'duplicata' && !r['_dup'])                         return false;
 
     if (busca) {
-      var haystack = [
+      var hay = [
         gS(r,'Novo Campaign Local'), gS(r,'Campaign Name'), gS(r,'CN CODE'),
         gS(r,'Brand Name'), gS(r,'Agência'), gS(r,'Responsável'), gS(r,'Obs')
       ].join(' ').toLowerCase();
-      if (!haystack.includes(busca)) return false;
+      if (!hay.includes(busca)) return false;
     }
     return true;
   });
 }
 
 function limparFiltros() {
-  ['filtBrand','filtAgencia','filtResponsavel','filtAno','filtStatus','filtDup'].forEach(function(id){
-    document.getElementById(id).value = '';
-  });
+  ['filtBrand','filtAgencia','filtResponsavel','filtAno','filtStatus','filtDup','filtNovo']
+    .forEach(function(id){ document.getElementById(id).value = ''; });
   document.getElementById('filtBusca').value = '';
   limparKpi();
   renderizar();
@@ -339,15 +385,14 @@ function limparFiltros() {
 
 // ── AVISOS ────────────────────────────────────────────────────
 function renderizarVC() {
-  var vcRows = dados.rows.filter(function(r) { return gS(r,'CN CODE') === 'Verificar Campanha'; });
+  var vcRows = todos.filter(function(r){ return gS(r,'CN CODE') === 'Verificar Campanha'; });
   var sec  = document.getElementById('vcSection');
   var body = document.getElementById('vcBody');
   var cnt  = document.getElementById('vcCount');
   if (!vcRows.length) { sec.style.display = 'none'; return; }
   sec.style.display = '';
-  cnt.textContent = vcRows.length + ' entr' + (vcRows.length===1?'ada':'adas');
+  cnt.textContent = vcRows.length + (vcRows.length===1?' entrada':' entradas');
 
-  // Agrupa por Campaign Name
   var grupos = {};
   vcRows.forEach(function(r) {
     var camp = gS(r,'Campaign Name') || '(sem campanha)';
@@ -368,15 +413,14 @@ function renderizarVC() {
 }
 
 function renderizarDup() {
-  var dupRows = dados.rows.filter(function(r) { return r['_duplicata']; });
+  var dupRows = todos.filter(function(r){ return r['_dup']; });
   var sec  = document.getElementById('dupSection');
   var body = document.getElementById('dupBody');
   var cnt  = document.getElementById('dupCount');
   if (!dupRows.length) { sec.style.display = 'none'; return; }
   sec.style.display = '';
-  cnt.textContent = dupRows.length + ' entr' + (dupRows.length===1?'ada':'adas');
+  cnt.textContent = dupRows.length + (dupRows.length===1?' entrada':' entradas');
 
-  // Agrupa por _dupKey
   var grupos = {};
   dupRows.forEach(function(r) {
     var k = r['_dupKey'];
@@ -396,25 +440,25 @@ function renderizarDup() {
     html += '<span class="dup-data">';
     html += '<span class="dup-campo">' + esc(novo || '(sem nome)') + '</span><br>';
     html += '<span class="dup-linhas">' + esc(brand) + (ag?' · '+esc(ag):'') + (resp?' · '+esc(resp):'') + ' — linhas: ' + esc(linhas) + '</span>';
-    html += '</span>';
-    html += '</div>';
+    html += '</span></div>';
   });
   body.innerHTML = html;
 }
 
 // ── TABELA ────────────────────────────────────────────────────
 var COLS = [
-  { key:'_ano',                label:'Ano',         w:50 },
-  { key:'Data de Inclusão',    label:'Data',        w:60 },
-  { key:'Novo Campaign Local', label:'Novo Campaign Local', w:200 },
-  { key:'Brand Name',          label:'Brand',       w:100 },
-  { key:'Campaign Name',       label:'Campaign Name',w:200 },
-  { key:'CN CODE',             label:'CN Code',     w:130 },
-  { key:'Responsável',         label:'Responsável', w:100 },
-  { key:'Agência',             label:'Agência',     w:80  },
-  { key:'EXTRA',               label:'Extra',       w:80  },
-  { key:'DE/PARA EXTRA',       label:'DE/PARA Extra',w:120 },
-  { key:'Obs',                 label:'Obs',         w:160 },
+  { key:'_ano',                  label:'Ano',              w:50  },
+  { key:'Data de Inclusão',      label:'Data',             w:70  },
+  { key:'Novo Campaign Local',   label:'Novo Campaign',    w:90  },
+  { key:'Brand Name',            label:'Brand',            w:100 },
+  { key:'Campaign Name',         label:'Campaign Name',    w:200 },
+  { key:'CN CODE',               label:'CN Code',          w:130 },
+  { key:'Responsável',           label:'Responsável',      w:100 },
+  { key:'Agência',               label:'Agência',          w:80  },
+  { key:'DE/PARA Campaign Local',label:'DE/PARA Campaign', w:160 },
+  { key:'EXTRA',                 label:'Extra',            w:80  },
+  { key:'DE/PARA EXTRA',         label:'DE/PARA Extra',    w:120 },
+  { key:'Obs',                   label:'Obs',              w:160 },
 ];
 
 function renderizarTabela(rows) {
@@ -425,14 +469,11 @@ function renderizarTabela(rows) {
   }
 
   var html = '<div class="table-wrap"><table><thead><tr>';
-  COLS.forEach(function(c) {
-    html += '<th style="min-width:'+c.w+'px">'+esc(c.label)+'</th>';
-  });
+  COLS.forEach(function(c) { html += '<th style="min-width:'+c.w+'px">'+esc(c.label)+'</th>'; });
   html += '</tr></thead><tbody>';
 
   rows.forEach(function(r) {
-    var isDup = r['_duplicata'];
-    var cn    = gS(r,'CN CODE');
+    var isDup = r['_dup'];
     html += '<tr' + (isDup ? ' class="dup-highlight"' : '') + '>';
     COLS.forEach(function(c) {
       var v = gS(r, c.key);
@@ -440,12 +481,12 @@ function renderizarTabela(rows) {
         if (v === 'Verificar Campanha') {
           html += '<td><span class="tag-vc">⚠️ Verificar</span></td>';
         } else if (v) {
-          html += '<td><span class="tag-ok">' + esc(v) + '</span>' + (isDup ? '<span class="tag-dup">DUP</span>':'') + '</td>';
+          html += '<td><span class="tag-ok">' + esc(v) + '</span>' + (isDup?'<span class="tag-dup">DUP</span>':'') + '</td>';
         } else {
-          html += '<td><span style="color:var(--mut)">—</span>' + (isDup ? '<span class="tag-dup">DUP</span>':'') + '</td>';
+          html += '<td><span style="color:var(--mut)">—</span>' + (isDup?'<span class="tag-dup">DUP</span>':'') + '</td>';
         }
       } else if (c.key === 'Novo Campaign Local' && isDup) {
-        html += '<td>' + esc(v) + '<span class="tag-dup">DUP</span></td>';
+        html += '<td>' + esc(v||'—') + '<span class="tag-dup">DUP</span></td>';
       } else {
         html += '<td>' + (v ? esc(v) : '<span style="color:var(--mut)">—</span>') + '</td>';
       }
@@ -454,7 +495,7 @@ function renderizarTabela(rows) {
   });
 
   html += '</tbody></table>';
-  html += '<div class="table-footer">Exibindo '+rows.length+' de '+dados.rows.length+' registros</div>';
+  html += '<div class="table-footer">Exibindo ' + rows.length + ' de ' + todos.length + ' registros</div>';
   html += '</div>';
   main.innerHTML = html;
 }
@@ -463,11 +504,10 @@ function renderizarTabela(rows) {
 function renderizar() {
   var rows = getFiltered();
 
-  // KPIs (sempre sobre todos os dados, não filtrados)
-  document.getElementById('kpiTotal').textContent = dados.rows.length;
-  var nOK      = dados.rows.filter(function(r){ var cn=gS(r,'CN CODE'); return cn && cn!=='Verificar Campanha'; }).length;
-  var nVC      = dados.rows.filter(function(r){ return gS(r,'CN CODE')==='Verificar Campanha'; }).length;
-  var nDup     = dados.rows.filter(function(r){ return r['_duplicata']; }).length;
+  document.getElementById('kpiTotal').textContent = todos.length;
+  var nOK  = todos.filter(function(r){ var cn=gS(r,'CN CODE'); return cn && cn!=='Verificar Campanha'; }).length;
+  var nVC  = todos.filter(function(r){ return gS(r,'CN CODE')==='Verificar Campanha'; }).length;
+  var nDup = todos.filter(function(r){ return r['_dup']; }).length;
   document.getElementById('kpiOK').textContent  = nOK;
   document.getElementById('kpiVC').textContent  = nVC;
   document.getElementById('kpiDup').textContent = nDup;
@@ -475,62 +515,133 @@ function renderizar() {
   renderizarTabela(rows);
 }
 
-// ── POPULAR FILTROS ───────────────────────────────────────────
 function popularFiltros() {
-  preencheSelect('filtBrand',      unicos('Brand Name'),  'Todas as marcas');
-  preencheSelect('filtAgencia',    unicos('Agência'),     'Todas as agências');
-  preencheSelect('filtResponsavel',unicos('Responsável'), 'Todos');
-  preencheSelect('filtAno',        unicos('_ano'),        'Todos os anos');
+  preencheSelect('filtBrand',       unicos('Brand Name'),  'Todas as marcas');
+  preencheSelect('filtAgencia',     unicos('Agência'),     'Todas as agências');
+  preencheSelect('filtResponsavel', unicos('Responsável'), 'Todos');
+  preencheSelect('filtAno',         unicos('_ano'),        'Todos os anos');
 }
 
-// ── CARGA DE DADOS ────────────────────────────────────────────
-function recarregar() {
-  var dot   = document.getElementById('syncDot');
-  var label = document.getElementById('syncLabel');
-  dot.className = 'sync-dot loading';
-  label.textContent = 'Carregando...';
+// ── PROCESSAMENTO GVIZ ────────────────────────────────────────
+function processarGviz(anoStr, table) {
+  if (!table || !table.rows) return;
+  table.rows.forEach(function(row, idx) {
+    var vals = (row.c || []).map(cel);
+    // Pula linhas completamente vazias (ex: linha 2 filtro)
+    var temDado = vals.slice(1).some(function(v){ return v.trim() !== ''; });
+    if (!temDado) return;
 
-  if (WEBAPP_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') {
-    document.getElementById('setupBanner').style.display = '';
-    dot.className = 'sync-dot error';
-    label.textContent = 'Web App não configurado';
-    document.getElementById('mainContent').innerHTML =
-      '<div class="state-msg"><div class="icon">⚙️</div><h3>Configure o Web App</h3><p>Veja o banner acima para instruções.</p></div>';
-    return;
-  }
+    var obj = {};
+    CAMPOS.forEach(function(h, i){ obj[h] = vals[i] || ''; });
+    obj['_ano']   = anoStr;
+    obj['_linha'] = idx + 2; // linha 1 = header (consumido pelo gviz); linha 2 em diante = dados
 
-  var script = document.createElement('script');
-  var cb     = '_cb_' + Date.now();
-  window[cb] = function(payload) {
-    delete window[cb];
-    document.getElementById('setupBanner').style.display = 'none';
-    dados = payload;
-    if (!dados.rows) dados.rows = [];
+    // Chave de duplicata
+    var partes = [];
+    CAMPOS.forEach(function(h, i){
+      if (!EXCLUIR_DUP[i]) partes.push((vals[i]||'').trim().toLowerCase());
+    });
+    obj['_dupKey'] = partes.join('|');
+    obj['_dup']    = false;
+    todos.push(obj);
+  });
+}
+
+function marcarDuplicatas() {
+  var map = {};
+  todos.forEach(function(r, i){
+    var k = r['_dupKey'];
+    if (!map[k]) map[k] = [];
+    map[k].push(i);
+  });
+  Object.values(map).forEach(function(indices){
+    if (indices.length > 1) indices.forEach(function(i){ todos[i]['_dup'] = true; });
+  });
+}
+
+// ── CARGA POR ANO (GVIZ) ─────────────────────────────────────
+function carregarAnos() {
+  var anoAtual  = new Date().getFullYear();
+  var anos      = [];
+  for (var a = PRIMEIRO_ANO; a <= anoAtual + 1; a++) anos.push(String(a));
+
+  var pendentes = {};
+  anos.forEach(function(a){ pendentes[a] = 'wait'; });
+
+  function verificarFim() {
+    var pronto = Object.values(pendentes).every(function(v){ return v !== 'wait'; });
+    if (!pronto) return;
+
+    marcarDuplicatas();
     popularFiltros();
     renderizarVC();
     renderizarDup();
     renderizar();
 
-    // Sync info
-    var t = new Date(payload.sync);
-    var hm = ('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
-    label.textContent = 'Atualizado às ' + hm;
-    dot.className = 'sync-dot';
-    document.body.removeChild(script);
-  };
-  script.onerror = function() {
-    dot.className = 'sync-dot error';
-    label.textContent = 'Erro ao carregar dados';
-    document.getElementById('mainContent').innerHTML =
-      '<div class="state-msg"><div class="icon">❌</div><h3>Erro de conexão</h3><p>Verifique a URL do Web App ou tente recarregar.</p></div>';
-    delete window[cb];
-    document.body.removeChild(script);
-  };
-  script.src = WEBAPP_URL + '?callback=' + cb + '&t=' + Date.now();
-  document.body.appendChild(script);
+    var dot   = document.getElementById('syncDot');
+    var label = document.getElementById('syncLabel');
+    var agora = new Date();
+    var hm    = ('0'+agora.getHours()).slice(-2)+':'+('0'+agora.getMinutes()).slice(-2);
+    dot.className   = 'sync-dot';
+    label.textContent = 'Atualizado às ' + hm + ' · ' + todos.length + ' registros';
+  }
+
+  anos.forEach(function(anoStr) {
+    var cbName = '_gviz_' + anoStr + '_' + Date.now();
+    var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+            + '/gviz/tq?sheet=' + encodeURIComponent(anoStr)
+            + '&headers=1&tq=select+*&callback=' + cbName;
+
+    window[cbName] = function(resp) {
+      delete window[cbName];
+      var s = document.querySelector('script[data-gviz="'+anoStr+'"]');
+      if (s) document.body.removeChild(s);
+      if (resp && resp.table) processarGviz(anoStr, resp.table);
+      pendentes[anoStr] = 'done';
+      verificarFim();
+    };
+
+    var script = document.createElement('script');
+    script.dataset.gviz = anoStr;
+    script.onerror = function() {
+      delete window[cbName];
+      var s = document.querySelector('script[data-gviz="'+anoStr+'"]');
+      if (s && s.parentNode) s.parentNode.removeChild(s);
+      pendentes[anoStr] = 'skip';
+      verificarFim();
+    };
+    script.src = url;
+    document.body.appendChild(script);
+  });
 }
 
-recarregar();
+// ── INICIAR ───────────────────────────────────────────────────
+function iniciar() {
+  todos = [];
+  kpiFiltroAtivo = null;
+  atualizarBannerKpi();
+
+  var dot   = document.getElementById('syncDot');
+  var label = document.getElementById('syncLabel');
+  dot.className     = 'sync-dot loading';
+  label.textContent = 'Carregando...';
+  document.getElementById('mainContent').innerHTML =
+    '<div class="state-msg"><div class="icon">⏳</div><h3>Carregando dados...</h3></div>';
+
+  if (SHEET_ID === 'COLE_AQUI_O_ID_DA_PLANILHA') {
+    document.getElementById('setupBanner').style.display = '';
+    dot.className     = 'sync-dot error';
+    label.textContent = 'Planilha não configurada';
+    document.getElementById('mainContent').innerHTML =
+      '<div class="state-msg"><div class="icon">⚙️</div><h3>Configure o ID da planilha</h3><p>Veja o banner acima para instruções.</p></div>';
+    return;
+  }
+
+  document.getElementById('setupBanner').style.display = 'none';
+  carregarAnos();
+}
+
+iniciar();
 </script>
 </body>
 </html>
