@@ -200,6 +200,14 @@ body{font-family:var(--sa);background:var(--g50);color:var(--g800);min-height:10
             <div class="file-info-rows" id="cl-file-rows"></div>
           </div>
         </div>
+        <div id="cl-agencia-fallback" style="display:none;margin-top:12px;padding:10px 14px;background:var(--warn-b);border:1px solid #FDE68A;border-radius:8px">
+          <label style="font-size:12px;font-weight:600;color:var(--warn);display:block;margin-bottom:6px">⚠ Agência não detectada no nome do arquivo — selecione manualmente:</label>
+          <select id="cl-agencia-sel" onchange="clAgenciaFallbackChange()" style="border:1px solid var(--g300);border-radius:6px;padding:7px 12px;font-size:13px;font-family:var(--sa);outline:none;min-width:200px">
+            <option value="">Selecione a agência...</option>
+            <option value="Initiative">Initiative</option>
+            <option value="Cadastra">Cadastra</option>
+          </select>
+        </div>
         <div class="ans-sbar" id="cl-st1"></div>
       </div>
 
@@ -476,8 +484,18 @@ function clHandleFiles(files){
         document.getElementById('cl-file-info').style.display='flex';
         document.getElementById('cl-file-name').textContent=total===1?fileArr[0].name:total+' arquivos';
         document.getElementById('cl-file-rows').textContent=abasDetectadas.length+' aba(s) detectada(s): '+abasDetectadas.join(', ')+agMsg;
-        document.getElementById('cl-btn1').disabled=false;
-        _clShowSt('cl-st1','ok','✅ '+total+' arquivo(s) carregado(s) · '+abasDetectadas.length+' aba(s) de mídia'+agMsg);
+        var fallback=document.getElementById('cl-agencia-fallback');
+        var fallbackSel=document.getElementById('cl-agencia-sel');
+        if(!clAgencia){
+          fallback.style.display='block';
+          fallbackSel.value='';
+          document.getElementById('cl-btn1').disabled=true;
+          _clShowSt('cl-st1','warn','⚠ '+total+' arquivo(s) carregado(s) · Selecione a agência manualmente.');
+        } else {
+          fallback.style.display='none';
+          document.getElementById('cl-btn1').disabled=false;
+          _clShowSt('cl-st1','ok','✅ '+total+' arquivo(s) carregado(s) · '+abasDetectadas.length+' aba(s) de mídia'+agMsg);
+        }
       }
     };
     r.readAsBinaryString(f);
@@ -817,10 +835,25 @@ function clSalvar(){
     });
 }
 
+// ─── Agência fallback ───
+function clAgenciaFallbackChange(){
+  var sel=document.getElementById('cl-agencia-sel');
+  if(sel&&sel.value){
+    clAgencia=sel.value;
+    document.getElementById('cl-btn1').disabled=false;
+    _clShowSt('cl-st1','ok','✅ Agência definida: '+sel.value+' · Pronto para extrair.');
+  } else {
+    clAgencia='';
+    document.getElementById('cl-btn1').disabled=true;
+  }
+}
+
 // ─── Reset ───
 function clReset(){
   clWorkbook=null;clAgencia='';clResultado=[];clTabsCache=null;
   document.getElementById('cl-file-info').style.display='none';
+  document.getElementById('cl-agencia-fallback').style.display='none';
+  document.getElementById('cl-agencia-sel').value='';
   document.getElementById('cl-file-name').textContent='';
   document.getElementById('cl-file-rows').textContent='';
   document.getElementById('cl-file-inp').value='';
