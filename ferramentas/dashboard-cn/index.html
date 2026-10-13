@@ -437,12 +437,31 @@ function recarregar() { carregarTudo(); }
 
 // ── WEB APP ───────────────────────────────────────────────────
 function processarRows(rows) {
-  var campoNomes = ['Data de Inclusão','Novo Campaign Local','DE/PARA Campaign Local',
-                    'EXTRA','DE/PARA EXTRA','Brand Name','Campaign Name',
-                    'CN CODE','Responsável','Agência','Obs'];
+  // g() tenta múltiplos nomes de coluna (variações de typo entre abas)
+  function g(obj, keys) {
+    for (var i = 0; i < keys.length; i++) {
+      var v = obj[keys[i]];
+      if (v !== undefined && v !== null) return String(v).trim();
+    }
+    return '';
+  }
   rows.forEach(function(obj) {
-    // converte objeto da Web App para array de vals na ordem das colunas
-    var vals = campoNomes.map(function(h){ return (obj[h] || '').trim(); });
+    var vals = [
+      g(obj, ['Data de Inclusão']),
+      g(obj, ['Novo Campaign Local', 'Novo Campaing Local']),
+      g(obj, ['DE/PARA Campaign Local', 'DE/PARA Campaing Local']),
+      g(obj, ['EXTRA']),
+      g(obj, ['DE/PARA EXTRA']),
+      g(obj, ['Brand Name', 'Brand Name ']),
+      g(obj, ['Campaign Name', 'Campaing Name']),
+      g(obj, ['CN CODE']),
+      g(obj, ['Responsável']),
+      g(obj, ['Agência']),
+      g(obj, ['Obs'])
+    ];
+    // ignora linhas totalmente vazias
+    var temDado = vals.some(function(v){ return !!v; });
+    if (!temDado) return;
     todasLinhas.push({ ano: obj['_ano'] || '', vals: vals, _dup: false });
   });
 }
