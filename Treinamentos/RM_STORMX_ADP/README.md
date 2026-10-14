@@ -2,6 +2,16 @@
 
 Materiais do treinamento sobre o fluxo RM → ADP na plataforma StormX — Unilever BR.
 
+## Acesso rápido
+
+| Treinamento | Edição | Link |
+|---|---|---|
+| RM ADP — Completo | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
+| RM ADP — Regras Taxonomia | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/regras-taxonomia.html) |
+| RM ADP v3 (final Jul/26) | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v3/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
+| RM ADP v2 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v2/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
+| RM ADP v1 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v1/RM_STORMX_ADP_Apresentacao_Interativa.html) |
+
 ## Estrutura
 
 ```
@@ -12,16 +22,6 @@ RM_STORMX_ADP/
 │   └── v3/                 ← versão final Jul/26 (atual desta edição)
 └── 24-08-26/               ← edição Ago/26 (versão mais recente)
 ```
-
-## Edições disponíveis
-
-| Edição | Versão | Arquivo | Link |
-|---|---|---|---|
-| Ago/26 | — | `RM_STORMX_ADP_Treinamento_Completo.html` | [Abrir](24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
-| Ago/26 | — | `regras-taxonomia.html` | [Abrir](24-08-26/regras-taxonomia.html) |
-| Jul/26 | v3 | `RM_STORMX_ADP_Apresentacao_Interativa_v2.html` | [Abrir](23-07-26/v3/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
-| Jul/26 | v2 | `RM_STORMX_ADP_Apresentacao_Interativa_v2.html` | [Abrir](23-07-26/v2/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
-| Jul/26 | v1 | `RM_STORMX_ADP_Apresentacao_Interativa.html` | [Abrir](23-07-26/v1/RM_STORMX_ADP_Apresentacao_Interativa.html) |
 
 ## Conteúdo coberto
 
