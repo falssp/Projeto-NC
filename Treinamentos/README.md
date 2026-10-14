@@ -12,6 +12,11 @@ Treinamentos/
 │   ├── index.html              ← apresentação interativa (23 slides)
 │   └── roteiro.md              ← roteiro com falas por slide
 │
+├── Custo_Produtos_Pacote/      ← Custo de produtos em pacote (Out/26)
+│   ├── index.html              ← apresentação interativa (10 slides)
+│   ├── roteiro.md              ← roteiro com falas por slide
+│   └── MotorTaxonomiaGenerico.bas
+│
 ├── RM_STORMX_ADP/              ← Treinamento RM → ADP
 │   ├── 23-07-26/               ← edição Jul/26
 │   │   ├── v1/
@@ -51,6 +56,7 @@ Treinamentos/
 | 🎯 Audience Type × Party | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
 | 💻 Ad Server (v15 atual) | — | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
 | 🌐 UL Operação 2026 | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
+| 💰 Custo de Produtos em Pacote | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/index.html) |
 | 🎓 RM STORMX ADP — Completo | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
 | 📋 RM STORMX ADP — Regras Taxonomia | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/regras-taxonomia.html) |
 | RM STORMX ADP v3 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v3/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
