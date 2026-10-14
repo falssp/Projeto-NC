@@ -114,14 +114,22 @@ input.filt:focus{border-color:var(--acc)}
 .table-chevron{color:var(--mut);font-size:12px;margin-left:auto}
 .table-wrap{border:1px solid var(--brd);border-top:none;border-bottom-left-radius:10px;border-bottom-right-radius:10px;display:none;overflow:hidden}
 .table-wrap.open{display:block}
-/* brand blocks */
-.brand-block{border-bottom:1px solid var(--brd)}
-.brand-block:last-child{border-bottom:none}
-.brand-header{display:flex;align-items:center;gap:10px;padding:9px 14px;background:#141828;cursor:pointer;user-select:none}
+/* ano + brand blocks */
+.ano-block{border-bottom:1px solid var(--brd)}
+.ano-block:last-child{border-bottom:none}
+.ano-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0e1220;cursor:pointer;user-select:none}
+.ano-header:hover{background:#141828}
+.ano-label{font-size:13px;font-weight:700;color:var(--acc);flex:1}
+.ano-count{font-size:11px;color:var(--mut)}
+.ano-chev{font-size:11px;color:var(--mut)}
+.ano-content{display:none}
+.ano-content.open{display:block}
+.brand-block{border-top:1px solid var(--brd)}
+.brand-header{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 26px;background:#141828;cursor:pointer;user-select:none}
 .brand-header:hover{background:#1a1f30}
-.brand-name{font-size:12px;font-weight:700;color:var(--txt);flex:1}
+.brand-name{font-size:12px;font-weight:600;color:var(--txt);flex:1}
 .brand-count{font-size:11px;color:var(--mut)}
-.brand-chev{font-size:11px;color:var(--mut);transition:transform .2s}
+.brand-chev{font-size:11px;color:var(--mut)}
 .brand-rows{display:none;overflow-x:auto}
 .brand-rows.open{display:block}
 .table-wrap.open{display:block}
@@ -706,69 +714,86 @@ function renderizar() {
     return;
   }
 
-  // Agrupa por Brand
-  var grupos = {};
-  var ordemBrands = [];
+  // Agrupa por Ano → Brand
+  var porAno = {};
+  var ordemAnos = [];
   filtradas.forEach(function(l) {
+    var ano   = l.ano || '?';
     var brand = l.vals[COL.BRAND].trim() || '(sem brand)';
-    if (!grupos[brand]) { grupos[brand] = []; ordemBrands.push(brand); }
-    grupos[brand].push(l);
+    if (!porAno[ano]) { porAno[ano] = {}; ordemAnos.push(ano); }
+    if (!porAno[ano][brand]) porAno[ano][brand] = [];
+    porAno[ano][brand].push(l);
   });
-  ordemBrands.sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+  ordemAnos.sort(function(a,b){ return b.localeCompare(a); }); // ano mais recente primeiro
 
-  var thead = '<table style="width:100%;border-collapse:collapse;min-width:900px">'
-    + '<thead><tr>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Ano</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Data</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Novo</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Campaign Name</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">CN Code</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Responsável</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Agência</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">DE/PARA Campaign</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">EXTRA</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">DE/PARA EXTRA</th>'
-    + '<th style="background:#141828;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">Obs</th>'
-    + '</tr></thead></table>';
+  var TH = '<th style="background:#0e1220;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">';
 
   var html = '';
-  ordemBrands.forEach(function(brand, idx) {
-    var linhas = grupos[brand];
-    var bid = 'brand_' + idx;
-    html += '<div class="brand-block">'
-      + '<div class="brand-header" onclick="toggleBrand(\''+bid+'\')">'
-      + '<span class="brand-name">'+esc(brand)+'</span>'
-      + '<span class="brand-count">'+linhas.length+' linha'+(linhas.length===1?'':'s')+'</span>'
-      + '<span class="brand-chev" id="chev_'+bid+'">▶</span>'
-      + '</div>'
-      + '<div class="brand-rows" id="'+bid+'">'
-      + '<table style="width:100%;border-collapse:collapse;min-width:900px"><tbody>';
+  ordemAnos.forEach(function(ano, ai) {
+    var brandsDoAno = porAno[ano];
+    var ordemBrands = Object.keys(brandsDoAno).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+    var totalAno = ordemBrands.reduce(function(s,b){ return s + brandsDoAno[b].length; }, 0);
+    var aid = 'ano_' + ai;
 
-    linhas.forEach(function(l) {
-      var v   = l.vals;
-      var cn  = v[COL.CN_CODE].trim();
-      var nov = v[COL.NOVO].trim();
-      var cnBadge  = cn ? '<span class="badge badge-ok cn-code">'+esc(cn)+'</span>' : '<span class="badge badge-warn">—</span>';
-      var novoBadge = nov.toLowerCase()==='sim' ? '<span class="badge badge-new">Sim</span>' : '<span class="badge badge-no">—</span>';
-      var dupMark = l._dup ? '<span class="dup-badge" title="Duplicata">2</span>' : '';
-      html += '<tr style="border-bottom:1px solid #1e2333"'+(l._dup?' class="dup-row"':'')+'>'
-        + '<td style="padding:7px 12px;font-size:12px"><span class="ano-badge">'+esc(l.ano)+'</span></td>'
-        + '<td style="padding:7px 12px;font-size:12px">'+esc(v[COL.DATA])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px">'+novoBadge+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.CAMPAIGN])+'">'+dupMark+esc(v[COL.CAMPAIGN])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px">'+cnBadge+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.RESP])+'">'+esc(v[COL.RESP])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.AGENCIA])+'">'+esc(v[COL.AGENCIA])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.DEPARA_CAM])+'">'+esc(v[COL.DEPARA_CAM])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.EXTRA])+'">'+esc(v[COL.EXTRA])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.DEPARA_EXT])+'">'+esc(v[COL.DEPARA_EXT])+'</td>'
-        + '<td style="padding:7px 12px;font-size:12px" title="'+esc(v[COL.OBS])+'">'+esc(v[COL.OBS])+'</td>'
-        + '</tr>';
+    html += '<div class="ano-block">'
+      + '<div class="ano-header" onclick="toggleAno(\''+aid+'\')">'
+      + '<span class="ano-label">'+esc(ano)+'</span>'
+      + '<span class="ano-count">'+totalAno+' linha'+(totalAno===1?'':'s')+'</span>'
+      + '<span class="ano-chev" id="chev_'+aid+'">▶</span>'
+      + '</div>'
+      + '<div class="ano-content" id="'+aid+'">';
+
+    ordemBrands.forEach(function(brand, bi) {
+      var linhas = brandsDoAno[brand];
+      var bid = 'brand_' + ai + '_' + bi;
+      html += '<div class="brand-block">'
+        + '<div class="brand-header" onclick="toggleBrand(\''+bid+'\')">'
+        + '<span class="brand-name">'+esc(brand)+'</span>'
+        + '<span class="brand-count">'+linhas.length+' linha'+(linhas.length===1?'':'s')+'</span>'
+        + '<span class="brand-chev" id="chev_'+bid+'">▶</span>'
+        + '</div>'
+        + '<div class="brand-rows" id="'+bid+'">'
+        + '<table style="width:100%;border-collapse:collapse;min-width:900px">'
+        + '<thead><tr>'
+        + TH+'Data</th>'+TH+'Novo</th>'+TH+'Campaign Name</th>'
+        + TH+'CN Code</th>'+TH+'Responsável</th>'+TH+'Agência</th>'
+        + TH+'DE/PARA Campaign</th>'+TH+'EXTRA</th>'+TH+'DE/PARA EXTRA</th>'+TH+'Obs</th>'
+        + '</tr></thead><tbody>';
+
+      linhas.forEach(function(l) {
+        var v = l.vals;
+        var cn  = v[COL.CN_CODE].trim();
+        var nov = v[COL.NOVO].trim();
+        var cnBadge   = cn ? '<span class="badge badge-ok cn-code">'+esc(cn)+'</span>' : '<span class="badge badge-warn">—</span>';
+        var novoBadge = nov.toLowerCase()==='sim' ? '<span class="badge badge-new">Sim</span>' : '<span class="badge badge-no">—</span>';
+        var dupMark   = l._dup ? '<span class="dup-badge" title="Duplicata">2</span>' : '';
+        var TD = ' style="padding:7px 12px;font-size:12px;border-bottom:1px solid #1e2333;vertical-align:middle"';
+        html += '<tr'+(l._dup?' class="dup-row"':'')+'>'
+          + '<td'+TD+'>'+esc(v[COL.DATA])+'</td>'
+          + '<td'+TD+'>'+novoBadge+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.CAMPAIGN])+'">'+dupMark+esc(v[COL.CAMPAIGN])+'</td>'
+          + '<td'+TD+'>'+cnBadge+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.RESP])+'">'+esc(v[COL.RESP])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.AGENCIA])+'">'+esc(v[COL.AGENCIA])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.DEPARA_CAM])+'">'+esc(v[COL.DEPARA_CAM])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.EXTRA])+'">'+esc(v[COL.EXTRA])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.DEPARA_EXT])+'">'+esc(v[COL.DEPARA_EXT])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.OBS])+'">'+esc(v[COL.OBS])+'</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div></div>';
     });
-    html += '</tbody></table></div></div>';
+    html += '</div></div>';
   });
 
-  container.innerHTML = thead + html;
+  container.innerHTML = html;
+}
+
+function toggleAno(aid) {
+  var content = document.getElementById(aid);
+  var chev    = document.getElementById('chev_' + aid);
+  var aberto  = content.classList.toggle('open');
+  chev.textContent = aberto ? '▼' : '▶';
 }
 
 function toggleBrand(bid) {
@@ -776,7 +801,6 @@ function toggleBrand(bid) {
   var chev = document.getElementById('chev_' + bid);
   var aberto = rows.classList.toggle('open');
   chev.textContent = aberto ? '▼' : '▶';
-  chev.style.transform = '';
 }
 
 // ── SEÇÕES AVISO ──────────────────────────────────────────────
