@@ -23,7 +23,17 @@ Treinamentos/
 │       ├── RM_STORMX_ADP_Treinamento.pptx
 │       └── Roteiro_Apresentacao_RM_STORMX_ADP.docx
 │
-└── AdServer/                   ← Treinamento Ad Server (PPTX — v15 atual)
+├── AdServer/                   ← Treinamento Ad Server (PPTX — v15 atual)
+│
+├── VAST_VPAID/                 ← VAST vs VPAID — guia técnico e operacional
+│   ├── index.html
+│   └── vast-vs-vpaid.md
+│
+├── Programatico_Video/         ← Ecossistema programático de vídeo
+│   └── index.html
+│
+└── Brand_Safety_Viewability/   ← Brand Safety, Viewability, IVT e Geo
+    └── index.html
 ```
 
 ## Treinamentos disponíveis
@@ -37,6 +47,9 @@ Treinamentos/
 | RM STORMX ADP v3 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v3/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
 | RM STORMX ADP v2 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v2/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
 | RM STORMX ADP v1 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v1/RM_STORMX_ADP_Apresentacao_Interativa.html) |
+| 🎬 VAST vs VPAID | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/VAST_VPAID/) |
+| 🔄 Programático & Vídeo | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Programatico_Video/) |
+| 🛡 Brand Safety & Viewability | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Brand_Safety_Viewability/) |
 
 ## Portal de acesso
 
