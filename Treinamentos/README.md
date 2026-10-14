@@ -32,14 +32,20 @@ Treinamentos/
 ├── Programatico_Video/         ← Ecossistema programático de vídeo
 │   └── index.html
 │
-└── Brand_Safety_Viewability/   ← Brand Safety, Viewability, IVT e Geo
-    └── index.html
+├── Brand_Safety_Viewability/   ← Brand Safety, Viewability, IVT e Geo
+│   └── index.html
+│
+└── Jira_Unidades_Dashboard/    ← Unidades pai/filho sem duplicidade (Jira → BQ/Sheets → Looker)
+    ├── index.html
+    ├── guia-unidades.md
+    └── ROLLUP_UNIDADES_PAI_FILHO.gs
 ```
 
 ## Treinamentos disponíveis
 
 | Treinamento | Edição | Link |
 |---|---|---|
+| 📊 Jira → Dashboard: Unidades Pai/Filho | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Jira_Unidades_Dashboard/index.html) |
 | 💻 Ad Server (v15 atual) | — | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
 | 🌐 UL Operação 2026 | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
 | 🎓 RM STORMX ADP — Completo | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
