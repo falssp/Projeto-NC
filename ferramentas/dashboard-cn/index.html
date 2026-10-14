@@ -318,10 +318,7 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
     <span class="warn-chevron" id="vcChev">▶ expandir</span>
   </div>
   <div class="warn-body" id="vcBody">
-    <table class="warn-table-mini">
-      <thead><tr><th>Data</th><th>Brand</th><th>Campaign Name</th><th>Responsável</th><th>Agência</th></tr></thead>
-      <tbody id="vcTableBody"></tbody>
-    </table>
+    <div id="vcTreeBody"></div>
   </div>
 </div>
 
@@ -332,10 +329,7 @@ textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid
     <span class="warn-chevron" id="dupChev">▶ expandir</span>
   </div>
   <div class="warn-body" id="dupBody">
-    <table class="warn-table-mini">
-      <thead><tr><th>Ano</th><th>Data</th><th>Brand</th><th>Campaign Name</th><th>CN Code</th><th>Extra</th><th>Agência</th></tr></thead>
-      <tbody id="dupTableBody"></tbody>
-    </table>
+    <div id="dupTreeBody"></div>
   </div>
 </div>
 
@@ -807,25 +801,12 @@ function renderVcSection(linhas) {
   sec.style.display = linhas.length ? '' : 'none';
   if (!linhas.length) return;
 
-  linhas.sort(function(a, b) {
-    var cn = (a.vals[COL.CN_CODE] || '').localeCompare(b.vals[COL.CN_CODE] || '', 'pt-BR');
-    if (cn !== 0) return cn;
-    var ag = (a.vals[COL.AGENCIA] || '').localeCompare(b.vals[COL.AGENCIA] || '', 'pt-BR');
-    if (ag !== 0) return ag;
-    return (a.vals[COL.EXTRA] || '').localeCompare(b.vals[COL.EXTRA] || '', 'pt-BR');
-  });
-  var html = '';
-  linhas.forEach(function(l) {
-    var v = l.vals;
-    html += '<tr>'
-      + '<td>'+esc(v[COL.DATA])+'</td>'
-      + '<td>'+esc(v[COL.BRAND])+'</td>'
-      + '<td title="'+esc(v[COL.CAMPAIGN])+'">'+esc(v[COL.CAMPAIGN])+'</td>'
-      + '<td>'+esc(v[COL.RESP])+'</td>'
-      + '<td>'+esc(v[COL.AGENCIA])+'</td>'
-      + '</tr>';
-  });
-  document.getElementById('vcTableBody').innerHTML = html;
+  document.getElementById('vcTreeBody').innerHTML = renderAnoTree(linhas, 'vc', [
+    {label:'Data',    td:function(l){return esc(l.vals[COL.DATA]);}},
+    {label:'Campaign Name', td:function(l){return '<span title="'+esc(l.vals[COL.CAMPAIGN])+'">'+esc(l.vals[COL.CAMPAIGN])+'</span>';}},
+    {label:'Responsável',   td:function(l){return esc(l.vals[COL.RESP]);}},
+    {label:'Agência',       td:function(l){return esc(l.vals[COL.AGENCIA]);}}
+  ]);
 }
 
 function renderDupSection(linhas) {
@@ -834,27 +815,73 @@ function renderDupSection(linhas) {
   sec.style.display = linhas.length ? '' : 'none';
   if (!linhas.length) return;
 
-  linhas.sort(function(a, b) {
+  document.getElementById('dupTreeBody').innerHTML = renderAnoTree(linhas, 'dup', [
+    {label:'Data',    td:function(l){return esc(l.vals[COL.DATA]);}},
+    {label:'Campaign Name', td:function(l){return '<span title="'+esc(l.vals[COL.CAMPAIGN])+'">'+esc(l.vals[COL.CAMPAIGN])+'</span>';}},
+    {label:'CN Code',       td:function(l){return '<span class="cn-code">'+esc(l.vals[COL.CN_CODE])+'</span>';}},
+    {label:'Extra',         td:function(l){return esc(l.vals[COL.EXTRA]);}},
+    {label:'Agência',       td:function(l){return esc(l.vals[COL.AGENCIA]);}}
+  ]);
+}
+
+function sortLinhas(linhas) {
+  return linhas.slice().sort(function(a, b) {
     var cn = (a.vals[COL.CN_CODE] || '').localeCompare(b.vals[COL.CN_CODE] || '', 'pt-BR');
     if (cn !== 0) return cn;
     var ag = (a.vals[COL.AGENCIA] || '').localeCompare(b.vals[COL.AGENCIA] || '', 'pt-BR');
     if (ag !== 0) return ag;
     return (a.vals[COL.EXTRA] || '').localeCompare(b.vals[COL.EXTRA] || '', 'pt-BR');
   });
-  var html = '';
+}
+
+function renderAnoTree(linhas, prefix, cols) {
+  var porAno = {}, ordemAnos = [];
   linhas.forEach(function(l) {
-    var v = l.vals;
-    html += '<tr>'
-      + '<td>'+esc(l.ano)+'</td>'
-      + '<td>'+esc(v[COL.DATA])+'</td>'
-      + '<td>'+esc(v[COL.BRAND])+'</td>'
-      + '<td title="'+esc(v[COL.CAMPAIGN])+'">'+esc(v[COL.CAMPAIGN])+'</td>'
-      + '<td class="cn-code">'+esc(v[COL.CN_CODE])+'</td>'
-      + '<td>'+esc(v[COL.EXTRA])+'</td>'
-      + '<td>'+esc(v[COL.AGENCIA])+'</td>'
-      + '</tr>';
+    var ano   = l.ano || '?';
+    var brand = l.vals[COL.BRAND].trim() || '(sem brand)';
+    if (!porAno[ano]) { porAno[ano] = {}; ordemAnos.push(ano); }
+    if (!porAno[ano][brand]) porAno[ano][brand] = [];
+    porAno[ano][brand].push(l);
   });
-  document.getElementById('dupTableBody').innerHTML = html;
+  ordemAnos.sort(function(a,b){ return b.localeCompare(a); });
+
+  var TH = 'style="background:#0e1220;padding:6px 10px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)"';
+  var TD = 'style="padding:6px 10px;font-size:12px;border-bottom:1px solid #1e2333;vertical-align:middle"';
+
+  var html = '';
+  ordemAnos.forEach(function(ano, ai) {
+    var brandsDoAno = porAno[ano];
+    var ordemBrands = Object.keys(brandsDoAno).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+    var totalAno = ordemBrands.reduce(function(s,b){ return s + brandsDoAno[b].length; }, 0);
+    var aid = prefix + '_ano_' + ai;
+    html += '<div class="ano-block">'
+      + '<div class="ano-header" onclick="toggleAno(\''+aid+'\')">'
+      + '<span class="ano-label">'+esc(ano)+'</span>'
+      + '<span class="ano-count">'+totalAno+' linha'+(totalAno===1?'':'s')+'</span>'
+      + '<span class="ano-chev" id="chev_'+aid+'">▶</span>'
+      + '</div>'
+      + '<div class="ano-content" id="'+aid+'">';
+    ordemBrands.forEach(function(brand, bi) {
+      var linhasBrand = sortLinhas(brandsDoAno[brand]);
+      var bid = prefix + '_brand_' + ai + '_' + bi;
+      html += '<div class="brand-block">'
+        + '<div class="brand-header" onclick="toggleBrand(\''+bid+'\')">'
+        + '<span class="brand-name">'+esc(brand)+'</span>'
+        + '<span class="brand-count">'+linhasBrand.length+' linha'+(linhasBrand.length===1?'':'s')+'</span>'
+        + '<span class="brand-chev" id="chev_'+bid+'">▶</span>'
+        + '</div>'
+        + '<div class="brand-rows" id="'+bid+'">'
+        + '<table style="width:100%;border-collapse:collapse">'
+        + '<thead><tr>' + cols.map(function(c){ return '<th '+TH+'>'+c.label+'</th>'; }).join('') + '</tr></thead>'
+        + '<tbody>';
+      linhasBrand.forEach(function(l) {
+        html += '<tr>' + cols.map(function(c){ return '<td '+TD+'>'+c.td(l)+'</td>'; }).join('') + '</tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+    html += '</div></div>';
+  });
+  return html;
 }
 
 function toggleSection(tipo) {
