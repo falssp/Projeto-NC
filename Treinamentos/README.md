@@ -39,7 +39,7 @@ Treinamentos/
 │   ├── index.html
 │   └── flashtalking-especificacoes.md
 │
-└── Audience_Type_Party/        ← Guia Audience Type × Audience Party (rascunho)
+└── Audience_Type_Party/        ← Guia Audience Type × Audience Party
     ├── index.html
     └── audience-type-party.md
 ```
@@ -48,7 +48,7 @@ Treinamentos/
 
 | Treinamento | Edição | Link |
 |---|---|---|
-| 🎯 Audience Type × Party (rascunho) | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
+| 🎯 Audience Type × Party | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
 | 💻 Ad Server (v15 atual) | — | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
 | 🌐 UL Operação 2026 | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
 | 🎓 RM STORMX ADP — Completo | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |

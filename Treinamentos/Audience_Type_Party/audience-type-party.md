@@ -1,48 +1,68 @@
 # Audience Type × Audience Party — Guia de Referência
 
-> **Status:** rascunho. A regra de Rmkt abaixo é a proposta da operação e ainda precisa de validação com Carolina Dobner / UL antes de virar oficial.
+> **Status:** v1. Matriz extraída do Dicionário Grasp 2026, do Glossário 2026 e da UNCC Digital Platform String Tool. O Remarket (Rmkt) só consta na UNCC e ainda não foi incorporado ao Dicionário/Glossário (ver *Pontos de atenção*).
+
+## Resposta rápida: Audience Type = Rmkt
+
+Permitido com **1PD-DAD**, **1PD-DID** e **1PD-DID+DAD**. **Nunca** com `No 1PD`.
 
 ## Os dois campos
 
-| Campo | Onde aparece | Valores no dicionário |
-|---|---|---|
-| `gl_audience_party` | Dicionário (global) | `1pd-dad`, `1pd-did`, `1pd-diddad`, `no1pd` |
-| `ft_audience_type` | Dicionário (field type) | Behav, CollPform, CombAud, CRM, Cust, Demog, DMP, InMark, InmLst, IntAff, Lstyle, LLike, None, Rmkt |
-
-São duas listas independentes: não existe correspondência linha a linha entre elas. A regra de combinação é o que este guia documenta.
-
-## Regra: Audience Type = Rmkt (remarketing)
-
-Remarketing é construído sobre audiência que já teve contato direto com a marca, ou seja, dado de 1ª parte.
-
-| Audience Party | Permitido com Rmkt? | Motivo |
-|---|---|---|
-| `1pd-dad` | Sim | É 1PD |
-| `1pd-did` | Sim | É 1PD |
-| `1pd-diddad` | Sim | É 1PD (combinação) |
-| `no1pd` | **Não** | Declara que não há 1PD, o que contradiz remarketing |
-
-**Resposta curta:** qualquer `1pd-*`; nunca `no1pd`.
-
-## Matriz completa (a preencher)
-
-| Audience Type | Party permitido |
+| Campo | Valores |
 |---|---|
-| Rmkt | 1pd-dad, 1pd-did, 1pd-diddad |
-| CRM | a validar |
-| Cust | a validar |
-| Demog, Behav, IntAff, Lstyle, LLike, InMark, InmLst | a validar |
-| DMP, CollPform, CombAud | a validar |
-| None | a validar |
+| `gl_audience_party` (Audience Party GL) | `1pd-dad`, `1pd-did`, `1pd-diddad`, `no1pd` |
+| `ft_audience_type` (Audience Type FT) | CRM, Lookalike, CombinedAudiences, DMP, Collected in-platform, Custom, Remarket, Behavioural, Demographic, In-Market, Interest/Affinity, In-Market & Lifestyle, Lifestyle/Life Events (e `None`, ver pontos de atenção) |
 
-## Quando a UL usar Rmkt com party errado
+## O que significa cada Audience Party
+
+| Party | Significado (Glossário 2026) |
+|---|---|
+| **1PD-DID** | Só dados próprios (1PD) de *Digital ID Data*: identificadores digitais **anônimos** coletados nas propriedades digitais da Unilever |
+| **1PD-DAD** | Só dados próprios (1PD) de *Deterministic Audience Data*: consumidores **identificados** por cadastro, CRM ou outras fontes determinísticas |
+| **1PD-DID+DAD** | Combinação das bases DID e DAD |
+| **No 1PD** | Não usa dados próprios para segmentar a audiência |
+
+## Matriz: Audience Type → Audience Party permitido
+
+| Audience Type | Short | 1PD-DAD | 1PD-DID | 1PD-DID+DAD | No 1PD |
+|---|---|---|---|---|---|
+| CRM | `crm` | ✅ | — | — | — |
+| Lookalike | `llike` | ✅ | ✅ | ✅ | — |
+| CombinedAudiences | `combaud` | ✅ | — | ✅ | ✅ |
+| DMP | `dmp` | — | ✅ | — | — |
+| Collected in-platform | `collpform` | — | ✅ | — | — |
+| Custom | `cust` | — | — | ✅ | ✅ |
+| Remarket *(só na UNCC)* | `rmkt` | ✅ | ✅ | ✅ | — |
+| Behavioural | `behav` | — | — | — | ✅ |
+| Demographic | `demog` | — | — | — | ✅ |
+| In-Market | `inmark` | — | — | — | ✅ |
+| Interest/Affinity | `intaff` | — | — | — | ✅ |
+| In-Market & Lifestyle | `inmlst` | — | — | — | ✅ |
+| Lifestyle/Life Events | `lstyle` | — | — | — | ✅ |
+
+## Visão inversa: Audience Party → Audience Types
+
+- **1PD-DAD:** CRM, Lookalike, CombinedAudiences, Remarket
+- **1PD-DID:** Lookalike, DMP, Collected in-platform, Remarket
+- **1PD-DID+DAD:** Lookalike, CombinedAudiences, Custom, Remarket
+- **No 1PD:** CombinedAudiences, Custom, Behavioural, Demographic, In-Market, Interest/Affinity, In-Market & Lifestyle, Lifestyle/Life Events
+
+## Pontos de atenção
+
+1. **Rmkt não está no nosso Dicionário, no Glossário nem no RM (`Dados`).** Está na aba `Mandated Values Freetext` da UNCC como *Remarket / Rmkt*, permitido com os três 1PD e não com `No 1PD`. Quem recebe taxonomia da UL com Rmkt precisa dessa regra, então falta incorporá-la ao Dicionário e ao Glossário.
+2. **Glossário com abreviações invertidas:** na aba `Galileo e Freetext`, a opção `1PD-DID` aparece com a abreviação `1pd-dad` (e vice-versa). Pelo texto do Significado e pelo Dicionário, o correto é DID → `1pd-did` e DAD → `1pd-dad`.
+3. **`None` como Audience Type:** consta na lista de tipos da UNCC (`Mandated Dimensions & Values`), mas não encontrei regra de party para ele.
+4. **DMP e remarketing:** o Glossário descreve DMP como audiência com dados próprios *ou segmentos de remarketing*, ambos com 1PD-DID.
+
+## Quando a UL usar um type com party fora da matriz
 
 1. Confirmar na taxonomia enviada qual `gl_audience_party` veio junto.
-2. Se for `no1pd`, devolver o ajuste: ou o type não é Rmkt, ou o party deve ser um `1pd-*`.
-3. Se for `1pd-*`, seguir normalmente.
+2. Se a combinação não estiver na matriz (ex.: Rmkt + `no1pd`), devolver o ajuste: ou o type muda, ou o party passa a ser um `1pd-*` compatível.
+3. Se estiver na matriz, seguir normalmente.
 
-## Pendências
+## Fontes
 
-- Validar a regra de Rmkt com a Carolina.
-- Confirmar o significado de `dad` / `did` / `diddad` com o dicionário global.
-- Preencher as demais linhas da matriz.
+- Dicionário Grasp 2026, aba Google Search, colunas `Regra-Audience-Party-x-Audience-Type` (BT:BU)
+- Glossário 2026, aba Galileo e Freetext, coluna Relação
+- UNCC Digital Platform String Tool, abas `Mandated Values Freetext` e `Mandated Dimensions & Values`
+- RM StormX 2026 v6.0, aba `Dados` (regra sem Rmkt)
