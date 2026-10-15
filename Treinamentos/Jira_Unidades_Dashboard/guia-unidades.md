@@ -212,6 +212,16 @@ LEFT JOIN base p ON p.issue_key = b.parent_key
 
 Arquivos em `exemplos/`: `dados_teste.csv` (entrada) e `resultados_esperados.csv` (saída esperada). **Total esperado: 31.**
 
+Scripts em `testes/` que reproduzem a validação a partir desses arquivos:
+
+| Script | O que valida | Como rodar |
+|---|---|---|
+| `teste_views_duckdb.py` | Views SQL simples e multi-nível (em DuckDB) | `pip install duckdb` · `python3 teste_views_duckdb.py` |
+| `teste_formulas_sheets.py` | Fórmulas do Sheets, 2 e 3 níveis (em LibreOffice) | `pip install openpyxl` · `python3 teste_formulas_sheets.py` (precisa de `soffice`) |
+| `teste_rollup_gs.js` | `ROLLUP_UNIDADES_PAI_FILHO.gs` (em Node) | `node teste_rollup_gs.js` |
+
+Os três terminam com `OK: todas as verificações passaram` quando a lógica está correta. Se você alterar a regra, atualize `resultados_esperados.csv` e rode de novo.
+
 ## 10. Casos de borda (todos testados)
 
 | Caso | Dados | Resultado | Observação |
@@ -287,7 +297,7 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 - View SQL simples cobre só 2 níveis; o Sheets chega a 3 com colunas extras.
 - `unidades_exibicao` do pai não reage a filtros do Looker.
 - Ciclos de parentesco quebram a view multi-nível.
-- Não testados em ambiente real: execução no BigQuery, execução no Google Sheets e `JIRA_EXTRACAO_UNIDADES.gs` contra o Jira. A lógica das views e fórmulas foi validada localmente (DuckDB e LibreOffice) com os dados de `exemplos/`.
+- Não testados em ambiente real: execução no BigQuery, execução no Google Sheets e `JIRA_EXTRACAO_UNIDADES.gs` contra o Jira. A lógica das views, das fórmulas e do rollup em Apps Script foi validada localmente (DuckDB, LibreOffice e Node) com os dados de `exemplos/`, usando os scripts de `testes/`.
 
 ## 15. Arquivos desta pasta
 
@@ -301,6 +311,9 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 | `JIRA_EXTRACAO_UNIDADES.gs` | Exemplo de extração do Jira (não testado) |
 | `exemplos/dados_teste.csv` | Dados de teste |
 | `exemplos/resultados_esperados.csv` | Resultados esperados (total 31) |
+| `testes/teste_views_duckdb.py` | Teste das views SQL |
+| `testes/teste_formulas_sheets.py` | Teste das fórmulas do Sheets |
+| `testes/teste_rollup_gs.js` | Teste do rollup em Apps Script |
 
 ## 16. Histórico
 
@@ -309,6 +322,7 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 | 15/10/2026 | Criação: regra de duas colunas, view simples, Sheets, Apps Script, Looker |
 | 15/10/2026 | View BigQuery multi-nível |
 | 15/10/2026 | Documentação completa: casos de borda, Sheets 3 níveis, extração Jira, FAQ, dados de teste |
+| 15/10/2026 | Scripts de teste reproduzíveis (DuckDB, LibreOffice, Node) |
 
 ---
 
