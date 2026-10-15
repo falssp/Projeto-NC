@@ -1,6 +1,6 @@
 # Flashtalking — Especificações de Mídia
 
-> Guia de referência para trafficking — StormX Data & Tech · out/2026
+> ⚠️ **Não validado no client portal FT.** Guia de referência para trafficking — StormX Data & Tech · out/2026
 > Base: padrões IAB que a Flashtalking segue. **Peso, formato e aceite final sempre variam por publisher/veículo** — confirmar o spec sheet específico no client portal (support.flashtalking.com) antes de subir qualquer peça fora do padrão.
 
 ## Display estático — tamanhos e peso
@@ -16,6 +16,8 @@
 | 970x90 | Super Leaderboard | 200 KB | JPG, PNG, GIF |
 
 GIF animado: loop limitado a 3x, duração total até 15–30s conforme publisher. Peso é o fator que mais derruba aprovação — validar sempre abaixo do limite do veículo, não só do IAB.
+
+> ⚠️ Valores de peso são padrão IAB, não extraídos do spec sheet da Flashtalking. Confirmar antes de divulgar — veículos como Globo e UOL costumam ter exigência própria.
 
 ## Rich Media / Expansível
 
@@ -34,6 +36,8 @@ GIF animado: loop limitado a 3x, duração total até 15–30s conforme publishe
 - Declarar direção de expansão (Left/Right/Up/Down) coerente com o rail
 - Se o criativo for MRAID, **não** declarar como expansível na Creatives Library — trava o spend
 
+> ⚠️ Tamanhos de expansão máxima não foram extraídos do spec sheet da Flashtalking — confirmar no portal antes de usar como regra fixa, especialmente por veículo.
+
 ## Vídeo — VAST / VPAID
 
 | Item | Padrão |
@@ -46,6 +50,8 @@ GIF animado: loop limitado a 3x, duração total até 15–30s conforme publishe
 | Scan | Progressive (não entrelaçado) |
 
 **Eventos de tracking padrão (VAST):** impression, start, firstQuartile, midpoint, thirdQuartile, complete, skip, mute/unmute, pause/resume, clickThrough.
+
+> ⚠️ Bitrate e duração são padrão de mercado — alguns publishers de CTV exigem specs próprias; confirmar no portal FT antes de trafegar.
 
 Ver guia [VAST vs VPAID](../VAST_VPAID/vast-vs-vpaid.md) para detalhe de protocolo.
 
