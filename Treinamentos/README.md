@@ -53,6 +53,7 @@ Treinamentos/
 | RM STORMX ADP v1 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v1/RM_STORMX_ADP_Apresentacao_Interativa.html) |
 | 🎬 VAST vs VPAID | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/VAST_VPAID/) |
 | 🔄 Programático & Vídeo | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Programatico_Video/) |
+| 🏕️ Camphouse — Media Ops Platform | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Camphouse/index.html) |
 | 🛡 Brand Safety & Viewability | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Brand_Safety_Viewability/) |
 | 📐 Flashtalking — Especificações de Mídia | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Flashtalking_Especificacoes/) |
 
