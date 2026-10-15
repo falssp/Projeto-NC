@@ -61,7 +61,55 @@ FROM base b
 LEFT JOIN soma_filhos sf ON sf.parent_key = b.issue_key
 ```
 
-> ⚠️ A view cobre **2 níveis** (pai → filho). Para 3+ níveis (pai → filho → neto) o SQL precisa de CTE recursiva; o Apps Script (seção abaixo) já é recursivo.
+> ⚠️ A view cobre **2 níveis** (pai → filho). Para 3+ níveis use a versão multi-nível logo abaixo (CTE recursiva); o Apps Script também é recursivo.
+
+#### Versão multi-nível (pai → filho → neto…)
+
+Use esta view quando a hierarquia tiver 3+ níveis. Premissa: a unidade é preenchida **só nas issues de baixo** (quem tem filhos fica sem valor). O pai exibe a soma de **todos** os descendentes.
+
+```sql
+CREATE OR REPLACE VIEW `projeto.dataset.vw_jira_unidades` AS
+WITH RECURSIVE base AS (
+  SELECT issue_key, parent_key, unidades
+  FROM `projeto.dataset.tabela_jira`
+),
+arvore AS (
+  SELECT issue_key AS raiz, issue_key AS descendente FROM base
+  UNION ALL
+  SELECT a.raiz, b.issue_key
+  FROM arvore a
+  JOIN base b ON b.parent_key = a.descendente
+),
+soma AS (
+  SELECT a.raiz, SUM(d.unidades) AS unidades_desc
+  FROM arvore a
+  JOIN base d ON d.issue_key = a.descendente
+  WHERE a.descendente <> a.raiz
+  GROUP BY a.raiz
+)
+SELECT
+  b.issue_key,
+  b.parent_key,
+  b.unidades,
+  COALESCE(b.unidades, s.unidades_desc, 0) AS unidades_exibicao,
+  b.unidades AS unidades_total
+FROM base b
+LEFT JOIN soma s ON s.raiz = b.issue_key
+```
+
+Exemplo (3 níveis):
+
+| Issue | Pai | unidades | unidades_exibicao | unidades_total |
+|---|---|---|---|---|
+| UL-100 | — | — | 15 | — |
+| UL-110 | UL-100 | — | 10 | — |
+| UL-111 | UL-110 | 4 | 4 | 4 |
+| UL-112 | UL-110 | 6 | 6 | 6 |
+| UL-101 | UL-100 | 5 | 5 | 5 |
+| UL-200 | — | 10 | 10 | 10 |
+| **Total** | | | | **25** |
+
+> Lógica validada em DuckDB com esse exemplo. Na 1ª execução no BigQuery, conferir o total contra a soma manual.
 
 ### Google Sheets
 
@@ -98,7 +146,7 @@ Arquivo: [`ROLLUP_UNIDADES_PAI_FILHO.gs`](ROLLUP_UNIDADES_PAI_FILHO.gs) — fun�
 |---|---|---|
 | Somar `unidades_exibicao` no total | Duplicidade (pai + filhos) | Usar `unidades_total` |
 | Preencher unidade no pai **e** nos filhos | Conta nos dois (valores originais) | Unidade só no filho |
-| Hierarquia com 3+ níveis na view SQL | Pai do topo fica incompleto | CTE recursiva ou Apps Script |
+| Hierarquia com 3+ níveis na view simples | Pai do topo fica incompleto | Usar a view multi-nível ou o Apps Script |
 | Filho sem `parent_key` na sync | Vira "pai" e entra como valor próprio | Garantir `parent_key` na extração do Jira |
 
 ---

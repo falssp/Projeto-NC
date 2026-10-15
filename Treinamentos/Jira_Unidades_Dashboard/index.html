@@ -91,7 +91,48 @@ SELECT
   b.unidades AS unidades_total
 FROM base b
 LEFT JOIN soma_filhos sf ON sf.parent_key = b.issue_key</code></pre>
-  <div class="note warn">A view cobre <b>2 níveis</b> (pai → filho). Para 3+ níveis, use CTE recursiva ou o Apps Script, que já é recursivo.</div>
+  <div class="note warn">A view cobre <b>2 níveis</b> (pai → filho). Para 3+ níveis use a versão multi-nível logo abaixo (CTE recursiva); o Apps Script também é recursivo.</div>
+
+  <h3>BigQuery — versão multi-nível (pai → filho → neto…)</h3>
+  <p>Use quando a hierarquia tiver 3+ níveis. Premissa: a unidade é preenchida <b>só nas issues de baixo</b>; o pai exibe a soma de <b>todos</b> os descendentes.</p>
+<pre><code>CREATE OR REPLACE VIEW `projeto.dataset.vw_jira_unidades` AS
+WITH RECURSIVE base AS (
+  SELECT issue_key, parent_key, unidades
+  FROM `projeto.dataset.tabela_jira`
+),
+arvore AS (
+  SELECT issue_key AS raiz, issue_key AS descendente FROM base
+  UNION ALL
+  SELECT a.raiz, b.issue_key
+  FROM arvore a
+  JOIN base b ON b.parent_key = a.descendente
+),
+soma AS (
+  SELECT a.raiz, SUM(d.unidades) AS unidades_desc
+  FROM arvore a
+  JOIN base d ON d.issue_key = a.descendente
+  WHERE a.descendente &lt;&gt; a.raiz
+  GROUP BY a.raiz
+)
+SELECT
+  b.issue_key,
+  b.parent_key,
+  b.unidades,
+  COALESCE(b.unidades, s.unidades_desc, 0) AS unidades_exibicao,
+  b.unidades AS unidades_total
+FROM base b
+LEFT JOIN soma s ON s.raiz = b.issue_key</code></pre>
+  <table>
+    <tr><th>Issue</th><th>Pai</th><th>unidades</th><th>unidades_exibicao</th><th>unidades_total</th></tr>
+    <tr><td>UL-100</td><td>—</td><td>—</td><td>15</td><td>—</td></tr>
+    <tr><td>UL-110</td><td>UL-100</td><td>—</td><td>10</td><td>—</td></tr>
+    <tr><td>UL-111</td><td>UL-110</td><td>4</td><td>4</td><td>4</td></tr>
+    <tr><td>UL-112</td><td>UL-110</td><td>6</td><td>6</td><td>6</td></tr>
+    <tr><td>UL-101</td><td>UL-100</td><td>5</td><td>5</td><td>5</td></tr>
+    <tr><td>UL-200</td><td>—</td><td>10</td><td>10</td><td>10</td></tr>
+    <tr class="tot"><td>Total</td><td></td><td></td><td></td><td>25</td></tr>
+  </table>
+  <div class="note">Lógica validada em DuckDB com esse exemplo. Na 1ª execução no BigQuery, confira o total contra a soma manual.</div>
 
   <h3>Google Sheets</h3>
   <p>Colunas: <code>A</code> issue_key · <code>B</code> parent_key · <code>C</code> unidades</p>
@@ -131,7 +172,7 @@ LEFT JOIN soma_filhos sf ON sf.parent_key = b.issue_key</code></pre>
     <tr><th>Erro</th><th>Efeito</th><th>Correção</th></tr>
     <tr><td>Somar <code>unidades_exibicao</code> no total</td><td>Duplicidade</td><td>Usar <code>unidades_total</code></td></tr>
     <tr><td>Unidade preenchida no pai <b>e</b> nos filhos</td><td>Conta nos dois</td><td>Unidade só no filho</td></tr>
-    <tr><td>3+ níveis na view SQL</td><td>Pai do topo incompleto</td><td>CTE recursiva ou Apps Script</td></tr>
+    <tr><td>3+ níveis na view simples</td><td>Pai do topo incompleto</td><td>Usar a view multi-nível ou o Apps Script</td></tr>
     <tr><td>Filho sem <code>parent_key</code> na sync</td><td>Vira "pai" e entra como valor próprio</td><td>Garantir <code>parent_key</code> na extração</td></tr>
   </table>
 </section>
