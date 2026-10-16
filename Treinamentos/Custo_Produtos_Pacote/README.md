@@ -34,3 +34,7 @@ Treinamento sobre como tratar custo e taxonomia de produtos vendidos em pacote (
 
 Gerado a partir do ADP `UNCC_Digital_Platform_String_Tool_Merge_4_4` (abas Youtube, Meta e Tiktok, Programmatic).
 Data: Out/2026
+
+## Se o ADP for recriado do zero
+
+Ver o anexo no [roteiro](roteiro.html). Resumo: o motor e a `Config_Produtos` já nascem no arquivo novo (`.xlsm`), mas é preciso garantir strings idênticas às atuais (campanhas em veiculação e joins do BI), remapear as letras de coluna da config (ideal: referenciar por nome de cabeçalho), migrar validações e abas de apoio, e rodar os dois ADPs em paralelo antes do corte. O VBA não roda no Excel Online.
