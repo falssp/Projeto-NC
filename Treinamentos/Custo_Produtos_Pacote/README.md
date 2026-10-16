@@ -13,6 +13,7 @@ Treinamento sobre como tratar custo e taxonomia de produtos vendidos em pacote (
 | `index.html` | Apresentação interativa — 10 slides | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/index.html) |
 | `roteiro.html` / `roteiro.md` | Roteiro com falas sugeridas por slide | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/roteiro.html) |
 | `MotorTaxonomiaGenerico.bas` | Módulo VBA: motor genérico de montagem de string + `SetupConfigProdutos()` | — |
+| `Config_Produtos.tsv` | Conteúdo da aba `Config_Produtos` (colar na célula A1 do ADP) | — |
 
 ## Conteúdo (10 slides)
 
