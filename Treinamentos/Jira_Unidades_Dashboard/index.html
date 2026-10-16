@@ -57,6 +57,7 @@
 <li><code>unidades_exibicao</code> → o que aparece na linha (pai = soma dos filhos).</li>
 <li><code>unidades_total</code> → o que o Looker soma nos totais (pai = vazio).</li>
 <li>Nos totais, scorecards e gráficos agregados do Looker: <strong>só <code>unidades_total</code></strong>.</li>
+<li><strong>Sem BigQuery?</strong> Siga o <a href="passo-a-passo-jira-sheets.md">passo a passo Jira → Sheets → Looker</a>.</li>
 </ul>
 
 </section><section><h2>1. Contexto e problema</h2>
@@ -246,7 +247,7 @@ Google Sheets (colunas D e E)           ▼
 </tr>
 </tbody>
 </table>
-<p>Exemplo pronto em <a href="JIRA_EXTRACAO_UNIDADES.gs"><code>JIRA_EXTRACAO_UNIDADES.gs</code></a>. <strong>Não foi testado contra o Jira real</strong>: ajustar domínio, JQL e ID do campo, e conferir o endpoint de busca na documentação atual da API.</p>
+<p>Exemplo pronto em <a href="JIRA_EXTRACAO_UNIDADES.gs"><code>JIRA_EXTRACAO_UNIDADES.gs</code></a>, com instruções completas em <a href="passo-a-passo-jira-sheets.md"><code>passo-a-passo-jira-sheets.md</code></a> (credenciais, descoberta do ID do campo, sincronização para a planilha, agendamento e Looker). <strong>Não foi testado contra o Jira real</strong>: ajustar domínio, JQL e ID do campo, e conferir o endpoint de busca na documentação atual da API.</p>
 <p>Regra de ouro: o JQL traz <strong>pais e filhos</strong> do escopo inteiro. Quem filtra é o Looker.</p>
 </section><section><h2>7. Implementação</h2>
 <h3>7.1 BigQuery — view simples (2 níveis: pai → filho)</h3>
@@ -399,9 +400,14 @@ LEFT JOIN base p ON p.issue_key = b.parent_key
 <td><code>ROLLUP_UNIDADES_PAI_FILHO.gs</code> (em Node)</td>
 <td><code>node teste_rollup_gs.js</code></td>
 </tr>
+<tr>
+<td><code>teste_planilha_gs.js</code></td>
+<td>Montagem das linhas gravadas na planilha (<code>JIRA_EXTRACAO_UNIDADES.gs</code>, em Node)</td>
+<td><code>node teste_planilha_gs.js</code></td>
+</tr>
 </tbody>
 </table>
-<p>Os três terminam com <code>OK: todas as verificações passaram</code> quando a lógica está correta. Se você alterar a regra, atualize <code>resultados_esperados.csv</code> e rode de novo.</p>
+<p>Os quatro terminam com <code>OK: todas as verificações passaram</code> quando a lógica está correta. Se você alterar a regra, atualize <code>resultados_esperados.csv</code> e rode de novo.</p>
 </section><section><h2>10. Casos de borda (todos testados)</h2>
 <table>
 <thead>
@@ -538,7 +544,7 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 <li>View SQL simples cobre só 2 níveis; o Sheets chega a 3 com colunas extras.</li>
 <li><code>unidades_exibicao</code> do pai não reage a filtros do Looker.</li>
 <li>Ciclos de parentesco quebram a view multi-nível.</li>
-<li>Não testados em ambiente real: execução no BigQuery, execução no Google Sheets e <code>JIRA_EXTRACAO_UNIDADES.gs</code> contra o Jira. A lógica das views, das fórmulas e do rollup em Apps Script foi validada localmente (DuckDB, LibreOffice e Node) com os dados de <code>exemplos/</code>, usando os scripts de <code>testes/</code>.</li>
+<li>Não testados em ambiente real: execução no BigQuery, execução no Google Sheets, e as chamadas ao Jira e a gravação na planilha do <code>JIRA_EXTRACAO_UNIDADES.gs</code> (só a montagem das linhas foi testada). A lógica das views, das fórmulas e do rollup em Apps Script foi validada localmente (DuckDB, LibreOffice e Node) com os dados de <code>exemplos/</code>, usando os scripts de <code>testes/</code>.</li>
 </ul>
 </section><section><h2>15. Arquivos desta pasta</h2>
 <table>
@@ -570,8 +576,12 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 <td>Rollup recursivo (exibição + total)</td>
 </tr>
 <tr>
+<td><code>passo-a-passo-jira-sheets.md</code> / <code>.html</code></td>
+<td>Passo a passo Jira → Sheets → Looker (sem BigQuery)</td>
+</tr>
+<tr>
 <td><code>JIRA_EXTRACAO_UNIDADES.gs</code></td>
-<td>Exemplo de extração do Jira (não testado)</td>
+<td>Extração do Jira + gravação na planilha (chamadas externas não testadas)</td>
 </tr>
 <tr>
 <td><code>exemplos/dados_teste.csv</code></td>
@@ -592,6 +602,14 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 <tr>
 <td><code>testes/teste_rollup_gs.js</code></td>
 <td>Teste do rollup em Apps Script</td>
+</tr>
+<tr>
+<td><code>testes/teste_planilha_gs.js</code></td>
+<td>Teste da montagem das linhas da planilha</td>
+</tr>
+<tr>
+<td><code>gerar_html.py</code></td>
+<td>Gera <code>index.html</code> e <code>passo-a-passo-jira-sheets.html</code> a partir dos <code>.md</code></td>
 </tr>
 </tbody>
 </table>
@@ -619,6 +637,10 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 <tr>
 <td>15/10/2026</td>
 <td>Scripts de teste reproduzíveis (DuckDB, LibreOffice, Node)</td>
+</tr>
+<tr>
+<td>16/10/2026</td>
+<td>Passo a passo Jira → Sheets → Looker (sem BigQuery); script grava a aba <code>Jira_Unidades</code>; funções de teste de conexão e descoberta do ID do campo</td>
 </tr>
 </tbody>
 </table>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passo a passo | Jira → Sheets → Looker Studio</title>
+<style>
+  :root { --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3248; --accent:#5b6af0; --text:#e8eaf0; --muted:#8890aa; --green:#4ade80; --red:#f87171; --yellow:#fbbf24; --code:#12141e; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+  header{background:linear-gradient(135deg,#1a1d27,#12141e);border-bottom:1px solid var(--border);padding:44px 24px 32px;text-align:center}
+  h1{font-size:clamp(22px,4vw,34px);font-weight:800;letter-spacing:-.02em}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);margin-top:8px;font-size:14px}
+  .back{display:inline-block;margin:16px 0 0;font-size:13px;color:var(--accent);text-decoration:none}
+  .container{max-width:900px;margin:0 auto;padding:36px 20px 80px}
+  section{margin-bottom:44px}
+  h2{font-size:19px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:15px;margin:18px 0 8px;color:#aab3ff}
+  p{margin-bottom:10px;font-size:14.5px}
+  .note{background:var(--surface);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;font-size:14px;margin:12px 0}
+  .warn{border-left-color:var(--yellow)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0;background:var(--surface);border-radius:8px;overflow:hidden;display:block;overflow-x:auto}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{background:var(--surface2);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  tr.tot td{font-weight:800;color:var(--green)}
+  .ok{color:var(--green)} .bad{color:var(--red)}
+  pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0}
+  code{font-family:Consolas,'Courier New',monospace}
+  p code,td code,li code{background:var(--code);padding:1px 6px;border-radius:4px;font-size:12.5px}
+  ul.check{list-style:none}
+  ul.check li{padding:6px 0;font-size:14px}
+  ul.check li::before{content:"☐ ";color:var(--accent)}
+  a{color:var(--accent)}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+  blockquote{background:var(--surface);border-left:3px solid var(--accent);padding:4px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+  blockquote p{margin:8px 0}
+  ul,ol{margin:0 0 12px 22px;font-size:14.5px}
+  li{margin:4px 0}
+  hr{border:0;border-top:1px solid var(--border);margin:24px 0}
+  pre code{background:none;padding:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Passo a passo: <span>Jira → Sheets → Looker</span></h1>
+  <p class="sub">Extração, rollup e conexão com o Looker Studio · sem BigQuery · Out/26</p>
+  <a class="back" href="index.html">&larr; Voltar ao guia</a>
+</header>
+<div class="container">
+<p><strong>Para quem não tem BigQuery.</strong> Este caminho usa só Jira, uma planilha Google e o Looker Studio. O rollup (pai = soma dos filhos, total sem duplicar) é calculado pelo Apps Script e gravado já pronto na planilha.</p>
+<blockquote>
+<p><strong>Antes de começar:</strong> as chamadas ao Jira e a gravação na planilha <strong>não foram testadas em ambiente real</strong> (só a lógica do cálculo foi). Siga o passo a passo na ordem; cada etapa tem um teste que mostra se está funcionando.</p>
+</blockquote>
+<section><h2>O que você precisa</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detalhe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conta Atlassian</td>
+<td>Com permissão para ver o projeto no Jira Cloud</td>
+</tr>
+<tr>
+<td>API token do Jira</td>
+<td>Criado no passo 2</td>
+</tr>
+<tr>
+<td>Planilha Google</td>
+<td>Nova ou existente (o script cria a aba <code>Jira_Unidades</code>)</td>
+</tr>
+<tr>
+<td>Looker Studio</td>
+<td>Conta Google com acesso à planilha</td>
+</tr>
+<tr>
+<td>Arquivos desta pasta</td>
+<td><code>ROLLUP_UNIDADES_PAI_FILHO.gs</code> e <code>JIRA_EXTRACAO_UNIDADES.gs</code></td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>Passo 1 — Criar a planilha e o projeto do Apps Script</h2>
+<ol>
+<li>Crie (ou abra) uma planilha Google.</li>
+<li>Menu <strong>Extensões → Apps Script</strong>. Abre o editor com um arquivo <code>Código.gs</code>.</li>
+<li>Renomeie o projeto (ex.: <code>Jira Unidades</code>).</li>
+<li>No arquivo <code>Código.gs</code>, apague tudo e cole o conteúdo de <code>ROLLUP_UNIDADES_PAI_FILHO.gs</code>. Renomeie o arquivo para <code>ROLLUP_UNIDADES_PAI_FILHO</code>.</li>
+<li>Clique em <strong>+ → Script</strong> e crie um segundo arquivo <code>JIRA_EXTRACAO_UNIDADES</code>. Cole o conteúdo de <code>JIRA_EXTRACAO_UNIDADES.gs</code>.</li>
+<li>Salve (ícone de disquete).</li>
+</ol>
+<p><strong>Importante:</strong> os dois arquivos precisam estar no <strong>mesmo projeto</strong>. O segundo usa a função do primeiro.</p>
+</section><section><h2>Passo 2 — Criar o API token do Jira</h2>
+<ol>
+<li>Acesse <code>https://id.atlassian.com/manage-profile/security/api-tokens</code>.</li>
+<li><strong>Create API token</strong>, dê um nome (ex.: <code>Sheets Unidades</code>) e copie o token.</li>
+<li>Guarde o token só para o passo 4. <strong>Nunca</strong> cole em código, em chat ou em repositório.</li>
+</ol>
+</section><section><h2>Passo 3 — Ajustar a configuração do script</h2>
+<p>No arquivo <code>JIRA_EXTRACAO_UNIDADES</code>, edite o bloco <code>JIRA_CFG</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>O que colocar</th>
+<th>Exemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DOMINIO</code></td>
+<td>Domínio do seu Jira, sem <code>https://</code></td>
+<td><code>suaempresa.atlassian.net</code></td>
+</tr>
+<tr>
+<td><code>JQL</code></td>
+<td>Busca que traga <strong>pais e filhos</strong> do escopo inteiro</td>
+<td><code>project = UL ORDER BY key ASC</code></td>
+</tr>
+<tr>
+<td><code>CAMPO_UNIDADES</code></td>
+<td>ID do campo de unidades (passo 6)</td>
+<td><code>customfield_10123</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Regra do JQL:</strong> nunca filtre só os filhos nem só um status. Se o pai ficar de fora, o filho vira "órfão" e o rollup quebra. Filtros ficam no Looker.</p>
+<p>Deixe <code>CAMPO_UNIDADES</code> como está por enquanto; você descobre o ID no passo 6.</p>
+</section><section><h2>Passo 4 — Guardar as credenciais</h2>
+<ol>
+<li>No editor, escolha a função <strong><code>configurarCredenciaisJira</code></strong> na lista ao lado do botão <strong>Executar</strong> e clique em <strong>Executar</strong>.</li>
+<li>Na primeira vez o Google pede autorização: <strong>Revisar permissões</strong> → escolha sua conta → <strong>Avançado</strong> → <strong>Acessar (nome do projeto)</strong> → <strong>Permitir</strong>. (O script precisa acessar a planilha e fazer requisições externas.)</li>
+<li>Volte à planilha: aparecem dois pop-ups. Informe o <strong>e-mail</strong> da conta Atlassian e o <strong>API token</strong> do passo 2.</li>
+<li>Aparece "Credenciais salvas para o seu usuário".</li>
+</ol>
+<p>As credenciais ficam nas propriedades do <strong>seu usuário</strong>, não no código.</p>
+</section><section><h2>Passo 5 — Testar a conexão</h2>
+<ol>
+<li>Execute a função <strong><code>testarConexaoJira</code></strong>.</li>
+<li>Abra <strong>Execução</strong> (menu lateral) ou <strong>Ver → Registros</strong> e confira: <code>Conectado como: &lt;seu nome&gt;</code>.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Erro</th>
+<th>Causa provável</th>
+<th>O que fazer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Jira HTTP 401</code></td>
+<td>E-mail ou token errado</td>
+<td>Refazer o passo 4</td>
+</tr>
+<tr>
+<td><code>Jira HTTP 404</code></td>
+<td>Domínio errado</td>
+<td>Corrigir <code>DOMINIO</code> (sem <code>https://</code>)</td>
+</tr>
+<tr>
+<td><code>Jira HTTP 403</code></td>
+<td>Sem permissão</td>
+<td>Pedir acesso ao projeto</td>
+</tr>
+<tr>
+<td><code>Defina JIRA_EMAIL e JIRA_TOKEN</code></td>
+<td>Credenciais não salvas</td>
+<td>Refazer o passo 4</td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>Passo 6 — Descobrir o ID do campo de unidades</h2>
+<p><strong>Opção A (pelo script):</strong></p>
+<ol>
+<li>Execute <strong><code>listarCamposJira</code></strong>. Ele procura campos com "unidade" no nome.</li>
+<li>Nos registros aparece algo como <code>customfield_10123 | Unidades (custom)</code>. Copie o ID.</li>
+<li>Se o nome do seu campo for outro (ex.: "Quantidade"), edite a chamada para <code>listarCamposJira('quantidade')</code> ou altere o termo padrão.</li>
+</ol>
+<p><strong>Opção B (pela interface, precisa ser admin do Jira):</strong> Configurações do Jira → Issues → Campos personalizados → abra o campo → o ID aparece na URL (<code>customfield_XXXXX</code>).</p>
+<p>Cole o ID em <code>CAMPO_UNIDADES</code> e salve.</p>
+<p><strong>Atenção:</strong> se houver dois campos com nomes parecidos, confirme qual é o que está preenchido nas tarefas filhas (abra uma tarefa filha no Jira e compare).</p>
+</section><section><h2>Passo 7 — Rodar a sincronização</h2>
+<ol>
+<li>Execute <strong><code>sincronizarUnidadesParaPlanilha</code></strong>.</li>
+<li>Nos registros aparece: <code>Issues gravadas: N | Total geral (unidades_total): X</code>.</li>
+<li>Na planilha surge a aba <strong><code>Jira_Unidades</code></strong> com 5 colunas:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Coluna</th>
+<th>Conteúdo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>issue_key</code></td>
+<td>Chave da issue</td>
+</tr>
+<tr>
+<td><code>parent_key</code></td>
+<td>Chave do pai (vazio se não tem)</td>
+</tr>
+<tr>
+<td><code>unidades</code></td>
+<td>Valor próprio no Jira (vazio se não tem)</td>
+</tr>
+<tr>
+<td><code>unidades_exibicao</code></td>
+<td>Para o pai sem valor: soma dos descendentes</td>
+</tr>
+<tr>
+<td><code>unidades_total</code></td>
+<td>Valor próprio (vazio no pai sem valor) — <strong>é o que o Looker soma</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Cada execução <strong>substitui</strong> o conteúdo da aba. Não edite a aba na mão.</p>
+</section><section><h2>Passo 8 — Validar o resultado</h2>
+<p>Faça com uma amostra pequena antes de confiar no total.</p>
+<ul>
+<li>☐ Escolha um pai conhecido; some à mão as unidades dos filhos no Jira; compare com <code>unidades_exibicao</code> desse pai.</li>
+<li>☐ Some a coluna <code>unidades_total</code> (ex.: <code>=SUM(E2:E)</code>) e compare com a soma manual de todas as issues com valor próprio.</li>
+<li>☐ Conte issues na aba e compare com o resultado do JQL no Jira (mesma contagem).</li>
+<li>☐ Procure órfãos: <code>parent_key</code> preenchido que não existe em <code>issue_key</code>.</li>
+<li>☐ Procure pai com valor próprio <strong>e</strong> filhos com valor (conta nos dois).</li>
+</ul>
+<p>Se o total não bater, veja a tabela de problemas no fim.</p>
+</section><section><h2>Passo 9 — Agendar a atualização</h2>
+<ol>
+<li>No editor, ícone de <strong>relógio (Acionadores)</strong> → <strong>Adicionar acionador</strong>.</li>
+<li>Função: <code>sincronizarUnidadesParaPlanilha</code> · Origem: <strong>Baseado em tempo</strong> · Escolha a frequência (ex.: a cada hora ou diária).</li>
+<li>Salve. Confira depois em <strong>Execuções</strong> se rodou sem erro.</li>
+</ol>
+<p>O Apps Script tem limite de tempo por execução (alguns minutos). Se o projeto for muito grande e der erro de tempo, restrinja o escopo no JQL (por exemplo, por período de criação), mantendo sempre pais e filhos juntos.</p>
+</section><section><h2>Passo 10 — Conectar no Looker Studio</h2>
+<ol>
+<li>Acesse <code>https://lookerstudio.google.com</code> → <strong>Criar → Fonte de dados</strong>.</li>
+<li>Conector <strong>Planilhas Google</strong> → escolha a planilha → aba <strong><code>Jira_Unidades</code></strong>.</li>
+<li>Marque <strong>Usar a primeira linha como cabeçalho</strong> → <strong>Conectar</strong>.</li>
+<li>Confira os tipos: <code>unidades</code>, <code>unidades_exibicao</code> e <code>unidades_total</code> como <strong>Número</strong> (se vier como texto, mude para Número).</li>
+<li><strong>Criar relatório</strong>.</li>
+</ol>
+<p><strong>Montagem do relatório:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Elemento</th>
+<th>Campos</th>
+<th>Agregação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scorecard / totais / gráficos agregados</td>
+<td><code>unidades_total</code></td>
+<td>Soma</td>
+</tr>
+<tr>
+<td>Tabela de detalhe</td>
+<td><code>issue_key</code> + <code>unidades_exibicao</code></td>
+<td>Soma</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nunca</strong> coloque <code>unidades_exibicao</code> em total, scorecard ou gráfico agregado.</p>
+<p>O Looker Studio guarda cache da fonte. Se o dado novo não aparece, use <strong>Atualizar dados</strong> no relatório ou ajuste a atualização da fonte.</p>
+</section><section><h2>Passo 11 — Dimensões que só existem no pai (BU, marca, campanha, veículo)</h2>
+<p>Se campanha, BU etc. estão preenchidas só no pai, o total por dimensão (que soma linhas de filhos) fica sem agrupamento. Duas saídas:</p>
+<ol>
+<li><strong>Preencher a dimensão nos filhos</strong> no Jira.</li>
+<li><strong>Herdar do pai</strong> no script: adicionar a dimensão ao <code>fields</code> da busca e copiá-la para o filho na montagem das linhas. Hoje o script não faz isso; precisa de ajuste (pedir para implementar quando a dimensão estiver definida).</li>
+</ol>
+</section><section><h2>Problemas comuns</h2>
+<table>
+<thead>
+<tr>
+<th>Sintoma</th>
+<th>Causa provável</th>
+<th>Solução</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aba vazia ou <code>Issues gravadas: 0</code></td>
+<td>JQL sem resultado ou sem permissão</td>
+<td>Testar o mesmo JQL na busca avançada do Jira</td>
+</tr>
+<tr>
+<td><code>unidades</code> vazia para todas as issues</td>
+<td>ID do campo errado</td>
+<td>Refazer o passo 6 e comparar com uma tarefa preenchida</td>
+</tr>
+<tr>
+<td>Aviso "valor não numérico" nos registros</td>
+<td>Campo é texto/lista, não número</td>
+<td>Usar um campo numérico; o valor ruim é tratado como vazio</td>
+</tr>
+<tr>
+<td>Pai mostra 0</td>
+<td>Filhos sem valor, ou filhos fora do JQL</td>
+<td>Conferir valores e o JQL (pais e filhos juntos)</td>
+</tr>
+<tr>
+<td>Total maior que o esperado</td>
+<td>Pai com valor próprio e filhos com valor, ou soma de <code>unidades_exibicao</code></td>
+<td>Unidade só no filho; usar <code>unidades_total</code></td>
+</tr>
+<tr>
+<td>Total menor que o esperado</td>
+<td>Filhos fora do JQL ou valores vazios</td>
+<td>Conferir JQL e preenchimento</td>
+</tr>
+<tr>
+<td><code>Jira HTTP 410</code> ou erro no endpoint de busca</td>
+<td>Endpoint de busca mudou</td>
+<td>Conferir na documentação atual da API do Jira Cloud e ajustar a URL em <code>buscarIssuesJira</code></td>
+</tr>
+<tr>
+<td>Erro de tempo de execução</td>
+<td>Projeto muito grande</td>
+<td>Restringir o JQL mantendo pais e filhos</td>
+</tr>
+<tr>
+<td>Looker não atualiza</td>
+<td>Cache da fonte</td>
+<td>Atualizar dados no relatório</td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>Quando migrar para BigQuery</h2>
+<p>Se a base crescer ou houver mais de 3 níveis, o mesmo cálculo existe em SQL (<code>sql/vw_jira_unidades_multinivel.sql</code>). A tabela de entrada precisa ter <code>issue_key</code>, <code>parent_key</code> e <code>unidades</code>, os mesmos campos que o script extrai.</p>
+
+<p><em>Treinamento NC Tool · Unilever BR × Grasp</em></p></section>
+</div>
+<footer>NC Tool &copy; 2026 · Unilever BR &times; Grasp</footer>
+</body>
+</html>

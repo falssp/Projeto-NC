@@ -10,6 +10,7 @@
   - `unidades_exibicao` → o que aparece na linha (pai = soma dos filhos).
   - `unidades_total` → o que o Looker soma nos totais (pai = vazio).
 - Nos totais, scorecards e gráficos agregados do Looker: **só `unidades_total`**.
+- **Sem BigQuery?** Siga o [passo a passo Jira → Sheets → Looker](passo-a-passo-jira-sheets.md).
 
 ---
 
@@ -87,7 +88,7 @@ Cada issue precisa chegar na fonte com **3 campos**:
 | `parent_key` | `fields.parent.key` (vazio se não tem pai) |
 | `unidades` | campo customizado de unidades (ID `customfield_XXXXX`; confirmar em Jira → Configurações → Campos). **Vazio = NULL**, não `0`. |
 
-Exemplo pronto em [`JIRA_EXTRACAO_UNIDADES.gs`](JIRA_EXTRACAO_UNIDADES.gs). **Não foi testado contra o Jira real**: ajustar domínio, JQL e ID do campo, e conferir o endpoint de busca na documentação atual da API.
+Exemplo pronto em [`JIRA_EXTRACAO_UNIDADES.gs`](JIRA_EXTRACAO_UNIDADES.gs), com instruções completas em [`passo-a-passo-jira-sheets.md`](passo-a-passo-jira-sheets.md) (credenciais, descoberta do ID do campo, sincronização para a planilha, agendamento e Looker). **Não foi testado contra o Jira real**: ajustar domínio, JQL e ID do campo, e conferir o endpoint de busca na documentação atual da API.
 
 Regra de ouro: o JQL traz **pais e filhos** do escopo inteiro. Quem filtra é o Looker.
 
@@ -219,8 +220,9 @@ Scripts em `testes/` que reproduzem a validação a partir desses arquivos:
 | `teste_views_duckdb.py` | Views SQL simples e multi-nível (em DuckDB) | `pip install duckdb` · `python3 teste_views_duckdb.py` |
 | `teste_formulas_sheets.py` | Fórmulas do Sheets, 2 e 3 níveis (em LibreOffice) | `pip install openpyxl` · `python3 teste_formulas_sheets.py` (precisa de `soffice`) |
 | `teste_rollup_gs.js` | `ROLLUP_UNIDADES_PAI_FILHO.gs` (em Node) | `node teste_rollup_gs.js` |
+| `teste_planilha_gs.js` | Montagem das linhas gravadas na planilha (`JIRA_EXTRACAO_UNIDADES.gs`, em Node) | `node teste_planilha_gs.js` |
 
-Os três terminam com `OK: todas as verificações passaram` quando a lógica está correta. Se você alterar a regra, atualize `resultados_esperados.csv` e rode de novo.
+Os quatro terminam com `OK: todas as verificações passaram` quando a lógica está correta. Se você alterar a regra, atualize `resultados_esperados.csv` e rode de novo.
 
 ## 10. Casos de borda (todos testados)
 
@@ -297,7 +299,7 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 - View SQL simples cobre só 2 níveis; o Sheets chega a 3 com colunas extras.
 - `unidades_exibicao` do pai não reage a filtros do Looker.
 - Ciclos de parentesco quebram a view multi-nível.
-- Não testados em ambiente real: execução no BigQuery, execução no Google Sheets e `JIRA_EXTRACAO_UNIDADES.gs` contra o Jira. A lógica das views, das fórmulas e do rollup em Apps Script foi validada localmente (DuckDB, LibreOffice e Node) com os dados de `exemplos/`, usando os scripts de `testes/`.
+- Não testados em ambiente real: execução no BigQuery, execução no Google Sheets, e as chamadas ao Jira e a gravação na planilha do `JIRA_EXTRACAO_UNIDADES.gs` (só a montagem das linhas foi testada). A lógica das views, das fórmulas e do rollup em Apps Script foi validada localmente (DuckDB, LibreOffice e Node) com os dados de `exemplos/`, usando os scripts de `testes/`.
 
 ## 15. Arquivos desta pasta
 
@@ -308,12 +310,15 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 | `sql/vw_jira_unidades_simples.sql` | View BigQuery, 2 níveis |
 | `sql/vw_jira_unidades_multinivel.sql` | View BigQuery, 3+ níveis |
 | `ROLLUP_UNIDADES_PAI_FILHO.gs` | Rollup recursivo (exibição + total) |
-| `JIRA_EXTRACAO_UNIDADES.gs` | Exemplo de extração do Jira (não testado) |
+| `passo-a-passo-jira-sheets.md` / `.html` | Passo a passo Jira → Sheets → Looker (sem BigQuery) |
+| `JIRA_EXTRACAO_UNIDADES.gs` | Extração do Jira + gravação na planilha (chamadas externas não testadas) |
 | `exemplos/dados_teste.csv` | Dados de teste |
 | `exemplos/resultados_esperados.csv` | Resultados esperados (total 31) |
 | `testes/teste_views_duckdb.py` | Teste das views SQL |
 | `testes/teste_formulas_sheets.py` | Teste das fórmulas do Sheets |
 | `testes/teste_rollup_gs.js` | Teste do rollup em Apps Script |
+| `testes/teste_planilha_gs.js` | Teste da montagem das linhas da planilha |
+| `gerar_html.py` | Gera `index.html` e `passo-a-passo-jira-sheets.html` a partir dos `.md` |
 
 ## 16. Histórico
 
@@ -323,6 +328,7 @@ Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com 
 | 15/10/2026 | View BigQuery multi-nível |
 | 15/10/2026 | Documentação completa: casos de borda, Sheets 3 níveis, extração Jira, FAQ, dados de teste |
 | 15/10/2026 | Scripts de teste reproduzíveis (DuckDB, LibreOffice, Node) |
+| 16/10/2026 | Passo a passo Jira → Sheets → Looker (sem BigQuery); script grava a aba `Jira_Unidades`; funções de teste de conexão e descoberta do ID do campo |
 
 ---
 
