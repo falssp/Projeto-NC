@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Dashboard — Campaign Local v20261013</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1117;--surf:#181c27;--surf2:#1e2333;--brd:#2a3050;
+  --acc:#4f7ef8;--acc2:#7c5ff5;--grn:#2ecc71;--ylw:#f1c40f;
+  --org:#e67e22;--red:#e74c3c;--mut:#6b7a9e;--txt:#e8ecf4;--txt2:#a0aabf;
+  --pink:#e91e8c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
+
+/* ── TOPBAR ─────────────────────────────────────────────────── */
+.topbar{display:flex;align-items:center;gap:12px;padding:0 20px;height:52px;background:var(--surf);border-bottom:1px solid var(--brd);position:sticky;top:0;z-index:100}
+.topbar-title{font-weight:700;font-size:15px;color:var(--txt);white-space:nowrap}
+.topbar-title span{color:var(--acc);margin-right:6px}
+.sync-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);margin-left:4px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--mut)}
+.sync-dot.ok{background:var(--grn)}
+.sync-dot.loading{background:var(--ylw);animation:pulse .9s infinite}
+.sync-dot.erro{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.topbar-spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;border:1px solid var(--brd);background:var(--surf2);color:var(--txt2);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--acc);color:var(--txt);background:#232a42}
+.btn-icon{font-size:13px}
+
+/* ── KPIS ───────────────────────────────────────────────────── */
+.kpi-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 20px;border-bottom:1px solid var(--brd)}
+.kpi-card{background:var(--surf);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;transition:all .15s}
+.kpi-card.clickable{cursor:pointer}
+.kpi-card.clickable:hover{border-color:var(--acc);background:#1c2035}
+.kpi-card.active{border-color:var(--acc)!important;background:#1a2240!important}
+.kpi-label{font-size:11px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
+.kpi-sub{font-size:11px;color:var(--mut)}
+.kpi-card.total .kpi-val{color:var(--acc)}
+.kpi-card.ok .kpi-val{color:var(--grn)}
+.kpi-card.warn .kpi-val{color:var(--ylw)}
+.kpi-card.dup .kpi-val{color:var(--pink)}
+
+/* ── BANNER KPI ─────────────────────────────────────────────── */
+.kpi-banner{display:none;align-items:center;justify-content:space-between;padding:7px 20px;background:#1a2240;border-bottom:1px solid var(--acc);font-size:12px;color:var(--acc)}
+.kpi-banner.show{display:flex}
+.kpi-banner-close{cursor:pointer;opacity:.6;font-size:16px;line-height:1}
+.kpi-banner-close:hover{opacity:1}
+
+/* ── FILTROS ────────────────────────────────────────────────── */
+.filters-wrap{padding:12px 20px;border-bottom:1px solid var(--brd);display:flex;flex-direction:column;gap:8px}
+.filters-row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;width:100%}
+.filter-group{display:flex;flex-direction:column;gap:3px;position:relative;flex:1;min-width:120px}
+.filter-label{font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+/* search input com dropdown */
+.filter-search{background:var(--surf2);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:6px 10px;outline:none;transition:border-color .15s;height:34px;width:100%;min-width:140px}
+.filter-search:focus{border-color:var(--acc)}
+.filter-search.active{border-color:var(--acc);background:#1c2240}
+.filter-dropdown{position:absolute;top:calc(100% + 2px);left:0;min-width:100%;background:var(--surf);border:1px solid var(--brd);border-radius:7px;max-height:240px;overflow-y:auto;z-index:80;display:none;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.filter-dropdown.show{display:block}
+.fdd-item{padding:7px 11px;font-size:12px;cursor:pointer;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fdd-item:hover,.fdd-item.sel{background:var(--surf2);color:var(--txt)}
+.fdd-item.sel{font-weight:600;color:var(--acc)}
+.fdd-empty{padding:9px 11px;font-size:11px;color:var(--mut);text-align:center}
+/* busca global */
+.search-global{background:var(--surf2);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:6px 10px 6px 32px;outline:none;transition:border-color .15s;height:34px;width:100%}
+.search-global:focus{border-color:var(--acc)}
+.search-wrap{position:relative;flex:1;min-width:220px}
+.search-wrap::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none}
+/* pill toggles */
+.filter-group.no-grow{flex:0 0 auto}
+.pill-group{display:flex;gap:4px;flex-wrap:wrap}
+.pill{background:var(--surf2);border:1px solid var(--brd);color:var(--txt2);font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;font-family:inherit;transition:all .13s;white-space:nowrap;height:34px;display:flex;align-items:center}
+.pill:hover{border-color:var(--acc);color:var(--txt)}
+.pill.active{background:#1a2240;border-color:var(--acc);color:var(--acc)}
+input.filt{background:var(--surf2);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:inherit;font-size:13px;padding:6px 10px;outline:none;transition:border-color .15s;height:34px}
+input.filt:focus{border-color:var(--acc)}
+.btn-limpar{background:transparent;border:1px dashed var(--brd);color:var(--mut);font-size:12px;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;height:34px}
+.btn-limpar:hover{border-color:var(--red);color:var(--red)}
+
+/* ── SEÇÕES DE AVISO ────────────────────────────────────────── */
+.warn-section{margin:14px 20px 0;border-radius:10px;border:1px solid;overflow:hidden;position:relative;z-index:15}
+.warn-section.vc{border-color:#533a00;background:#1a1200}
+.warn-section.dup{border-color:#4a0f2e;background:#1a0010;margin-top:10px}
+.warn-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none}
+.warn-section.vc .warn-header{background:#251c00}
+.warn-section.dup .warn-header{background:#250010}
+.warn-title{font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px}
+.warn-section.vc .warn-title{color:var(--ylw)}
+.warn-section.dup .warn-title{color:var(--pink)}
+.warn-count{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700}
+.warn-section.vc .warn-count{background:#533a00;color:#ffdd57}
+.warn-section.dup .warn-count{background:#4a0f2e;color:#ff6ec7}
+.warn-chevron{font-size:11px;transition:transform .2s;color:var(--mut)}
+.warn-body{display:none}
+.warn-body.open{display:block}
+.warn-table-mini{width:100%;border-collapse:collapse;font-size:12px}
+.warn-table-mini th{padding:5px 8px;text-align:left;color:var(--mut);font-weight:600;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--brd);white-space:nowrap}
+.warn-table-mini td{padding:5px 8px;border-bottom:1px solid #ffffff08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+
+/* ── TABELA PRINCIPAL ───────────────────────────────────────── */
+.main-wrap{padding:14px 20px 40px}
+.table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer;user-select:none;padding:10px 14px;background:var(--surf);border:1px solid var(--brd);border-radius:10px;transition:background .15s}
+.table-header:hover{background:#1c2035}
+.table-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
+.table-title{font-size:12px;font-weight:600;color:var(--mut)}
+.table-chevron{color:var(--mut);font-size:12px;margin-left:auto}
+.table-wrap{border:1px solid var(--brd);border-top:none;border-bottom-left-radius:10px;border-bottom-right-radius:10px;display:none;overflow:hidden}
+.table-wrap.open{display:block}
+/* ano + brand blocks */
+.ano-block{border-bottom:1px solid var(--brd)}
+.ano-block:last-child{border-bottom:none}
+.ano-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0e1220;cursor:pointer;user-select:none}
+.ano-header:hover{background:#141828}
+.ano-label{font-size:13px;font-weight:700;color:var(--acc);flex:1}
+.ano-count{font-size:11px;color:var(--mut)}
+.ano-chev{font-size:11px;color:var(--mut)}
+.ano-content{display:none}
+.ano-content.open{display:block}
+.brand-block{border-top:1px solid var(--brd)}
+.brand-header{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 26px;background:#141828;cursor:pointer;user-select:none}
+.brand-header:hover{background:#1a1f30}
+.brand-name{font-size:12px;font-weight:600;color:var(--txt);flex:1}
+.brand-count{font-size:11px;color:var(--mut)}
+.brand-chev{font-size:11px;color:var(--mut)}
+.brand-rows{display:none;overflow-x:auto}
+.brand-rows.open{display:block}
+.table-wrap.open{display:block}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead th{background:#1e2333;padding:9px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{color:var(--txt)}
+.sort-icon{margin-left:4px;opacity:.4;font-size:10px}
+thead th.sorted .sort-icon{opacity:1;color:var(--acc)}
+tbody tr{border-bottom:1px solid #ffffff06;transition:background .1s}
+tbody tr:hover{background:#ffffff05}
+tbody tr.dup-row{background:#1a001080}
+tbody td{padding:8px 12px;font-size:13px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-ok{background:#0d3a20;color:#2ecc71;border:1px solid #1a5c33}
+.badge-warn{background:#3a2d00;color:#f1c40f;border:1px solid #5c4700}
+.badge-new{background:#0a2040;color:#4f7ef8;border:1px solid #1a3a6a}
+.badge-no{background:#222;color:#a0aabf;border:1px solid #333}
+.cn-code{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.3px}
+.ano-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--surf2);color:var(--mut);border:1px solid var(--brd)}
+.dup-badge{display:inline-block;width:16px;height:16px;border-radius:50%;background:#4a0f2e;color:var(--pink);font-size:9px;font-weight:700;text-align:center;line-height:16px;margin-right:4px;vertical-align:middle}
+
+/* ── EMPTY / LOADING ────────────────────────────────────────── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--mut)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.loading-wrap{height:3px;overflow:hidden;position:fixed;top:0;left:0;right:0;z-index:200;display:none}
+.loading-wrap.show{display:block}
+.loading-bar{height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc));background-size:200%;animation:load 1.4s linear infinite}
+@keyframes load{0%{background-position:100%}100%{background-position:-100%}}
+
+/* ── EXPORT MODAL ───────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:#00000085;z-index:300;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surf);border:1px solid var(--brd);border-radius:12px;padding:24px;width:440px;max-width:95vw}
+.modal h3{font-size:15px;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--txt2);margin-bottom:14px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn-primary{background:var(--acc);border:none;color:#fff;padding:8px 18px;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+textarea.modal-csv{width:100%;height:110px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:11px;padding:8px;resize:none;outline:none;margin-bottom:12px}
+
+/* ── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--mut)}
+
+@media(max-width:768px){
+  .kpi-bar{grid-template-columns:1fr 1fr}
+  .filters-row{flex-direction:column;align-items:stretch}
+  select.filt,input.filt{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-wrap" id="loadingWrap"><div class="loading-bar"></div></div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title"><span>📋</span>Campaign Local</div>
+  <div class="sync-wrap">
+    <div class="sync-dot loading" id="syncDot"></div>
+    <span id="syncInfo">Carregando...</span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <button class="btn" onclick="expandirTudo()"><span class="btn-icon">↓</span>Expandir avisos</button>
+  <button class="btn" onclick="abrirExport()"><span class="btn-icon">⬇</span>Exportar CSV</button>
+  <button class="btn" onclick="window.print()" title="Imprimir ou salvar como PDF"><span class="btn-icon">🖨</span>PDF</button>
+  <button class="btn" onclick="recarregar()" title="Recarregar dados"><span class="btn-icon">↻</span>Atualizar</button>
+</div>
+
+<!-- KPI BAR -->
+<div class="kpi-bar">
+  <div class="kpi-card total" id="kpiTotal">
+    <div class="kpi-label">Total de linhas</div>
+    <div class="kpi-val" id="kpiTotalVal">—</div>
+    <div class="kpi-sub" id="kpiTotalSub">carregando...</div>
+  </div>
+  <div class="kpi-card ok clickable" id="kpiOk" onclick="toggleKpi('ok')">
+    <div class="kpi-label">CN Code OK</div>
+    <div class="kpi-val" id="kpiOkVal">—</div>
+    <div class="kpi-sub" id="kpiOkSub">% do total</div>
+  </div>
+  <div class="kpi-card warn clickable" id="kpiVc" onclick="toggleKpi('vc')">
+    <div class="kpi-label">Verificar Campanha</div>
+    <div class="kpi-val" id="kpiVcVal">—</div>
+    <div class="kpi-sub" id="kpiVcSub">CN Code em branco — clique p/ filtrar</div>
+  </div>
+  <div class="kpi-card dup clickable" id="kpiDup" onclick="toggleKpi('dup')">
+    <div class="kpi-label">Duplicatas</div>
+    <div class="kpi-val" id="kpiDupVal">—</div>
+    <div class="kpi-sub" id="kpiDupSub">mesmos campos-chave — clique p/ filtrar</div>
+  </div>
+</div>
+
+<!-- BANNER KPI ATIVO -->
+<div class="kpi-banner" id="kpiBanner">
+  <span id="kpiBannerText"></span>
+  <span class="kpi-banner-close" onclick="toggleKpi(null)">✕</span>
+</div>
+
+<!-- BANNER SETUP -->
+<div id="setupBanner" style="display:none;background:#1a2240;border:1px solid #4f7ef8;border-radius:8px;padding:12px 16px;margin:12px 20px;font-size:12px;color:var(--txt2);line-height:1.8;">
+  <strong style="color:var(--txt)">⚙️ Web App não configurada</strong><br>
+  Instale <code style="background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:1px 6px;font-family:monospace">WEBAPP_CN.gs</code>
+  na planilha corp → <em>Extensions &gt; Apps Script</em>.<br>
+  <em>Deploy &gt; New deployment &gt; Web App</em> · Execute as: <strong style="color:var(--txt)">Me</strong> · Access: <strong style="color:var(--txt)">Anyone</strong>.<br>
+  Cole a URL gerada em <code style="background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:1px 6px;font-family:monospace">index.html</code>
+  na variável <code style="background:var(--surf2);border:1px solid var(--brd);border-radius:4px;padding:1px 6px;font-family:monospace">WEBAPP_URL</code>.
+</div>
+
+<!-- FILTROS -->
+<div class="filters-wrap">
+  <!-- linha 1: busca global -->
+  <div class="filters-row">
+    <div class="search-wrap" style="flex:1">
+      <input class="search-global" id="filtBusca" placeholder="Buscar por Brand, Campaign Name, CN Code, Responsável, Agência…" oninput="renderizar()">
+    </div>
+    <button class="btn-limpar" onclick="limparFiltros()">✕ Limpar</button>
+  </div>
+  <!-- linha 2: filtros com dropdown -->
+  <div class="filters-row">
+    <div class="filter-group" style="min-width:150px">
+      <div class="filter-label">Brand Name</div>
+      <input class="filter-search" id="filtBrandSearch" placeholder="Todas as marcas" autocomplete="off"
+        oninput="atualizarDropdown('Brand')" onfocus="abrirDropdown('Brand')" onblur="fecharDropdownDelay('Brand')" readonly onclick="this.removeAttribute('readonly');abrirDropdown('Brand')">
+      <input type="hidden" id="filtBrand">
+      <div class="filter-dropdown" id="filtBrandDD"></div>
+    </div>
+    <div class="filter-group" style="min-width:140px">
+      <div class="filter-label">Agência</div>
+      <input class="filter-search" id="filtAgenciaSearch" placeholder="Todas" autocomplete="off"
+        oninput="atualizarDropdown('Agencia')" onfocus="abrirDropdown('Agencia')" onblur="fecharDropdownDelay('Agencia')" readonly onclick="this.removeAttribute('readonly');abrirDropdown('Agencia')">
+      <input type="hidden" id="filtAgencia">
+      <div class="filter-dropdown" id="filtAgenciaDD"></div>
+    </div>
+    <div class="filter-group" style="min-width:140px">
+      <div class="filter-label">Responsável</div>
+      <input class="filter-search" id="filtRespSearch" placeholder="Todos" autocomplete="off"
+        oninput="atualizarDropdown('Resp')" onfocus="abrirDropdown('Resp')" onblur="fecharDropdownDelay('Resp')" readonly onclick="this.removeAttribute('readonly');abrirDropdown('Resp')">
+      <input type="hidden" id="filtResp">
+      <div class="filter-dropdown" id="filtRespDD"></div>
+    </div>
+    <div class="filter-group" style="min-width:90px">
+      <div class="filter-label">Ano</div>
+      <input class="filter-search" id="filtAnoSearch" placeholder="Todos" autocomplete="off"
+        oninput="atualizarDropdown('Ano')" onfocus="abrirDropdown('Ano')" onblur="fecharDropdownDelay('Ano')" readonly onclick="this.removeAttribute('readonly');abrirDropdown('Ano')">
+      <input type="hidden" id="filtAno">
+      <div class="filter-dropdown" id="filtAnoDD"></div>
+    </div>
+    <div class="filter-group no-grow">
+      <div class="filter-label">CN Code</div>
+      <div class="pill-group">
+        <button class="pill" id="pilCN0" onclick="setPill('CN','')">Todos</button>
+        <button class="pill" id="pilCN1" onclick="setPill('CN','ok')">✅ Preench.</button>
+        <button class="pill" id="pilCN2" onclick="setPill('CN','vazio')">⚠ Branco</button>
+      </div>
+      <input type="hidden" id="filtCN">
+    </div>
+    <div class="filter-group no-grow">
+      <div class="filter-label">Novo Campaign</div>
+      <div class="pill-group">
+        <button class="pill" id="pilNovo0" onclick="setPill('Novo','')">Todos</button>
+        <button class="pill" id="pilNovo1" onclick="setPill('Novo','sim')">Sim</button>
+        <button class="pill" id="pilNovo2" onclick="setPill('Novo','nao')">Não</button>
+      </div>
+      <input type="hidden" id="filtNovo">
+    </div>
+    <div class="filter-group no-grow">
+      <div class="filter-label">Duplicatas</div>
+      <div class="pill-group">
+        <button class="pill" id="pilDup0" onclick="setPill('Dup','')">Todas</button>
+        <button class="pill" id="pilDup1" onclick="setPill('Dup','dup')">Só dup.</button>
+        <button class="pill" id="pilDup2" onclick="setPill('Dup','unico')">Só únicas</button>
+      </div>
+      <input type="hidden" id="filtDup">
+    </div>
+  </div>
+</div>
+
+<!-- AVISO: VERIFICAR CAMPANHA -->
+<div class="warn-section vc" id="vcSection" style="display:none">
+  <div class="warn-header" onclick="toggleSection('vc')">
+    <div class="warn-title">⚠️ Verificar Campanha — CN Code em branco <span class="warn-count" id="vcCount">0</span></div>
+    <span class="warn-chevron" id="vcChev">▶ expandir</span>
+  </div>
+  <div class="warn-body" id="vcBody">
+    <div id="vcTreeBody"></div>
+  </div>
+</div>
+
+<!-- AVISO: DUPLICATAS -->
+<div class="warn-section dup" id="dupSection" style="display:none">
+  <div class="warn-header" onclick="toggleSection('dup')">
+    <div class="warn-title">🔁 Possíveis Duplicatas <span class="warn-count" id="dupCount">0</span></div>
+    <span class="warn-chevron" id="dupChev">▶ expandir</span>
+  </div>
+  <div class="warn-body" id="dupBody">
+    <div id="dupTreeBody"></div>
+  </div>
+</div>
+
+<!-- TABELA PRINCIPAL -->
+<div class="main-wrap">
+  <div id="mainBody"><div style="padding:40px;text-align:center;color:var(--mut)"><div style="font-size:28px;margin-bottom:8px">⏳</div>Carregando dados...</div></div>
+</div>
+
+<!-- MODAL EXPORT -->
+<div class="modal-overlay" id="exportModal" onclick="if(event.target===this)fecharExport()">
+  <div class="modal">
+    <h3>Exportar dados filtrados</h3>
+    <p>CSV com as linhas visíveis na tabela atual. Cole no Google Sheets ou Excel.</p>
+    <textarea class="modal-csv" id="exportCsv" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="fecharExport()">Fechar</button>
+      <button class="btn-primary" onclick="copiarCsv()">📋 Copiar CSV</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURAÇÃO ──────────────────────────────────────────────
+// 1. Instale WEBAPP_CN.gs na planilha corp (Extensions > Apps Script)
+// 2. Deploy > New deployment > Web App
+//    Execute as: Me  |  Who has access: Anyone
+// 3. Cole a URL gerada abaixo (termina em /exec)
+var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyzt6L-FdiXCAnPxHkAbY01szqiFtd2W-wPv7C9x7iPEdv2D5RKsBnzAMBKSppmnuSKPg/exec';
+
+// Índices das colunas (0-based, cols A-K) — usados apenas no render
+var COL = {
+  DATA:       0,  // A — Data de Inclusão
+  NOVO:       1,  // B — Novo Campaign Local
+  DEPARA_CAM: 2,  // C — DE/PARA Campaign Local
+  EXTRA:      3,  // D — EXTRA
+  DEPARA_EXT: 4,  // E — DE/PARA EXTRA
+  BRAND:      5,  // F — Brand Name
+  CAMPAIGN:   6,  // G — Campaign Name
+  CN_CODE:    7,  // H — CN CODE
+  RESP:       8,  // I — Responsável
+  AGENCIA:    9,  // J — Agência
+  OBS:       10   // K — Obs
+};
+
+// Colunas INCLUÍDAS na chave de duplicata: Novo Campaign (1), EXTRA (3), CN Code (7)
+// Só marca duplicata se EXTRA não estiver vazio
+var INCLUIR_DUP = { 1: 1, 3: 1, 7: 1 };
+
+// ── ESTADO ───────────────────────────────────────────────────
+var todasLinhas    = [];
+var anosPendentes  = {};
+var sortCol        = 'data';
+var sortAsc        = false;
+var kpiFiltroAtivo = null;
+var sectionsOpen   = { vc: false, dup: false };
+
+// ── BOOT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  // pills: marca "Todos" como ativo
+  ['CN','Novo','Dup'].forEach(function(k){ setPill(k,''); });
+  carregarTudo();
+});
+
+function carregarTudo() {
+  if (!WEBAPP_URL || WEBAPP_URL === 'COLE_AQUI_A_URL_DO_WEB_APP') {
+    setSyncState('erro', 'Web App não configurada');
+    document.getElementById('loadingWrap').classList.remove('show');
+    // mostra banner de instrução
+    var b = document.getElementById('setupBanner');
+    if (b) b.style.display = '';
+    return;
+  }
+
+  todasLinhas = [];
+  document.getElementById('loadingWrap').classList.add('show');
+  setSyncState('loading', 'Carregando...');
+
+  var url = WEBAPP_URL + (WEBAPP_URL.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
+
+  fetch(url, { credentials: 'omit', redirect: 'follow' })
+    .then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      if (!data.ok) throw new Error(data.error || 'Erro na Web App');
+      processarRows(data.rows || []);
+      document.getElementById('loadingWrap').classList.remove('show');
+      marcarDuplicatas();
+      popularFiltros();
+      renderizar();
+      setSyncState('ok', todasLinhas.length + ' linhas · atualizado ' + fmtHora());
+    })
+    .catch(function(err) {
+      document.getElementById('loadingWrap').classList.remove('show');
+      var msg = err.message || 'Erro desconhecido';
+      if (msg === 'Failed to fetch') msg = 'Failed to fetch — abra a URL do Web App no navegador para autorizar o script';
+      setSyncState('erro', msg);
+    });
+}
+
+function recarregar() { carregarTudo(); }
+
+// ── WEB APP ───────────────────────────────────────────────────
+function titleCase(s) {
+  if (!s) return '';
+  return s.replace(/\b\S/g, function(c){ return c.toUpperCase(); });
+}
+function fmtIso(s, ano) {
+  if (s === null || s === undefined || s === '') return '';
+  // garante string
+  s = String(s).trim();
+  if (!s) return '';
+  // já está em dd/MM — completa com o ano da aba
+  if (/^\d{1,2}\/\d{1,2}$/.test(s)) {
+    var partes = s.split('/');
+    return partes[0].padStart(2,'0') + '/' + partes[1].padStart(2,'0') + '/' + (ano || '');
+  }
+  var d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return String(d.getDate()).padStart(2,'0') + '/'
+       + String(d.getMonth()+1).padStart(2,'0') + '/'
+       + d.getFullYear();
+}
+
+function processarRows(rows) {
+  // g() tenta múltiplos nomes de coluna (variações de typo entre abas)
+  function g(obj, keys) {
+    for (var i = 0; i < keys.length; i++) {
+      var v = obj[keys[i]];
+      if (v !== undefined && v !== null) return String(v).trim();
+    }
+    return '';
+  }
+  rows.forEach(function(obj) {
+    var vals = [
+      fmtIso(g(obj, ['Data de Inclusão']), obj['_ano']),
+      g(obj, ['Novo Campaign Local', 'Novo Campaing Local']),
+      g(obj, ['DE/PARA Campaign Local', 'DE/PARA Campaing Local']),
+      g(obj, ['EXTRA']),
+      g(obj, ['DE/PARA EXTRA']),
+      titleCase(g(obj, ['Brand Name', 'Brand Name '])),
+      g(obj, ['Campaign Name', 'Campaing Name']),
+      g(obj, ['CN CODE']),
+      g(obj, ['Responsável']),
+      titleCase(g(obj, ['Agência'])),
+      g(obj, ['Obs'])
+    ];
+    // ignora linhas totalmente vazias
+    var temDado = vals.some(function(v){ return !!v; });
+    if (!temDado) return;
+    todasLinhas.push({ ano: obj['_ano'] || '', vals: vals, _dup: false });
+  });
+}
+
+// ── DUPLICATAS ────────────────────────────────────────────────
+function marcarDuplicatas() {
+  var mapa = {};
+  todasLinhas.forEach(function(linha) {
+    // só entra na análise se EXTRA (col 3) estiver preenchido
+    if (!linha.vals[COL.EXTRA].trim()) return;
+    var chave = linha.vals.map(function(v, i){
+      return INCLUIR_DUP[i] ? v.trim().toLowerCase() : '';
+    }).join('\x00');
+    if (!mapa[chave]) mapa[chave] = [];
+    mapa[chave].push(linha);
+  });
+  Object.keys(mapa).forEach(function(k) {
+    if (mapa[k].length > 1) mapa[k].forEach(function(l){ l._dup = true; });
+  });
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function unicos(colIdx) {
+  var map = {};
+  todasLinhas.forEach(function(l){
+    var v = l.vals[colIdx];
+    if (v && v.trim()) {
+      var key = v.trim().toLowerCase();
+      if (!map[key]) map[key] = v.trim(); // guarda primeira ocorrência (já em titleCase)
+    }
+  });
+  return Object.values(map).sort(function(a,b){
+    return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
+  });
+}
+
+// ── DADOS DOS DROPDOWNS ───────────────────────────────────────
+var ddDados = { Brand: [], Agencia: [], Resp: [], Ano: [] };
+
+function popularFiltros() {
+  ddDados.Brand   = unicos(COL.BRAND);
+  ddDados.Agencia = unicos(COL.AGENCIA);
+  ddDados.Resp    = unicos(COL.RESP);
+  var set = {};
+  todasLinhas.forEach(function(l){ if (l.ano) set[l.ano] = true; });
+  ddDados.Ano = Object.keys(set).sort();
+}
+
+function limparFiltros() {
+  ['Brand','Agencia','Resp','Ano'].forEach(function(k){
+    document.getElementById('filt'+k).value = '';
+    document.getElementById('filt'+k+'Search').value = '';
+    document.getElementById('filt'+k+'Search').classList.remove('active');
+    fecharDropdown(k);
+  });
+  document.getElementById('filtBusca').value = '';
+  setPill('CN',''); setPill('Novo',''); setPill('Dup','');
+  kpiFiltroAtivo = null;
+  atualizarBannerKpi();
+  renderizar();
+}
+
+// ── DROPDOWN ──────────────────────────────────────────────────
+var phMap = { Brand:'Todas as marcas', Agencia:'Todas', Resp:'Todos', Ano:'Todos' };
+
+function abrirDropdown(k) {
+  renderDropdown(k, document.getElementById('filt'+k+'Search').value);
+  document.getElementById('filt'+k+'DD').classList.add('show');
+}
+
+function fecharDropdown(k) {
+  document.getElementById('filt'+k+'DD').classList.remove('show');
+}
+
+function fecharDropdownDelay(k) {
+  setTimeout(function(){ fecharDropdown(k); }, 180);
+}
+
+function atualizarDropdown(k) {
+  renderDropdown(k, document.getElementById('filt'+k+'Search').value);
+  document.getElementById('filt'+k+'DD').classList.add('show');
+}
+
+function renderDropdown(k, q) {
+  var dd   = document.getElementById('filt'+k+'DD');
+  var cur  = document.getElementById('filt'+k).value;
+  var lista = ddDados[k] || [];
+  var ql   = (q || '').toLowerCase().trim();
+  var filtrado = ql ? lista.filter(function(v){ return v.toLowerCase().indexOf(ql) >= 0; }) : lista;
+
+  var html = '<div class="fdd-item'+(cur===''?' sel':'')+'" onmousedown="selecionarDD(\''+k+'\',\'\')">'+esc(phMap[k]||'Todos')+'</div>';
+  filtrado.forEach(function(v){
+    html += '<div class="fdd-item'+(cur===v?' sel':'')+'" onmousedown="selecionarDD(\''+k+'\','+JSON.stringify(v)+')">'+esc(v)+'</div>';
+  });
+  if (!filtrado.length && ql) html += '<div class="fdd-empty">Nenhum resultado</div>';
+  dd.innerHTML = html;
+}
+
+function selecionarDD(k, val) {
+  document.getElementById('filt'+k).value = val;
+  var inp = document.getElementById('filt'+k+'Search');
+  inp.value = val || '';
+  inp.classList.toggle('active', !!val);
+  fecharDropdown(k);
+  renderizar();
+}
+
+// ── PILLS ─────────────────────────────────────────────────────
+var pillCfg = {
+  CN:   { ids: ['pilCN0','pilCN1','pilCN2'],   vals: ['','ok','vazio'],  hid: 'filtCN'   },
+  Novo: { ids: ['pilNovo0','pilNovo1','pilNovo2'], vals: ['','sim','nao'], hid: 'filtNovo' },
+  Dup:  { ids: ['pilDup0','pilDup1','pilDup2'],  vals: ['','dup','unico'], hid: 'filtDup'  }
+};
+
+function setPill(k, val) {
+  var cfg = pillCfg[k];
+  var cur = document.getElementById(cfg.hid).value;
+  // clicou no mesmo pill ativo (não-Todos) → volta para Todos
+  var newVal = (cur === val && val !== '') ? '' : val;
+  document.getElementById(cfg.hid).value = newVal;
+  cfg.ids.forEach(function(id, i){
+    document.getElementById(id).classList.toggle('active', cfg.vals[i] === newVal);
+  });
+  renderizar();
+}
+
+// ── FILTRAGEM ─────────────────────────────────────────────────
+function linhasFiltradas() {
+  var brand   = document.getElementById('filtBrand').value;
+  var agencia = document.getElementById('filtAgencia').value;
+  var resp    = document.getElementById('filtResp').value;
+  var ano     = document.getElementById('filtAno').value;
+  var cn      = document.getElementById('filtCN').value;
+  var novo    = document.getElementById('filtNovo').value;
+  var dup     = document.getElementById('filtDup').value;
+  var busca   = (document.getElementById('filtBusca').value || '').toLowerCase().trim();
+
+  return todasLinhas.filter(function(l) {
+    var v = l.vals;
+    if (brand   && v[COL.BRAND].trim().toLowerCase()   !== brand.toLowerCase())   return false;
+    if (agencia && v[COL.AGENCIA].trim().toLowerCase() !== agencia.toLowerCase()) return false;
+    if (resp    && v[COL.RESP].trim().toLowerCase()    !== resp.toLowerCase())    return false;
+    if (ano     && l.ano                 !== ano)      return false;
+    if (cn === 'ok'    && !v[COL.CN_CODE].trim())  return false;
+    if (cn === 'vazio' &&  v[COL.CN_CODE].trim())  return false;
+    if (novo === 'sim' && v[COL.NOVO].trim().toLowerCase() !== 'sim') return false;
+    if (novo === 'nao' && v[COL.NOVO].trim().toLowerCase() === 'sim') return false;
+    if (dup === 'dup'   && !l._dup) return false;
+    if (dup === 'unico' &&  l._dup) return false;
+    if (kpiFiltroAtivo === 'vc'  &&  v[COL.CN_CODE].trim()) return false;
+    if (kpiFiltroAtivo === 'ok'  && !v[COL.CN_CODE].trim()) return false;
+    if (kpiFiltroAtivo === 'dup' && !l._dup)               return false;
+    if (busca) {
+      var txt = v.join(' ').toLowerCase();
+      if (txt.indexOf(busca) === -1) return false;
+    }
+    return true;
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+var sortFns = {
+  ano:     function(l){ return l.ano; },
+  data:    function(l){ return l.vals[COL.DATA] || ''; },
+  brand:   function(l){ return l.vals[COL.BRAND] || ''; },
+  resp:    function(l){ return l.vals[COL.RESP] || ''; },
+  agencia: function(l){ return l.vals[COL.AGENCIA] || ''; }
+};
+
+function sortBy(col) {
+  sortAsc = (sortCol === col) ? !sortAsc : true;
+  sortCol = col;
+  ['ano','data','brand','resp','agencia'].forEach(function(c){
+    var el = document.getElementById('sort-'+c);
+    if (!el) return;
+    el.textContent = (sortCol === c) ? (sortAsc ? '↑' : '↓') : '↕';
+    var th = el.parentElement;
+    th.classList.toggle('sorted', sortCol === c);
+  });
+  renderizar();
+}
+
+function renderizar() {
+  var filtradas = linhasFiltradas();
+
+  // Sort
+  var fn = sortFns[sortCol] || sortFns['data'];
+  filtradas.sort(function(a, b){
+    var c = (fn(a) || '').localeCompare(fn(b) || '', 'pt-BR', {sensitivity:'base'});
+    return sortAsc ? c : -c;
+  });
+
+  // KPIs (sobre total de dados, não filtrado)
+  var total = todasLinhas.length;
+  var comCN = todasLinhas.filter(function(l){ return !!l.vals[COL.CN_CODE].trim(); }).length;
+  var semCN = total - comCN;
+  var dups  = todasLinhas.filter(function(l){ return l._dup; }).length;
+
+  document.getElementById('kpiTotalVal').textContent = total;
+  document.getElementById('kpiTotalSub').textContent = filtradas.length + ' exibida' + (filtradas.length===1?'':'s');
+  document.getElementById('kpiOkVal').textContent    = comCN;
+  document.getElementById('kpiOkSub').textContent    = (total ? Math.round(comCN/total*100) : 0) + '% do total';
+  document.getElementById('kpiVcVal').textContent    = semCN;
+  document.getElementById('kpiVcSub').textContent    = (total ? Math.round(semCN/total*100) : 0) + '% do total';
+  document.getElementById('kpiDupVal').textContent   = dups;
+  document.getElementById('kpiDupSub').textContent   = (total ? Math.round(dups/total*100) : 0) + '% do total';
+
+  // Seções aviso
+  renderVcSection(todasLinhas.filter(function(l){ return !l.vals[COL.CN_CODE].trim(); }));
+  renderDupSection(todasLinhas.filter(function(l){ return l._dup; }));
+
+  var container = document.getElementById('mainBody');
+  if (filtradas.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div>Nenhuma linha para os filtros selecionados</div></div>';
+    return;
+  }
+
+  // Agrupa por Ano → Brand
+  var porAno = {};
+  var ordemAnos = [];
+  filtradas.forEach(function(l) {
+    var ano   = l.ano || '?';
+    var brand = l.vals[COL.BRAND].trim() || '(sem brand)';
+    if (!porAno[ano]) { porAno[ano] = {}; ordemAnos.push(ano); }
+    if (!porAno[ano][brand]) porAno[ano][brand] = [];
+    porAno[ano][brand].push(l);
+  });
+  ordemAnos.sort(function(a,b){ return b.localeCompare(a); }); // ano mais recente primeiro
+
+  var TH = '<th style="background:#0e1220;padding:7px 12px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)">';
+
+  var html = '';
+  ordemAnos.forEach(function(ano, ai) {
+    var brandsDoAno = porAno[ano];
+    var ordemBrands = Object.keys(brandsDoAno).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+    var totalAno = ordemBrands.reduce(function(s,b){ return s + brandsDoAno[b].length; }, 0);
+    var aid = 'ano_' + ai;
+
+    html += '<div class="ano-block">'
+      + '<div class="ano-header" onclick="toggleAno(\''+aid+'\')">'
+      + '<span class="ano-label">'+esc(ano)+'</span>'
+      + '<span class="ano-count">'+totalAno+' linha'+(totalAno===1?'':'s')+'</span>'
+      + '<span class="ano-chev" id="chev_'+aid+'">▶</span>'
+      + '</div>'
+      + '<div class="ano-content" id="'+aid+'">';
+
+    ordemBrands.forEach(function(brand, bi) {
+      var linhas = brandsDoAno[brand];
+      var bid = 'brand_' + ai + '_' + bi;
+      html += '<div class="brand-block">'
+        + '<div class="brand-header" onclick="toggleBrand(\''+bid+'\')">'
+        + '<span class="brand-name">'+esc(brand)+'</span>'
+        + '<span class="brand-count">'+linhas.length+' linha'+(linhas.length===1?'':'s')+'</span>'
+        + '<span class="brand-chev" id="chev_'+bid+'">▶</span>'
+        + '</div>'
+        + '<div class="brand-rows" id="'+bid+'">'
+        + '<table style="width:100%;border-collapse:collapse;min-width:900px">'
+        + '<thead><tr>'
+        + TH+'Data</th>'+TH+'Novo</th>'+TH+'Campaign Name</th>'
+        + TH+'CN Code</th>'+TH+'Responsável</th>'+TH+'Agência</th>'
+        + TH+'DE/PARA Campaign</th>'+TH+'EXTRA</th>'+TH+'DE/PARA EXTRA</th>'+TH+'Obs</th>'
+        + '</tr></thead><tbody>';
+
+      linhas.sort(function(a, b) {
+        var cn = (a.vals[COL.CN_CODE] || '').localeCompare(b.vals[COL.CN_CODE] || '', 'pt-BR');
+        if (cn !== 0) return cn;
+        var ag = (a.vals[COL.AGENCIA] || '').localeCompare(b.vals[COL.AGENCIA] || '', 'pt-BR');
+        if (ag !== 0) return ag;
+        return (a.vals[COL.EXTRA] || '').localeCompare(b.vals[COL.EXTRA] || '', 'pt-BR');
+      });
+      linhas.forEach(function(l) {
+        var v = l.vals;
+        var cn  = v[COL.CN_CODE].trim();
+        var nov = v[COL.NOVO].trim();
+        var cnBadge   = cn ? '<span class="badge badge-ok cn-code">'+esc(cn)+'</span>' : '<span class="badge badge-warn">—</span>';
+        var novoBadge = nov.toLowerCase()==='sim' ? '<span class="badge badge-new">Sim</span>' : '<span class="badge badge-no">—</span>';
+        var dupMark   = l._dup ? '<span class="dup-badge" title="Duplicata">2</span>' : '';
+        var TD = ' style="padding:7px 12px;font-size:12px;border-bottom:1px solid #1e2333;vertical-align:middle"';
+        html += '<tr'+(l._dup?' class="dup-row"':'')+'>'
+          + '<td'+TD+'>'+esc(v[COL.DATA])+'</td>'
+          + '<td'+TD+'>'+novoBadge+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.CAMPAIGN])+'">'+dupMark+esc(v[COL.CAMPAIGN])+'</td>'
+          + '<td'+TD+'>'+cnBadge+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.RESP])+'">'+esc(v[COL.RESP])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.AGENCIA])+'">'+esc(v[COL.AGENCIA])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.DEPARA_CAM])+'">'+esc(v[COL.DEPARA_CAM])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.EXTRA])+'">'+esc(v[COL.EXTRA])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.DEPARA_EXT])+'">'+esc(v[COL.DEPARA_EXT])+'</td>'
+          + '<td'+TD+' title="'+esc(v[COL.OBS])+'">'+esc(v[COL.OBS])+'</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleAno(aid) {
+  var content = document.getElementById(aid);
+  var chev    = document.getElementById('chev_' + aid);
+  var aberto  = content.classList.toggle('open');
+  chev.textContent = aberto ? '▼' : '▶';
+}
+
+function toggleBrand(bid) {
+  var rows = document.getElementById(bid);
+  var chev = document.getElementById('chev_' + bid);
+  var aberto = rows.classList.toggle('open');
+  chev.textContent = aberto ? '▼' : '▶';
+}
+
+// ── SEÇÕES AVISO ──────────────────────────────────────────────
+function renderVcSection(linhas) {
+  var sec = document.getElementById('vcSection');
+  document.getElementById('vcCount').textContent = linhas.length;
+  sec.style.display = linhas.length ? '' : 'none';
+  if (!linhas.length) return;
+
+  document.getElementById('vcTreeBody').innerHTML = renderAnoTree(linhas, 'vc', [
+    {label:'Data',    td:function(l){return esc(l.vals[COL.DATA]);}},
+    {label:'Campaign Name', td:function(l){return '<span title="'+esc(l.vals[COL.CAMPAIGN])+'">'+esc(l.vals[COL.CAMPAIGN])+'</span>';}},
+    {label:'Responsável',   td:function(l){return esc(l.vals[COL.RESP]);}},
+    {label:'Agência',       td:function(l){return esc(l.vals[COL.AGENCIA]);}}
+  ]);
+}
+
+function renderDupSection(linhas) {
+  var sec = document.getElementById('dupSection');
+  document.getElementById('dupCount').textContent = linhas.length;
+  sec.style.display = linhas.length ? '' : 'none';
+  if (!linhas.length) return;
+
+  document.getElementById('dupTreeBody').innerHTML = renderAnoTree(linhas, 'dup', [
+    {label:'Data',    td:function(l){return esc(l.vals[COL.DATA]);}},
+    {label:'Campaign Name', td:function(l){return '<span title="'+esc(l.vals[COL.CAMPAIGN])+'">'+esc(l.vals[COL.CAMPAIGN])+'</span>';}},
+    {label:'CN Code',       td:function(l){return '<span class="cn-code">'+esc(l.vals[COL.CN_CODE])+'</span>';}},
+    {label:'Extra',         td:function(l){return esc(l.vals[COL.EXTRA]);}},
+    {label:'Agência',       td:function(l){return esc(l.vals[COL.AGENCIA]);}}
+  ]);
+}
+
+function sortLinhas(linhas) {
+  return linhas.slice().sort(function(a, b) {
+    var cn = (a.vals[COL.CN_CODE] || '').localeCompare(b.vals[COL.CN_CODE] || '', 'pt-BR');
+    if (cn !== 0) return cn;
+    var ag = (a.vals[COL.AGENCIA] || '').localeCompare(b.vals[COL.AGENCIA] || '', 'pt-BR');
+    if (ag !== 0) return ag;
+    return (a.vals[COL.EXTRA] || '').localeCompare(b.vals[COL.EXTRA] || '', 'pt-BR');
+  });
+}
+
+function renderAnoTree(linhas, prefix, cols) {
+  var porAno = {}, ordemAnos = [];
+  linhas.forEach(function(l) {
+    var ano   = l.ano || '?';
+    var brand = l.vals[COL.BRAND].trim() || '(sem brand)';
+    if (!porAno[ano]) { porAno[ano] = {}; ordemAnos.push(ano); }
+    if (!porAno[ano][brand]) porAno[ano][brand] = [];
+    porAno[ano][brand].push(l);
+  });
+  ordemAnos.sort(function(a,b){ return b.localeCompare(a); });
+
+  var TH = 'style="background:#0e1220;padding:6px 10px;font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;border-bottom:1px solid var(--brd)"';
+  var TD = 'style="padding:6px 10px;font-size:12px;border-bottom:1px solid #1e2333;vertical-align:middle"';
+
+  var html = '';
+  ordemAnos.forEach(function(ano, ai) {
+    var brandsDoAno = porAno[ano];
+    var ordemBrands = Object.keys(brandsDoAno).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+    var totalAno = ordemBrands.reduce(function(s,b){ return s + brandsDoAno[b].length; }, 0);
+    var aid = prefix + '_ano_' + ai;
+    html += '<div class="ano-block">'
+      + '<div class="ano-header" onclick="toggleAno(\''+aid+'\')">'
+      + '<span class="ano-label">'+esc(ano)+'</span>'
+      + '<span class="ano-count">'+totalAno+' linha'+(totalAno===1?'':'s')+'</span>'
+      + '<span class="ano-chev" id="chev_'+aid+'">▶</span>'
+      + '</div>'
+      + '<div class="ano-content" id="'+aid+'">';
+    ordemBrands.forEach(function(brand, bi) {
+      var linhasBrand = sortLinhas(brandsDoAno[brand]);
+      var bid = prefix + '_brand_' + ai + '_' + bi;
+      html += '<div class="brand-block">'
+        + '<div class="brand-header" onclick="toggleBrand(\''+bid+'\')">'
+        + '<span class="brand-name">'+esc(brand)+'</span>'
+        + '<span class="brand-count">'+linhasBrand.length+' linha'+(linhasBrand.length===1?'':'s')+'</span>'
+        + '<span class="brand-chev" id="chev_'+bid+'">▶</span>'
+        + '</div>'
+        + '<div class="brand-rows" id="'+bid+'">'
+        + '<table style="width:100%;border-collapse:collapse">'
+        + '<thead><tr>' + cols.map(function(c){ return '<th '+TH+'>'+c.label+'</th>'; }).join('') + '</tr></thead>'
+        + '<tbody>';
+      linhasBrand.forEach(function(l) {
+        html += '<tr>' + cols.map(function(c){ return '<td '+TD+'>'+c.td(l)+'</td>'; }).join('') + '</tr>';
+      });
+      html += '</tbody></table></div></div>';
+    });
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function toggleSection(tipo) {
+  sectionsOpen[tipo] = !sectionsOpen[tipo];
+  var body = document.getElementById(tipo + 'Body');
+  var chev = document.getElementById(tipo + 'Chev');
+  body.classList.toggle('open', sectionsOpen[tipo]);
+  chev.textContent = sectionsOpen[tipo] ? '▼ recolher' : '▶ expandir';
+}
+
+function expandirTudo() {
+  ['vc','dup'].forEach(function(t) {
+    if (document.getElementById(t+'Section').style.display !== 'none') {
+      sectionsOpen[t] = true;
+      document.getElementById(t+'Body').classList.add('open');
+      document.getElementById(t+'Chev').textContent = '▼ recolher';
+    }
+  });
+}
+
+// ── KPI FILTRO ────────────────────────────────────────────────
+function toggleKpi(tipo) {
+  kpiFiltroAtivo = (kpiFiltroAtivo === tipo) ? null : tipo;
+  atualizarBannerKpi();
+  renderizar();
+}
+
+function atualizarBannerKpi() {
+  var banner = document.getElementById('kpiBanner');
+  var txt    = document.getElementById('kpiBannerText');
+  var labels = { ok: 'CN Code OK', vc: 'CN Code em branco', dup: 'Duplicatas detectadas' };
+  if (kpiFiltroAtivo && labels[kpiFiltroAtivo]) {
+    txt.textContent = '🔍 Filtro KPI ativo: ' + labels[kpiFiltroAtivo];
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+  document.getElementById('kpiOk').classList.toggle('active', kpiFiltroAtivo === 'ok');
+  document.getElementById('kpiVc').classList.toggle('active', kpiFiltroAtivo === 'vc');
+  document.getElementById('kpiDup').classList.toggle('active', kpiFiltroAtivo === 'dup');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function abrirExport() {
+  var filtradas = linhasFiltradas();
+  var cols = ['Ano','Data','Novo Campaign','Brand Name','Campaign Name','CN Code','Responsável','Agência','DE/PARA Campaign','EXTRA','DE/PARA EXTRA','Obs'];
+  var linhasCsv = [cols.join(';')];
+  filtradas.forEach(function(l) {
+    var v = l.vals;
+    var row = [l.ano, v[0], v[1], v[5], v[6], v[7], v[8], v[9], v[2], v[3], v[4], v[10]];
+    linhasCsv.push(row.map(function(c){ return '"'+(c||'').replace(/"/g,'""')+'"'; }).join(';'));
+  });
+  document.getElementById('exportCsv').value = linhasCsv.join('\n');
+  document.getElementById('exportModal').classList.add('show');
+}
+
+function fecharExport() { document.getElementById('exportModal').classList.remove('show'); }
+
+function copiarCsv() {
+  var ta = document.getElementById('exportCsv');
+  ta.select();
+  document.execCommand('copy');
+  alert('CSV copiado — cole no Google Sheets ou Excel!');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtData(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+  return String(d.getDate()).padStart(2,'0') + '/'
+       + String(d.getMonth()+1).padStart(2,'0') + '/'
+       + d.getFullYear();
+}
+
+function fmtHora() {
+  var n = new Date();
+  return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+
+function setSyncState(state, msg) {
+  document.getElementById('syncDot').className  = 'sync-dot ' + state;
+  document.getElementById('syncInfo').textContent = msg;
+}
+</script>
+</body>
+</html>

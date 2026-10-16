@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>F2 — Naming Tool</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f11;
+      --bg2: #18181c;
+      --bg3: #222228;
+      --border: #2e2e38;
+      --text: #e8e8f0;
+      --text2: #9090a8;
+      --accent: #6c63ff;
+      --accent2: #9d97ff;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --error: #ef4444;
+      --radius: 8px;
+      --sidebar-w: 180px;
+      --header-h: 52px;
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    #app-header {
+      height: var(--header-h);
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    #app-header .logo {
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    #app-header .logo span {
+      color: var(--accent2);
+    }
+    #platform-header {
+      margin-left: 8px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+      font-size: 14px;
+      color: var(--text2);
+    }
+    #platform-header #platform-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .env-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 4px;
+      background: #1e2a1e;
+      color: #4ade80;
+      border: 1px solid #2d4a2d;
+      flex-shrink: 0;
+    }
+    .env-badge[data-env="pes"] {
+      background: #1e1e2a;
+      color: #a78bfa;
+      border-color: #2d2d4a;
+    }
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .gas-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+    }
+    .gas-loading  { color: #9090a8; border-color: #2e2e38; background: #18181c; animation: pulse 1.2s infinite; }
+    .gas-ok       { color: #4ade80; border-color: #2d4a2d; background: #1e2a1e; }
+    .gas-fallback { color: #f59e0b; border-color: #4a3a1e; background: #2a221e; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+
+    /* ── Main Layout ── */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 8px 0;
+    }
+    .platform-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 9px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text2);
+      font-size: 13px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .platform-btn:hover {
+      background: var(--bg3);
+      color: var(--text);
+    }
+    .platform-btn.active {
+      border-left-color: var(--pcolor, var(--accent));
+      background: var(--bg3);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── Content Area ── */
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Row Tabs ── */
+    #row-tabs-bar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 16px;
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .row-tab {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .row-tab:hover { background: var(--bg3); color: var(--text); }
+    .row-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .row-tab.add-row { border-style: dashed; color: var(--accent2); }
+    .row-tab.add-row:hover { background: rgba(108,99,255,.12); color: var(--accent2); }
+
+    /* ── Work Area ── */
+    #work-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Form ── */
+    #form-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .level-section {
+      margin-bottom: 24px;
+    }
+    .level-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text2);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+    .field-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field-wrapper.optional {
+      opacity: 0.8;
+    }
+    .field-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .optional-badge {
+      font-size: 9px;
+      padding: 1px 4px;
+      background: var(--bg3);
+      border-radius: 3px;
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .field-input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      padding: 7px 10px;
+      width: 100%;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .field-input:focus {
+      border-color: var(--accent);
+    }
+    .field-input.result-field {
+      background: rgba(108,99,255,.06);
+      color: var(--accent2);
+      cursor: default;
+      font-size: 12px;
+    }
+    .field-input.formula-result {
+      background: rgba(34,197,94,.06);
+      color: #4ade80;
+      font-weight: 500;
+    }
+    .field-input.dynamic-free {
+      border-style: dashed;
+    }
+    .note-field {
+      resize: vertical;
+      min-height: 52px;
+    }
+    select.field-input {
+      cursor: pointer;
+    }
+    .age-select { width: 100%; }
+
+    /* ── Results Panel ── */
+    #results-panel-wrap {
+      width: 340px;
+      border-left: 1px solid var(--border);
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    #results-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #results-header h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text2);
+    }
+    #results-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .result-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .result-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text2);
+    }
+    .result-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .result-name.empty {
+      color: var(--text2);
+      font-style: italic;
+    }
+    .copy-btn {
+      align-self: flex-end;
+      padding: 3px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text2);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { background: var(--bg); color: var(--text); }
+    .copy-btn.copied { color: var(--ok); border-color: var(--ok); }
+    .result-status {
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(34,197,94,.08);
+      color: #4ade80;
+      text-align: center;
+    }
+    .result-status:contains('⚠️') {
+      background: rgba(245,158,11,.08);
+      color: var(--warn);
+    }
+
+    #export-bar {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #export-bar .btn { flex: 1; justify-content: center; font-size: 12px; }
+
+    /* ── Scrollbars ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+    /* ── ADP Import Modal ── */
+    #adp-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #adp-modal-overlay.open { display: flex; }
+    #adp-modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: min(580px, 96vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,.6);
+    }
+    #adp-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #adp-modal-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    #adp-modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text2);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    #adp-modal-close:hover { color: var(--text); }
+    #adp-modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    #adp-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+    #adp-drop-zone:hover, #adp-drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(108,99,255,.06);
+    }
+    #adp-drop-zone p { color: var(--text2); font-size: 14px; margin-top: 8px; }
+    #adp-drop-zone .drop-icon { font-size: 32px; }
+    #adp-file-input { display: none; }
+    #adp-import-status {
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    #adp-import-status.info  { background: rgba(108,99,255,.1); color: var(--accent2); display: block; }
+    #adp-import-status.ok    { background: rgba(34,197,94,.1);  color: #4ade80; display: block; }
+    #adp-import-status.error { background: rgba(239,68,68,.1);  color: var(--error); display: block; }
+    #adp-platform-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .adp-plat-item {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .adp-plat-name { font-size: 13px; font-weight: 600; }
+    .adp-plat-count { font-size: 12px; color: var(--text2); }
+    #adp-modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ── ADP Import row badge on tabs ── */
+    .row-tab.adp-imported { border-color: #f59e0b; color: #f59e0b; }
+    .row-tab.adp-imported.active { background: #f59e0b; color: #000; border-color: #f59e0b; }
+
+    /* ── Loading ── */
+    #loading {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: var(--text2); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>Carregando plataformas…</p>
+</div>
+
+<!-- Header -->
+<header id="app-header">
+  <div class="logo">NC Tool — <span>F2</span></div>
+  <span id="env-badge" class="env-badge" data-env="corp">Corp</span>
+  <div id="platform-header">
+    <span id="platform-title">—</span>
+  </div>
+  <div class="header-actions">
+    <span id="gas-status" class="gas-status gas-loading">⟳ GAS</span>
+    <button class="btn btn-ghost" onclick="openAdpModal()">↑ ADP</button>
+    <button class="btn btn-ghost" onclick="window.F2Download.exportToCSV()">↓ CSV</button>
+    <button class="btn btn-primary" onclick="window.F2Download.exportToXLSX()">↓ Excel</button>
+  </div>
+</header>
+
+<!-- Main -->
+<div id="main">
+  <!-- Sidebar -->
+  <nav id="sidebar"></nav>
+
+  <!-- Content -->
+  <div id="content">
+    <!-- Row tabs -->
+    <div id="row-tabs-bar">
+      <div id="row-tabs" style="display:flex;gap:6px;"></div>
+    </div>
+
+    <!-- Work area -->
+    <div id="work-area">
+      <!-- Form -->
+      <div id="form-area"></div>
+
+      <!-- Results -->
+      <div id="results-panel-wrap">
+        <div id="results-header">
+          <h4>Nomes Gerados</h4>
+        </div>
+        <div id="results-panel"></div>
+        <div id="export-bar">
+          <button class="btn btn-secondary" onclick="window.F2Download.exportToCSV()">CSV</button>
+          <button class="btn btn-primary" onclick="window.F2Download.exportToXLSX()">Excel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADP Import Modal -->
+<div id="adp-modal-overlay">
+  <div id="adp-modal">
+    <div id="adp-modal-header">
+      <h3>↑ Importar ADP</h3>
+      <button id="adp-modal-close" onclick="closeAdpModal()">×</button>
+    </div>
+    <div id="adp-modal-body">
+      <div id="adp-drop-zone" onclick="document.getElementById('adp-file-input').click()">
+        <div class="drop-icon">📂</div>
+        <p><strong>Arraste o ADP aqui</strong> ou clique para selecionar</p>
+        <p style="font-size:12px;margin-top:4px;">Arquivo XLSX — UNCC Digital Platform String Tool</p>
+      </div>
+      <input type="file" id="adp-file-input" accept=".xlsx,.xls" />
+      <div id="adp-import-status"></div>
+      <div id="adp-platform-list"></div>
+    </div>
+    <div id="adp-modal-footer">
+      <button class="btn btn-ghost" onclick="closeAdpModal()">Cancelar</button>
+      <button class="btn btn-primary" id="adp-confirm-btn" onclick="confirmAdpImport()" style="display:none;">
+        Carregar no F2
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="js/engine.js"></script>
+<script src="js/download.js"></script>
+<script src="js/adp-import.js"></script>
+<script>
+  window.F2Engine.init().then(() => {
+    document.getElementById('loading').style.display = 'none';
+    initAdpModal();
+  }).catch(err => {
+    document.getElementById('loading').innerHTML =
+      `<p style="color:var(--error)">Erro ao carregar: ${err.message}</p>`;
+  });
+
+  // ─── ADP Modal ───────────────────────────────────────────────────────────────
+  let _adpPendingImport = null; // Map: platformId → rows[]
+
+  function initAdpModal() {
+    const overlay = document.getElementById('adp-modal-overlay');
+    const dropZone = document.getElementById('adp-drop-zone');
+    const fileInput = document.getElementById('adp-file-input');
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeAdpModal();
+    });
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) processAdpFile(file);
+    });
+
+    // File input change
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (file) processAdpFile(file);
+    });
+  }
+
+  function openAdpModal() {
+    _adpPendingImport = null;
+    document.getElementById('adp-import-status').className = '';
+    document.getElementById('adp-import-status').textContent = '';
+    document.getElementById('adp-platform-list').innerHTML = '';
+    document.getElementById('adp-confirm-btn').style.display = 'none';
+    document.getElementById('adp-file-input').value = '';
+    document.getElementById('adp-modal-overlay').classList.add('open');
+  }
+
+  function closeAdpModal() {
+    document.getElementById('adp-modal-overlay').classList.remove('open');
+  }
+
+  function setAdpStatus(type, msg) {
+    const el = document.getElementById('adp-import-status');
+    el.className = type;
+    el.textContent = msg;
+  }
+
+  async function processAdpFile(file) {
+    setAdpStatus('info', `⟳ Lendo ${file.name}…`);
+    document.getElementById('adp-platform-list').innerHTML = '';
+    document.getElementById('adp-confirm-btn').style.display = 'none';
+    _adpPendingImport = null;
+
+    try {
+      const platforms = window.F2Engine.PLATFORMS;
+      const byPlatform = await window.F2AdpImport.importAdpFile(file, platforms);
+
+      _adpPendingImport = byPlatform;
+
+      // Build summary list
+      const listEl = document.getElementById('adp-platform-list');
+      listEl.innerHTML = '';
+
+      let totalRows = 0;
+      for (const [platId, adpRows] of byPlatform.entries()) {
+        const platform = platforms.find(p => p.id === platId);
+        const div = document.createElement('div');
+        div.className = 'adp-plat-item';
+        div.style.borderLeftColor = platform ? platform.color : '#6c63ff';
+        div.style.borderLeftWidth = '3px';
+        div.innerHTML = `
+          <span class="adp-plat-name">${platform ? platform.name : platId}</span>
+          <span class="adp-plat-count">${adpRows.length} linha${adpRows.length !== 1 ? 's' : ''}</span>
+        `;
+        listEl.appendChild(div);
+        totalRows += adpRows.length;
+      }
+
+      setAdpStatus('ok', `✓ ${file.name} — ${totalRows} linha${totalRows !== 1 ? 's' : ''} encontrada${totalRows !== 1 ? 's' : ''} em ${byPlatform.size} plataforma${byPlatform.size !== 1 ? 's' : ''}`);
+      document.getElementById('adp-confirm-btn').style.display = '';
+
+    } catch (err) {
+      setAdpStatus('error', `✗ ${err.message}`);
+    }
+  }
+
+  function confirmAdpImport() {
+    if (!_adpPendingImport) return;
+
+    const platforms = window.F2Engine.PLATFORMS;
+
+    // Load the first platform found
+    let firstPlatformId = null;
+
+    for (const [platId, adpRows] of _adpPendingImport.entries()) {
+      if (!firstPlatformId) firstPlatformId = platId;
+      break;
+    }
+
+    if (!firstPlatformId) return;
+
+    const platform = platforms.find(p => p.id === firstPlatformId);
+    if (!platform) return;
+
+    const adpRows = _adpPendingImport.get(firstPlatformId);
+    window.F2Engine.loadPlatformWithRows(platform, adpRows);
+
+    closeAdpModal();
+
+    // Notify if multiple platforms found
+    if (_adpPendingImport.size > 1) {
+      const names = [..._adpPendingImport.keys()]
+        .map(id => platforms.find(p => p.id === id)?.name || id)
+        .join(', ');
+      setTimeout(() => {
+        alert(
+          `⚠️ O ADP contém ${_adpPendingImport.size} plataformas: ${names}.\n\n` +
+          `Carregada: ${platform.name} (${adpRows.length} linha${adpRows.length !== 1 ? 's' : ''}).\n\n` +
+          `Para ver outra plataforma, clique em "↑ ADP" novamente.`
+        );
+      }, 100);
+    }
+  }
+</script>
+</body>
+</html>

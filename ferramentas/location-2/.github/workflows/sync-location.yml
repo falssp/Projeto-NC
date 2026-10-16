@@ -1,0 +1,42 @@
+name: Sync location.json
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # diário às 06h UTC
+  workflow_dispatch:       # permite rodar manualmente
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Corp (fonte primária)
+        id: corp
+        run: |
+          STATUS=$(curl -s -o location.json -w "%{http_code}" \
+            "${{ secrets.CORP_WEBAPP_URL }}?action=json")
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Validar JSON da Corp
+        id: valid
+        if: steps.corp.outputs.status == '200'
+        run: |
+          python3 -c "import json,sys; d=json.load(open('location.json')); assert d.get('cidade'), 'vazio'" \
+            && echo "ok=true" >> $GITHUB_OUTPUT || echo "ok=false" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Fallback para Pessoal
+        if: steps.corp.outputs.status != '200' || steps.valid.outputs.ok != 'true'
+        run: |
+          echo "⚠️  Corp falhou — usando Pessoal como fallback"
+          curl -sf "${{ secrets.PESSOAL_WEBAPP_URL }}?action=json" -o location.json
+
+      - name: Commit location.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add location.json
+          git diff --staged --quiet || git commit -m "chore: sync location.json [skip ci]"
+          git push

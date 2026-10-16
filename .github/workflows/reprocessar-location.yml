@@ -1,0 +1,51 @@
+name: Reprocessar Location Taxonomy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ferramentas/location/UL_Location_Taxonomy.xlsx'
+
+jobs:
+  reprocessar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install openpyxl
+
+      - name: Rodar reprocessamento
+        working-directory: ferramentas/location
+        run: |
+          python reprocessar_location.py
+          if [ -f municipios_updated.json ]; then
+            mv municipios_updated.json municipios.json
+            echo "JSON atualizado com sucesso"
+          else
+            echo "Nenhuma alteração encontrada"
+          fi
+
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ferramentas/location/municipios.json
+          git diff --staged --quiet || git commit -m "auto: reprocessar municipios.json [skip ci]"
+          git push
+
+      - name: Sync para gh-pages
+        run: |
+          git checkout gh-pages
+          git checkout main -- ferramentas/location/municipios.json
+          git checkout main -- ferramentas/location/index.html
+          git diff --staged --quiet || git commit -m "sync: municipios.json para gh-pages [skip ci]"
+          git push

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cruzador de IDs — ADP × RM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ul:#0040CE;--ul-b:#E5ECFF;--ul-m:#1a56d6;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;--ok-d:#065f46;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;
+  --g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;
+  --sb:#0F1B6E;
+  --sw:215px;--sa:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── FULL HEIGHT CHAIN ── */
+html{height:100%}
+body{height:100%;overflow:hidden;font-family:var(--sa);background:var(--g50);color:var(--g800);font-size:13px;display:flex;flex-direction:column}
+.app{flex:1;display:flex;overflow:hidden;min-height:0}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.page{flex:1;display:none;flex-direction:column;overflow-y:auto;padding:12px 16px}
+.page.active{display:flex;background:var(--g50)}
+.tool-card{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;background:#fff;border:1px solid var(--g200);border-radius:11px}
+/* ids-grid and dado-grid: use flex rows, not grid, so flex:1 propagates */
+.ids-grid{display:flex;overflow-y:auto}
+.dado-grid{display:flex;overflow-y:auto}
+.id-col{flex:1;padding:12px 14px;border-right:1px solid var(--g200)}
+.id-col:last-child{border-right:none}
+.dado-in{flex:1;padding:12px 14px;border-right:1px solid var(--g200)}
+.dado-out{flex:1;padding:12px 14px}
+.out-box{position:relative}
+textarea{width:100%;height:calc(100vh - 340px);min-height:160px;border:1px solid var(--g300);border-radius:8px;padding:10px 12px;font-size:12px;font-family:var(--mo);resize:none;outline:none;background:var(--g50);color:var(--g800);line-height:1.7;transition:border-color .15s,box-shadow .15s}
+textarea:focus{border-color:var(--ul);box-shadow:0 0 0 3px var(--ul-b)}
+textarea::placeholder{color:var(--g400)}
+textarea[readonly]{background:var(--g100);cursor:default}
+
+/* ── HEADER ── */
+header{background:#fff;border-bottom:1px solid var(--g200);padding:0 16px;height:44px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:20}
+.h-ico{width:38px;height:38px;border-radius:7px;background:var(--ul-b);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.h-title{font-size:15px;font-weight:700;color:var(--g900)}
+.h-sub{font-size:11px;color:var(--g500);margin-left:6px}
+.h-faq-btn{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-family:var(--sa);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--g300);background:#fff;color:var(--g700);transition:all .15s}
+.h-faq-btn:hover{background:var(--g100)}
+
+/* ── SIDEBAR ── */
+#sb{width:var(--sw);min-width:var(--sw);background:var(--sb);color:#fff;display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sb-logo{padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-badge{display:inline-flex;align-items:center;background:rgba(255,255,255,.12);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:600;letter-spacing:.05em;color:#A5B4FC;margin-bottom:7px}
+.sb-logo h1{font-size:13px;font-weight:600;color:#fff;line-height:1.4}
+.sb-logo p{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+.sb-s{padding:10px 8px 4px}
+.sb-s label{font-size:9px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;display:block;padding:0 8px;margin-bottom:5px}
+.canal-btn{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;cursor:pointer;padding:5px 8px;border-radius:7px;color:rgba(255,255,255,.6);font-family:var(--sa);font-size:11.5px;font-weight:400;transition:all .15s;text-align:left}
+.canal-btn:hover{background:rgba(255,255,255,.07);color:#fff}
+.canal-btn.active{background:rgba(255,255,255,.13);color:#fff;font-weight:600}
+.canal-ico{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.canal-ico svg{width:14px;height:14px;flex-shrink:0}
+.sb-div{height:1px;background:rgba(255,255,255,.08);margin:8px 14px}
+.step-nav{display:flex;flex-direction:column;gap:1px;padding:6px 10px}
+.step-btn{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;font-size:10.5px;color:rgba(255,255,255,.45);background:none;border:none;cursor:pointer;transition:all .12s;text-align:left;width:100%;line-height:1.3}
+.step-btn:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.8)}
+.step-btn.active{background:rgba(255,255,255,.13);color:#fff;font-weight:600}
+.step-btn.done{color:#6ee7b7}
+.step-btn.done .sdot{background:#6ee7b7}
+.step-btn.active .sdot{background:#A5B4FC}
+.sdot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0;transition:background .12s}
+.sb-foot{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08)}
+.sb-foot p{font-size:10px;color:rgba(255,255,255,.25);line-height:1.6}
+
+/* ── TOPBAR ── */
+#topbar{background:#fff;border-bottom:1px solid var(--g200);padding:0 16px;height:40px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#topbar h2{font-size:13px;font-weight:600;color:var(--g900)}
+.tb-sub{font-size:11px;color:var(--g500)}
+
+/* ── TOOL CARD INNER ── */
+.tool-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g200);flex-shrink:0}
+.tool-ico{width:30px;height:30px;border-radius:7px;background:var(--ul-b);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.tool-title{font-size:13px;font-weight:600;color:var(--g900)}
+.tool-desc{font-size:11px;color:var(--g500);margin-top:1px}
+.mf-title{font-size:10px;font-weight:700;color:var(--g700);letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-shrink:0}
+.side-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.badge-a{background:var(--ul)}.badge-r{background:#0ea5e9}.badge-d{background:var(--ok)}
+.lc{font-size:10px;color:var(--g500);margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0}
+.col-hint{font-size:10px;color:var(--g500);margin-top:5px;flex-shrink:0}
+.copy-btn-abs{position:absolute;top:8px;right:8px;z-index:2}
+.match-sum{padding:10px 18px;background:var(--g50);border-top:1px solid var(--g200);display:none;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-ok{background:var(--ok-b);color:var(--ok)}
+.pill-err{background:var(--err-b);color:var(--err)}
+.pill-ul{background:var(--ul-b);color:var(--ul)}
+.action-bar{padding:9px 14px;border-top:1px solid var(--g200);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--sa);font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff;border-color:var(--ul)}.btn-p:hover{background:var(--ul-m)}
+.btn-g{background:#fff;border-color:var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.btn-ok{background:var(--ok);color:#fff;border-color:var(--ok)}.btn-ok:hover{background:var(--ok-d)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-sm{padding:4px 10px;font-size:11px}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+/* ── FAQ MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:600px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-hdr h3{font-size:14px;font-weight:700;color:var(--g900)}
+.modal-close{width:28px;height:28px;border:none;background:var(--g100);border-radius:6px;cursor:pointer;font-size:14px;color:var(--g700);display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--g200)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.faq-item{margin-bottom:18px}
+.faq-q{font-size:12.5px;font-weight:700;color:var(--g900);margin-bottom:5px;display:flex;align-items:flex-start;gap:8px}
+.faq-q::before{content:"Q";background:var(--ul);color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+.faq-a{font-size:12px;color:var(--g700);line-height:1.65;padding-left:26px}
+.faq-a code{font-size:11px}
+.faq-div{height:1px;background:var(--g200);margin:14px 0}
+.step-list{padding-left:16px;margin-top:6px}
+.step-list li{font-size:12px;color:var(--g700);line-height:1.7;margin-bottom:2px}
+
+/* ── ICONS — colored bg + white icon ── */
+.ico-google{background:#4285F4}
+.ico-prog{background:#fff}
+.ico-yt{background:#FF0000}
+.ico-meta{background:#0866FF}
+.ico-tiktok{background:#010101}
+.ico-pin{background:#E60023}
+.ico-snap{background:#FFFC00;padding:1px}
+.ico-x{background:#000}
+.ico-ft{background:#0D7A4E}
+.ico-yt svg path,.ico-meta svg path,.ico-tiktok svg path,.ico-pin svg path,.ico-x svg path,.ico-ft svg path{fill:#fff;opacity:1}
+
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--g300);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-ico">🔗</div>
+  <span class="h-title">Cruzador de IDs — ADP × RM</span>
+  <span class="h-sub">· StormX / Unilever BR</span>
+  <button class="h-faq-btn" onclick="toggleFaq()">❓ Como usar</button>
+</header>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div id="sb">
+    <div class="sb-logo">
+      <h1>NC Tool<br>Unilever BR</h1>
+      <p>Cruzador de IDs</p>
+    </div>
+
+    <div class="sb-s">
+      <label>Canal</label>
+      <button class="canal-btn active" onclick="setChannel('Google',this)">
+        <span class="canal-ico" style="background:#fff"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg></span>Google
+      </button>
+      <button class="canal-btn" onclick="setChannel('Programmatic',this)">
+        <span class="canal-ico ico-prog"><svg viewBox="0 0 192 192" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+<path fill="#81C995" d="M142.01,77.08c10.47-6.04,23.86-2.46,29.9,8.01s2.46,23.86-8.01,29.9L49.79,180.65c-10.47,6.04-23.86,2.46-29.9-8.01c-6.04-10.47-2.46-23.86,8.01-29.9L142.01,77.08z"/>
+<path fill="#34A853" d="M59,29.44c0-13.49-12.16-22.83-26-20c-10.1,2.07-17,10.58-17,21v133h43V29.44z"/>
+<path fill="#5BB974" d="M142,115c10.57,6.05,24.69,1.16,30-8c6.09-10.49,4.57-22.95-6-29L49,11c-11.47-6.43-23.79-2.62-30,8c-6.13,10.47-2.57,24.09,8,30.14L142,115z"/>
+<path fill="#81C995" d="M164,115L59,173l0.01-49L142,77c11.9-6.69,28.35-1.4,33,12C178.41,98.82,173.23,109.82,164,115z"/>
+<circle fill="#1E8E3E" cx="37.5" cy="162.5" r="21.5"/>
+</svg></span>Programmatic
+      </button>
+      <button class="canal-btn" onclick="setChannel('YouTube',this)">
+        <span class="canal-ico ico-yt"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M23 7s-.3-1.9-1.1-2.7c-1-.9-2.2-.9-2.7-1C16.5 3 12 3 12 3s-4.5 0-7.2.3c-.5.1-1.7.1-2.7 1C1.3 5.1 1 7 1 7S.7 9.1.7 11.2v2c0 2 .3 4.2.3 4.2s.3 1.9 1.1 2.7c1 .9 2.4.9 3 1 2.1.2 9 .2 9 .2s4.5 0 7.2-.3c.5-.1 1.7-.1 2.7-1 .8-.8 1.1-2.7 1.1-2.7s.3-2 .3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l7.6 3.6-7.6 3.5z"/></svg></span>YouTube
+      </button>
+      <button class="canal-btn" onclick="setChannel('Meta',this)">
+        <span class="canal-ico ico-meta"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02z"/></svg></span>Meta
+      </button>
+      <button class="canal-btn" onclick="setChannel('TikTok',this)">
+        <span class="canal-ico ico-tiktok"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/></svg></span>TikTok
+      </button>
+      <button class="canal-btn" onclick="setChannel('Pinterest',this)">
+        <span class="canal-ico ico-pin"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg></span>Pinterest
+      </button>
+      <button class="canal-btn" onclick="setChannel('Snapchat',this)">
+        <span class="canal-ico ico-snap"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
+  <path fill="#fff" stroke="#000" stroke-width="4" d="M50 8c-11 0-20 9-20 20v8c-2 0-4 1-5 3s0 5 2 6c-1 3-3 7-7 10 2 1 7 2 10 1 1 3 6 5 11 6-3 1-5 3-5 5 0 3 6 5 14 5s14-2 14-5c0-2-2-4-5-5 5-1 10-3 11-6 3 1 8 0 10-1-4-3-6-7-7-10 2-1 3-4 2-6s-3-3-5-3v-8c0-11-9-20-20-20z"/>
+</svg></span>Snapchat
+      </button>
+      <button class="canal-btn" onclick="setChannel('X',this)">
+        <span class="canal-ico ico-x"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>X (Twitter)
+      </button>
+      <button class="canal-btn" onclick="setChannel('Flashtalking',this)">
+        <span class="canal-ico ico-ft"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="14" height="14"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>Flashtalking
+      </button>
+    </div>
+
+    <div class="sb-div"></div>
+    <div class="sb-s">
+      <label>Etapas</label>
+      <div class="step-nav" id="step-nav"></div>
+    </div>
+
+    <div class="sb-foot">
+      <p>Transpõe campos do ADP para a ordem da RM pelo Placement ID</p>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="topbar">
+      <h2 id="tb-title">Google — Cruzamento de IDs</h2>
+      <span class="tb-sub" id="tb-sub"></span>
+    </div>
+    <div id="pages"></div>
+  </div>
+</div>
+
+<!-- FAQ MODAL -->
+<div class="modal-overlay" id="faq-modal" onclick="closeFaqOutside(event)">
+  <div class="modal" style="width:780px;max-width:95vw;max-height:92vh">
+    <div class="modal-hdr">
+      <h3>❓ Como usar — Cruzador de IDs · ADP × RM</h3>
+      <button class="modal-close" onclick="toggleFaq()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px">
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">Para que serve?</div>
+          <div class="faq-a">O ADP gera campos de taxonomia na sua ordem de criação. A RM pode estar em ordem diferente. Este tool cruza os dois pelo ID e entrega cada coluna do ADP já alinhada à ordem da RM — pronta para colar.</div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">Passo a passo</div>
+          <div class="faq-a">
+            <ol class="step-list" style="padding-left:14px">
+              <li>Selecione o <strong>canal</strong> na sidebar</li>
+              <li>Cole o <strong>ID ADP</strong> (esq) e <strong>ID RM</strong> (dir) → <strong>Cruzar IDs →</strong></li>
+              <li>Para cada campo: cole o dado do ADP → <strong>Gerar saída</strong></li>
+              <li>Clique <strong>📋 Copiar</strong> e cole direto na RM</li>
+              <li>Use <strong>Gerar e avançar →</strong> para ir passando campo a campo</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">IDs no ADP — Placement ID</div>
+          <div class="faq-a">
+            Google → <code>BG</code> · Programmatic → <code>BJ</code> · YouTube → <code>BH</code><br>
+            Meta → <code>BI</code> · TikTok → <code>BI</code> · Pinterest/Snap/X → <code>BE</code> · Flashtalking → <code>BB</code><br><br>
+            Campos de saída ficam no bloco verde do ADP, a partir de <code>CX</code> em diante (varia por canal). Selecione a coluna inteira sem cabeçalho.
+          </div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">IDs na RM — ID Flashtalking/Stormx</div>
+          <div class="faq-a">
+            Google → <code>AU</code> · Programmatic → <code>AX</code> · YouTube → <code>AR</code><br>
+            Meta → <code>AU</code> · TikTok → <code>AU</code> · Pinterest/Snap/X → <code>AX</code> · Flashtalking → <code>AS</code><br><br>
+            Cole a coluna inteira <strong>na ordem em que está na RM</strong> — essa ordem é mantida no output.
+          </div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">O que acontece sem match?</div>
+          <div class="faq-a">A linha correspondente fica em branco na saída. Um aviso aparece mostrando quantos IDs da RM não foram encontrados no ADP. Você pode copiar normalmente.</div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">Posso pular campos?</div>
+          <div class="faq-a">Sim — cada etapa é independente. Clique diretamente na etapa que precisa na sidebar, sem passar pelas anteriores. Se só precisar da URL Parametrizada, vá direto para essa etapa.</div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">E se o nº de linhas for diferente?</div>
+          <div class="faq-a">O tool avisa mas não bloqueia. IDs sem dado correspondente recebem célula em branco. Verifique se selecionou a coluna completa sem o cabeçalho.</div>
+        </div>
+
+        <div class="faq-item" style="margin:0">
+          <div class="faq-q">Adicionar coluna no ADP ou RM quebra o tool?</div>
+          <div class="faq-a">Não. Como é tudo manual (colar texto), o tool não lê colunas por posição. Só quebraria se o ID mudasse de coluna — nesse caso basta buscar a nova coluna. O tool em si não precisa ser atualizado.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CHANNELS = {
+  'Google': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign - Reduzido (IO - Deals do YT: Line ups, masthead, first position, YT Select, Demand Gen)',
+    'Parameterized URL'
+  ],
+  'Programmatic': [
+    'Campaign',
+    'Insertion Order',
+    'Line Item',
+    'Creative/Ad',
+    'Creative/Ad Amazon - Reduzido (pegar na planilha de geração de ID)',
+    'IO Reduzido - Meli Ads',
+    'Line Item Reduzido - Meli Ads',
+    'Creative Reduzido - Meli Ads',
+    'Parameterized URL',
+    'Insetion Order Galileo',
+    'Insetion Order Freetext',
+    'Line Item Galileo',
+    'Line Item Freetext',
+    'Ad Name Galileo + Freetext'
+  ],
+  'YouTube': [
+    'Campaign',
+    'Insertion Order',
+    'Line Item',
+    'AdGroup',
+    'Creative/Ad',
+    'IO - Reduzido (Campaign - Deals do YT: Line ups, masthead, first position, YT Select - Original)',
+    'IO Youtube Masthead CPH (Compra Direta)',
+    'Ad Group Youtube Masthead CPH (Compra Direta)',
+    'Ad Name Youtube Masthead CPH (Compra Direta)',
+    'Parameterized URL',
+    'IO Galileo',
+    'IO Freetext',
+    'Ad Group Galileo',
+    'Ad Group Freetext',
+    'Ad Name Galileo',
+    'Ad Name Freetext'
+  ],
+  'Meta': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign Tiktok Branded Mission e Buzz (Compra Direta)',
+    'Ad Set Tiktok Branded Mission e Buzz (Compra Direta)',
+    'Ad Name Tiktok Branded Mission e Buzz (Compra Direta)',
+    'Campaign Tiktokshop',
+    'Parameterized URL',
+    'Campaign Galileo',
+    'Campaign Freetext',
+    'Ad Set Galileo',
+    'Ad Set Freetext',
+    'Ad Name Galileo',
+    'Ad Name Freetext'
+  ],
+  'TikTok': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign Tiktok Branded Mission e Buzz (Compra Direta)',
+    'Ad Set Tiktok Branded Mission e Buzz (Compra Direta)',
+    'Ad Name Tiktok Branded Mission e Buzz (Compra Direta)',
+    'Campaign Tiktokshop',
+    'Parameterized URL',
+    'Campaign Galileo',
+    'Campaign Freetext',
+    'Ad Set Galileo',
+    'Ad Set Freetext',
+    'Ad Name Galileo',
+    'Ad Name Freetext'
+  ],
+  'Pinterest': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign Name (Pinterest - Compra Direta)',
+    'Ad Set/Placement Name (Pinterest - Compra Direta)',
+    'Ad name (Pinterest - Compra Direta)',
+    'Parameterized URL',
+    'Campaign Galileo',
+    'Campaign Freetext',
+    'Ad Set Galileo',
+    'Ad Set Freetext',
+    'Ad Name Galileo',
+    'Ad Name Freetext'
+  ],
+  'Snapchat': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign Name (Pinterest - Compra Direta)',
+    'Ad Set/Placement Name (Pinterest - Compra Direta)',
+    'Ad name (Pinterest - Compra Direta)',
+    'Parameterized URL',
+    'Campaign Galileo',
+    'Campaign Freetext',
+    'Ad Set Galileo',
+    'Ad Set Freetext',
+    'Ad Name Galileo',
+    'Ad Name Freetext'
+  ],
+  'X': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign Name (Pinterest - Compra Direta)',
+    'Ad Set/Placement Name (Pinterest - Compra Direta)',
+    'Ad name (Pinterest - Compra Direta)',
+    'Parameterized URL',
+    'Campaign Galileo',
+    'Campaign Freetext',
+    'Ad Set Galileo',
+    'Ad Set Freetext',
+    'Ad Name Galileo',
+    'Ad Name Freetext'
+  ],
+  'Flashtalking': [
+    'Campaign Name',
+    'Ad Set/Placement Name',
+    'Ad name',
+    'Campaign Reduzido - Meli Ads e Kwai',
+    'Ad Name Reduzido - Kwai',
+    'Parameterized URL',
+    'Campaign GL - Meli Ads e Kwaii',
+    'Ad Name - Kwai (Galileo)',
+    'Ad Name - Kwai (Freetext)'
+  ]
+};
+
+let S = { ch:'Google', adpIds:[], rmIds:[], adpMap:{}, step0Done:false, fieldDone:{} };
+let currentStep = 0;
+
+function renderAll(){
+  renderStepNav();
+  renderPages();
+  showStep(0);
+}
+
+function renderStepNav(){
+  const cols = CHANNELS[S.ch];
+  let html = `<button class="step-btn" id="snav-0" onclick="showStep(0)">
+    <div class="sdot"></div><span>1. IDs</span></button>`;
+  cols.forEach((label,i) => {
+    html += `<button class="step-btn" id="snav-${i+1}" onclick="showStep(${i+1})">
+      <div class="sdot"></div><span>${i+2}. ${esc(label)}</span></button>`;
+  });
+  document.getElementById('step-nav').innerHTML = html;
+}
+
+function renderPages(){
+  const cols = CHANNELS[S.ch];
+  let html = '';
+
+  // PAGE 0
+  html += `<div class="page" id="page-0">
+    <div class="tool-card">
+      <div class="tool-hdr">
+        <div class="tool-ico">🆔</div>
+        <div>
+          <div class="tool-title">Etapa 1 — Cruzamento de IDs</div>
+          <div class="tool-desc">Cole o Placement ID do ADP e o ID Flashtalking/Stormx da RM · o mapa de match será usado em todas as etapas seguintes</div>
+        </div>
+      </div>
+      <div class="ids-grid">
+        <div class="id-col">
+          <div class="mf-title">
+            <span class="side-badge badge-a">A</span>
+            ID ADP — Placement ID
+            <span class="lc" id="cnt-adp">0 linhas</span>
+          </div>
+          <textarea id="adp-id" placeholder="SX00010382&#10;SX00010383&#10;SX00010384&#10;..."
+            oninput="updateLc('adp-id','cnt-adp')"></textarea>
+          <div class="col-hint">Sem cabeçalho · um ID por linha · ordem do ADP · col BG / BJ / BH / BI / BE / BB (varia por canal)</div>
+        </div>
+        <div class="id-col">
+          <div class="mf-title">
+            <span class="side-badge badge-r">R</span>
+            ID RM — ID Flashtalking / Stormx
+            <span class="lc" id="cnt-rm">0 linhas</span>
+          </div>
+          <textarea id="rm-id" placeholder="SX00010381&#10;SX00010382&#10;SX00010383&#10;..."
+            oninput="updateLc('rm-id','cnt-rm')"></textarea>
+          <div class="col-hint">Sem cabeçalho · um ID por linha · ordem da RM (mantida no output) · col AU / AX / AR / AU / AX / AS</div>
+        </div>
+      </div>
+      <div class="match-sum" id="match-sum"></div>
+      <div id="ib-0"></div>
+      <div class="action-bar">
+        <button class="btn btn-g" onclick="clearAll()">Limpar tudo</button>
+        <button class="btn btn-p" onclick="runStep0()">Cruzar IDs →</button>
+      </div>
+    </div>
+  </div>`;
+
+  // FIELD PAGES
+  cols.forEach((label, i) => {
+    html += `<div class="page" id="page-${i+1}">
+      <div class="tool-card">
+        <div class="tool-hdr">
+          <div class="tool-ico">📋</div>
+          <div>
+            <div class="tool-title">Etapa ${i+2} — ${esc(label)}</div>
+            <div class="tool-desc">Cole a coluna do ADP · a saída já sai alinhada à ordem da RM → copie e cole diretamente</div>
+          </div>
+        </div>
+        <div class="dado-grid">
+          <div class="dado-in">
+            <div class="mf-title">
+              <span class="side-badge badge-a">A</span>
+              Dado ADP — <code>${esc(label)}</code>
+              <span class="lc" id="cnt-d-${i}">0 linhas</span>
+            </div>
+            <textarea id="dado-${i}" placeholder="Um valor por linha&#10;mesma ordem que ID ADP"
+              oninput="updateLc('dado-${i}','cnt-d-${i}')"></textarea>
+            <div class="col-hint" id="hint-d-${i}">Mesma ordem e quantidade que ID ADP</div>
+          </div>
+          <div class="dado-out">
+            <div class="mf-title">
+              <span class="side-badge badge-r">R</span>
+              Saída — ordem da RM
+              <span class="lc" id="out-lc-${i}"></span>
+            </div>
+            <div class="out-box">
+              <div class="copy-btn-abs">
+                <button class="btn btn-ok btn-sm" onclick="copyField(${i})">📋 Copiar</button>
+              </div>
+              <textarea id="out-${i}" readonly placeholder="Cole o dado e clique em Gerar →"></textarea>
+            </div>
+            <div class="col-hint">Pronto para colar na RM</div>
+          </div>
+        </div>
+        <div id="ib-${i+1}"></div>
+        <div class="action-bar">
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-g" onclick="showStep(${i>0?i:0})">← Voltar</button>
+            <button class="btn btn-g" onclick="clearField(${i})">Limpar campo</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-p" onclick="runField(${i})">Gerar saída</button>
+            ${i < cols.length-1
+              ? `<button class="btn btn-g" onclick="runField(${i},true)">Gerar e avançar →</button>`
+              : `<button class="btn btn-ok" onclick="runField(${i})">✓ Concluir</button>`}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('pages').innerHTML = html;
+}
+
+function showStep(step){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const pg = document.getElementById(`page-${step}`);
+  if(pg) pg.classList.add('active');
+  currentStep = step;
+  const cols = CHANNELS[S.ch];
+  const label = step===0 ? 'Cruzamento de IDs' : cols[step-1];
+  document.getElementById('tb-title').textContent = `${S.ch} — ${label}`;
+  document.getElementById('tb-sub').textContent = `Etapa ${step+1} de ${cols.length+1}`;
+  if(step>0){
+    const h=document.getElementById(`hint-d-${step-1}`);
+    if(h) h.textContent=`Mesma ordem e quantidade que ID ADP (${S.adpIds.length} linhas)`;
+  }
+  syncStepNav();
+}
+
+function syncStepNav(){
+  document.querySelectorAll('.step-btn').forEach((b,i)=>{
+    b.classList.remove('active','done');
+    if(i===currentStep) b.classList.add('active');
+    else if(i===0&&S.step0Done) b.classList.add('done');
+    else if(i>0&&S.fieldDone[i-1]) b.classList.add('done');
+  });
+}
+
+function setChannel(ch,btn){
+  if(S.step0Done&&!confirm('Trocar de canal vai limpar tudo. Continuar?')) return;
+  document.querySelectorAll('.canal-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  S.ch=ch;
+  clearAll();
+}
+
+function runStep0(){
+  const adpIds=lines('adp-id'), rmIds=lines('rm-id');
+  setIb('ib-0','');
+  if(!adpIds.length){setIb('ib-0','Cole o ID ADP antes de cruzar.','err');return;}
+  if(!rmIds.length){setIb('ib-0','Cole o ID RM antes de cruzar.','err');return;}
+  const adpMap={};
+  adpIds.forEach(id=>adpMap[id]=true);
+  let mc=0,nm=0;
+  rmIds.forEach(id=>adpMap[id]?mc++:nm++);
+  S.adpIds=adpIds;S.rmIds=rmIds;S.adpMap=adpMap;
+  S.matchCount=mc;S.noMatchCount=nm;S.step0Done=true;
+  const sum=document.getElementById('match-sum');
+  sum.style.display='flex';
+  sum.innerHTML=`<span class="pill pill-ok">✓ ${mc} match</span>
+    <span class="pill pill-err">✗ ${nm} sem match</span>
+    <span class="pill pill-ul">${adpIds.length} IDs no ADP · ${rmIds.length} na RM</span>
+    <span style="font-size:11px;color:var(--g500);margin-left:auto">Use a barra lateral para avançar etapa por etapa →</span>`;
+  if(nm>0) setIb('ib-0',`${nm} IDs da RM não encontrados no ADP — receberão célula em branco nas saídas.`,'warn');
+  syncStepNav();
+}
+
+function runField(i,advance=false){
+  const ibId=`ib-${i+1}`;
+  setIb(ibId,'');
+  if(!S.step0Done){setIb(ibId,'Conclua a Etapa 1 (IDs) primeiro.','err');return;}
+  const dado=lines(`dado-${i}`);
+  if(!dado.length){setIb(ibId,'Cole o dado ADP antes de gerar.','err');return;}
+  if(dado.length!==S.adpIds.length)
+    setIb(ibId,`Dado tem ${dado.length} linhas, ID ADP tem ${S.adpIds.length} — IDs sem par receberão célula em branco.`,'warn');
+  const dadoMap={};
+  S.adpIds.forEach((id,idx)=>{dadoMap[id]=idx<dado.length?dado[idx]:'';});
+  const out=S.rmIds.map(id=>dadoMap[id]!==undefined?dadoMap[id]:'');
+  const filled=out.filter(v=>v!=='').length;
+  document.getElementById(`out-${i}`).value=out.join('\n');
+  document.getElementById(`out-lc-${i}`).textContent=`${filled} preenchidos · ${out.length-filled} em branco`;
+  S.fieldDone[i]=true;
+  syncStepNav();
+  if(advance&&i<CHANNELS[S.ch].length-1) showStep(i+2);
+}
+
+function clearField(i){
+  const d=document.getElementById(`dado-${i}`);if(d)d.value='';
+  const o=document.getElementById(`out-${i}`);if(o)o.value='';
+  document.getElementById(`cnt-d-${i}`).textContent='0 linhas';
+  document.getElementById(`out-lc-${i}`).textContent='';
+  S.fieldDone[i]=false;
+  setIb(`ib-${i+1}`,'');
+  syncStepNav();
+}
+
+function copyField(i){
+  const ta=document.getElementById(`out-${i}`);
+  if(ta) navigator.clipboard.writeText(ta.value).catch(()=>{});
+}
+
+function clearAll(){
+  S={...S,adpIds:[],rmIds:[],adpMap:{},step0Done:false,fieldDone:{}};
+  renderAll();
+}
+
+function toggleFaq(){
+  document.getElementById('faq-modal').classList.toggle('open');
+}
+function closeFaqOutside(e){
+  if(e.target===document.getElementById('faq-modal')) toggleFaq();
+}
+
+function lines(id){
+  const el=document.getElementById(id);
+  if(!el) return [];
+  return el.value.split('\n').map(l=>l.trim()).filter(l=>l!=='');
+}
+function updateLc(inputId,countId){
+  const n=lines(inputId).length;
+  document.getElementById(countId).textContent=n+' linhas';
+}
+function setIb(id,msg,type=''){
+  const el=document.getElementById(id);
+  if(!el) return;
+  if(!msg){el.innerHTML='';return;}
+  el.innerHTML=`<div class="ib ${type==='warn'?'warn':type==='err'?'err':''}" style="margin:10px 18px 0">${esc(msg)}</div>`;
+}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+renderAll();
+</script>
+</body>
+</html>

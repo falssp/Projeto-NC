@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jira → Dashboard | Unidades Pai/Filho sem Duplicidade</title>
+<style>
+  :root { --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3248; --accent:#5b6af0; --text:#e8eaf0; --muted:#8890aa; --green:#4ade80; --red:#f87171; --yellow:#fbbf24; --code:#12141e; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+  header{background:linear-gradient(135deg,#1a1d27,#12141e);border-bottom:1px solid var(--border);padding:44px 24px 32px;text-align:center}
+  h1{font-size:clamp(22px,4vw,34px);font-weight:800;letter-spacing:-.02em}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);margin-top:8px;font-size:14px}
+  .back{display:inline-block;margin:16px 0 0;font-size:13px;color:var(--accent);text-decoration:none}
+  .container{max-width:900px;margin:0 auto;padding:36px 20px 80px}
+  section{margin-bottom:44px}
+  h2{font-size:19px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h3{font-size:15px;margin:18px 0 8px;color:#aab3ff}
+  p{margin-bottom:10px;font-size:14.5px}
+  .note{background:var(--surface);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;font-size:14px;margin:12px 0}
+  .warn{border-left-color:var(--yellow)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0;background:var(--surface);border-radius:8px;overflow:hidden;display:block;overflow-x:auto}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{background:var(--surface2);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  tr.tot td{font-weight:800;color:var(--green)}
+  .ok{color:var(--green)} .bad{color:var(--red)}
+  pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.55;margin:10px 0}
+  code{font-family:Consolas,'Courier New',monospace}
+  p code,td code,li code{background:var(--code);padding:1px 6px;border-radius:4px;font-size:12.5px}
+  ul.check{list-style:none}
+  ul.check li{padding:6px 0;font-size:14px}
+  ul.check li::before{content:"☐ ";color:var(--accent)}
+  a{color:var(--accent)}
+  footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+  blockquote{background:var(--surface);border-left:3px solid var(--accent);padding:4px 16px;border-radius:0 8px 8px 0;margin:12px 0}
+  blockquote p{margin:8px 0}
+  ul,ol{margin:0 0 12px 22px;font-size:14.5px}
+  li{margin:4px 0}
+  hr{border:0;border-top:1px solid var(--border);margin:24px 0}
+  pre code{background:none;padding:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jira → Dashboard: <span>Unidades Pai/Filho</span></h1>
+  <p class="sub">Como somar sem duplicidade · BigQuery / Sheets → Looker Studio · Out/26</p>
+  <a class="back" href="../index.html">&larr; Voltar aos Treinamentos</a>
+</header>
+<div class="container">
+<p><strong>Edição:</strong> Out/26 · <strong>Público:</strong> AdOps / Taxonomia (UL) · <strong>Fluxo:</strong> Jira → BigQuery e/ou Google Sheets → Looker Studio</p>
+<section><h2>Resumo (leia isto primeiro)</h2>
+<ul>
+<li>No Jira, a tarefa <strong>pai não tem unidade</strong> e as <strong>filhas têm</strong>.</li>
+<li>O pai deve <strong>mostrar</strong> a soma dos filhos, mas essa soma <strong>não pode entrar no total</strong> (senão duplica).</li>
+<li>Solução: <strong>duas colunas</strong> na fonte de dados.</li>
+<li><code>unidades_exibicao</code> → o que aparece na linha (pai = soma dos filhos).</li>
+<li><code>unidades_total</code> → o que o Looker soma nos totais (pai = vazio).</li>
+<li>Nos totais, scorecards e gráficos agregados do Looker: <strong>só <code>unidades_total</code></strong>.</li>
+<li><strong>Sem BigQuery?</strong> Siga o <a href="passo-a-passo-jira-sheets.html">passo a passo Jira → Sheets → Looker</a>.</li>
+</ul>
+
+</section><section><h2>1. Contexto e problema</h2>
+<p>O dashboard precisa contabilizar unidades por issue do Jira. As unidades são preenchidas nas tarefas filhas; o pai é só um agrupador sem valor. Duas exigências ao mesmo tempo:</p>
+<ol>
+<li>O pai precisa <strong>aparecer com o número</strong> (soma dos filhos), para leitura no detalhe.</li>
+<li>O <strong>total geral</strong> não pode contar o mesmo número duas vezes (uma no pai agregado, outra em cada filho).</li>
+</ol>
+<blockquote>
+<p>O número do pai é só <strong>exibição</strong>. A unidade de verdade vive no filho.</p>
+</blockquote>
+</section><section><h2>2. Glossário</h2>
+<table>
+<thead>
+<tr>
+<th>Termo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Valor próprio</strong></td>
+<td>Unidade preenchida na própria issue (inclui <code>0</code>). Vazio/NULL = não tem.</td>
+</tr>
+<tr>
+<td><strong>Rollup</strong></td>
+<td>Soma dos valores dos descendentes mostrada no pai.</td>
+</tr>
+<tr>
+<td><strong>Exibição</strong></td>
+<td>Número mostrado na linha (valor próprio, ou rollup se o pai não tem).</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td>Número que entra nas somas do dashboard (só valores próprios).</td>
+</tr>
+<tr>
+<td><strong>Órfão</strong></td>
+<td>Issue cujo <code>parent_key</code> não existe na base carregada.</td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>3. A regra</h2>
+<table>
+<thead>
+<tr>
+<th>Coluna</th>
+<th>O que é</th>
+<th>Pai sem valor próprio</th>
+<th>Issue com valor próprio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unidades_exibicao</code></td>
+<td>Aparece na linha</td>
+<td>Soma dos descendentes</td>
+<td>Valor próprio</td>
+</tr>
+<tr>
+<td><code>unidades_total</code></td>
+<td>Looker soma nos totais</td>
+<td><strong>vazio / NULL</strong></td>
+<td>Valor próprio</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Tabela de detalhe → <code>unidades_exibicao</code>.</li>
+<li>Scorecard, total, gráfico agregado → <strong>somente</strong> <code>unidades_total</code>.</li>
+</ul>
+<h3>Exemplo</h3>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Pai</th>
+<th>unidades (Jira)</th>
+<th>unidades_exibicao</th>
+<th>unidades_total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UL-100</td>
+<td>—</td>
+<td>—</td>
+<td>8</td>
+<td>—</td>
+</tr>
+<tr>
+<td>UL-101</td>
+<td>UL-100</td>
+<td>5</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>UL-102</td>
+<td>UL-100</td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>UL-200</td>
+<td>—</td>
+<td>10</td>
+<td>10</td>
+<td>10</td>
+</tr>
+<tr>
+<td><strong>Total do dashboard</strong></td>
+<td></td>
+<td></td>
+<td>26 (errado)</td>
+<td><strong>18 (correto)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Somando <code>unidades_exibicao</code> o total seria 26 (o 8 do pai é duplicado). Com <code>unidades_total</code>, é 18.</p>
+</section><section><h2>4. Premissas e decisões</h2>
+<table>
+<thead>
+<tr>
+<th>Decisão</th>
+<th>Motivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unidade é preenchida <strong>só no filho</strong> (nível mais baixo)</td>
+<td>Evita ambiguidade; é a regra que o dashboard assume.</td>
+</tr>
+<tr>
+<td>Total soma só <strong>valores próprios</strong></td>
+<td>É a forma de nunca contar rollup.</td>
+</tr>
+<tr>
+<td><code>0</code> conta como valor próprio, vazio não</td>
+<td>Zero é informação ("sem unidades"); vazio é "não preenchido".</td>
+</tr>
+<tr>
+<td>Pai com valor próprio <strong>e</strong> filhos com valor = <strong>conta nos dois</strong></td>
+<td>A regra não adivinha intenção; é erro de preenchimento (ver seção 10).</td>
+</tr>
+<tr>
+<td>Cálculo na <strong>camada de dados</strong> (BQ/Sheets), não no Looker</td>
+<td>O Looker só agrega o que a fonte entrega; ele não distingue valor original de herdado.</td>
+</tr>
+<tr>
+<td>Carga sempre com a <strong>hierarquia inteira</strong></td>
+<td>Filtrar na carga deixa filhos órfãos e quebra o rollup. Filtrar no Looker.</td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>5. Fluxo de dados</h2>
+<pre><code>Jira (issues: key, parent, unidades)
+        │  extração (Apps Script / sync existente)
+        ▼
+BigQuery tabela_jira  ──►  view vw_jira_unidades (exibicao + total)
+   ou                                   │
+Google Sheets (colunas D e E)           ▼
+                              Looker Studio (detalhe = exibicao | totais = total)
+</code></pre>
+</section><section><h2>6. Extração do Jira</h2>
+<p>Cada issue precisa chegar na fonte com <strong>3 campos</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Campo na fonte</th>
+<th>Origem no Jira</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>issue_key</code></td>
+<td>chave da issue (ex.: <code>UL-101</code>)</td>
+</tr>
+<tr>
+<td><code>parent_key</code></td>
+<td><code>fields.parent.key</code> (vazio se não tem pai)</td>
+</tr>
+<tr>
+<td><code>unidades</code></td>
+<td>campo customizado de unidades (ID <code>customfield_XXXXX</code>; confirmar em Jira → Configurações → Campos). <strong>Vazio = NULL</strong>, não <code>0</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Exemplo pronto em <a href="JIRA_EXTRACAO_UNIDADES.gs"><code>JIRA_EXTRACAO_UNIDADES.gs</code></a>, com instruções completas em <a href="passo-a-passo-jira-sheets.html"><code>passo-a-passo-jira-sheets.md</code></a> (credenciais, descoberta do ID do campo, sincronização para a planilha, agendamento e Looker). <strong>Não foi testado contra o Jira real</strong>: ajustar domínio, JQL e ID do campo, e conferir o endpoint de busca na documentação atual da API.</p>
+<p>Regra de ouro: o JQL traz <strong>pais e filhos</strong> do escopo inteiro. Quem filtra é o Looker.</p>
+</section><section><h2>7. Implementação</h2>
+<h3>7.1 BigQuery — view simples (2 níveis: pai → filho)</h3>
+<p>Arquivo: <a href="sql/vw_jira_unidades_simples.sql"><code>sql/vw_jira_unidades_simples.sql</code></a></p>
+<pre><code class="language-sql">CREATE OR REPLACE VIEW `projeto.dataset.vw_jira_unidades` AS
+WITH base AS (
+  SELECT issue_key, parent_key, unidades
+  FROM `projeto.dataset.tabela_jira`
+),
+soma_filhos AS (
+  SELECT parent_key, SUM(unidades) AS unidades_filhos
+  FROM base
+  WHERE parent_key IS NOT NULL AND unidades IS NOT NULL
+  GROUP BY parent_key
+)
+SELECT
+  b.issue_key,
+  b.parent_key,
+  b.unidades,
+  COALESCE(b.unidades, sf.unidades_filhos, 0) AS unidades_exibicao,
+  b.unidades AS unidades_total
+FROM base b
+LEFT JOIN soma_filhos sf ON sf.parent_key = b.issue_key
+</code></pre>
+<blockquote>
+<p>⚠️ Só enxerga <strong>filhos diretos</strong>. Num cenário pai → filho → neto, o pai do topo mostra 0 se o filho do meio não tem valor.</p>
+</blockquote>
+<h3>7.2 BigQuery — view multi-nível (3+ níveis)</h3>
+<p>Arquivo: <a href="sql/vw_jira_unidades_multinivel.sql"><code>sql/vw_jira_unidades_multinivel.sql</code></a></p>
+<pre><code class="language-sql">CREATE OR REPLACE VIEW `projeto.dataset.vw_jira_unidades` AS
+WITH RECURSIVE base AS (
+  SELECT issue_key, parent_key, unidades
+  FROM `projeto.dataset.tabela_jira`
+),
+arvore AS (
+  SELECT issue_key AS raiz, issue_key AS descendente FROM base
+  UNION ALL
+  SELECT a.raiz, b.issue_key
+  FROM arvore a
+  JOIN base b ON b.parent_key = a.descendente
+),
+soma AS (
+  SELECT a.raiz, SUM(d.unidades) AS unidades_desc
+  FROM arvore a
+  JOIN base d ON d.issue_key = a.descendente
+  WHERE a.descendente &lt;&gt; a.raiz
+  GROUP BY a.raiz
+)
+SELECT
+  b.issue_key,
+  b.parent_key,
+  b.unidades,
+  COALESCE(b.unidades, s.unidades_desc, 0) AS unidades_exibicao,
+  b.unidades AS unidades_total
+FROM base b
+LEFT JOIN soma s ON s.raiz = b.issue_key
+</code></pre>
+<p>O pai exibe a soma de <strong>todos</strong> os descendentes (premissa: valores só nas issues de baixo).</p>
+<blockquote>
+<p>Lógica validada em <strong>DuckDB</strong> com os dados de <code>exemplos/</code>. Na 1ª execução no BigQuery, conferir o total contra a soma manual.</p>
+</blockquote>
+<h3>7.3 Google Sheets — 2 níveis</h3>
+<p>Colunas: <code>A</code> issue_key · <code>B</code> parent_key · <code>C</code> unidades</p>
+<table>
+<thead>
+<tr>
+<th>Coluna</th>
+<th>Fórmula (linha 2)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>D</code> unidades_exibicao</td>
+<td><code>=IF(C2&lt;&gt;"", C2, SUMIF($B$2:$B, A2, $C$2:$C))</code></td>
+</tr>
+<tr>
+<td><code>E</code> unidades_total</td>
+<td><code>=IF(C2&lt;&gt;"", C2, "")</code></td>
+</tr>
+</tbody>
+</table>
+<h3>7.4 Google Sheets — até 3 níveis (sem referência circular)</h3>
+<p>Adicionar a coluna <code>F</code> (chave do avô) e trocar a <code>D</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Coluna</th>
+<th>Fórmula (linha 2)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>F</code> avo_key</td>
+<td><code>=IFERROR(VLOOKUP(B2, $A$2:$B, 2, FALSE), "")</code></td>
+</tr>
+<tr>
+<td><code>D</code> unidades_exibicao</td>
+<td><code>=IF(C2&lt;&gt;"", C2, SUMIF($B$2:$B, A2, $C$2:$C) + SUMIF($F$2:$F, A2, $C$2:$C))</code></td>
+</tr>
+<tr>
+<td><code>E</code> unidades_total</td>
+<td><code>=IF(C2&lt;&gt;"", C2, "")</code></td>
+</tr>
+</tbody>
+</table>
+<p>Cada nível extra exige mais uma coluna auxiliar (bisavô etc.). A partir de 4 níveis, prefira BigQuery ou Apps Script. Fórmulas testadas em LibreOffice com os dados de <code>exemplos/</code>; o comportamento no Google Sheets é equivalente, mas valide na 1ª vez.</p>
+<h3>7.5 Apps Script (recursivo, qualquer profundidade)</h3>
+<p>Arquivo: <a href="ROLLUP_UNIDADES_PAI_FILHO.gs"><code>ROLLUP_UNIDADES_PAI_FILHO.gs</code></a>. A função <code>calcularUnidadesComRollup(issues)</code> recebe <code>[{key, parentKey, unidades}]</code> e devolve cada issue com <code>unidadesExibicao</code> e o <code>totalGeral</code> (só valores próprios).</p>
+</section><section><h2>8. Configuração no Looker Studio</h2>
+<ol>
+<li>Fonte de dados = view do BigQuery (ou aba do Sheets) com as duas colunas.</li>
+<li>Scorecards, totais, gráficos agregados → métrica <code>unidades_total</code> (<strong>Soma</strong>).</li>
+<li>Tabela de detalhe → dimensão <code>issue_key</code> + métrica <code>unidades_exibicao</code>.</li>
+<li>Nunca colocar <code>unidades_exibicao</code> e <code>unidades_total</code> no mesmo scorecard.</li>
+<li>Para tabelas com pai e filhos juntos, esperar linha de pai <strong>sem</strong> valor na coluna de total (é proposital).</li>
+</ol>
+<h3>Dimensões que só existem no pai (BU, marca, campanha, veículo)</h3>
+<p>Se a dimensão está preenchida só no pai, o total por dimensão (que soma linhas de filho) fica sem agrupamento. Solução: herdar a dimensão do pai na view (padrão <code>LEFT JOIN</code> no <code>parent_key</code>):</p>
+<pre><code class="language-sql">SELECT b.*, p.campanha AS campanha_pai
+FROM base b
+LEFT JOIN base p ON p.issue_key = b.parent_key
+</code></pre>
+<p>(Padrão genérico; ajustar nomes de colunas à tabela real.)</p>
+<h3>Limitação com filtros</h3>
+<p><code>unidades_exibicao</code> do pai é calculada na <strong>view</strong>, sobre todos os filhos. Se um filtro do Looker (status, data) esconde alguns filhos, o pai continua mostrando a soma completa. O <strong>total</strong> continua correto (soma só filhos visíveis). Para decisões, confie em <code>unidades_total</code>; use a exibição do pai como referência de leitura.</p>
+</section><section><h2>9. Dados de teste</h2>
+<p>Arquivos em <code>exemplos/</code>: <code>dados_teste.csv</code> (entrada) e <code>resultados_esperados.csv</code> (saída esperada). <strong>Total esperado: 31.</strong></p>
+<p>Scripts em <code>testes/</code> que reproduzem a validação a partir desses arquivos:</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>O que valida</th>
+<th>Como rodar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>teste_views_duckdb.py</code></td>
+<td>Views SQL simples e multi-nível (em DuckDB)</td>
+<td><code>pip install duckdb</code> · <code>python3 teste_views_duckdb.py</code></td>
+</tr>
+<tr>
+<td><code>teste_formulas_sheets.py</code></td>
+<td>Fórmulas do Sheets, 2 e 3 níveis (em LibreOffice)</td>
+<td><code>pip install openpyxl</code> · <code>python3 teste_formulas_sheets.py</code> (precisa de <code>soffice</code>)</td>
+</tr>
+<tr>
+<td><code>teste_rollup_gs.js</code></td>
+<td><code>ROLLUP_UNIDADES_PAI_FILHO.gs</code> (em Node)</td>
+<td><code>node teste_rollup_gs.js</code></td>
+</tr>
+<tr>
+<td><code>teste_planilha_gs.js</code></td>
+<td>Montagem das linhas gravadas na planilha (<code>JIRA_EXTRACAO_UNIDADES.gs</code>, em Node)</td>
+<td><code>node teste_planilha_gs.js</code></td>
+</tr>
+</tbody>
+</table>
+<p>Os quatro terminam com <code>OK: todas as verificações passaram</code> quando a lógica está correta. Se você alterar a regra, atualize <code>resultados_esperados.csv</code> e rode de novo.</p>
+</section><section><h2>10. Casos de borda (todos testados)</h2>
+<table>
+<thead>
+<tr>
+<th>Caso</th>
+<th>Dados</th>
+<th>Resultado</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pai sem valor, 2 filhos</td>
+<td>A-1 → 5 e 3</td>
+<td>pai exibe 8, total 8</td>
+<td>Caso padrão</td>
+</tr>
+<tr>
+<td>Pai <strong>com</strong> valor + filho com valor</td>
+<td>B-1=10, B-2=4</td>
+<td>total 14 (conta nos dois)</td>
+<td>Erro de preenchimento: unidade só no filho</td>
+</tr>
+<tr>
+<td>Filho <code>0</code> e filho vazio</td>
+<td>C-2=0, C-3=vazio</td>
+<td>pai exibe 0</td>
+<td><code>0</code> é valor próprio, vazio não</td>
+</tr>
+<tr>
+<td>Órfão (pai não está na base)</td>
+<td>D-1=7, pai inexistente</td>
+<td>conta 7</td>
+<td>Vira valor próprio; carregar hierarquia inteira</td>
+</tr>
+<tr>
+<td>3 níveis</td>
+<td>E-1 → E-2 → E-3=2</td>
+<td>simples: E-1=0 ❌ / multi-nível: E-1=2 ✅</td>
+<td>Usar view multi-nível</td>
+</tr>
+<tr>
+<td>Ciclo de parentesco</td>
+<td>X-1 ↔ X-2</td>
+<td>recursão não termina</td>
+<td>Em teste local (DuckDB) travou; no BigQuery espere erro de limite de iterações. O Jira em princípio não permite ciclos, então o risco é dado corrompido na carga</td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>11. Checklist de validação</h2>
+<ul>
+<li>☐ Total do dashboard = soma manual dos valores próprios (filhos + issues com valor).</li>
+<li>☐ Pai sem valor próprio mostra a soma dos filhos na tabela.</li>
+<li>☐ Pai sem valor próprio <strong>não</strong> altera o total.</li>
+<li>☐ Filtros (BU, marca, campanha, veículo) mantêm o total coerente.</li>
+<li>☐ Nenhum órfão inesperado: <code>parent_key</code> que não existe em <code>issue_key</code>.</li>
+<li>☐ Nenhum pai com valor próprio <strong>e</strong> filhos com valor.</li>
+</ul>
+<p>Query para achar órfãos:</p>
+<pre><code class="language-sql">SELECT b.issue_key, b.parent_key
+FROM `projeto.dataset.tabela_jira` b
+LEFT JOIN `projeto.dataset.tabela_jira` p ON p.issue_key = b.parent_key
+WHERE b.parent_key IS NOT NULL AND p.issue_key IS NULL
+</code></pre>
+<p>Query para achar pai com valor próprio e filhos com valor:</p>
+<pre><code class="language-sql">SELECT p.issue_key, p.unidades AS unidades_pai
+FROM `projeto.dataset.tabela_jira` p
+WHERE p.unidades IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM `projeto.dataset.tabela_jira` f
+    WHERE f.parent_key = p.issue_key AND f.unidades IS NOT NULL
+  )
+</code></pre>
+</section><section><h2>12. Erros comuns</h2>
+<table>
+<thead>
+<tr>
+<th>Erro</th>
+<th>Efeito</th>
+<th>Correção</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Somar <code>unidades_exibicao</code> no total</td>
+<td>Duplicidade</td>
+<td>Usar <code>unidades_total</code></td>
+</tr>
+<tr>
+<td>Preencher unidade no pai <strong>e</strong> nos filhos</td>
+<td>Conta nos dois</td>
+<td>Unidade só no filho</td>
+</tr>
+<tr>
+<td>View simples com 3+ níveis</td>
+<td>Pai do topo incompleto</td>
+<td>View multi-nível ou Apps Script</td>
+</tr>
+<tr>
+<td>Filho sem <code>parent_key</code> na sync</td>
+<td>Vira "pai" e entra como valor próprio</td>
+<td>Garantir <code>parent_key</code> na extração</td>
+</tr>
+<tr>
+<td>Carga filtrada (só filhos, sem os pais)</td>
+<td>Filhos viram órfãos</td>
+<td>Carregar hierarquia inteira</td>
+</tr>
+<tr>
+<td>Campo vazio gravado como <code>0</code> na carga</td>
+<td>Pai exibe 0 em vez de rollup correto</td>
+<td>Gravar NULL quando o campo está vazio</td>
+</tr>
+<tr>
+<td>Total somando linhas de pai</td>
+<td>Duplicidade</td>
+<td>Pai tem <code>unidades_total</code> vazio; conferir a métrica</td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>13. FAQ</h2>
+<p><strong>Por que não fazer o rollup direto no Looker?</strong>
+O Looker Studio soma o que a fonte entrega e não distingue valor original de herdado. Sem a coluna <code>unidades_total</code>, não há como excluir o pai do total.</p>
+<p><strong>O pai pode ter unidade própria?</strong>
+Pode, mas se os filhos também tiverem, conta nos dois. A regra assume unidade só no filho.</p>
+<p><strong>Qual fonte usar, BigQuery ou Sheets?</strong>
+BigQuery quando o volume ou os níveis crescem (view multi-nível, sem fórmulas frágeis). Sheets quando a base é pequena e a hierarquia tem até 3 níveis.</p>
+<p><strong>Quando usar o Apps Script?</strong>
+Para calcular na própria sync (antes de gravar), com qualquer profundidade, ou para validar um total rapidamente.</p>
+<p><strong>Como validar um total que parece errado?</strong>
+Rode as queries da seção 11 (órfãos e pai com valor + filhos) e compare com a soma manual de <code>unidades</code> das issues com valor próprio.</p>
+</section><section><h2>14. Limitações conhecidas</h2>
+<ul>
+<li>View SQL simples cobre só 2 níveis; o Sheets chega a 3 com colunas extras.</li>
+<li><code>unidades_exibicao</code> do pai não reage a filtros do Looker.</li>
+<li>Ciclos de parentesco quebram a view multi-nível.</li>
+<li>Não testados em ambiente real: execução no BigQuery, execução no Google Sheets, e as chamadas ao Jira e a gravação na planilha do <code>JIRA_EXTRACAO_UNIDADES.gs</code> (só a montagem das linhas foi testada). A lógica das views, das fórmulas e do rollup em Apps Script foi validada localmente (DuckDB, LibreOffice e Node) com os dados de <code>exemplos/</code>, usando os scripts de <code>testes/</code>.</li>
+</ul>
+</section><section><h2>15. Arquivos desta pasta</h2>
+<table>
+<thead>
+<tr>
+<th>Arquivo</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>index.html</code></td>
+<td>Este guia (HTML)</td>
+</tr>
+<tr>
+<td><code>guia-unidades.md</code></td>
+<td>Este guia (Markdown)</td>
+</tr>
+<tr>
+<td><code>sql/vw_jira_unidades_simples.sql</code></td>
+<td>View BigQuery, 2 níveis</td>
+</tr>
+<tr>
+<td><code>sql/vw_jira_unidades_multinivel.sql</code></td>
+<td>View BigQuery, 3+ níveis</td>
+</tr>
+<tr>
+<td><code>ROLLUP_UNIDADES_PAI_FILHO.gs</code></td>
+<td>Rollup recursivo (exibição + total)</td>
+</tr>
+<tr>
+<td><code>passo-a-passo-jira-sheets.md</code> / <code>.html</code></td>
+<td>Passo a passo Jira → Sheets → Looker (sem BigQuery)</td>
+</tr>
+<tr>
+<td><code>JIRA_EXTRACAO_UNIDADES.gs</code></td>
+<td>Extração do Jira + gravação na planilha (chamadas externas não testadas)</td>
+</tr>
+<tr>
+<td><code>exemplos/dados_teste.csv</code></td>
+<td>Dados de teste</td>
+</tr>
+<tr>
+<td><code>exemplos/resultados_esperados.csv</code></td>
+<td>Resultados esperados (total 31)</td>
+</tr>
+<tr>
+<td><code>testes/teste_views_duckdb.py</code></td>
+<td>Teste das views SQL</td>
+</tr>
+<tr>
+<td><code>testes/teste_formulas_sheets.py</code></td>
+<td>Teste das fórmulas do Sheets</td>
+</tr>
+<tr>
+<td><code>testes/teste_rollup_gs.js</code></td>
+<td>Teste do rollup em Apps Script</td>
+</tr>
+<tr>
+<td><code>testes/teste_planilha_gs.js</code></td>
+<td>Teste da montagem das linhas da planilha</td>
+</tr>
+<tr>
+<td><code>gerar_html.py</code></td>
+<td>Gera <code>index.html</code> e <code>passo-a-passo-jira-sheets.html</code> a partir dos <code>.md</code></td>
+</tr>
+</tbody>
+</table>
+</section><section><h2>16. Histórico</h2>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Mudança</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15/10/2026</td>
+<td>Criação: regra de duas colunas, view simples, Sheets, Apps Script, Looker</td>
+</tr>
+<tr>
+<td>15/10/2026</td>
+<td>View BigQuery multi-nível</td>
+</tr>
+<tr>
+<td>15/10/2026</td>
+<td>Documentação completa: casos de borda, Sheets 3 níveis, extração Jira, FAQ, dados de teste</td>
+</tr>
+<tr>
+<td>15/10/2026</td>
+<td>Scripts de teste reproduzíveis (DuckDB, LibreOffice, Node)</td>
+</tr>
+<tr>
+<td>16/10/2026</td>
+<td>Passo a passo Jira → Sheets → Looker (sem BigQuery); script grava a aba <code>Jira_Unidades</code>; funções de teste de conexão e descoberta do ID do campo</td>
+</tr>
+</tbody>
+</table>
+
+<p><em>Treinamento NC Tool · Unilever BR × Grasp</em></p></section>
+</div>
+<footer>NC Tool &copy; 2026 · Unilever BR &times; Grasp</footer>
+</body>
+</html>
