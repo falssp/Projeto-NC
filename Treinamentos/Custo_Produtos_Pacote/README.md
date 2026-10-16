@@ -22,7 +22,7 @@ Treinamento sobre como tratar custo e taxonomia de produtos vendidos em pacote (
 | 01 | Capa | Custo de produtos vendidos em pacote |
 | 02 | O problema | Masthead CPH com custo R$0 ao quebrar por Ad/Ad Group/Ad ID |
 | 03 | Leilão vs. pacote | Causa raiz: modelo comercial do produto |
-| 04 | Onde o custo mora | Tabela produto → grain de custo e de entrega |
+| 04 | Onde o custo mora | Tabela produto → granularidade de custo e de entrega |
 | 05 | O ADP já resolve | Coluna D, Insertion Order / IO - Reduzido, Line Item Motor |
 | 06 | Ajuste no BI | Troca da chave do join: Ad ID → Insertion Order |
 | 07 | Montagem por produto | Masthead CPH, Branded Mission, Mercado Livre |
