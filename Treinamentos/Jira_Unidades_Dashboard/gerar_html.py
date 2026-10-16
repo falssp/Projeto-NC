@@ -80,6 +80,7 @@ def converter(md_texto):
     partes = html.split("<section>")
     html = partes[0] + "".join("<section>" + p + "</section>" for p in partes[1:])
     html = html.replace("<li>[ ] ", "<li>☐ ")
+    html = html.replace('href="passo-a-passo-jira-sheets.md"', 'href="passo-a-passo-jira-sheets.html"')
     return html
 
 for p in PAGINAS:
