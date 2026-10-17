@@ -236,6 +236,36 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 .api-result-body.open{display:block}
 .chevron{transition:transform .2s;font-size:10px;color:var(--g400)}
 .chevron.open{transform:rotate(180deg)}
+
+/* ── Nav Tabs (outer) ───────────────────────────────────────── */
+.nav-tabs{display:flex;gap:0;border-bottom:2px solid rgba(255,255,255,.08);margin-bottom:24px;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:9px 16px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:#aaa;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.nav-tab.on{color:#6fa8ff;border-bottom-color:#6fa8ff;font-weight:600}
+.nav-tab:hover:not(.on){color:#ddd;background:rgba(255,255,255,.04)}
+.nav-pane{display:none}.nav-pane.on{display:block}
+/* ── FAQ ────────────────────────────────────────────────────── */
+.faq-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.faq-search-wrap{flex:1;min-width:180px;position:relative}
+.faq-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#888;pointer-events:none}
+.faq-search{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 10px 8px 32px;font:13px 'DM Sans',sans-serif;color:#e0e0e0;outline:none;transition:border-color .15s}
+.faq-search:focus{border-color:#6fa8ff}
+.faq-count{font-size:11px;color:#888;white-space:nowrap}
+.faq-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.faq-chip{padding:5px 13px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);font:500 12px 'DM Sans',sans-serif;color:#aaa;cursor:pointer;transition:all .15s}
+.faq-chip:hover{border-color:#6fa8ff;color:#6fa8ff}
+.faq-chip.on{background:#6fa8ff;border-color:#6fa8ff;color:#fff}
+.faq-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.faq-q{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-size:13px;font-weight:500;color:#e0e0e0}
+.faq-q:hover{background:rgba(255,255,255,.04)}
+.faq-q-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0}
+.faq-q-text{flex:1}
+.faq-q-arr{color:#888;transition:transform .2s}
+.faq-item.open .faq-q-arr{transform:rotate(90deg)}
+.faq-a{display:none;padding:0 14px 14px;font-size:13px;color:#aaa;line-height:1.6;border-top:1px solid rgba(255,255,255,.08)}
+.faq-item.open .faq-a{display:block}
+.faq-empty{text-align:center;padding:32px;color:#888;font-size:13px}
+
 </style>
 </head>
 <body>
@@ -293,6 +323,11 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 </div>
 
 <!-- Main Card -->
+<div class="nav-tabs">
+  <button class="nav-tab on" onclick="aidTabSwitch('main')">🤖 Ferramenta</button>
+  <button class="nav-tab" onclick="aidTabSwitch('faq')">❓ Dúvidas</button>
+</div>
+<div class="nav-pane on" id="aid-pane-main">
 <div class="card">
   <div class="tabs">
     <div class="tab active" onclick="switchTab('audio')" id="tab-audio">🎵 Áudio</div>
@@ -394,6 +429,16 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
     <div class="loading" id="loading-video"><div class="spinner"></div><span id="loading-msg-video">Analisando...</span></div>
     <div class="result" id="result-video"></div>
   </div>
+</div>
+</div><!-- /aid-pane-main -->
+
+<div class="nav-pane" id="aid-pane-faq" style="max-width:800px;margin:0 auto;padding:0 16px">
+  <div class="faq-toolbar">
+    <div class="faq-search-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="faq-search" id="aid-faq-search" placeholder="Buscar dúvida..." oninput="aidFilterFAQ()"></div>
+    <span class="faq-count" id="aid-faq-count"></span>
+  </div>
+  <div class="faq-chips" id="aid-faq-chips"></div>
+  <div id="aid-faq-list"></div>
 </div>
 
 <script>
@@ -975,6 +1020,51 @@ function updateLoadingMsg(t,msg){ document.getElementById('loading-msg-'+t).text
 function hideLoading(t){ document.getElementById('loading-'+t).classList.remove('visible'); }
 
 init();
+
+// ── AI Detector Nav Tabs ──────────────────────────────────────
+function aidTabSwitch(name) {
+  document.querySelectorAll('.nav-tab').forEach(function(b, i) {
+    b.classList.toggle('on', ['main','faq'][i] === name);
+  });
+  document.querySelectorAll('.nav-pane').forEach(function(q) {
+    q.classList.toggle('on', q.id === 'aid-pane-' + name);
+  });
+  if (name === 'faq') aidInitFAQ();
+}
+// ── FAQ ───────────────────────────────────────────────────────
+var AID_FAQ = [
+  {tag:'Uso',q:'Que tipos de arquivo posso analisar?',a:'Áudio (MP3, WAV, AAC, OGG, FLAC, M4A), imagem (JPG, PNG, WEBP, GIF), texto (TXT, DOCX, PDF) e vídeo (MP4, MOV, AVI, WEBM).'},
+  {tag:'Uso',q:'Qual API é recomendada para começar?',a:'Google Gemini — é gratuita, não exige cartão de crédito e suporta todos os tipos de mídia. Crie sua chave em aistudio.google.com.'},
+  {tag:'Uso',q:'Posso usar mais de uma API ao mesmo tempo?',a:'Sim. Configure as APIs que quiser — Gemini, Claude e OpenAI. A ferramenta consulta todas as disponíveis e mostra o resultado de cada uma.'},
+  {tag:'APIs',q:'Como salvo minha chave de API?',a:'Clique em "Configurar APIs" no canto superior direito, cole sua chave e salve. As chaves ficam armazenadas só no seu navegador (localStorage).'},
+  {tag:'APIs',q:'A chave de API é enviada para algum servidor?',a:'Não. Toda análise é feita direto do seu navegador para a API escolhida. Nenhum dado passa por servidores intermediários.'},
+  {tag:'Resultado',q:'O que significa o resultado da análise?',a:'"Provavelmente gerado por IA" indica padrões típicos de conteúdo sintético. "Provavelmente humano" indica traços orgânicos. O percentual reflete a confiança da API.'},
+  {tag:'Resultado',q:'A detecção é 100% precisa?',a:'Não. Nenhuma ferramenta de detecção de IA é 100% precisa. Use o resultado como indício, não como prova definitiva. Revise sempre com análise crítica.'},
+  {tag:'Técnico',q:'Por que a análise de vídeo é mais lenta?',a:'A ferramenta extrai frames do vídeo localmente antes de enviar para a API. Vídeos longos extraem mais frames e levam mais tempo.'},
+];
+var aidFaqDone=false, aidFaqChip='Todas';
+var AID_COLORS={'Uso':'#6fa8ff','APIs':'#a78bfa','Resultado':'#34d399','Técnico':'#fbbf24'};
+function aidInitFAQ(){
+  if(aidFaqDone){aidFilterFAQ();return;}aidFaqDone=true;
+  var tags=['Todas',...new Set(AID_FAQ.map(function(f){return f.tag;}))];
+  document.getElementById('aid-faq-chips').innerHTML=tags.map(function(t){return'<button class="faq-chip'+(t==='Todas'?' on':'')+'" onclick="aidSetFaqChip(\''+t+'\')">'+t+'</button>';}).join('');
+  document.getElementById('aid-faq-list').innerHTML=AID_FAQ.map(function(f){
+    var col=AID_COLORS[f.tag]||'#aaa';
+    return'<div class="faq-item" data-tag="'+f.tag+'"><div class="faq-q" onclick="this.parentElement.classList.toggle(\'open\')"><span class="faq-q-tag" style="background:'+col+'22;color:'+col+'">'+f.tag+'</span><span class="faq-q-text">'+f.q+'</span><span class="faq-q-arr">▶</span></div><div class="faq-a">'+f.a+'</div></div>';
+  }).join('');
+  aidFilterFAQ();
+}
+function aidSetFaqChip(tag){aidFaqChip=tag;document.querySelectorAll('.faq-chip').forEach(function(c){c.classList.toggle('on',c.textContent===tag);});aidFilterFAQ();}
+function aidFilterFAQ(){
+  var q=(document.getElementById('aid-faq-search').value||'').toLowerCase();
+  var items=document.querySelectorAll('#aid-faq-list .faq-item'),vis=0;
+  items.forEach(function(el){var ok=(aidFaqChip==='Todas'||el.dataset.tag===aidFaqChip)&&(!q||el.textContent.toLowerCase().includes(q));el.style.display=ok?'':'none';if(ok)vis++;});
+  var cnt=document.getElementById('aid-faq-count');if(cnt)cnt.textContent=vis+' pergunta'+(vis!==1?'s':'');
+  var lst=document.getElementById('aid-faq-list'),emp=lst?lst.querySelector('.faq-empty'):null;
+  if(vis===0&&!emp&&lst)lst.insertAdjacentHTML('beforeend','<div class="faq-empty">Nenhuma dúvida encontrada.</div>');
+  if(vis>0&&emp)emp.remove();
+}
+
 </script>
 </body>
 </html>
