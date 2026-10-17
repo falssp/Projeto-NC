@@ -44,6 +44,11 @@ Treinamentos/
 │   ├── index.html
 │   └── flashtalking-especificacoes.md
 │
+├── Influencer_Dicionario/      ← Dicionário Influencer: fórmulas e cores por rede (Out/26)
+│   ├── index.html
+│   ├── README.md
+│   └── influencer-dicionario.md
+│
 └── Audience_Type_Party/        ← Guia Audience Type × Audience Party
     ├── index.html
     └── audience-type-party.md
@@ -53,6 +58,7 @@ Treinamentos/
 
 | Treinamento | Edição | Link |
 |---|---|---|
+| 📊 Influencer Dicionário — Fórmulas e Cores | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Influencer_Dicionario/index.html) |
 | 🎯 Audience Type × Party | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
 | 💻 Ad Server (v15 atual) | — | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
 | 🌐 UL Operação 2026 | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
