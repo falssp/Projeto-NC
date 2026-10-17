@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Excel Reference</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -109,6 +110,27 @@ code, .mono { font-family: 'JetBrains Mono', monospace; }
 .copy-btn { position: absolute; top: 6px; right: 6px; background: var(--bg2); border: 1px solid var(--bdr); border-radius: 4px; padding: 3px 6px; font-size: 10px; cursor: pointer; color: var(--fg2); transition: all .15s; }
 .copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* FAV STAR */
+.fav-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 2px 4px; line-height: 1; transition: transform .15s; flex-shrink: 0; opacity: .45; }
+.fav-btn:hover { transform: scale(1.25); opacity: 1; }
+.fav-btn.active { opacity: 1; }
+
+/* ERROR SECTION */
+.error-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.error-card { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); overflow: hidden; transition: box-shadow .15s, border-color .15s; }
+.error-card:hover { box-shadow: var(--shadow-md); border-color: var(--bdr2); }
+.error-card.open .error-body { display: block; }
+.error-card.open .error-chevron { transform: rotate(180deg); }
+.error-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; user-select: none; }
+.error-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
+.error-name { font-size: 12px; font-weight: 600; flex: 1; color: var(--fg2); }
+.error-chevron { color: var(--fg3); transition: transform .2s; flex-shrink: 0; }
+.error-body { display: none; padding: 0 14px 14px; border-top: 1px solid var(--bdr); padding-top: 12px; }
+.error-cause { font-size: 12px; color: var(--fg2); line-height: 1.6; margin-bottom: 10px; }
+.error-example { background: var(--bg3); border-radius: var(--radius-sm); padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; margin-bottom: 10px; }
+.error-fix { background: var(--green-bg); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 12px; color: var(--green); display: flex; gap: 6px; }
+.error-section-wrap { padding-top: 0; }
 
 /* BADGES */
 .cat-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 600; }
@@ -317,6 +339,7 @@ code, .mono { font-family: 'JetBrains Mono', monospace; }
 <div class="tabs-wrap">
   <div class="tabs">
     <div class="tab active" onclick="switchTab('ref',this)">📋 Referência</div>
+    <div class="tab" onclick="switchTab('errors',this)">🚨 Erros</div>
     <div class="tab" onclick="switchTab('train',this)">🎯 Treino</div>
     <div class="tab" onclick="switchTab('ai',this)">🤖 Assistente IA</div>
   </div>
@@ -326,6 +349,25 @@ code, .mono { font-family: 'JetBrains Mono', monospace; }
   <div class="main-wrap">
     <div class="sidebar" id="sidebar"></div>
     <div class="content" id="ref-content"></div>
+  </div>
+</div>
+
+<div id="panel-errors" class="panel">
+  <div class="content">
+    <div class="error-section-wrap">
+      <div class="section-header" style="margin-bottom:16px">
+        <span class="section-icon">🚨</span>
+        <span class="section-title">Erros do Excel</span>
+        <span class="section-count">causa, exemplo e como corrigir</span>
+      </div>
+      <div class="error-grid" id="error-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel-favs" class="panel">
+  <div class="main-wrap">
+    <div class="content" id="favs-content" style="max-width:100%"></div>
   </div>
 </div>
 
@@ -422,14 +464,32 @@ code, .mono { font-family: 'JetBrains Mono', monospace; }
             <span class="ai-ex" onclick="setAiEx(this)">Calcular dias úteis entre datas</span>
             <span class="ai-ex" onclick="setAiEx(this)">Retornar maior valor com critério</span>
           </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px">
+            <div>
+              <div class="ai-label" style="margin-bottom:4px">Versão do Excel:</div>
+              <select id="ai-version" style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--fg);outline:none">
+                <option value="365">Excel 365 / 2021+</option>
+                <option value="2019">Excel 2019</option>
+                <option value="2016">Excel 2016 ou anterior</option>
+                <option value="gsheets">Google Sheets</option>
+              </select>
+            </div>
+            <div>
+              <div class="ai-label" style="margin-bottom:4px">Idioma das fórmulas:</div>
+              <select id="ai-formula-lang" style="background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--radius-sm);padding:6px 10px;font-size:12px;color:var(--fg);outline:none">
+                <option value="pt">Português (PROCV, SOMA…)</option>
+                <option value="en">Inglês (VLOOKUP, SUM…)</option>
+              </select>
+            </div>
+          </div>
           <div class="ai-no-key" id="aiNoKey">
             <span>Nenhuma API configurada.<br>Configure <strong>Google Gemini</strong> (gratuito), <strong>OpenAI</strong> ou <strong>Anthropic Claude</strong>.</span>
             <button onclick="openCfg()">Configurar</button>
           </div>
-          <button class="btn btn-accent" id="ai-btn" onclick="askAI()" style="margin-top:8px" disabled>✨ Sugerir fórmula</button>
+          <button class="btn btn-accent" id="ai-btn" onclick="askAI()" style="margin-top:8px" disabled>✨ Monta pra mim ✨</button>
         </div>
         <div class="ai-result" id="ai-result">
-          <div class="ai-result-label">💡 Sugestão</div>
+          <div class="ai-result-label">💡 Fórmula sugerida</div>
           <div class="ai-answer" id="ai-answer"></div>
         </div>
       </div>
@@ -734,13 +794,17 @@ function switchTab(id, el) {
   document.getElementById('panel-'+id).classList.add('active');
   document.getElementById('search-wrap').style.display = id === 'ref' ? '' : 'none';
   if (id === 'train' && trainOrder.length === 0) initTraining();
+  if (id === 'errors') renderErrors();
 }
 
 // ---- REFERENCE ----
 function buildSidebar() {
   const sb = document.getElementById('sidebar');
+  const favCount = getFavs().length;
   let html = `<div class="sidebar-item ${currentCat==='all'?'active':''}" onclick="filterCat('all',this)">
     <span class="cat-icon">📚</span> Todas <span class="sidebar-count">${EXCEL_DATA.reduce((a,c)=>a+c.fns.length,0)}</span></div>`;
+  html += `<div class="sidebar-item ${currentCat==='favs'?'active':''}" onclick="filterCat('favs',this)">
+    <span class="cat-icon">⭐</span> Favoritos <span class="sidebar-count">${favCount}</span></div>`;
   EXCEL_DATA.forEach(cat => {
     const count = cat.fns.filter(f => matchSearch(f)).length;
     if (count === 0 && searchQ) return;
@@ -766,32 +830,48 @@ function matchSearch(fn) {
 function renderRef() {
   searchQ = document.getElementById('search')?.value || '';
   const content = document.getElementById('ref-content');
-  const cats = currentCat === 'all' ? EXCEL_DATA : EXCEL_DATA.filter(c => c.id === currentCat);
   let html = '', total = 0;
-  cats.forEach(cat => {
-    const fns = cat.fns.filter(f => matchSearch(f));
-    if (!fns.length) return;
-    total += fns.length;
-    html += `<div class="section" id="cat-${cat.id}">
-      <div class="section-header">
-        <span class="section-icon">${cat.icon}</span>
-        <span class="section-title">${t(cat.label)}</span>
-        <span class="section-count">${fns.length} funções</span>
-      </div>
-      <div class="grid">${fns.map(buildCard).join('')}</div></div>`;
-  });
-  if (!html) html = `<div class="no-results"><div class="no-results-icon">🔍</div><p>Nenhuma função encontrada para "<strong>${searchQ}</strong>"</p></div>`;
+
+  if (currentCat === 'favs') {
+    const favIds = getFavs();
+    const favFns = [];
+    EXCEL_DATA.forEach(cat => cat.fns.forEach(fn => { if (favIds.includes(fn.id)) favFns.push({fn, cat}); }));
+    if (!favFns.length) {
+      html = `<div class="no-results"><div class="no-results-icon">⭐</div><p>Nenhum favorito ainda.<br><small>Clique na estrela ☆ de qualquer fórmula para salvar.</small></p></div>`;
+    } else {
+      html += `<div class="section"><div class="section-header"><span class="section-icon">⭐</span><span class="section-title">Favoritos</span><span class="section-count">${favFns.length} funções</span></div><div class="grid">${favFns.map(({fn})=>buildCard(fn)).join('')}</div></div>`;
+    }
+  } else {
+    const cats = currentCat === 'all' ? EXCEL_DATA : EXCEL_DATA.filter(c => c.id === currentCat);
+    cats.forEach(cat => {
+      const fns = cat.fns.filter(f => matchSearch(f));
+      if (!fns.length) return;
+      total += fns.length;
+      html += `<div class="section" id="cat-${cat.id}">
+        <div class="section-header">
+          <span class="section-icon">${cat.icon}</span>
+          <span class="section-title">${t(cat.label)}</span>
+          <span class="section-count">${fns.length} funções</span>
+        </div>
+        <div class="grid">${fns.map(buildCard).join('')}</div></div>`;
+    });
+    if (!html) html = `<div class="no-results"><div class="no-results-icon">🔍</div><p>Nenhuma função encontrada para "<strong>${searchQ}</strong>"</p></div>`;
+  }
+
   content.innerHTML = html;
   buildSidebar();
-  content.querySelectorAll('.card-head').forEach(h => h.onclick = () => h.parentElement.classList.toggle('open'));
+  content.querySelectorAll('.card-head').forEach(h => h.onclick = e => { if (!e.target.classList.contains('fav-btn')) h.parentElement.classList.toggle('open'); });
   content.querySelectorAll('.copy-btn').forEach(btn => btn.onclick = e => { e.stopPropagation(); copyText(btn); });
+  content.querySelectorAll('.fav-btn').forEach(btn => btn.onclick = e => { e.stopPropagation(); toggleFav(btn.dataset.id); });
 }
 
 function buildCard(fn) {
   const ex = t(fn.example).replace(/\n/g,'<br>');
+  const fav = isFav(fn.id);
   return `<div class="card">
     <div class="card-head">
       <span class="card-name">${t(fn.name)}</span>
+      <button class="fav-btn${fav?' active':''}" data-id="${fn.id}" title="${fav?'Remover favorito':'Adicionar aos favoritos'}">${fav?'⭐':'☆'}</button>
       <span class="chevron">▾</span>
     </div>
     <div class="card-body">
@@ -1162,18 +1242,52 @@ async function askAI() {
   result.classList.add('show');
   answer.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
   const langLabel = {pt:'português',en:'English',es:'español'}[lang];
-  const prompt = `Você é um especialista em Excel. O usuário descreve um problema e você sugere a melhor fórmula do Excel.
-Responda em ${langLabel}. Seja direto e prático.
+  const excelVersion = document.getElementById('ai-version')?.value || '365';
+  const formulaLang = document.getElementById('ai-formula-lang')?.value || 'pt';
+  const formulaLangLabel = formulaLang === 'pt' ? 'português (PROCV, SOMA, SE, CONT.SE…)' : 'inglês (VLOOKUP, SUM, IF, COUNTIF…)';
+  const versionLabel = {
+    '365': 'Excel 365 / 2021+ (suporta PROCX, ÚNICO, FILTRO, SEQUÊNCIA, arrays dinâmicos)',
+    '2019': 'Excel 2019 (sem PROCX, sem arrays dinâmicos, sem ÚNICO)',
+    '2016': 'Excel 2016 ou anterior (sem SES, sem PARÂMETRO, use SE aninhado)',
+    'gsheets': 'Google Sheets (sintaxe similar ao Excel, ponto-e-vírgula como separador)'
+  }[excelVersion] || 'Excel 365';
+  const prompt = `Você é um especialista em Excel com 20 anos de experiência. O usuário descreve um problema e você entrega a fórmula pronta para copiar e usar.
 
-Problema: ${input}
+CONTEXTO DO USUÁRIO:
+- Plataforma: ${versionLabel}
+- Idioma das fórmulas: ${formulaLangLabel}
+- Idioma da resposta: ${langLabel}
 
-Responda com:
-1. A fórmula recomendada (em destaque com código)
-2. Por que essa fórmula (2-3 frases)
-3. Um exemplo prático com a sintaxe completa
-4. Uma dica importante (se houver)
+PROBLEMA DO USUÁRIO:
+${input}
 
-Use \`código\` para fórmulas inline.`;
+FORMATO OBRIGATÓRIO DA RESPOSTA (use exatamente estas seções):
+
+## ✅ Fórmula
+\`\`\`
+[a fórmula completa e pronta para colar]
+\`\`\`
+
+## 📖 Como funciona
+[explique cada argumento da fórmula em 2-4 linhas, de forma simples]
+
+## 📋 Exemplo prático
+Dado: [descreva um cenário concreto com colunas e dados de exemplo]
+Fórmula: \`[adapte a fórmula ao exemplo]\`
+Resultado: [o que aparece na célula]
+
+## 💡 Dica importante
+[uma armadilha comum ou variação útil — se não houver dica relevante, omita esta seção]
+
+## 🔀 Alternativa (opcional)
+[somente se houver uma alternativa significativamente diferente ou mais simples — caso contrário, omita]
+
+Regras:
+- Sempre entregue a fórmula completa, não um esqueleto
+- Use a versão correta das funções para a plataforma indicada
+- Se o problema exigir dados que o usuário não forneceu (colunas, intervalos), use exemplos realistas como A2:A100, $B$2:$C$500
+- Seja direto: o usuário quer copiar e usar, não ler teoria`;
+
   try {
     if (sampleAPI) {
       let text = '';
@@ -1194,16 +1308,97 @@ Use \`código\` para fórmulas inline.`;
 
 function formatAIAnswer(text) {
   return text
-    .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre style="background:var(--bg3);padding:10px 12px;border-radius:6px;font-size:12px;overflow-x:auto;margin:8px 0"><code>$1</code></pre>')
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) => {
+      const clean = code.trim();
+      return `<div style="position:relative;margin:10px 0"><pre style="background:var(--bg3);padding:10px 12px;border-radius:6px;font-size:13px;overflow-x:auto;border:1px solid var(--bdr);margin:0"><code>${clean}</code></pre><button onclick="navigator.clipboard.writeText(${JSON.stringify(clean)}).then(()=>{this.textContent='✓ Copiado!';setTimeout(()=>this.textContent='📋 Copiar',1500)})" style="position:absolute;top:6px;right:6px;background:var(--bg2);border:1px solid var(--bdr);border-radius:4px;padding:3px 8px;font-size:10px;cursor:pointer;color:var(--fg2)">📋 Copiar</button></div>`;
+    })
+    .replace(/^##\s(.+)/gm, '<h3 style="font-size:13px;font-weight:700;margin:16px 0 6px;color:var(--fg)">&nbsp;$1</h3>')
+    .replace(/^#\s(.+)/gm, '<h2 style="font-size:14px;font-weight:700;margin:16px 0 8px;color:var(--fg)">$1</h2>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^(\d+\.\s)/gm, '<br><strong>$1</strong>')
-    .replace(/^-\s(.+)/gm, '&bull; $1')
+    .replace(/`([^`]+)`/g, '<code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-family:JetBrains Mono,monospace;font-size:12px">$1</code>')
+    .replace(/^-\s(.+)/gm, '<div style="display:flex;gap:6px;margin:3px 0"><span style="color:var(--accent)">•</span><span>$1</span></div>')
     .replace(/\n/g, '<br>');
+}
+
+// ---- FAVORITES ----
+function getFavs() { try { return JSON.parse(localStorage.getItem('xl_favs') || '[]'); } catch(e) { return []; } }
+function saveFavs(arr) { try { localStorage.setItem('xl_favs', JSON.stringify(arr)); } catch(e) {} }
+function isFav(id) { return getFavs().includes(id); }
+function toggleFav(id) {
+  let favs = getFavs();
+  if (favs.includes(id)) favs = favs.filter(f => f !== id);
+  else favs.push(id);
+  saveFavs(favs);
+  renderRef();
+}
+
+// ---- ERRORS DATA ----
+const ERROR_DATA = [
+  { code:'#REF!', color:'#dc2626', bg:'#fef2f2',
+    name:{pt:'Referência inválida',en:'Invalid reference',es:'Referencia inválida'},
+    cause:{pt:'Ocorre quando uma fórmula aponta para uma célula que foi deletada, movida ou está fora dos limites da planilha.',en:'Occurs when a formula points to a cell that was deleted, moved, or is out of sheet bounds.',es:'Ocurre cuando una fórmula apunta a una celda eliminada, movida o fuera de los límites de la hoja.'},
+    example:{pt:'=A1+#REF! — ocorre ao deletar a coluna B quando a fórmula referenciava =A1+B1',en:'=A1+#REF! — happens when column B is deleted and the formula referenced =A1+B1',es:'=A1+#REF! — ocurre al eliminar la columna B cuando la fórmula referenciaba =A1+B1'},
+    fix:{pt:'Desfaça a ação (Ctrl+Z), ajuste manualmente as referências ou use SEERROS para ocultar o erro temporariamente.',en:'Undo the action (Ctrl+Z), manually fix the references, or use IFERROR to hide the error temporarily.',es:'Deshaz la acción (Ctrl+Z), ajusta las referencias manualmente o usa SIERROR para ocultar el error temporalmente.'} },
+  { code:'#VALOR!', color:'#d97706', bg:'#fffbeb',
+    name:{pt:'Tipo de dado incorreto',en:'Wrong data type',es:'Tipo de dato incorrecto'},
+    cause:{pt:'A fórmula recebeu um tipo de dado inesperado — por exemplo, texto onde esperava número, ou operação aritmética com célula vazia.',en:'The formula received an unexpected data type — e.g., text where a number was expected, or arithmetic with an empty cell.',es:'La fórmula recibió un tipo de dato inesperado — p. ej., texto donde esperaba número, o aritmética con celda vacía.'},
+    example:{pt:'=A1+B1 onde B1 contém "abc" em vez de número',en:'=A1+B1 where B1 contains "abc" instead of a number',es:'=A1+B1 donde B1 contiene "abc" en lugar de un número'},
+    fix:{pt:'Verifique os dados de entrada com ÉCÉL.VAZIA ou ÉNÚM. Use VALOR() para converter texto numérico. Limpe espaços com ARRUMAR().',en:'Check input data with ISBLANK or ISNUMBER. Use VALUE() to convert numeric text. Clean spaces with TRIM().',es:'Verifica los datos con ESBLANCO o ESNÚMERO. Usa VALOR() para convertir texto numérico. Limpia espacios con ESPACIOS().'} },
+  { code:'#DIV/0!', color:'#7c3aed', bg:'#f5f3ff',
+    name:{pt:'Divisão por zero',en:'Division by zero',es:'División por cero'},
+    cause:{pt:'Tentativa de dividir um número por zero ou por uma célula vazia. Muito comum em planilhas de médias e percentuais.',en:'Attempt to divide a number by zero or an empty cell. Very common in average and percentage sheets.',es:'Intento de dividir un número por cero o una celda vacía. Muy común en hojas de medias y porcentajes.'},
+    example:{pt:'=A1/B1 onde B1=0 ou está vazia',en:'=A1/B1 where B1=0 or is empty',es:'=A1/B1 donde B1=0 o está vacía'},
+    fix:{pt:'Use SE: =SE(B1=0;"";A1/B1) ou SEERROS: =SEERROS(A1/B1;"—"). Valide os dados antes de calcular.',en:'Use IF: =IF(B1=0,"",A1/B1) or IFERROR: =IFERROR(A1/B1,"—"). Validate data before calculating.',es:'Usa SI: =SI(B1=0,"",A1/B1) o SIERROR: =SIERROR(A1/B1,"—"). Valida los datos antes de calcular.'} },
+  { code:'#NOME?', color:'#059669', bg:'#ecfdf5',
+    name:{pt:'Nome não reconhecido',en:'Unrecognized name',es:'Nombre no reconocido'},
+    cause:{pt:'Excel não reconhece o nome da função ou intervalo nomeado. Causa mais comum: erro de digitação no nome da função, aspas indevidas, ou função exclusiva de uma versão mais nova.',en:'Excel doesn\'t recognize the function or named range. Most common cause: typo in function name, improper quotes, or function exclusive to a newer version.',es:'Excel no reconoce el nombre de la función o rango con nombre. Causa más común: error al escribir el nombre, comillas incorrectas o función de una versión más nueva.'},
+    example:{pt:'=PROCKV(A1;B:C;2;0) — PROCKV não existe, o correto é PROCV',en:'=VLOOKUP misspelled as VLOKUP',es:'=BUSCARV escrito como BUSCARVV'},
+    fix:{pt:'Verifique a ortografia da função. Use o Assistente de Funções (fx). Confira se a função existe na sua versão do Excel. Texto na fórmula deve usar aspas duplas "assim".',en:'Check function spelling. Use the Function Wizard (fx). Confirm the function exists in your Excel version. Text in formulas must use double quotes "like this".',es:'Verifica la ortografía de la función. Usa el Asistente de Funciones (fx). Confirma que la función exista en tu versión de Excel. El texto en fórmulas debe usar comillas dobles "así".'} },
+  { code:'#NÚM!', color:'#0ea5e9', bg:'#f0f9ff',
+    name:{pt:'Número inválido',en:'Invalid number',es:'Número inválido'},
+    cause:{pt:'A fórmula produziu um número que o Excel não consegue processar: muito grande, raiz quadrada de negativo, data inválida, ou resultado fora do alcance numérico.',en:'The formula produced a number Excel can\'t process: too large, square root of a negative, invalid date, or out-of-range result.',es:'La fórmula produjo un número que Excel no puede procesar: demasiado grande, raíz cuadrada de negativo, fecha inválida o resultado fuera del rango numérico.'},
+    example:{pt:'=RAIZ(-4) — raiz quadrada de número negativo é impossível',en:'=SQRT(-4) — square root of a negative number is impossible',es:'=RAIZ(-4) — la raíz cuadrada de un número negativo es imposible'},
+    fix:{pt:'Adicione validação antes do cálculo: =SE(A1>=0;RAIZ(A1);"—"). Para datas, certifique que a data final é posterior à inicial.',en:'Add validation before calculating: =IF(A1>=0,SQRT(A1),"—"). For dates, ensure the end date is after the start date.',es:'Agrega validación: =SI(A1>=0,RAIZ(A1),"—"). Para fechas, asegúrate de que la fecha final sea posterior a la inicial.'} },
+  { code:'#NULO!', color:'#64748b', bg:'#f8fafc',
+    name:{pt:'Interseção vazia',en:'Empty intersection',es:'Intersección vacía'},
+    cause:{pt:'Usado o operador de interseção (espaço) entre dois intervalos que não se cruzam. É o erro mais raro — normalmente indica um espaço digitado por engano em vez de ";" ou ",".',en:'Used the intersection operator (space) between two ranges that don\'t intersect. It\'s the rarest error — typically indicates a space typed by mistake instead of ";" or ",".',es:'Se usó el operador de intersección (espacio) entre dos rangos que no se cruzan. Es el error más raro — normalmente indica un espacio escrito por error en lugar de ";" o ",".'},
+    example:{pt:'=SOMA(A1:A10 C1:C10) — espaço entre os intervalos em vez de ";"',en:'=SUM(A1:A10 C1:C10) — space between ranges instead of ","',es:'=SUMA(A1:A10 C1:C10) — espacio entre los rangos en vez de ";"'},
+    fix:{pt:'Substitua o espaço por ";" (PT) ou "," (EN) entre os argumentos. Verifique se os intervalos realmente se intersectam se o operador de interseção for intencional.',en:'Replace the space with "," between arguments. Check if the ranges actually intersect if the intersection operator is intentional.',es:'Reemplaza el espacio por ";" entre los argumentos. Verifica si los rangos se intersectan si el operador de intersección es intencional.'} },
+  { code:'#N/D', color:'#6366f1', bg:'#eef2ff',
+    name:{pt:'Não disponível / Não encontrado',en:'Not available / Not found',es:'No disponible / No encontrado'},
+    cause:{pt:'A função de busca não encontrou o valor procurado na matriz. Ocorre com PROCV, PROCX, CORRESP quando o valor não existe na tabela.',en:'The lookup function didn\'t find the searched value in the array. Occurs with VLOOKUP, XLOOKUP, MATCH when the value doesn\'t exist in the table.',es:'La función de búsqueda no encontró el valor en la matriz. Ocurre con BUSCARV, BUSCARX, COINCIDIR cuando el valor no existe en la tabla.'},
+    example:{pt:'=PROCV("XYZ";A:B;2;FALSO) quando "XYZ" não existe na coluna A',en:'=VLOOKUP("XYZ",A:B,2,FALSE) when "XYZ" doesn\'t exist in column A',es:'=BUSCARV("XYZ",A:B,2,FALSO) cuando "XYZ" no existe en la columna A'},
+    fix:{pt:'Use SEERROS ou SENÃODISP: =SENÃODISP(PROCV(...);"Não encontrado"). Verifique espaços extras ou tipos de dados diferentes. Para PROCX, use o 4º argumento de valor padrão.',en:'Use IFERROR or IFNA: =IFNA(VLOOKUP(...),"Not found"). Check for extra spaces or different data types. For XLOOKUP, use the 4th default value argument.',es:'Usa SIERROR o SI.ND: =SI.ND(BUSCARV(...),"No encontrado"). Verifica espacios extra o tipos de datos diferentes. Para BUSCARX, usa el 4.º argumento de valor predeterminado.'} }
+];
+
+function renderErrors() {
+  const grid = document.getElementById('error-grid');
+  if (!grid) return;
+  grid.innerHTML = ERROR_DATA.map(e => {
+    const fav = isFav('err_'+e.code);
+    return `<div class="error-card">
+      <div class="error-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="error-badge" style="color:${e.color};background:${e.bg};border-color:${e.color}40">${e.code}</span>
+        <span class="error-name">${t(e.name)}</span>
+        <span class="error-chevron">▾</span>
+      </div>
+      <div class="error-body">
+        <div class="card-label">Causa</div>
+        <div class="error-cause">${t(e.cause)}</div>
+        <div class="card-label">Exemplo</div>
+        <div class="error-example">${t(e.example)}</div>
+        <div class="card-label">Como corrigir</div>
+        <div class="error-fix"><span>✅</span><span>${t(e.fix)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // INIT
 document.getElementById('search-wrap').style.display = '';
 renderRef();
+renderErrors();
 initAI();
 </script>
+
+</body></html>
