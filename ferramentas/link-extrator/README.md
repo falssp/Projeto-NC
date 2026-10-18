@@ -2,7 +2,7 @@
 
 > 🔗 **[Abrir ferramenta](https://falssp.github.io/Projeto-NC/ferramentas/link-extrator/)**
 
-Ferramenta HTML standalone para extrair handles de influencers a partir de URLs de redes sociais — Instagram, TikTok, YouTube, Facebook, X, LinkedIn, Pinterest, Snapchat e Twitch.
+Ferramenta HTML standalone para extrair handles de influencers a partir de URLs de redes sociais.
 
 Funciona 100% offline — nenhum dado sai do browser.
 
@@ -40,7 +40,7 @@ ferramentas/link-extrator/
 
 | Funcionalidade | Detalhe |
 |---|---|
-| Redes suportadas | Instagram, TikTok, YouTube, Facebook, X (Twitter), LinkedIn, Pinterest, Snapchat, Twitch |
+| Redes suportadas | Instagram, TikTok, YouTube, Facebook, X (Twitter), LinkedIn, Pinterest, Snapchat, Twitch, **Kwai**, Threads, Bluesky, Telegram, BeReal, Triller, Rumble, Kick, Discord, Reddit |
 | Detecção automática | Rede detectada em tempo real ao digitar/colar |
 | URL canônica | Normaliza a URL removendo parâmetros e caminhos extras |
 | Modo lote | Processa múltiplas URLs de uma vez, com tabela de resultados |
