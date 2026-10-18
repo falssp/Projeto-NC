@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Fórmulas — Influencer Dicionário</title>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3248;
+  --accent:#5b6af0; --accent2:#7c8cf8; --text:#e8eaf0; --muted:#8890aa;
+  --green:#4ade80; --red:#f87171; --yellow:#fbbf24; --orange:#fb923c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+header{background:linear-gradient(135deg,#1a1d27,#12141e);border-bottom:1px solid var(--border);padding:36px 24px 28px;text-align:center}
+h1{font-size:clamp(20px,3.5vw,30px);font-weight:800;letter-spacing:-.02em}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 20px 80px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}
+.panel-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.panel-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+/* rede list */
+.rede-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:6px;background:var(--surface2);border:1px solid var(--border);font-size:13px}
+.swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;border:1px solid rgba(255,255,255,.1)}
+.rede-name{font-weight:700;min-width:90px}
+.rede-domain{color:var(--muted);font-size:12px;font-family:Consolas,monospace}
+.rede-e{color:var(--accent2);font-size:11px;margin-left:auto;text-align:right;max-width:160px}
+.rede-actions{display:flex;gap:6px;margin-left:8px}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;transition:all .15s}
+.btn-icon:hover{color:var(--text);border-color:var(--accent)}
+.btn-icon.del:hover{color:var(--red);border-color:var(--red)}
+/* form */
+.form-row{margin-bottom:14px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+input,select{width:100%;background:#12141e;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;transition:border .15s}
+input:focus,select:focus{border-color:var(--accent)}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{width:44px;height:38px;padding:2px;cursor:pointer;border-radius:6px}
+.color-row input[type=text]{flex:1}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sw{width:24px;height:24px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:border .12s;flex-shrink:0}
+.sw:hover,.sw.active{border-color:#fff}
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}
+.radio-opt{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:13px;transition:all .15s}
+.radio-opt:hover{border-color:var(--accent)}
+.radio-opt input{accent-color:var(--accent);width:14px;height:14px}
+.radio-opt.active{border-color:var(--accent);background:rgba(91,106,240,.1)}
+.hint{font-size:11px;color:var(--muted);margin-top:5px}
+.btn{width:100%;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .15s;margin-top:4px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent)}
+.warn-box{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);color:#fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;margin-top:8px;display:none}
+/* output */
+.output-panel{grid-column:1/-1}
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .15s}
+.tab.active,.tab:hover{border-color:var(--accent);color:var(--text)}
+.tab.active{background:rgba(91,106,240,.15)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.formula-out{position:relative;background:#12141e;border:1px solid var(--border);border-radius:8px;padding:16px 18px;font-size:12px;line-height:1.8;color:#c4cde8;font-family:Consolas,monospace;white-space:pre;overflow-x:auto;min-height:60px}
+.copy-btn{position:absolute;top:10px;right:10px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'Segoe UI',sans-serif;transition:all .15s}
+.copy-btn:hover{color:var(--text);border-color:var(--accent)}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+.cond-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.cond-table th,.cond-table td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+.cond-table th{background:var(--surface2);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.cond-table tr:last-child td{border-bottom:none}
+.cond-table code{font-family:Consolas,monospace;background:#12141e;padding:2px 6px;border-radius:4px;font-size:11px;color:#a5b4fc}
+.diff-badge{background:rgba(74,222,128,.15);color:var(--green);border-radius:20px;padding:1px 7px;font-size:10px;margin-left:6px}
+.info{background:rgba(91,106,240,.1);border:1px solid rgba(91,106,240,.35);color:#a5b4fc;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Gerador de Fórmulas <span>×</span> Influencer Dicionário</h1>
+  <p class="sub">Adicione redes, visualize o impacto e gere as fórmulas prontas para colar na planilha</p>
+</header>
+
+<div class="wrap">
+
+  <!-- PAINEL ESQUERDO: redes cadastradas -->
+  <div class="panel">
+    <div class="panel-title"><span class="dot"></span>Redes cadastradas</div>
+    <div id="rede-list"></div>
+  </div>
+
+  <!-- PAINEL DIREITO: form nova rede -->
+  <div class="panel">
+    <div class="panel-title"><span class="dot" style="background:var(--green)"></span>Adicionar nova rede</div>
+
+    <div class="form-row">
+      <label>Nome da rede</label>
+      <input id="f-nome" type="text" placeholder="ex: Threads">
+    </div>
+
+    <div class="form-row">
+      <label>Domínio (regex-safe)</label>
+      <input id="f-dominio" type="text" placeholder="ex: threads\.net">
+      <div class="hint">Use <code>\.</code> para pontos. Para múltiplos domínios: <code>x\.com|twitter\.com</code></div>
+    </div>
+
+    <div class="form-row">
+      <label>Padrão de URL do handle</label>
+      <div class="radio-group" id="url-pattern-group">
+        <label class="radio-opt active"><input type="radio" name="urlpat" value="slash_at" checked> /<wbr>@handle</label>
+        <label class="radio-opt"><input type="radio" name="urlpat" value="slash"> /handle</label>
+        <label class="radio-opt"><input type="radio" name="urlpat" value="slash_at_opt"> /@?handle</label>
+        <label class="radio-opt"><input type="radio" name="urlpat" value="subdominio"> subdomínio</label>
+        <label class="radio-opt"><input type="radio" name="urlpat" value="custom"> custom</label>
+      </div>
+      <div id="custom-regex-wrap" style="display:none;margin-top:8px">
+        <input id="f-custom-regex" type="text" placeholder="ex: linkedin\.com\/in\/([^/?&]+)">
+        <div class="hint">Capture group entre parênteses — é o que vai para E.</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Cor de fundo (formatação condicional)</label>
+      <div class="color-row">
+        <input type="color" id="f-color-picker" value="#5b6af0">
+        <input type="text" id="f-color-hex" value="#5b6af0" maxlength="7" placeholder="#rrggbb">
+      </div>
+      <div class="swatches" id="swatches"></div>
+    </div>
+
+    <div class="form-row">
+      <label>Cor do texto</label>
+      <div class="radio-group">
+        <label class="radio-opt active"><input type="radio" name="txtcolor" value="white" checked> Branco</label>
+        <label class="radio-opt"><input type="radio" name="txtcolor" value="black"> Preto</label>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Termo para REGEXMATCH condicional</label>
+      <input id="f-regex-term" type="text" placeholder="ex: THREADS (automático)">
+      <div class="hint">Deixe em branco para gerar automaticamente a partir do nome.</div>
+    </div>
+
+    <div id="warn-dup" class="warn-box">⚠️ Já existe uma rede com esse nome ou domínio.</div>
+
+    <button class="btn btn-primary" onclick="addRede()">+ Adicionar rede</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="testUrl()">🧪 Testar URL</button>
+    <div class="form-row" style="margin-top:10px">
+      <input id="f-test-url" type="text" placeholder="Cole uma URL para testar (ex: https://threads.net/@handle)">
+      <div id="test-result" style="margin-top:6px;font-size:12px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- PAINEL OUTPUT: fórmulas geradas -->
+  <div class="panel output-panel">
+    <div class="panel-title"><span class="dot" style="background:var(--yellow)"></span>Fórmulas geradas</div>
+    <div class="info">As fórmulas abaixo já incluem todas as redes cadastradas. Copie e cole substituindo o conteúdo atual de cada célula na planilha.</div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="setTab('D',this)">Coluna D — Rede Social</div>
+      <div class="tab" onclick="setTab('E',this)">Coluna E — Perfil</div>
+      <div class="tab" onclick="setTab('COND',this)">Formatação Condicional</div>
+      <div class="tab" onclick="setTab('ALL',this)">Todas juntas</div>
+    </div>
+
+    <div id="tab-D" class="tab-content active">
+      <div class="formula-out" id="out-D"><button class="copy-btn" onclick="copyOut('out-D',this)">Copiar</button></div>
+    </div>
+    <div id="tab-E" class="tab-content">
+      <div class="formula-out" id="out-E"><button class="copy-btn" onclick="copyOut('out-E',this)">Copiar</button></div>
+    </div>
+    <div id="tab-COND" class="tab-content">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+        Formatar → Formatação condicional → Adicionar outra regra → A fórmula personalizada é → <strong>intervalo D3:D570</strong>
+      </p>
+      <table class="cond-table" id="cond-table"></table>
+    </div>
+    <div id="tab-ALL" class="tab-content">
+      <div style="margin-bottom:8px;font-size:12px;color:var(--muted);font-weight:700">COLUNA D</div>
+      <div class="formula-out" id="out-ALL-D" style="margin-bottom:16px"><button class="copy-btn" onclick="copyOut('out-ALL-D',this)">Copiar</button></div>
+      <div style="margin-bottom:8px;font-size:12px;color:var(--muted);font-weight:700">COLUNA E</div>
+      <div class="formula-out" id="out-ALL-E"><button class="copy-btn" onclick="copyOut('out-ALL-E',this)">Copiar</button></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── dados iniciais ───────────────────────────────────────────────────────────
+var REDES = [
+  {nome:'TikTok',    dominio:'tiktok\\.com',         pat:'slash_at_opt', custom:'',  hex:'#000000', txt:'white', term:'TIKTOK',    origem:'original'},
+  {nome:'Instagram', dominio:'instagram\\.com',       pat:'slash',        custom:'',  hex:'#e1306c', txt:'white', term:'INSTAGRAM', origem:'original'},
+  {nome:'Facebook',  dominio:'facebook\\.com',        pat:'slash',        custom:'',  hex:'#1877f2', txt:'white', term:'FACEBOOK|META', origem:'original'},
+  {nome:'YouTube',   dominio:'youtube\\.com|youtu\\.be', pat:'custom',   custom:'youtube\\.com/(?:c/|channel/|user/|@)?([^/?&]+)', hex:'#ff0000', txt:'white', term:'YOUTUBE', origem:'original'},
+  {nome:'X',         dominio:'x\\.com|twitter\\.com', pat:'slash',       custom:'',  hex:'#00bfff', txt:'black', term:'TWITTER|(^| )X($| )', origem:'original'},
+  {nome:'Pinterest', dominio:'pinterest\\.com',       pat:'slash',        custom:'',  hex:'#e60023', txt:'white', term:'PINTEREST', origem:'original'},
+  {nome:'LinkedIn',  dominio:'linkedin\\.com',        pat:'custom',       custom:'linkedin\\.com/(?:in/|company/)?([^/?&]+)', hex:'#0a66c2', txt:'white', term:'LINKEDIN', origem:'original'},
+  {nome:'Snapchat',  dominio:'snapchat\\.com',        pat:'custom',       custom:'snapchat\\.com/(?:add/)?([^/?&]+)', hex:'#fffc00', txt:'black', term:'SNAPCHAT', origem:'original'},
+  {nome:'Twitch',    dominio:'twitch\\.tv',           pat:'slash',        custom:'',  hex:'#9146ff', txt:'white', term:'TWITCH',    origem:'original'},
+  {nome:'Kwai',      dominio:'kwai\\.com',            pat:'slash_at_opt', custom:'',  hex:'#ff6600', txt:'white', term:'KWAI',      origem:'Out/2026'},
+];
+
+var PALETTE = ['#000000','#e1306c','#1877f2','#00bfff','#e60023','#9146ff','#ff0000',
+               '#ff6600','#0a66c2','#fffc00','#1db954','#0085ff','#26a5e4','#101010',
+               '#ff6719','#6441A5','#25D366','#E1306C','#FF4500','#46D160'];
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+function extractRegex(r){
+  if(r.pat==='slash_at')   return r.dominio+'/(@[^/?&]+)';
+  if(r.pat==='slash')      return r.dominio+'/([^/?&]+)';
+  if(r.pat==='slash_at_opt') return r.dominio+'/@?([^/?&]+)';
+  if(r.pat==='subdominio') return '([^.]+)\\.'+r.dominio.replace(/\\\./g,'\\.');
+  if(r.pat==='custom')     return r.custom;
+  return r.dominio+'/([^/?&]+)';
+}
+
+function buildD(){
+  var lines = ['=ARRAYFORMULA(SE(H3:H="";"";'];
+  REDES.forEach(function(r){
+    lines.push('SE(REGEXMATCH(H3:H;"'+r.dominio+'");"'+r.nome+'";');
+  });
+  lines.push('"Verificar cadastro da mídia"');
+  lines.push(Array(REDES.length+1).join(')') + ')');
+  return lines.join('\n');
+}
+
+function buildE(){
+  var lines = ['=ARRAYFORMULA('];
+  lines.push('SE(H3:H="";"";');
+  REDES.forEach(function(r,i){
+    var rx = extractRegex(r);
+    if(r.nome==='TikTok'){
+      lines.push('SE(REGEXMATCH(H3:H;"tiktok\\.com");');
+      lines.push('  SE(REGEXMATCH(H3:H;"@");');
+      lines.push('    REGEXEXTRACT(H3:H;"@([^/?&]+)");');
+      lines.push('    REGEXEXTRACT(H3:H;"tiktok\\.com/([^/?&@]+)"));');
+    } else {
+      lines.push('SE(REGEXMATCH(H3:H;"'+r.dominio+'");');
+      lines.push('  IFERROR(REGEXEXTRACT(H3:H;"'+rx+'");"");');
+    }
+  });
+  lines.push('""');
+  lines.push(Array(REDES.length+1).join(')') + ')');
+  return lines.join('\n');
+}
+
+function renderList(){
+  var el = document.getElementById('rede-list');
+  el.innerHTML = '';
+  REDES.forEach(function(r,i){
+    var div = document.createElement('div');
+    div.className = 'rede-item';
+    var badge = r.origem && r.origem!=='original' ? '<span style="font-size:10px;color:var(--green);margin-left:4px">'+r.origem+'</span>' : '';
+    var patLabel = {slash_at:'/@handle',slash:'/handle',slash_at_opt:'/@?handle',subdominio:'subdomínio',custom:'custom'}[r.pat]||r.pat;
+    div.innerHTML = '<span class="swatch" style="background:'+r.hex+'"></span>'
+      +'<span class="rede-name">'+r.nome+badge+'</span>'
+      +'<span class="rede-domain">'+r.dominio.replace(/\\\\/g,'\\')+'</span>'
+      +'<span class="rede-e">'+patLabel+'</span>'
+      +(r.origem!=='original'?'<div class="rede-actions"><button class="btn-icon del" onclick="removeRede('+i+')">✕</button></div>':'');
+    el.appendChild(div);
+  });
+}
+
+function renderOutputs(){
+  var fD = buildD();
+  var fE = buildE();
+  setPreText('out-D', fD);
+  setPreText('out-E', fE);
+  setPreText('out-ALL-D', fD);
+  setPreText('out-ALL-E', fE);
+  renderCond();
+}
+
+function setPreText(id, txt){
+  var el = document.getElementById(id);
+  var btn = el.querySelector('.copy-btn');
+  el.textContent = txt;
+  el.insertBefore(btn, el.firstChild);
+}
+
+function renderCond(){
+  var tbl = document.getElementById('cond-table');
+  tbl.innerHTML = '<tr><th>Rede</th><th>Fundo</th><th>Hex</th><th>Texto</th><th>Fórmula personalizada</th></tr>';
+  REDES.forEach(function(r){
+    var isNew = r.origem && r.origem!=='original';
+    var tr = document.createElement('tr');
+    if(isNew) tr.style.background = 'rgba(74,222,128,.04)';
+    tr.innerHTML = '<td><span class="swatch" style="background:'+r.hex+'"></span> '+r.nome+(isNew?'<span class="diff-badge">novo</span>':'')+'</td>'
+      +'<td style="background:'+r.hex+';color:'+(r.txt==='black'?'#000':'#fff')+';font-weight:700;font-size:11px;border-radius:4px;padding:4px 8px">'+r.hex+'</td>'
+      +'<td><code>'+r.hex+'</code></td>'
+      +'<td>'+r.txt+'</td>'
+      +'<td><code>=REGEXMATCH(MAIÚSCULA(H3);"'+r.term+'")</code></td>';
+    tbl.appendChild(tr);
+  });
+}
+
+// ── swatches ─────────────────────────────────────────────────────────────────
+function buildSwatches(){
+  var el = document.getElementById('swatches');
+  PALETTE.forEach(function(c){
+    var s = document.createElement('div');
+    s.className='sw'; s.style.background=c; s.title=c;
+    s.onclick=function(){setColor(c)};
+    el.appendChild(s);
+  });
+}
+function setColor(hex){
+  document.getElementById('f-color-picker').value = hex;
+  document.getElementById('f-color-hex').value = hex;
+  document.querySelectorAll('.sw').forEach(function(s){s.classList.toggle('active', s.title===hex)});
+}
+document.addEventListener('DOMContentLoaded', function(){
+  buildSwatches();
+  document.getElementById('f-color-picker').addEventListener('input', function(){
+    document.getElementById('f-color-hex').value = this.value;
+    document.querySelectorAll('.sw').forEach(function(s){s.classList.remove('active')});
+  });
+  document.getElementById('f-color-hex').addEventListener('input', function(){
+    var v = this.value.trim();
+    if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('f-color-picker').value=v}
+  });
+  document.querySelectorAll('input[name="urlpat"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      document.querySelectorAll('.radio-opt').forEach(function(o){o.classList.remove('active')});
+      this.closest('.radio-opt').classList.add('active');
+      document.getElementById('custom-regex-wrap').style.display = this.value==='custom'?'block':'none';
+    });
+  });
+  document.querySelectorAll('input[name="txtcolor"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      document.querySelectorAll('.radio-opt').forEach(function(o){
+        if(o.querySelector('input[name="txtcolor"]')) o.classList.remove('active');
+      });
+      this.closest('.radio-opt').classList.add('active');
+    });
+  });
+  renderList();
+  renderOutputs();
+});
+
+// ── ações ────────────────────────────────────────────────────────────────────
+function addRede(){
+  var nome = document.getElementById('f-nome').value.trim();
+  var dom  = document.getElementById('f-dominio').value.trim();
+  var pat  = document.querySelector('input[name="urlpat"]:checked').value;
+  var custom = document.getElementById('f-custom-regex').value.trim();
+  var hex  = document.getElementById('f-color-hex').value.trim();
+  var txt  = document.querySelector('input[name="txtcolor"]:checked').value;
+  var term = document.getElementById('f-regex-term').value.trim() || nome.toUpperCase().replace(/[^A-Z0-9|]/g,'');
+  var warn = document.getElementById('warn-dup');
+
+  if(!nome||!dom){alert('Nome e domínio são obrigatórios.');return}
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)){alert('Cor inválida. Use formato #rrggbb.');return}
+  var dup = REDES.some(function(r){return r.nome.toLowerCase()===nome.toLowerCase()||r.dominio===dom});
+  if(dup){warn.style.display='block';setTimeout(function(){warn.style.display='none'},3000);return}
+  warn.style.display='none';
+
+  var now = new Date();
+  var mes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][now.getMonth()];
+  REDES.push({nome:nome, dominio:dom, pat:pat, custom:custom, hex:hex, txt:txt, term:term, origem:mes+'/'+now.getFullYear()});
+
+  renderList(); renderOutputs();
+  // limpar form
+  ['f-nome','f-dominio','f-custom-regex','f-test-url'].forEach(function(id){document.getElementById(id).value=''});
+  document.getElementById('f-regex-term').value='';
+  document.getElementById('test-result').style.display='none';
+}
+
+function removeRede(i){
+  if(REDES[i].origem==='original'){alert('Redes originais não podem ser removidas.');return}
+  if(!confirm('Remover '+REDES[i].nome+'?'))return;
+  REDES.splice(i,1);
+  renderList(); renderOutputs();
+}
+
+function testUrl(){
+  var url = document.getElementById('f-test-url').value.trim();
+  var nome = document.getElementById('f-nome').value.trim();
+  var dom  = document.getElementById('f-dominio').value.trim();
+  var pat  = document.querySelector('input[name="urlpat"]:checked').value;
+  var custom = document.getElementById('f-custom-regex').value.trim();
+  var res  = document.getElementById('test-result');
+  if(!url){res.style.display='none';return}
+
+  // detectar rede
+  var matched = REDES.find(function(r){return new RegExp(r.dominio,'i').test(url)});
+  if(!matched && dom && new RegExp(dom,'i').test(url)){
+    matched = {nome:nome||'(nova rede)', dominio:dom, pat:pat, custom:custom};
+  }
+  res.style.display='block';
+  if(!matched){res.innerHTML='<span style="color:var(--red)">✗ Nenhuma rede reconhece essa URL</span>';return}
+
+  // extrair handle
+  var rx = extractRegex(matched);
+  var m;
+  try{ m = url.match(new RegExp(rx,'i')); } catch(e){ m=null; }
+  var handle = m ? (m[1]||'').replace(/\/$|\/+$/,'') : '';
+
+  res.innerHTML = '<span style="color:var(--green)">✓ Rede: <strong>'+matched.nome+'</strong></span>'
+    + (handle ? ' · Handle: <strong style="color:var(--accent2)">'+handle+'</strong>' : ' · <span style="color:var(--yellow)">Handle não extraído (verificar padrão)</span>');
+}
+
+function setTab(name, el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});
+  if(el) el.classList.add('active');
+  var tc = document.getElementById('tab-'+name);
+  if(tc) tc.classList.add('active');
+}
+
+function copyOut(id, btn){
+  var el = document.getElementById(id);
+  var txt = el.innerText.replace('Copiar','').trim();
+  navigator.clipboard.writeText(txt).then(function(){
+    btn.textContent='Copiado!'; btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='Copiar';btn.classList.remove('copied')},2000);
+  });
+}
+</script>
+</body>
+</html>
