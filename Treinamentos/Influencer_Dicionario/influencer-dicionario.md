@@ -75,7 +75,7 @@ Todas as regras usam **Fórmula personalizada** no intervalo `D3:D570`. As regra
 | TikTok | `#000000` preto | `=REGEXMATCH(MAIÚSCULA(H3);"TIKTOK")` |
 | Instagram | `#e1306c` rosa | `=REGEXMATCH(MAIÚSCULA(H3);"INSTAGRAM")` |
 | Facebook | `#1877f2` azul | `=REGEXMATCH(MAIÚSCULA(H3);"FACEBOOK\|META")` |
-| X / Twitter | `#00bfff` ciano | `=REGEXMATCH(MAIÚSCULA(H3);"TWITTER\|(^\ \|\ )X($\|\ )")` |
+| X / Twitter | `#000000` preto | `=REGEXMATCH(MAIÚSCULA(H3);"TWITTER\|(^\ \|\ )X($\|\ )")` |
 | Pinterest | `#e60023` vermelho | `=REGEXMATCH(MAIÚSCULA(H3);"PINTEREST")` |
 | Twitch | `#9146ff` roxo | `=REGEXMATCH(MAIÚSCULA(H3);"TWITCH")` |
 | YouTube | `#ff0000` vermelho YT | `=REGEXMATCH(MAIÚSCULA(H3);"YOUTUBE")` |
