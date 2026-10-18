@@ -24,6 +24,7 @@ Rodam 100% no browser, sem configuração.
 | [**Mapeador RM→ADP**](mapeador-rm/) | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/mapeador-rm/) |
 | [**Merge RM→ADP**](merge-rm-adp/) | Mescla dados do RM na estrutura ADP por plataforma | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/merge-rm-adp/) |
 | [**Removedor de Caracteres**](char-cleaner/) | Remove/substitui caracteres especiais de textos de campanha | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
+| [**Gerador de Fórmulas — Influencer**](influencer-formulas/) | Adiciona redes e gera fórmulas D, E e formatação condicional atualizadas | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/influencer-formulas/) |
 
 ---
 
