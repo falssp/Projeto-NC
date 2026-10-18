@@ -6,81 +6,70 @@ Materiais de treinamento organizados por tema. Cada pasta contém o HTML interat
 
 ```
 Treinamentos/
-├── index.html                  ← portal de acesso (GitHub Pages)
+├── index.html                       ← portal de acesso (GitHub Pages)
 │
-├── UL_Operacao_2026/           ← Operação Unilever 2026 (Out/26)
-│   ├── index.html              ← apresentação interativa (23 slides)
-│   └── roteiro.md              ← roteiro com falas por slide
+├── UL_Operacao_2026/                ← Operação Unilever 2026 (Out/26)
+│   ├── index.html
+│   └── roteiro.md
 │
-├── Custo_Produtos_Pacote/      ← Custo de produtos em pacote (Out/26)
-│   ├── index.html              ← apresentação interativa (10 slides)
-│   ├── roteiro.md              ← roteiro com falas por slide
+├── UL_Agencia_2026/                 ← Agência × StormX × Flashtalking (Out/26)
+│   └── index.html
+│
+├── Custo_Produtos_Pacote/           ← Custo de produtos em pacote (Out/26)
+│   ├── index.html
+│   ├── roteiro.md
 │   └── MotorTaxonomiaGenerico.bas
 │
-├── RM_STORMX_ADP/              ← Treinamento RM → ADP
-│   ├── 23-07-26/               ← edição Jul/26
-│   │   ├── v1/
-│   │   ├── v2/
-│   │   └── v3/                 ← versão atual Jul/26
-│   └── 24-08-26/               ← edição Ago/26 (versão mais recente)
-│       ├── RM_STORMX_ADP_Treinamento_Completo.html
-│       ├── regras-taxonomia.html
-│       ├── RM_STORMX_ADP_Treinamento.pptx
-│       └── Roteiro_Apresentacao_RM_STORMX_ADP.docx
+├── AdServer/                        ← Treinamento Ad Server (PPTX — v15 atual)
 │
-├── AdServer/                   ← Treinamento Ad Server (PPTX — v15 atual)
+├── RM_STORMX_ADP/                   ← Treinamento RM → ADP
+│   ├── 23-07-26/                    ← edição Jul/26 (v1/v2/v3)
+│   └── 24-08-26/                    ← edição Ago/26 (versão mais recente)
 │
-├── VAST_VPAID/                 ← VAST vs VPAID — guia técnico e operacional
+├── VAST_VPAID/                      ← VAST vs VPAID — guia técnico e operacional
 │   ├── index.html
 │   └── vast-vs-vpaid.md
 │
-├── Programatico_Video/         ← Ecossistema programático de vídeo
+├── Programatico_Video/              ← Ecossistema programático de vídeo
 │   └── index.html
 │
-├── Brand_Safety_Viewability/   ← Brand Safety, Viewability, IVT e Geo
+├── Brand_Safety_Viewability/        ← Brand Safety, Viewability, IVT e Geo
 │   └── index.html
 │
-├── Flashtalking_Especificacoes/ ← Specs de criativo Flashtalking (display, rich media, vídeo)
+├── Flashtalking_Especificacoes/     ← Specs de criativo Flashtalking
 │   ├── index.html
 │   └── flashtalking-especificacoes.md
 │
-├── Influencer_Dicionario/      ← Dicionário Influencer: fórmulas e cores por rede (Out/26)
+├── Camphouse/                       ← Camphouse — visão geral e operação
+│   └── index.html
+│
+├── Influencer_Dicionario/           ← Dicionário Influencer: fórmulas e cores por rede (Out/26)
 │   ├── index.html
 │   ├── README.md
 │   └── influencer-dicionario.md
 │
-└── Audience_Type_Party/        ← Guia Audience Type × Audience Party
+├── Jira_Unidades_Dashboard/         ← Jira → Dashboard: Unidades Pai/Filho
+│   └── index.html
+│
+└── Audience_Type_Party/             ← Guia Audience Type × Audience Party
     ├── index.html
     └── audience-type-party.md
 ```
 
 ## Treinamentos disponíveis
 
-| Treinamento | Edição | Link |
-|---|---|---|
-| 📊 Influencer Dicionário — Fórmulas e Cores | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Influencer_Dicionario/index.html) |
-| 🎯 Audience Type × Party | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
-| 💻 Ad Server (v15 atual) | — | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
-| 🌐 UL Operação 2026 | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
-| 💰 Custo de Produtos em Pacote | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/index.html) |
-| 🎓 RM STORMX ADP — Completo | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
-| 📋 RM STORMX ADP — Regras Taxonomia | Ago/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/regras-taxonomia.html) |
-| RM STORMX ADP v3 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v3/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
-| RM STORMX ADP v2 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v2/RM_STORMX_ADP_Apresentacao_Interativa_v2.html) |
-| RM STORMX ADP v1 | Jul/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/23-07-26/v1/RM_STORMX_ADP_Apresentacao_Interativa.html) |
-| 🎬 VAST vs VPAID | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/VAST_VPAID/) |
-| 🔄 Programático & Vídeo | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Programatico_Video/) |
-| 🏕️ Camphouse — Media Ops Platform | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Camphouse/index.html) |
-| 🛡 Brand Safety & Viewability | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Brand_Safety_Viewability/) |
-| 📐 Flashtalking — Especificações de Mídia | Out/26 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Flashtalking_Especificacoes/) |
-
-## Portal de acesso
-
-🔗 **[https://falssp.github.io/Projeto-NC/Treinamentos/](https://falssp.github.io/Projeto-NC/Treinamentos/)**
-
-## Como adicionar novo treinamento
-
-1. Cria pasta com slug do treinamento (ex: `UL_Operacao_2026`)
-2. Sobe os arquivos: `index.html` (apresentação), `roteiro.md` e opcionalmente PPTX/DOCX
-3. Adiciona o card em `Treinamentos/index.html`
-4. Atualiza este README (tabela e estrutura acima)
+| Treinamento | Edição | Tipo | Link |
+|---|---|---|---|
+| UL Operação 2026 | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
+| UL Agência × StormX × Flashtalking | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/index.html) |
+| Custo de Produtos em Pacote | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/index.html) |
+| Ad Server | v15 — atual | PPTX + PDF | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
+| RM StormX ADP | Ago/2026 | Treinamento completo | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
+| VAST vs VPAID | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/VAST_VPAID/index.html) |
+| Programático & Vídeo | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Programatico_Video/index.html) |
+| Brand Safety & Viewability | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Brand_Safety_Viewability/index.html) |
+| Flashtalking — Especificações | Out/2026 | Guia de referência | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Flashtalking_Especificacoes/index.html) |
+| Camphouse | Out/2026 | Guia operacional | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Camphouse/index.html) |
+| Influencer — Fórmulas e Cores | Out/2026 | Guia de referência | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Influencer_Dicionario/index.html) |
+| Jira → Dashboard: Unidades Pai/Filho | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Jira_Unidades_Dashboard/index.html) |
+| Audience Type × Audience Party | Out/2026 | Guia de referência | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
