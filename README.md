@@ -49,6 +49,8 @@ Ver lista completa em [`ferramentas/README.md`](ferramentas/README.md).
 | **Location** | Gera o campo Location do naming | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location/) |
 | **Mapeador RM→ADP** | Copia valores de colunas do RM para o ADP via ZIP patch | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/mapeador-rm/) |
 | **Merge RM→ADP** | Mescla dados do RM na estrutura ADP preservando formatação | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/merge-rm-adp/) |
+| **Excel Reference** | Guia interativo de funções, erros e exercícios Excel/Sheets (4 abas: Referência, Erros, Treino, IA) | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/excel-reference/) |
+| **Gerador de Fórmulas — Influencer** | Adiciona redes e gera fórmulas D, E e formatação condicional do Dicionário de Influs | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/influencer-formulas/) |
 | **Removedor de Caracteres** | Remove/substitui caracteres especiais de textos de campanha | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
 
 ### GAS (requerem Web App Google Apps Script)
@@ -73,6 +75,7 @@ Ver lista completa em [`ferramentas/README.md`](ferramentas/README.md).
 |---|---|---|
 | **Dicionário de Taxonomias UL** | Parâmetros Galileo e Freetext com siglas | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ul-taxonomias/taxonomias-ul.html) |
 | **Dashboard Campaign Local** | Visualiza e filtra dados do Campaign Local | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/dashboard-cn/) |
+| **Location v2 (UL)** | Gera o campo Location no padrão Unilever BR — HTML + GAS backend | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location-2/location-ul.html) |
 
 ## Treinamentos
 
@@ -89,8 +92,8 @@ Projeto-NC/
 ├── F4-Acessorios/corp/ e pessoal/
 ├── F5-Flashtalking/corp/ e pessoal/
 ├── SuperApp/corp/ e pessoal/
-├── ferramentas/          ← 18 ferramentas standalone + GAS
-├── Treinamentos/         ← 12 treinamentos/guias interativos
+├── ferramentas/          ← 21 ferramentas standalone + GAS
+├── Treinamentos/         ← 13 treinamentos/guias interativos
 ├── Arquivos/
 │   ├── 2025/ADP/
 │   └── 2026/ADP/ e RM/

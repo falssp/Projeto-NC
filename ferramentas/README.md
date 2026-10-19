@@ -24,6 +24,7 @@ Rodam 100% no browser, sem configuração.
 | [**Mapeador RM→ADP**](mapeador-rm/) | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/mapeador-rm/) |
 | [**Merge RM→ADP**](merge-rm-adp/) | Mescla dados do RM na estrutura ADP por plataforma | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/merge-rm-adp/) |
 | [**Removedor de Caracteres**](char-cleaner/) | Remove/substitui caracteres especiais de textos de campanha | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
+| [**Excel Reference**](excel-reference/) | Guia interativo de funções, erros e exercícios Excel/Sheets — 4 abas: Referência, Erros, Treino e Assistente IA | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/excel-reference/) |
 | [**Gerador de Fórmulas — Influencer**](influencer-formulas/) | Adiciona redes e gera fórmulas D, E e formatação condicional atualizadas | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/influencer-formulas/) |
 
 ---
@@ -59,3 +60,14 @@ Interface offline com atualização automática via GAS.
 | Ferramenta | Descrição | Link |
 |---|---|---|
 | [**Dicionário de Taxonomias UL**](ul-taxonomias/) | Dicionário interativo de todos os parâmetros Galileo e Freetext | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ul-taxonomias/taxonomias-ul.html) |
+| [**Dashboard Campaign Local**](dashboard-cn/) | Visualiza e filtra dados do Campaign Local sincronizados via GAS | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/dashboard-cn/) |
+
+---
+
+## GAS — Location
+
+Ferramenta de geração do campo Location com base nos 5.499 municípios brasileiros.
+
+| Ferramenta | Descrição | Link |
+|---|---|---|
+| [**Location v2 (UL)**](location-2/) | Gera o campo Location no padrão Unilever BR — interface HTML + GAS backend | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location-2/location-ul.html) |
