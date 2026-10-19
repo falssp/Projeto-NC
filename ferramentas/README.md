@@ -24,8 +24,6 @@ Rodam 100% no browser, sem configuração.
 | [**Mapeador RM→ADP**](mapeador-rm/) | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/mapeador-rm/) |
 | [**Merge RM→ADP**](merge-rm-adp/) | Mescla dados do RM na estrutura ADP por plataforma | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/merge-rm-adp/) |
 | [**Removedor de Caracteres**](char-cleaner/) | Remove/substitui caracteres especiais de textos de campanha | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
-| [**Excel Reference**](excel-reference/) | Guia interativo de funções, erros e exercícios Excel/Sheets — 4 abas: Referência, Erros, Treino e Assistente IA | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/excel-reference/) |
-| [**Gerador de Fórmulas — Influencer**](influencer-formulas/) | Adiciona redes e gera fórmulas D, E e formatação condicional atualizadas | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/influencer-formulas/) |
 
 ---
 
@@ -60,14 +58,15 @@ Interface offline com atualização automática via GAS.
 | Ferramenta | Descrição | Link |
 |---|---|---|
 | [**Dicionário de Taxonomias UL**](ul-taxonomias/) | Dicionário interativo de todos os parâmetros Galileo e Freetext | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ul-taxonomias/taxonomias-ul.html) |
-| [**Dashboard Campaign Local**](dashboard-cn/) | Visualiza e filtra dados do Campaign Local sincronizados via GAS | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/dashboard-cn/) |
+| [**Location**](location/) | Gera o campo Location do naming (cidade, estado, região, nacional) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location/) |
+| [**Location 2**](location-2/) | Versão atualizada da taxonomia Location (UL_Location_Corp.html) | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location-2/) |
 
 ---
 
-## GAS — Location
+## Referência
 
-Ferramenta de geração do campo Location com base nos 5.499 municípios brasileiros.
+Ferramentas de consulta e aprendizado.
 
 | Ferramenta | Descrição | Link |
 |---|---|---|
-| [**Location v2 (UL)**](location-2/) | Gera o campo Location no padrão Unilever BR — interface HTML + GAS backend | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location-2/location-ul.html) |
+| [**Excel Reference**](excel-reference/) | Referência completa de fórmulas Excel/Sheets — trilíngue (PT/EN/ES), exemplos, modo flashcard e assistente IA | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/excel-reference/) |
