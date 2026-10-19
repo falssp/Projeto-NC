@@ -41,8 +41,6 @@ input:focus{border-color:var(--accent)}
 .crow input[type=color]{width:40px;height:36px;padding:2px;cursor:pointer;border-radius:6px;flex-shrink:0}
 .crow input[type=text]{flex:1}
 .sws{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
-.sw-opt{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:border .12s;flex-shrink:0}
-.sw-opt:hover,.sw-opt.on{border-color:#fff}
 .rg{display:flex;gap:6px;flex-wrap:wrap}
 .ro{display:flex;align-items:flex-start;flex-direction:column;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px 11px;cursor:pointer;font-size:12px;transition:all .15s;user-select:none;min-width:90px}
 .ro:hover,.ro.on{border-color:var(--accent);background:rgba(91,106,240,.1)}
@@ -131,11 +129,32 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-t
 
     <div class="fr">
       <label class="lbl">Cor de fundo <span style="font-size:10px;font-weight:400">(cores oficiais das plataformas)</span></label>
-      <div class="crow">
-        <input type="color" id="fcp" value="#5b6af0">
-        <input type="text" id="fhex" value="#5b6af0" maxlength="7" placeholder="#rrggbb">
+      <select id="fcolor-sel" onchange="onColorSel()" style="width:100%;background:#12141e;border:1px solid var(--border);color:var(--text);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+        <option value="">— Selecionar plataforma conhecida —</option>
+        <option value="#000000:white">TikTok / X / Threads — #000000 preto</option>
+        <option value="#E1306C:white">Instagram — #E1306C rosa</option>
+        <option value="#1877F2:white">Facebook — #1877F2 azul</option>
+        <option value="#FF0000:white">YouTube — #FF0000 vermelho</option>
+        <option value="#1DA1F2:white">Twitter — #1DA1F2 azul</option>
+        <option value="#E60023:white">Pinterest — #E60023 vermelho</option>
+        <option value="#0A66C2:white">LinkedIn — #0A66C2 azul-marinho</option>
+        <option value="#FFFC00:black">Snapchat — #FFFC00 amarelo</option>
+        <option value="#9146FF:white">Twitch — #9146FF roxo</option>
+        <option value="#FF6600:white">Kwai — #FF6600 laranja</option>
+        <option value="#1DB954:white">Spotify — #1DB954 verde</option>
+        <option value="#0085FF:white">Bluesky — #0085FF azul</option>
+        <option value="#26A5E4:white">Telegram — #26A5E4 azul</option>
+        <option value="#FF6719:white">Substack — #FF6719 laranja</option>
+        <option value="custom">Outra cor (manual)</option>
+      </select>
+      <div id="cor-manual" style="display:none">
+        <div class="crow">
+          <input type="color" id="fcp" value="#5b6af0">
+          <input type="text" id="fhex" value="#5b6af0" maxlength="7" placeholder="#rrggbb">
+        </div>
+        <div class="hint" style="margin-top:4px">Cor do texto será definida automaticamente pelo contraste.</div>
       </div>
-      <div class="sws" id="swatches"></div>
+      <div id="cor-preview" style="display:none;margin-top:8px;padding:8px 14px;border-radius:7px;font-size:12px;font-weight:700;text-align:center"></div>
     </div>
 
     <div class="fr">
@@ -245,25 +264,21 @@ var FML={
 // ── redes (cores oficiais) ────────────────────────────────────────────────────
 // X e Twitter separados: Twitter=#1DA1F2 (link twitter.com), X=#000000 (link x.com)
 var REDES=[
-  {n:'TikTok',   d:'tiktok\\.com',    p:'slash_at_opt',c:'',                                               h:'#000000',t:'white',tm:'TIKTOK',        orig:true},
-  {n:'Instagram',d:'instagram\\.com', p:'slash',       c:'',                                               h:'#E1306C',t:'white',tm:'INSTAGRAM',     orig:true},
-  {n:'Facebook', d:'facebook\\.com',  p:'slash',       c:'',                                               h:'#1877F2',t:'white',tm:'FACEBOOK|META', orig:true},
-  {n:'YouTube',  d:'youtube\\.com|youtu\\.be',p:'custom',c:'youtube\\.com/(?:c/|channel/|user/|@)?([^/?&]+)',h:'#FF0000',t:'white',tm:'YOUTUBE',    orig:true},
-  {n:'X',        d:'x\\.com',         p:'slash',       c:'',                                               h:'#000000',t:'white',tm:'(^| )X($| )',   orig:true, nota:'x.com — preto oficial (pós-rebrand 2023)'},
-  {n:'Twitter',  d:'twitter\\.com',   p:'slash',       c:'',                                               h:'#1DA1F2',t:'white',tm:'TWITTER',       orig:true, nota:'twitter.com — azul original'},
-  {n:'Pinterest',d:'pinterest\\.com', p:'slash',       c:'',                                               h:'#E60023',t:'white',tm:'PINTEREST',     orig:true},
-  {n:'LinkedIn', d:'linkedin\\.com',  p:'custom',      c:'linkedin\\.com/(?:in/|company/)?([^/?&]+)',      h:'#0A66C2',t:'white',tm:'LINKEDIN',      orig:true},
-  {n:'Snapchat', d:'snapchat\\.com',  p:'custom',      c:'snapchat\\.com/(?:add/)?([^/?&]+)',              h:'#FFFC00',t:'black',tm:'SNAPCHAT',      orig:true},
-  {n:'Twitch',   d:'twitch\\.tv',     p:'slash',       c:'',                                               h:'#9146FF',t:'white',tm:'TWITCH',        orig:true},
-  {n:'Kwai',     d:'kwai\\.com',      p:'slash_at_opt',c:'',                                               h:'#FF6600',t:'white',tm:'KWAI',          orig:false,added:'Out/2026'},
+  {n:'Facebook', d:'facebook\.com',            p:'slash',       c:'',                                                    h:'#1877F2',t:'white',tm:'FACEBOOK|META'},
+  {n:'Instagram',d:'instagram\.com',            p:'slash',       c:'',                                                    h:'#E1306C',t:'white',tm:'INSTAGRAM'},
+  {n:'Kwai',     d:'kwai\.com',                 p:'slash_at_opt',c:'',                                                    h:'#FF6600',t:'white',tm:'KWAI'},
+  {n:'LinkedIn', d:'linkedin\.com',             p:'custom',      c:'linkedin\.com/(?:in/|company/)?([^/?&]+)',           h:'#0A66C2',t:'white',tm:'LINKEDIN'},
+  {n:'Pinterest',d:'pinterest\.com',            p:'slash',       c:'',                                                    h:'#E60023',t:'white',tm:'PINTEREST'},
+  {n:'Snapchat', d:'snapchat\.com',             p:'custom',      c:'snapchat\.com/(?:add/)?([^/?&]+)',                   h:'#FFFC00',t:'black',tm:'SNAPCHAT'},
+  {n:'TikTok',   d:'tiktok\.com',               p:'slash_at_opt',c:'',                                                    h:'#000000',t:'white',tm:'TIKTOK'},
+  {n:'Threads',  d:'threads\.net',              p:'slash_at_opt',c:'',                                                    h:'#101010',t:'white',tm:'THREADS'},
+  {n:'Twitch',   d:'twitch\.tv',                p:'slash',       c:'',                                                    h:'#9146FF',t:'white',tm:'TWITCH'},
+  {n:'Twitter',  d:'twitter\.com',              p:'slash',       c:'',                                                    h:'#1DA1F2',t:'white',tm:'TWITTER'},
+  {n:'X',        d:'x\.com',                    p:'slash',       c:'',                                                    h:'#000000',t:'white',tm:'(^| )X($| )'},
+  {n:'YouTube',  d:'youtube\.com|youtu\.be',   p:'custom',      c:'youtube\.com/(?:c/|channel/|user/|@)?@?([^/?&]+)',  h:'#FF0000',t:'white',tm:'YOUTUBE'},
 ];
 
-// paleta de cores oficiais
-var PAL=[
-  '#000000','#E1306C','#1877F2','#FF0000','#E60023','#9146FF',
-  '#FF6600','#0A66C2','#FFFC00','#1DA1F2','#1DB954','#0085FF',
-  '#26A5E4','#101010','#FF6719','#25D366','#FF4500','#46D160',
-];
+
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function rxPat(r){
@@ -320,7 +335,7 @@ function renderList(){
     var d=document.createElement('div');
     d.className='ri';
     d.innerHTML='<span class="swi" style="background:'+r.h+'"></span>'
-      +'<span class="rn">'+r.n+(r.added?'<span style="font-size:9px;color:var(--green);margin-left:4px">'+r.added+'</span>':'')+'</span>'
+      +'<span class="rn">'+r.n+'</span>'
       +'<span class="rd">'+r.d.replace(/\\\\/g,'\\')+'</span>'
       +'<span class="rp">'+patL+'</span>'
       ;
@@ -369,8 +384,8 @@ function addRede(){
   var d=document.getElementById('fd').value.trim();
   var p=document.querySelector('input[name="pat"]:checked').value;
   var c=document.getElementById('fc').value.trim();
-  var h=document.getElementById('fhex').value.trim();
-  var t=document.querySelector('input[name="tc"]:checked').value;
+  var h=getSelHex();
+  var t=getSelTxt();
   var tm=document.getElementById('ft').value.trim()||n.toUpperCase().replace(/[^A-Z0-9|]/g,'');
   var w=document.getElementById('warn-dup');
   if(!n||!d){alert('Nome e domínio são obrigatórios.');return;}
@@ -391,10 +406,41 @@ function addRede(){
 
 
 // ── ui ────────────────────────────────────────────────────────────────────────
-function setColor(hex){
-  document.getElementById('fcp').value=hex;
-  document.getElementById('fhex').value=hex;
-  document.querySelectorAll('.sw-opt').forEach(function(s){s.classList.toggle('on',s.title.toLowerCase()===hex.toLowerCase());});
+function onColorSel(){
+  var sel=document.getElementById('fcolor-sel');
+  var val=sel.value;
+  var manual=document.getElementById('cor-manual');
+  var preview=document.getElementById('cor-preview');
+  if(!val){manual.style.display='none';preview.style.display='none';return;}
+  if(val==='custom'){manual.style.display='block';preview.style.display='none';return;}
+  var parts=val.split(':');
+  var hex=parts[0]; var txt=parts[1]||'white';
+  manual.style.display='none';
+  preview.style.display='block';
+  preview.style.background=hex;
+  preview.style.color=txt==='black'?'#000':'#fff';
+  preview.textContent=hex+' — texto '+txt;
+  // sync txt radio
+  document.querySelectorAll('input[name="tc"]').forEach(function(r){
+    r.checked=(r.value===txt);
+    r.closest('.ro').classList.toggle('on',r.value===txt);
+  });
+}
+function getSelHex(){
+  var sel=document.getElementById('fcolor-sel');
+  var val=sel?sel.value:'';
+  if(!val||val==='custom'){
+    return (document.getElementById('fhex')||{value:'#5b6af0'}).value.trim();
+  }
+  return val.split(':')[0];
+}
+function getSelTxt(){
+  var sel=document.getElementById('fcolor-sel');
+  var val=sel?sel.value:'';
+  if(!val||val==='custom'){
+    return document.querySelector('input[name="tc"]:checked').value;
+  }
+  return val.split(':')[1]||'white';
 }
 
 function setTab(name,el){
@@ -416,22 +462,23 @@ function cp(id,btn){
 
 // ── init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',function(){
-  // swatches
-  var sw=document.getElementById('swatches');
-  PAL.forEach(function(c){
-    var s=document.createElement('div');
-    s.className='sw-opt';s.style.background=c;s.title=c;
-    s.onclick=function(){setColor(c);};
-    sw.appendChild(s);
-  });
-  document.getElementById('fcp').addEventListener('input',function(){
-    document.getElementById('fhex').value=this.value;
-    document.querySelectorAll('.sw-opt').forEach(function(s){s.classList.remove('on');});
-  });
-  document.getElementById('fhex').addEventListener('input',function(){
-    var v=this.value.trim();
-    if(/^#[0-9a-fA-F]{6}$/.test(v))document.getElementById('fcp').value=v;
-  });
+  // color picker manual
+  var cpEl=document.getElementById('fcp');
+  if(cpEl){
+    cpEl.addEventListener('input',function(){
+      document.getElementById('fhex').value=this.value;
+    });
+  }
+  var hexEl=document.getElementById('fhex');
+  if(hexEl){
+    hexEl.addEventListener('input',function(){
+      var v=this.value.trim();
+      if(/^#[0-9a-fA-F]{6}$/.test(v)){
+        var cpx=document.getElementById('fcp');
+        if(cpx)cpx.value=v;
+      }
+    });
+  }
   document.querySelectorAll('input[name="pat"]').forEach(function(r){
     r.addEventListener('change',function(){
       document.querySelectorAll('#pats .ro').forEach(function(o){o.classList.remove('on');});
