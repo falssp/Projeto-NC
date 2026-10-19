@@ -14,7 +14,7 @@ Desenvolvido pela StormX em parceria com a Grasp.
 
 ## Portal
 
-**https://falssp.github.io/nc-tool/**
+**https://falssp.github.io/Projeto-NC/**  
 Hub de navegacao com status em tempo real de cada fase (via Cloudflare Workers proxy).
 
 ## Modulos
@@ -30,82 +30,95 @@ Hub de navegacao com status em tempo real de cada fase (via Cloudflare Workers p
 
 ## Ferramentas standalone
 
-Ferramentas HTML interativas hospedadas no GitHub Pages — sem build, sem backend.
-Ver lista completa em [`ferramentas/README.md`](ferramentas/README.md).
+Ferramentas HTML interativas hospedadas no GitHub Pages — sem build, sem backend.  
+Hub: **[falssp.github.io/Projeto-NC/ferramentas/](https://falssp.github.io/Projeto-NC/ferramentas/)**
 
-### Offline (sem dependências)
+### Offline
 
-| Ferramenta | Descrição | Link |
-|---|---|---|
-| **AI Detector** | Detecta conteúdo gerado por IA via APIs configuráveis | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ai-detector/) |
-| **Comparador ADP** | Compara tokens entre duas strings posição a posição | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/comparador-adp/) |
-| **Contador ADP** | Conta linhas válidas por aba em arquivos ADP | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/contador-adp/) |
-| **Creative Taxonomy** | Gera taxonomia de criativos por asset | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/creative-taxonomy/creative-taxonomy.html) |
-| **Cruzador de IDs** | Cruza IDs ADP × RM e aponta divergências | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/cruzador-ids/) |
-| **Extractor de Fórmulas** | Extrai e deduplica fórmulas de .xlsx/.xlsm por aba | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extractor-formulas/) |
-| **Extrator de Links** | Extrai handles de influencers de URLs (19 redes) | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/link-extrator/) |
-| **Galileo IDs** | Browser interativo de IDs e abreviações do Galileo | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/galileo-ids/) |
-| **Grasp Naming** | Estrutura de naming por plataforma | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/grasp-naming/grasp-naming.html) |
-| **Location** | Gera o campo Location do naming | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location/) |
-| **Mapeador RM→ADP** | Copia valores de colunas do RM para o ADP via ZIP patch | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/mapeador-rm/) |
-| **Merge RM→ADP** | Mescla dados do RM na estrutura ADP preservando formatação | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/merge-rm-adp/) |
-| **Excel Reference** | Guia interativo de funções, erros e exercícios Excel/Sheets (4 abas: Referência, Erros, Treino, IA) | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/excel-reference/) |
-| **Gerador de Fórmulas — Influencer** | Adiciona redes e gera fórmulas D, E e formatação condicional do Dicionário de Influs | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/influencer-formulas/) |
-| **Removedor de Caracteres** | Remove/substitui caracteres especiais de textos de campanha | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/char-cleaner/) |
+| Ferramenta | Descrição |
+|---|---|
+| **AI Detector** | Detecta conteúdo gerado por IA em vídeo, imagem, áudio e texto |
+| **Comparador ADP** | Compara estrutura de duas abas ADP e aponta divergências |
+| **Contador ADP** | Conta linhas por aba e plataforma em planilhas ADP |
+| **Creative Taxonomy** | Gera taxonomia de criativos por asset (Plataforma + Brainsuite) |
+| **Cruzador de IDs** | Cruza IDs ADP × RM e aponta divergências |
+| **Excel Reference** | Referência trilíngue de fórmulas Excel/Sheets com assistente IA |
+| **Extractor de Fórmulas** | Extrai e deduplica fórmulas de .xlsx/.xlsm por aba |
+| **Extrator de Links** | Extrai links de perfil de influencers de planilhas RM/ADP |
+| **Galileo IDs** | Browser interativo de IDs e abreviações do sistema Galileo |
+| **Grasp Naming** | Referência de estrutura de naming por plataforma (Grasp 2026) |
+| **Mapeador RM→ADP** | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch |
+| **Merge RM→ADP** | Mescla dados do RM na estrutura ADP por plataforma |
+| **Removedor de Caracteres** | Remove/substitui caracteres especiais de textos de campanha |
 
-### GAS (requerem Web App Google Apps Script)
+### GAS (Google Apps Script)
 
-| Ferramenta | Descrição | Link |
-|---|---|---|
-| **Ad Name Sync** | Sincroniza Ad Names entre planilhas RM e ADP | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ad-name-sync/) |
-| **Dashboard Jira** | Sincroniza subtasks do Jira com Google Sheets | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/dashboard-jira/) |
-| **Extrator de Campaign Local** | Extrai dados de Campaign Local dos ADPs | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extrator-campanha/) |
-| **Extrator de Influs** | Extrai influs do RM/ADP e valida duplicatas no dicionário | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/extrator-influs/) |
-| **Gerador de IDs UL** | Gera e registra IDs SX/AMZ nas planilhas | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/gerador-ids-ul/) |
+| Ferramenta | Descrição |
+|---|---|
+| **Ad Name Sync** | Sincroniza Ad Names entre planilhas RM e ADP |
+| **Dashboard Jira** | Sincroniza subtasks do Jira com Google Sheets |
+| **Extrator de Campaign Local** | Extrai dados de Campaign Local das planilhas |
+| **Extrator de Influs** | Extrai influencers do RM/ADP e valida duplicatas no dicionário |
+| **Gerador de IDs UL** | Gera e registra IDs SX/AMZ nas planilhas em uma operação |
 
 ### Offline + Cloud Run
 
-| Ferramenta | Descrição | Link |
-|---|---|---|
-| **Influencer Name** | Padroniza nomes e extrai handles/seguidores (scraping TikTok/IG/YT opcional) | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/influ-name/) |
+| Ferramenta | Descrição |
+|---|---|
+| **Influencer Name** | Padroniza nomes de influencers e extrai handles/seguidores |
 
 ### Offline + GAS
 
-| Ferramenta | Descrição | Link |
-|---|---|---|
-| **Dicionário de Taxonomias UL** | Parâmetros Galileo e Freetext com siglas | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ul-taxonomias/taxonomias-ul.html) |
-| **Dashboard Campaign Local** | Visualiza e filtra dados do Campaign Local | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/dashboard-cn/) |
-| **Location v2 (UL)** | Gera o campo Location no padrão Unilever BR — HTML + GAS backend | [Abrir](https://falssp.github.io/Projeto-NC/ferramentas/location-2/location-ul.html) |
+| Ferramenta | Descrição |
+|---|---|
+| **Dicionário de Taxonomias UL** | Dicionário interativo de todos os parâmetros Galileo e Freetext |
+| **Location** | Gera o campo Location do naming (cidade, estado, região, nacional) |
+| **Location 2** | Versão atualizada da taxonomia Location |
 
-## Treinamentos
-
-Materiais de treinamento interativos em [`Treinamentos/`](Treinamentos/).
-Ver lista completa em [`Treinamentos/README.md`](Treinamentos/README.md) ou no [portal de treinamentos](https://falssp.github.io/Projeto-NC/Treinamentos/).
-
-## Estrutura do repositorio
+## Estrutura do repositório
 
 ```
 Projeto-NC/
-├── F1-IDs-AdServer/corp/ e pessoal/
-├── F2-Gerador/corp/ e pessoal/
-├── F3-Validador/corp/ e pessoal/
-├── F4-Acessorios/corp/ e pessoal/
-├── F5-Flashtalking/corp/ e pessoal/
-├── SuperApp/corp/ e pessoal/
-├── ferramentas/          ← 21 ferramentas standalone + GAS
-├── Treinamentos/         ← 13 treinamentos/guias interativos
+├── index.html               ← Portal (GitHub Pages)
+├── ferramentas/             ← Hub + 23 ferramentas standalone
+│   ├── index.html           ← Hub de ferramentas
+│   ├── ad-name-sync/
+│   ├── ai-detector/
+│   ├── char-cleaner/
+│   ├── comparador-adp/
+│   ├── contador-adp/
+│   ├── creative-taxonomy/
+│   ├── cruzador-ids/
+│   ├── dashboard-jira/
+│   ├── excel-reference/
+│   ├── extractor-formulas/
+│   ├── extrator-campanha/
+│   ├── extrator-influs/
+│   ├── galileo-ids/
+│   ├── gerador-ids-ul/
+│   ├── grasp-naming/
+│   ├── influ-name/
+│   ├── link-extrator/
+│   ├── location/
+│   ├── location-2/
+│   ├── mapeador-rm/
+│   ├── merge-rm-adp/
+│   └── ul-taxonomias/
+├── Treinamentos/
+│   └── RM_STORMX_ADP/
+├── dashboard/
 ├── Arquivos/
 │   ├── 2025/ADP/
 │   └── 2026/ADP/ e RM/
 ├── workers/
-│   └── worker.js         ← Cloudflare Workers proxy CORS
+│   └── worker.js            ← Cloudflare Workers proxy CORS
 └── docs/
-    ├── links.md
     ├── overview.md
-    └── NC_Tool_*.md
+    └── links.md
 ```
 
 ## Stack
+
 - Google Apps Script (GAS)
 - Google Sheets
 - HTML/CSS/JS vanilla
