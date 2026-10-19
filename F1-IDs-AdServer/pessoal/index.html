@@ -304,26 +304,50 @@
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbx7RZbuzi0NWMdWoun5ESxh2tCJmtO105MXrFUhWT8mEk5XJe66SvySdXiNT1YRyzH-/exec';
 var f1p_allIDs = [];
 
-/* ── GAS FETCH HELPERS ──────────────────── */
-function f1pget(params) {
-  var qs = Object.entries(params).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
-  return fetch(GAS_URL+'?'+qs).then(r=>r.json());
+/* ── GAS FETCH HELPERS (padrão F4) ─────── */
+function f1pget(params, tentativa) {
+  tentativa = tentativa || 1;
+  var qs = Object.keys(params).map(function(k){ return k+'='+encodeURIComponent(params[k]); }).join('&');
+  return fetch(GAS_URL+'?'+qs)
+    .then(function(r) {
+      var ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error('Servidor indisponível');
+      return r.json();
+    })
+    .catch(function(e) {
+      if (tentativa < 3) return f1pget(params, tentativa+1);
+      throw e;
+    });
 }
-function f1ppost(action, body) {
-  return fetch(GAS_URL+'?action='+action, {
-    method:'POST', body:JSON.stringify(body),
-    headers:{'Content-Type':'application/json'}
-  }).then(r=>r.json());
+function f1ppost(action, body, tentativa) {
+  tentativa = tentativa || 1;
+  var payload = Object.assign({action: action}, body);
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify(payload)
+  })
+    .then(function(r) {
+      var ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error('Servidor indisponível');
+      return r.json();
+    })
+    .catch(function(e) {
+      if (tentativa < 3) return f1ppost(action, body, tentativa+1);
+      throw e;
+    });
 }
 
 /* ── STATUS + STATS ─────────────────────── */
 function f1pInit() {
-  f1pget({action:'ping'}).then(r=>{
-    var dot = document.getElementById('status-dot');
-    if (r.ok) { dot.className='ok'; dot.title='GAS online — '+r.env; }
+  fetch(GAS_URL+'?action=ping').catch(function(){});
+  var dot = document.getElementById('status-dot');
+  dot.className=''; dot.title='Verificando...';
+  f1pget({action:'ping'}).then(function(r) {
+    if (r.ok) { dot.className='ok'; dot.title='GAS online — '+(r.env||''); }
     else      { dot.className='err'; dot.title='GAS erro'; }
-  }).catch(()=>{ document.getElementById('status-dot').className='err'; });
-  f1pget({action:'stats'}).then(f1pRenderStats).catch(()=>{});
+  }).catch(function() { dot.className='err'; dot.title='GAS offline'; });
+  f1pget({action:'stats'}).then(f1pRenderStats).catch(function(){});
   f1pCarregarIDs();
 }
 
