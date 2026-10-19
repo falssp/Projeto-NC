@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F1 — IDs AdServer · Corp</title>
+<style>
+
+    :root{--accent:#1F36C7;--accent-light:#e8ecfd;--danger:#DC2626;--ok:#0D7A4E;--warn:#B45309}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f9fa;color:#222;min-height:100vh}
+    #header{background:#1a1a2e;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px}
+    #header h1{font-size:1.15rem;font-weight:700}
+    #status-dot{width:10px;height:10px;border-radius:50%;background:#555;flex-shrink:0;margin-left:auto}
+    #status-dot.ok{background:#22c55e}
+    #status-dot.err{background:#ef4444}
+    #env-badge{font-size:.7rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.15);color:#fff}
+    #main{max-width:960px;margin:0 auto;padding:16px}
+    .stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+    .stat-card{flex:1;min-width:140px;background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .stat-card .val{font-size:1.8rem;font-weight:800;color:var(--accent)}
+    .stat-card .lbl{font-size:.75rem;color:#666;margin-top:2px}
+    .plat-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .plat-pill{font-size:.72rem;padding:3px 9px;border-radius:12px;background:var(--accent-light);color:var(--accent);font-weight:600}
+    section{background:#fff;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    section h2{font-size:.95rem;font-weight:700;margin-bottom:14px;color:#333;border-bottom:1px solid #eee;padding-bottom:8px}
+    .form-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+    .form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px}
+    .form-group label{font-size:.78rem;font-weight:600;color:#555}
+    input,select,textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:.88rem;width:100%;background:#fff}
+    textarea{resize:vertical;min-height:90px}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(31,54,199,.12)}
+    .btn{padding:9px 18px;border:none;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;transition:.15s}
+    .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#1630aa}
+    .btn-secondary{background:#f3f4f6;color:#333}.btn-secondary:hover{background:#e5e7eb}
+    .btn-danger{background:#fee2e2;color:var(--danger)}.btn-danger:hover{background:#fecaca}
+    .btn-sm{padding:5px 10px;font-size:.78rem}
+    table{width:100%;border-collapse:collapse;font-size:.83rem}
+    th{text-align:left;padding:8px 10px;background:#f3f4f6;font-weight:700;color:#555;position:sticky;top:0}
+    td{padding:7px 10px;border-bottom:1px solid #f0f0f0}
+    tr:hover td{background:#f9fafb}
+    .tbl-wrap{max-height:400px;overflow-y:auto;border-radius:8px;border:1px solid #e5e7eb}
+    .id-pill{font-family:monospace;font-size:.82rem;background:#f3f4f6;padding:2px 6px;border-radius:4px}
+    .msg{padding:8px 12px;border-radius:7px;margin-top:10px;font-size:.85rem;display:none}
+    .msg.ok{background:#dcfce7;color:#166534;display:block}
+    .msg.err{background:#fee2e2;color:#991b1b;display:block}
+    .msg.info{background:#e0e7ff;color:#3730a3;display:block}
+    .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+    #filter-row input,#filter-row select{flex:1;min-width:140px}
+    .last-entry{font-size:.82rem;color:#555;margin-top:8px;padding:8px 12px;background:#f8f9fa;border-radius:7px}
+    .last-entry strong{color:#222}
+    
+
+/* ── Nav Tabs ──────────────────────────── */
+.nav-tabs{display:flex;gap:0;border-bottom:2px solid var(--g200,#e9ecef);margin-bottom:24px;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:9px 16px;border:none;background:none;font-family:'DM Sans',system-ui,sans-serif;font-size:13px;font-weight:500;color:var(--g500,#868e96);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.nav-tab.on{color:var(--ul,#1F36C7);border-bottom-color:var(--ul,#1F36C7);font-weight:600}
+.nav-tab:hover:not(.on){color:var(--g700,#495057);background:var(--g50,#f8f9fa)}
+.nav-pane{display:none}.nav-pane.on{display:block}
+/* ── FAQ ───────────────────────────────── */
+.faq-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.faq-search-wrap{flex:1;min-width:180px;position:relative}
+.faq-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g400,#adb5bd);pointer-events:none}
+.faq-search{width:100%;background:var(--g50,#f8f9fa);border:1px solid var(--g200,#e9ecef);border-radius:6px;padding:8px 10px 8px 32px;font:13px 'DM Sans',system-ui,sans-serif;color:var(--g700,#495057);outline:none;transition:border-color .15s}
+.faq-search:focus{border-color:var(--ul,#1F36C7)}
+.faq-count{font-size:11px;color:var(--g400,#adb5bd);white-space:nowrap}
+.faq-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.faq-chip{padding:5px 13px;border-radius:20px;border:1px solid var(--g200,#e9ecef);background:#fff;font:500 12px 'DM Sans',system-ui,sans-serif;color:var(--g500,#868e96);cursor:pointer;transition:all .15s}
+.faq-chip:hover{border-color:var(--ul,#1F36C7);color:var(--ul,#1F36C7)}
+.faq-chip.on{background:var(--ul,#1F36C7);border-color:var(--ul,#1F36C7);color:#fff}
+.faq-item{background:#fff;border:1px solid var(--g200,#e9ecef);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.faq-q{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-size:13px;font-weight:500}
+.faq-q:hover{background:var(--g50,#f8f9fa)}
+.faq-q-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0}
+.faq-q-text{flex:1}
+.faq-q-arr{color:var(--g400,#adb5bd);transition:transform .2s}
+.faq-item.open .faq-q-arr{transform:rotate(90deg)}
+.faq-a{display:none;padding:0 14px 14px;font-size:13px;color:var(--g500,#868e96);line-height:1.6;border-top:1px solid var(--g100,#f1f3f5)}
+.faq-item.open .faq-a{display:block}
+.faq-empty{text-align:center;padding:32px;color:var(--g400,#adb5bd);font-size:13px}
+/* ── IA ────────────────────────────────── */
+.ia-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ia-head h2{font-size:15px;font-weight:700}
+.btn-cfg-open{background:var(--g50,#f8f9fa);border:1px solid var(--g200,#e9ecef);border-radius:6px;padding:6px 12px;font:500 12px 'DM Sans',system-ui,sans-serif;color:var(--g500,#868e96);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.btn-cfg-open:hover{border-color:var(--ul,#1F36C7);color:var(--ul,#1F36C7)}
+.cfg-dot{width:7px;height:7px;border-radius:50%;background:var(--g300,#dee2e6);flex-shrink:0}
+.cfg-dot.ok{background:#22c55e}
+.ia-no-key{background:var(--g50,#f8f9fa);border:1px solid var(--g200,#e9ecef);border-radius:10px;padding:28px 24px;text-align:center;margin-bottom:16px}
+.ia-no-key p{font-size:13px;color:var(--g500,#868e96);margin:8px 0 16px}
+.btn-cfg-cta{background:var(--ul,#1F36C7);color:#fff;border:none;border-radius:6px;padding:10px 20px;font:600 13px 'DM Sans',system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ia-ready{display:none}.ia-ready.show{display:block}
+.ia-result{background:var(--g50,#f8f9fa);border:1px solid var(--g200,#e9ecef);border-radius:10px;padding:16px;font-size:13px;color:var(--g700,#495057);line-height:1.7;min-height:80px}
+.ia-result h3{font-size:14px;font-weight:700;margin:14px 0 6px}
+.ia-result ul{padding-left:20px;margin:6px 0}
+.ia-result strong{font-weight:600}
+.ia-actions{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+/* ── Config Modal ──────────────────────── */
+.cfg-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px}
+.cfg-overlay.open{display:flex}
+.cfg-modal-ia{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:calc(100dvh - 32px);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.25);display:flex;flex-direction:column}
+.cfg-modal-ia .cfg-modal-hdr-ia{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--g200,#e9ecef)}
+.cfg-modal-ia .cfg-modal-hdr-ia h3{font-size:15px;font-weight:700}
+.cfg-close-ia{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g500,#868e96);padding:2px 6px;border-radius:4px}
+.cfg-modal-ia .cfg-modal-body-ia{padding:20px;overflow-y:auto}
+.cfg-modal-ia .cfg-tabs-ia{display:flex;gap:6px;margin-bottom:16px}
+.cfg-modal-ia .cfg-tab-ia{flex:1;padding:8px;border:1px solid var(--g200,#e9ecef);border-radius:7px;background:#fff;font-family:'DM Sans',system-ui,sans-serif;font-size:13px;font-weight:500;color:var(--g500,#868e96);cursor:pointer;text-align:center;transition:all .15s}
+.cfg-modal-ia .cfg-tab-ia.on{background:var(--ul,#1F36C7);border-color:var(--ul,#1F36C7);color:#fff}
+.cfg-modal-ia .cfg-panel-ia{display:none}.cfg-modal-ia .cfg-panel-ia.on{display:block}
+.cfg-modal-ia .cfg-lbl-ia{font-size:11px;font-weight:600;color:var(--g500,#868e96);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.cfg-modal-ia .cfg-inp-ia{width:100%;padding:9px 12px;border:1px solid var(--g200,#e9ecef);border-radius:7px;font-family:monospace;font-size:13px;background:var(--g50,#f8f9fa);outline:none;margin-bottom:8px;transition:border-color .15s}
+.cfg-modal-ia .cfg-inp-ia:focus{border-color:var(--ul,#1F36C7)}
+.cfg-modal-ia .cfg-link-ia{font-size:12px;color:var(--ul,#1F36C7);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px}
+.cfg-modal-ia .btn-cfg-save-ia{background:var(--ul,#1F36C7);color:#fff;border:none;border-radius:7px;padding:9px 18px;font:600 13px 'DM Sans',system-ui,sans-serif;cursor:pointer;width:100%}
+
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span>🎯</span>
+  <h1>F1 — IDs AdServer</h1>
+  <span id="env-badge">CORP</span>
+  <div id="status-dot" title="Status GAS"></div>
+</div>
+
+<div id="main">
+
+<nav class="nav-tabs">
+  <button class="nav-tab on" id="f1c-tab-main"    onclick="f1cTabSwitch('main')">📋 IDs AdServer</button>
+  <button class="nav-tab"    id="f1c-tab-faq"     onclick="f1cTabSwitch('faq')">❓ Dúvidas</button>
+  <button class="nav-tab"    id="f1c-tab-ia"      onclick="f1cTabSwitch('ia')">🤖 Análise IA</button>
+</nav>
+
+  <div class="nav-pane on" id="f1c-pane-main">
+
+    <!-- Stats -->
+    <div class="stats-row" id="f1c-stats-row">
+      <div class="stat-card"><div class="val" id="f1c-s-total">–</div><div class="lbl">Total IDs</div></div>
+      <div class="stat-card"><div class="val" id="f1c-s-mes">–</div><div class="lbl">Este mês</div></div>
+      <div class="stat-card"><div class="val" id="f1c-s-sx">–</div><div class="lbl">IDs SX</div></div>
+      <div class="stat-card"><div class="val" id="f1c-s-amz">–</div><div class="lbl">IDs AMZ</div></div>
+    </div>
+    <div id="f1c-plat-row" class="plat-grid" style="margin-bottom:16px"></div>
+    <div id="f1c-last-entry" class="last-entry" style="display:none;margin-bottom:16px"></div>
+
+    <!-- Criar ID unitário -->
+    <section>
+      <h2>Criar ID</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:3">
+          <label>Ad Name</label>
+          <input id="f1c-adname" type="text" placeholder="ex: cn123456_Meta_Brand_Video_PT_BR_2026">
+        </div>
+        <div class="form-group">
+          <label>Plataforma</label>
+          <select id="f1c-plat">
+            <option value="">— selecione —</option>
+      <option value="Amazon">Amazon</option>
+      <option value="Compra Direta">Compra Direta</option>
+      <option value="DV360">DV360</option>
+      <option value="Google Ads">Google Ads</option>
+      <option value="Kwai">Kwai</option>
+      <option value="LinkedIn">LinkedIn</option>
+      <option value="Meta">Meta</option>
+      <option value="Pinterest">Pinterest</option>
+      <option value="Search">Search</option>
+      <option value="Snapchat">Snapchat</option>
+      <option value="Spotify">Spotify</option>
+      <option value="TikTok">TikTok</option>
+      <option value="Twitter/X">Twitter/X</option>
+      <option value="YouTube">YouTube</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Usuário</label>
+          <input id="f1c-user" type="text" placeholder="ex: felipe">
+        </div>
+        <div class="form-group" style="min-width:auto">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" onclick="f1cCriarID()">+ Criar</button>
+        </div>
+      </div>
+      <div id="f1c-criar-msg" class="msg"></div>
+    </section>
+
+    <!-- Criar em Lote -->
+    <section>
+      <h2>Criar em Lote</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex:3">
+          <label>Ad Names (um por linha)</label>
+          <textarea id="f1c-lote-adnames" placeholder="cn123456_Meta_Brand_V1&#10;cn123456_Meta_Brand_V2&#10;cn123456_Meta_Brand_V3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Plataforma</label>
+          <select id="f1c-lote-plat">
+            <option value="">— selecione —</option>
+      <option value="Amazon">Amazon</option>
+      <option value="Compra Direta">Compra Direta</option>
+      <option value="DV360">DV360</option>
+      <option value="Google Ads">Google Ads</option>
+      <option value="Kwai">Kwai</option>
+      <option value="LinkedIn">LinkedIn</option>
+      <option value="Meta">Meta</option>
+      <option value="Pinterest">Pinterest</option>
+      <option value="Search">Search</option>
+      <option value="Snapchat">Snapchat</option>
+      <option value="Spotify">Spotify</option>
+      <option value="TikTok">TikTok</option>
+      <option value="Twitter/X">Twitter/X</option>
+      <option value="YouTube">YouTube</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Usuário</label>
+          <input id="f1c-lote-user" type="text" placeholder="ex: felipe">
+        </div>
+        <div class="form-group" style="min-width:auto;align-self:flex-end">
+          <button class="btn btn-primary" onclick="f1cCriarLote()">+ Criar Lote</button>
+        </div>
+      </div>
+      <div id="f1c-lote-msg" class="msg"></div>
+      <div id="f1c-lote-result" class="tbl-wrap" style="display:none;margin-top:10px">
+        <table id="f1c-lote-tbl">
+          <thead><tr><th>Ad Name</th><th>ID SX</th><th>ID AMZ</th><th>Plataforma</th><th>Data</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Listar / Buscar IDs -->
+    <section>
+      <h2>Listar IDs</h2>
+      <div id="filter-row">
+        <input id="f1c-filter-id"   type="search" placeholder="Buscar ID exato (SX ou AMZ)..." oninput="f1cFilterLocal()">
+        <input id="f1c-filter-adname" type="search" placeholder="Buscar Ad Name..." oninput="f1cFilterLocal()">
+        <select id="f1c-filter-plat" onchange="f1cCarregarIDs()">
+          <option value="">Todas plataformas</option>
+      <option value="Amazon">Amazon</option>
+      <option value="Compra Direta">Compra Direta</option>
+      <option value="DV360">DV360</option>
+      <option value="Google Ads">Google Ads</option>
+      <option value="Kwai">Kwai</option>
+      <option value="LinkedIn">LinkedIn</option>
+      <option value="Meta">Meta</option>
+      <option value="Pinterest">Pinterest</option>
+      <option value="Search">Search</option>
+      <option value="Snapchat">Snapchat</option>
+      <option value="Spotify">Spotify</option>
+      <option value="TikTok">TikTok</option>
+      <option value="Twitter/X">Twitter/X</option>
+      <option value="YouTube">YouTube</option>
+        </select>
+        <input id="f1c-filter-user" type="text" placeholder="Usuário..." onchange="f1cCarregarIDs()">
+        <button class="btn btn-secondary" onclick="f1cCarregarIDs()">🔄 Atualizar</button>
+      </div>
+      <div id="f1c-list-msg" class="msg"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>ID SX</th><th>ID AMZ</th><th>Ad Name</th><th>Plataforma</th><th>Usuário</th><th>Data</th><th>Ações</th></tr></thead>
+          <tbody id="f1c-ids-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div><!-- /pane-main -->
+
+
+  <div class="nav-pane" id="f1c-pane-faq">
+    <div class="faq-wrap">
+      <input class="faq-search" type="search" placeholder="Buscar dúvidas..." oninput="f1cFaqFilter(this.value)">
+      <div class="tag-chips"><button class="tag-chip" data-tag="IDs" style="--chip-c:#1F36C7" onclick="f1cToggleTag(this)">IDs</button><button class="tag-chip" data-tag="Criar" style="--chip-c:#0D7A4E" onclick="f1cToggleTag(this)">Criar</button><button class="tag-chip" data-tag="Busca" style="--chip-c:#B45309" onclick="f1cToggleTag(this)">Busca</button><button class="tag-chip" data-tag="Ações" style="--chip-c:#7C3AED" onclick="f1cToggleTag(this)">Ações</button><button class="tag-chip" data-tag="GAS" style="--chip-c:#DC2626" onclick="f1cToggleTag(this)">GAS</button></div>
+      <div id="f1c-faq-list"><div class="faq-item" data-tag="IDs" data-q="qual a diferença entre id sx e id amz?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#1F36C7">IDs</span>Qual a diferença entre ID SX e ID AMZ?</div><div class="faq-a">ID SX (Sizmek/StackAdapt) é usado para plataformas DSP — DV360, Google Ads, Meta, LinkedIn etc. ID AMZ (Amazon) é exclusivo para campanhas Amazon. A plataforma escolhida determina qual tipo será gerado automaticamente.</div></div><div class="faq-item" data-tag="IDs" data-q="como funciona a numeração dos ids?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#1F36C7">IDs</span>Como funciona a numeração dos IDs?</div><div class="faq-a">Cada ID é sequencial dentro da planilha do usuário. O formato é uma string única baseada na plataforma + sequencial do mês. IDs gerados no mesmo dia, mesmo usuário, são incrementais.</div></div><div class="faq-item" data-tag="Criar" data-q="posso criar vários ids de uma vez?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#0D7A4E">Criar</span>Posso criar vários IDs de uma vez?</div><div class="faq-a">Sim — use a seção "Criar em Lote". Cole um Ad Name por linha na caixa de texto. Todos receberão a mesma plataforma e serão registrados para o mesmo usuário.</div></div><div class="faq-item" data-tag="Criar" data-q="o campo usuário é obrigatório?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#0D7A4E">Criar</span>O campo Usuário é obrigatório?</div><div class="faq-a">Sim. O usuário identifica qual aba da planilha GAS será preenchida. Use seu nome ou sigla padrão do time (ex: felipe, ana, pedro).</div></div><div class="faq-item" data-tag="Busca" data-q="como busco um id já criado?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#B45309">Busca</span>Como busco um ID já criado?</div><div class="faq-a">Use o campo de busca na seção "Listar IDs". Você pode filtrar por plataforma, usuário ou buscar um ID específico (SX ou AMZ) pelo valor exato.</div></div><div class="faq-item" data-tag="Busca" data-q="o que significa "última entrada"?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#B45309">Busca</span>O que significa "Última entrada"?</div><div class="faq-a">É o ID mais recente registrado na planilha Geral, com data, plataforma e usuário. Aparece no painel de stats ao carregar a página.</div></div><div class="faq-item" data-tag="Ações" data-q="como inativo um id?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#7C3AED">Ações</span>Como inativo um ID?</div><div class="faq-a">Na tabela de resultados, clique no botão "Inativar" na linha do ID desejado. Informe o motivo (opcional) — ele será registrado na coluna de notas da planilha.</div></div><div class="faq-item" data-tag="Ações" data-q="posso editar o ad name de um id já criado?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#7C3AED">Ações</span>Posso editar o Ad Name de um ID já criado?</div><div class="faq-a">Sim. Na tabela de resultados, clique em "Editar" para alterar o Ad Name. O ID SX/AMZ permanece o mesmo — apenas o Ad Name é atualizado na planilha Geral.</div></div><div class="faq-item" data-tag="GAS" data-q="o que fazer se o gas retornar erro?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#DC2626">GAS</span>O que fazer se o GAS retornar erro?</div><div class="faq-a">Verifique se o Web App do GAS está publicado como "Qualquer pessoa". O indicador de status no topo da página mostra verde (online) ou vermelho (offline/erro). Em caso de erro persistente, revise as permissões do Web App no editor GAS.</div></div><div class="faq-item" data-tag="GAS" data-q="por que o gas pode estar lento?"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-tag" style="background:#DC2626">GAS</span>Por que o GAS pode estar lento?</div><div class="faq-a">O Google Apps Script tem latência natural (~1-3s por chamada). Operações em lote podem demorar mais. Se ultrapassar 10s, verifique se a planilha não está com muitas linhas sem dados válidos na aba Geral.</div></div></div>
+    </div>
+  </div>
+
+  <div class="nav-pane" id="f1c-pane-ia">
+    <div class="ia-wrap">
+      <p class="ia-desc">Analise dados de IDs AdServer com IA — cole resultados, stats ou listas de IDs para obter insights.</p>
+      <textarea id="f1c-ia-input" placeholder="Cole aqui os dados de IDs, stats ou contexto para análise..."></textarea>
+      <button class="btn btn-primary" onclick="f1cIaOpen()">🤖 Analisar com IA</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+
+<div class="cfg-overlay" id="f1c-cfg-overlay" onclick="if(event.target===this)f1cCloseCfg()">
+  <div class="cfg-modal-ia">
+    <div class="cfg-modal-hdr-ia"><h3>⚙️ Configurar IA</h3><button class="cfg-close-ia" onclick="f1cCloseCfg()">✕</button></div>
+    <div class="cfg-modal-body-ia">
+      <p style="font-size:13px;color:var(--g500,#868e96);margin-bottom:16px">Chave salva <strong>apenas no seu navegador</strong>.</p>
+      <div class="cfg-tabs-ia"><button class="cfg-tab-ia on" id="f1c-ctab-gemini" onclick="f1cSetCfgTab('gemini')">🔷 Gemini</button><button class="cfg-tab-ia" id="f1c-ctab-claude" onclick="f1cSetCfgTab('claude')">🟠 Claude</button><button class="cfg-tab-ia" id="f1c-ctab-openai" onclick="f1cSetCfgTab('openai')">🟢 OpenAI</button></div>
+      <div class="cfg-panel-ia on" id="f1c-cpanel-gemini"><div class="cfg-lbl-ia">Google Gemini API Key</div><input class="cfg-inp-ia" id="f1c-key-gemini" type="password" placeholder="AIza..."><a class="cfg-link-ia" href="https://aistudio.google.com/app/apikey" target="_blank">↗ Google AI Studio (gratuito)</a><button class="btn-cfg-save-ia" onclick="f1cSaveCfgKey('gemini')">Salvar Gemini</button></div>
+      <div class="cfg-panel-ia" id="f1c-cpanel-claude"><div class="cfg-lbl-ia">Anthropic Claude API Key</div><input class="cfg-inp-ia" id="f1c-key-claude" type="password" placeholder="sk-ant-..."><a class="cfg-link-ia" href="https://console.anthropic.com/settings/keys" target="_blank">↗ console.anthropic.com</a><button class="btn-cfg-save-ia" onclick="f1cSaveCfgKey('claude')">Salvar Claude</button></div>
+      <div class="cfg-panel-ia" id="f1c-cpanel-openai"><div class="cfg-lbl-ia">OpenAI API Key</div><input class="cfg-inp-ia" id="f1c-key-openai" type="password" placeholder="sk-proj-..."><a class="cfg-link-ia" href="https://platform.openai.com/api-keys" target="_blank">↗ platform.openai.com</a><button class="btn-cfg-save-ia" onclick="f1cSaveCfgKey('openai')">Salvar OpenAI</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwiSVKGOHSLcHNIzGA2qSEgLnihBx1XpRCyEkQbPHww4qt3N5WAzpIERwW2zYOYQIne/exec';
+var f1c_allIDs = [];
+
+/* ── TAB SWITCH ─────────────────────────── */
+function f1cTabSwitch(name) {
+  document.querySelectorAll('#f1c-pane-main,#f1c-pane-faq,#f1c-pane-ia').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('#main .nav-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('f1c-pane-'+name).classList.add('on');
+  document.getElementById('f1c-tab-'+name).classList.add('on');
+}
+
+/* ── GAS FETCH HELPERS ──────────────────── */
+function f1cget(params) {
+  var qs = Object.entries(params).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  return fetch(GAS_URL+'?'+qs).then(r=>r.json());
+}
+function f1cpost(action, body) {
+  return fetch(GAS_URL+'?action='+action, {
+    method:'POST', body:JSON.stringify(body),
+    headers:{'Content-Type':'application/json'}
+  }).then(r=>r.json());
+}
+
+/* ── STATUS + STATS ─────────────────────── */
+function f1cInit() {
+  f1cget({action:'ping'}).then(r=>{
+    var dot = document.getElementById('status-dot');
+    if (r.ok) { dot.className='ok'; dot.title='GAS online — '+r.env; }
+    else      { dot.className='err'; dot.title='GAS erro'; }
+  }).catch(()=>{ document.getElementById('status-dot').className='err'; });
+  f1cget({action:'stats'}).then(f1cRenderStats).catch(()=>{});
+  f1cCarregarIDs();
+}
+
+function f1cRenderStats(s) {
+  document.getElementById('f1c-s-total').textContent = s.totalSlugs||0;
+  document.getElementById('f1c-s-mes').textContent   = s.totalMes||0;
+  document.getElementById('f1c-s-sx').textContent    = s.totalSX||0;
+  document.getElementById('f1c-s-amz').textContent   = s.totalAMZ||0;
+  var platRow = document.getElementById('f1c-plat-row');
+  platRow.innerHTML='';
+  if (s.porPlataforma) {
+    Object.entries(s.porPlataforma).sort((a,b)=>b[1]-a[1]).forEach(([pl,n])=>{
+      var pill=document.createElement('span');
+      pill.className='plat-pill'; pill.textContent=pl+' ('+n+')';
+      platRow.appendChild(pill);
+    });
+  }
+  if (s.ultimaEntrada) {
+    var el=document.getElementById('f1c-last-entry');
+    var u=s.ultimaEntrada;
+    el.style.display='block';
+    el.innerHTML='<strong>Última entrada:</strong> '+
+      (u.idSX?'SX '+u.idSX+' ':'')+(u.idAMZ?'AMZ '+u.idAMZ+' ':'')+
+      '&nbsp;·&nbsp;'+u.plataforma+'&nbsp;·&nbsp;'+u.usuario+'&nbsp;·&nbsp;'+u.data;
+  }
+}
+
+/* ── CRIAR ID ───────────────────────────── */
+function f1cCriarID() {
+  var adName    = document.getElementById('f1c-adname').value.trim();
+  var plataforma= document.getElementById('f1c-plat').value;
+  var usuario   = document.getElementById('f1c-user').value.trim();
+  var msg       = document.getElementById('f1c-criar-msg');
+  if (!adName||!plataforma||!usuario) { f1cshowMsg(msg,'err','Preencha Ad Name, Plataforma e Usuário.'); return; }
+  msg.className='msg info'; msg.innerHTML='<span class="spinner"></span>Criando ID...'; msg.style.display='block';
+  f1cpost('criarID',{adName,plataforma,usuario}).then(r=>{
+    if (r.error) { f1cshowMsg(msg,'err',r.error); return; }
+    f1cshowMsg(msg,'ok','✅ ID criado — SX: '+(r.idSX||'–')+' | AMZ: '+(r.idAMZ||'–'));
+    document.getElementById('f1c-adname').value='';
+    f1cget({action:'stats'}).then(f1cRenderStats);
+    f1cCarregarIDs();
+  }).catch(e=>{ f1cshowMsg(msg,'err','Erro: '+e.message); });
+}
+
+/* ── CRIAR LOTE ─────────────────────────── */
+function f1cCriarLote() {
+  var raw       = document.getElementById('f1c-lote-adnames').value;
+  var plataforma= document.getElementById('f1c-lote-plat').value;
+  var usuario   = document.getElementById('f1c-lote-user').value.trim();
+  var msg       = document.getElementById('f1c-lote-msg');
+  var adNames   = raw.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!adNames.length||!plataforma||!usuario) { f1cshowMsg(msg,'err','Preencha Ad Names, Plataforma e Usuário.'); return; }
+  msg.className='msg info'; msg.innerHTML='<span class="spinner"></span>Criando '+adNames.length+' ID(s)...'; msg.style.display='block';
+  f1cpost('criarIDLote',{adNames,plataforma,usuario}).then(r=>{
+    if (r.error) { f1cshowMsg(msg,'err',r.error); return; }
+    f1cshowMsg(msg,'ok','✅ '+r.ids.length+' ID(s) criados com sucesso.');
+    var tbody = document.querySelector('#f1c-lote-tbl tbody'); tbody.innerHTML='';
+    r.ids.forEach(id=>{
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+id.adName+'</td><td><span class="id-pill">'+id.idSX+'</span></td>'+
+        '<td><span class="id-pill">'+id.idAMZ+'</span></td><td>'+id.plataforma+'</td><td>'+id.data+'</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('f1c-lote-result').style.display='block';
+    f1cget({action:'stats'}).then(f1cRenderStats);
+    f1cCarregarIDs();
+  }).catch(e=>{ f1cshowMsg(msg,'err','Erro: '+e.message); });
+}
+
+/* ── LISTAR IDs ─────────────────────────── */
+function f1cCarregarIDs() {
+  var plat = document.getElementById('f1c-filter-plat').value;
+  var user = document.getElementById('f1c-filter-user').value.trim();
+  var msg  = document.getElementById('f1c-list-msg');
+  var params = {action:'listarIDs'};
+  if (plat) params.plataforma=plat;
+  if (user) params.usuario=user;
+  msg.className='msg info'; msg.innerHTML='<span class="spinner"></span>Carregando...'; msg.style.display='block';
+  f1cget(params).then(r=>{
+    if (r.error) { f1cshowMsg(msg,'err',r.error); return; }
+    f1c_allIDs = r.ids||[];
+    msg.style.display='none';
+    f1cFilterLocal();
+  }).catch(e=>{ f1cshowMsg(msg,'err','Erro: '+e.message); });
+}
+
+function f1cFilterLocal() {
+  var idQ    = (document.getElementById('f1c-filter-id').value||'').toLowerCase().trim();
+  var anQ    = (document.getElementById('f1c-filter-adname').value||'').toLowerCase().trim();
+  var filtered = f1c_allIDs.filter(id=>
+    (!idQ || id.idSX.toLowerCase().includes(idQ) || id.idAMZ.toLowerCase().includes(idQ)) &&
+    (!anQ || id.adName.toLowerCase().includes(anQ))
+  );
+  f1cRenderTable(filtered);
+}
+
+function f1cRenderTable(ids) {
+  var tbody = document.getElementById('f1c-ids-tbody');
+  tbody.innerHTML='';
+  if (!ids.length) {
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#999;padding:20px">Nenhum ID encontrado</td></tr>';
+    return;
+  }
+  ids.forEach(id=>{
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><span class="id-pill">'+id.idSX+'</span></td>'+
+      '<td><span class="id-pill">'+id.idAMZ+'</span></td>'+
+      '<td style="max-width:280px;word-break:break-all">'+id.adName+'</td>'+
+      '<td>'+id.plataforma+'</td>'+
+      '<td>'+id.usuario+'</td>'+
+      '<td>'+id.data+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<button class="btn btn-sm btn-secondary" onclick="f1cEditarAdName(''+id.id+'',''+id.adName.replace(/'/g,"\'")+'')" style="margin-right:4px">✏️</button>'+
+        '<button class="btn btn-sm btn-danger" onclick="f1cInativar(''+id.id+'')">✕</button>'+
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+/* ── INATIVAR ───────────────────────────── */
+function f1cInativar(id) {
+  var motivo = prompt('Motivo da inativação (opcional):', '');
+  if (motivo === null) return;
+  var usuario = prompt('Seu usuário:', '');
+  if (!usuario) return;
+  f1cpost('inativarID',{id,motivo,usuario}).then(r=>{
+    if (r.error) { alert('Erro: '+r.error); return; }
+    alert('ID '+id+' inativado com sucesso.');
+    f1cCarregarIDs();
+  }).catch(e=>alert('Erro: '+e.message));
+}
+
+/* ── EDITAR AD NAME ─────────────────────── */
+function f1cEditarAdName(id, adNameAtual) {
+  var adNameNovo = prompt('Novo Ad Name:', adNameAtual);
+  if (!adNameNovo || adNameNovo === adNameAtual) return;
+  var usuario = prompt('Seu usuário:', '');
+  if (!usuario) return;
+  f1cpost('editarAdName',{id,adNameNovo,usuario}).then(r=>{
+    if (r.error) { alert('Erro: '+r.error); return; }
+    alert('Ad Name atualizado com sucesso.');
+    f1cCarregarIDs();
+  }).catch(e=>alert('Erro: '+e.message));
+}
+
+/* ── FAQ ─────────────────────────────────── */
+var f1c_activeTags = new Set();
+function f1cToggleTag(el) {
+  var tag = el.dataset.tag;
+  if (f1c_activeTags.has(tag)) { f1c_activeTags.delete(tag); el.classList.remove('active'); }
+  else { f1c_activeTags.add(tag); el.classList.add('active'); }
+  f1cFaqFilter(document.querySelector('.faq-search').value||'');
+}
+function f1cFaqFilter(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#f1c-faq-list .faq-item').forEach(el=>{
+    var matchTag = f1c_activeTags.size===0 || f1c_activeTags.has(el.dataset.tag);
+    var matchQ   = !q || el.dataset.q.includes(q) || el.textContent.toLowerCase().includes(q);
+    el.style.display = (matchTag && matchQ) ? '' : 'none';
+  });
+}
+
+/* ── IA ─────────────────────────────────── */
+function f1cIaOpen() {
+  var ctx = document.getElementById('f1c-ia-input').value.trim();
+  if (!ctx) {
+    // build auto context from stats
+    var total = document.getElementById('f1c-s-total').textContent;
+    var mes   = document.getElementById('f1c-s-mes').textContent;
+    var sx    = document.getElementById('f1c-s-sx').textContent;
+    var amz   = document.getElementById('f1c-s-amz').textContent;
+    var plats = Array.from(document.querySelectorAll('#f1c-plat-row .plat-pill')).map(p=>p.textContent).join(', ');
+    ctx = 'Stats F1 IDs AdServer:\nTotal: '+total+'\nEste mês: '+mes+'\nSX: '+sx+', AMZ: '+amz+'\nPor plataforma: '+plats;
+    document.getElementById('f1c-ia-input').value=ctx;
+  }
+  document.getElementById('f1c-ia-prompt-hidden').value = ctx;
+  document.getElementById('f1c-ia-modal').style.display='flex';
+}
+
+/* ── UTIL ───────────────────────────────── */
+function f1cshowMsg(el,cls,txt) {
+  el.className='msg '+cls; el.textContent=txt; el.style.display='block';
+  if(cls!=='err') setTimeout(()=>{el.style.display='none';},6000);
+}
+
+
+// ── Nav Tabs (f1c) ──────────────────────────────────────────────
+function f1cTabSwitch(name){
+  var tabs=['main','faq','ia'];
+  document.querySelectorAll('.nav-tab').forEach(function(b,i){b.classList.toggle('on',tabs[i]===name);});
+  document.querySelectorAll('.nav-pane').forEach(function(q){q.classList.toggle('on',q.id==='f1c-pane-'+name);});
+  if(name==='faq')f1cInitFAQ();
+  if(name==='ia')f1cUpdateIAState();
+}
+// ── FAQ (f1c) ──────────────────────────────────────────────────
+var F1C_FAQ=[{tag:"IDs",q:"Qual a diferença entre ID SX e ID AMZ?",a:"ID SX (Sizmek/StackAdapt) é usado para plataformas DSP — DV360, Google Ads, Meta, LinkedIn etc. ID AMZ (Amazon) é exclusivo para campanhas Amazon. A plataforma escolhida determina qual tipo será gerado automaticamente."},{tag:"IDs",q:"Como funciona a numeração dos IDs?",a:"Cada ID é sequencial dentro da planilha do usuário. O formato é uma string única baseada na plataforma + sequencial do mês. IDs gerados no mesmo dia, mesmo usuário, são incrementais."},{tag:"Criar",q:"Posso criar vários IDs de uma vez?",a:"Sim — use a seção \"Criar em Lote\". Cole um Ad Name por linha na caixa de texto. Todos receberão a mesma plataforma e serão registrados para o mesmo usuário."},{tag:"Criar",q:"O campo Usuário é obrigatório?",a:"Sim. O usuário identifica qual aba da planilha GAS será preenchida. Use seu nome ou sigla padrão do time (ex: felipe, ana, pedro)."},{tag:"Busca",q:"Como busco um ID já criado?",a:"Use o campo de busca na seção \"Listar IDs\". Você pode filtrar por plataforma, usuário ou buscar um ID específico (SX ou AMZ) pelo valor exato."},{tag:"Busca",q:"O que significa \"Última entrada\"?",a:"É o ID mais recente registrado na planilha Geral, com data, plataforma e usuário. Aparece no painel de stats ao carregar a página."},{tag:"Ações",q:"Como inativo um ID?",a:"Na tabela de resultados, clique no botão \"Inativar\" na linha do ID desejado. Informe o motivo (opcional) — ele será registrado na coluna de notas da planilha."},{tag:"Ações",q:"Posso editar o Ad Name de um ID já criado?",a:"Sim. Na tabela de resultados, clique em \"Editar\" para alterar o Ad Name. O ID SX/AMZ permanece o mesmo — apenas o Ad Name é atualizado na planilha Geral."},{tag:"GAS",q:"O que fazer se o GAS retornar erro?",a:"Verifique se o Web App do GAS está publicado como \"Qualquer pessoa\". O indicador de status no topo da página mostra verde (online) ou vermelho (offline/erro). Em caso de erro persistente, revise as permissões do Web App no editor GAS."},{tag:"GAS",q:"Por que o GAS pode estar lento?",a:"O Google Apps Script tem latência natural (~1-3s por chamada). Operações em lote podem demorar mais. Se ultrapassar 10s, verifique se a planilha não está com muitas linhas sem dados válidos na aba Geral."}];
+var f1cFaqDone=false,f1cFaqChip='Todas';
+function f1cInitFAQ(){
+  if(f1cFaqDone){f1cFilterFAQ();return;}f1cFaqDone=true;
+  var tags=['Todas',...new Set(F1C_FAQ.map(function(f){return f.tag;}))];
+  var cols={"IDs":"#1F36C7","Criar":"#0D7A4E","Busca":"#B45309","Ações":"#7C3AED","GAS":"#DC2626"};
+  document.getElementById('f1c-faq-chips').innerHTML=tags.map(function(t){return'<button class="faq-chip'+(t==='Todas'?' on':'')+'" onclick="f1cSetFaqChip(''+t+'')">'+t+'</button>';}).join('');
+  document.getElementById('f1c-faq-list').innerHTML=F1C_FAQ.map(function(f,i){
+    var col=cols[f.tag]||'#555';
+    return'<div class="faq-item" data-tag="'+f.tag+'"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span class="faq-q-tag" style="background:'+col+'20;color:'+col+'">'+f.tag+'</span><span class="faq-q-text">'+f.q+'</span><span class="faq-q-arr">▶</span></div><div class="faq-a">'+f.a+'</div></div>';
+  }).join('');
+  f1cFilterFAQ();
+}
+function f1cSetFaqChip(tag){f1cFaqChip=tag;document.querySelectorAll('.faq-chip').forEach(function(c){c.classList.toggle('on',c.textContent===tag);});f1cFilterFAQ();}
+function f1cFilterFAQ(){
+  var q=(document.getElementById('f1c-faq-search')?document.getElementById('f1c-faq-search').value:'').toLowerCase();
+  var items=document.querySelectorAll('#f1c-faq-list .faq-item'),vis=0;
+  items.forEach(function(el){var ok=(f1cFaqChip==='Todas'||el.dataset.tag===f1cFaqChip)&&(!q||el.textContent.toLowerCase().includes(q));el.style.display=ok?'':'none';if(ok)vis++;});
+  var cnt=document.getElementById('f1c-faq-count');if(cnt)cnt.textContent=vis+' pergunta'+(vis!==1?'s':'');
+  var lst=document.getElementById('f1c-faq-list');var emp=lst?lst.querySelector('.faq-empty'):null;
+  if(vis===0&&!emp&&lst)lst.insertAdjacentHTML('beforeend','<div class="faq-empty">Nenhuma dúvida encontrada.</div>');
+  if(vis>0&&emp)emp.remove();
+}
+// ── IA (f1c) ──────────────────────────────────────────────────
+var F1C_IA={gemini:{name:'Gemini',ls:'f1c_key_gemini'},claude:{name:'Claude',ls:'f1c_key_claude'},openai:{name:'OpenAI',ls:'f1c_key_openai'}};
+function f1cGetKey(pid){try{return localStorage.getItem(F1C_IA[pid].ls)||'';}catch(e){return '';}}
+function f1cHasKey(){return Object.keys(F1C_IA).some(function(q){return !!f1cGetKey(q);});}
+function f1cActiveProv(){return Object.keys(F1C_IA).find(function(q){return !!f1cGetKey(q);});}
+function f1cUpdateIAState(){
+  var ok=f1cHasKey(),pid=f1cActiveProv();
+  var nk=document.getElementById('f1c-ia-nokey'),rdy=document.getElementById('f1c-ia-ready');
+  if(nk)nk.style.display=ok?'none':'';if(rdy)rdy.classList.toggle('show',ok);
+  var dot=document.getElementById('f1c-cfg-dot'),lbl=document.getElementById('f1c-cfg-lbl');
+  if(dot)dot.classList.toggle('ok',ok);if(lbl)lbl.textContent=ok?(F1C_IA[pid].name+' configurado'):'Configurar IA';
+  Object.keys(F1C_IA).forEach(function(q){var inp=document.getElementById('f1c-key-'+q);if(inp)inp.value=f1cGetKey(q);});
+}
+function f1cOpenCfg(){document.getElementById('f1c-cfg-overlay').classList.add('open');f1cUpdateIAState();}
+function f1cCloseCfg(){document.getElementById('f1c-cfg-overlay').classList.remove('open');f1cUpdateIAState();}
+function f1cSetCfgTab(pid){Object.keys(F1C_IA).forEach(function(q){document.getElementById('f1c-ctab-'+q).classList.toggle('on',q===pid);document.getElementById('f1c-cpanel-'+q).classList.toggle('on',q===pid);});}
+function f1cSaveCfgKey(pid){var v=(document.getElementById('f1c-key-'+pid).value||'').trim();try{if(v)localStorage.setItem(F1C_IA[pid].ls,v);else localStorage.removeItem(F1C_IA[pid].ls);}catch(e){}f1cCloseCfg();}
+async function f1cAnalisarIA(){
+  var pid=f1cActiveProv();if(!pid){f1cOpenCfg();return;}
+  var res=document.getElementById('f1c-ia-result');if(!res)return;
+  res.innerHTML='<span style="color:var(--g400,#adb5bd)">⏳ Analisando...</span>';
+  var promptText='Especialista em gestão de IDs para campanhas digitais Unilever BR. Analise os dados de IDs AdServer do F1: distribuição por plataforma, volume mensal, padrões de uso, usuários mais ativos, recomendações de organização. Use ## títulos. Seja objetivo.';
+  var key=f1cGetKey(pid);
+  try{
+    var resp,text,d;
+    if(pid==='gemini'){resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:promptText}]}]})});d=await resp.json();if(!resp.ok)throw new Error(d.error?.message||'Erro Gemini');text=d.candidates?.[0]?.content?.parts?.[0]?.text||'';}
+    else if(pid==='claude'){resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1024,messages:[{role:'user',content:promptText}]})}); d=await resp.json();if(!resp.ok)throw new Error(d.error?.message||'Erro Claude');text=d.content?.[0]?.text||'';}
+    else{resp=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:promptText}]})});d=await resp.json();if(!resp.ok)throw new Error(d.error?.message||'Erro OpenAI');text=d.choices?.[0]?.message?.content||'';}
+    res.innerHTML=text.replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^[*-] (.+)$/gm,'<li>$1</li>').replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>');
+  }catch(e){res.innerHTML='<span style="color:red">❌ '+e.message+'</span>';}
+}
+
+
+document.addEventListener('DOMContentLoaded', f1cInit);
+</script>
+</body>
+</html>
