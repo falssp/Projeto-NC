@@ -191,6 +191,7 @@ code, .mono { font-family: 'JetBrains Mono', monospace; }
 .ai-result { background: var(--bg2); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 20px; display: none; }
 .ai-result.show { display: block; }
 .ai-result-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: 12px; }
+.ai-followup .ai-textarea { min-height: 56px; font-size: 13px; }
 .ai-answer { font-size: 13px; line-height: 1.7; color: var(--fg); }
 .ai-answer code { background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
 .ai-unavailable { background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius); padding: 20px; text-align: center; color: var(--fg3); font-size: 13px; }
@@ -486,11 +487,18 @@ code, .mono { font-family: 'JetBrains Mono', monospace; }
             <span>Nenhuma API configurada.<br>Configure <strong>Google Gemini</strong> (gratuito), <strong>OpenAI</strong> ou <strong>Anthropic Claude</strong>.</span>
             <button onclick="openCfg()">Configurar</button>
           </div>
-          <button class="btn btn-accent" id="ai-btn" onclick="askAI()" style="margin-top:8px" disabled>✨ Monta pra mim ✨</button>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-accent" id="ai-btn" onclick="askAI()" style="flex:1" disabled>✨ Monta pra mim ✨</button>
+            <button class="btn" id="ai-clear-btn" onclick="clearAiChat()" title="Limpar conversa" style="padding:6px 10px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--fg2)" hidden>🗑️</button>
+          </div>
         </div>
         <div class="ai-result" id="ai-result">
-          <div class="ai-result-label">💡 Fórmula sugerida</div>
+          <div class="ai-result-label" id="ai-result-label">💡 Fórmula sugerida</div>
           <div class="ai-answer" id="ai-answer"></div>
+          <div class="ai-followup" id="ai-followup" style="display:none;margin-top:12px;border-top:1px solid var(--bdr);padding-top:10px">
+            <textarea class="ai-textarea" id="ai-followup-input" placeholder="Refine a resposta… Ex: sem VBA, para Excel 2019, com critério adicional…" style="min-height:60px"></textarea>
+            <button class="btn btn-accent" id="ai-followup-btn" onclick="askFollowup()" style="margin-top:6px;width:100%">↩ Refinar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -768,6 +776,7 @@ explain:{pt:"SEERROS captura qualquer erro da fórmula interna e substitui pelo 
 let lang = 'pt', theme = 'auto', searchQ = '', currentCat = 'all';
 let trainIdx = 0, trainOrder = [], trainOk = 0, trainErr = 0, trainRevealed = false;
 let sampleAPI = null, sampleLoading = false;
+let aiHistory = []; // {role: 'user'|'assistant', content: string}
 
 function t(obj) { return obj[lang] || obj.pt || ''; }
 
@@ -1194,53 +1203,8 @@ function setAiEx(el) {
   document.getElementById('ai-input').value = el.textContent;
 }
 
-async function callProviderKey(prompt) {
-  const provider = getActiveProvider();
-  if (!provider) throw new Error('no provider');
-  const key = getAiKey(provider.id);
-  if (provider.id === 'gemini') {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    if (!res.ok) { const err = await res.json().catch(()=>{}); throw new Error('Gemini ' + res.status + (err?.error?.message ? ': ' + err.error.message : '')); }
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  } else if (provider.id === 'claude') {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 800, messages: [{role:'user', content: prompt}] })
-    });
-    if (!res.ok) throw new Error('Anthropic ' + res.status);
-    const data = await res.json();
-    return data.content?.[0]?.text || '';
-  } else {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{role:'user', content: prompt}], max_tokens: 800 })
-    });
-    if (!res.ok) throw new Error('OpenAI ' + res.status);
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
-  }
-}
 
-async function askAI() {
-  if (sampleLoading) return;
-  const input = document.getElementById('ai-input').value.trim();
-  if (!input) return;
-  if (!sampleAPI && !hasAnyAiKey()) { openCfg(); return; }
-  sampleLoading = true;
-  const btn = document.getElementById('ai-btn');
-  const result = document.getElementById('ai-result');
-  const answer = document.getElementById('ai-answer');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
-  result.classList.add('show');
-  answer.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
+function buildSystemPrompt() {
   const langLabel = {pt:'português',en:'English',es:'español'}[lang];
   const excelVersion = document.getElementById('ai-version')?.value || '365';
   const formulaLang = document.getElementById('ai-formula-lang')?.value || 'pt';
@@ -1251,17 +1215,14 @@ async function askAI() {
     '2016': 'Excel 2016 ou anterior (sem SES, sem PARÂMETRO, use SE aninhado)',
     'gsheets': 'Google Sheets (sintaxe similar ao Excel, ponto-e-vírgula como separador)'
   }[excelVersion] || 'Excel 365';
-  const prompt = `Você é um especialista em Excel com 20 anos de experiência. O usuário descreve um problema e você entrega a fórmula pronta para copiar e usar.
+  return `Você é um especialista em Excel com 20 anos de experiência. O usuário descreve um problema e você entrega a fórmula pronta para copiar e usar.
 
-CONTEXTO DO USUÁRIO:
+CONTEXTO:
 - Plataforma: ${versionLabel}
 - Idioma das fórmulas: ${formulaLangLabel}
 - Idioma da resposta: ${langLabel}
 
-PROBLEMA DO USUÁRIO:
-${input}
-
-FORMATO OBRIGATÓRIO DA RESPOSTA (use exatamente estas seções):
+FORMATO OBRIGATÓRIO (use exatamente estas seções):
 
 ## ✅ Fórmula
 \`\`\`
@@ -1269,41 +1230,162 @@ FORMATO OBRIGATÓRIO DA RESPOSTA (use exatamente estas seções):
 \`\`\`
 
 ## 📖 Como funciona
-[explique cada argumento da fórmula em 2-4 linhas, de forma simples]
+[explique cada argumento em 2-4 linhas simples]
 
 ## 📋 Exemplo prático
-Dado: [descreva um cenário concreto com colunas e dados de exemplo]
-Fórmula: \`[adapte a fórmula ao exemplo]\`
+Dado: [cenário concreto com colunas e dados]
+Fórmula: \`[adapte ao exemplo]\`
 Resultado: [o que aparece na célula]
 
 ## 💡 Dica importante
-[uma armadilha comum ou variação útil — se não houver dica relevante, omita esta seção]
+[armadilha comum ou variação — omita se não houver]
 
 ## 🔀 Alternativa (opcional)
-[somente se houver uma alternativa significativamente diferente ou mais simples — caso contrário, omita]
+[só se houver alternativa significativamente diferente]
 
-Regras:
-- Sempre entregue a fórmula completa, não um esqueleto
-- Use a versão correta das funções para a plataforma indicada
-- Se o problema exigir dados que o usuário não forneceu (colunas, intervalos), use exemplos realistas como A2:A100, $B$2:$C$500
-- Seja direto: o usuário quer copiar e usar, não ler teoria`;
+Regras: entregue fórmula completa; use versão correta da plataforma; use intervalos realistas como A2:A100 se não especificado; seja direto.`;
+}
+
+async function runAI(userMessage, isFollowup) {
+  if (sampleLoading) return;
+  if (!sampleAPI && !hasAnyAiKey()) { openCfg(); return; }
+  sampleLoading = true;
+  const result = document.getElementById('ai-result');
+  const answer = document.getElementById('ai-answer');
+  const followupArea = document.getElementById('ai-followup');
+  const label = document.getElementById('ai-result-label');
+
+  // Update history
+  aiHistory.push({role:'user', content: userMessage});
+
+  const btnId = isFollowup ? 'ai-followup-btn' : 'ai-btn';
+  const btn = document.getElementById(btnId);
+  const origLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
+  result.classList.add('show');
+  if (isFollowup) {
+    answer.innerHTML += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bdr)"><div style="font-size:11px;color:var(--fg3);margin-bottom:6px">↩ Refinamento</div><span class="loading-dots"><span></span><span></span><span></span></span></div>`;
+  } else {
+    answer.innerHTML = '<span class="loading-dots"><span></span><span></span><span></span></span>';
+    label.textContent = '💡 Fórmula sugerida';
+  }
+
+  const systemPrompt = buildSystemPrompt();
+  // Build messages array for multi-turn
+  const messages = isFollowup
+    ? aiHistory.map(m => ({role: m.role, content: m.content}))
+    : [{role:'user', content: systemPrompt + '\n\nPROBLEMA DO USUÁRIO:\n' + userMessage}];
 
   try {
+    let text = '';
     if (sampleAPI) {
-      let text = '';
-      await sampleAPI(prompt, { onText: ({text: t}) => { text = t; answer.innerHTML = formatAIAnswer(text); }});
-      answer.innerHTML = formatAIAnswer(text);
+      const input = isFollowup
+        ? aiHistory.map(m => ({role: m.role, content: m.content}))
+        : systemPrompt + '\n\nPROBLEMA DO USUÁRIO:\n' + userMessage;
+      await sampleAPI(input, { onText: ({text: t}) => { text = t; } });
     } else {
-      const text = await callProviderKey(prompt);
+      text = await callProviderKeyMultiTurn(messages, systemPrompt, isFollowup);
+    }
+
+    aiHistory.push({role:'assistant', content: text});
+
+    if (isFollowup) {
+      // Replace last loading block
+      const cur = answer.innerHTML;
+      const loadIdx = cur.lastIndexOf('<div style="margin-top:12px');
+      answer.innerHTML = cur.substring(0, loadIdx) +
+        `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bdr)"><div style="font-size:11px;color:var(--fg3);margin-bottom:6px">↩ Refinamento</div>${formatAIAnswer(text)}</div>`;
+      document.getElementById('ai-followup-input').value = '';
+    } else {
       answer.innerHTML = formatAIAnswer(text);
     }
+
+    followupArea.style.display = '';
+    document.getElementById('ai-clear-btn').hidden = false;
   } catch(e) {
-    if (e?.code === 'rate_limited') answer.innerHTML = '⏳ Limite temporário. Aguarde e tente novamente.';
-    else if (String(e).includes('401') || String(e).includes('403')) answer.innerHTML = '❌ Chave inválida ou sem permissão. <a onclick="openCfg()" style="color:var(--accent);cursor:pointer">Reconfigurar</a>';
-    else answer.innerHTML = '❌ Erro ao consultar. Tente novamente.';
+    const errHtml = e?.code === 'rate_limited'
+      ? '⏳ Limite temporário. Aguarde e tente novamente.'
+      : (String(e).includes('401') || String(e).includes('403'))
+        ? '❌ Chave inválida ou sem permissão. <a onclick="openCfg()" style="color:var(--accent);cursor:pointer">Reconfigurar</a>'
+        : '❌ Erro ao consultar. Tente novamente.';
+    if (isFollowup) {
+      const cur = answer.innerHTML;
+      const loadIdx = cur.lastIndexOf('<div style="margin-top:12px');
+      answer.innerHTML = cur.substring(0, loadIdx) +
+        `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bdr)">${errHtml}</div>`;
+    } else {
+      answer.innerHTML = errHtml;
+    }
+    aiHistory.pop(); // remove failed user message
   }
-  btn.disabled = false; btn.innerHTML = '✨ Sugerir fórmula';
+
+  btn.disabled = false; btn.innerHTML = origLabel;
   sampleLoading = false;
+}
+
+async function callProviderKeyMultiTurn(messages, systemPrompt, isFollowup) {
+  const provider = getActiveProvider();
+  if (!provider) throw new Error('no provider');
+  const key = getAiKey(provider.id);
+
+  if (provider.id === 'gemini') {
+    // Gemini uses flat contents array with system prompt prepended to first user message
+    const contents = isFollowup
+      ? messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{text: m.content}] }))
+      : [{ role:'user', parts:[{text: messages[0].content}] }];
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ contents })
+    });
+    if (!res.ok) { const err = await res.json().catch(()=>{}); throw new Error('Gemini ' + res.status + (err?.error?.message ? ': ' + err.error.message : '')); }
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } else if (provider.id === 'claude') {
+    const msgs = isFollowup ? messages : [{role:'user', content: messages[0].content}];
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:'claude-opus-4-5', max_tokens:1200, system: isFollowup ? systemPrompt : undefined, messages: msgs })
+    });
+    if (!res.ok) throw new Error('Anthropic ' + res.status);
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  } else {
+    const msgs = isFollowup
+      ? [{role:'system', content: systemPrompt}, ...messages]
+      : [{role:'user', content: messages[0].content}];
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body: JSON.stringify({ model:'gpt-4o-mini', messages: msgs, max_tokens:1200 })
+    });
+    if (!res.ok) throw new Error('OpenAI ' + res.status);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  }
+}
+
+async function askAI() {
+  const input = document.getElementById('ai-input').value.trim();
+  if (!input) return;
+  aiHistory = []; // reset for new question
+  await runAI(input, false);
+}
+
+async function askFollowup() {
+  const input = document.getElementById('ai-followup-input').value.trim();
+  if (!input) return;
+  await runAI(input, true);
+}
+
+function clearAiChat() {
+  aiHistory = [];
+  document.getElementById('ai-result').classList.remove('show');
+  document.getElementById('ai-answer').innerHTML = '';
+  document.getElementById('ai-followup').style.display = 'none';
+  document.getElementById('ai-input').value = '';
+  document.getElementById('ai-clear-btn').hidden = true;
 }
 
 function formatAIAnswer(text) {
@@ -1368,7 +1450,17 @@ const ERROR_DATA = [
     name:{pt:'Não disponível / Não encontrado',en:'Not available / Not found',es:'No disponible / No encontrado'},
     cause:{pt:'A função de busca não encontrou o valor procurado na matriz. Ocorre com PROCV, PROCX, CORRESP quando o valor não existe na tabela.',en:'The lookup function didn\'t find the searched value in the array. Occurs with VLOOKUP, XLOOKUP, MATCH when the value doesn\'t exist in the table.',es:'La función de búsqueda no encontró el valor en la matriz. Ocurre con BUSCARV, BUSCARX, COINCIDIR cuando el valor no existe en la tabla.'},
     example:{pt:'=PROCV("XYZ";A:B;2;FALSO) quando "XYZ" não existe na coluna A',en:'=VLOOKUP("XYZ",A:B,2,FALSE) when "XYZ" doesn\'t exist in column A',es:'=BUSCARV("XYZ",A:B,2,FALSO) cuando "XYZ" no existe en la columna A'},
-    fix:{pt:'Use SEERROS ou SENÃODISP: =SENÃODISP(PROCV(...);"Não encontrado"). Verifique espaços extras ou tipos de dados diferentes. Para PROCX, use o 4º argumento de valor padrão.',en:'Use IFERROR or IFNA: =IFNA(VLOOKUP(...),"Not found"). Check for extra spaces or different data types. For XLOOKUP, use the 4th default value argument.',es:'Usa SIERROR o SI.ND: =SI.ND(BUSCARV(...),"No encontrado"). Verifica espacios extra o tipos de datos diferentes. Para BUSCARX, usa el 4.º argumento de valor predeterminado.'} }
+    fix:{pt:'Use SEERROS ou SENÃODISP: =SENÃODISP(PROCV(...);"Não encontrado"). Verifique espaços extras ou tipos de dados diferentes. Para PROCX, use o 4º argumento de valor padrão.',en:'Use IFERROR or IFNA: =IFNA(VLOOKUP(...),"Not found"). Check for extra spaces or different data types. For XLOOKUP, use the 4th default value argument.',es:'Usa SIERROR o SI.ND: =SI.ND(BUSCARV(...),"No encontrado"). Verifica espacios extra o tipos de datos diferentes. Para BUSCARX, usa el 4.º argumento de valor predeterminado.'} },
+  { code:'####', color:'#0891b2', bg:'#ecfeff',
+    name:{pt:'Coluna muito estreita',en:'Column too narrow',es:'Columna demasiado estrecha'},
+    cause:{pt:'A célula não tem largura suficiente para exibir o valor. Ocorre com números grandes, datas formatadas e percentuais. Não é um erro de fórmula — o valor está correto, apenas invisível.',en:'The cell isn\'t wide enough to display the value. Happens with large numbers, formatted dates, and percentages. Not a formula error — the value is correct, just invisible.',es:'La celda no es lo suficientemente ancha para mostrar el valor. Ocurre con números grandes, fechas formateadas y porcentajes. No es un error de fórmula — el valor es correcto, solo invisible.'},
+    example:{pt:'Coluna A com data "31/12/2024" mas largura ajustada para apenas 5 caracteres',en:'Column A with date "12/31/2024" but width set to only 5 characters',es:'Columna A con fecha "31/12/2024" pero ancho ajustado a solo 5 caracteres'},
+    fix:{pt:'Arraste a borda da coluna para alargá-la, ou dê duplo clique na borda do cabeçalho para auto-ajuste. Também pode ocorrer com datas negativas — confira se a data inicial é menor que a final.',en:'Drag the column border to widen it, or double-click the header border for auto-fit. Can also happen with negative dates — check that the start date is earlier than the end date.',es:'Arrastra el borde de la columna para ensancharla, o haz doble clic en el borde del encabezado para ajuste automático. También ocurre con fechas negativas — verifica que la fecha de inicio sea anterior a la final.'} },
+  { code:'#SPILL!', color:'#7c3aed', bg:'#f5f3ff',
+    name:{pt:'Área de despejo bloqueada',en:'Spill range blocked',es:'Rango de desbordamiento bloqueado'},
+    cause:{pt:'Fórmulas de matriz dinâmica (ÚNICO, FILTRO, SEQUÊNCIA, PROCX com múltiplas colunas) precisam "despejar" resultados em células adjacentes, mas alguma dessas células não está vazia.',en:'Dynamic array formulas (UNIQUE, FILTER, SEQUENCE, XLOOKUP with multiple columns) need to "spill" results into adjacent cells, but one or more of those cells isn\'t empty.',es:'Las fórmulas de matriz dinámica (ÚNICO, FILTRAR, SECUENCIA, BUSCARX con múltiples columnas) necesitan "derramarse" en celdas adyacentes, pero alguna de esas celdas no está vacía.'},
+    example:{pt:'=ÚNICO(A:A) na célula C1, mas C3 tem um valor digitado — impede o despejo',en:'=UNIQUE(A:A) in cell C1, but C3 has a typed value — blocks the spill',es:'=ÚNICO(A:A) en celda C1, pero C3 tiene un valor escrito — bloquea el desbordamiento'},
+    fix:{pt:'Limpe as células no caminho do despejo. Para ver exatamente quais estão bloqueando, clique na célula com #SPILL! e observe as bordas pontilhadas que indicam a área necessária. Disponível apenas Excel 365.',en:'Clear the cells in the spill path. To see exactly which cells are blocking, click the #SPILL! cell and observe the dotted border that indicates the needed area. Excel 365 only.',es:'Limpia las celdas en el camino de desbordamiento. Para ver cuáles bloquean, haz clic en la celda con #SPILL! y observa el borde punteado que indica el área necesaria. Solo Excel 365.'} }
 ];
 
 function renderErrors() {
