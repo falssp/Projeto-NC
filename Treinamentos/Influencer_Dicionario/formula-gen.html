@@ -284,98 +284,34 @@ function buildD(){
 }
 
 function buildE(){
-  var L=['=ARRAYFORMULA(','SE(H3:H="";"";'];
+  // Fórmula E corrigida — YouTube detecta links de vídeo, Instagram cobre /@?
+  var L=[];
+  L.push('=ARRAYFORMULA(');
+  L.push('SE(H3:H="";"";');
+  // TikTok — branch especial com/sem @
+  L.push('SE(REGEXMATCH(H3:H;"tiktok\\.com");');
+  L.push('  SE(REGEXMATCH(H3:H;"@");');
+  L.push('    REGEXEXTRACT(H3:H;"@([^/?&]+)");');
+  L.push('    REGEXEXTRACT(H3:H;"tiktok\\.com/([^/?&@]+)"));');
+  // YouTube — detecta links de vídeo e avisa
+  L.push('SE(REGEXMATCH(H3:H;"youtube\\.com");');
+  L.push('  SE(REGEXMATCH(H3:H;"youtube\\.com/(?:watch|shorts|embed|playlist|results)");');
+  L.push('    "\u26a0\ufe0f link de vídeo — informe o canal";');
+  L.push('    REGEXEXTRACT(H3:H;"youtube\\.com/(?:c/|channel/|user/|@)?@?([^/?&]+)"));');
+  // Instagram — cobre /@? (com e sem @)
+  L.push('SE(REGEXMATCH(H3:H;"instagram\\.com");');
+  L.push('  REGEXEXTRACT(H3:H;"instagram\\.com/@?([^/?&]+)");');
+  // demais redes dinâmicas
+  var skip=['TikTok','YouTube','Instagram'];
   REDES.forEach(function(r){
-    if(r.n==='TikTok'){
-      L.push('SE(REGEXMATCH(H3:H;"tiktok\\.com");');
-      L.push('  SE(REGEXMATCH(H3:H;"@");');
-      L.push('    REGEXEXTRACT(H3:H;"@([^/?&]+)");');
-      L.push('    REGEXEXTRACT(H3:H;"tiktok\\.com/([^/?&@]+)"));');
-    }else{
-      L.push('SE(REGEXMATCH(H3:H;"'+r.d+'");');
-      L.push('  IFERROR(REGEXEXTRACT(H3:H;"'+rxPat(r)+'");"");');
-    }
+    if(skip.indexOf(r.n)!==-1) return;
+    L.push('SE(REGEXMATCH(H3:H;"'+r.d+'");');
+    L.push('  IFERROR(REGEXEXTRACT(H3:H;"'+rxPat(r)+'");"");');
   });
   L.push('""');
   L.push(Array(REDES.length+1).join(')')+')');
   return L.join('\n');
 }
-
-// ── extractFromUrl ────────────────────────────────────────────────────────────
-function extractFromUrl(){
-  var url=document.getElementById('furl-ex').value.trim();
-  if(!url){alert('Cole uma URL de exemplo primeiro.');return;}
-
-  // extrair domínio principal
-  var domMatch=url.match(/https?:\/\/(?:www\.)?([^\/]+)/i);
-  if(!domMatch){alert('URL inválida.');return;}
-  var rawDom=domMatch[1]; // ex: tiktok.com, twitch.tv, kwai.com
-
-  // escapar pontos para regex
-  var regexDom=rawDom.replace(/\./g,'\\.');
-  document.getElementById('fd').value=regexDom;
-
-  // detectar padrão de handle
-  var pat='slash_at_opt';
-  var hasAt=url.indexOf('/@')!==-1;
-  var noAt=/https?:\/\/(?:www\.)?[^\/]+\/(?!@)([^\/\?&]+)/.test(url);
-  if(hasAt) pat='slash_at_opt';
-  else if(noAt) pat='slash';
-
-  // marcar radio correto
-  document.querySelectorAll('input[name="pat"]').forEach(function(r){
-    r.checked=(r.value===pat);
-    r.closest('.ro').classList.toggle('on',r.value===pat);
-  });
-  document.getElementById('fc').style.display='none';
-
-  // sugerir nome se ainda não digitado
-  var nomeEl=document.getElementById('fn');
-  if(!nomeEl.value.trim()){
-    var parts=rawDom.split('.');
-    var sugestao=parts[0].charAt(0).toUpperCase()+parts[0].slice(1);
-    nomeEl.value=sugestao;
-    nomeEl.focus();
-  }
-
-  // mostrar preview
-  var prev=document.getElementById('dom-preview');
-  prev.style.display='block';
-  prev.innerHTML='↳ domínio: <strong>'+regexDom+'</strong>  ·  padrão: <strong>'+pat+'</strong>';
-
-  // pré-preencher handle extraído para teste
-  var handleMatch=url.match(new RegExp(regexDom+'\\/@?([^/?&]+)','i'));
-  if(handleMatch){
-    document.getElementById('ftest').value=url;
-  }
-}
-
-// ── testUrl ───────────────────────────────────────────────────────────────────
-function testUrl(){
-  var url=document.getElementById('ftest').value.trim();
-  if(!url){document.getElementById('tres').style.display='none';return;}
-
-  var n=document.getElementById('fn').value.trim();
-  var d=document.getElementById('fd').value.trim();
-  var p=document.querySelector('input[name="pat"]:checked').value;
-  var c=document.getElementById('fc').value.trim();
-
-  var match=REDES.find(function(r){try{return new RegExp(r.d,'i').test(url);}catch(e){return false;}});
-  if(!match&&d){try{if(new RegExp(d,'i').test(url))match={n:n||'(nova rede)',d:d,p:p,c:c};}catch(e){}}
-
-  var res=document.getElementById('tres');
-  res.style.display='block';
-  if(!match){res.innerHTML='<span style="color:var(--red)">✗ Nenhuma rede reconhece essa URL</span>';return;}
-
-  var pattern=rxPat(match);
-  var m; try{m=url.match(new RegExp(pattern,'i'));}catch(e){m=null;}
-  var handle=m?(m[1]||'').replace(/\/$/,''):'';
-  res.innerHTML='<span style="color:var(--green)">✓ Rede: <strong>'+match.n+'</strong></span>'
-    +(handle?' · Handle: <strong style="font-family:Consolas,monospace">'+handle+'</strong>'
-             :' · <span style="color:var(--yellow)">Handle não extraído — verificar padrão</span>');
-}
-
-// ── renderList ────────────────────────────────────────────────────────────────
 function renderList(){
   var el=document.getElementById('rede-list');
   el.innerHTML='';
@@ -387,7 +323,7 @@ function renderList(){
       +'<span class="rn">'+r.n+(r.added?'<span style="font-size:9px;color:var(--green);margin-left:4px">'+r.added+'</span>':'')+'</span>'
       +'<span class="rd">'+r.d.replace(/\\\\/g,'\\')+'</span>'
       +'<span class="rp">'+patL+'</span>'
-      +(r.orig?'':'<button onclick="removeRede('+i+')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:1px 8px;cursor:pointer;color:var(--muted);font-size:10px;margin-left:6px;transition:all .15s" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--muted)\'">✕</button>');
+      ;
     el.appendChild(d);
   });
 }
@@ -452,11 +388,7 @@ function addRede(){
   document.getElementById('tres').style.display='none';
 }
 
-function removeRede(i){
-  if(REDES[i].orig){alert('Redes originais não podem ser removidas.');return;}
-  if(!confirm('Remover '+REDES[i].n+'?'))return;
-  REDES.splice(i,1);renderList();renderOutputs();
-}
+
 
 // ── ui ────────────────────────────────────────────────────────────────────────
 function setColor(hex){
