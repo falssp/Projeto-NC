@@ -86,8 +86,11 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-t
 
   <!-- REDES CADASTRADAS -->
   <div class="panel">
-    <div class="ptitle"><span class="dot"></span>Redes cadastradas</div>
+    <div class="ptitle"><span class="dot"></span>Redes cadastradas <span id="extras-badge" style="display:none;font-size:10px;font-weight:400;color:var(--muted);margin-left:6px"></span></div>
     <div id="rede-list"></div>
+    <div id="extras-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <button onclick="clearExtras()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.color='var(--red)';this.style.borderColor='var(--red)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">🗑 Remover redes adicionadas</button>
+    </div>
   </div>
 
   <!-- FORM -->
@@ -337,6 +340,12 @@ function buildE(){
 function renderList(){
   var el=document.getElementById('rede-list');
   el.innerHTML='';
+  var extras=REDES.filter(function(r){return !r.orig;});
+  // badge e botão limpar
+  var badge=document.getElementById('extras-badge');
+  var actions=document.getElementById('extras-actions');
+  if(badge){badge.textContent=extras.length>0?'+'+extras.length+' adicionada'+(extras.length>1?'s':''):'';badge.style.display=extras.length>0?'inline':'none';}
+  if(actions){actions.style.display=extras.length>0?'block':'none';}
   REDES.forEach(function(r,i){
     var patL={slash_at:'/@handle',slash:'/handle',slash_at_opt:'/@?handle',subdom:'subdomínio',custom:'custom'}[r.p]||r.p;
     var d=document.createElement('div');
@@ -344,10 +353,16 @@ function renderList(){
     d.innerHTML='<span class="swi" style="background:'+r.h+'"></span>'
       +'<span class="rn">'+r.n+'</span>'
       +'<span class="rd">'+r.d.replace(/\\\\/g,'\\')+'</span>'
-      +'<span class="rp">'+patL+'</span>'
-      ;
+      +'<span class="rp">'+patL+'</span>';
     el.appendChild(d);
   });
+}
+
+function clearExtras(){
+  if(!confirm('Remover todas as redes adicionadas (as originais ficam)?')) return;
+  REDES=REDES.filter(function(r){return r.orig;});
+  try{localStorage.removeItem(STORAGE_KEY);}catch(e){}
+  renderList();renderOutputs();
 }
 
 function setText(id,txt){
@@ -406,6 +421,7 @@ function addRede(){
   REDES.push({n:n,d:d,p:p,c:c,h:h,t:t,tm:tm,orig:false,added:mes+'/'+now.getFullYear()});
   // Reordenar alfabeticamente
   REDES.sort(function(a,b){return a.n.localeCompare(b.n,'pt');});
+  saveExtras();
   renderList();renderOutputs();
   ['fn','fd','fc','ft','furl-ex','ftest'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('dom-preview').style.display='none';
@@ -542,6 +558,31 @@ function extractFromUrl(){
   testUrl();
 }
 
+
+// ── persistência localStorage ─────────────────────────────────────────────────
+var STORAGE_KEY = 'fmlgen_redes_extras';
+
+function saveExtras(){
+  var extras = REDES.filter(function(r){return !r.orig;});
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(extras)); }catch(e){}
+}
+
+function loadExtras(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    var extras = JSON.parse(raw);
+    if(!Array.isArray(extras)) return;
+    extras.forEach(function(r){
+      // Não duplicar
+      if(!REDES.some(function(e){return e.n===r.n||e.d===r.d;})){
+        REDES.push(r);
+      }
+    });
+    REDES.sort(function(a,b){return a.n.localeCompare(b.n,'pt');});
+  }catch(e){}
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   // color picker manual
   var cpEl=document.getElementById('fcp');
@@ -577,6 +618,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('furl-ex').addEventListener('keydown',function(e){
     if(e.key==='Enter')extractFromUrl();
   });
+  loadExtras();
   onColorSel();
   renderList();renderOutputs();
 });
