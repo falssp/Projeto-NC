@@ -131,20 +131,22 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-t
       <label class="lbl">Cor de fundo <span style="font-size:10px;font-weight:400">(cores oficiais das plataformas)</span></label>
       <select id="fcolor-sel" onchange="onColorSel()" style="width:100%;background:#12141e;border:1px solid var(--border);color:var(--text);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
         <option value="">— Selecionar plataforma conhecida —</option>
-        <option value="#000000:white">TikTok / X / Threads — #000000 preto</option>
-        <option value="#E1306C:white">Instagram — #E1306C rosa</option>
-        <option value="#1877F2:white">Facebook — #1877F2 azul</option>
-        <option value="#FF0000:white">YouTube — #FF0000 vermelho</option>
-        <option value="#1DA1F2:white">Twitter — #1DA1F2 azul</option>
-        <option value="#E60023:white">Pinterest — #E60023 vermelho</option>
-        <option value="#0A66C2:white">LinkedIn — #0A66C2 azul-marinho</option>
-        <option value="#FFFC00:black">Snapchat — #FFFC00 amarelo</option>
-        <option value="#9146FF:white">Twitch — #9146FF roxo</option>
-        <option value="#FF6600:white">Kwai — #FF6600 laranja</option>
-        <option value="#1DB954:white">Spotify — #1DB954 verde</option>
         <option value="#0085FF:white">Bluesky — #0085FF azul</option>
-        <option value="#26A5E4:white">Telegram — #26A5E4 azul</option>
+        <option value="#1877F2:white">Facebook — #1877F2 azul</option>
+        <option value="#E1306C:white">Instagram — #E1306C rosa</option>
+        <option value="#FF6600:white">Kwai — #FF6600 laranja</option>
+        <option value="#0A66C2:white">LinkedIn — #0A66C2 azul-marinho</option>
+        <option value="#E60023:white">Pinterest — #E60023 vermelho</option>
+        <option value="#FFFC00:black">Snapchat — #FFFC00 amarelo</option>
+        <option value="#1DB954:white">Spotify — #1DB954 verde</option>
         <option value="#FF6719:white">Substack — #FF6719 laranja</option>
+        <option value="#26A5E4:white">Telegram — #26A5E4 azul</option>
+        <option value="#101010:white">Threads — #101010 preto escuro</option>
+        <option value="#000000:white">TikTok — #000000 preto</option>
+        <option value="#9146FF:white">Twitch — #9146FF roxo</option>
+        <option value="#1DA1F2:white">Twitter — #1DA1F2 azul</option>
+        <option value="#000000:white">X — #000000 preto</option>
+        <option value="#FF0000:white">YouTube — #FF0000 vermelho</option>
         <option value="custom">Outra cor (manual)</option>
       </select>
       <div id="cor-manual" style="display:none">
@@ -174,7 +176,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-t
     <button class="btn bp" onclick="addRede()">+ Adicionar rede</button>
 
     <div class="fr" style="margin-top:14px">
-      <label class="lbl">Testar URL</label>
+      <label class="lbl">Testar URL <span style="font-size:10px;font-weight:400;color:var(--muted)">(preenchido pelo Extrair — ou cole outra URL)</span></label>
       <input id="ftest" type="text" placeholder="https://threads.net/@handle">
       <div id="tres" style="margin-top:6px;font-size:12px;display:none"></div>
     </div>
@@ -247,7 +249,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;border-t
     <div style="border-top:1px solid var(--border);margin-top:20px;padding-top:16px">
       <div class="flbl" style="margin-bottom:4px">Formatação Condicional — Coluna D</div>
       <div class="fdesc">
-        <strong>Como aplicar:</strong> Formatar → Formatação condicional → Adicionar outra regra → <em>A fórmula personalizada é</em> → intervalo <strong>D3:D570</strong> → definir cor de fundo.<br>
+        <strong>Como aplicar:</strong> Formatar → Formatação condicional → Adicionar outra regra → <em>A fórmula personalizada é</em> → intervalo <strong>D3:D</strong> → definir cor de fundo.<br>
         Redes novas adicionadas acima aparecem automaticamente nesta tabela.
       </div>
       <div style="overflow-x:auto;margin-top:10px"><table class="ctbl" id="cond-tbl"></table></div>
@@ -368,7 +370,7 @@ function renderOutputs(){
 
 function renderCond(){
   var t=document.getElementById('cond-tbl');
-  t.innerHTML='<tr><th>Rede</th><th>Fundo</th><th>Hex</th><th>Texto</th><th>Fórmula personalizada — intervalo D3:D570</th></tr>';
+  t.innerHTML='<tr><th>Rede</th><th>Fundo</th><th>Hex</th><th>Texto</th><th>Fórmula personalizada — intervalo D3:D</th></tr>';
   REDES.forEach(function(r){
     var tr=document.createElement('tr');
     if(r.added)tr.className='newbg';
@@ -467,6 +469,58 @@ function cp(id,btn){
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
+
+// ── extractFromUrl ────────────────────────────────────────────────────────────
+function extractFromUrl(){
+  var url=document.getElementById('furl-ex').value.trim();
+  if(!url){alert('Cole uma URL de exemplo primeiro.');return;}
+  var domMatch=url.match(/https?:\/\/(?:www\.)?([^\/]+)/i);
+  if(!domMatch){alert('URL inválida.');return;}
+  var rawDom=domMatch[1];
+  var regexDom=rawDom.replace(/\./g,'\\.');
+  document.getElementById('fd').value=regexDom;
+  // padrão
+  var pat=url.indexOf('/@')!==-1?'slash_at_opt':'slash';
+  document.querySelectorAll('input[name="pat"]').forEach(function(r){
+    r.checked=(r.value===pat);
+    r.closest('.ro').classList.toggle('on',r.value===pat);
+  });
+  document.getElementById('fc').style.display='none';
+  // nome e termo
+  var parts=rawDom.split('.');
+  var nome=parts[0].charAt(0).toUpperCase()+parts[0].slice(1);
+  document.getElementById('fn').value=nome;
+  document.getElementById('ft').value=nome.toUpperCase();
+  // copiar para testar
+  document.getElementById('ftest').value=url;
+  // cor automática
+  var known={
+    'tiktok':'#000000:white','instagram':'#E1306C:white','facebook':'#1877F2:white',
+    'youtube':'#FF0000:white','x':'#000000:white','twitter':'#1DA1F2:white',
+    'pinterest':'#E60023:white','linkedin':'#0A66C2:white','snapchat':'#FFFC00:black',
+    'twitch':'#9146FF:white','kwai':'#FF6600:white','threads':'#101010:white',
+    'bsky':'#0085FF:white','telegram':'#26A5E4:white','spotify':'#1DB954:white',
+    'substack':'#FF6719:white'
+  };
+  var key=parts[0].toLowerCase();
+  var sel=document.getElementById('fcolor-sel');
+  var matched=false;
+  if(known[key]){
+    var val=known[key];
+    for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===val){sel.selectedIndex=i;matched=true;break;}
+    }
+  }
+  if(!matched) sel.selectedIndex=0;
+  onColorSel();
+  // preview
+  var prev=document.getElementById('dom-preview');
+  prev.style.display='block';
+  prev.innerHTML='↳ domínio: <strong>'+regexDom+'</strong> · padrão: <strong>'+pat+'</strong>'+(matched?' · cor preenchida automaticamente':'');
+  // auto-testar
+  testUrl();
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   // color picker manual
   var cpEl=document.getElementById('fcp');
