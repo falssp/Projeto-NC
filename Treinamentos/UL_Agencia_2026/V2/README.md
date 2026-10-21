@@ -8,7 +8,9 @@
 
 ## Acesso
 
-🔗 [Abrir apresentação](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V2/)
+🔗 [Abrir apresentação interativa](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V2/)
+
+📊 [Abrir no Google Slides](https://docs.google.com/presentation/d/1dlhrSivyWi0ntYvQzvDib-M8G9bZUphR/edit?slide=id.p1#slide=id.p1)
 
 ---
 
@@ -58,7 +60,7 @@
 | Arquivo | Descrição |
 |---------|-----------|
 | `index.html` | Apresentação interativa HTML |
-| `UL_Agencia_Stormx_Flashtalking_v2.pptx` | Fonte original PPTX (referência) |
+| `UL_Agencia_Stormx_Flashtalking_v2.pptx` | Fonte original PPTX |
 
 ---
 

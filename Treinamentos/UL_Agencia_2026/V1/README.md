@@ -8,7 +8,9 @@
 
 ## Acesso
 
-🔗 [Abrir apresentação](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V1/)
+🔗 [Abrir apresentação interativa](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V1/)
+
+📊 [Abrir no Google Slides](https://docs.google.com/presentation/d/1ZyLzuvGhe0xfWXhSf2LUme83bn16R8aZt3dVBsKFGdU/edit?slide=id.h4b5e8a3c59073b9b_0_0#slide=id.h4b5e8a3c59073b9b_0_0)
 
 ---
 
