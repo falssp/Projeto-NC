@@ -185,8 +185,9 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     Compara pares de colunas na mesma linha. Se os valores forem iguais → <strong style="color:var(--green)">verde</strong>. Se diferentes → <strong style="color:var(--red)">vermelho</strong>.
   </p>
 
-  <div class="card">
-    <div class="card-label">Identificação</div>
+  <!-- etapa 1 -->
+  <div class="card" id="c-step1">
+    <div class="card-label">1 · Identificação</div>
     <div class="sel-row">
       <span class="lbl">Aba</span>
       <select class="sel" id="c-aba" onchange="onAbaChange('c')">
@@ -205,13 +206,14 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         <option value="">— selecione a aba primeiro —</option>
       </select>
     </div>
-    <div id="c-load-wrap" style="display:none;margin-top:4px">
+    <div id="c-load-wrap" style="display:none;margin-top:8px">
       <button class="load-btn" onclick="loadPlatform('c')">↺ Carregar campos da plataforma</button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-label">Dado de busca</div>
+  <!-- etapa 2 -->
+  <div class="card" id="c-step2" hidden>
+    <div class="card-label">2 · Dado de busca</div>
     <div class="row">
       <span class="lbl">Coluna</span>
       <input class="inp inp-col" id="c-trigCol" value="B" maxlength="3" oninput="this.value=this.value.toUpperCase()" placeholder="B">
@@ -223,10 +225,14 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
       <span class="lbl">Começa na linha</span>
       <input class="inp inp-row" id="c-startRow" value="2" type="number" min="1">
     </div>
+    <div style="margin-top:12px">
+      <button class="load-btn" onclick="cStep3()">Próximo →</button>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="card-label">Intervalo</div>
+  <!-- etapa 3 -->
+  <div class="card" id="c-step3" hidden>
+    <div class="card-label">3 · Intervalo</div>
     <div class="row">
       <span class="lbl">Colunas</span>
       <input class="inp inp-col" id="c-intStart" placeholder="início" maxlength="3" oninput="this.value=this.value.toUpperCase()">
@@ -236,13 +242,14 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-label">Pares — campo · coluna referência → coluna pintada</div>
+  <!-- etapa 4 -->
+  <div class="card" id="c-step4" hidden>
+    <div class="card-label">4 · Pares — campo · coluna referência → coluna pintada</div>
     <div class="pairs" id="c-pairs"></div>
     <button class="btn-add" onclick="addColPair()">＋ Adicionar par</button>
   </div>
 
-  <button class="btn-gen" onclick="generateCols()">⚡ Gerar fórmulas</button>
+  <button class="btn-gen" id="c-btn-gen" hidden onclick="generateCols()">⚡ Gerar fórmulas</button>
 
   <div class="out-section" id="c-out" hidden>
     <div class="out-title">📋 Fórmulas geradas</div>
@@ -464,6 +471,24 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', cur==='dark'?'light':'dark');
 }
 
+// ── Step control (Bloco Linhas) ───────────────────────────
+function cStep2() {
+  document.getElementById('c-step2').hidden=false;
+  document.getElementById('c-step2').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cStep3() {
+  const tc=document.getElementById('c-trigCol').value.trim();
+  const tv=document.getElementById('c-trigVal').value.trim();
+  if(!tc||!tv){toast('Preencha coluna e valor de busca');return;}
+  document.getElementById('c-step3').hidden=false;
+  document.getElementById('c-step3').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cStep4() {
+  document.getElementById('c-step4').hidden=false;
+  document.getElementById('c-btn-gen').hidden=false;
+  document.getElementById('c-step4').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 // ── Dropdown handlers ─────────────────────────────────────
 function onAbaChange(pfx) {
   const aba = document.getElementById(pfx+'-aba').value;
@@ -508,6 +533,7 @@ function loadPlatform(pfx) {
       });
     });
     renderColPairs();
+    cStep2();
     toast(`${colPairs.length} colunas carregadas — ${tag}`);
   } else {
     rowCols = [];
@@ -534,6 +560,7 @@ function expandIntervalo() {
   colPairs=[];
   expandRange(s,e).forEach(col=>colPairs.push({id:++uid,col,target:'',label:''}));
   renderColPairs();
+  cStep4();
   toast(`${colPairs.length} colunas expandidas`);
 }
 function removeColPair(id) { colPairs=colPairs.filter(p=>p.id!==id); renderColPairs(); }
