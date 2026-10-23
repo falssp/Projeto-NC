@@ -147,6 +147,16 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 /* Tip box */
 .tip{background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--fg2);line-height:1.5;margin-bottom:14px}
 .tip strong{color:var(--accent)}
+
+/* Select */
+.sel{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--radius-sm);padding:7px 9px;font-size:13px;color:var(--fg);outline:none;transition:border-color .15s;font-family:'Inter',sans-serif;cursor:pointer;flex:1}
+.sel:focus{border-color:var(--accent)}
+.sel-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.sel-row:last-child{margin-bottom:0}
+.pair-name{font-size:10px;color:var(--fg3);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.platform-badge{display:inline-flex;align-items:center;gap:5px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600;color:var(--accent);margin-bottom:12px}
+.load-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.load-btn:hover{background:var(--accent);color:#fff}
 </style>
 </head>
 <body>
@@ -177,9 +187,25 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 
   <div class="card">
     <div class="card-label">Identificação</div>
-    <div class="row">
-      <span class="lbl">Plataforma / Aba</span>
-      <input class="inp" style="flex:1" id="c-label" placeholder="ex: Google, DV360, Programmatic…">
+    <div class="sel-row">
+      <span class="lbl">Aba</span>
+      <select class="sel" id="c-aba" onchange="onAbaChange('c')">
+        <option value="">— selecione a aba —</option>
+        <option value="Google">Google</option>
+        <option value="Programmatic">Programmatic</option>
+        <option value="Meta e Tiktok">Meta e Tiktok</option>
+        <option value="Youtube">Youtube</option>
+        <option value="Flashtalking">Flashtalking</option>
+      </select>
+    </div>
+    <div class="sel-row">
+      <span class="lbl">Plataforma</span>
+      <select class="sel" id="c-plat" disabled onchange="onPlatChange('c')">
+        <option value="">— selecione a aba primeiro —</option>
+      </select>
+    </div>
+    <div id="c-load-wrap" style="display:none;margin-top:4px">
+      <button class="load-btn" onclick="loadPlatform('c')">↺ Carregar campos da plataforma</button>
     </div>
     <div style="height:12px"></div>
     <div class="card-label">Gatilho</div>
@@ -222,9 +248,25 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 
   <div class="card">
     <div class="card-label">Identificação</div>
-    <div class="row">
-      <span class="lbl">Plataforma / Aba</span>
-      <input class="inp" style="flex:1" id="r-label" placeholder="ex: Google, DV360, Programmatic…">
+    <div class="sel-row">
+      <span class="lbl">Aba</span>
+      <select class="sel" id="r-aba" onchange="onAbaChange('r')">
+        <option value="">— selecione a aba —</option>
+        <option value="Google">Google</option>
+        <option value="Programmatic">Programmatic</option>
+        <option value="Meta e Tiktok">Meta e Tiktok</option>
+        <option value="Youtube">Youtube</option>
+        <option value="Flashtalking">Flashtalking</option>
+      </select>
+    </div>
+    <div class="sel-row">
+      <span class="lbl">Plataforma</span>
+      <select class="sel" id="r-plat" disabled onchange="onPlatChange('r')">
+        <option value="">— selecione a aba primeiro —</option>
+      </select>
+    </div>
+    <div id="r-load-wrap" style="display:none;margin-top:4px">
+      <button class="load-btn" onclick="loadPlatform('r')">↺ Carregar campos da plataforma</button>
     </div>
     <div style="height:12px"></div>
     <div class="card-label">Gatilho</div>
@@ -375,6 +417,87 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 <div class="toast" id="toast"></div>
 
 <script>
+// ── Platform data ─────────────────────────────────────────
+const PLATFORMS = {
+  'Google': {
+    platforms: ['Google'],
+    cols: [
+      {col:'D',name:'Video/Others/Search/Pmax'},{col:'E',name:'Country'},
+      {col:'F',name:'Brand Name'},{col:'G',name:'Market L5 PCat'},
+      {col:'H',name:'Campaign Name'},{col:'I',name:'Engine'},
+      {col:'J',name:'Language'},{col:'K',name:'Buy Type'},
+      {col:'L',name:'Format Type'},{col:'M',name:'Objective'},
+      {col:'N',name:'Audience Party'},{col:'O',name:'Audience Name'},
+      {col:'P',name:'Gender'},{col:'Q',name:'Lower Age'},
+      {col:'R',name:'Upper Age'},{col:'S',name:'Placement Type'},
+      {col:'T',name:'Device Type'},{col:'Y',name:'Landing Page'},
+      {col:'Z',name:'Retailer'},{col:'AA',name:'Influencer'},
+    ]
+  },
+  'Programmatic': {
+    platforms: ['Programática','Amazon DSP'],
+    cols: [
+      {col:'D',name:'Programatica/Amazon DSP'},{col:'E',name:'Platform'},
+      {col:'F',name:'Country'},{col:'G',name:'Brand Name'},
+      {col:'H',name:'Market L5 PCat'},{col:'I',name:'Campaign Name'},
+      {col:'J',name:'Buy Model'},{col:'K',name:'Objective'},
+      {col:'L',name:'Audience Party'},{col:'M',name:'Audience Name'},
+      {col:'N',name:'Gender'},{col:'O',name:'Lower Age'},
+      {col:'P',name:'Upper Age'},{col:'Q',name:'Placement Type'},
+      {col:'R',name:'Device Type'},{col:'S',name:'Targeting Strategy'},
+      {col:'U',name:'Format Type'},{col:'W',name:'Landing Page'},
+      {col:'X',name:'Retailer'},{col:'Y',name:'Influencer'},
+      {col:'Z',name:'Amazon Product'},
+    ]
+  },
+  'Meta e Tiktok': {
+    platforms: ['Meta','TikTok'],
+    cols: [
+      {col:'D',name:'Platform'},{col:'E',name:'Country'},
+      {col:'F',name:'Brand Name'},{col:'G',name:'Market L5 PCat'},
+      {col:'H',name:'Campaign Name'},{col:'I',name:'Buy Model'},
+      {col:'J',name:'Collaborative Account Type'},{col:'L',name:'Collaborative Ad'},
+      {col:'M',name:'Objective'},{col:'N',name:'Audience Party'},
+      {col:'O',name:'Audience Name'},{col:'P',name:'Gender'},
+      {col:'Q',name:'Lower Age'},{col:'R',name:'Upper Age'},
+      {col:'S',name:'Placement Type'},{col:'T',name:'Device Type'},
+      {col:'V',name:'Format Type'},{col:'X',name:'Influencer'},
+      {col:'Y',name:'Influencer-Post-Type'},{col:'Z',name:'Add-on'},
+      {col:'AA',name:'Landing Page'},{col:'AB',name:'Retailer'},
+      {col:'AC',name:'Influencer-Handle'},{col:'AD',name:'Creative-Exchange'},
+    ]
+  },
+  'Youtube': {
+    platforms: ['YouTube','Masthead'],
+    cols: [
+      {col:'D',name:'Masthead/Youtube'},{col:'E',name:'Platform'},
+      {col:'F',name:'Country'},{col:'G',name:'Brand Name'},
+      {col:'H',name:'Market L5 PCat'},{col:'I',name:'Campaign Name'},
+      {col:'J',name:'Buy Model'},{col:'K',name:'Objective'},
+      {col:'L',name:'Audience Party'},{col:'M',name:'Audience Name'},
+      {col:'N',name:'Gender'},{col:'O',name:'Lower Age'},
+      {col:'P',name:'Upper Age'},{col:'Q',name:'Placement Type'},
+      {col:'R',name:'Device Type'},{col:'S',name:'Targeting Strategy'},
+      {col:'U',name:'Format Type'},{col:'W',name:'Landing Page'},
+      {col:'X',name:'Retailer'},{col:'Y',name:'Influencer'},
+    ]
+  },
+  'Flashtalking': {
+    platforms: ['Flashtalking'],
+    cols: [
+      {col:'D',name:'Plataforma'},{col:'E',name:'Country'},
+      {col:'F',name:'Agency Name'},{col:'G',name:'Brand Name'},
+      {col:'H',name:'Market L5 PCat'},{col:'I',name:'Campaign Name'},
+      {col:'J',name:'Objective'},{col:'K',name:'Audience Party'},
+      {col:'L',name:'Audience Name'},{col:'M',name:'Gender'},
+      {col:'N',name:'Lower Age'},{col:'O',name:'Upper Age'},
+      {col:'P',name:'Placement Type'},{col:'Q',name:'Format Type'},
+      {col:'S',name:'Influencer'},{col:'T',name:'Landing Page'},
+      {col:'U',name:'Retailer'},
+    ]
+  },
+};
+
 // ── State ─────────────────────────────────────────────────
 let colPairs=[], rowCols=[], uid=0;
 
@@ -397,9 +520,47 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', cur==='dark'?'light':'dark');
 }
 
+// ── Dropdown handlers ─────────────────────────────────────
+function onAbaChange(pfx) {
+  const aba = document.getElementById(pfx+'-aba').value;
+  const platSel = document.getElementById(pfx+'-plat');
+  platSel.innerHTML = '';
+  if (!aba) {
+    platSel.innerHTML = '<option value="">— selecione a aba primeiro —</option>';
+    platSel.disabled = true;
+    document.getElementById(pfx+'-load-wrap').style.display='none';
+    return;
+  }
+  const data = PLATFORMS[aba];
+  platSel.innerHTML = data.platforms.map(p=>`<option value="${p}">${p}</option>`).join('');
+  platSel.disabled = false;
+  document.getElementById(pfx+'-load-wrap').style.display='flex';
+}
+
+function onPlatChange(pfx) {
+  document.getElementById(pfx+'-load-wrap').style.display='flex';
+}
+
+function loadPlatform(pfx) {
+  const aba = document.getElementById(pfx+'-aba').value;
+  const plat = document.getElementById(pfx+'-plat').value;
+  if (!aba) { toast('Selecione a aba primeiro'); return; }
+  const data = PLATFORMS[aba];
+  if (pfx==='c') {
+    colPairs = [];
+    data.cols.forEach(c => { colPairs.push({id:++uid, ref:c.col, target:'', name:c.name}); });
+    renderColPairs();
+  } else {
+    rowCols = [];
+    data.cols.forEach(c => { rowCols.push({id:++uid, col:c.col, name:c.name}); });
+    renderRowCols();
+  }
+  toast(`${data.cols.length} campos carregados — ${aba}${plat && plat!==aba?' · '+plat:''}`);
+}
+
 // ── Col Pairs ─────────────────────────────────────────────
-function addColPair(ref='', target='') {
-  colPairs.push({id:++uid, ref, target});
+function addColPair(ref='', target='', name='') {
+  colPairs.push({id:++uid, ref, target, name});
   renderColPairs();
 }
 function removeColPair(id) { colPairs=colPairs.filter(p=>p.id!==id); renderColPairs(); }
@@ -410,19 +571,19 @@ function renderColPairs() {
   el.innerHTML=colPairs.map((p,i)=>`
     <div class="pair-row">
       <span class="pair-n">${i+1}</span>
-      <span class="arr" style="font-size:11px;color:var(--fg3)">Ref</span>
-      <input class="inp inp-col" value="${ea(p.ref)}" placeholder="M" maxlength="3"
+      <input class="inp inp-col" value="${ea(p.ref)}" placeholder="M" maxlength="3" title="Coluna referência"
         oninput="updateColPair(${p.id},'ref',this.value.toUpperCase());this.value=this.value.toUpperCase()">
+      ${p.name?`<span class="pair-name" title="${ea(p.name)}">${ea(p.name)}</span>`:''}
       <span class="arr">→ pinta →</span>
-      <input class="inp inp-col" value="${ea(p.target)}" placeholder="N" maxlength="3"
+      <input class="inp inp-col" value="${ea(p.target)}" placeholder="N" maxlength="3" title="Coluna pintada"
         oninput="updateColPair(${p.id},'target',this.value.toUpperCase());this.value=this.value.toUpperCase()">
       <button class="pair-del" onclick="removeColPair(${p.id})">×</button>
     </div>`).join('');
 }
 
 // ── Row Cols ──────────────────────────────────────────────
-function addRowCol(col='') {
-  rowCols.push({id:++uid, col});
+function addRowCol(col='', name='') {
+  rowCols.push({id:++uid, col, name});
   renderRowCols();
 }
 function removeRowCol(id) { rowCols=rowCols.filter(c=>c.id!==id); renderRowCols(); }
@@ -433,10 +594,10 @@ function renderRowCols() {
   el.innerHTML=rowCols.map((c,i)=>`
     <div class="pair-row">
       <span class="pair-n">${i+1}</span>
-      <span class="arr" style="font-size:11px;color:var(--fg3)">Coluna</span>
       <input class="inp inp-col" value="${ea(c.col)}" placeholder="X" maxlength="3"
         oninput="updateRowCol(${c.id},this.value.toUpperCase());this.value=this.value.toUpperCase()">
-      <button class="pair-del" onclick="removeRowCol(${c.id})">×</button>
+      ${c.name?`<span class="pair-name" title="${ea(c.name)}">${ea(c.name)}</span>`:''}
+      <button class="pair-del" style="margin-left:auto" onclick="removeRowCol(${c.id})">×</button>
     </div>`).join('');
 }
 
@@ -445,10 +606,12 @@ function generateCols() {
   const tc=document.getElementById('c-trigCol').value.trim().toUpperCase();
   const tv=document.getElementById('c-trigVal').value.trim();
   const sr=parseInt(document.getElementById('c-startRow').value)||2;
-  const lbl=document.getElementById('c-label').value.trim();
+  const aba=document.getElementById('c-aba').value;
+  const plat=document.getElementById('c-plat').value;
+  const lbl=aba?(aba+(plat&&plat!==aba?' — '+plat:'')):null;
   if(!tc||!tv){toast('Preencha o gatilho');return;}
   const valid=colPairs.filter(p=>p.ref&&p.target);
-  if(!valid.length){toast('Adicione ao menos um par');return;}
+  if(!valid.length){toast('Adicione ao menos um par (preencha a coluna destino →)');return;}
 
   const outEl=document.getElementById('c-out');
   const titleEl=outEl.querySelector('.out-title');
@@ -463,7 +626,7 @@ function generateCols() {
     const gid=`cg-${p.id}`, rid=`cr-${p.id}`;
     return `
       <div class="pair-out">
-        <div class="pair-out-hdr">Par ${i+1} &nbsp;·&nbsp; <code>$${p.ref}</code> → pinta <code>$${p.target}</code> &nbsp;·&nbsp; Intervalo: <code>${range}</code></div>
+        <div class="pair-out-hdr">Par ${i+1} &nbsp;·&nbsp; <code>$${p.ref}</code>${p.name?` <span style="color:var(--fg3);font-weight:400;font-size:11px">(${p.name})</span>`:''} → pinta <code>$${p.target}</code> &nbsp;·&nbsp; Intervalo: <code>${range}</code></div>
         ${fRow('g','🟢 Verde — iguais',g,range,gid)}
         ${fRow('r','🔴 Vermelho — diferentes',r,range,rid)}
       </div>`;
@@ -478,14 +641,16 @@ function generateRows() {
   const tv=document.getElementById('r-trigVal').value.trim();
   const sr=parseInt(document.getElementById('r-startRow').value)||2;
   const mr=parseInt(document.getElementById('r-maxRow').value)||1000;
-  const lbl=document.getElementById('r-label').value.trim();
+  const aba=document.getElementById('r-aba').value;
+  const plat=document.getElementById('r-plat').value;
+  const lbl=aba?(aba+(plat&&plat!==aba?' — '+plat:'')):null;
   if(!tc||!tv){toast('Preencha o gatilho');return;}
   const valid=rowCols.filter(c=>c.col);
   if(!valid.length){toast('Adicione ao menos uma coluna');return;}
 
   const outEl=document.getElementById('r-out');
   const titleEl=outEl.querySelector('.out-title');
-  titleEl.textContent=lbl?`📋 ${lbl}`:'📋 Fórmulas geradas';
+  titleEl.textContent=lbl?`📋 ${lbl}`:'📋 Fórmulas geradas (Bloco Colunas)';
 
   const list=document.getElementById('r-out-list');
   list.innerHTML=valid.map((c,i)=>{
