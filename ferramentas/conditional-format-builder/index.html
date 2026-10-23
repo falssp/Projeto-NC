@@ -472,6 +472,13 @@ function onPlatChange(pfx) {
   document.getElementById(pfx+'-load-wrap').style.display='flex';
 }
 
+// converte letra de coluna → número (A=1, Z=26, AA=27 …)
+function colToNum(s){ let n=0; for(const c of s) n=n*26+(c.charCodeAt(0)-64); return n; }
+// número → letra de coluna
+function numToCol(n){ let s=''; while(n>0){ n--; s=String.fromCharCode(65+(n%26))+s; n=Math.floor(n/26); } return s; }
+// expande "CX" .. "DA" → ["CX","CY","CZ","DA"]
+function expandRange(a,b){ const cols=[]; for(let i=colToNum(a),e=colToNum(b);i<=e;i++) cols.push(numToCol(i)); return cols; }
+
 function loadPlatform(pfx) {
   const aba = document.getElementById(pfx+'-aba').value;
   const plat = document.getElementById(pfx+'-plat').value;
@@ -480,14 +487,22 @@ function loadPlatform(pfx) {
   const tag = aba+(plat&&plat!==aba?' · '+plat:'');
   if (pfx==='c') {
     colPairs = [];
-    data.pairs.forEach(p => { colPairs.push({id:++uid, ref:p.ref, target:p.target, refName:p.refName||'', targetName:p.targetName||''}); });
+    data.pairs.forEach(p => {
+      expandRange(p.ref, p.target).forEach(col => {
+        colPairs.push({id:++uid, ref:col, target:'', refName:'', targetName:''});
+      });
+    });
     renderColPairs();
-    toast(`Par carregado — ${tag}`);
+    toast(`${colPairs.length} colunas carregadas — ${tag}`);
   } else {
     rowCols = [];
-    data.pairs.forEach(p => { rowCols.push({id:++uid, col:p.ref, name:p.name||''}); });
+    data.pairs.forEach(p => {
+      expandRange(p.ref, p.target).forEach(col => {
+        rowCols.push({id:++uid, col, name:''});
+      });
+    });
     renderRowCols();
-    toast(`Coluna carregada — ${tag}`);
+    toast(`${rowCols.length} colunas carregadas — ${tag}`);
   }
 }
 
