@@ -208,25 +208,38 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     <div id="c-load-wrap" style="display:none;margin-top:4px">
       <button class="load-btn" onclick="loadPlatform('c')">↺ Carregar campos da plataforma</button>
     </div>
-    <div style="height:12px"></div>
-    <div class="card-label">Gatilho</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Dado de busca</div>
     <div class="row">
-      <span class="lbl">Se coluna</span>
+      <span class="lbl">Coluna</span>
       <input class="inp inp-col" id="c-trigCol" value="B" maxlength="3" oninput="this.value=this.value.toUpperCase()" placeholder="B">
       <span class="lbl">= "</span>
       <input class="inp inp-val" id="c-trigVal" value="BW" placeholder="BW">
       <span class="lbl">"</span>
     </div>
     <div class="row" style="margin-top:12px">
-      <span class="lbl">Intervalo começa na linha</span>
+      <span class="lbl">Começa na linha</span>
       <input class="inp inp-row" id="c-startRow" value="2" type="number" min="1">
     </div>
   </div>
 
   <div class="card">
-    <div class="card-label">Pares — coluna referência → coluna pintada</div>
+    <div class="card-label">Intervalo</div>
+    <div class="row">
+      <span class="lbl">Colunas</span>
+      <input class="inp inp-col" id="c-intStart" placeholder="início" maxlength="3" oninput="this.value=this.value.toUpperCase()">
+      <span class="lbl">:</span>
+      <input class="inp inp-col" id="c-intEnd" placeholder="fim" maxlength="3" oninput="this.value=this.value.toUpperCase()">
+      <button class="load-btn" onclick="expandIntervalo()">↻ Expandir pares</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Pares — campo · coluna referência → coluna pintada</div>
     <div class="pairs" id="c-pairs"></div>
-    <button class="btn-add" onclick="addColPair()">＋ Adicionar par de colunas</button>
+    <button class="btn-add" onclick="addColPair()">＋ Adicionar par</button>
   </div>
 
   <button class="btn-gen" onclick="generateCols()">⚡ Gerar fórmulas</button>
@@ -433,8 +446,8 @@ const PLATFORMS = {
 let colPairs=[], rowCols=[], uid=0;
 
 // ── Init ─────────────────────────────────────────────────
-addColPair('M','N','','');
-addColPair('I','J','','');
+addColPair('M','N','');
+addColPair('I','J','');
 addRowCol('X');
 
 // ── Tabs ──────────────────────────────────────────────────
@@ -488,8 +501,10 @@ function loadPlatform(pfx) {
   if (pfx==='c') {
     colPairs = [];
     data.pairs.forEach(p => {
+      document.getElementById('c-intStart').value = p.ref;
+      document.getElementById('c-intEnd').value = p.target;
       expandRange(p.ref, p.target).forEach(col => {
-        colPairs.push({id:++uid, ref:col, target:'', refName:'', targetName:''});
+        colPairs.push({id:++uid, col, target:'', label:''});
       });
     });
     renderColPairs();
@@ -507,9 +522,19 @@ function loadPlatform(pfx) {
 }
 
 // ── Col Pairs ─────────────────────────────────────────────
-function addColPair(ref='', target='', refName='', targetName='') {
-  colPairs.push({id:++uid, ref, target, refName, targetName});
+function addColPair(col='', target='', label='') {
+  colPairs.push({id:++uid, col, target, label});
   renderColPairs();
+}
+function expandIntervalo() {
+  const s=document.getElementById('c-intStart').value.trim().toUpperCase();
+  const e=document.getElementById('c-intEnd').value.trim().toUpperCase();
+  if(!s||!e){toast('Preencha início e fim do intervalo');return;}
+  if(colToNum(s)>colToNum(e)){toast('Início deve ser ≤ fim');return;}
+  colPairs=[];
+  expandRange(s,e).forEach(col=>colPairs.push({id:++uid,col,target:'',label:''}));
+  renderColPairs();
+  toast(`${colPairs.length} colunas expandidas`);
 }
 function removeColPair(id) { colPairs=colPairs.filter(p=>p.id!==id); renderColPairs(); }
 function updateColPair(id, f, v) { const p=colPairs.find(p=>p.id===id); if(p) p[f]=v; }
@@ -519,28 +544,14 @@ function renderColPairs() {
   el.innerHTML=colPairs.map((p,i)=>`
     <div class="pair-row" style="align-items:center;gap:8px;flex-wrap:nowrap">
       <span class="pair-n" style="flex-shrink:0">${i+1}</span>
-      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
-        <div style="font-size:10px;color:var(--fg3)">Ref</div>
-        <input class="inp inp-col" style="width:52px" value="${ea(p.ref)}" placeholder="col" maxlength="3"
-          oninput="updateColPair(${p.id},'ref',this.value.toUpperCase());this.value=this.value.toUpperCase()">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:60px">
-        <div style="font-size:10px;color:var(--fg3)">Nome Ref</div>
-        <input class="inp" style="width:100%;font-family:inherit" value="${ea(p.refName)}" placeholder="ex: Campaign"
-          oninput="updateColPair(${p.id},'refName',this.value)">
-      </div>
+      <input class="inp" style="flex:1;min-width:80px;font-family:inherit" value="${ea(p.label)}" placeholder="Campo (ex: Campaign)"
+        oninput="updateColPair(${p.id},'label',this.value)">
+      <input class="inp inp-col" style="width:52px;flex-shrink:0" value="${ea(p.col)}" placeholder="col" maxlength="3"
+        oninput="updateColPair(${p.id},'col',this.value.toUpperCase());this.value=this.value.toUpperCase()">
       <span class="arr" style="flex-shrink:0;font-size:11px">→ pinta →</span>
-      <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
-        <div style="font-size:10px;color:var(--fg3)">Destino</div>
-        <input class="inp inp-col" style="width:52px" value="${ea(p.target)}" placeholder="col" maxlength="3"
-          oninput="updateColPair(${p.id},'target',this.value.toUpperCase());this.value=this.value.toUpperCase()">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:60px">
-        <div style="font-size:10px;color:var(--fg3)">Nome Destino</div>
-        <input class="inp" style="width:100%;font-family:inherit" value="${ea(p.targetName)}" placeholder="ex: Ad Name"
-          oninput="updateColPair(${p.id},'targetName',this.value)">
-      </div>
-      <button class="pair-del" style="flex-shrink:0;align-self:center;margin-top:14px" onclick="removeColPair(${p.id})">×</button>
+      <input class="inp inp-col" style="width:52px;flex-shrink:0" value="${ea(p.target)}" placeholder="col" maxlength="3"
+        oninput="updateColPair(${p.id},'target',this.value.toUpperCase());this.value=this.value.toUpperCase()">
+      <button class="pair-del" style="flex-shrink:0" onclick="removeColPair(${p.id})">×</button>
     </div>`).join('');
 }
 
@@ -573,8 +584,8 @@ function generateCols() {
   const plat=document.getElementById('c-plat').value;
   const lbl=aba?(aba+(plat&&plat!==aba?' — '+plat:'')):null;
   if(!tc||!tv){toast('Preencha o gatilho');return;}
-  const valid=colPairs.filter(p=>p.ref&&p.target);
-  if(!valid.length){toast('Adicione ao menos um par (preencha a coluna destino →)');return;}
+  const valid=colPairs.filter(p=>p.col&&p.target);
+  if(!valid.length){toast('Preencha a coluna destino (→) nos pares');return;}
 
   const outEl=document.getElementById('c-out');
   const titleEl=outEl.querySelector('.out-title');
@@ -582,14 +593,15 @@ function generateCols() {
 
   const list=document.getElementById('c-out-list');
   list.innerHTML=valid.map((p,i)=>{
-    const base=`$${tc}${sr}="${tv}";$${tc}${sr}<>"";$${p.ref}${sr}<>"";$${p.target}${sr}<>""`;
-    const g=`=E(${base};$${p.ref}${sr}=$${p.target}${sr})`;
-    const r=`=E(${base};$${p.ref}${sr}<>$${p.target}${sr})`;
-    const range=`${p.ref}${sr}:${p.target}`;
+    const base=`$${tc}${sr}="${tv}";$${tc}${sr}<>"";$${p.col}${sr}<>"";$${p.target}${sr}<>""`;
+    const g=`=E(${base};$${p.col}${sr}=$${p.target}${sr})`;
+    const r=`=E(${base};$${p.col}${sr}<>$${p.target}${sr})`;
+    const range=`${p.col}${sr}:${p.target}`;
     const gid=`cg-${p.id}`, rid=`cr-${p.id}`;
+    const hdr=p.label?`<strong>${ea(p.label)}</strong> &nbsp;·&nbsp; `:`Par ${i+1} &nbsp;·&nbsp; `;
     return `
       <div class="pair-out">
-        <div class="pair-out-hdr">Par ${i+1} &nbsp;·&nbsp; <code>$${p.ref}</code>${p.refName?` <span style="color:var(--fg3);font-weight:400;font-size:11px">${ea(p.refName)}</span>`:''} → pinta <code>$${p.target}</code>${p.targetName?` <span style="color:var(--fg3);font-weight:400;font-size:11px">${ea(p.targetName)}</span>`:''} &nbsp;·&nbsp; Intervalo: <code>${range}</code></div>
+        <div class="pair-out-hdr">${hdr}<code>$${p.col}</code> → pinta <code>$${p.target}</code> &nbsp;·&nbsp; Intervalo: <code>${range}</code></div>
         ${fRow('g','🟢 Verde — iguais',g,range,gid)}
         ${fRow('r','🔴 Vermelho — diferentes',r,range,rid)}
       </div>`;
