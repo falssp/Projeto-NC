@@ -198,6 +198,7 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         <option value="Meta e Tiktok">Meta e Tiktok</option>
         <option value="Pinterest/Snapchat e Twitter">Pinterest / Snapchat e Twitter</option>
         <option value="Flashtalking">Flashtalking</option>
+        <option value="Livre">Livre</option>
       </select>
     </div>
     <div class="sel-row">
@@ -236,6 +237,7 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     <input type="hidden" id="c-intStart">
     <input type="hidden" id="c-intEnd">
     <div class="pairs" id="c-pairs"></div>
+    <button class="btn-add" id="c-add-par" hidden onclick="addColPair()">＋ Adicionar par</button>
   </div>
 
   <button class="btn-gen" id="c-btn-gen" hidden onclick="generateCols()">⚡ Gerar fórmulas</button>
@@ -551,6 +553,12 @@ function onAbaChange(pfx) {
     document.getElementById(pfx+'-load-wrap').style.display='none';
     return;
   }
+  if (aba === 'Livre') {
+    platSel.innerHTML = '<option value="Livre">Livre</option>';
+    platSel.disabled = true;
+    document.getElementById(pfx+'-load-wrap').style.display='flex';
+    return;
+  }
   const data = PLATFORMS[aba];
   platSel.innerHTML = data.platforms.map(p=>`<option value="${p}">${p}</option>`).join('');
   platSel.disabled = false;
@@ -576,16 +584,22 @@ function loadPlatform(pfx) {
   const tag = aba+(plat&&plat!==aba?' · '+plat:'');
   if (pfx==='c') {
     colPairs = [];
-    data.pairs.forEach(p => {
-      document.getElementById('c-intStart').value = p.ref;
-      document.getElementById('c-intEnd').value = p.target;
-      expandRange(p.ref, p.target).forEach((col, i) => {
-        colPairs.push({id:++uid, col, target:'', label:(p.fields&&p.fields[i])||''});
+    if (aba === 'Livre') {
+      colPairs.push({id:++uid, col:'', target:'', label:'', locked:false});
+      document.getElementById('c-add-par').hidden = false;
+    } else {
+      document.getElementById('c-add-par').hidden = true;
+      data.pairs.forEach(p => {
+        document.getElementById('c-intStart').value = p.ref;
+        document.getElementById('c-intEnd').value = p.target;
+        expandRange(p.ref, p.target).forEach((col, i) => {
+          colPairs.push({id:++uid, col, target:'', label:(p.fields&&p.fields[i])||'', locked:true});
+        });
       });
-    });
+    }
     renderColPairs();
     cStep2();
-    toast(`${colPairs.length} colunas carregadas — ${tag}`);
+    toast(aba==='Livre' ? 'Modo livre — adicione os pares' : `${colPairs.length} colunas carregadas — ${tag}`);
   } else {
     rowCols = [];
     data.pairs.forEach(p => {
@@ -629,7 +643,7 @@ function renderColPairs() {
       <span class="arr" style="flex-shrink:0;font-size:11px">→ pinta →</span>
       <input class="inp inp-col" style="width:52px;flex-shrink:0" value="${ea(p.target)}" placeholder="col" maxlength="3"
         oninput="updateColPair(${p.id},'target',this.value.toUpperCase());this.value=this.value.toUpperCase()">
-      <button class="pair-del" style="flex-shrink:0" onclick="removeColPair(${p.id})">×</button>
+      ${p.locked?'<span style="width:20px;flex-shrink:0"></span>':`<button class="pair-del" style="flex-shrink:0" onclick="removeColPair(${p.id})">×</button>`}
     </div>`).join('');
 }
 
