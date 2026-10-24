@@ -11,6 +11,11 @@
   ║  Autor    : falssp · felipe.lima@stormx.com.br                  ║
   ╠══════════════════════════════════════════════════════════════════╣
   ║  CHANGELOG                                                      ║
+  ║  v1.1.0 · 2026-10-23 · Análise Manual adicionada                ║
+  ║    — Nova aba "Manual": análise frame-a-frame com timestamps    ║
+  ║    — Timeline visual de suspeita por segmento                   ║
+  ║    — Veredito automático + exportação de relatório              ║
+  ║    — Checklist de indicadores de IA (Física, Rostos, Mãos…)    ║
   ║  v1.0.0 · 2026-10-08 · Versão inicial                          ║
   ║    — UX dois níveis: Gemini recomendado + Outras APIs           ║
   ║    — Tabs alfabéticas: Áudio · Imagem · Texto · Vídeo           ║
@@ -153,6 +158,98 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 .manual-step-link.elevenlabs{background:#6D28D9;color:#fff}
 .manual-step-link.elevenlabs:hover{background:#5B21B6}
 .manual-note{font-size:11px;color:var(--g500);margin-top:10px;padding:7px 10px;background:var(--warn-b);border-radius:6px;line-height:1.5}
+
+/* ══════════════════════════════════════
+   MANUAL ANALYSIS TAB
+══════════════════════════════════════ */
+.man-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.man-meta-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.mf{display:flex;flex-direction:column;gap:4px}
+.mf-lbl{font-size:10.5px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.05em}
+.mf-inp{padding:8px 10px;border:1.5px solid var(--g300);border-radius:7px;font-family:var(--fn);font-size:13px;outline:none;transition:border-color .15s;background:#fff;color:var(--g900)}
+.mf-inp:focus{border-color:var(--ul)}
+
+/* timeline */
+.tl-wrap{margin:14px 0 8px;background:var(--g50);border:1px solid var(--g200);border-radius:9px;padding:12px 14px}
+.tl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tl-title{font-size:10.5px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.05em}
+.tl-dur-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--g500)}
+.tl-dur-inp{width:62px;padding:4px 7px;border:1.5px solid var(--g300);border-radius:6px;font-family:var(--fn);font-size:11px;outline:none;background:#fff;color:var(--g900)}
+.tl-dur-inp:focus{border-color:var(--ul)}
+.tl-bar{height:32px;background:var(--g200);border-radius:6px;position:relative;overflow:hidden}
+.tl-seg{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 4px;min-width:3px;transition:opacity .15s;cursor:default}
+.tl-seg:hover{opacity:.85}
+.tl-seg-lbl{font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tl-empty{font-size:11px;color:var(--g400);text-align:center;padding:8px 0}
+.tl-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.tl-leg-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--g700)}
+.tl-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.slev-b{background:#16a34a}.slev-m{background:#d97706}.slev-a{background:#dc2626}.slev-ma{background:#7c3aed}
+
+/* segment rows */
+.seg-list{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.seg-row{background:var(--g50);border:1px solid var(--g200);border-radius:9px;padding:11px 12px 10px;position:relative}
+.seg-row-top{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.seg-num{width:22px;height:22px;border-radius:50%;background:var(--ul);color:#fff;font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.seg-times{display:flex;align-items:center;gap:4px;flex-shrink:0;padding-top:2px}
+.seg-time{width:54px;padding:6px 7px;border:1.5px solid var(--g300);border-radius:6px;font-family:'DM Mono',monospace;font-size:11.5px;text-align:center;outline:none;background:#fff;color:var(--g900);transition:border-color .15s}
+.seg-time:focus{border-color:var(--ul)}
+.seg-sep{font-size:12px;color:var(--g400)}
+.seg-obs{flex:1;padding:6px 9px;border:1.5px solid var(--g300);border-radius:7px;font-family:var(--fn);font-size:12.5px;outline:none;resize:none;min-height:54px;line-height:1.4;color:var(--g900);background:#fff;transition:border-color .15s}
+.seg-obs:focus{border-color:var(--ul)}
+.seg-del{width:24px;height:24px;border-radius:5px;border:none;background:none;color:var(--g300);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;padding:0;margin-top:1px}
+.seg-del:hover{background:var(--err-b);color:var(--err)}
+
+.seg-row-bot{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.seg-lev-lbl{font-size:10.5px;font-weight:600;color:var(--g500);white-space:nowrap;padding-top:3px;flex-shrink:0}
+.seg-lev-btns{display:flex;gap:4px;flex-wrap:wrap}
+.slb{padding:4px 10px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .12s;white-space:nowrap}
+.slb-b{background:var(--g100);color:var(--g700);border-color:var(--g200)}.slb-b.on{background:#dcfce7;color:#15803d;border-color:#86efac}
+.slb-m{background:var(--g100);color:var(--g700);border-color:var(--g200)}.slb-m.on{background:#fef3c7;color:#b45309;border-color:#fcd34d}
+.slb-a{background:var(--g100);color:var(--g700);border-color:var(--g200)}.slb-a.on{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+.slb-ma{background:var(--g100);color:var(--g700);border-color:var(--g200)}.slb-ma.on{background:#ede9fe;color:#7c3aed;border-color:#c4b5fd}
+
+.seg-ev-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.ev-lbl{font-size:10.5px;font-weight:600;color:var(--g500);white-space:nowrap;padding-top:3px;flex-shrink:0}
+.ev-chip{display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:12px;font-size:10.5px;font-weight:500;cursor:pointer;border:1.5px solid var(--g300);background:#fff;color:var(--g700);transition:all .12s;white-space:nowrap}
+.ev-chip:hover{border-color:var(--ul);color:var(--ul)}
+.ev-chip.on{background:var(--ul-l);border-color:var(--ul);color:var(--ul);font-weight:600}
+
+/* add seg */
+.btn-add-seg{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border-radius:8px;border:1.5px dashed var(--ul);background:var(--ul-l);color:var(--ul);font-family:var(--fn);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-add-seg:hover{background:var(--ul);color:#fff}
+
+/* highlights */
+.hl-section{margin-top:16px;padding:14px;background:#fff8f0;border:1px solid #FCD34D;border-radius:9px;display:none}
+.hl-section.visible{display:block}
+.hl-title{font-size:10.5px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.hl-list{display:flex;flex-direction:column;gap:7px}
+.hl-item{display:flex;gap:9px;align-items:flex-start}
+.hl-badge{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.hl-badge-a{background:#dc2626}.hl-badge-ma{background:#7c3aed}.hl-badge-m{background:#d97706}
+.hl-text{font-size:12px;color:var(--g700);line-height:1.4}
+.hl-time{font-weight:700;color:var(--g900);font-family:'DM Mono',monospace;font-size:11px}
+.hl-level{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:10px;margin-left:4px}
+.hl-lev-a{background:#fee2e2;color:#dc2626}.hl-lev-ma{background:#ede9fe;color:#7c3aed}.hl-lev-m{background:#fef3c7;color:#b45309}
+
+/* verdict */
+.man-verdict{margin-top:14px;background:#fff;border:1.5px solid var(--g200);border-radius:10px;padding:16px;display:none}
+.man-verdict.visible{display:block}
+.mv-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.mv-icon{font-size:34px;line-height:1;flex-shrink:0}
+.mv-text h3{font-size:15px;font-weight:700;margin-bottom:3px}
+.mv-text p{font-size:12px;color:var(--g500);line-height:1.5}
+.man-notes-lbl{font-size:10.5px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.man-notes{width:100%;padding:9px 11px;border:1.5px solid var(--g300);border-radius:8px;font-family:var(--fn);font-size:12.5px;resize:vertical;min-height:72px;outline:none;line-height:1.5;color:var(--g900);transition:border-color .15s}
+.man-notes:focus{border-color:var(--ul)}
+
+/* export */
+.man-export-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn-exp{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;font-family:var(--fn);font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-exp-copy{background:var(--ul);color:#fff}.btn-exp-copy:hover{background:var(--ul-m)}
+.btn-exp-reset{background:#fff;color:var(--g700);border:1px solid var(--g300)}.btn-exp-reset:hover{background:var(--g100)}
+.man-copied{font-size:11.5px;color:var(--ok);font-weight:600;align-self:center;display:none}
+.man-copied.visible{display:inline}
 
 /* ── main card ── */
 .card{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden}
@@ -332,6 +429,7 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
   <div class="tabs">
     <div class="tab active" onclick="switchTab('audio')" id="tab-audio">🎵 Áudio</div>
     <div class="tab" onclick="switchTab('image')" id="tab-image">🖼️ Imagem</div>
+    <div class="tab" onclick="switchTab('manual')" id="tab-manual">📋 Manual</div>
     <div class="tab" onclick="switchTab('text')" id="tab-text">📝 Texto</div>
     <div class="tab" onclick="switchTab('video')" id="tab-video">🎬 Vídeo</div>
   </div>
@@ -389,6 +487,75 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
   </div>
 
   <!-- TEXTO -->
+  <!-- ══════════════════════ MANUAL PANEL ══════════════════════ -->
+  <div class="panel" id="panel-manual">
+
+    <div style="font-size:12px;color:var(--g500);line-height:1.55;margin-bottom:14px;padding:10px 12px;background:var(--g50);border-radius:8px;border-left:3px solid var(--ul)">
+      Analise a peça segmento por segmento, como uma análise forense humana. Adicione cada trecho, descreva o que observou e classifique o nível de suspeita de uso de IA. O veredito e o relatório são gerados automaticamente.
+    </div>
+
+    <!-- Meta -->
+    <div class="man-meta">
+      <div class="mf"><span class="mf-lbl">Peça / Título</span><input class="mf-inp" id="man-titulo" placeholder="ex: Hellmann's — Sabor que une" oninput="manUpdate()"></div>
+      <div class="mf"><span class="mf-lbl">Anunciante</span><input class="mf-inp" id="man-anunciante" placeholder="ex: Unilever" oninput="manUpdate()"></div>
+    </div>
+    <div class="man-meta" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-top:-4px">
+      <div class="mf"><span class="mf-lbl">Data da análise</span><input class="mf-inp" id="man-data" type="date" oninput="manUpdate()"></div>
+      <div class="mf"><span class="mf-lbl">Analista</span><input class="mf-inp" id="man-analista" placeholder="ex: Felipe" oninput="manUpdate()"></div>
+      <div class="mf" style="grid-column:span 2"><span class="mf-lbl">Observação geral (opcional)</span><input class="mf-inp" id="man-obs-geral" placeholder="ex: Peça de 30s recebida para aprovação" oninput="manUpdate()"></div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="tl-wrap">
+      <div class="tl-head">
+        <span class="tl-title">Timeline de suspeita</span>
+        <div class="tl-dur-row">
+          <span>Duração total:</span>
+          <input class="tl-dur-inp" id="man-dur" placeholder="00:30" oninput="manUpdate()" title="Duração total do vídeo (mm:ss)">
+        </div>
+      </div>
+      <div class="tl-bar" id="man-tl-bar"><div class="tl-empty">Adicione segmentos abaixo para ver a timeline</div></div>
+      <div class="tl-legend">
+        <div class="tl-leg-item"><div class="tl-leg-dot slev-b"></div>Baixa</div>
+        <div class="tl-leg-item"><div class="tl-leg-dot slev-m"></div>Moderada</div>
+        <div class="tl-leg-item"><div class="tl-leg-dot slev-a"></div>Alta</div>
+        <div class="tl-leg-item"><div class="tl-leg-dot slev-ma"></div>Muito Alta</div>
+      </div>
+    </div>
+
+    <!-- Segments -->
+    <div style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:4px">Segmentos analisados</div>
+    <div class="seg-list" id="man-seg-list"></div>
+    <button class="btn-add-seg" onclick="manAddSeg()">+ Adicionar segmento</button>
+
+    <!-- Highlights -->
+    <div class="hl-section" id="man-hl">
+      <div class="hl-title">⚠️ Pontos que merecem mais atenção</div>
+      <div class="hl-list" id="man-hl-list"></div>
+    </div>
+
+    <!-- Verdict -->
+    <div class="man-verdict" id="man-verdict">
+      <div class="mv-row">
+        <div class="mv-icon" id="man-verd-ico">❓</div>
+        <div class="mv-text">
+          <h3 id="man-verd-title">Veredito</h3>
+          <p id="man-verd-sub"></p>
+        </div>
+      </div>
+      <div class="man-notes-lbl">Notas adicionais do analista</div>
+      <textarea class="man-notes" id="man-notes" placeholder="Observações finais, contexto da peça, recomendação de aprovação..."></textarea>
+    </div>
+
+    <!-- Export -->
+    <div class="man-export-row" id="man-export-row" style="display:none">
+      <button class="btn-exp btn-exp-copy" onclick="manExport()">📋 Copiar relatório</button>
+      <button class="btn-exp btn-exp-reset" onclick="manReset()">↺ Nova análise</button>
+      <span class="man-copied" id="man-copied">✓ Copiado!</span>
+    </div>
+
+  </div><!-- /panel-manual -->
+
   <div class="panel" id="panel-text">
     <textarea class="txt-area" id="txt-input" placeholder="Cole aqui o texto que você quer verificar..." oninput="textInput()"></textarea>
     <div class="txt-count" id="txt-count">0 caracteres · mínimo 50</div>
@@ -1020,6 +1187,340 @@ function updateLoadingMsg(t,msg){ document.getElementById('loading-msg-'+t).text
 function hideLoading(t){ document.getElementById('loading-'+t).classList.remove('visible'); }
 
 init();
+
+/* ═══════════════════════════════════════════════════════════════
+   MANUAL ANALYSIS
+═══════════════════════════════════════════════════════════════ */
+var manSegs = [];
+var manIdCnt = 0;
+
+var MAN_EVID = [
+  {id:'fisica',  label:'Física impossível'},
+  {id:'rostos',  label:'Rostos artificiais'},
+  {id:'maos',    label:'Mãos / Anatomia'},
+  {id:'texturas',label:'Texturas uniformes'},
+  {id:'mov',     label:'Movimento sintético'},
+  {id:'produto', label:'Produto composição'},
+  {id:'ilum',    label:'Iluminação estranha'},
+  {id:'texto',   label:'Texto / Letras'},
+  {id:'outro',   label:'Outra evidência'},
+];
+var MAN_LEV = [
+  {id:'b',  label:'Baixa',     cls:'slb-b', col:'#16a34a'},
+  {id:'m',  label:'Moderada',  cls:'slb-m', col:'#d97706'},
+  {id:'a',  label:'Alta',      cls:'slb-a', col:'#dc2626'},
+  {id:'ma', label:'Muito Alta',cls:'slb-ma',col:'#7c3aed'},
+];
+
+function manTimeToSec(s){
+  if(!s||!s.trim()) return null;
+  var p=s.trim().split(':');
+  if(p.length===2) return parseInt(p[0],10)*60+parseFloat(p[1]);
+  if(p.length===3) return parseInt(p[0],10)*3600+parseInt(p[1],10)*60+parseFloat(p[2]);
+  return null;
+}
+function manSecToTime(s){
+  var m=Math.floor(s/60), sec=Math.round(s%60);
+  return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function manAddSeg(){
+  var id = ++manIdCnt;
+  manSegs.push({id:id, ini:'', fim:'', obs:'', lev:'', evid:[]});
+  manRenderSegs();
+  manUpdate();
+  setTimeout(function(){
+    var el=document.getElementById('seg-obs-'+id);
+    if(el) el.focus();
+  },50);
+}
+
+function manDelSeg(id){
+  manSegs = manSegs.filter(function(s){ return s.id!==id; });
+  manRenderSegs();
+  manUpdate();
+}
+
+function manSetLev(id, lev){
+  var seg = manSegs.find(function(s){ return s.id===id; });
+  if(!seg) return;
+  seg.lev = seg.lev===lev ? '' : lev;
+  document.querySelectorAll('#seg-lev-'+id+' .slb').forEach(function(b){
+    b.classList.toggle('on', b.dataset.lev===seg.lev);
+  });
+  manUpdate();
+}
+
+function manToggleEv(id, ev){
+  var seg = manSegs.find(function(s){ return s.id===id; });
+  if(!seg) return;
+  var idx = seg.evid.indexOf(ev);
+  if(idx>=0) seg.evid.splice(idx,1); else seg.evid.push(ev);
+  document.querySelectorAll('#seg-ev-'+id+' .ev-chip').forEach(function(c){
+    c.classList.toggle('on', seg.evid.includes(c.dataset.ev));
+  });
+  manUpdate();
+}
+
+function manSyncField(id, field, val){
+  var seg = manSegs.find(function(s){ return s.id===id; });
+  if(seg) seg[field] = val;
+  if(field==='ini'||field==='fim') manUpdate();
+}
+
+function manRenderSegs(){
+  var list = document.getElementById('man-seg-list');
+  if(!list) return;
+  if(!manSegs.length){
+    list.innerHTML='<div style="text-align:center;color:var(--g400);font-size:12px;padding:12px 0">Nenhum segmento — clique em "+ Adicionar segmento"</div>';
+    return;
+  }
+  list.innerHTML = manSegs.map(function(seg, idx){
+    var levBtns = MAN_LEV.map(function(l){
+      return '<button class="slb '+l.cls+(seg.lev===l.id?' on':'')+'" data-lev="'+l.id+'" onclick="manSetLev('+seg.id+',\''+l.id+'\')">'+l.label+'</button>';
+    }).join('');
+    var evChips = MAN_EVID.map(function(e){
+      return '<span class="ev-chip'+(seg.evid.includes(e.id)?' on':'')+'" data-ev="'+e.id+'" onclick="manToggleEv('+seg.id+',\''+e.id+'\')">'+e.label+'</span>';
+    }).join('');
+    return '<div class="seg-row" id="seg-row-'+seg.id+'">'+
+      '<div class="seg-row-top">'+
+        '<div class="seg-num">'+( idx+1)+'</div>'+
+        '<div class="seg-times">'+
+          '<input class="seg-time" id="seg-ini-'+seg.id+'" value="'+seg.ini+'" placeholder="00:00" title="Início" oninput="manSyncField('+seg.id+',\'ini\',this.value);manUpdate()">'+
+          '<span class="seg-sep">–</span>'+
+          '<input class="seg-time" id="seg-fim-'+seg.id+'" value="'+seg.fim+'" placeholder="00:00" title="Fim" oninput="manSyncField('+seg.id+',\'fim\',this.value);manUpdate()">'+
+        '</div>'+
+        '<textarea class="seg-obs" id="seg-obs-'+seg.id+'" placeholder="Descreva o que observou neste trecho..." oninput="manSyncField('+seg.id+',\'obs\',this.value)">'+seg.obs+'</textarea>'+
+        '<button class="seg-del" title="Remover segmento" onclick="manDelSeg('+seg.id+')">×</button>'+
+      '</div>'+
+      '<div class="seg-row-bot">'+
+        '<span class="seg-lev-lbl">Suspeita:</span>'+
+        '<div class="seg-lev-btns" id="seg-lev-'+seg.id+'">'+levBtns+'</div>'+
+      '</div>'+
+      '<div class="seg-ev-row" id="seg-ev-'+seg.id+'">'+
+        '<span class="ev-lbl">Evidências:</span>'+evChips+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function manUpdate(){
+  manUpdateTimeline();
+  manUpdateHighlights();
+  manUpdateVerdict();
+}
+
+function manUpdateTimeline(){
+  var bar = document.getElementById('man-tl-bar'); if(!bar) return;
+  var durRaw = (document.getElementById('man-dur')||{value:''}).value;
+  var durSec = manTimeToSec(durRaw) || 0;
+
+  // auto-detect duration from segments if not set
+  if(!durSec && manSegs.length){
+    var maxFim = 0;
+    manSegs.forEach(function(s){
+      var f=manTimeToSec(s.fim)||0; if(f>maxFim) maxFim=f;
+    });
+    durSec = maxFim;
+  }
+
+  if(!durSec || !manSegs.length){
+    bar.innerHTML='<div class="tl-empty">'+(!manSegs.length?'Adicione segmentos abaixo para ver a timeline':'Informe a duração total acima')+'</div>';
+    return;
+  }
+
+  var levCol = {b:'#16a34a',m:'#d97706',a:'#dc2626',ma:'#7c3aed'};
+  var segsHtml = '';
+  manSegs.forEach(function(seg){
+    var ini = manTimeToSec(seg.ini);
+    var fim = manTimeToSec(seg.fim);
+    if(ini===null||fim===null||ini>=fim) return;
+    var left = (ini/durSec*100).toFixed(2)+'%';
+    var width = ((fim-ini)/durSec*100).toFixed(2)+'%';
+    var col = levCol[seg.lev]||'#94a3b8';
+    var lev = MAN_LEV.find(function(l){return l.id===seg.lev;});
+    var levLabel = lev ? lev.label : '';
+    segsHtml += '<div class="tl-seg" style="left:'+left+';width:'+width+';background:'+col+'" title="'+seg.ini+'–'+seg.fim+' | '+(seg.obs||'sem descrição')+' | Suspeita: '+(levLabel||'—')+'">'+
+      '<span class="tl-seg-lbl">'+seg.ini+'</span>'+
+    '</div>';
+  });
+  bar.innerHTML = segsHtml || '<div class="tl-empty">Informe os tempos dos segmentos (início e fim)</div>';
+}
+
+function manUpdateHighlights(){
+  var hl = document.getElementById('man-hl');
+  var hlList = document.getElementById('man-hl-list');
+  if(!hl||!hlList) return;
+  var levOrder = {ma:4, a:3, m:2, b:1, '':0};
+  var sorted = manSegs.filter(function(s){ return s.lev==='a'||s.lev==='ma'||s.lev==='m'; })
+    .sort(function(a,b){ return levOrder[b.lev]-levOrder[a.lev]; })
+    .slice(0,3);
+  if(!sorted.length){ hl.classList.remove('visible'); return; }
+  hl.classList.add('visible');
+  var badgeCls = {a:'hl-badge-a', ma:'hl-badge-ma', m:'hl-badge-m'};
+  var levCls   = {a:'hl-lev-a',   ma:'hl-lev-ma',   m:'hl-lev-m'};
+  var levLabel = {a:'Alta', ma:'Muito Alta', m:'Moderada'};
+  hlList.innerHTML = sorted.map(function(seg,i){
+    var time = (seg.ini&&seg.fim) ? seg.ini+'–'+seg.fim : (seg.ini||seg.fim||'—');
+    var evNames = seg.evid.map(function(e){ var ev=MAN_EVID.find(function(x){return x.id===e;}); return ev?ev.label:''; }).filter(Boolean).join(', ');
+    return '<div class="hl-item">'+
+      '<div class="hl-badge '+badgeCls[seg.lev]+'">'+(i+1)+'</div>'+
+      '<div class="hl-text">'+
+        '<span class="hl-time">'+time+'</span>'+
+        '<span class="hl-level '+levCls[seg.lev]+'">'+levLabel[seg.lev]+'</span> — '+
+        (seg.obs||'<em style="color:var(--g400)">sem descrição</em>')+
+        (evNames?'<br><span style="font-size:10.5px;color:var(--g500)">Indicadores: '+evNames+'</span>':'')
+      +'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function manUpdateVerdict(){
+  var verd = document.getElementById('man-verdict');
+  var exportRow = document.getElementById('man-export-row');
+  if(!verd) return;
+
+  if(!manSegs.length){
+    verd.classList.remove('visible');
+    if(exportRow) exportRow.style.display='none';
+    return;
+  }
+
+  var counts = {ma:0, a:0, m:0, b:0};
+  manSegs.forEach(function(s){ if(counts[s.lev]!==undefined) counts[s.lev]++; });
+
+  var icon, title, sub, border;
+  if(counts.ma>=1){
+    icon='🤖'; title='IA detectada — alta suspeita';
+    sub='Há '+counts.ma+' segmento'+(counts.ma>1?'s':'')+' com suspeita muito alta. Indica fortemente geração ou alteração por IA generativa.';
+    border='border-color:#C4B5FD;background:#F5F3FF';
+  } else if(counts.a>=2){
+    icon='🚨'; title='Suspeita forte de IA';
+    sub=counts.a+' segmentos com suspeita alta. Recomenda-se marcar para revisão antes da aprovação.';
+    border='border-color:#FCA5A5;background:#FFF5F5';
+  } else if(counts.a>=1){
+    icon='⚠️'; title='Suspeita de IA';
+    sub='Um ou mais trechos apresentam indícios de conteúdo sintético. Confirme com análise adicional.';
+    border='border-color:#FCD34D;background:#FEFCE8';
+  } else if(counts.m>=1){
+    icon='🔍'; title='Suspeita moderada';
+    sub='Há indícios leves a moderados. Avalie os trechos marcados antes de aprovar a peça.';
+    border='border-color:#FCD34D;background:#FFFBEB';
+  } else {
+    icon='✅'; title='Sem indícios relevantes de IA';
+    sub='A análise não identificou características claras de conteúdo gerado por IA nos trechos avaliados.';
+    border='border-color:#6EE7B7;background:#F0FDF4';
+  }
+
+  document.getElementById('man-verd-ico').textContent = icon;
+  document.getElementById('man-verd-title').textContent = title;
+  document.getElementById('man-verd-sub').textContent = sub;
+  verd.style.cssText = (border||'');
+  verd.classList.add('visible');
+  if(exportRow) exportRow.style.display='flex';
+}
+
+function manExport(){
+  var titulo     = (document.getElementById('man-titulo')||{value:''}).value.trim()||'(não informado)';
+  var anunciante = (document.getElementById('man-anunciante')||{value:''}).value.trim()||'(não informado)';
+  var data       = (document.getElementById('man-data')||{value:''}).value||'(não informado)';
+  var analista   = (document.getElementById('man-analista')||{value:''}).value.trim()||'(não informado)';
+  var obsGeral   = (document.getElementById('man-obs-geral')||{value:''}).value.trim();
+  var dur        = (document.getElementById('man-dur')||{value:''}).value.trim();
+  var notes      = (document.getElementById('man-notes')||{value:''}).value.trim();
+  var verdTitle  = (document.getElementById('man-verd-title')||{textContent:''}).textContent;
+  var verdSub    = (document.getElementById('man-verd-sub')||{textContent:''}).textContent;
+
+  var levLabel = {b:'Baixa', m:'Moderada', a:'Alta', ma:'Muito Alta', '':'—'};
+  var levOrder = {ma:4, a:3, m:2, b:1, '':0};
+
+  var lines = [];
+  lines.push('RELATÓRIO DE ANÁLISE — DETECÇÃO DE IA');
+  lines.push('═'.repeat(50));
+  lines.push('Peça      : '+titulo);
+  lines.push('Anunciante: '+anunciante);
+  lines.push('Data      : '+data);
+  lines.push('Analista  : '+analista);
+  if(dur) lines.push('Duração   : '+dur);
+  if(obsGeral) lines.push('Obs. geral: '+obsGeral);
+  lines.push('');
+
+  lines.push('ANÁLISE POR SEGMENTO');
+  lines.push('─'.repeat(50));
+  var col1=13, col2=42, col3=14;
+  var header = pad('Tempo',col1)+'| '+pad('Observação',col2)+'| '+pad('Suspeita',col3)+'| Evidências';
+  lines.push(header);
+  lines.push('─'.repeat(50));
+  manSegs.forEach(function(seg){
+    var time = (seg.ini&&seg.fim)?seg.ini+'–'+seg.fim:(seg.ini||seg.fim||'—');
+    var obs  = (seg.obs||'—').replace(/\n/g,' ');
+    var lev  = levLabel[seg.lev]||'—';
+    var evNames = seg.evid.map(function(e){var ev=MAN_EVID.find(function(x){return x.id===e;});return ev?ev.label:'';}).filter(Boolean).join(', ')||'—';
+    lines.push(pad(time,col1)+'| '+pad(obs,col2)+'| '+pad(lev,col3)+'| '+evNames);
+  });
+  lines.push('');
+
+  // highlights
+  var sorted = manSegs.filter(function(s){ return s.lev==='a'||s.lev==='ma'||s.lev==='m'; })
+    .sort(function(a,b){ return levOrder[b.lev]-levOrder[a.lev]; }).slice(0,3);
+  if(sorted.length){
+    lines.push('PONTOS QUE MERECEM MAIS ATENÇÃO');
+    lines.push('─'.repeat(50));
+    sorted.forEach(function(seg,i){
+      var time = (seg.ini&&seg.fim)?seg.ini+'–'+seg.fim:(seg.ini||seg.fim||'—');
+      var obs  = seg.obs||'(sem descrição)';
+      var lev  = levLabel[seg.lev]||'—';
+      lines.push((i+1)+'. ['+time+'] (Suspeita: '+lev+')');
+      lines.push('   '+obs);
+    });
+    lines.push('');
+  }
+
+  lines.push('VEREDITO FINAL');
+  lines.push('─'.repeat(50));
+  lines.push(verdTitle);
+  lines.push(verdSub);
+  if(notes){
+    lines.push('');
+    lines.push('Notas do analista:');
+    lines.push(notes);
+  }
+  lines.push('');
+  lines.push('─'.repeat(50));
+  lines.push('Gerado por AI Detector · NC Tools · github.com/falssp/Projeto-NC');
+
+  var text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(function(){
+    var copied = document.getElementById('man-copied');
+    if(copied){ copied.classList.add('visible'); setTimeout(function(){ copied.classList.remove('visible'); },2000); }
+  }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=text;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    var copied = document.getElementById('man-copied');
+    if(copied){ copied.classList.add('visible'); setTimeout(function(){ copied.classList.remove('visible'); },2000); }
+  });
+}
+
+function pad(s,n){ return (s||'').substring(0,n).padEnd(n,' '); }
+
+function manReset(){
+  if(!confirm('Limpar toda a análise atual?')) return;
+  manSegs=[]; manIdCnt=0;
+  ['man-titulo','man-anunciante','man-data','man-analista','man-obs-geral','man-dur','man-notes'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  manRenderSegs();
+  manUpdate();
+}
+
+// init manual with one empty segment
+(function manInit(){
+  var dt = new Date();
+  var el = document.getElementById('man-data');
+  if(el) el.value = dt.toISOString().split('T')[0];
+  manRenderSegs();
+})();
 
 // ── AI Detector Nav Tabs ──────────────────────────────────────
 function aidTabSwitch(name) {
