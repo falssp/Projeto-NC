@@ -251,6 +251,15 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 
       <button class="btn-gen" id="c-btn-gen" hidden onclick="generateCols()">⚡ Gerar fórmulas</button>
 
+      <div id="c-dupe-warn" hidden style="background:var(--bg2);border:1px solid #f59e0b;border-radius:var(--radius);padding:16px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;color:#b45309;margin-bottom:6px">⚠️ Colunas repetidas detectadas</div>
+        <div id="c-dupe-msg" style="font-size:12px;color:var(--fg2);margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="load-btn" onclick="confirmGenerateCols()">Confirmar e gerar</button>
+          <button class="load-btn" style="background:var(--bg3);color:var(--fg2)" onclick="document.getElementById('c-dupe-warn').hidden=true">Cancelar</button>
+        </div>
+      </div>
+
       <div class="out-section" id="c-out" hidden>
         <div class="out-title">📋 Fórmulas geradas</div>
         <div id="c-out-list"></div>
@@ -284,6 +293,7 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
             <option value="Meta e Tiktok">Meta e Tiktok</option>
             <option value="Pinterest/Snapchat e Twitter">Pinterest / Snapchat e Twitter</option>
             <option value="Flashtalking">Flashtalking</option>
+            <option value="Livre">Livre</option>
           </select>
         </div>
         <div class="sel-row">
@@ -316,13 +326,13 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     </div>
 
     <div class="pane-right">
-      <div class="card">
-        <div class="card-label">Colunas para verificar duplicatas</div>
+      <div class="card" id="r-step2" hidden>
+        <div class="card-label">2 · Colunas para verificar duplicatas</div>
         <div class="pairs" id="r-pairs"></div>
-        <button class="btn-add" onclick="addRowCol()">＋ Adicionar coluna</button>
+        <button class="btn-add" id="r-add-col" hidden onclick="addRowCol()">＋ Adicionar coluna</button>
       </div>
 
-      <button class="btn-gen" onclick="generateRows()">⚡ Gerar fórmulas</button>
+      <button class="btn-gen" id="r-btn-gen" hidden onclick="generateRows()">⚡ Gerar fórmulas</button>
 
       <div class="out-section" id="r-out" hidden>
         <div class="out-title">📋 Fórmulas geradas</div>
@@ -570,6 +580,13 @@ function onAbaChange(pfx) {
     ['c-step2','c-step3','c-step4','c-btn-gen'].forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=true;});
     const ap=document.getElementById('c-add-par'); if(ap) ap.hidden=true;
   }
+  if (pfx==='r') {
+    rowCols=[];
+    const s2=document.getElementById('r-step2'); if(s2) s2.hidden=true;
+    const bg=document.getElementById('r-btn-gen'); if(bg) bg.hidden=true;
+    const ro=document.getElementById('r-out'); if(ro) ro.hidden=true;
+    const ac=document.getElementById('r-add-col'); if(ac) ac.hidden=true;
+  }
   if (!aba) {
     platSel.innerHTML = '<option value="">— selecione a aba primeiro —</option>';
     platSel.disabled = true;
@@ -625,13 +642,21 @@ function loadPlatform(pfx) {
     toast(aba==='Livre' ? 'Modo livre — adicione os pares' : `${colPairs.length} colunas carregadas — ${tag}`);
   } else {
     rowCols = [];
-    data.pairs.forEach(p => {
-      expandRange(p.ref, p.target).forEach(col => {
-        rowCols.push({id:++uid, col, name:''});
+    if (aba === 'Livre') {
+      rowCols.push({id:++uid, col:'', name:'', locked:false});
+      document.getElementById('r-add-col').hidden = false;
+    } else {
+      document.getElementById('r-add-col').hidden = true;
+      data.pairs.forEach(p => {
+        expandRange(p.ref, p.target).forEach((col, i) => {
+          rowCols.push({id:++uid, col, name:(p.fields&&p.fields[i])||'', locked:true});
+        });
       });
-    });
+    }
     renderRowCols();
-    toast(`${rowCols.length} colunas carregadas — ${tag}`);
+    const s2=document.getElementById('r-step2'); if(s2) s2.hidden=false;
+    const bg=document.getElementById('r-btn-gen'); if(bg) bg.hidden=false;
+    toast(aba==='Livre' ? 'Modo livre — adicione as colunas' : `${rowCols.length} colunas carregadas — ${tag}`);
   }
 }
 
@@ -679,20 +704,26 @@ function addRowCol(col='', name='') {
 }
 function removeRowCol(id) { rowCols=rowCols.filter(c=>c.id!==id); renderRowCols(); }
 function updateRowCol(id, v) { const c=rowCols.find(c=>c.id===id); if(c) c.col=v; }
+function updateRowColName(id,v){const c=rowCols.find(c=>c.id===id);if(c)c.name=v;}
 function renderRowCols() {
   const el=document.getElementById('r-pairs');
   if(!rowCols.length){ el.innerHTML='<div style="font-size:12px;color:var(--fg3);padding:8px 0;text-align:center">Nenhuma coluna</div>'; return; }
   el.innerHTML=rowCols.map((c,i)=>`
-    <div class="pair-row">
-      <span class="pair-n">${i+1}</span>
-      <input class="inp inp-col" value="${ea(c.col)}" placeholder="col" maxlength="3"
+    <div class="pair-row" style="align-items:center;gap:8px;flex-wrap:nowrap">
+      <span class="pair-n" style="flex-shrink:0">${i+1}</span>
+      ${c.locked
+        ? `<span class="inp" style="flex:1;min-width:80px;background:var(--bg2,#f5f5f5);color:var(--fg2,#555);cursor:default;user-select:text">${ea(c.name)||'&nbsp;'}</span>`
+        : `<input class="inp" style="flex:1;min-width:80px;font-family:inherit" value="${ea(c.name)}" placeholder="Campo (ex: Campaign)" oninput="updateRowColName(${c.id},this.value)">`
+      }
+      <input class="inp inp-col" style="width:52px;flex-shrink:0" value="${ea(c.col)}" placeholder="col" maxlength="3"
         oninput="updateRowCol(${c.id},this.value.toUpperCase());this.value=this.value.toUpperCase()">
-      ${c.name?`<span class="pair-name" title="${ea(c.name)}">${ea(c.name)}</span>`:'<span style="flex:1"></span>'}
-      <button class="pair-del" style="margin-left:auto" onclick="removeRowCol(${c.id})">×</button>
+      ${c.locked?'<span style="width:20px;flex-shrink:0"></span>':`<button class="pair-del" style="flex-shrink:0" onclick="removeRowCol(${c.id})">×</button>`}
     </div>`).join('');
 }
 
 // ── Generate Cols ─────────────────────────────────────────
+let _pendingGenCols = null;
+
 function generateCols() {
   const tc=document.getElementById('c-trigCol').value.trim().toUpperCase();
   const tv=document.getElementById('c-trigVal').value.trim();
@@ -704,12 +735,35 @@ function generateCols() {
   const valid=colPairs.filter(p=>p.col&&p.target);
   if(!valid.length){toast('Preencha ao menos um par (referência e destino)');return;}
 
-  const outEl=document.getElementById('c-out');
-  const titleEl=outEl.querySelector('.out-title');
-  titleEl.textContent=lbl?`📋 ${lbl}`:'📋 Fórmulas geradas';
+  // Detectar pares com mesmo col+target
+  const seen=new Map();
+  valid.forEach(p=>{ const k=`${p.col}→${p.target}`; seen.set(k,(seen.get(k)||0)+1); });
+  const dupes=[...seen.entries()].filter(([,n])=>n>1);
+  if(dupes.length) {
+    const msg=dupes.map(([k,n])=>`<strong>${k}</strong> aparece ${n}×`).join(', ');
+    document.getElementById('c-dupe-msg').innerHTML=`Pares repetidos: ${msg}.<br>Ao confirmar, será gerada apenas uma fórmula por intervalo único.`;
+    document.getElementById('c-dupe-warn').hidden=false;
+    _pendingGenCols={tc,tv,sr,lbl,valid};
+    return;
+  }
+  doGenerateCols({tc,tv,sr,lbl,valid});
+}
 
+function confirmGenerateCols() {
+  document.getElementById('c-dupe-warn').hidden=true;
+  if(_pendingGenCols) doGenerateCols(_pendingGenCols);
+  _pendingGenCols=null;
+}
+
+function doGenerateCols({tc,tv,sr,lbl,valid}) {
+  // Deduplica por col+target, mantém o label do primeiro
+  const uniq=[], seen=new Set();
+  valid.forEach(p=>{ const k=`${p.col}→${p.target}`; if(!seen.has(k)){ seen.add(k); uniq.push(p); }});
+
+  const outEl=document.getElementById('c-out');
+  outEl.querySelector('.out-title').textContent=lbl?`📋 ${lbl}`:'📋 Fórmulas geradas';
   const list=document.getElementById('c-out-list');
-  list.innerHTML=valid.map((p,i)=>{
+  list.innerHTML=uniq.map((p,i)=>{
     const base=`$${tc}${sr}="${tv}";$${tc}${sr}<>"";$${p.col}${sr}<>"";$${p.target}${sr}<>""`;
     const g=`=E(${base};$${p.col}${sr}=$${p.target}${sr})`;
     const r=`=E(${base};$${p.col}${sr}<>$${p.target}${sr})`;
