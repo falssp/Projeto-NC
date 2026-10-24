@@ -174,6 +174,7 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     <div class="logo-sub">Gerador de fórmulas para formatação condicional — Google Sheets</div>
   </div>
   <div class="hdr-r">
+    <button class="btn-hdr" id="btn-locale" onclick="toggleLocale()" title="Alternar idioma das fórmulas" style="font-weight:600;font-size:12px;min-width:60px">🇧🇷 PT</button>
     <button class="btn-hdr" onclick="toggleTheme()">🌓</button>
   </div>
 </div>
@@ -261,7 +262,10 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
       </div>
 
       <div class="out-section" id="c-out" hidden>
-        <div class="out-title">📋 Fórmulas geradas</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div class="out-title" style="margin-bottom:0">📋 Fórmulas geradas</div>
+          <button class="load-btn" style="margin-left:auto;font-size:11px;padding:5px 10px" onclick="copyAll('c-out-list')">📋 Copiar tudo</button>
+        </div>
         <div id="c-out-list"></div>
         <button class="btn-nova" onclick="novaConsultaCols()">↺ Nova consulta</button>
       </div>
@@ -331,7 +335,10 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
       <button class="btn-gen" id="r-btn-gen" hidden onclick="generateRows()">⚡ Gerar fórmulas</button>
 
       <div class="out-section" id="r-out" hidden>
-        <div class="out-title">📋 Fórmulas geradas</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div class="out-title" style="margin-bottom:0">📋 Fórmulas geradas</div>
+          <button class="load-btn" style="margin-left:auto;font-size:11px;padding:5px 10px" onclick="copyAll('r-out-list')">📋 Copiar tudo</button>
+        </div>
         <div id="r-out-list"></div>
       </div>
     </div>
@@ -569,6 +576,19 @@ function resetRows() {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// ── Locale ────────────────────────────────────────────────
+let locale = 'pt'; // 'pt' | 'en'
+const L = {
+  pt: { sep:';', and:'E', countifs:'CONT.SES', flag:'🇧🇷 PT', sub:'Google Sheets · PT-BR' },
+  en: { sep:',', and:'AND', countifs:'COUNTIFS', flag:'🇺🇸 EN', sub:'Google Sheets / Excel · EN' },
+};
+function l() { return L[locale]; }
+function toggleLocale() {
+  locale = locale==='pt' ? 'en' : 'pt';
+  document.getElementById('btn-locale').textContent = l().flag;
+  document.querySelector('.logo-sub').textContent = 'Gerador de fórmulas — ' + l().sub;
+}
+
 // ── Theme ─────────────────────────────────────────────────
 function toggleTheme() {
   const cur = document.documentElement.getAttribute('data-theme');
@@ -785,10 +805,11 @@ function doGenerateCols({tc,tv,sr,lbl,valid}) {
   const outEl=document.getElementById('c-out');
   outEl.querySelector('.out-title').textContent=lbl?`📋 ${lbl}`:'📋 Fórmulas geradas';
   const list=document.getElementById('c-out-list');
+  const s=l().sep, fn=l().and;
   list.innerHTML=uniq.map((p,i)=>{
-    const base=`$${tc}${sr}="${tv}";$${tc}${sr}<>"";$${p.col}${sr}<>"";$${p.target}${sr}<>""`;
-    const g=`=E(${base};$${p.col}${sr}=$${p.target}${sr})`;
-    const r=`=E(${base};$${p.col}${sr}<>$${p.target}${sr})`;
+    const base=`$${tc}${sr}="${tv}"${s}$${tc}${sr}<>""${s}$${p.col}${sr}<>""${s}$${p.target}${sr}<>""`;
+    const g=`=${fn}(${base}${s}$${p.col}${sr}=$${p.target}${sr})`;
+    const r=`=${fn}(${base}${s}$${p.col}${sr}<>$${p.target}${sr})`;
     const range=`${p.col}${sr}:${p.target}`;
     const gid=`cg-${p.id}`, rid=`cr-${p.id}`;
     const hdr=p.label?`<strong>${ea(p.label)}</strong> &nbsp;·&nbsp; `:`Par ${i+1} &nbsp;·&nbsp; `;
@@ -821,7 +842,8 @@ function generateRows() {
 
   const list=document.getElementById('r-out-list');
   list.innerHTML=valid.map((c,i)=>{
-    const f=`=E($${tc}${sr}="${tv}";$${c.col}${sr}<>"";CONT.SES($${tc}$${sr}:$${tc};"${tv}";$${c.col}$${sr}:$${c.col};$${c.col}${sr})>1)`;
+    const s=l().sep, fn=l().and, cf=l().countifs;
+    const f=`=${fn}($${tc}${sr}="${tv}"${s}$${c.col}${sr}<>""${s}${cf}($${tc}$${sr}:$${tc}${s}"${tv}"${s}$${c.col}$${sr}:$${c.col}${s}$${c.col}${sr})>1)`;
     const range=`${c.col}${sr}:${c.col}`;
     const bid=`rb-${c.id}`;
     return `
@@ -832,6 +854,13 @@ function generateRows() {
   }).join('');
   outEl.hidden=false;
   outEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── Copy all formulas ────────────────────────────────────
+function copyAll(listId) {
+  const codes=[...document.getElementById(listId).querySelectorAll('.f-code')];
+  const text=codes.map(el=>el.textContent.trim()).join('\n\n');
+  navigator.clipboard.writeText(text).then(()=>toast(`${codes.length} fórmulas copiadas`));
 }
 
 // ── Formula row HTML ──────────────────────────────────────
