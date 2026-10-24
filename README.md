@@ -38,7 +38,9 @@ Hub: **[falssp.github.io/Projeto-NC/ferramentas/](https://falssp.github.io/Proje
 | Ferramenta | Descrição |
 |---|---|
 | **AI Detector** | Detecta conteúdo gerado por IA em vídeo, imagem, áudio e texto |
+| **Branded Buzz Taxonomy** | Preenche e gera linha de taxonomia de Branded Buzz pronta para Excel/Sheets |
 | **Comparador ADP** | Compara estrutura de duas abas ADP e aponta divergências |
+| **Conditional Format Builder** | Gera fórmulas de formatação condicional para Sheets e Excel |
 | **Contador ADP** | Conta linhas por aba e plataforma em planilhas ADP |
 | **Creative Taxonomy** | Gera taxonomia de criativos por asset (Plataforma + Brainsuite) |
 | **Cruzador de IDs** | Cruza IDs ADP × RM e aponta divergências |
@@ -46,6 +48,7 @@ Hub: **[falssp.github.io/Projeto-NC/ferramentas/](https://falssp.github.io/Proje
 | **Extractor de Fórmulas** | Extrai e deduplica fórmulas de .xlsx/.xlsm por aba |
 | **Extrator de Links** | Extrai links de perfil de influencers de planilhas RM/ADP |
 | **Galileo IDs** | Browser interativo de IDs e abreviações do sistema Galileo |
+| **Gerador de Fórmulas** | Gera fórmulas para o Dicionário de Influencers |
 | **Grasp Naming** | Referência de estrutura de naming por plataforma (Grasp 2026) |
 | **Mapeador RM→ADP** | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch |
 | **Merge RM→ADP** | Mescla dados do RM na estrutura ADP por plataforma |
@@ -56,6 +59,7 @@ Hub: **[falssp.github.io/Projeto-NC/ferramentas/](https://falssp.github.io/Proje
 | Ferramenta | Descrição |
 |---|---|
 | **Ad Name Sync** | Sincroniza Ad Names entre planilhas RM e ADP |
+| **Dashboard Campaign Local** | Painel de Campaign Local via Web App |
 | **Dashboard Jira** | Sincroniza subtasks do Jira com Google Sheets |
 | **Extrator de Campaign Local** | Extrai dados de Campaign Local das planilhas |
 | **Extrator de Influs** | Extrai influencers do RM/ADP e valida duplicatas no dicionário |
@@ -80,15 +84,18 @@ Hub: **[falssp.github.io/Projeto-NC/ferramentas/](https://falssp.github.io/Proje
 ```
 Projeto-NC/
 ├── index.html               ← Portal (GitHub Pages)
-├── ferramentas/             ← Hub + 23 ferramentas standalone
+├── ferramentas/             ← Hub + 26 ferramentas standalone
 │   ├── index.html           ← Hub de ferramentas
 │   ├── ad-name-sync/
 │   ├── ai-detector/
+│   ├── branded-buzz-taxo/
 │   ├── char-cleaner/
 │   ├── comparador-adp/
+│   ├── conditional-format-builder/
 │   ├── contador-adp/
 │   ├── creative-taxonomy/
 │   ├── cruzador-ids/
+│   ├── dashboard-cn/
 │   ├── dashboard-jira/
 │   ├── excel-reference/
 │   ├── extractor-formulas/
@@ -98,6 +105,7 @@ Projeto-NC/
 │   ├── gerador-ids-ul/
 │   ├── grasp-naming/
 │   ├── influ-name/
+│   ├── influencer-formulas/
 │   ├── link-extrator/
 │   ├── location/
 │   ├── location-2/
