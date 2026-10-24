@@ -250,6 +250,9 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 .btn-exp-reset{background:#fff;color:var(--g700);border:1px solid var(--g300)}.btn-exp-reset:hover{background:var(--g100)}
 .man-copied{font-size:11.5px;color:var(--ok);font-weight:600;align-self:center;display:none}
 .man-copied.visible{display:inline}
+/* Import from video button */
+.btn-import-manual{display:flex;align-items:center;gap:8px;width:100%;margin:12px 0 4px;padding:11px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;justify-content:center;letter-spacing:.01em}
+.btn-import-manual:hover{opacity:.92}
 
 /* ── main card ── */
 .card{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden}
@@ -923,43 +926,81 @@ async function analyze(tipo){
 }
 
 /* ─── Video ─── */
+function parseVideoJson(rawText){
+  // extract JSON from response (handles markdown code fences)
+  var m = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
+  var jsonStr = m ? m[1] : rawText;
+  // fallback: find first { ... }
+  var start = jsonStr.indexOf('{'), end = jsonStr.lastIndexOf('}');
+  if(start>=0 && end>start) jsonStr = jsonStr.slice(start, end+1);
+  try { return JSON.parse(jsonStr); } catch(e) { return null; }
+}
+
 async function analyzeVideo(apiId,file){
   const key=getKey(apiId);
   if(apiId==='gemini'){
-    const frames=await extractFrames(file,6);
+    const frames=await extractFrames(file,8);
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[
-        {text:`Analise estes ${frames.length} frames do vídeo "${file.name}". Determine se foi gerado por IA (Runway, Sora, Pika, Kling, etc).
-Responda em português:
-1. VEREDITO: "IA detectada" / "Suspeita de IA" / "Provável live action ou CGI tradicional" / "Inconclusivo"
-2. CONFIANÇA: Alta / Média / Baixa
-3. ANÁLISE: 3-5 linhas sobre as características visuais.
-4. FRAMES SUSPEITOS: quais frames são mais indicativos.`},
+        {text:`Você é um especialista em detecção forense de IA em vídeos publicitários. Analise estes ${frames.length} frames do vídeo "${file.name}" (extraídos em sequência temporal).
+
+Responda SEMPRE neste formato JSON exato (sem markdown, sem texto fora do JSON):
+{
+  "veredito": "IA detectada" | "Suspeita de IA" | "Provável live action" | "Inconclusivo",
+  "confianca": "Alta" | "Média" | "Baixa",
+  "resumo": "2-3 frases sobre a peça como um todo",
+  "segmentos": [
+    {
+      "frame": 1,
+      "tempo_aprox": "00:00",
+      "obs": "O que é visível neste frame e por que é suspeito ou não",
+      "suspeita": "baixa" | "moderada" | "alta" | "muito_alta",
+      "evidencias": ["rostos", "maos", "texturas", "movimento", "iluminacao", "produto", "fisica", "texto"]
+    }
+  ]
+}
+
+Inclua um objeto por frame. Seja objetivo e técnico.`},
         ...frames.map(b64=>({inline_data:{mime_type:'image/jpeg',data:b64}}))
       ]}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).candidates[0].content.parts[0].text;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text, parsed, fileName:file.name};
   }
   if(apiId==='openai'){
-    const frames=await extractFrames(file,6);
+    const frames=await extractFrames(file,8);
     const res=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
       body:JSON.stringify({model:'gpt-4o',max_tokens:700,messages:[{role:'user',content:[
-        {type:'text',text:`Analise estes ${frames.length} frames do vídeo "${file.name}". Determine se foi gerado por IA.
-Responda em português:
-1. VEREDITO: "IA detectada" / "Suspeita de IA" / "Provável live action ou CGI tradicional" / "Inconclusivo"
-2. CONFIANÇA: Alta / Média / Baixa
-3. ANÁLISE: 3-5 linhas sobre características visuais.
-4. FRAMES SUSPEITOS: quais frames são mais indicativos.`},
+        {type:'text',text:`Você é um especialista em detecção forense de IA em vídeos publicitários. Analise estes ${frames.length} frames do vídeo "${file.name}" (extraídos em sequência temporal).
+
+Responda SEMPRE neste formato JSON exato (sem markdown, sem texto fora do JSON):
+{
+  "veredito": "IA detectada" | "Suspeita de IA" | "Provável live action" | "Inconclusivo",
+  "confianca": "Alta" | "Média" | "Baixa",
+  "resumo": "2-3 frases sobre a peça como um todo",
+  "segmentos": [
+    {
+      "frame": 1,
+      "tempo_aprox": "00:00",
+      "obs": "O que é visível neste frame e por que é suspeito ou não",
+      "suspeita": "baixa" | "moderada" | "alta" | "muito_alta",
+      "evidencias": ["rostos", "maos", "texturas", "movimento", "iluminacao", "produto", "fisica", "texto"]
+    }
+  ]
+}
+
+Inclua um objeto por frame. Seja objetivo e técnico.`},
         ...frames.map(b64=>({type:'image_url',image_url:{url:'data:image/jpeg;base64,'+b64,detail:'low'}}))
       ]}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).choices[0].message.content;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text, parsed, fileName:file.name};
   }
   return {verdict:'skip',label:'N/D',text:'Esta API não suporta vídeo.'};
 }
@@ -1124,6 +1165,11 @@ function renderResults(tipo,results){
   else if(verdicts.length&&verdicts.every(v=>v==='ok')){fv='verd-ok';fi='✅';ft='Sem indícios de IA';fs='As análises não identificaram características de geração por IA.';}
   const apisUsed=results.filter(r=>r.verdict!=='skip').map(r=>APIS.find(a=>a.id===r.apiId).name).join(', ');
   const bm={ai:'badge-ai',warn:'badge-warn',ok:'badge-ok',error:'badge-err',skip:'badge-skip',unknown:'badge-skip'};
+  // check if any result has parsed segments (video tab)
+  const videoResult = tipo==='video' ? results.find(r=>r.parsed&&r.parsed.segmentos&&r.parsed.segmentos.length) : null;
+  const importBtn = videoResult ? `<button class="btn-import-manual" onclick="manImportFromVideo()">📋 Ver análise segmentada →</button>` : '';
+  if(videoResult) window._lastVideoResult = videoResult;
+
   container.innerHTML=`
     <div class="verdict-box ${fv}">
       <div class="verd-ico">${fi}</div>
@@ -1133,6 +1179,7 @@ function renderResults(tipo,results){
         <div class="verd-apis">Análise por: ${apisUsed}</div>
       </div>
     </div>
+    ${importBtn}
     <div class="api-results-label">Detalhes por API</div>
     <div class="api-results">
       ${results.map((r,i)=>{
@@ -1222,6 +1269,69 @@ function manTimeToSec(s){
 function manSecToTime(s){
   var m=Math.floor(s/60), sec=Math.round(s%60);
   return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function manImportFromVideo(){
+  var r = window._lastVideoResult;
+  if(!r||!r.parsed) return;
+  var p = r.parsed;
+
+  // reset
+  manSegs=[]; manIdCnt=0;
+
+  // fill meta
+  var nameEl=document.getElementById('man-titulo');
+  if(nameEl&&!nameEl.value) nameEl.value = (r.fileName||'').replace(/\.[^.]+$/,'');
+  var obsEl=document.getElementById('man-obs-geral');
+  if(obsEl&&!obsEl.value&&p.resumo) obsEl.value = p.resumo;
+
+  // map evidence strings from AI → chip IDs
+  var evMap={
+    rostos:'rostos', rosto:'rostos',
+    maos:'maos', mao:'maos', anatomia:'maos',
+    texturas:'texturas', textura:'texturas',
+    movimento:'mov', movimentos:'mov',
+    iluminacao:'ilum', iluminação:'ilum',
+    produto:'produto',
+    fisica:'fisica', fisico:'fisica',
+    texto:'texto', letras:'texto'
+  };
+  var levMap={
+    baixa:'b', moderada:'m', alta:'a', muito_alta:'ma',
+    low:'b', medium:'m', high:'a', very_high:'ma'
+  };
+
+  // build segments
+  (p.segmentos||[]).forEach(function(seg,i){
+    var id=++manIdCnt;
+    var lev = levMap[(seg.suspeita||'').toLowerCase().replace(/\s+/g,'_')] || 'b';
+    var evids = (seg.evidencias||[]).map(function(e){
+      return evMap[e.toLowerCase().replace(/[^a-z]/g,'')];
+    }).filter(Boolean);
+
+    // estimate time based on frame index if not provided
+    var timeStr = seg.tempo_aprox||'';
+    if(!timeStr||timeStr==='00:00'){
+      var sec = i * 5; // ~5s per frame segment
+      var m=Math.floor(sec/60), s=sec%60;
+      timeStr = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    }
+    var fimSec = (function(t){
+      var p2=t.split(':'); return parseInt(p2[0],10)*60+parseInt(p2[1]||0,10)+5;
+    })(timeStr);
+    var fimStr = String(Math.floor(fimSec/60)).padStart(2,'0')+':'+String(fimSec%60).padStart(2,'0');
+
+    manSegs.push({id:id, ini:timeStr, fim:fimStr, obs:seg.obs||'', lev:lev, evid:evids});
+  });
+
+  manRenderSegs();
+  manUpdate();
+  switchTab('manual');
+  // scroll to top of manual panel
+  setTimeout(function(){
+    var panel=document.getElementById('panel-manual');
+    if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
+  },150);
 }
 
 function manAddSeg(){
