@@ -1006,14 +1006,26 @@ Inclua um objeto por frame. Seja objetivo e técnico.`},
 }
 
 /* ─── Image ─── */
+var IMG_JSON_PROMPT = (name) => `Você é especialista forense em detecção de imagens geradas por IA (Midjourney, DALL-E, Stable Diffusion, Firefly, etc).
+Analise a imagem "${name}" e responda SOMENTE neste JSON (sem markdown, sem texto fora):
+{
+  "veredito": "IA detectada" | "Suspeita de IA" | "Provável fotografia ou arte tradicional" | "Inconclusivo",
+  "confianca": "Alta" | "Média" | "Baixa",
+  "resumo": "2-3 frases sobre a imagem como um todo",
+  "segmentos": [
+    {
+      "area": "Nome da região ou elemento analisado (ex: rosto, mãos, fundo, produto, textura, iluminação)",
+      "obs": "O que foi observado nesta área e por que é suspeito ou não",
+      "suspeita": "baixa" | "moderada" | "alta" | "muito_alta",
+      "evidencias": ["rostos", "maos", "texturas", "movimento", "iluminacao", "produto", "fisica", "texto"]
+    }
+  ]
+}
+Inclua 4-8 áreas distintas. Seja técnico e objetivo.`;
+
 async function analyzeImage(apiId,file){
   const key=getKey(apiId); const b64=await fileToBase64(file); const mime=file.type||'image/jpeg';
-  const prompt=`Analise esta imagem "${file.name}". Determine se foi gerada por IA (Midjourney, DALL-E, Stable Diffusion, Firefly, etc) ou é fotografia/arte tradicional.
-Responda em português:
-1. VEREDITO: "IA detectada" / "Suspeita de IA" / "Provável fotografia ou arte tradicional" / "Inconclusivo"
-2. CONFIANÇA: Alta / Média / Baixa
-3. ANÁLISE: 3-5 linhas — textura, mãos, texto, iluminação, fundo.
-4. SINAIS: 2-3 indicadores principais.`;
+  const prompt = IMG_JSON_PROMPT(file.name);
   if(apiId==='gemini'){
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -1021,34 +1033,57 @@ Responda em português:
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).candidates[0].content.parts[0].text;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:file.name,tipo:'image'};
   }
   if(apiId==='openai'){
     const res=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'gpt-4o',max_tokens:500,messages:[{role:'user',content:[
+      body:JSON.stringify({model:'gpt-4o',max_tokens:700,messages:[{role:'user',content:[
         {type:'text',text:prompt},{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64,detail:'high'}}
       ]}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).choices[0].message.content;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:file.name,tipo:'image'};
   }
   if(apiId==='claude'){
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:500,messages:[{role:'user',content:[
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:700,messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:mime,data:b64}},{type:'text',text:prompt}
       ]}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).content[0].text;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:file.name,tipo:'image'};
   }
   return {verdict:'skip',label:'N/D',text:'Esta API não suporta imagem.'};
 }
 
 /* ─── Audio ─── */
+var AUDIO_JSON_PROMPT = (name, size, transcription) => `Você é especialista forense em detecção de áudio gerado por IA (locução sintética, trilha IA, voice cloning).
+Arquivo: "${name}" (${size})
+Transcrição: "${transcription.slice(0,800)}"
+
+Responda SOMENTE neste JSON (sem markdown, sem texto fora):
+{
+  "veredito": "IA detectada" | "Suspeita de IA" | "Provável áudio humano ou tradicional" | "Inconclusivo",
+  "confianca": "Alta" | "Média" | "Baixa",
+  "resumo": "2-3 frases sobre o áudio como um todo",
+  "segmentos": [
+    {
+      "area": "Aspecto analisado (ex: prosódia, respiração, emoção, variação tonal, artefatos, naturalidade)",
+      "obs": "O que foi observado e por que é suspeito ou não",
+      "suspeita": "baixa" | "moderada" | "alta" | "muito_alta",
+      "evidencias": ["rostos", "maos", "texturas", "movimento", "iluminacao", "produto", "fisica", "texto"]
+    }
+  ]
+}
+Inclua 4-6 aspectos. Seja técnico e objetivo. A análise é baseada na transcrição.`;
+
 async function analyzeAudio(apiId,file){
   const key=getKey(apiId);
   if(apiId==='openai'){
@@ -1056,22 +1091,15 @@ async function analyzeAudio(apiId,file){
     const tr=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:form});
     if(!tr.ok){const e=await tr.json();throw new Error(e.error?.message||'Erro Whisper '+tr.status);}
     const transcription=(await tr.json()).text||'';
+    const prompt = AUDIO_JSON_PROMPT(file.name, fmtSize(file.size), transcription);
     const res=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'gpt-4o',max_tokens:500,messages:[{role:'user',
-        content:`Analise o áudio "${file.name}" (${fmtSize(file.size)}).
-Transcrição: "${transcription.slice(0,800)}"
-Avalie se é locução/voz IA (ElevenLabs, Play.ht) ou trilha IA (Suno, Udio) — ou áudio humano/tradicional.
-Responda em português:
-1. VEREDITO: "IA detectada" / "Suspeita de IA" / "Provável áudio humano ou tradicional" / "Inconclusivo"
-2. CONFIANÇA: Alta / Média / Baixa
-3. ANÁLISE: 3-4 linhas com os indicadores.
-4. TRANSCRIÇÃO (prévia): primeiras palavras.
-Nota: análise baseada na transcrição e nome do arquivo.`}]})
+      body:JSON.stringify({model:'gpt-4o',max_tokens:700,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro GPT '+res.status);}
     const text=(await res.json()).choices[0].message.content;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:file.name,tipo:'audio'};
   }
   if(apiId==='elevenlabs'){
     if(hasKey('openai')) return {verdict:'skip',label:'N/D',text:'ElevenLabs não possui endpoint público de detecção de IA em áudio. Análise feita via OpenAI.'};
@@ -1099,19 +1127,31 @@ Nota: análise baseada na transcrição e nome do arquivo.`}]})
 }
 
 /* ─── Text ─── */
-async function analyzeText(apiId,inputText){
-  const key=getKey(apiId);
-  const prompt=`Analise o texto abaixo e determine se foi escrito por IA ou por humano.
-Observe: uniformidade excessiva, conectivos formais, ausência de erros naturais, frases formulaicas, padrões típicos de LLMs.
+var TEXT_JSON_PROMPT = (inputText) => `Você é especialista em detecção de texto gerado por IA (ChatGPT, Claude, Gemini, etc).
+Analise o texto abaixo observando: uniformidade excessiva, conectivos formais, ausência de erros naturais, frases formulaicas, estrutura previsível.
 
 TEXTO:
 "${inputText.slice(0,2500)}"
 
-Responda em português:
-1. VEREDITO: "IA detectada" / "Suspeita de IA" / "Provável texto humano" / "Inconclusivo"
-2. CONFIANÇA: Alta / Média / Baixa
-3. ANÁLISE: 3-5 linhas com os principais sinais.
-4. SINAIS: 2-4 características específicas.`;
+Responda SOMENTE neste JSON (sem markdown, sem texto fora):
+{
+  "veredito": "IA detectada" | "Suspeita de IA" | "Provável texto humano" | "Inconclusivo",
+  "confianca": "Alta" | "Média" | "Baixa",
+  "resumo": "2-3 frases sobre o texto como um todo",
+  "segmentos": [
+    {
+      "area": "Característica analisada (ex: estrutura, vocabulário, coesão, erros, tom, originalidade, expressões idiomáticas)",
+      "obs": "O que foi observado e por que é suspeito ou não",
+      "suspeita": "baixa" | "moderada" | "alta" | "muito_alta",
+      "evidencias": []
+    }
+  ]
+}
+Inclua 4-7 características. Seja técnico e objetivo.`;
+
+async function analyzeText(apiId,inputText){
+  const key=getKey(apiId);
+  const prompt = TEXT_JSON_PROMPT(inputText);
   if(apiId==='gemini'){
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -1119,25 +1159,28 @@ Responda em português:
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).candidates[0].content.parts[0].text;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:'texto-analisado',tipo:'text'};
   }
   if(apiId==='openai'){
     const res=await fetch('https://api.openai.com/v1/chat/completions',{
       method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-      body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:prompt}],max_tokens:500})
+      body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:prompt}],max_tokens:700})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).choices[0].message.content;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:'texto-analisado',tipo:'text'};
   }
   if(apiId==='claude'){
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:500,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:700,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Erro '+res.status);}
     const text=(await res.json()).content[0].text;
-    return {verdict:parseVerdict(text),label:parseLabel(text),text};
+    const parsed=parseVideoJson(text);
+    return {verdict:parseVerdict(text),label:parseLabel(text),text,parsed,fileName:'texto-analisado',tipo:'text'};
   }
   return {verdict:'skip',label:'N/D',text:'Esta API não suporta texto.'};
 }
@@ -1165,10 +1208,10 @@ function renderResults(tipo,results){
   else if(verdicts.length&&verdicts.every(v=>v==='ok')){fv='verd-ok';fi='✅';ft='Sem indícios de IA';fs='As análises não identificaram características de geração por IA.';}
   const apisUsed=results.filter(r=>r.verdict!=='skip').map(r=>APIS.find(a=>a.id===r.apiId).name).join(', ');
   const bm={ai:'badge-ai',warn:'badge-warn',ok:'badge-ok',error:'badge-err',skip:'badge-skip',unknown:'badge-skip'};
-  // check if any result has parsed segments (video tab)
-  const videoResult = tipo==='video' ? results.find(r=>r.parsed&&r.parsed.segmentos&&r.parsed.segmentos.length) : null;
-  const importBtn = videoResult ? `<button class="btn-import-manual" onclick="manImportFromVideo()">📋 Ver análise segmentada →</button>` : '';
-  if(videoResult) window._lastVideoResult = videoResult;
+  // check if any result has parsed segments
+  const parsedResult = results.find(r=>r.parsed&&r.parsed.segmentos&&r.parsed.segmentos.length);
+  const importBtn = parsedResult ? `<button class="btn-import-manual" onclick="manImportFromAI()">📋 Ver análise detalhada →</button>` : '';
+  if(parsedResult) window._lastAIResult = parsedResult;
 
   container.innerHTML=`
     <div class="verdict-box ${fv}">
@@ -1271,10 +1314,11 @@ function manSecToTime(s){
   return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
 }
 
-function manImportFromVideo(){
-  var r = window._lastVideoResult;
+function manImportFromAI(){
+  var r = window._lastAIResult;
   if(!r||!r.parsed) return;
   var p = r.parsed;
+  var tipo = r.tipo || 'video'; // 'video' | 'image' | 'audio' | 'text'
 
   // reset
   manSegs=[]; manIdCnt=0;
@@ -1285,49 +1329,54 @@ function manImportFromVideo(){
   var obsEl=document.getElementById('man-obs-geral');
   if(obsEl&&!obsEl.value&&p.resumo) obsEl.value = p.resumo;
 
-  // map evidence strings from AI → chip IDs
+  // evidence map
   var evMap={
-    rostos:'rostos', rosto:'rostos',
-    maos:'maos', mao:'maos', anatomia:'maos',
+    rostos:'rostos', rosto:'rostos', faces:'rostos',
+    maos:'maos', mao:'maos', anatomia:'maos', hands:'maos',
     texturas:'texturas', textura:'texturas',
-    movimento:'mov', movimentos:'mov',
-    iluminacao:'ilum', iluminação:'ilum',
-    produto:'produto',
+    movimento:'mov', movimentos:'mov', motion:'mov',
+    iluminacao:'ilum', iluminação:'ilum', lighting:'ilum',
+    produto:'produto', product:'produto',
     fisica:'fisica', fisico:'fisica',
-    texto:'texto', letras:'texto'
+    texto:'texto', letras:'texto', text:'texto'
   };
   var levMap={
     baixa:'b', moderada:'m', alta:'a', muito_alta:'ma',
     low:'b', medium:'m', high:'a', very_high:'ma'
   };
 
-  // build segments
   (p.segmentos||[]).forEach(function(seg,i){
     var id=++manIdCnt;
-    var lev = levMap[(seg.suspeita||'').toLowerCase().replace(/\s+/g,'_')] || 'b';
+    var lev = levMap[(seg.suspeita||'').toLowerCase().replace(/[\s-]/g,'_')] || 'b';
     var evids = (seg.evidencias||[]).map(function(e){
-      return evMap[e.toLowerCase().replace(/[^a-z]/g,'')];
+      return evMap[e.toLowerCase().replace(/[^a-záêãõíóú]/g,'')];
     }).filter(Boolean);
 
-    // estimate time based on frame index if not provided
-    var timeStr = seg.tempo_aprox||'';
-    if(!timeStr||timeStr==='00:00'){
-      var sec = i * 5; // ~5s per frame segment
-      var m=Math.floor(sec/60), s=sec%60;
-      timeStr = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    var ini='', fim='';
+    if(tipo==='video'){
+      // use tempo_aprox or estimate from frame index
+      var timeStr = seg.tempo_aprox||'';
+      if(!timeStr||timeStr==='00:00'){
+        var sec = i * 5;
+        var mm=Math.floor(sec/60), ss=sec%60;
+        timeStr = String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+      }
+      ini = timeStr;
+      var fimSec2 = (function(t){ var pts=t.split(':'); return parseInt(pts[0],10)*60+parseInt(pts[1]||0,10)+5; })(ini);
+      fim = String(Math.floor(fimSec2/60)).padStart(2,'0')+':'+String(fimSec2%60).padStart(2,'0');
     }
-    var fimSec = (function(t){
-      var p2=t.split(':'); return parseInt(p2[0],10)*60+parseInt(p2[1]||0,10)+5;
-    })(timeStr);
-    var fimStr = String(Math.floor(fimSec/60)).padStart(2,'0')+':'+String(fimSec%60).padStart(2,'0');
+    // for image/audio/text: no time, use area as the "obs" label prefix
+    var obsText = seg.obs||'';
+    if((tipo==='image'||tipo==='audio'||tipo==='text') && seg.area) {
+      obsText = (seg.area ? '['+seg.area+'] ' : '') + obsText;
+    }
 
-    manSegs.push({id:id, ini:timeStr, fim:fimStr, obs:seg.obs||'', lev:lev, evid:evids});
+    manSegs.push({id:id, ini:ini, fim:fim, obs:obsText, lev:lev, evid:evids});
   });
 
   manRenderSegs();
   manUpdate();
   switchTab('manual');
-  // scroll to top of manual panel
   setTimeout(function(){
     var panel=document.getElementById('panel-manual');
     if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
