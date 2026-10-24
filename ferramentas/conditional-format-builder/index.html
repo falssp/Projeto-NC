@@ -163,11 +163,13 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 .platform-badge{display:inline-flex;align-items:center;gap:5px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600;color:var(--accent);margin-bottom:12px}
 .load-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .load-btn:hover{background:var(--accent);color:#fff}
-.locale-toggle{display:flex;flex-direction:column;border:1px solid var(--bdr);border-radius:var(--radius-sm);overflow:hidden;width:100%}
-.loc-btn{padding:6px 12px;font-size:12px;font-weight:500;border:none;background:var(--bg3);color:var(--fg2);cursor:pointer;transition:all .15s;text-align:left;display:flex;align-items:center;gap:6px}
-.loc-btn+.loc-btn{border-top:1px solid var(--bdr)}
+.locale-toggle{display:flex;border:1px solid var(--bdr);border-radius:var(--radius-sm);overflow:hidden}
+.loc-btn{padding:5px 11px;font-size:12px;font-weight:500;border:none;background:var(--bg3);color:var(--fg2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.loc-btn+.loc-btn{border-left:1px solid var(--bdr)}
 .loc-btn.active{background:var(--accent);color:#fff;font-weight:600}
-.loc-btn .loc-hint{font-size:10px;font-weight:400;opacity:.75;margin-left:auto}
+.locale-block{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.locale-row{display:flex;align-items:center;gap:8px}
+.locale-lbl{font-size:11px;color:var(--fg3);width:72px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -243,11 +245,21 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         </div>
       </div>
 
-      <div id="c-locale-row" hidden style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+      <div id="c-locale-row" hidden class="locale-block">
         <span style="font-size:11px;color:var(--fg3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Sintaxe das fórmulas</span>
-        <div class="locale-toggle">
-          <button id="loc-pt" class="loc-btn active" onclick="setLocale('pt')">📊 PT-BR <span class="loc-hint">; · E( ) · CONT.SES( )</span></button>
-          <button id="loc-en" class="loc-btn" onclick="setLocale('en')">📗 English <span class="loc-hint">, · AND( ) · COUNTIFS( )</span></button>
+        <div class="locale-row">
+          <span class="locale-lbl">Plataforma</span>
+          <div class="locale-toggle">
+            <button id="loc-sheets" class="loc-btn active" onclick="setPlatf('sheets')">📊 Sheets</button>
+            <button id="loc-excel"  class="loc-btn"        onclick="setPlatf('excel')">📗 Excel</button>
+          </div>
+        </div>
+        <div class="locale-row">
+          <span class="locale-lbl">Idioma</span>
+          <div class="locale-toggle">
+            <button id="loc-pt" class="loc-btn active" onclick="setLang('pt')">PT-BR</button>
+            <button id="loc-en" class="loc-btn"        onclick="setLang('en')">English</button>
+          </div>
         </div>
       </div>
       <button class="btn-gen" id="c-btn-gen" hidden onclick="generateCols()">⚡ Gerar fórmulas</button>
@@ -335,11 +347,21 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         </div>
       </div>
 
-      <div id="r-locale-row" hidden style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+      <div id="r-locale-row" hidden class="locale-block">
         <span style="font-size:11px;color:var(--fg3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Sintaxe das fórmulas</span>
-        <div class="locale-toggle">
-          <button id="rloc-pt" class="loc-btn active" onclick="setLocale('pt')">📊 PT-BR <span class="loc-hint">; · E( ) · CONT.SES( )</span></button>
-          <button id="rloc-en" class="loc-btn" onclick="setLocale('en')">📗 English <span class="loc-hint">, · AND( ) · COUNTIFS( )</span></button>
+        <div class="locale-row">
+          <span class="locale-lbl">Plataforma</span>
+          <div class="locale-toggle">
+            <button id="rloc-sheets" class="loc-btn active" onclick="setPlatf('sheets')">📊 Sheets</button>
+            <button id="rloc-excel"  class="loc-btn"        onclick="setPlatf('excel')">📗 Excel</button>
+          </div>
+        </div>
+        <div class="locale-row">
+          <span class="locale-lbl">Idioma</span>
+          <div class="locale-toggle">
+            <button id="rloc-pt" class="loc-btn active" onclick="setLang('pt')">PT-BR</button>
+            <button id="rloc-en" class="loc-btn"        onclick="setLang('en')">English</button>
+          </div>
         </div>
       </div>
       <button class="btn-gen" id="r-btn-gen" hidden onclick="generateRows()">⚡ Gerar fórmulas</button>
@@ -596,22 +618,40 @@ function resetRows() {
 }
 
 // ── Locale ────────────────────────────────────────────────
-let locale = 'pt'; // 'pt' | 'en'
-const L = {
-  pt: { sep:';', and:'E', countifs:'CONT.SES' },
-  en: { sep:',', and:'AND', countifs:'COUNTIFS' },
-};
-function l() { return L[locale]; }
-function setLocale(loc) {
-  locale = loc;
-  ['loc-pt','loc-en','rloc-pt','rloc-en'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.classList.toggle('active', id.endsWith(loc));
-  });
-  // auto-regenerate if output already visible
+let appPlatf = 'sheets'; // 'sheets' | 'excel'
+let appLang  = 'pt';     // 'pt' | 'en'
+
+function l() {
+  return appLang === 'pt'
+    ? { sep:';', and:'E',   countifs:'CONT.SES' }
+    : { sep:',', and:'AND', countifs:'COUNTIFS' };
+}
+// open-ended range — Sheets supports $B$2:$B, Excel needs fixed last row
+function openRange(col, sr) {
+  return appPlatf === 'sheets'
+    ? `$${col}$${sr}:$${col}`
+    : `$${col}$${sr}:$${col}$1048576`;
+}
+
+function _regenIfVisible() {
   const cOut=document.getElementById('c-out');
   const rOut=document.getElementById('r-out');
   if(cOut && !cOut.hidden) generateCols();
   else if(rOut && !rOut.hidden) generateRows();
+}
+function setPlatf(p) {
+  appPlatf = p;
+  ['loc-sheets','loc-excel','rloc-sheets','rloc-excel'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.toggle('active', id.endsWith(p));
+  });
+  _regenIfVisible();
+}
+function setLang(lng) {
+  appLang = lng;
+  ['loc-pt','loc-en','rloc-pt','rloc-en'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.toggle('active', id.endsWith(lng));
+  });
+  _regenIfVisible();
 }
 
 // ── Theme ─────────────────────────────────────────────────
@@ -870,8 +910,9 @@ function generateRows() {
   const list=document.getElementById('r-out-list');
   list.innerHTML=valid.map((c,i)=>{
     const s=l().sep, fn=l().and, cf=l().countifs;
-    const f=`=${fn}($${tc}${sr}="${tv}"${s}$${c.col}${sr}<>""${s}${cf}($${tc}$${sr}:$${tc}${s}"${tv}"${s}$${c.col}$${sr}:$${c.col}${s}$${c.col}${sr})>1)`;
-    const range=`${c.col}${sr}:${c.col}`;
+    const tcRange=openRange(tc,sr), colRange=openRange(c.col,sr);
+    const f=`=${fn}($${tc}${sr}="${tv}"${s}$${c.col}${sr}<>""${s}${cf}(${tcRange}${s}"${tv}"${s}${colRange}${s}$${c.col}${sr})>1)`;
+    const range=appPlatf==='sheets'?`${c.col}${sr}:${c.col}`:`${c.col}${sr}:${c.col}1048576`;
     const bid=`rb-${c.id}`;
     return `
       <div class="pair-out">
