@@ -253,6 +253,15 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 /* Import from video button */
 .btn-import-manual{display:flex;align-items:center;gap:8px;width:100%;margin:12px 0 4px;padding:11px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;justify-content:center;letter-spacing:.01em}
 .btn-import-manual:hover{opacity:.92}
+/* Manual drop zone */
+.man-drop{border:2px dashed var(--g300);border-radius:11px;padding:20px 16px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:14px;background:var(--g50)}
+.man-drop:hover,.man-drop.drag-over{border-color:var(--ul);background:#EEF2FF}
+.man-drop-ico{font-size:28px;line-height:1;margin-bottom:6px}
+.man-drop-title{font-size:13px;font-weight:700;color:var(--g700);margin-bottom:3px}
+.man-drop-sub{font-size:11.5px;color:var(--g400)}
+.man-loading{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#EEF2FF;border-radius:9px;margin-bottom:12px;font-size:12.5px;color:#4338ca;font-weight:600}
+.man-loading-spin{width:16px;height:16px;border:2.5px solid #c7d2fe;border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.man-drop-err{padding:9px 12px;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;color:#dc2626;font-size:12px;margin-bottom:10px}
 
 /* ── main card ── */
 .card{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--g200);border-radius:var(--rad);overflow:hidden}
@@ -493,9 +502,22 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
   <!-- ══════════════════════ MANUAL PANEL ══════════════════════ -->
   <div class="panel" id="panel-manual">
 
-    <div style="font-size:12px;color:var(--g500);line-height:1.55;margin-bottom:14px;padding:10px 12px;background:var(--g50);border-radius:8px;border-left:3px solid var(--ul)">
-      Analise a peça segmento por segmento, como uma análise forense humana. Adicione cada trecho, descreva o que observou e classifique o nível de suspeita de uso de IA. O veredito e o relatório são gerados automaticamente.
+    <!-- Drop zone -->
+    <div class="man-drop" id="man-drop" onclick="document.getElementById('man-file-inp').click()"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="event.preventDefault();this.classList.remove('drag-over');manHandleFile(event.dataTransfer.files[0])">
+      <input type="file" id="man-file-inp" style="display:none" accept="video/*,audio/*,image/*,.txt,.md"
+             onchange="manHandleFile(this.files[0]);this.value=''">
+      <div class="man-drop-ico">🔍</div>
+      <div class="man-drop-title">Solte ou selecione um arquivo para analisar</div>
+      <div class="man-drop-sub">Vídeo · Áudio · Imagem · Texto — a IA preenche os segmentos automaticamente</div>
     </div>
+    <div class="man-loading" id="man-ai-loading" style="display:none">
+      <span class="man-loading-spin"></span>
+      <span id="man-ai-msg">Analisando com IA…</span>
+    </div>
+    <div class="man-drop-err" id="man-drop-err" style="display:none"></div>
 
     <!-- Meta -->
     <div class="man-meta">
@@ -1312,6 +1334,79 @@ function manTimeToSec(s){
 function manSecToTime(s){
   var m=Math.floor(s/60), sec=Math.round(s%60);
   return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+async function manHandleFile(file){
+  if(!file) return;
+  var errEl=document.getElementById('man-drop-err');
+  var loadEl=document.getElementById('man-ai-loading');
+  var msgEl=document.getElementById('man-ai-msg');
+  errEl.style.display='none';
+
+  // detect file type
+  var mime=file.type||'';
+  var isVideo = mime.startsWith('video/') || /\.(mp4|mov|avi|webm|mkv)$/i.test(file.name);
+  var isAudio = mime.startsWith('audio/') || /\.(mp3|wav|aac|ogg|flac|m4a)$/i.test(file.name);
+  var isImage = mime.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(file.name);
+  var isText  = mime.startsWith('text/')  || /\.(txt|md)$/i.test(file.name);
+
+  // pick best available API
+  var apiId = null;
+  if(isVideo||isImage){
+    if(hasKey('gemini')) apiId='gemini';
+    else if(hasKey('openai')) apiId='openai';
+    else if(hasKey('claude')&&isImage) apiId='claude';
+  } else if(isAudio){
+    if(hasKey('openai')) apiId='openai';
+    else if(hasKey('assemblyai')) apiId='assemblyai';
+  } else if(isText){
+    if(hasKey('gemini')) apiId='gemini';
+    else if(hasKey('openai')) apiId='openai';
+    else if(hasKey('claude')) apiId='claude';
+  }
+
+  if(!apiId){
+    errEl.textContent='Nenhuma API configurada para este tipo de arquivo. Configure uma chave em "Configurar APIs".';
+    errEl.style.display='block'; return;
+  }
+  if(!isVideo&&!isAudio&&!isImage&&!isText){
+    errEl.textContent='Tipo de arquivo não suportado. Use vídeo, áudio, imagem ou texto.';
+    errEl.style.display='block'; return;
+  }
+
+  loadEl.style.display='flex';
+  msgEl.textContent='Analisando com IA… ('+APIS.find(function(a){return a.id===apiId;}).name+')';
+
+  try{
+    var result;
+    if(isVideo)       result = await analyzeVideo(apiId, file);
+    else if(isAudio)  result = await analyzeAudio(apiId, file);
+    else if(isImage)  result = await analyzeImage(apiId, file);
+    else {
+      var text = await file.text();
+      result = await analyzeText(apiId, text);
+      result.fileName = file.name;
+    }
+
+    loadEl.style.display='none';
+
+    if(result.parsed&&result.parsed.segmentos&&result.parsed.segmentos.length){
+      window._lastAIResult = result;
+      manImportFromAI();
+    } else {
+      // fallback: no structured segments — show raw text
+      errEl.textContent='A IA não retornou segmentos estruturados. Resultado: '+(result.label||result.verdict)+'. Adicione segmentos manualmente abaixo.';
+      errEl.style.display='block';
+      var obsEl=document.getElementById('man-obs-geral');
+      if(obsEl&&result.text) obsEl.value=result.text.slice(0,300);
+      var titEl=document.getElementById('man-titulo');
+      if(titEl&&!titEl.value) titEl.value=(file.name||'').replace(/\.[^.]+$/,'');
+    }
+  } catch(e){
+    loadEl.style.display='none';
+    errEl.textContent='Erro na análise: '+e.message;
+    errEl.style.display='block';
+  }
 }
 
 function manImportFromAI(){
