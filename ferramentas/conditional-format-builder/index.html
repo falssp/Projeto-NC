@@ -163,6 +163,10 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
 .platform-badge{display:inline-flex;align-items:center;gap:5px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:600;color:var(--accent);margin-bottom:12px}
 .load-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .load-btn:hover{background:var(--accent);color:#fff}
+.locale-toggle{display:flex;border:1px solid var(--bdr);border-radius:var(--radius-sm);overflow:hidden}
+.loc-btn{padding:5px 12px;font-size:12px;font-weight:500;border:none;background:var(--bg3);color:var(--fg2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.loc-btn+.loc-btn{border-left:1px solid var(--bdr)}
+.loc-btn.active{background:var(--accent);color:#fff;font-weight:600}
 </style>
 </head>
 <body>
@@ -174,7 +178,6 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
     <div class="logo-sub">Gerador de fórmulas para formatação condicional — Google Sheets</div>
   </div>
   <div class="hdr-r">
-    <button class="btn-hdr" id="btn-locale" onclick="toggleLocale()" title="Alternar idioma das fórmulas" style="font-weight:600;font-size:12px;min-width:60px">🇧🇷 PT</button>
     <button class="btn-hdr" onclick="toggleTheme()">🌓</button>
   </div>
 </div>
@@ -250,6 +253,13 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         <button class="btn-add" id="c-add-par" hidden onclick="addColPair()">＋ Adicionar par</button>
       </div>
 
+      <div id="c-locale-row" hidden style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--fg2)">Fórmulas para:</span>
+        <div class="locale-toggle">
+          <button id="loc-pt" class="loc-btn active" onclick="setLocale('pt')">📊 Google Sheets (PT-BR)</button>
+          <button id="loc-en" class="loc-btn" onclick="setLocale('en')">📗 Excel / Sheets (EN)</button>
+        </div>
+      </div>
       <button class="btn-gen" id="c-btn-gen" hidden onclick="generateCols()">⚡ Gerar fórmulas</button>
 
       <div id="c-dupe-warn" hidden style="background:var(--bg2);border:1px solid #f59e0b;border-radius:var(--radius);padding:16px;margin-bottom:14px">
@@ -332,6 +342,13 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         <button class="btn-add" id="r-add-col" hidden onclick="addRowCol()">＋ Adicionar coluna</button>
       </div>
 
+      <div id="r-locale-row" hidden style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--fg2)">Fórmulas para:</span>
+        <div class="locale-toggle">
+          <button id="rloc-pt" class="loc-btn active" onclick="setLocale('pt')">📊 Google Sheets (PT-BR)</button>
+          <button id="rloc-en" class="loc-btn" onclick="setLocale('en')">📗 Excel / Sheets (EN)</button>
+        </div>
+      </div>
       <button class="btn-gen" id="r-btn-gen" hidden onclick="generateRows()">⚡ Gerar fórmulas</button>
 
       <div class="out-section" id="r-out" hidden>
@@ -559,6 +576,7 @@ function resetCols() {
   document.getElementById('c-trigCol').value='B';
   document.getElementById('c-trigVal').value='BW';
   document.getElementById('c-startRow').value='2';
+  document.getElementById('c-locale-row').hidden=true;
   document.getElementById('c-out').hidden=true;
   document.getElementById('c-dupe-warn').hidden=true;
   _pendingGenCols=null;
@@ -579,14 +597,15 @@ function resetRows() {
 // ── Locale ────────────────────────────────────────────────
 let locale = 'pt'; // 'pt' | 'en'
 const L = {
-  pt: { sep:';', and:'E', countifs:'CONT.SES', flag:'🇧🇷 PT', sub:'Google Sheets · PT-BR' },
-  en: { sep:',', and:'AND', countifs:'COUNTIFS', flag:'🇺🇸 EN', sub:'Google Sheets / Excel · EN' },
+  pt: { sep:';', and:'E', countifs:'CONT.SES' },
+  en: { sep:',', and:'AND', countifs:'COUNTIFS' },
 };
 function l() { return L[locale]; }
-function toggleLocale() {
-  locale = locale==='pt' ? 'en' : 'pt';
-  document.getElementById('btn-locale').textContent = l().flag;
-  document.querySelector('.logo-sub').textContent = 'Gerador de fórmulas — ' + l().sub;
+function setLocale(loc) {
+  locale = loc;
+  ['loc-pt','loc-en','rloc-pt','rloc-en'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.toggle('active', id.endsWith(loc));
+  });
 }
 
 // ── Theme ─────────────────────────────────────────────────
@@ -608,6 +627,7 @@ function cStep3() {
 }
 function cStep4() {
   document.getElementById('c-step4').hidden=false;
+  document.getElementById('c-locale-row').hidden=false;
   document.getElementById('c-btn-gen').hidden=false;
   document.getElementById('c-step4').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -697,6 +717,7 @@ function loadPlatform(pfx) {
     }
     renderRowCols();
     const s2=document.getElementById('r-step2'); if(s2) s2.hidden=false;
+    const lr=document.getElementById('r-locale-row'); if(lr) lr.hidden=false;
     const bg=document.getElementById('r-btn-gen'); if(bg) bg.hidden=false;
     toast(aba==='Livre' ? 'Modo livre — adicione as colunas' : `${rowCols.length} colunas carregadas — ${tag}`);
   }
