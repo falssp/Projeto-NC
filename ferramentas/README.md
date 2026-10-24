@@ -12,6 +12,7 @@ Rodam 100% no browser, sem configuração.
 | Ferramenta | Descrição | Link |
 |---|---|---|
 | [**AI Detector**](ai-detector/) | Detecta conteúdo gerado por IA em vídeo, imagem, áudio e texto via APIs configuráveis | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/ai-detector/) |
+| [**Branded Buzz Taxonomy**](branded-buzz-taxo/) | Preenche e gera linha de taxonomia para assets de Branded Buzz — bucket de duração automático e exportação TSV para Sheets/Excel | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/branded-buzz-taxo/branded-buzz-taxo.html) |
 | [**Comparador ADP**](comparador-adp/) | Compara estrutura de duas abas ADP e aponta divergências | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/comparador-adp/) |
 | [**Conditional Format Builder**](conditional-format-builder/) | Gera fórmulas de formatação condicional para Sheets/Excel — bloco linhas e bloco colunas, PT-BR ou inglês | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/conditional-format-builder/) |
 | [**Contador ADP**](contador-adp/) | Conta linhas por aba e plataforma em planilhas ADP | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/contador-adp/) |
