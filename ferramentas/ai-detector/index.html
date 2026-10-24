@@ -254,11 +254,12 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
 .btn-import-manual{display:flex;align-items:center;gap:8px;width:100%;margin:12px 0 4px;padding:11px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;justify-content:center;letter-spacing:.01em}
 .btn-import-manual:hover{opacity:.92}
 /* Manual drop zone */
-.man-drop{border:2px dashed var(--g300);border-radius:11px;padding:20px 16px 18px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:14px;background:var(--g50)}
-.man-drop:hover,.man-drop.drag-over{border-color:var(--ul);background:#EEF2FF}
-.man-drop-ico{font-size:28px;line-height:1;margin-bottom:6px}
-.man-drop-title{font-size:13px;font-weight:700;color:var(--g700);margin-bottom:3px}
-.man-drop-sub{font-size:11.5px;color:var(--g400)}
+.man-drop{border:2.5px dashed #818cf8;border-radius:14px;padding:28px 20px 24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;margin-bottom:16px;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 100%)}
+.man-drop:hover,.man-drop.drag-over{border-color:#6366f1;background:linear-gradient(135deg,#ede9fe 0%,#ddd6fe 100%);transform:scale(1.005)}
+.man-drop-ico{font-size:36px;line-height:1;margin-bottom:8px}
+.man-drop-title{font-size:15px;font-weight:800;color:#4338ca;margin-bottom:4px}
+.man-drop-sub{font-size:12px;color:#6d6aac;font-weight:500}
+.man-drop-btn{display:inline-block;margin-top:10px;padding:8px 20px;background:#6366f1;color:#fff;border-radius:20px;font-size:12.5px;font-weight:700;letter-spacing:.01em}
 .man-loading{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#EEF2FF;border-radius:9px;margin-bottom:12px;font-size:12.5px;color:#4338ca;font-weight:600}
 .man-loading-spin{width:16px;height:16px;border:2.5px solid #c7d2fe;border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 .man-drop-err{padding:9px 12px;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;color:#dc2626;font-size:12px;margin-bottom:10px}
@@ -509,15 +510,20 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
          ondrop="event.preventDefault();this.classList.remove('drag-over');manHandleFile(event.dataTransfer.files[0])">
       <input type="file" id="man-file-inp" style="display:none" accept="video/*,audio/*,image/*,.txt,.md"
              onchange="manHandleFile(this.files[0]);this.value=''">
-      <div class="man-drop-ico">🔍</div>
-      <div class="man-drop-title">Solte ou selecione um arquivo para analisar</div>
-      <div class="man-drop-sub">Vídeo · Áudio · Imagem · Texto — a IA preenche os segmentos automaticamente</div>
+      <div class="man-drop-ico">🤖</div>
+      <div class="man-drop-title">Solte o arquivo aqui ou clique para selecionar</div>
+      <div class="man-drop-sub">Vídeo · Áudio · Imagem · Texto (.txt)</div>
+      <div class="man-drop-btn">Selecionar arquivo</div>
+      <div style="margin-top:8px;font-size:11px;color:#8b7fd4">A IA analisa e preenche os segmentos automaticamente</div>
     </div>
     <div class="man-loading" id="man-ai-loading" style="display:none">
       <span class="man-loading-spin"></span>
       <span id="man-ai-msg">Analisando com IA…</span>
     </div>
     <div class="man-drop-err" id="man-drop-err" style="display:none"></div>
+
+    <!-- Main content (hidden until file analyzed) -->
+    <div id="man-content" style="display:none">
 
     <!-- Meta -->
     <div class="man-meta">
@@ -579,6 +585,7 @@ body{font-family:var(--fn);background:var(--g50);color:var(--g900);min-height:10
       <span class="man-copied" id="man-copied">✓ Copiado!</span>
     </div>
 
+    </div><!-- /man-content -->
   </div><!-- /panel-manual -->
 
   <div class="panel" id="panel-text">
@@ -1469,12 +1476,23 @@ function manImportFromAI(){
     manSegs.push({id:id, ini:ini, fim:fim, obs:obsText, lev:lev, evid:evids});
   });
 
+  // reveal main content
+  var content = document.getElementById('man-content');
+  if(content) content.style.display = 'block';
+  // update drop zone to compact "change file" state
+  var dropTitle = document.querySelector('#man-drop .man-drop-title');
+  var dropBtn   = document.querySelector('#man-drop .man-drop-btn');
+  var dropIco   = document.querySelector('#man-drop .man-drop-ico');
+  if(dropTitle) dropTitle.textContent = 'Trocar arquivo';
+  if(dropBtn)   dropBtn.textContent   = 'Selecionar outro';
+  if(dropIco)   dropIco.textContent   = '🔄';
+
   manRenderSegs();
   manUpdate();
   switchTab('manual');
   setTimeout(function(){
-    var panel=document.getElementById('panel-manual');
-    if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
+    var content2 = document.getElementById('man-content');
+    if(content2) content2.scrollIntoView({behavior:'smooth', block:'start'});
   },150);
 }
 
@@ -1761,14 +1779,29 @@ function pad(s,n){ return (s||'').substring(0,n).padEnd(n,' '); }
 function manReset(){
   if(!confirm('Limpar toda a análise atual?')) return;
   manSegs=[]; manIdCnt=0;
+  window._lastAIResult = null;
   ['man-titulo','man-anunciante','man-data','man-analista','man-obs-geral','man-dur','man-notes'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
+  // re-init date
+  var dt=new Date(), el=document.getElementById('man-data');
+  if(el) el.value=dt.toISOString().split('T')[0];
+  // hide content, restore drop zone
+  var content=document.getElementById('man-content');
+  if(content) content.style.display='none';
+  var dropTitle=document.querySelector('#man-drop .man-drop-title');
+  var dropBtn  =document.querySelector('#man-drop .man-drop-btn');
+  var dropIco  =document.querySelector('#man-drop .man-drop-ico');
+  if(dropTitle) dropTitle.textContent='Solte o arquivo aqui ou clique para selecionar';
+  if(dropBtn)   dropBtn.textContent  ='Selecionar arquivo';
+  if(dropIco)   dropIco.textContent  ='🤖';
+  var errEl=document.getElementById('man-drop-err');
+  if(errEl) errEl.style.display='none';
   manRenderSegs();
   manUpdate();
 }
 
-// init manual with one empty segment
+// init manual — content hidden until file analyzed
 (function manInit(){
   var dt = new Date();
   var el = document.getElementById('man-data');
