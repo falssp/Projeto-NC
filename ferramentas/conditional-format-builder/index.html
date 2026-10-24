@@ -374,6 +374,15 @@ code,.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
         <button class="btn-add" id="r-add-col" hidden onclick="addRowCol()">＋ Adicionar coluna</button>
       </div>
 
+      <div id="r-dupe-warn" hidden style="background:var(--bg2);border:1px solid #f59e0b;border-radius:var(--radius);padding:16px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:600;color:#b45309;margin-bottom:6px">⚠️ Colunas repetidas detectadas</div>
+        <div id="r-dupe-msg" style="font-size:12px;color:var(--fg2);margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="load-btn" onclick="confirmGenerateRows()">Confirmar e gerar</button>
+          <button class="load-btn" style="background:var(--bg3);color:var(--fg2)" onclick="document.getElementById('r-dupe-warn').hidden=true">Cancelar</button>
+        </div>
+      </div>
+
       <div class="out-section" id="r-out" hidden>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div class="out-title" style="margin-bottom:0">📋 Fórmulas geradas</div>
@@ -614,6 +623,8 @@ function resetRows() {
   document.getElementById('r-trigVal').value='BW';
   document.getElementById('r-startRow').value='2';
   document.getElementById('r-out').hidden=true;
+  document.getElementById('r-dupe-warn').hidden=true;
+  _pendingGenRows=null;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -892,6 +903,8 @@ function doGenerateCols({tc,tv,sr,lbl,valid}) {
 }
 
 // ── Generate Rows ─────────────────────────────────────────
+let _pendingGenRows = null;
+
 function generateRows() {
   const tc=document.getElementById('r-trigCol').value.trim().toUpperCase();
   const tv=document.getElementById('r-trigVal').value.trim();
@@ -903,6 +916,26 @@ function generateRows() {
   const valid=rowCols.filter(c=>c.col);
   if(!valid.length){toast('Adicione ao menos uma coluna');return;}
 
+  // Detectar colunas repetidas
+  const seen=new Map();
+  valid.forEach(c=>{ seen.set(c.col,(seen.get(c.col)||0)+1); });
+  const dupes=[...seen.entries()].filter(([,n])=>n>1);
+  if(dupes.length) {
+    const msg=dupes.map(([col,n])=>`<strong>${col}</strong> aparece ${n}×`).join(', ');
+    document.getElementById('r-dupe-msg').innerHTML=`Colunas repetidas: ${msg}.<br>Ao confirmar, será gerada uma fórmula por entrada (incluindo duplicatas).`;
+    document.getElementById('r-dupe-warn').hidden=false;
+    _pendingGenRows={tc,tv,sr,lbl,valid};
+    return;
+  }
+  doGenerateRows({tc,tv,sr,lbl,valid});
+}
+
+function confirmGenerateRows() {
+  document.getElementById('r-dupe-warn').hidden=true;
+  if(_pendingGenRows) { doGenerateRows(_pendingGenRows); _pendingGenRows=null; }
+}
+
+function doGenerateRows({tc,tv,sr,lbl,valid}) {
   const outEl=document.getElementById('r-out');
   const titleEl=outEl.querySelector('.out-title');
   titleEl.textContent=lbl?`📋 ${lbl}`:'📋 Fórmulas geradas (Bloco Colunas)';
