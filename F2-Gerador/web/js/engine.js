@@ -65,7 +65,10 @@ async function _loadGasLists() {
   _setGasStatus('loading');
 
   try {
-    const resp = await fetch(`${ENV.gasUrl}?action=listarOpcoes`, { cache: 'no-store' });
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000); // 5 s — cai no fallback se GAS não responder
+    const resp = await fetch(`${ENV.gasUrl}?action=listarOpcoes`, { cache: 'no-store', signal: ctrl.signal });
+    clearTimeout(timer);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     if (!data.ok || !data.campos) throw new Error(data.error || 'resposta inválida');
