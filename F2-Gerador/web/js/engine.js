@@ -40,21 +40,19 @@ async function init() {
     badge.dataset.env = ENV.id;
   }
 
-  // Load fallback lists (always load first)
-  const listsResp = await fetch('config/lists.json');
-  LISTS = await listsResp.json();
-
-  // Try to load dynamic lists from GAS
-  await _loadGasLists();
-
-  // Load all platform configs
-  const platPromises = PLATFORM_IDS.map(id =>
-    fetch(`config/${id}.json`).then(r => r.json())
-  );
-  PLATFORMS = await Promise.all(platPromises);
+  // Load fallback lists + all platform configs in parallel (GAS runs in background)
+  const results = await Promise.all([
+    fetch('config/lists.json').then(r => r.json()),
+    ...PLATFORM_IDS.map(id => fetch(`config/${id}.json`).then(r => r.json()))
+  ]);
+  LISTS = results[0];
+  PLATFORMS = results.slice(1);
 
   buildSidebar();
   selectPlatform(PLATFORMS[0]);
+
+  // Enrich lists from GAS in background — does NOT block rendering
+  _loadGasLists();
 }
 
 // ─── GAS Dynamic Lists ────────────────────────────────────────────────────────
