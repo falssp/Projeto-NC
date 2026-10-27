@@ -8,9 +8,35 @@
 
 ## Acesso
 
-🔗 [Abrir apresentação interativa](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/)
+🔗 [Abrir apresentação (v2 — atual)](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/)  
+🔗 [Abrir apresentação (v1 — anterior)](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/)
 
-📊 Abrir no Google Slides *(link a adicionar)*
+---
+
+## Versões
+
+| Versão | Descrição | Link |
+|--------|-----------|------|
+| **v2** (atual) | PPTX corrigido pelo autor (fonte original ajustada) | [Abrir v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
+| v1 | Versão anterior com correções via python-pptx (dots, layout) | [Abrir v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/) |
+
+---
+
+## Estrutura
+
+```
+V3/
+├── README.md
+├── index.html        ← landing page (redireciona para v2)
+├── v1/
+│   ├── index.html
+│   ├── slides/       ← 51 PNGs
+│   └── TreinamentoTaxonomia_RROI_TP1.pptx
+└── v2/
+    ├── index.html
+    ├── slides/       ← 51 PNGs (fonte corrigida)
+    └── TreinamentoTaxonomia_RROI_TP1_v2.pptx
+```
 
 ---
 
@@ -80,15 +106,6 @@
 - Cronograma mensal RROI detalhado com papéis e responsabilidades (PMO, Mídia, Engenharia)
 - Smart Bidding: meta global vs projeção Brasil
 - Total de slides: 25 → **51**
-
----
-
-## Arquivos
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `index.html` | Apresentação interativa HTML |
-| `TreinamentoTaxonomia_RROI_TP1.pptx` | Fonte original PPTX *(a subir)* |
 
 ---
 
