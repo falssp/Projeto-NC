@@ -1,6 +1,5 @@
-# V3 · v1 — Versão anterior
+# V3 · v1
 
-**Status:** 🗄️ Arquivo  
 **Slides:** 51  
 **Gerado em:** Out 2026  
 

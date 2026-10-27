@@ -2,7 +2,7 @@
 
 Apresentações interativas de treinamento operacional para o ecossistema Unilever BR — cobrindo RROI, taxonomia, RM, Jira, AD Media, AdServer Innovid e validação de dados.
 
-**Versão atual:** V3 · v2 · Out 2026
+**Out 2026**
 
 ---
 
@@ -10,7 +10,7 @@ Apresentações interativas de treinamento operacional para o ecossistema Unilev
 
 | Versão | AdServer | Slides | Link |
 |--------|----------|--------|------|
-| **V3 v2** (atual) | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
+| **V3 v2** | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
 | V3 v1 | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/) |
 | V2 | Innovid | 25 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V2/) |
 | V1 | Flashtalking | 22 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V1/) |

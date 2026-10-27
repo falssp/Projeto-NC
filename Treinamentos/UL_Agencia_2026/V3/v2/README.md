@@ -1,6 +1,5 @@
-# V3 · v2 — Versão atual
+# V3 · v2
 
-**Status:** ✅ Atual  
 **Slides:** 51  
 **Gerado em:** Out 2026  
 

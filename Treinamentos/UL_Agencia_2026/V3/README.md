@@ -2,7 +2,6 @@
 
 **AdServer:** Innovid  
 **Slides:** 51  
-**Status:** ✅ Versão atual  
 
 ---
 
@@ -17,8 +16,8 @@
 
 | Versão | Descrição | Link |
 |--------|-----------|------|
-| **v2** (atual) | PPTX corrigido pelo autor (fonte original ajustada) | [Abrir v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
-| v1 | Versão anterior com correções via python-pptx (dots, layout) | [Abrir v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/) |
+| **v2** | PPTX corrigido pelo autor (fonte original ajustada) | [Abrir v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
+| v1 | Correções via python-pptx (dots, layout) | [Abrir v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/) |
 
 ---
 
