@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Mídia</title>
+<style>
+:root{
+  --azul:#1F36C7;--azul-escuro:#1a237e;--azul-light:#e8ecfd;
+  --cinza:#f4f5fb;--borda:#d6dbf2;
+  --ok:#1b8a3a;--erro:#c0392b;--warn:#e6a817;
+  --header-h:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--cinza);color:#222;min-height:100vh;}
+
+/* HEADER */
+.header{background:var(--azul-escuro);color:#fff;padding:0 24px;height:var(--header-h);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;}
+.header h1{font-size:16px;font-weight:700;}
+.header .badge{font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:20px;}
+.header .ver{font-size:10px;opacity:.5;margin-left:auto;}
+
+/* LAYOUT */
+.container{max-width:1200px;margin:0 auto;padding:24px;}
+
+/* TAB NAV */
+.tab-nav{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{padding:9px 16px;border:1.5px solid var(--borda);background:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#555;display:flex;align-items:center;gap:7px;transition:all .15s;}
+.tab-btn:hover{background:var(--azul-light);}
+.tab-btn.active{background:var(--azul);color:#fff;border-color:var(--azul);}
+
+/* PANELS */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* CARD */
+.card{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:22px;margin-bottom:16px;}
+.card-title{font-size:15px;font-weight:700;color:var(--azul-escuro);margin-bottom:4px;}
+.card-sub{font-size:13px;color:#666;margin-bottom:18px;}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;}
+@media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+
+/* INPUT GROUP */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+.field input{width:100%;padding:10px 12px;border:1.5px solid var(--borda);border-radius:7px;font-size:15px;font-family:inherit;background:#fff;transition:border-color .15s;}
+.field input:focus{outline:none;border-color:var(--azul);}
+.field .hint{font-size:11px;color:#999;margin-top:4px;}
+.field-prefix{position:relative;}
+.field-prefix .prefix{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:#888;pointer-events:none;}
+.field-prefix input{padding-left:30px;}
+
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:18px;}
+.stat-card{background:var(--azul-light);border:1px solid var(--borda);border-radius:8px;padding:14px 16px;}
+.stat-card.highlight{background:var(--azul);color:#fff;}
+.stat-card.highlight .stat-label{color:rgba(255,255,255,.7);}
+.stat-card.highlight .stat-formula{color:rgba(255,255,255,.55);}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#667;margin-bottom:6px;}
+.stat-value{font-size:22px;font-weight:800;color:var(--azul-escuro);line-height:1.1;}
+.stat-card.highlight .stat-value{color:#fff;}
+.stat-unit{font-size:12px;font-weight:400;opacity:.7;margin-left:2px;}
+.stat-formula{font-size:10px;color:#999;margin-top:6px;font-style:italic;}
+.stat-na{font-size:14px;color:#bbb;font-weight:400;}
+
+/* SCENARIO CARDS */
+.scenario-card{background:#fff;border:2px solid var(--borda);border-radius:10px;padding:18px;position:relative;}
+.scenario-card .sc-name{width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:6px;font-size:13px;font-weight:600;margin-bottom:12px;}
+.scenario-card.best-overall{border-color:var(--ok);}
+
+/* COMPARISON TABLE */
+.comp-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;}
+.comp-table th{background:var(--azul-escuro);color:#fff;padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;}
+.comp-table td{padding:10px 12px;border-bottom:1px solid var(--borda);}
+.comp-table tr:hover td{background:#fafbff;}
+.comp-table .best{color:var(--ok);font-weight:700;}
+.comp-table .metric-name{font-weight:600;color:#444;}
+
+/* PACING */
+.pacing-status{border-radius:10px;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;gap:14px;}
+.pacing-ok{background:#e8f5ee;border:1.5px solid #a3d9b5;}
+.pacing-under{background:#fff8e1;border:1.5px solid #ffe082;}
+.pacing-over{background:#fdecea;border:1.5px solid #f5a9a4;}
+.pacing-icon{font-size:32px;}
+.pacing-label{font-size:18px;font-weight:700;}
+.pacing-sub{font-size:13px;opacity:.8;margin-top:2px;}
+
+/* PROGRESS BAR */
+.progress-wrap{margin:16px 0;}
+.progress-labels{display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:6px;}
+.progress-track{background:#e0e4f0;border-radius:100px;height:14px;position:relative;overflow:visible;}
+.progress-bar{height:14px;border-radius:100px;transition:width .4s ease;}
+.progress-bar.ok{background:var(--ok);}
+.progress-bar.under{background:var(--warn);}
+.progress-bar.over{background:var(--erro);}
+.progress-marker{position:absolute;top:-4px;width:2px;height:22px;background:var(--azul-escuro);border-radius:2px;}
+.progress-marker-label{position:absolute;top:20px;font-size:10px;color:var(--azul-escuro);font-weight:700;white-space:nowrap;transform:translateX(-50%);}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+.btn-reset{padding:9px 16px;border:1.5px solid var(--borda);background:#fff;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:#555;}
+.btn-reset:hover{background:var(--cinza);}
+.btn-copy{padding:9px 16px;border:none;background:var(--azul);color:#fff;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;}
+.btn-copy:hover{opacity:.9;}
+.btn-copy.copied{background:var(--ok);}
+
+/* REVERSE SCENARIOS */
+.rev-scenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
+.rev-card{background:#fff;border:1.5px solid var(--borda);border-radius:8px;padding:14px;}
+.rev-card .rev-cpm{font-size:11px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:4px;}
+.rev-card .rev-budget{font-size:20px;font-weight:800;color:var(--azul-escuro);}
+.rev-card .rev-detail{font-size:12px;color:#666;margin-top:6px;}
+@media(max-width:600px){.rev-scenarios{grid-template-columns:1fr;}}
+
+/* SEPARATOR */
+.sep{border:none;border-top:1px solid var(--borda);margin:18px 0;}
+
+/* TOOLTIP */
+.tooltip{position:relative;display:inline-block;}
+.tooltip .tip{visibility:hidden;background:#333;color:#fff;text-align:center;padding:4px 8px;border-radius:4px;position:absolute;z-index:10;bottom:125%;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap;opacity:0;transition:opacity .2s;}
+.tooltip:hover .tip{visibility:visible;opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:20px">🧮</span>
+  <h1>Calculadora de Mídia</h1>
+  <span class="badge"></span>
+  <span class="ver">v1.0 · 2026</span>
+</div>
+
+<div class="container">
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('projecao')">📊 Projeção de Entrega</button>
+    <button class="tab-btn" onclick="switchTab('reverso')">🔁 Cálculo Reverso</button>
+    <button class="tab-btn" onclick="switchTab('cenarios')">⚖️ Comparador de Cenários</button>
+    <button class="tab-btn" onclick="switchTab('pacing')">📅 Pacing Check</button>
+  </div>
+
+  <!-- ===================== TAB 1: PROJEÇÃO ===================== -->
+  <div id="tab-projecao" class="panel active">
+    <div class="card">
+      <div class="card-title">Projeção de Entrega</div>
+      <div class="card-sub">Insira o budget e as métricas de custo para projetar os resultados esperados.</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="field">
+            <label>Budget Total (R$)</label>
+            <div class="field-prefix">
+              <span class="prefix">R$</span>
+              <input type="text" id="p-budget" placeholder="10.000,00" oninput="calcProjecao()">
+            </div>
+            <div class="hint">Valor total disponível para a campanha</div>
+          </div>
+          <div class="field">
+            <label>CPM — Custo por Mil Impressões (R$)</label>
+            <div class="field-prefix">
+              <span class="prefix">R$</span>
+              <input type="text" id="p-cpm" placeholder="12,00" oninput="calcProjecao()">
+            </div>
+            <div class="hint">Impressões = Budget ÷ CPM × 1.000</div>
+          </div>
+          <div class="field">
+            <label>CTR — Taxa de Cliques (%)</label>
+            <input type="text" id="p-ctr" placeholder="1,50" oninput="calcProjecao()">
+            <div class="hint">Cliques = Impressões × CTR ÷ 100</div>
+          </div>
+          <div class="field">
+            <label>CPC — Custo por Clique (R$) <span style="color:#aaa;font-weight:400">(alternativo ao CTR)</span></label>
+            <div class="field-prefix">
+              <span class="prefix">R$</span>
+              <input type="text" id="p-cpc" placeholder="0,80" oninput="calcProjecao()">
+            </div>
+            <div class="hint">Cliques = Budget ÷ CPC</div>
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>CVR — Taxa de Conversão (%)</label>
+            <input type="text" id="p-cvr" placeholder="2,00" oninput="calcProjecao()">
+            <div class="hint">Conversões = Cliques × CVR ÷ 100</div>
+          </div>
+          <div class="field">
+            <label>CPA — Custo por Aquisição (R$) <span style="color:#aaa;font-weight:400">(alternativo ao CVR)</span></label>
+            <div class="field-prefix">
+              <span class="prefix">R$</span>
+              <input type="text" id="p-cpa" placeholder="50,00" oninput="calcProjecao()">
+            </div>
+            <div class="hint">Conversões = Budget ÷ CPA</div>
+          </div>
+          <div class="field">
+            <label>CPV — Custo por Visualização (R$)</label>
+            <div class="field-prefix">
+              <span class="prefix">R$</span>
+              <input type="text" id="p-cpv" placeholder="0,05" oninput="calcProjecao()">
+            </div>
+            <div class="hint">Visualizações = Budget ÷ CPV</div>
+          </div>
+          <div class="field">
+            <label>Frequência Média</label>
+            <input type="text" id="p-freq" placeholder="3,0" oninput="calcProjecao()">
+            <div class="hint">Alcance = Impressões ÷ Frequência</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="sep">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#aaa;letter-spacing:.05em;margin-bottom:10px;">Resultados Projetados</div>
+      <div class="stats-grid" id="p-results">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-reset" onclick="resetTab('projecao')">↺ Limpar</button>
+        <button class="btn-copy" id="copy-p" onclick="copyResult('projecao')">📋 Copiar resultado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB 2: REVERSO ===================== -->
+  <div id="tab-reverso" class="panel">
+    <div class="card">
+      <div class="card-title">Cálculo Reverso</div>
+      <div class="card-sub">Defina a meta que você quer atingir e descubra quanto budget é necessário em diferentes cenários de CPM/CPC/CPA.</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="field">
+            <label>Tipo de Meta</label>
+            <select id="r-tipo" onchange="calcReverso()" style="width:100%;padding:10px 12px;border:1.5px solid var(--borda);border-radius:7px;font-size:14px;font-family:inherit;background:#fff;">
+              <option value="impressoes">Impressões</option>
+              <option value="cliques">Cliques</option>
+              <option value="conversoes">Conversões</option>
+              <option value="visualizacoes">Visualizações</option>
+              <option value="alcance">Alcance</option>
+            </select>
+          </div>
+          <div class="field">
+            <label id="r-meta-label">Meta de Impressões</label>
+            <input type="text" id="r-meta" placeholder="1.000.000" oninput="calcReverso()">
+            <div class="hint" id="r-meta-hint">Número de impressões que você quer entregar</div>
+          </div>
+          <div class="field" id="r-freq-wrap" style="display:none;">
+            <label>Frequência Média (para Alcance)</label>
+            <input type="text" id="r-freq" placeholder="3,0" oninput="calcReverso()">
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>Cenário 1 — CPM/CPC/CPA (R$)</label>
+            <div class="field-prefix"><span class="prefix">R$</span>
+            <input type="text" id="r-c1" placeholder="10,00" oninput="calcReverso()"></div>
+          </div>
+          <div class="field">
+            <label>Cenário 2 — CPM/CPC/CPA (R$)</label>
+            <div class="field-prefix"><span class="prefix">R$</span>
+            <input type="text" id="r-c2" placeholder="15,00" oninput="calcReverso()"></div>
+          </div>
+          <div class="field">
+            <label>Cenário 3 — CPM/CPC/CPA (R$)</label>
+            <div class="field-prefix"><span class="prefix">R$</span>
+            <input type="text" id="r-c3" placeholder="20,00" oninput="calcReverso()"></div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="sep">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#aaa;letter-spacing:.05em;margin-bottom:10px;">Budget Necessário por Cenário</div>
+      <div class="rev-scenarios" id="r-results">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-reset" onclick="resetTab('reverso')">↺ Limpar</button>
+        <button class="btn-copy" id="copy-r" onclick="copyResult('reverso')">📋 Copiar resultado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB 3: CENÁRIOS ===================== -->
+  <div id="tab-cenarios" class="panel">
+    <div class="card">
+      <div class="card-title">Comparador de Cenários</div>
+      <div class="card-sub">Compare até 3 cenários de campanha lado a lado. As melhores métricas de cada linha são destacadas em verde.</div>
+
+      <div class="grid-3" id="sc-cards">
+        <!-- 3 scenario inputs -->
+      </div>
+
+      <hr class="sep">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#aaa;letter-spacing:.05em;margin-bottom:10px;">Comparativo</div>
+      <div style="overflow-x:auto;">
+        <table class="comp-table" id="sc-table">
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th id="sc-th-1">Cenário 1</th>
+              <th id="sc-th-2">Cenário 2</th>
+              <th id="sc-th-3">Cenário 3</th>
+            </tr>
+          </thead>
+          <tbody id="sc-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-reset" onclick="resetTab('cenarios')">↺ Limpar</button>
+        <button class="btn-copy" id="copy-s" onclick="copyResult('cenarios')">📋 Copiar resultado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== TAB 4: PACING ===================== -->
+  <div id="tab-pacing" class="panel">
+    <div class="card">
+      <div class="card-title">Pacing Check</div>
+      <div class="card-sub">Verifique se a campanha está dentro do ritmo de entrega esperado.</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="field">
+            <label>Budget Total (R$)</label>
+            <div class="field-prefix"><span class="prefix">R$</span>
+            <input type="text" id="pc-budget" placeholder="50.000,00" oninput="calcPacing()"></div>
+          </div>
+          <div class="field">
+            <label>Duração Total do Flight (dias)</label>
+            <input type="text" id="pc-dias-total" placeholder="30" oninput="calcPacing()">
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>Gasto Realizado até Hoje (R$)</label>
+            <div class="field-prefix"><span class="prefix">R$</span>
+            <input type="text" id="pc-gasto" placeholder="12.000,00" oninput="calcPacing()"></div>
+          </div>
+          <div class="field">
+            <label>Dias Decorridos</label>
+            <input type="text" id="pc-dias-dec" placeholder="10" oninput="calcPacing()">
+          </div>
+        </div>
+      </div>
+
+      <div id="pc-results"></div>
+
+      <div class="btn-row">
+        <button class="btn-reset" onclick="resetTab('pacing')">↺ Limpar</button>
+        <button class="btn-copy" id="copy-pc" onclick="copyResult('pacing')">📋 Copiar resultado</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ============================================================
+   UTILS
+   ============================================================ */
+function parseBR(s){
+  if(!s || s.trim()==='') return NaN;
+  // Remove R$, spaces, then convert BR format (dots as thousands, comma as decimal)
+  return parseFloat(s.replace(/R\$\s*/g,'').replace(/\./g,'').replace(',','.'));
+}
+
+function fmtNum(n, decimals=0){
+  if(isNaN(n)||!isFinite(n)) return '—';
+  return n.toLocaleString('pt-BR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+}
+
+function fmtBRL(n){
+  if(isNaN(n)||!isFinite(n)) return '—';
+  return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function statCard(label, value, formula, highlight=false){
+  return `<div class="stat-card${highlight?' highlight':''}">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value">${value==='—'?`<span class="stat-na">—</span>`:value}</div>
+    ${formula?`<div class="stat-formula">${formula}</div>`:''}
+  </div>`;
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+function switchTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+/* ============================================================
+   TAB 1 — PROJEÇÃO
+   ============================================================ */
+function calcProjecao(){
+  const budget = parseBR(document.getElementById('p-budget').value);
+  const cpm    = parseBR(document.getElementById('p-cpm').value);
+  const ctr    = parseBR(document.getElementById('p-ctr').value);
+  const cpc    = parseBR(document.getElementById('p-cpc').value);
+  const cvr    = parseBR(document.getElementById('p-cvr').value);
+  const cpa    = parseBR(document.getElementById('p-cpa').value);
+  const cpv    = parseBR(document.getElementById('p-cpv').value);
+  const freq   = parseBR(document.getElementById('p-freq').value);
+
+  let impressoes = NaN, cliques = NaN, conversoes = NaN, alcance = NaN, visualizacoes = NaN;
+  let cpaEfetivo = NaN, cpcEfetivo = NaN;
+
+  if(!isNaN(budget) && !isNaN(cpm) && cpm>0){
+    impressoes = budget / cpm * 1000;
+  }
+  // Cliques via CTR (precisa de impressões) ou CPC
+  if(!isNaN(impressoes) && !isNaN(ctr) && ctr>0){
+    cliques = impressoes * ctr / 100;
+    cpcEfetivo = !isNaN(budget) ? budget/cliques : NaN;
+  } else if(!isNaN(budget) && !isNaN(cpc) && cpc>0){
+    cliques = budget / cpc;
+    cpcEfetivo = cpc;
+  }
+  // Conversões via CVR (precisa de cliques) ou CPA
+  if(!isNaN(cliques) && !isNaN(cvr) && cvr>0){
+    conversoes = cliques * cvr / 100;
+    cpaEfetivo = !isNaN(budget) ? budget/conversoes : NaN;
+  } else if(!isNaN(budget) && !isNaN(cpa) && cpa>0){
+    conversoes = budget / cpa;
+    cpaEfetivo = cpa;
+  }
+  // Visualizações
+  if(!isNaN(budget) && !isNaN(cpv) && cpv>0){
+    visualizacoes = budget / cpv;
+  }
+  // Alcance
+  if(!isNaN(impressoes) && !isNaN(freq) && freq>0){
+    alcance = impressoes / freq;
+  }
+
+  const html = [
+    statCard('Budget', !isNaN(budget)?fmtBRL(budget):'—', null, true),
+    statCard('Impressões', fmtNum(impressoes), 'Budget ÷ CPM × 1.000'),
+    statCard('Cliques', fmtNum(cliques), !isNaN(ctr)?'Impressões × CTR ÷ 100':'Budget ÷ CPC'),
+    statCard('Conversões', fmtNum(conversoes), !isNaN(cvr)?'Cliques × CVR ÷ 100':'Budget ÷ CPA'),
+    statCard('Visualizações', fmtNum(visualizacoes), 'Budget ÷ CPV'),
+    statCard('Alcance', fmtNum(alcance), 'Impressões ÷ Frequência'),
+    statCard('CPC Efetivo', !isNaN(cpcEfetivo)?fmtBRL(cpcEfetivo):'—', 'Budget ÷ Cliques'),
+    statCard('CPA Efetivo', !isNaN(cpaEfetivo)?fmtBRL(cpaEfetivo):'—', 'Budget ÷ Conversões'),
+  ].join('');
+
+  document.getElementById('p-results').innerHTML = html;
+}
+
+/* ============================================================
+   TAB 2 — REVERSO
+   ============================================================ */
+document.getElementById('r-tipo').addEventListener('change', function(){
+  const tipo = this.value;
+  const labels = {
+    impressoes:  ['Meta de Impressões',   'Número de impressões que você quer entregar'],
+    cliques:     ['Meta de Cliques',      'Número de cliques que você quer gerar'],
+    conversoes:  ['Meta de Conversões',   'Número de conversões / leads / compras'],
+    visualizacoes:['Meta de Visualizações','Número de visualizações de vídeo'],
+    alcance:     ['Meta de Alcance',      'Número de pessoas únicas a alcançar'],
+  };
+  document.getElementById('r-meta-label').textContent = labels[tipo][0];
+  document.getElementById('r-meta-hint').textContent  = labels[tipo][1];
+  document.getElementById('r-freq-wrap').style.display = (tipo==='alcance') ? 'block' : 'none';
+  calcReverso();
+});
+
+function calcReverso(){
+  const tipo  = document.getElementById('r-tipo').value;
+  const meta  = parseBR(document.getElementById('r-meta').value);
+  const freq  = parseBR(document.getElementById('r-freq').value);
+  const c1    = parseBR(document.getElementById('r-c1').value);
+  const c2    = parseBR(document.getElementById('r-c2').value);
+  const c3    = parseBR(document.getElementById('r-c3').value);
+
+  function budgetFor(custo, meta, tipo, freq){
+    if(isNaN(custo)||isNaN(meta)||custo<=0||meta<=0) return NaN;
+    switch(tipo){
+      case 'impressoes':   return custo * meta / 1000;
+      case 'cliques':      return custo * meta;
+      case 'conversoes':   return custo * meta;
+      case 'visualizacoes':return custo * meta;
+      case 'alcance':      return (!isNaN(freq)&&freq>0) ? custo * meta * freq / 1000 : NaN;
+    }
+  }
+
+  const metricLabel = {'impressoes':'CPM','cliques':'CPC','conversoes':'CPA','visualizacoes':'CPV','alcance':'CPM'}[tipo];
+
+  function revCard(custo, idx){
+    const b = budgetFor(custo, meta, tipo, freq);
+    if(isNaN(custo)) return `<div class="rev-card" style="opacity:.4">
+      <div class="rev-cpm">Cenário ${idx}</div>
+      <div class="rev-budget">—</div>
+      <div class="rev-detail">Preencha o ${metricLabel}</div>
+    </div>`;
+    return `<div class="rev-card">
+      <div class="rev-cpm">${metricLabel} = ${fmtBRL(custo)}</div>
+      <div class="rev-budget">${isNaN(b)?'—':fmtBRL(b)}</div>
+      <div class="rev-detail">${isNaN(b)||isNaN(meta)?'—':fmtNum(meta)+' '+({impressoes:'impressões',cliques:'cliques',conversoes:'conversões',visualizacoes:'visualizações',alcance:'pessoas'}[tipo])}</div>
+    </div>`;
+  }
+
+  document.getElementById('r-results').innerHTML = revCard(c1,1)+revCard(c2,2)+revCard(c3,3);
+}
+
+/* ============================================================
+   TAB 3 — CENÁRIOS
+   ============================================================ */
+function buildScenarioCards(){
+  const wrap = document.getElementById('sc-cards');
+  wrap.innerHTML = [1,2,3].map(i=>`
+    <div class="scenario-card" id="sc-card-${i}">
+      <input class="sc-name" type="text" id="sc-name-${i}" placeholder="Cenário ${i}" oninput="calcCenarios()">
+      <div class="field"><label>Budget (R$)</label>
+        <div class="field-prefix"><span class="prefix">R$</span>
+        <input type="text" id="sc-budget-${i}" placeholder="20.000,00" oninput="calcCenarios()"></div></div>
+      <div class="field"><label>CPM (R$)</label>
+        <div class="field-prefix"><span class="prefix">R$</span>
+        <input type="text" id="sc-cpm-${i}" placeholder="12,00" oninput="calcCenarios()"></div></div>
+      <div class="field"><label>CTR (%)</label>
+        <input type="text" id="sc-ctr-${i}" placeholder="1,50" oninput="calcCenarios()"></div>
+      <div class="field"><label>CVR (%)</label>
+        <input type="text" id="sc-cvr-${i}" placeholder="2,00" oninput="calcCenarios()"></div>
+    </div>
+  `).join('');
+}
+
+function calcCenarios(){
+  const sc = [1,2,3].map(i=>{
+    const name   = document.getElementById(`sc-name-${i}`).value || `Cenário ${i}`;
+    const budget = parseBR(document.getElementById(`sc-budget-${i}`).value);
+    const cpm    = parseBR(document.getElementById(`sc-cpm-${i}`).value);
+    const ctr    = parseBR(document.getElementById(`sc-ctr-${i}`).value);
+    const cvr    = parseBR(document.getElementById(`sc-cvr-${i}`).value);
+    const imp    = (!isNaN(budget)&&!isNaN(cpm)&&cpm>0) ? budget/cpm*1000 : NaN;
+    const cli    = (!isNaN(imp)&&!isNaN(ctr)&&ctr>0) ? imp*ctr/100 : NaN;
+    const conv   = (!isNaN(cli)&&!isNaN(cvr)&&cvr>0) ? cli*cvr/100 : NaN;
+    const cpaEf  = (!isNaN(budget)&&!isNaN(conv)&&conv>0) ? budget/conv : NaN;
+    const cpmEf  = (!isNaN(budget)&&!isNaN(imp)&&imp>0) ? budget/imp*1000 : NaN;
+    return {name, budget, cpm, ctr, cvr, imp, cli, conv, cpaEf, cpmEf};
+  });
+
+  // Update headers
+  [1,2,3].forEach(i=> document.getElementById(`sc-th-${i}`).textContent = sc[i-1].name);
+
+  // Metrics config: [label, key, format, bestFn (higher/lower)]
+  const metrics = [
+    ['Budget', 'budget', fmtBRL, null],
+    ['CPM', 'cpm', fmtBRL, null],
+    ['CTR', 'ctr', v=>fmtNum(v,2)+'%', v=>v],
+    ['CVR', 'cvr', v=>fmtNum(v,2)+'%', v=>v],
+    ['Impressões', 'imp', v=>fmtNum(v,0), v=>v],
+    ['Cliques', 'cli', v=>fmtNum(v,0), v=>v],
+    ['Conversões', 'conv', v=>fmtNum(v,0), v=>v],
+    ['CPA Efetivo', 'cpaEf', fmtBRL, v=>-v],  // lower is better
+    ['CPM Efetivo', 'cpmEf', fmtBRL, v=>-v],  // lower is better
+  ];
+
+  const tbody = document.getElementById('sc-tbody');
+  tbody.innerHTML = metrics.map(([label,key,fmt,bestFn])=>{
+    const vals = sc.map(s=>s[key]);
+    let bestIdx = -1;
+    if(bestFn){
+      const valid = vals.map((v,i)=>({v,i})).filter(x=>!isNaN(x.v)&&isFinite(x.v));
+      if(valid.length>1){
+        bestIdx = valid.reduce((a,b)=>bestFn(a.v)>bestFn(b.v)?a:b).i;
+      }
+    }
+    const cells = vals.map((v,i)=>{
+      const isBest = i===bestIdx;
+      return `<td class="${isBest?'best':''}">${fmt(v)}</td>`;
+    }).join('');
+    return `<tr><td class="metric-name">${label}</td>${cells}</tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   TAB 4 — PACING
+   ============================================================ */
+function calcPacing(){
+  const budget   = parseBR(document.getElementById('pc-budget').value);
+  const diasTot  = parseBR(document.getElementById('pc-dias-total').value);
+  const gasto    = parseBR(document.getElementById('pc-gasto').value);
+  const diasDec  = parseBR(document.getElementById('pc-dias-dec').value);
+  const wrap = document.getElementById('pc-results');
+
+  if(isNaN(budget)||isNaN(diasTot)||isNaN(gasto)||isNaN(diasDec)||diasTot<=0||diasDec<0){
+    wrap.innerHTML = '<p style="color:#aaa;font-size:13px;margin-top:12px;">Preencha todos os campos para ver o pacing.</p>';
+    return;
+  }
+
+  const diasRest   = diasTot - diasDec;
+  const pctTempo   = diasDec / diasTot * 100;
+  const pctGasto   = gasto / budget * 100;
+  const gastoEsper = budget * diasDec / diasTot;
+  const diff       = gasto - gastoEsper;
+  const projecao   = diasDec > 0 ? gasto / diasDec * diasTot : NaN;
+  const diario     = diasDec > 0 ? gasto / diasDec : NaN;
+  const diarioRest = diasRest > 0 ? (budget - gasto) / diasRest : NaN;
+
+  const threshold = 5; // % tolerance
+  let status, cls, icon, statusLabel, statusSub;
+  if(Math.abs(pctGasto - pctTempo) <= threshold){
+    status='ok'; cls='pacing-ok'; icon='✅'; statusLabel='On Pace';
+    statusSub=`Variação de ${fmtNum(Math.abs(pctGasto-pctTempo),1)}% — dentro da tolerância de ±${threshold}%.`;
+  } else if(pctGasto < pctTempo){
+    status='under'; cls='pacing-under'; icon='⚠️'; statusLabel='Underpacing';
+    statusSub=`Gasto ${fmtNum(pctTempo-pctGasto,1)}pp abaixo do esperado. Necessário acelerar entrega.`;
+  } else {
+    status='over'; cls='pacing-over'; icon='🔴'; statusLabel='Overpacing';
+    statusSub=`Gasto ${fmtNum(pctGasto-pctTempo,1)}pp acima do esperado. Risco de esgotar budget antes do fim.`;
+  }
+
+  const barPct = Math.min(pctGasto,100);
+  const markerPct = Math.min(pctTempo,100);
+
+  wrap.innerHTML = `
+    <div class="pacing-status ${cls}">
+      <div class="pacing-icon">${icon}</div>
+      <div>
+        <div class="pacing-label">${statusLabel}</div>
+        <div class="pacing-sub">${statusSub}</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-labels">
+        <span>Gasto: ${fmtBRL(gasto)} (${fmtNum(pctGasto,1)}%)</span>
+        <span>Budget: ${fmtBRL(budget)}</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar ${status}" style="width:${barPct}%"></div>
+        <div class="progress-marker" style="left:${markerPct}%">
+          <div class="progress-marker-label">Esperado ${fmtNum(pctTempo,1)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid" style="margin-top:14px;">
+      ${statCard('Gasto Esperado Hoje', fmtBRL(gastoEsper), `Budget × ${fmtNum(diasDec,0)} ÷ ${fmtNum(diasTot,0)} dias`)}
+      ${statCard('Gasto Real', fmtBRL(gasto), null, true)}
+      ${statCard('Diferença', (diff>=0?'+':'')+fmtBRL(Math.abs(diff)), diff>=0?'Acima do esperado':'Abaixo do esperado')}
+      ${statCard('% Tempo Decorrido', fmtNum(pctTempo,1)+'%', `${fmtNum(diasDec,0)} de ${fmtNum(diasTot,0)} dias`)}
+      ${statCard('% Budget Consumido', fmtNum(pctGasto,1)+'%', `${fmtBRL(gasto)} de ${fmtBRL(budget)}`)}
+      ${statCard('Projeção ao Final', fmtBRL(projecao), 'Baseado no ritmo atual')}
+      ${statCard('Gasto Diário Médio', fmtBRL(diario), 'Média dos dias decorridos')}
+      ${statCard('Diário p/ Entregar Restante', fmtBRL(diarioRest), `${fmtNum(diasRest,0)} dias restantes`)}
+    </div>
+  `;
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+function resetTab(tab){
+  const ids = {
+    projecao: ['p-budget','p-cpm','p-ctr','p-cpc','p-cvr','p-cpa','p-cpv','p-freq'],
+    reverso:  ['r-meta','r-c1','r-c2','r-c3','r-freq'],
+    pacing:   ['pc-budget','pc-dias-total','pc-gasto','pc-dias-dec'],
+    cenarios: []
+  };
+  (ids[tab]||[]).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  if(tab==='cenarios'){
+    [1,2,3].forEach(i=>{
+      ['budget','cpm','ctr','cvr'].forEach(f=>{
+        const el=document.getElementById(`sc-${f}-${i}`); if(el) el.value='';
+      });
+      const n=document.getElementById(`sc-name-${i}`); if(n) n.value='';
+    });
+    calcCenarios();
+  } else if(tab==='projecao'){
+    document.getElementById('p-results').innerHTML='';
+  } else if(tab==='reverso'){
+    document.getElementById('r-results').innerHTML='';
+  } else if(tab==='pacing'){
+    document.getElementById('pc-results').innerHTML='';
+  }
+}
+
+/* ============================================================
+   COPY
+   ============================================================ */
+function copyResult(tab){
+  let text = '';
+  const btn = document.getElementById('copy-'+({projecao:'p',reverso:'r',cenarios:'s',pacing:'pc'}[tab]));
+
+  if(tab==='projecao'){
+    const cards = document.querySelectorAll('#p-results .stat-card');
+    cards.forEach(c=>{
+      const label = c.querySelector('.stat-label')?.textContent||'';
+      const val   = c.querySelector('.stat-value')?.textContent||'';
+      text += `${label}: ${val}\n`;
+    });
+  } else if(tab==='reverso'){
+    document.querySelectorAll('#r-results .rev-card').forEach(c=>{
+      const cpm = c.querySelector('.rev-cpm')?.textContent||'';
+      const b   = c.querySelector('.rev-budget')?.textContent||'';
+      text += `${cpm} → Budget: ${b}\n`;
+    });
+  } else if(tab==='cenarios'){
+    const rows = document.querySelectorAll('#sc-tbody tr');
+    const ths  = ['', ...[1,2,3].map(i=>document.getElementById(`sc-th-${i}`).textContent)];
+    text += ths.join('\t')+'\n';
+    rows.forEach(r=>{
+      text += [...r.querySelectorAll('td')].map(td=>td.textContent).join('\t')+'\n';
+    });
+  } else if(tab==='pacing'){
+    const cards = document.querySelectorAll('#pc-results .stat-card');
+    const statusEl = document.querySelector('#pc-results .pacing-label');
+    if(statusEl) text += 'Status: '+statusEl.textContent+'\n\n';
+    cards.forEach(c=>{
+      const label = c.querySelector('.stat-label')?.textContent||'';
+      const val   = c.querySelector('.stat-value')?.textContent||'';
+      text += `${label}: ${val}\n`;
+    });
+  }
+
+  if(!text.trim()){ alert('Calcule primeiro para poder copiar.'); return; }
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent = '✅ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='📋 Copiar resultado'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildScenarioCards();
+calcCenarios();
+calcProjecao();
+calcReverso();
+calcPacing();
+</script>
+</body>
+</html>
