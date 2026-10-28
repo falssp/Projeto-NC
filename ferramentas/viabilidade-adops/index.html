@@ -44,10 +44,15 @@ input[type=number]{font-family:var(--mono);font-size:13px}
 .prefix-wrap input{padding-left:28px}
 
 /* ── TOOL ROWS (ad servers / verifications) ── */
-.tool-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.tool-list{display:flex;flex-direction:column;gap:0;margin-bottom:10px}
+.tool-table{width:100%;border-collapse:separate;border-spacing:0 6px}
+.tool-table th{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 2px;text-align:left}
+.tool-table th:last-child{width:32px}
+.tool-table td{padding:6px 8px;background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.tool-table td:first-child{border-left:1px solid var(--border);border-radius:9px 0 0 9px;padding-left:12px}
+.tool-table td:last-child{border-right:1px solid var(--border);border-radius:0 9px 9px 0;padding-right:8px;width:32px}
+/* legado (não usado mais) */
 .tool-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
-.tool-row.header-row{background:none;border:none;padding:0 12px;margin-bottom:-4px}
-.tool-row.header-row span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .tool-row input,.tool-row select{background:#fff}
 
 .add-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--azul);background:none;border:1.5px dashed var(--azul);border-radius:7px;padding:6px 14px;cursor:pointer;opacity:.75;transition:opacity .15s}
@@ -435,36 +440,40 @@ function updateTool(type, id, field, value){
   calc()
 }
 
+/* Opções conhecidas por categoria */
+const AS_OPTIONS = ['CM360','DV360','Sizmek','Xandr (AppNexus)','Yahoo Ad Tech','Adform','Flashtalking','Celtra','Outro']
+const AV_OPTIONS = ['IAS (Integral Ad Science)','DoubleVerify (DV)','MOAT','Nielsen DAR','Comscore','Oracle Moat','Pixalate','Outro']
+
 function renderToolList(type){
   const list = type==='as' ? asTools : avTools
   const el   = document.getElementById(type+'-list')
   if(!list.length){ el.innerHTML=''; return }
 
-  const cpmLabel = type==='as' ? 'CPM de serving (R$)' : 'CPM de verificação (R$)'
-  const cpmHint  = type==='as' ? 'ex: CM360 ~R$0,25 · DV360 ~R$0 (incluso)' : 'ex: IAS/DV ~R$0,15 · MOAT ~R$0,20'
+  const opts   = type==='as' ? AS_OPTIONS : AV_OPTIONS
+  const cpmLbl = type==='as' ? 'CPM de serving (R$)' : 'CPM de verificação (R$)'
+
+  const optHtml = (selected) => opts.map(o=>
+    `<option value="${o}"${o===selected?' selected':''}>${o}</option>`
+  ).join('')
 
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 32px;gap:8px;padding:0 12px;margin-bottom:-4px">
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Nome / Plataforma</span>
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${cpmLabel}</span>
-      <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Fee fixo / setup (R$)</span>
-      <span></span>
-    </div>
-    ${list.map(t=>`
-    <div class="tool-row">
-      <div>
-        <input type="text" value="${t.name}" placeholder="ex: CM360, IAS…" oninput="updateTool('${type}',${t.id},'name',this.value)">
-      </div>
-      <div>
-        <div class="prefix-wrap"><span>R$</span><input type="number" value="${t.cpm}" min="0" step="0.01" style="padding-left:28px" oninput="updateTool('${type}',${t.id},'cpm',this.value)"></div>
-        <div class="hint">${cpmHint}</div>
-      </div>
-      <div>
-        <div class="prefix-wrap"><span>R$</span><input type="number" value="${t.fixed}" min="0" step="0.01" style="padding-left:28px" oninput="updateTool('${type}',${t.id},'fixed',this.value)"></div>
-        <div class="hint">Licença mensal ou fee mínimo</div>
-      </div>
-      <button class="rm-btn" onclick="removeTool('${type}',${t.id})" title="Remover">×</button>
-    </div>`).join('')}
+    <table class="tool-table">
+      <thead><tr>
+        <th>Plataforma</th>
+        <th>${cpmLbl}</th>
+        <th>Fee fixo / setup (R$)</th>
+        <th></th>
+      </tr></thead>
+      <tbody>
+      ${list.map(t=>`
+        <tr>
+          <td><select onchange="updateTool('${type}',${t.id},'name',this.value)">${optHtml(t.name||opts[0])}</select></td>
+          <td><div class="prefix-wrap"><span>R$</span><input type="number" value="${t.cpm}" min="0" step="0.01" style="padding-left:28px" oninput="updateTool('${type}',${t.id},'cpm',this.value)"></div></td>
+          <td><div class="prefix-wrap"><span>R$</span><input type="number" value="${t.fixed}" min="0" step="0.01" style="padding-left:28px" oninput="updateTool('${type}',${t.id},'fixed',this.value)"></div></td>
+          <td><button class="rm-btn" onclick="removeTool('${type}',${t.id})" title="Remover">×</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
   `
 }
 
@@ -680,10 +689,10 @@ function closeHelp(){document.getElementById('helpOverlay').classList.remove('op
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp()})
 
 /* ── DEFAULTS: 2 ad servers e 2 verifications de exemplo ── */
-addTool('as', {name:'CM360', cpm:0.25, fixed:0})
-addTool('as', {name:'DV360', cpm:0,    fixed:0})
-addTool('av', {name:'IAS',   cpm:0.15, fixed:0})
-addTool('av', {name:'DV',    cpm:0.12, fixed:0})
+addTool('as', {name:'CM360',                    cpm:0.25, fixed:0})
+addTool('as', {name:'DV360',                    cpm:0,    fixed:0})
+addTool('av', {name:'IAS (Integral Ad Science)',cpm:0.15, fixed:0})
+addTool('av', {name:'DoubleVerify (DV)',         cpm:0.12, fixed:0})
 
 onModelChange()
 calc()
