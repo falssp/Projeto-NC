@@ -328,13 +328,7 @@ input[type=number]{font-family:var(--mono);font-size:13px}
 
     <div class="kpi-row" id="kpi-row"></div>
 
-    <!-- COMPARAÇÃO POR CATEGORIA -->
-    <div class="card" id="compare-card">
-      <div class="section-title">Comparativo por ferramenta</div>
-      <div id="compare-content"></div>
-    </div>
-
-    <!-- RECOMENDAÇÕES FINAIS -->
+    <!-- RECOMENDAÇÕES + COMPARATIVO INTEGRADO -->
     <div class="rec-grid" id="rec-grid"></div>
 
     <!-- BREAKDOWN -->
@@ -592,65 +586,40 @@ function calc(){
     <div class="kpi"><div class="kpi-label">Total operacional</div><div class="kpi-value" style="color:${opsPct>15?'var(--err)':opsPct>10?'var(--warn)':'var(--ok)'}">${fmtR(totalOps)}</div><div class="kpi-sub">${mediaBudget>0?fmtP(opsPct)+' do budget':'—'}</div></div>
   `
 
-  // COMPARATIVO
-  let compareHTML = ''
-
-  if(asTools.length > 0){
-    const asSorted = [...asTools].sort((a,b)=>toolCost(a)-toolCost(b))
-    compareHTML += `<div class="compare-section">
-      <div class="compare-title">🖥️ Ad Servers</div>
-      <div class="tool-compare-grid">`
-    asSorted.forEach((t,i)=>{
+  // COMPARATIVO inline por categoria
+  const buildCompare = (tools) => {
+    if(!tools.length) return ''
+    const sorted = [...tools].sort((a,b)=>toolCost(a)-toolCost(b))
+    const cards = sorted.map((t,i)=>{
       const cost = toolCost(t)
       const pct  = mediaBudget>0?(cost/mediaBudget)*100:0
-      const cls  = asTools.length===1?'only':i===0?'best':'worst'
-      const badge = cls==='best'&&asTools.length>1?'<div class="best-badge">MENOR CUSTO</div>':''
-      compareHTML += `<div class="tool-compare-card ${cls}">${badge}
+      const cls  = tools.length===1?'only':i===0?'best':'worst'
+      const badge = cls==='best'&&tools.length>1?'<div class="best-badge">MENOR CUSTO</div>':''
+      return `<div class="tool-compare-card ${cls}">${badge}
         <div class="tool-name">${t.name||'(sem nome)'}</div>
         <div class="tool-cost-val">${fmtR(cost)}</div>
-        <div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'CPM: R$'+fmt(t.cpm)+' · fixed: R$'+fmt(t.fixed)}</div>
-        ${t.cpm>0&&mediaBudget>0?`<div class="hint" style="margin-top:4px">CPM R$${fmt(t.cpm)} · fee R$${fmt(t.fixed)}</div>`:''}
+        <div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'—'}</div>
+        ${(t.cpm>0||t.fixed>0)&&mediaBudget>0?`<div class="hint" style="margin-top:4px">CPM R$${fmt(t.cpm)} · fee R$${fmt(t.fixed)}</div>`:''}
       </div>`
-    })
-    compareHTML += '</div></div>'
+    }).join('')
+    return `<div class="tool-compare-grid" style="margin-top:10px">${cards}</div>`
   }
 
-  if(avTools.length > 0){
-    const avSorted = [...avTools].sort((a,b)=>toolCost(a)-toolCost(b))
-    compareHTML += `<div class="compare-section">
-      <div class="compare-title">🛡️ Ad Verifications</div>
-      <div class="tool-compare-grid">`
-    avSorted.forEach((t,i)=>{
-      const cost = toolCost(t)
-      const pct  = mediaBudget>0?(cost/mediaBudget)*100:0
-      const cls  = avTools.length===1?'only':i===0?'best':'worst'
-      const badge = cls==='best'&&avTools.length>1?'<div class="best-badge">MENOR CUSTO</div>':''
-      compareHTML += `<div class="tool-compare-card ${cls}">${badge}
-        <div class="tool-name">${t.name||'(sem nome)'}</div>
-        <div class="tool-cost-val">${fmtR(cost)}</div>
-        <div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'CPM: R$'+fmt(t.cpm)+' · fixed: R$'+fmt(t.fixed)}</div>
-        ${t.cpm>0&&mediaBudget>0?`<div class="hint" style="margin-top:4px">CPM R$${fmt(t.cpm)} · fee R$${fmt(t.fixed)}</div>`:''}
-      </div>`
-    })
-    compareHTML += '</div></div>'
-  }
-
-  if(!compareHTML) compareHTML = '<p style="font-size:13px;color:var(--muted)">Nenhuma ferramenta cadastrada ainda — adicione ad servers e verifications acima.</p>'
-  document.getElementById('compare-content').innerHTML = compareHTML
-
-  // RECOMENDAÇÕES
-  const makeCard = (label, icon, verdict, cls, sigs, defs) => {
+  // RECOMENDAÇÕES + COMPARATIVO INTEGRADO
+  const makeCard = (label, icon, verdict, cls, sigs, defs, tools) => {
     const items = sigs.map(j=>`<div style="display:flex;gap:7px;align-items:flex-start;margin-bottom:4px"><span class="chip ${j.c}" style="flex-shrink:0;margin-top:1px">${j.t}</span><span style="font-size:11.5px;color:#444;line-height:1.4">${j.msg}</span></div>`).join('')
     const def = defs.length ? `<div class="rec-defense">💡 ${defs[0]}</div>` : ''
+    const cmp = buildCompare(tools)
     return `<div class="rec-card ${cls}">
       <div class="rec-header"><div class="rec-icon">${icon}</div><div><div class="rec-label">${label}</div><div class="rec-verdict">${verdict}</div></div></div>
-      <div style="margin-top:6px">${items||'<span style="font-size:12px;color:var(--muted)">Sem sinais determinantes — cenário neutro.</span>'}</div>
+      ${cmp}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08)">${items||'<span style="font-size:12px;color:var(--muted)">Sem sinais determinantes — cenário neutro.</span>'}</div>
       ${def}
     </div>`
   }
   document.getElementById('rec-grid').innerHTML =
-    makeCard('Ad Server', '🖥️', asVerdict, asClass, asSignals, asDefenses) +
-    makeCard('Ad Verification', '🛡️', avVerdict, avClass, avSignals, avDefenses)
+    makeCard('Ad Server', '🖥️', asVerdict, asClass, asSignals, asDefenses, asTools) +
+    makeCard('Ad Verification', '🛡️', avVerdict, avClass, avSignals, avDefenses, avTools)
 
   // BREAKDOWN
   const rows = [
