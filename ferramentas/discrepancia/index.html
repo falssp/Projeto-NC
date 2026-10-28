@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troubleshooter de Discrepância | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--green-bg:#D1FAE5;--green-text:#065F46;
+  --yellow:#F59E0B;--yellow-bg:#FEF3C7;--yellow-text:#92400E;
+  --red:#EF4444;--red-bg:#FEE2E2;--red-text:#991B1B;
+  --blue:#2563EB;--purple:#7C3AED;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:16px;height:56px}
+.logo{color:#fff;font-size:15px;font-weight:700}
+.logo span{color:var(--accent)}
+
+.wrap{padding:24px;max-width:880px;margin:0 auto}
+
+/* DELTA CALC */
+.delta-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.delta-card h3{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:14px}
+.delta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.delta-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+.delta-label{font-size:11px;font-weight:600;color:var(--mid)}
+.delta-field input{padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
+.delta-field input:focus{border-color:var(--blue)}
+.delta-eq{font-size:20px;color:var(--light);align-self:flex-end;padding-bottom:8px}
+.delta-result{flex:1;min-width:120px;background:#F7FAFC;border-radius:9px;padding:12px;align-self:flex-end}
+.delta-pct{font-size:24px;font-weight:800}
+.delta-sub{font-size:11px;color:var(--light);margin-top:2px}
+.tolerance-bar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tol{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.tol-ok{background:var(--green-bg);color:var(--green-text)}
+.tol-warn{background:var(--yellow-bg);color:var(--yellow-text)}
+.tol-bad{background:var(--red-bg);color:var(--red-text)}
+
+/* TREE */
+.tree-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.tree-card h3{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:16px}
+
+.breadcrumb{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px;min-height:24px}
+.bc-item{font-size:11px;font-weight:600;color:var(--light)}
+.bc-item.active{color:var(--navy)}
+.bc-sep{font-size:11px;color:var(--border)}
+
+.question-block{background:#F7FAFC;border-radius:10px;padding:18px;margin-bottom:16px}
+.q-text{font-size:15px;font-weight:700;color:var(--navy);line-height:1.4;margin-bottom:6px}
+.q-hint{font-size:12px;color:var(--mid);line-height:1.5;margin-bottom:14px}
+
+.options{display:flex;flex-direction:column;gap:8px}
+.opt-btn{width:100%;text-align:left;padding:11px 16px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-size:13px;color:var(--text);cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:10px}
+.opt-btn:hover{border-color:var(--accent);background:#F0FBFF;color:var(--navy2)}
+.opt-icon{font-size:16px;flex-shrink:0}
+
+/* DIAGNOSIS */
+.diagnosis{border-radius:10px;padding:18px;margin-bottom:16px}
+.diag-badge{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 12px;border-radius:20px;display:inline-block;margin-bottom:10px}
+.diag-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:8px;line-height:1.3}
+.diag-desc{font-size:13px;line-height:1.7;margin-bottom:14px}
+.diag-actions{display:flex;flex-direction:column;gap:6px}
+.action{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.6;color:var(--mid)}
+.action-num{min-width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.also-check{background:#F0F4F8;border-radius:9px;padding:12px;margin-top:12px}
+.also-check-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--light);margin-bottom:8px}
+.also-chips{display:flex;flex-wrap:wrap;gap:6px}
+.also-chip{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--mid);cursor:pointer;transition:all .12s}
+.also-chip:hover{border-color:var(--blue);color:var(--blue)}
+
+.nav-btns{display:flex;gap:8px;margin-top:4px}
+.btn-back{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
+.btn-back:hover{border-color:var(--navy);color:var(--navy)}
+.btn-restart{padding:8px 16px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Troubleshooter de <span>Discrepância</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- DELTA CALC -->
+  <div class="delta-card">
+    <h3>Calculadora de Discrepância</h3>
+    <div class="delta-row">
+      <div class="delta-field">
+        <span class="delta-label">Ad Server (CM360 / 3rd party)</span>
+        <input type="number" id="d-as" placeholder="Ex: 1.000.000" oninput="calcDelta()">
+      </div>
+      <div class="delta-eq">vs</div>
+      <div class="delta-field">
+        <span class="delta-label">Plataforma (Meta / Google Ads…)</span>
+        <input type="number" id="d-pl" placeholder="Ex: 1.100.000" oninput="calcDelta()">
+      </div>
+      <div class="delta-result" id="d-result">
+        <div class="delta-pct" style="color:var(--light)">—</div>
+        <div class="delta-sub">discrepância</div>
+      </div>
+    </div>
+    <div class="tolerance-bar" id="tol-bar" style="display:none">
+      <span class="tol tol-ok">✅ ≤10% — Normal</span>
+      <span class="tol tol-warn">⚠️ 10–20% — Investigar</span>
+      <span class="tol tol-bad">❌ &gt;20% — Crítico</span>
+    </div>
+  </div>
+
+  <!-- TREE -->
+  <div class="tree-card">
+    <h3>Diagnóstico Interativo</h3>
+    <div class="breadcrumb" id="breadcrumb"></div>
+    <div id="tree-output"></div>
+  </div>
+</div>
+
+<footer>Troubleshooter de Discrepância · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+
+<script>
+// ── DELTA CALC ──────────────────────────────────────
+function calcDelta(){
+  const as = +document.getElementById('d-as').value;
+  const pl = +document.getElementById('d-pl').value;
+  if(!as||!pl){document.getElementById('d-result').querySelector('.delta-pct').textContent='—';document.getElementById('d-result').querySelector('.delta-pct').style.color='var(--light)';document.getElementById('tol-bar').style.display='none';return;}
+  // Discrepância: (plataforma - adserver) / plataforma * 100 (plat é maior quase sempre)
+  const bigger = Math.max(as,pl), smaller = Math.min(as,pl);
+  const pct = ((bigger-smaller)/bigger*100);
+  const dir = pl > as ? 'Plataforma > Ad Server' : 'Ad Server > Plataforma';
+  const el = document.getElementById('d-result');
+  const color = pct <= 10 ? 'var(--green)' : pct <= 20 ? 'var(--yellow)' : 'var(--red)';
+  el.querySelector('.delta-pct').textContent = pct.toFixed(1)+'%';
+  el.querySelector('.delta-pct').style.color = color;
+  el.querySelector('.delta-sub').textContent = dir;
+  document.getElementById('tol-bar').style.display = 'flex';
+}
+
+// ── DECISION TREE ────────────────────────────────────
+const TREE = {
+  root:{
+    q:"Qual é o tipo de discrepância?",
+    hint:"Identifique o que está diferindo entre ad server (CM360/Flashtalking) e a plataforma.",
+    opts:[
+      {icon:"📊",label:"Impressões — plataforma entrega mais que o ad server",next:"imp_plat_maior"},
+      {icon:"📉",label:"Impressões — ad server registra mais que a plataforma",next:"imp_as_maior"},
+      {icon:"🖱️",label:"Cliques — divergência entre ad server e plataforma",next:"clicks"},
+      {icon:"💰",label:"Conversões / eventos de conversão",next:"conversao"},
+      {icon:"🎬",label:"Views de vídeo / quartis",next:"video"},
+    ]
+  },
+
+  imp_plat_maior:{
+    q:"A plataforma conta mais impressões. Qual é o contexto?",
+    hint:"Plataforma reportando mais que o ad server é o padrão mais comum (até 10% é normal). Identifique o gatilho.",
+    opts:[
+      {icon:"⏱️",label:"A discrepância é >10% ou foi repentina",next:"imp_grande_plat"},
+      {icon:"📱",label:"Campanha tem mobile/app no mix",next:"imp_mobile_env"},
+      {icon:"📺",label:"Inventário inclui CTV / OTT / DOOH",next:"imp_ctv"},
+      {icon:"🔁",label:"Configuração recente de redirect / wrapper VAST",next:"imp_vast_redirect"},
+    ]
+  },
+
+  imp_as_maior:{
+    q:"O ad server registra mais impressões que a plataforma. Isso é incomum — qual cenário melhor descreve?",
+    hint:"Ad server maior que plataforma quase sempre indica problema técnico ou de configuração.",
+    opts:[
+      {icon:"🏷️",label:"Tag não aprovada / em revisão na plataforma",next:"diag_tag_nao_aprovada"},
+      {icon:"🚫",label:"Campanha pausada na plataforma mas tag ativa no servidor",next:"diag_campanha_pausada_plat"},
+      {icon:"🕐",label:"Diferença de timezone entre relatórios",next:"diag_timezone"},
+      {icon:"🔢",label:"Métricas sendo comparadas erradas (impressões vs requisições)",next:"diag_metrica_errada"},
+    ]
+  },
+
+  imp_grande_plat:{
+    q:"A plataforma conta muito mais que o ad server (>10%). Qual configuração você suspeita?",
+    hint:"Discrepâncias grandes quase sempre têm causa técnica ou de configuração identificável.",
+    opts:[
+      {icon:"🪟",label:"Janela de atribuição / lookback diferente entre os sistemas",next:"diag_window"},
+      {icon:"🔁",label:"Tag sendo contada múltiplas vezes (duplicate count)",next:"diag_duplicate"},
+      {icon:"🛡️",label:"Ad blocker / ITP reduzindo o registro no ad server",next:"diag_adblocker"},
+      {icon:"📡",label:"Pixel de impression não disparando (timeout, firewall, JS bloqueado)",next:"diag_pixel_falha"},
+    ]
+  },
+
+  imp_mobile_env:{
+    q:"Qual é o ambiente mobile?",
+    hint:"Ambientes mobile têm mecanismos diferentes de tracking que causam divergências estruturais.",
+    opts:[
+      {icon:"🌐",label:"Mobile web (browser)",next:"diag_mobile_web"},
+      {icon:"📱",label:"In-app (SDK / MMP)",next:"diag_mobile_app"},
+      {icon:"🔀",label:"Mix de mobile web + in-app",next:"diag_mobile_mix"},
+    ]
+  },
+
+  imp_ctv:{q:"",hint:"",opts:[],diag:{
+    causa:"Ambientes CTV/OTT não suportam cookies nem pixels JavaScript",
+    severity:"warn",
+    title:"Discrepância estrutural em CTV/OTT",
+    desc:"Smart TVs e boxes de streaming não executam JavaScript — o pixel de impression do ad server não dispara. A plataforma (ex: Spotify, Amazon, parceiros CTV) usa seu próprio log de entrega, resultando em discrepância estrutural de 10–30%, que é normal nesse ambiente.",
+    actions:[
+      "Usar VAST tracking events (Impression, Start, FirstQuartile etc.) em vez de pixel JS para medir CTV",
+      "Configurar impression tracker via VAST tag no CM360 — suportado por CTV players",
+      "Não comparar CTV com métricas de Display/Web no mesmo relatório — separar dimensão de ambiente",
+      "Aceitar discrepância de 10–30% como baseline para CTV se VAST tracking estiver ativo",
+    ],
+    also:["diag_vast_redirect","diag_pixel_falha"]
+  }},
+
+  imp_vast_redirect:{q:"",hint:"",opts:[],diag:{
+    causa:"Redirect VAST / Wrapper adiciona latência e causa timeouts",
+    severity:"warn",
+    title:"Perda de impressões por timeout no Wrapper VAST",
+    desc:"Quando o player faz um redirect VAST (Wrapper → InLine), cada hop adiciona latência. Se o player tem timeout de 5s e o chain VAST demora 3s+, o player abandona antes de carregar — a plataforma conta a requisição mas o ad server nunca registra o disparo.",
+    actions:[
+      "Auditar chain VAST: no máximo 2 redirects (platform → CM360 → creative)",
+      "Verificar tempo de resposta do ad server — deve ser <500ms",
+      "Usar VAST Inspector (DoubleVerify ou IAS) para testar a chain completa",
+      "Negociar com publisher/plataforma se timeout está abaixo de 5s",
+      "Usar VPAID ou SIMID apenas quando estritamente necessário — aumentam timeout",
+    ],
+    also:["imp_ctv","diag_pixel_falha"]
+  }},
+
+  clicks:{
+    q:"A divergência de cliques é em qual direção?",
+    hint:"Cliques são as métricas com maior discrepância estrutural entre sistemas — cada um usa definição diferente.",
+    opts:[
+      {icon:"📈",label:"Plataforma registra mais cliques que o ad server",next:"diag_clicks_plat_maior"},
+      {icon:"📉",label:"Ad server registra mais cliques que a plataforma",next:"diag_clicks_as_maior"},
+      {icon:"🤖",label:"Suspeito de cliques inválidos / fraude",next:"diag_clicks_invalidos"},
+    ]
+  },
+
+  conversao:{
+    q:"As conversões divergem. Qual é a configuração de tracking?",
+    hint:"Conversões são as métricas com maior variação — cada plataforma usa janela e modelo de atribuição diferente.",
+    opts:[
+      {icon:"📆",label:"Janelas de atribuição diferentes (ex: 7d click Meta vs 30d CM360)",next:"diag_conv_window"},
+      {icon:"🔢",label:"Modelo de atribuição diferente (last click vs data-driven)",next:"diag_conv_model"},
+      {icon:"🔄",label:"Mesmo evento sendo contado por dois pixels (double counting)",next:"diag_conv_double"},
+      {icon:"🏷️",label:"Floodlight vs pixel nativo — definições de evento diferentes",next:"diag_conv_evento"},
+    ]
+  },
+
+  video:{
+    q:"A divergência de vídeo é em qual métrica?",
+    opts:[
+      {icon:"▶️",label:"Views totais (plataforma vs ad server)",next:"diag_video_views"},
+      {icon:"📊",label:"Quartis (25%, 50%, 75%, 100%) — diferença entre sistemas",next:"diag_video_quartis"},
+      {icon:"⏭️",label:"VTR (View-Through Rate) muito diferente",next:"diag_video_vtr"},
+    ]
+  },
+
+  // ── DIAGNÓSTICOS FINAIS ──────────────────────────────
+  diag_window:{diag:{
+    causa:"Janelas de lookback / atribuição diferentes",
+    severity:"warn",
+    title:"Janela de lookback divergente entre sistemas",
+    desc:"CM360 e plataformas self-serve usam janelas de atribuição diferentes por padrão. Meta padrão: 7 dias por clique + 1 dia por view. CM360 padrão: 30 dias por clique + impressão. Isso gera contagens totalmente diferentes para a mesma campanha.",
+    actions:[
+      "Alinhar janelas: configurar CM360 com o mesmo lookback da plataforma comparada",
+      "Em Meta: Settings → Attribution Settings → alterar para 30d click / 1d view se comparando com CM360",
+      "Documentar qual janela cada plataforma usa — incluir no relatório como nota de rodapé",
+      "Criar uma métrica padronizada para uso interno (ex: 'conversões 7d click, 0d view') usada em todas as plataformas",
+    ],
+    also:["diag_conv_model","diag_conv_double"]
+  }},
+
+  diag_duplicate:{diag:{
+    causa:"Tag de impression sendo disparada múltiplas vezes por impressão",
+    severity:"bad",
+    title:"Contagem duplicada de impressões",
+    desc:"Pode ocorrer quando a tag está inserida mais de uma vez na página, quando o container de tag (GTM) dispara múltiplas vezes, ou quando o lazy load do criativo aciona o pixel antes e depois da renderização.",
+    actions:[
+      "Auditar a implementação da tag na página com o DevTools (Network tab — filtrar por domínio doubleclick.net)",
+      "Verificar se a tag está duplicada no GTM ou direto no código",
+      "Confirmar se o pixel de impression está dentro do criativo e não também no código da página",
+      "Comparar requisições no Network com o relatório do CM360 para validar a proporção",
+    ],
+    also:["diag_pixel_falha","diag_adblocker"]
+  }},
+
+  diag_adblocker:{diag:{
+    causa:"Ad blockers e ITP reduzem o alcance do pixel do ad server",
+    severity:"warn",
+    title:"Ad blockers / ITP afetando o pixel do ad server",
+    desc:"Usuários com uBlock, Adblock Plus, Brave ou browsers com ITP ativo (Safari) bloqueiam requisições ao doubleclick.net e similares. A plataforma (que tem integração server-side ou SDK) não é afetada da mesma forma.",
+    actions:[
+      "Verificar percentual do audience usando Safari — se >30%, a discrepância estrutural de ITP pode chegar a 15–25%",
+      "Implementar CM360 Floodlight em server-side quando possível",
+      "Separar relatório por browser/device para isolar o efeito do ITP",
+      "Considerar discrepância de 5–15% como baseline aceitável para audiences Safari-heavy",
+    ],
+    also:["diag_mobile_web","diag_pixel_falha"]
+  }},
+
+  diag_pixel_falha:{diag:{
+    causa:"Pixel de impression não está disparando corretamente",
+    severity:"bad",
+    title:"Falha no disparo do pixel de impression",
+    desc:"O pixel pode não disparar por timeout (carregamento lento), bloqueio de JavaScript, firewall corporativo, erro de implementação da tag ou preview mode do browser que não executa pixels de terceiros.",
+    actions:[
+      "Abrir CM360 Ad Preview e verificar se o Floodlight dispara no Network tab",
+      "Usar o Tag Assistant (Google) para validar o disparo em tempo real",
+      "Verificar se a URL do criativo está correta e o ad está aprovado na plataforma",
+      "Checar se há Content Security Policy (CSP) bloqueando scripts de terceiros no publisher",
+      "Confirmar com o publisher se existe whitelist necessária para o domínio do ad server",
+    ],
+    also:["diag_duplicate","imp_vast_redirect"]
+  }},
+
+  diag_tag_nao_aprovada:{diag:{
+    causa:"Tag de 3rd party não aprovada ou em revisão pela plataforma",
+    severity:"bad",
+    title:"Tag não aprovada na plataforma",
+    desc:"Meta, TikTok, LinkedIn e outros players social exigem aprovação explícita de tags de 3rd party. Se a campanha está entregando mas a tag não passou pelo processo de aprovação, a plataforma não executa o pixel do ad server.",
+    actions:[
+      "Verificar status de aprovação da tag no painel da plataforma (Meta: Events Manager → Partner Integration)",
+      "Reenviar a tag para aprovação se rejeitada — verificar motivo da rejeição",
+      "Confirmar se o domínio do ad server está na allowlist da plataforma",
+      "Enquanto aguarda aprovação, usar pixel nativo da plataforma para tracking de fallback",
+    ],
+    also:["diag_pixel_falha","diag_timezone"]
+  }},
+
+  diag_campanha_pausada_plat:{diag:{
+    causa:"Campanha pausada na plataforma mas tag ainda ativa no ad server",
+    severity:"bad",
+    title:"Status de campanha divergente entre sistemas",
+    desc:"O ad server pode continuar registrando requisições de impression mesmo após a campanha ser pausada na plataforma, especialmente se há cache de criativos ou se a tag foi implementada diretamente no site/app e não via plataforma.",
+    actions:[
+      "Conferir datas de início e fim da campanha nos dois sistemas",
+      "Verificar se o flight de entrega no CM360 corresponde ao período da plataforma",
+      "Pausar o line item no CM360 simultaneamente à plataforma",
+      "Revisar implementação — se a tag está no código do site, impressões podem ser registradas mesmo sem campanha ativa na plataforma",
+    ],
+    also:["diag_timezone","diag_metrica_errada"]
+  }},
+
+  diag_timezone:{diag:{
+    causa:"Fuso horário diferente entre ad server e plataforma no relatório",
+    severity:"warn",
+    title:"Discrepância por fuso horário (Timezone)",
+    desc:"CM360 pode estar configurado em US/Eastern (UTC-5) enquanto Meta usa horário local (BRT, UTC-3). Um relatório do dia 1 extraído de manhã no BRT pode incluir impressões que o CM360 ainda atribui ao dia anterior. Causa discrepâncias de 1–5% em relatórios diários.",
+    actions:[
+      "Alinhar o fuso horário do CM360 com o da plataforma nas configurações do relatório",
+      "No CM360: Report Builder → selecionar Timezone → Brazil (BRT)",
+      "Comparar sempre relatórios de períodos completos (semana cheia ou mês) para minimizar o efeito de borda",
+      "Documentar os timezones de cada sistema no cabeçalho dos relatórios de conciliação",
+    ],
+    also:["diag_metrica_errada","diag_window"]
+  }},
+
+  diag_metrica_errada:{diag:{
+    causa:"Métricas comparadas têm definições diferentes nos dois sistemas",
+    severity:"warn",
+    title:"Comparação de métricas com definições diferentes",
+    desc:"'Impressões' no CM360 = impression tag disparada. 'Impressões' na Meta = ad renderizado no feed. 'Impressões' no DV360 pode incluir ou excluir non-viewable conforme configuração. Comparar sem alinhar a definição é a causa mais comum de falsas discrepâncias.",
+    actions:[
+      "Mapear a definição exata de cada métrica nos dois sistemas antes de comparar",
+      "No CM360: preferir 'Impressions' (tag fired) vs 'Rendered Impressions' (dependendo da configuração)",
+      "Na Meta: 'Impressions' = todas as vezes que o ad apareceu (inclui vídeo autoplay, feed scroll)",
+      "Criar glossário interno de métricas por plataforma para uso padrão em relatórios",
+    ],
+    also:["diag_timezone","diag_duplicate"]
+  }},
+
+  diag_mobile_web:{diag:{
+    causa:"ITP e restrições de cookies em mobile web",
+    severity:"warn",
+    title:"Discrepância estrutural em Mobile Web (ITP / Safari)",
+    desc:"Safari em iOS bloqueia cookies de 3rd party por ITP (Intelligent Tracking Prevention). Pixels de ad server baseados em cookies de 3rd party não funcionam em Safari iOS. Campanhas com alto volume de tráfego iOS/Safari podem ter discrepâncias de 15–30%.",
+    actions:[
+      "Verificar split de dispositivos no relatório — quanto é Safari iOS?",
+      "Implementar Conversion Linker (CM360) para mitigar perda de cookies",
+      "Migrar tracking de conversão para server-side quando possível",
+      "Usar URL parameters (UTM + custom parameter) como tracking alternativo",
+      "Aceitar discrepância de 10–20% como baseline se >40% do tráfego for Safari",
+    ],
+    also:["diag_adblocker","diag_mobile_app"]
+  }},
+
+  diag_mobile_app:{diag:{
+    causa:"In-app não suporta cookies — requer SDK/MMP para tracking",
+    severity:"bad",
+    title:"Tracking in-app sem SDK / MMP configurado",
+    desc:"Ambientes in-app (iOS e Android) não suportam cookies de 3rd party. O ad server não consegue rastrear impressões ou cliques sem SDK integrado ou parceria com MMP (Adjust, AppsFlyer, Branch). A plataforma usa seu próprio SDK para registrar eventos.",
+    actions:[
+      "Implementar SDK de MMP (Adjust / AppsFlyer / Branch) no app se ainda não existe",
+      "Configurar postback/S2S entre MMP e CM360 para atribuição cross-device",
+      "Usar tracking por URL parameters em deep links como fallback",
+      "Não comparar métricas de in-app com métricas web do mesmo ad server sem a camada MMP",
+    ],
+    also:["diag_mobile_web","diag_mobile_mix"]
+  }},
+
+  diag_mobile_mix:{diag:{
+    causa:"Mix de mobile web e in-app com métodos de tracking diferentes",
+    severity:"warn",
+    title:"Mix de ambientes com tracking incompatível",
+    desc:"Campanhas que servem em mobile web + in-app usam métodos de tracking fundamentalmente diferentes. Tentar consolidar em um único número do ad server vai resultar em discrepância estrutural.",
+    actions:[
+      "Segmentar relatório por ambiente (web vs app) — nunca consolidar sem separar",
+      "Aplicar tracking específico para cada ambiente: pixel JS (web) + SDK/MMP (app)",
+      "Definir KPI por ambiente — viewability em app ≠ viewability em web",
+    ],
+    also:["diag_mobile_web","diag_mobile_app"]
+  }},
+
+  diag_clicks_plat_maior:{diag:{
+    causa:"Plataforma conta todos os cliques; ad server conta apenas cliques únicos não duplicados",
+    severity:"warn",
+    title:"Definição de clique diferente entre sistemas",
+    desc:"Meta e Google Ads contam todos os cliques, incluindo múltiplos cliques do mesmo usuário, cliques no botão de play, swipes em carrosseis e interações que não geram visita ao site. O ad server conta apenas cliques que resultam em uma requisição ao click tracker URL — que pode falhar se o browser bloquear o redirect.",
+    actions:[
+      "Comparar CM360 'Total Clicks' vs 'Click-Through' separadamente",
+      "Na Meta, usar 'Link Clicks' (não 'All Clicks') para comparar com ad server",
+      "No Google Ads, excluir 'Invalid Clicks' antes de comparar",
+      "Documentar qual definição de clique é usada em cada relatório de conciliação",
+    ],
+    also:["diag_clicks_invalidos","diag_adblocker"]
+  }},
+
+  diag_clicks_as_maior:{diag:{
+    causa:"Ad server registrando cliques que a plataforma não valida",
+    severity:"bad",
+    title:"Ad server com mais cliques que a plataforma",
+    desc:"Isso é incomum e quase sempre indica um problema. Pode ser double counting de click tracker, bots/scraping ativando URLs de click sem passar pela plataforma, ou URL de click configurada incorretamente redirecionando para o tracker sem passar pela plataforma.",
+    actions:[
+      "Auditar a URL de click — deve incluir o click macro da plataforma antes do tracker do ad server",
+      "Verificar no Network tab se o click tracker está sendo ativado por bots ou scripts",
+      "Confirmar que o order of redirects está correto: plataforma → ad server → landing page",
+      "Checar se há implementação de tag direta no site ativando o click tracker sem passar pela plataforma",
+    ],
+    also:["diag_clicks_invalidos","diag_duplicate"]
+  }},
+
+  diag_clicks_invalidos:{diag:{
+    causa:"Cliques inválidos / fraude inflando métricas de uma das partes",
+    severity:"bad",
+    title:"Suspeita de cliques inválidos ou fraude",
+    desc:"Cliques inválidos (bots, click farms, competidores) podem inflar métricas de uma das partes. Sinais: CTR muito acima da média (<0.05% é normal em Display; >1% sem retargeting é suspeito), pico repentino, bounce rate de 98%+ na landing page, geographic spike incomum.",
+    actions:[
+      "Analisar relatório de IVT (Invalid Traffic) no CM360 — disponível em Report Builder",
+      "Verificar bounce rate e tempo na página para os cliques suspeitos (GA4)",
+      "Habilitar protecao de cliques inválidos no Google Ads se Search/Display GDN",
+      "Para campanhas via DV360: ativar IAS ou DV blocking para cliques inválidos",
+      "Reportar à plataforma/publisher se fraude confirmada — solicitar make-good",
+    ],
+    also:["diag_clicks_plat_maior","diag_adblocker"]
+  }},
+
+  diag_conv_window:{diag:{
+    causa:"Janelas de atribuição divergentes — a causa mais comum de discrepância de conversão",
+    severity:"warn",
+    title:"Janelas de atribuição diferentes por sistema",
+    desc:"Meta padrão (7d click / 1d view), Google Ads (30d click / 1d view / 1d engaged view), CM360 (30d click / 1d view por default, mas configurável). Isso significa que Meta e CM360 lendo a mesma campanha vão contar conversões diferentes para o mesmo período.",
+    actions:[
+      "Definir uma janela padrão para a empresa e aplicar em todas as plataformas",
+      "Recomendação prática: 7d click / 1d view para campanhas de performance",
+      "No CM360: Advertiser Properties → Floodlight → Attribution → ajustar lookback",
+      "Na Meta: Ads Manager → Settings → Attribution Settings → alterar por conta",
+      "Incluir a janela usada sempre que reportar conversões — torna comparações válidas",
+    ],
+    also:["diag_conv_model","diag_conv_double"]
+  }},
+
+  diag_conv_model:{diag:{
+    causa:"Modelos de atribuição diferentes (last click, data-driven, linear…)",
+    severity:"warn",
+    title:"Modelos de atribuição divergentes",
+    desc:"CM360 usa last-click por padrão. Meta usa last-touch (ad serving, 1d click). Google Ads tem data-driven como padrão para contas com volume suficiente. Esses modelos podem atribuir a mesma conversão para touchpoints diferentes — resultando em cada sistema reivindicando 100% da conversão.",
+    actions:[
+      "Usar CM360 como fonte única de verdade (single source of truth) para conversões cross-channel",
+      "Desabilitar tracking de conversão nativo das plataformas que não são o sistema primário",
+      "Se precisar comparar: usar sempre last-click em todos os sistemas como baseline comum",
+      "Para análise de jornada: usar Path to Conversion Report do CM360",
+    ],
+    also:["diag_conv_window","diag_conv_double"]
+  }},
+
+  diag_conv_double:{diag:{
+    causa:"Mesmo evento sendo contado por múltiplos pixels — double counting",
+    severity:"bad",
+    title:"Double counting de conversões",
+    desc:"Quando Floodlight (CM360) e pixel nativo da plataforma (Meta Pixel, gtag) estão ambos ativos no mesmo evento de conversão, cada sistema atribui a conversão para si. Parece que a campanha performou o dobro do real.",
+    actions:[
+      "Auditar o código da página de confirmação (thank you page) — quais pixels estão disparando?",
+      "Usar apenas um sistema de atribuição como primário — CM360 para Display/Video, plataforma para Social",
+      "Ou: usar Floodlight para tudo e desativar pixel nativo das plataformas (exceto Meta — Pixel é necessário para otimização)",
+      "Se usar ambos: reportar separadamente e não somar — são universos de atribuição diferentes",
+    ],
+    also:["diag_conv_model","diag_conv_evento"]
+  }},
+
+  diag_conv_evento:{diag:{
+    causa:"Definição de evento de conversão diferente entre Floodlight e pixel nativo",
+    severity:"warn",
+    title:"Eventos de conversão com definições diferentes",
+    desc:"CM360 Floodlight pode estar configurado como 'Purchase' com valor de receita. Meta Pixel pode estar disparando 'Purchase' em etapa anterior (ex: add to cart). Ou vice-versa. Eventos parecem iguais mas medem momentos diferentes da jornada.",
+    actions:[
+      "Mapear exatamente qual momento cada pixel dispara na jornada do usuário",
+      "Usar o Tag Assistant / Facebook Pixel Helper para validar o disparo em tempo real",
+      "Alinhar a nomenclatura dos eventos entre sistemas (ambos disparam no mesmo momento)",
+      "Documentar o event mapping no media plan como referência para futuros relatórios",
+    ],
+    also:["diag_conv_double","diag_duplicate"]
+  }},
+
+  diag_video_views:{diag:{
+    causa:"Definição de 'view' diferente entre plataformas e ad server",
+    severity:"warn",
+    title:"Definição de 'view' divergente entre sistemas",
+    desc:"YouTube conta view após 30s (ou se assistiu o vídeo completo). Meta conta view após 3s. CM360 conta impression (tag fired), não view. TikTok conta view após 6s. Comparar essas métricas sem ajuste vai sempre resultar em discrepância.",
+    actions:[
+      "Nunca comparar 'views' entre plataformas sem alinhar a definição",
+      "Usar como comparável: CM360 'Video Completions' vs plataforma 'Complete Views (100%)'",
+      "Para benchmarking de awareness: usar VTR (Video Completion Rate) como KPI padronizado",
+      "Separar relatório de vídeo por plataforma com definição de view explícita no cabeçalho",
+    ],
+    also:["diag_video_quartis","diag_metrica_errada"]
+  }},
+
+  diag_video_quartis:{diag:{
+    causa:"Quartis de vídeo discrepando entre ad server e plataforma",
+    severity:"warn",
+    title:"Discrepância nos quartis de vídeo (25/50/75/100%)",
+    desc:"CM360 mede quartis via VAST tracking events. A plataforma pode usar player events diferentes. Se o player não disparar os VAST events corretamente (buffer, pause, replay), o CM360 registra menos quartis que o player da plataforma.",
+    actions:[
+      "Verificar VAST tag com VAST Inspector — confirmar que os tracking events estão na posição correta",
+      "Testar em ambiente de preview antes do go live — acompanhar disparo dos eventos no Network tab",
+      "Verificar se o publisher/plataforma suporta VAST 3.0 (quartis) ou apenas VAST 2.0",
+      "Para campanhas com foco em completion rate: exigir VAST 3.0 ou superior na especificação técnica",
+    ],
+    also:["diag_video_views","imp_vast_redirect"]
+  }},
+
+  diag_video_vtr:{diag:{
+    causa:"VTR calculado com denominadores diferentes entre sistemas",
+    severity:"warn",
+    title:"VTR com denominadores diferentes",
+    desc:"VTR = Completions / Impressions. Se a plataforma usa 'Impressions viewable' no denominador e o CM360 usa 'Total Impressions', o VTR vai diferir mesmo com o mesmo número de completions. Plataformas social usam 'Reach' como denominador em algumas métricas.",
+    actions:[
+      "Definir fórmula de VTR usada internamente: Completions / Total Impressions (recomendado para padronização)",
+      "Documentar no relatório qual denominador cada sistema usa",
+      "Criar métrica calculada manual se precisar de comparação normalizada",
+    ],
+    also:["diag_video_views","diag_metrica_errada"]
+  }},
+};
+
+// ── NAVIGATION ──────────────────────────────────────
+let history = ['root'];
+
+function renderNode(id){
+  const node = TREE[id];
+  if(!node) return;
+
+  // DIAGNOSIS leaf
+  if(node.diag){
+    renderDiag(id, node.diag); return;
+  }
+
+  // QUESTION node
+  const out = document.getElementById('tree-output');
+  out.innerHTML = `
+    <div class="question-block">
+      <div class="q-text">${node.q}</div>
+      ${node.hint?`<div class="q-hint">${node.hint}</div>`:''}
+      <div class="options">
+        ${node.opts.map(o=>`
+          <button class="opt-btn" onclick="go('${o.next}','${o.label}')">
+            <span class="opt-icon">${o.icon}</span>
+            <span>${o.label}</span>
+          </button>`).join('')}
+      </div>
+    </div>
+    ${history.length>1?`<div class="nav-btns"><button class="btn-back" onclick="back()">← Voltar</button><button class="btn-restart" onclick="restart()">↺ Recomeçar</button></div>`:''}
+  `;
+  renderBC();
+}
+
+function renderDiag(id, d){
+  const bgMap = {ok:'#D1FAE5',warn:'#FEF3C7',bad:'#FEE2E2'};
+  const colorMap = {ok:'#065F46',warn:'#92400E',bad:'#991B1B'};
+  const labelMap = {ok:'✅ Discrepância normal',warn:'⚠️ Requer atenção',bad:'❌ Problema crítico'};
+  const bg = bgMap[d.severity]||bgMap.warn;
+  const color = colorMap[d.severity]||colorMap.warn;
+
+  const alsoChips = (d.also||[]).map(a=>{
+    const n = TREE[a];
+    const lbl = n?.diag?.title || n?.q || a;
+    return `<span class="also-chip" onclick="go('${a}','${lbl.slice(0,40)}')">${lbl.slice(0,40)}…</span>`;
+  }).join('');
+
+  document.getElementById('tree-output').innerHTML = `
+    <div class="diagnosis" style="background:${bg}20;border:1px solid ${bg}">
+      <span class="diag-badge" style="background:${bg};color:${color}">${labelMap[d.severity]}</span>
+      <div class="diag-title">${d.title}</div>
+      <div class="diag-desc" style="color:${color}99">${d.desc}</div>
+      <div class="diag-actions">
+        ${d.actions.map((a,i)=>`<div class="action"><span class="action-num">${i+1}</span><span>${a}</span></div>`).join('')}
+      </div>
+      ${alsoChips?`<div class="also-check"><div class="also-check-title">Verificar também</div><div class="also-chips">${alsoChips}</div></div>`:''}
+    </div>
+    <div class="nav-btns"><button class="btn-back" onclick="back()">← Voltar</button><button class="btn-restart" onclick="restart()">↺ Recomeçar</button></div>
+  `;
+  renderBC();
+}
+
+function renderBC(){
+  // Build breadcrumb from history labels
+  document.getElementById('breadcrumb').innerHTML = bcLabels.map((l,i)=>`
+    ${i>0?'<span class="bc-sep">›</span>':''}
+    <span class="bc-item${i===bcLabels.length-1?' active':''}">${l}</span>
+  `).join('');
+}
+
+let bcLabels = ['Início'];
+
+function go(id, label){
+  history.push(id);
+  bcLabels.push(label||id);
+  renderNode(id);
+}
+
+function back(){
+  if(history.length<=1) return;
+  history.pop(); bcLabels.pop();
+  renderNode(history[history.length-1]);
+}
+
+function restart(){
+  history=['root']; bcLabels=['Início'];
+  renderNode('root');
+}
+
+restart();
+</script>
+</body>
+</html>

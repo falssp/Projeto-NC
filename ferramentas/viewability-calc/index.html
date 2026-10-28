@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Viewability | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--green-bg:#D1FAE5;--green-text:#065F46;
+  --yellow:#F59E0B;--yellow-bg:#FEF3C7;--yellow-text:#92400E;
+  --red:#EF4444;--red-bg:#FEE2E2;--red-text:#991B1B;
+  --blue:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:16px;height:56px}
+.logo{color:#fff;font-size:15px;font-weight:700}
+.logo span{color:var(--accent)}
+
+.wrap{padding:24px;max-width:960px;margin:0 auto}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:680px){.grid-2{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px}
+.card h3{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:16px}
+
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;color:var(--mid);margin-bottom:5px;display:block}
+input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s}
+input[type=number]:focus,select:focus{border-color:var(--blue)}
+.input-row{display:flex;align-items:center;gap:8px}
+.input-row input{flex:1}
+.unit{font-size:12px;color:var(--light);white-space:nowrap}
+
+.btn-calc{width:100%;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:4px}
+.btn-calc:hover{background:#1D4ED8}
+.btn-reset{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:12px;font-weight:600;cursor:pointer;margin-top:6px}
+
+/* RESULT */
+.result-empty{text-align:center;color:var(--light);padding:40px 20px;font-size:13px}
+
+.score-ring{display:flex;flex-direction:column;align-items:center;margin-bottom:20px}
+.ring-wrap{position:relative;width:120px;height:120px}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:#EEF2F7;stroke-width:10}
+.ring-fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1),stroke .4s}
+.ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ring-pct{font-size:24px;font-weight:800;color:var(--navy)}
+.ring-sub{font-size:10px;color:var(--light)}
+.verdict{margin-top:10px;font-size:13px;font-weight:700;padding:5px 18px;border-radius:20px}
+
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.metric{background:#F7FAFC;border-radius:9px;padding:12px}
+.metric-val{font-size:20px;font-weight:800;color:var(--navy)}
+.metric-key{font-size:10px;font-weight:600;color:var(--light);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+
+.bench-table{width:100%;border-collapse:collapse;font-size:12px}
+.bench-table th{text-align:left;padding:6px 10px;background:#F0F4F8;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)}
+.bench-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.bench-table tr:last-child td{border-bottom:none}
+.bench-table tr.highlight td{background:#EFF6FF}
+.bval{font-weight:700;color:var(--navy)}
+.diff-pos{color:var(--green);font-weight:700}
+.diff-neg{color:var(--red);font-weight:700}
+.diff-zero{color:var(--light)}
+
+.tip-box{background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:12px;font-size:12px;color:#92400E;line-height:1.6;margin-top:12px}
+
+/* BENCHMARKS REF */
+.bref-section{margin-top:20px}
+.bref-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy2);border-left:3px solid var(--accent);padding-left:10px;margin-bottom:12px}
+.bref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.bref-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px}
+.bref-plat{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.bref-rows{display:flex;flex-direction:column;gap:3px}
+.bref-row{display:flex;justify-content:space-between;font-size:11px;color:var(--mid)}
+.bref-row span:last-child{font-weight:700;color:var(--navy2)}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Calculadora de <span>Viewability</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid-2">
+
+    <!-- INPUTS -->
+    <div class="card">
+      <h3>Dados da Campanha</h3>
+
+      <div class="form-group">
+        <label class="form-label">Plataforma / Ambiente</label>
+        <select id="plat" onchange="updateBench()">
+          <option value="">Selecionar…</option>
+          <optgroup label="Display">
+            <option value="display_desktop">Display — Desktop</option>
+            <option value="display_mobile">Display — Mobile Web</option>
+            <option value="display_app">Display — In-App</option>
+          </optgroup>
+          <optgroup label="Vídeo">
+            <option value="video_desktop">Vídeo — Desktop</option>
+            <option value="video_mobile">Vídeo — Mobile</option>
+            <option value="video_ctv">Vídeo — CTV/OTT</option>
+          </optgroup>
+          <optgroup label="Social">
+            <option value="social_meta">Meta (Feed/Reels)</option>
+            <option value="social_tiktok">TikTok</option>
+            <option value="social_linkedin">LinkedIn</option>
+            <option value="social_youtube">YouTube (In-Stream)</option>
+          </optgroup>
+          <optgroup label="Programático">
+            <option value="prog_open">Programático — Open Exchange</option>
+            <option value="prog_pmp">Programático — PMP/Deal</option>
+            <option value="prog_premium">Publisher Premium BR</option>
+          </optgroup>
+          <optgroup label="Áudio">
+            <option value="audio_spotify">Spotify</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Formato</label>
+        <select id="fmt">
+          <option value="">Selecionar plataforma primeiro</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Impressões Totais</label>
+        <div class="input-row">
+          <input type="number" id="imp" min="0" placeholder="Ex: 1000000" oninput="calc()">
+          <span class="unit">impr.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Impressões Viewable (Mensuradas)</label>
+        <div class="input-row">
+          <input type="number" id="vimp" min="0" placeholder="Ex: 650000" oninput="calc()">
+          <span class="unit">impr.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Impressões Mensuráveis (opcional)</label>
+        <div class="input-row">
+          <input type="number" id="mimp" min="0" placeholder="Ex: 900000" oninput="calc()">
+          <span class="unit">impr.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">% Viewability contratada (meta)</label>
+        <div class="input-row">
+          <input type="number" id="meta" min="0" max="100" placeholder="Ex: 70" oninput="calc()">
+          <span class="unit">%</span>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calc()">📊 Calcular</button>
+      <button class="btn-reset" onclick="reset()">↺ Limpar</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="card">
+      <h3>Resultado</h3>
+      <div id="result">
+        <div class="result-empty">Preencha os dados ao lado<br>para calcular a viewability</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BENCHMARKS REF -->
+  <div class="bref-section">
+    <div class="bref-title">Benchmarks de Referência (MRC + IAB BR 2024)</div>
+    <div class="bref-grid" id="bref-grid"></div>
+  </div>
+</div>
+
+<footer>Calculadora de Viewability · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+
+<script>
+// MRC / IAB benchmarks: {mrc, good, premium}
+// mrc = padrão mínimo MRC, good = mercado BR saudável, premium = publisher premium
+const BENCHMARKS = {
+  display_desktop:{
+    "Banner 300×250 (Medium Rectangle)":{mrc:50,good:60,premium:70},
+    "Leaderboard 728×90":{mrc:50,good:55,premium:65},
+    "Half Page 300×600":{mrc:50,good:65,premium:75},
+    "Billboard 970×250":{mrc:50,good:65,premium:72},
+    "Responsive Display":{mrc:50,good:58,premium:68},
+  },
+  display_mobile:{
+    "Mobile Banner 320×50":{mrc:50,good:45,premium:55},
+    "Mobile Interstitial":{mrc:50,good:75,premium:85},
+    "Mobile 300×250":{mrc:50,good:58,premium:68},
+  },
+  display_app:{
+    "In-App Banner 320×50":{mrc:50,good:40,premium:52},
+    "In-App Interstitial":{mrc:50,good:78,premium:88},
+    "In-App 300×250":{mrc:50,good:55,premium:65},
+    "Rewarded Video":{mrc:50,good:90,premium:95},
+  },
+  video_desktop:{
+    "Pre-roll 15s (skippable)":{mrc:50,good:60,premium:70},
+    "Pre-roll 30s (skippable)":{mrc:50,good:55,premium:68},
+    "Non-skippable 15s":{mrc:50,good:85,premium:95},
+    "Bumper 6s":{mrc:50,good:80,premium:90},
+    "Outstream":{mrc:50,good:50,premium:62},
+  },
+  video_mobile:{
+    "Pre-roll Mobile":{mrc:50,good:58,premium:70},
+    "Non-skippable Mobile":{mrc:50,good:80,premium:92},
+    "Outstream Mobile":{mrc:50,good:48,premium:60},
+  },
+  video_ctv:{
+    "CTV 15s":{mrc:50,good:95,premium:99},
+    "CTV 30s":{mrc:50,good:94,premium:98},
+    "OTT Pre-roll":{mrc:50,good:90,premium:96},
+  },
+  social_meta:{
+    "Feed Image/Video 4:5":{mrc:50,good:65,premium:75},
+    "Reels / Stories 9:16":{mrc:50,good:70,premium:80},
+    "Carrossel":{mrc:50,good:62,premium:72},
+  },
+  social_tiktok:{
+    "In-Feed Video 9:16":{mrc:50,good:72,premium:82},
+    "TopView":{mrc:50,good:92,premium:96},
+  },
+  social_linkedin:{
+    "Single Image Feed":{mrc:50,good:58,premium:70},
+    "Video Ad":{mrc:50,good:62,premium:74},
+  },
+  social_youtube:{
+    "Skippable In-Stream":{mrc:50,good:62,premium:74},
+    "Non-Skippable 15s":{mrc:50,good:88,premium:95},
+    "Bumper 6s":{mrc:50,good:85,premium:92},
+    "In-Feed / Discovery":{mrc:50,good:68,premium:78},
+  },
+  prog_open:{
+    "Banner 300×250":{mrc:50,good:52,premium:62},
+    "Leaderboard 728×90":{mrc:50,good:50,premium:60},
+    "Vídeo VAST":{mrc:50,good:55,premium:66},
+    "Native":{mrc:50,good:60,premium:70},
+  },
+  prog_pmp:{
+    "Banner 300×250":{mrc:50,good:62,premium:72},
+    "Half Page 300×600":{mrc:50,good:68,premium:78},
+    "Vídeo VAST":{mrc:50,good:65,premium:76},
+  },
+  prog_premium:{
+    "Banner 300×250":{mrc:50,good:68,premium:78},
+    "Half Page 300×600":{mrc:50,good:72,premium:82},
+    "Billboard 970×250":{mrc:50,good:70,premium:80},
+    "Rich Media Expandable":{mrc:50,good:74,premium:84},
+  },
+  audio_spotify:{
+    "Audio 30s + Companion Banner":{mrc:50,good:85,premium:95},
+    "Audio 15s":{mrc:50,good:88,premium:96},
+  },
+};
+
+const FMTS = {
+  display_desktop:Object.keys(BENCHMARKS.display_desktop),
+  display_mobile:Object.keys(BENCHMARKS.display_mobile),
+  display_app:Object.keys(BENCHMARKS.display_app),
+  video_desktop:Object.keys(BENCHMARKS.video_desktop),
+  video_mobile:Object.keys(BENCHMARKS.video_mobile),
+  video_ctv:Object.keys(BENCHMARKS.video_ctv),
+  social_meta:Object.keys(BENCHMARKS.social_meta),
+  social_tiktok:Object.keys(BENCHMARKS.social_tiktok),
+  social_linkedin:Object.keys(BENCHMARKS.social_linkedin),
+  social_youtube:Object.keys(BENCHMARKS.social_youtube),
+  prog_open:Object.keys(BENCHMARKS.prog_open),
+  prog_pmp:Object.keys(BENCHMARKS.prog_pmp),
+  prog_premium:Object.keys(BENCHMARKS.prog_premium),
+  audio_spotify:Object.keys(BENCHMARKS.audio_spotify),
+};
+
+function updateBench(){
+  const plat = document.getElementById('plat').value;
+  const fmts = FMTS[plat]||[];
+  const sel = document.getElementById('fmt');
+  sel.innerHTML = fmts.length?fmts.map(f=>`<option>${f}</option>`):'<option>Selecionar plataforma primeiro</option>';
+  calc();
+  renderBrefGrid();
+}
+
+document.getElementById('fmt').addEventListener('change', calc);
+
+function calc(){
+  const imp = +document.getElementById('imp').value;
+  const vimp = +document.getElementById('vimp').value;
+  const mimp = +document.getElementById('mimp').value;
+  const metaPct = +document.getElementById('meta').value;
+  const plat = document.getElementById('plat').value;
+  const fmt = document.getElementById('fmt').value;
+
+  if(!imp || !vimp){ document.getElementById('result').innerHTML='<div class="result-empty">Preencha Impressões Totais e Viewable</div>'; return; }
+
+  const vr = (vimp/imp)*100; // viewability rate
+  const mr = mimp ? (mimp/imp)*100 : null; // measurability rate
+  const vofm = mimp ? (vimp/mimp)*100 : null; // viewable of measurable
+
+  const bench = plat && fmt && BENCHMARKS[plat]?.[fmt];
+  const mrc = bench?.mrc ?? 50;
+  const good = bench?.good ?? 60;
+  const premium = bench?.premium ?? 70;
+  const ref = metaPct || good;
+
+  // Verdict
+  let verdict, vClass, vColor, tip='';
+  if(vr >= premium){ verdict='🏆 Premium'; vClass=''; vColor='#065F46'; tip='Performance excelente — acima do benchmark premium. Boa justificativa para renovar com CPM mais alto.'; }
+  else if(vr >= good){ verdict='✅ Dentro do padrão'; vClass=''; vColor='#166534'; tip='Dentro do benchmark de mercado BR. Continuar monitorando frequência e pacing.'; }
+  else if(vr >= mrc){ verdict='⚠️ Abaixo do esperado'; vClass='yellow'; vColor='var(--yellow-text)'; tip='Acima do mínimo MRC, mas abaixo do benchmark de mercado. Revisar posicionamentos, formatos e qualidade do inventário.'; }
+  else{ verdict='❌ Abaixo do MRC'; vClass='red'; vColor='var(--red-text)'; tip='Abaixo do padrão mínimo MRC ('+mrc+'%). Ação imediata: pausar inventários com baixa viewability, revisar deal ID ou lista de publishers.'; }
+
+  // Ring color
+  const ringColor = vr >= premium ? '#10B981' : vr >= good ? '#2563EB' : vr >= mrc ? '#F59E0B' : '#EF4444';
+  const circ = 188.5;
+  const offset = circ - (Math.min(vr,100)/100)*circ;
+
+  // Delta vs meta/bench
+  const delta = vr - ref;
+  const deltaStr = (delta>=0?'+':'')+delta.toFixed(1)+'pp';
+  const deltaClass = delta>=0?'diff-pos':'diff-neg';
+
+  // Impressões viewable para atingir meta
+  const needed = ref>0 ? Math.ceil((ref/100)*imp) : null;
+  const gap = needed ? needed - vimp : null;
+
+  document.getElementById('result').innerHTML = `
+    <div class="score-ring">
+      <div class="ring-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="ring-fill" cx="60" cy="60" r="50"
+            stroke="${ringColor}"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${offset}"/>
+        </svg>
+        <div class="ring-label">
+          <div class="ring-pct">${vr.toFixed(1)}%</div>
+          <div class="ring-sub">viewability</div>
+        </div>
+      </div>
+      <div class="verdict" style="background:${ringColor}22;color:${ringColor}">${verdict}</div>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric">
+        <div class="metric-val">${fmt2(imp)}</div>
+        <div class="metric-key">Impr. Totais</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">${fmt2(vimp)}</div>
+        <div class="metric-key">Impr. Viewable</div>
+      </div>
+      ${mr!==null?`<div class="metric">
+        <div class="metric-val">${mr.toFixed(1)}%</div>
+        <div class="metric-key">Mensurabilidade</div>
+      </div>`:''}
+      ${vofm!==null?`<div class="metric">
+        <div class="metric-val">${vofm.toFixed(1)}%</div>
+        <div class="metric-key">Viewable / Mensurável</div>
+      </div>`:''}
+    </div>
+
+    <table class="bench-table">
+      <thead><tr><th>Benchmark</th><th>Meta</th><th>Resultado</th><th>Δ</th></tr></thead>
+      <tbody>
+        <tr${ref===mrc?' class="highlight"':''}><td>MRC Mínimo</td><td class="bval">${mrc}%</td><td class="bval">${vr.toFixed(1)}%</td><td class="${vr>=mrc?'diff-pos':'diff-neg'}">${(vr-mrc>=0?'+':'')+(vr-mrc).toFixed(1)}pp</td></tr>
+        ${bench?`<tr${ref===good?' class="highlight"':''}><td>Mercado BR (bom)</td><td class="bval">${good}%</td><td class="bval">${vr.toFixed(1)}%</td><td class="${vr>=good?'diff-pos':'diff-neg'}">${(vr-good>=0?'+':'')+(vr-good).toFixed(1)}pp</td></tr>
+        <tr${ref===premium?' class="highlight"':''}><td>Premium BR</td><td class="bval">${premium}%</td><td class="bval">${vr.toFixed(1)}%</td><td class="${vr>=premium?'diff-pos':'diff-neg'}">${(vr-premium>=0?'+':'')+(vr-premium).toFixed(1)}pp</td></tr>`:''}
+        ${metaPct?`<tr class="highlight"><td>Meta contratada</td><td class="bval">${metaPct}%</td><td class="bval">${vr.toFixed(1)}%</td><td class="${deltaClass}">${deltaStr}</td></tr>`:''}
+      </tbody>
+    </table>
+
+    ${gap!==null?`<div class="tip-box" style="margin-top:12px;background:#EFF6FF;border-color:#BFDBFE;color:#1E40AF">
+      📈 Para atingir ${ref}%: faltam <b>${fmt2(Math.max(0,gap))} impressões viewable</b>${gap<=0?' — meta atingida! ✅':'.'}</div>`:''}
+
+    <div class="tip-box">${tip}</div>
+  `;
+}
+
+function fmt2(n){return n>=1e6?(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M':n>=1e3?(n/1e3).toFixed(1).replace(/\.?0+$/,'')+'K':n.toLocaleString('pt-BR')}
+
+function reset(){
+  ['imp','vimp','mimp','meta'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('plat').value='';
+  document.getElementById('fmt').innerHTML='<option>Selecionar plataforma primeiro</option>';
+  document.getElementById('result').innerHTML='<div class="result-empty">Preencha os dados ao lado<br>para calcular a viewability</div>';
+}
+
+function renderBrefGrid(){
+  const plat = document.getElementById('plat').value;
+  const data = plat ? {[plat]: BENCHMARKS[plat]} : BENCHMARKS;
+  const labels = {
+    display_desktop:'Display Desktop',display_mobile:'Display Mobile Web',display_app:'In-App',
+    video_desktop:'Vídeo Desktop',video_mobile:'Vídeo Mobile',video_ctv:'CTV / OTT',
+    social_meta:'Meta',social_tiktok:'TikTok',social_linkedin:'LinkedIn',social_youtube:'YouTube',
+    prog_open:'Prog. Open Exchange',prog_pmp:'Prog. PMP / Deal',prog_premium:'Publisher Premium BR',
+    audio_spotify:'Spotify Áudio',
+  };
+  document.getElementById('bref-grid').innerHTML = Object.entries(data).map(([key,fmts])=>`
+    <div class="bref-card">
+      <div class="bref-plat">${labels[key]||key}</div>
+      <div class="bref-rows">
+        ${Object.entries(fmts).map(([f,b])=>`
+          <div class="bref-row"><span>${f}</span><span>${b.mrc}% / ${b.good}% / ${b.premium}%</span></div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+  // legend
+  document.getElementById('bref-grid').insertAdjacentHTML('afterbegin','<div style="grid-column:1/-1;font-size:11px;color:var(--light);margin-bottom:4px">MRC mínimo / Mercado BR (bom) / Premium BR</div>');
+}
+
+renderBrefGrid();
+</script>
+</body>
+</html>
