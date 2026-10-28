@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decodificador TCF | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
+  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:20px 24px 0;max-width:960px;margin:0 auto}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
+.main{max-width:960px;margin:0 auto;padding:0 24px 48px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:6px}
+textarea{width:100%;font-family:var(--mono);font-size:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--escuro);resize:vertical;min-height:70px;outline:none;transition:border-color .15s}
+textarea:focus{border-color:var(--azul)}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{padding:8px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:99px;background:var(--surface);color:var(--body);cursor:pointer;font-family:inherit;transition:all .15s}
+.chip:hover{border-color:var(--azul);color:var(--azul)}
+/* result */
+.section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:16px}
+.meta-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.meta-key{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.meta-val{font-size:13px;font-weight:600;color:var(--escuro);word-break:break-all}
+.purposes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;margin-bottom:16px}
+.purpose-item{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:7px;border:1px solid;font-size:12px}
+.p-ok{background:var(--ok-bg);border-color:var(--ok-bd)}
+.p-no{background:var(--err-bg);border-color:var(--err-bd)}
+.p-ok .pi{color:var(--ok)}
+.p-no .pi{color:var(--err)}
+.p-name{font-weight:600;margin-bottom:2px}
+.p-ok .p-name{color:var(--ok)}
+.p-no .p-name{color:var(--err)}
+.p-desc{font-size:11px;color:var(--body)}
+.version-badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:var(--light);color:var(--azul);margin-bottom:14px}
+.vendor-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.vendor-table th{background:var(--bg);padding:6px 10px;text-align:left;font-weight:700;color:var(--body);font-size:11px;border-bottom:1px solid var(--border)}
+.vendor-table td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.vendor-table tr:last-child td{border-bottom:none}
+.v-id{font-family:var(--mono);font-weight:600;color:var(--azul)}
+.v-ok{color:var(--ok);font-weight:700}
+.v-no{color:var(--err);font-weight:700}
+.filter-row{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+.filter-row input{flex:1;min-width:160px;font-family:inherit;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none}
+.filter-row input:focus{border-color:var(--azul)}
+.toggle-group{display:flex;gap:4px}
+.tgl{padding:5px 12px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--body);cursor:pointer;font-family:inherit}
+.tgl.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+.warning-box{background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--warn);margin-bottom:14px}
+.error-box{background:var(--err-bg);border:1px solid var(--err-bd);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--err);margin-bottom:14px}
+</style>
+</head>
+<body>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Decodificador TCF Consent String</h1>
+  <p class="subtitle">Cola uma gdpr_consent= string (TCF v1 ou v2) e veja os propósitos, vendors autorizados e campos técnicos de privacidade.</p>
+</div>
+<div class="main">
+  <div class="card">
+    <label>Cole a TCF Consent String</label>
+    <textarea id="tcf-input" rows="3" placeholder="Ex: CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA…"></textarea>
+    <div class="chips">
+      <span style="font-size:11px;color:var(--muted);align-self:center">Exemplos:</span>
+      <button class="chip" onclick="loadEx('v2_full')">TCF v2 (completo)</button>
+      <button class="chip" onclick="loadEx('v2_minimal')">TCF v2 (mínimo)</button>
+      <button class="chip" onclick="loadEx('v1')">TCF v1</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="decode()">Decodificar</button>
+      <button class="btn-secondary" onclick="document.getElementById('tcf-input').value='';document.getElementById('result').innerHTML=''">Limpar</button>
+    </div>
+  </div>
+  <div id="result"></div>
+</div>
+<script>
+/* ─── KNOWN VENDORS (subset — top 50 AdTech) ─── */
+const VENDORS={
+  1:{n:'Exponential Interactive'},2:{n:'Captify Technologies'},4:{n:'Roq.ad'},
+  10:{n:'Index Exchange'},25:{n:'Tapad'},32:{n:'Adform'},
+  52:{n:'The Trade Desk'},53:{n:'Nielsen'},56:{n:'Adobe Advertising Cloud'},
+  57:{n:'DoubleVerify'},65:{n:'Magnite'},69:{n:'Zemanta'},
+  70:{n:'Outbrain'},76:{n:'PubMatic'},80:{n:'LiveRamp'},
+  90:{n:'Conversant'},92:{n:'Yahoo! EMEA'},97:{n:'Criteo'},
+  98:{n:'Lotame Solutions'},128:{n:'IAS (Integral Ad Science)'},
+  148:{n:'MediaMath'},158:{n:'Amazon Advertising'},
+  253:{n:'Meta Audience Network'},278:{n:'Google Advertising Products'},
+  290:{n:'AppNexus (Xandr)'},295:{n:'Neustar (TransUnion)'},
+  301:{n:'Amobee'},314:{n:'DoubleVerify'},
+  321:{n:'The Trade Desk (EU)'},350:{n:'Spotify AB'},
+  357:{n:'TikTok'},360:{n:'Microsoft Advertising'},
+  373:{n:'Taboola'},394:{n:'Quantcast'},
+  399:{n:'LiveIntent'},415:{n:'Sharethrough'},
+  422:{n:'GumGum'},432:{n:'Verizon Media'},
+  437:{n:'OpenX'},482:{n:'PubMatic EU'},
+  512:{n:'Smart AdServer'},520:{n:'Undertone (Perion)'},
+  524:{n:'Beeswax'},549:{n:'MOAT (Oracle)'},
+  559:{n:'Kargo'},566:{n:'33Across'},
+  571:{n:'Teads'},580:{n:'Celtra'},
+  617:{n:'Adcolony'},755:{n:'DV360 (Google)'},
+};
+
+/* TCF v2 Purposes */
+const PURPOSES_V2=[
+  {id:1,n:'Armazenar e/ou acessar informações em um dispositivo',d:'Cookies, IDs de dispositivo ou tecnologia semelhante'},
+  {id:2,n:'Selecionar anúncios básicos',d:'Anúncios podem ser exibidos com base no conteúdo da página'},
+  {id:3,n:'Criar perfil de anúncios personalizados',d:'Perfil sobre interesses do usuário para exibir anúncios relevantes'},
+  {id:4,n:'Selecionar anúncios personalizados',d:'Anúncios selecionados com base em perfil do usuário'},
+  {id:5,n:'Criar perfil de conteúdo personalizado',d:'Perfil sobre interesses para exibir conteúdo relevante'},
+  {id:6,n:'Selecionar conteúdo personalizado',d:'Conteúdo selecionado baseado em perfil do usuário'},
+  {id:7,n:'Medir performance de anúncios',d:'Informações de performance e eficácia de anúncios'},
+  {id:8,n:'Medir performance de conteúdo',d:'Eficácia de conteúdo e combinação com interesses'},
+  {id:9,n:'Aplicar pesquisa de mercado para gerar insights de audiência',d:'Combinação e análise de dados para relatórios de segmento'},
+  {id:10,n:'Desenvolver e melhorar produtos',d:'Dados usados para melhorar sistemas e software existentes'},
+  {id:11,n:'Usar perfis para selecionar conteúdo personalizado',d:'Conteúdo pode ser selecionado com base em perfis criados'},
+];
+
+const SPECIAL_FEATURES_V2=[
+  {id:1,n:'Usar processamento de sinal preciso de localização geográfica',d:'Localização GPS precisa do dispositivo'},
+  {id:2,n:'Escanear ativamente características do dispositivo para identificação',d:'Device fingerprinting'},
+];
+
+/* TCF v1 Purposes */
+const PURPOSES_V1=[
+  {id:1,n:'Armazenamento e acesso a informações',d:''},
+  {id:2,n:'Personalização',d:''},
+  {id:3,n:'Seleção de anúncios, entrega e relatório',d:''},
+  {id:4,n:'Seleção de conteúdo, entrega e relatório',d:''},
+  {id:5,n:'Medição',d:''},
+];
+
+const EX={
+  v2_full:'CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA',
+  v2_minimal:'CPdqkgAPdqkgAAbASAENA2CgAP_AAH_AAAqIHItf_X__b3_j-_5_f0eY1f9_7__-0zjhfdt-8N3f_X_L8X42M7vF36pq4KuR4ku3bBIQdtHOncTUmx6olVrzHsak2cpyNhg6sskmNKJ_JkknsZe2dYGF9vm5tj3Zaxr2FtDNq7bC5OmdRRMH7I5_pgwA',
+  v1:'BOkNSBTOkNSBTABABBENDh-AAAAid',
+};
+
+function loadEx(k){document.getElementById('tcf-input').value=EX[k]||'';decode();}
+
+/* ─── BASE64URL decode ─── */
+function b64urlDecode(str){
+  str=str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length%4) str+='=';
+  try{
+    const bin=atob(str);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return bytes;
+  }catch(e){return null;}
+}
+
+function readBits(bytes,start,len){
+  let v=0;
+  for(let i=0;i<len;i++){
+    const byteIdx=Math.floor((start+i)/8);
+    const bitIdx=7-((start+i)%8);
+    if(byteIdx<bytes.length) v=(v<<1)|((bytes[byteIdx]>>bitIdx)&1);
+    else v=v<<1;
+  }
+  return v>>>0;
+}
+
+function readDate(bytes,start){
+  const deciseconds=readBits(bytes,start,36);
+  return new Date(deciseconds*100);
+}
+
+function readString(bytes,start,len){
+  let s='';
+  for(let i=0;i<len;i+=6){
+    s+=String.fromCharCode(65+readBits(bytes,start+i,6));
+  }
+  return s;
+}
+
+function decodeTCFv2(bytes){
+  const version=readBits(bytes,0,6);
+  const created=readDate(bytes,6);
+  const lastUpdated=readDate(bytes,42);
+  const cmpId=readBits(bytes,78,12);
+  const cmpVersion=readBits(bytes,90,12);
+  const consentScreen=readBits(bytes,102,6);
+  const consentLanguage=readString(bytes,108,12);
+  const vendorListVersion=readBits(bytes,120,12);
+  const tcfPolicyVersion=readBits(bytes,132,6);
+  const isServiceSpecific=readBits(bytes,138,1);
+  const useNonStandardStacks=readBits(bytes,139,1);
+  const specialFeatureOptIns=readBits(bytes,140,12);
+  const purposeConsents=readBits(bytes,152,24);
+  const purposeLegInt=readBits(bytes,176,24);
+  const purposeOneTreatment=readBits(bytes,200,1);
+  const publisherCC=readString(bytes,201,12);
+
+  // Parse vendor consents
+  let pos=213;
+  const maxVendorConsent=readBits(bytes,pos,16); pos+=16;
+  const isRangeEncoded=readBits(bytes,pos,1); pos+=1;
+  const consentedVendors=new Set();
+  if(!isRangeEncoded){
+    for(let i=1;i<=maxVendorConsent;i++){
+      if(readBits(bytes,pos+(i-1),1)) consentedVendors.add(i);
+    }
+    pos+=maxVendorConsent;
+  } else {
+    const numEntries=readBits(bytes,pos,12); pos+=12;
+    for(let e=0;e<numEntries;e++){
+      const isRange=readBits(bytes,pos,1); pos+=1;
+      const startId=readBits(bytes,pos,16); pos+=16;
+      if(isRange){const endId=readBits(bytes,pos,16);pos+=16;for(let v=startId;v<=endId;v++)consentedVendors.add(v);}
+      else consentedVendors.add(startId);
+    }
+  }
+
+  // Purposes from bits
+  const purposes=[];
+  for(let i=0;i<24;i++){
+    const bit=(purposeConsents>>(23-i))&1;
+    const legBit=(purposeLegInt>>(23-i))&1;
+    purposes.push({id:i+1,consent:!!bit,legInt:!!legBit});
+  }
+
+  // Special features
+  const specFeatures=[];
+  for(let i=0;i<12;i++){
+    const bit=(specialFeatureOptIns>>(11-i))&1;
+    specFeatures.push({id:i+1,optIn:!!bit});
+  }
+
+  return {
+    version,created,lastUpdated,cmpId,cmpVersion,consentLanguage,
+    vendorListVersion,tcfPolicyVersion,isServiceSpecific:!!isServiceSpecific,
+    publisherCC,purposes,specFeatures,consentedVendors,maxVendorConsent
+  };
+}
+
+function decodeTCFv1(bytes){
+  const version=readBits(bytes,0,6);
+  const created=readDate(bytes,6);
+  const lastUpdated=readDate(bytes,42);
+  const cmpId=readBits(bytes,78,12);
+  const cmpVersion=readBits(bytes,90,12);
+  const consentScreen=readBits(bytes,102,6);
+  const consentLanguage=readString(bytes,108,12);
+  const vendorListVersion=readBits(bytes,120,12);
+  const purposeConsents=readBits(bytes,132,24);
+
+  const purposes=[];
+  for(let i=0;i<24;i++){
+    const bit=(purposeConsents>>(23-i))&1;
+    purposes.push({id:i+1,consent:!!bit,legInt:false});
+  }
+
+  let pos=156;
+  const maxVendorConsent=readBits(bytes,pos,16);pos+=16;
+  const isRangeEncoded=readBits(bytes,pos,1);pos+=1;
+  const consentedVendors=new Set();
+  if(!isRangeEncoded){
+    for(let i=1;i<=maxVendorConsent;i++){
+      if(readBits(bytes,pos+(i-1),1)) consentedVendors.add(i);
+    }
+  } else {
+    const numEntries=readBits(bytes,pos,12);pos+=12;
+    for(let e=0;e<numEntries;e++){
+      const isRange=readBits(bytes,pos,1);pos+=1;
+      const startId=readBits(bytes,pos,16);pos+=16;
+      if(isRange){const endId=readBits(bytes,pos,16);pos+=16;for(let v=startId;v<=endId;v++)consentedVendors.add(v);}
+      else consentedVendors.add(startId);
+    }
+  }
+
+  return {version,created,lastUpdated,cmpId,cmpVersion,consentLanguage,vendorListVersion,purposes,specFeatures:[],consentedVendors,maxVendorConsent,publisherCC:'',tcfPolicyVersion:0,isServiceSpecific:false};
+}
+
+let currentResult=null;
+let vendorFilter='';
+let vendorShow='all';
+
+function decode(){
+  const raw=document.getElementById('tcf-input').value.trim();
+  if(!raw){document.getElementById('result').innerHTML='';return;}
+
+  // Strip URL prefix if present
+  const clean=raw.replace(/^.*gdpr_consent=/,'').replace(/[&;].*/,'').trim();
+  const bytes=b64urlDecode(clean);
+  if(!bytes||bytes.length<4){
+    document.getElementById('result').innerHTML=`<div class="card"><div class="error-box">❌ String inválida — não foi possível decodificar. Certifique-se que é uma TCF Consent String em base64url.</div></div>`;
+    return;
+  }
+
+  const version=readBits(bytes,0,6);
+  let result;
+  try{
+    if(version===1) result=decodeTCFv1(bytes);
+    else if(version===2) result=decodeTCFv2(bytes);
+    else throw new Error('Versão desconhecida: '+version);
+    result._raw=clean;
+    currentResult=result;
+    renderResult(result);
+  }catch(e){
+    document.getElementById('result').innerHTML=`<div class="card"><div class="error-box">❌ Erro ao decodificar: ${escHtml(e.message)}</div></div>`;
+  }
+}
+
+function renderResult(r){
+  const fmt=d=>d instanceof Date&&!isNaN(d)?d.toLocaleString('pt-BR'):'—';
+  const purposeDefs=r.version===1?PURPOSES_V1:PURPOSES_V2;
+
+  // Purposes
+  const purposeRows=purposeDefs.map(p=>{
+    const state=r.purposes.find(x=>x.id===p.id)||{consent:false,legInt:false};
+    const granted=state.consent||state.legInt;
+    return `<div class="purpose-item ${granted?'p-ok':'p-no'}">
+      <div class="pi" style="font-size:14px;flex-shrink:0">${granted?'✅':'❌'}</div>
+      <div>
+        <div class="p-name">P${p.id}: ${p.n}</div>
+        ${p.d?`<div class="p-desc">${p.d}</div>`:''}
+        ${r.version===2?`<div class="p-desc" style="margin-top:3px">${state.consent?'<b>Consentimento</b>':''} ${state.legInt?'<b>Interesse Legítimo</b>':''}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Special features (v2 only)
+  let specFeaturesHtml='';
+  if(r.version===2&&r.specFeatures.length){
+    const sfRows=SPECIAL_FEATURES_V2.map(sf=>{
+      const state=r.specFeatures.find(x=>x.id===sf.id)||{optIn:false};
+      return `<div class="purpose-item ${state.optIn?'p-ok':'p-no'}">
+        <div class="pi">${state.optIn?'✅':'❌'}</div>
+        <div><div class="p-name">SF${sf.id}: ${sf.n}</div><div class="p-desc">${sf.d}</div></div>
+      </div>`;
+    }).join('');
+    specFeaturesHtml=`
+      <div class="section-label">Recursos Especiais (opt-in)</div>
+      <div class="purposes-grid" style="margin-bottom:16px">${sfRows}</div>`;
+  }
+
+  // Vendors
+  const knownVendorIds=Object.keys(VENDORS).map(Number).sort((a,b)=>a-b);
+  const consentedKnown=knownVendorIds.filter(id=>r.consentedVendors.has(id));
+  const allConsentedIds=[...r.consentedVendors].sort((a,b)=>a-b);
+
+  document.getElementById('result').innerHTML=`
+    <div class="card">
+      <div class="version-badge">TCF v${r.version}</div>
+
+      ${r.version===1?`<div class="warning-box">⚠️ TCF v1 está descontinuado desde 2020. Strings v1 podem não ser aceitas por todos os vendors. Migre para v2.</div>`:''}
+
+      <div class="section-label">Metadados</div>
+      <div class="meta-grid">
+        <div class="meta-item"><div class="meta-key">Versão TCF</div><div class="meta-val">v${r.version}</div></div>
+        <div class="meta-item"><div class="meta-key">Criado em</div><div class="meta-val">${fmt(r.created)}</div></div>
+        <div class="meta-item"><div class="meta-key">Atualizado em</div><div class="meta-val">${fmt(r.lastUpdated)}</div></div>
+        <div class="meta-item"><div class="meta-key">CMP ID</div><div class="meta-val">${r.cmpId}</div></div>
+        <div class="meta-item"><div class="meta-key">CMP Versão</div><div class="meta-val">${r.cmpVersion}</div></div>
+        <div class="meta-item"><div class="meta-key">Idioma</div><div class="meta-val">${r.consentLanguage}</div></div>
+        <div class="meta-item"><div class="meta-key">Vendor List v.</div><div class="meta-val">${r.vendorListVersion}</div></div>
+        ${r.version===2?`<div class="meta-item"><div class="meta-key">Publisher CC</div><div class="meta-val">${r.publisherCC||'—'}</div></div>`:''}
+        ${r.version===2?`<div class="meta-item"><div class="meta-key">TCF Policy v.</div><div class="meta-val">${r.tcfPolicyVersion}</div></div>`:''}
+        ${r.version===2?`<div class="meta-item"><div class="meta-key">Service Specific</div><div class="meta-val">${r.isServiceSpecific?'Sim':'Não'}</div></div>`:''}
+        <div class="meta-item"><div class="meta-key">Vendors consentidos</div><div class="meta-val">${r.consentedVendors.size} / ${r.maxVendorConsent}</div></div>
+      </div>
+
+      <div class="section-label">Propósitos de Consentimento</div>
+      <div class="purposes-grid">${purposeRows}</div>
+
+      ${specFeaturesHtml}
+
+      <div class="section-label">Vendors conhecidos (${consentedKnown.length} de ${knownVendorIds.length} verificados)</div>
+      <div class="filter-row">
+        <input type="text" placeholder="Filtrar por nome ou ID…" oninput="setVFilter(this.value)">
+        <div class="toggle-group">
+          <button class="tgl active" id="tgl-all" onclick="setVShow('all',this)">Todos</button>
+          <button class="tgl" id="tgl-ok" onclick="setVShow('ok',this)">✅ Consentidos</button>
+          <button class="tgl" id="tgl-no" onclick="setVShow('no',this)">❌ Não consentidos</button>
+        </div>
+      </div>
+      <div id="vendor-table"></div>
+
+      <div style="margin-top:16px">
+        <div class="section-label">IDs consentidos (todos — ${allConsentedIds.length})</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--body);word-break:break-all;background:var(--bg);padding:10px;border-radius:7px;border:1px solid var(--border);max-height:100px;overflow-y:auto">${allConsentedIds.join(', ')||'(nenhum)'}</div>
+      </div>
+    </div>`;
+
+  renderVendors();
+}
+
+function setVFilter(v){vendorFilter=v.toLowerCase();renderVendors();}
+function setVShow(v,btn){
+  vendorShow=v;
+  document.querySelectorAll('.tgl').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderVendors();
+}
+
+function renderVendors(){
+  if(!currentResult) return;
+  const r=currentResult;
+  const knownIds=Object.keys(VENDORS).map(Number);
+  let rows=knownIds.map(id=>({id,name:VENDORS[id].n,consented:r.consentedVendors.has(id)}));
+  if(vendorFilter) rows=rows.filter(v=>v.name.toLowerCase().includes(vendorFilter)||String(v.id).includes(vendorFilter));
+  if(vendorShow==='ok') rows=rows.filter(v=>v.consented);
+  if(vendorShow==='no') rows=rows.filter(v=>!v.consented);
+  rows.sort((a,b)=>a.name.localeCompare(b.name));
+  const html=rows.length?`
+    <table class="vendor-table">
+      <thead><tr><th>ID</th><th>Vendor</th><th>Status</th></tr></thead>
+      <tbody>${rows.map(v=>`
+        <tr>
+          <td class="v-id">${v.id}</td>
+          <td>${escHtml(v.name)}</td>
+          <td class="${v.consented?'v-ok':'v-no'}">${v.consented?'✅ Consentido':'❌ Não consentido'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`:'<div style="font-size:12px;color:var(--muted);padding:8px">Nenhum vendor encontrado com esse filtro.</div>';
+  document.getElementById('vendor-table').innerHTML=html;
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

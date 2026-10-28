@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de Viewability | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
+  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:20px 24px 0;max-width:1100px;margin:0 auto}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
+.main{max-width:1100px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+@media(max-width:780px){.main{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:4px}
+.field{margin-bottom:12px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+input,select{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+/* results */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-size:22px;font-weight:700;color:var(--escuro);line-height:1}
+.kpi-sub{font-size:11px;color:var(--body);margin-top:4px}
+.kpi-ok{border-color:var(--ok-bd);background:var(--ok-bg)}
+.kpi-ok .kpi-val{color:var(--ok)}
+.kpi-warn{border-color:var(--warn-bd);background:var(--warn-bg)}
+.kpi-warn .kpi-val{color:var(--warn)}
+.kpi-err{border-color:var(--err-bd);background:var(--err-bg)}
+.kpi-err .kpi-val{color:var(--err)}
+/* benchmark table */
+.bench-table{width:100%;border-collapse:collapse;font-size:12px}
+.bench-table th{background:var(--bg);padding:7px 10px;text-align:left;font-weight:700;color:var(--body);font-size:11px;border-bottom:1px solid var(--border)}
+.bench-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.bench-table tr:last-child td{border-bottom:none}
+.bench-table tr.highlight td{font-weight:700;background:var(--light)}
+.bar-wrap{background:var(--border);border-radius:99px;height:6px;width:100%;margin-top:6px}
+.bar-fill{height:6px;border-radius:99px;background:var(--azul);transition:width .3s}
+.insight{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:8px;border:1px solid;display:flex;gap:8px}
+.insight-ok{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok)}
+.insight-warn{background:var(--warn-bg);border-color:var(--warn-bd);color:var(--warn)}
+.insight-err{background:var(--err-bg);border-color:var(--err-bd);color:var(--err)}
+.insight-icon{font-size:14px;flex-shrink:0}
+</style>
+</head>
+<body>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Calculadora de Viewability</h1>
+  <p class="subtitle">Calcule viewable rate, custo por viewable impression (CPVI), IVT-adjusted reach e compare com benchmarks do mercado por formato e vendor.</p>
+</div>
+<div class="main">
+  <!-- FORM -->
+  <div>
+    <div class="card">
+      <div class="section-title">Dados da campanha</div>
+      <div class="field">
+        <label>Formato do anúncio</label>
+        <select id="fmt" onchange="calc()">
+          <option value="display_300x250">Display 300×250</option>
+          <option value="display_728x90">Display 728×90 (Leaderboard)</option>
+          <option value="display_160x600">Display 160×600 (Skyscraper)</option>
+          <option value="display_970x250">Display 970×250 (Billboard)</option>
+          <option value="video_pre">Vídeo Pre-roll (in-stream)</option>
+          <option value="video_out">Vídeo Out-stream</option>
+          <option value="native">Native</option>
+          <option value="ctv">CTV / Connected TV</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Parceiro de verificação</label>
+        <select id="vendor" onchange="calc()">
+          <option value="ias">IAS (Integral Ad Science)</option>
+          <option value="dv">DoubleVerify</option>
+          <option value="moat">MOAT (Oracle)</option>
+          <option value="cm360">CM360 Active View</option>
+          <option value="none">Sem verificação</option>
+        </select>
+      </div>
+      <hr class="divider">
+      <div class="section-title">Métricas reportadas</div>
+      <div class="field">
+        <label>Impressões servidas (total)</label>
+        <input id="imp-served" type="number" value="1000000" min="0" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Impressões mensuráveis</label>
+        <input id="imp-measurable" type="number" value="850000" min="0" oninput="calc()">
+        <div class="hint">Impressões onde viewability pôde ser medida</div>
+      </div>
+      <div class="field">
+        <label>Impressões viewable</label>
+        <input id="imp-viewable" type="number" value="510000" min="0" oninput="calc()">
+        <div class="hint">Impressões que passaram no critério de viewability (MRC/JICWEBS)</div>
+      </div>
+      <hr class="divider">
+      <div class="section-title">Custo</div>
+      <div class="field-row">
+        <div>
+          <label>Gasto total (R$)</label>
+          <input id="spend" type="number" value="15000" min="0" step="100" oninput="calc()">
+        </div>
+        <div>
+          <label>CPM contratado (R$)</label>
+          <input id="cpm" type="number" value="15" min="0" step="0.5" oninput="calc()">
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="section-title">IVT (Invalid Traffic)</div>
+      <div class="field-row">
+        <div>
+          <label>IVT rate (%)</label>
+          <input id="ivt" type="number" value="3" min="0" max="100" step="0.1" oninput="calc()">
+        </div>
+        <div>
+          <label>SIVT rate (%) <span style="font-size:10px;color:var(--muted)">subset</span></label>
+          <input id="sivt" type="number" value="0.5" min="0" max="100" step="0.1" oninput="calc()">
+          <div class="hint">Sophisticated IVT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div>
+    <div class="card" id="result-card">
+      <div style="font-size:13px;color:var(--muted)">Preencha os dados ao lado para calcular.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Benchmarks por formato [viewableRate, measurableRate] - fonte: IAS H2 2024, DV benchmarks */
+const BENCHMARKS={
+  display_300x250:{label:'Display 300×250',vr:0.62,mr:0.84,mrc:'50% pixel por ≥1s',vrVideo:null},
+  display_728x90:{label:'Leaderboard 728×90',vr:0.58,mr:0.82,mrc:'50% pixel por ≥1s',vrVideo:null},
+  display_160x600:{label:'Skyscraper 160×600',vr:0.65,mr:0.80,mrc:'50% pixel por ≥1s',vrVideo:null},
+  display_970x250:{label:'Billboard 970×250',vr:0.68,mr:0.83,mrc:'50% pixel por ≥1s',vrVideo:null},
+  video_pre:{label:'Vídeo Pre-roll',vr:0.73,mr:0.90,mrc:'50% pixel por ≥2s',vrVideo:true},
+  video_out:{label:'Vídeo Out-stream',vr:0.54,mr:0.78,mrc:'50% pixel por ≥2s',vrVideo:true},
+  native:{label:'Native',vr:0.70,mr:0.86,mrc:'50% pixel por ≥1s',vrVideo:null},
+  ctv:{label:'CTV',vr:0.95,mr:0.97,mrc:'100% pixel por ≥2s',vrVideo:true},
+};
+
+const VENDOR_NOTES={
+  ias:'IAS define viewability conforme padrão MRC. Relatório inclui Viewability Rate, IVT e Brand Safety.',
+  dv:'DoubleVerify usa metodologia MRC + própria. Pode diferir do IAS em até 5–8pp em alguns formatos.',
+  moat:'MOAT (Oracle) descontinuado para novos contratos desde 2023. Dados legados ainda presentes em campanhas existentes.',
+  cm360:'CM360 Active View usa padrão MRC. Disponível nativamente em campanhas DV360/CM360.',
+  none:'Sem parceiro de verificação — dados de viewability baseados em estimativa do publisher ou ad server.',
+};
+
+function n(id){return parseFloat(document.getElementById(id).value)||0;}
+
+function fmt(v,dec=1){return v.toLocaleString('pt-BR',{maximumFractionDigits:dec,minimumFractionDigits:dec});}
+function fmtPct(v){return fmt(v*100,1)+'%';}
+function fmtBRL(v){return 'R$ '+fmt(v,2);}
+function fmtM(v){return v>=1e6?fmt(v/1e6,2)+'M':v>=1e3?fmt(v/1e3,1)+'k':fmt(v,0);}
+
+function statusClass(actual,benchmark,higher=true){
+  const ratio=actual/benchmark;
+  if(higher) return ratio>=0.95?'kpi-ok':ratio>=0.80?'kpi-warn':'kpi-err';
+  return ratio<=1.05?'kpi-ok':ratio<=1.20?'kpi-warn':'kpi-err';
+}
+
+function calc(){
+  const served=n('imp-served')||1;
+  const measurable=n('imp-measurable');
+  const viewable=n('imp-viewable');
+  const spend=n('spend');
+  const cpm=n('cpm');
+  const ivt=n('ivt')/100;
+  const sivt=n('sivt')/100;
+  const fmt_key=document.getElementById('fmt').value;
+  const vendor=document.getElementById('vendor').value;
+  const bench=BENCHMARKS[fmt_key];
+
+  // Core metrics
+  const measurableRate=measurable/served;
+  const viewableRate=viewable/measurable||0;
+  const viewableOfServed=viewable/served;
+  const ivtAdj=Math.max(0,viewable*(1-ivt));
+  const cpmCalc=spend/(served/1000)||0;
+  const cpvi=viewable>0?spend/(viewable/1000):0;
+  const cpviAdj=ivtAdj>0?spend/(ivtAdj/1000):0;
+  const cpmViewable=cpmCalc/viewableOfServed||0;
+
+  // vs benchmark
+  const vrDiff=viewableRate-bench.vr;
+  const mrDiff=measurableRate-bench.mr;
+
+  // Insights
+  const insights=[];
+  if(viewableRate>=bench.vr*1.05) insights.push({t:'ok',msg:`Viewable rate ${fmtPct(viewableRate)} está ${fmt(vrDiff*100,1)}pp acima do benchmark (${fmtPct(bench.vr)}). Excelente performance.`});
+  else if(viewableRate>=bench.vr*0.90) insights.push({t:'warn',msg:`Viewable rate ${fmtPct(viewableRate)} está ligeiramente abaixo do benchmark (${fmtPct(bench.vr)}). Avalie posicionamentos e frequency cap.`});
+  else insights.push({t:'err',msg:`Viewable rate ${fmtPct(viewableRate)} está ${fmt(Math.abs(vrDiff)*100,1)}pp abaixo do benchmark (${fmtPct(bench.vr)}). Revise inventário — considere filtro de posicionamentos low-viewability.`});
+
+  if(measurableRate<0.70) insights.push({t:'warn',msg:`Taxa de mensuração baixa (${fmtPct(measurableRate)}). Inventário com alta presença de ambientes sem tag JS (app nativo, CTV) pode reduzir mensurabilidade.`});
+
+  if(ivt>=0.05) insights.push({t:'err',msg:`IVT rate de ${fmtPct(ivt)} está acima do limiar aceitável (5%). Revise listas de exclusão e considere compra com garantia de IVT.`});
+  else if(ivt>=0.03) insights.push({t:'warn',msg:`IVT rate de ${fmtPct(ivt)} — monitorar. Benchmark de mercado aceitável: < 3%.`});
+  else insights.push({t:'ok',msg:`IVT rate de ${fmtPct(ivt)} dentro do limite aceitável (< 3%).`});
+
+  if(vendor==='moat') insights.push({t:'warn',msg:'MOAT (Oracle) está descontinuado para novos contratos desde 2023. Avalie migração para IAS ou DoubleVerify.'});
+
+  document.getElementById('result-card').innerHTML=`
+    <div class="section-title">Resultados — ${bench.label}</div>
+
+    <div class="kpi-grid">
+      <div class="kpi ${statusClass(viewableRate,bench.vr)}">
+        <div class="kpi-label">Viewable Rate</div>
+        <div class="kpi-val">${fmtPct(viewableRate)}</div>
+        <div class="kpi-sub">Benchmark: ${fmtPct(bench.vr)}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,viewableRate*100)}%"></div></div>
+      </div>
+      <div class="kpi ${statusClass(measurableRate,bench.mr)}">
+        <div class="kpi-label">Taxa de Mensuração</div>
+        <div class="kpi-val">${fmtPct(measurableRate)}</div>
+        <div class="kpi-sub">Benchmark: ${fmtPct(bench.mr)}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,measurableRate*100)}%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Impressões Viewable</div>
+        <div class="kpi-val">${fmtM(viewable)}</div>
+        <div class="kpi-sub">${fmtM(ivtAdj)} após IVT adj.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">CPM servido</div>
+        <div class="kpi-val">${fmtBRL(cpmCalc)}</div>
+        <div class="kpi-sub">Contratado: ${fmtBRL(n('cpm'))}</div>
+      </div>
+      <div class="kpi ${cpvi<=cpm*3?'kpi-ok':cpvi<=cpm*5?'kpi-warn':'kpi-err'}">
+        <div class="kpi-label">CPVI (viewable)</div>
+        <div class="kpi-val">${fmtBRL(cpvi)}</div>
+        <div class="kpi-sub">Custo por 1k viewable</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">CPVI ajust. IVT</div>
+        <div class="kpi-val">${fmtBRL(cpviAdj)}</div>
+        <div class="kpi-sub">Após descontar IVT</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">IVT Rate</div>
+        <div class="kpi-val ${ivt>=0.05?'':''}${ivt>=0.05?'':''}">${fmtPct(ivt)}</div>
+        <div class="kpi-sub">SIVT: ${fmtPct(sivt)}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Impressões Válidas</div>
+        <div class="kpi-val">${fmtM(ivtAdj)}</div>
+        <div class="kpi-sub">Viewable sem IVT</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      ${insights.map(i=>`<div class="insight insight-${i.t}"><div class="insight-icon">${i.t==='ok'?'✅':i.t==='warn'?'⚠️':'⛔'}</div><div>${i.msg}</div></div>`).join('')}
+    </div>
+
+    <div class="divider" style="margin-bottom:14px"></div>
+
+    <div class="section-title">Benchmarks de mercado — ${bench.label}</div>
+    <table class="bench-table">
+      <thead><tr><th>Padrão</th><th>Viewable Rate</th><th>Critério MRC</th></tr></thead>
+      <tbody>
+        <tr><td>Mínimo aceitável</td><td>50%</td><td rowspan="4">${bench.mrc}</td></tr>
+        <tr><td>Benchmark de mercado BR</td><td>${fmtPct(bench.vr)}</td></tr>
+        <tr><td>Premium / Top publishers</td><td>${fmtPct(bench.vr+0.08)}</td></tr>
+        <tr class="highlight"><td>Sua campanha</td><td>${fmtPct(viewableRate)}</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:7px;border:1px solid var(--border);font-size:12px;color:var(--body)">
+      <b>${['ias','dv','moat','cm360','none'].includes(vendor)?['IAS','DoubleVerify','MOAT','CM360 Active View','Sem verificação'][['ias','dv','moat','cm360','none'].indexOf(vendor)]:vendor}:</b> ${VENDOR_NOTES[vendor]||''}
+    </div>`;
+}
+
+// Init
+calc();
+</script>
+</body>
+</html>

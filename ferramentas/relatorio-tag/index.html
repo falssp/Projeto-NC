@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório de Tag | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
+  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:20px 24px 0;max-width:1100px;margin:0 auto}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
+.main{max-width:1100px;margin:0 auto;padding:0 24px 48px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--azul)}
+.field{margin-bottom:10px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.field-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+button{padding:8px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-danger{background:#fecdd3;color:var(--err);border:1px solid var(--err-bd)}
+.btn-danger:hover{background:var(--err-bd)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+/* tag list */
+.tag-item{border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:8px;position:relative;background:var(--surface)}
+.tag-item-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tag-num{font-size:11px;font-weight:700;color:var(--muted);min-width:22px}
+.tag-name-input{flex:1}
+.tag-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:700px){.tag-body{grid-template-columns:1fr 1fr}}
+.remove-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.remove-btn:hover{background:var(--err-bg);color:var(--err)}
+/* report */
+.report-header{background:var(--escuro);color:#fff;border-radius:12px 12px 0 0;padding:24px 28px;margin-bottom:0}
+.report-header h2{font-size:18px;font-weight:700}
+.report-meta{font-size:12px;opacity:.7;margin-top:4px}
+.report-body{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:24px 28px}
+.report-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.rstat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.rstat-val{font-size:20px;font-weight:700;color:var(--azul)}
+.rstat-label{font-size:11px;color:var(--body);margin-top:2px}
+.report-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+.report-table th{background:var(--bg);padding:8px 10px;text-align:left;font-weight:700;color:var(--body);font-size:11px;border-bottom:2px solid var(--border)}
+.report-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.report-table tr:last-child td{border-bottom:none}
+.st-ok{background:var(--ok-bg);color:var(--ok);font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap;font-size:11px}
+.st-warn{background:var(--warn-bg);color:var(--warn);font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap;font-size:11px}
+.st-err{background:var(--err-bg);color:var(--err);font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap;font-size:11px}
+.st-info{background:var(--light);color:var(--azul);font-weight:600;border-radius:4px;padding:2px 7px;white-space:nowrap;font-size:11px}
+.issue-row td{background:#fffbeb}
+.print-btn{background:var(--escuro);color:#fff}
+.print-btn:hover{background:var(--azul)}
+@media print{
+  a.back,#form-section,.btn-row{display:none!important}
+  .header{padding:0;margin-bottom:12px}
+  body{background:white;color:black}
+  .report-header{background:#1a237e!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Relatório de Tag</h1>
+  <p class="subtitle">Cadastre as tags de uma campanha, veja status de cada uma e exporte o relatório em HTML para enviar ao cliente ou ao veículo.</p>
+</div>
+<div class="main">
+
+  <!-- FORM -->
+  <div id="form-section">
+    <div class="card">
+      <div class="section-title">Informações da campanha</div>
+      <div class="field-row">
+        <div><label>Anunciante</label><input id="advertiser" type="text" placeholder="Nome do anunciante" oninput="updateReport()"></div>
+        <div><label>Campanha</label><input id="campaign" type="text" placeholder="Nome da campanha" oninput="updateReport()"></div>
+      </div>
+      <div class="field-3">
+        <div><label>Ad Server</label>
+          <select id="adserver" onchange="updateReport()">
+            <option>CM360</option><option>DV360</option><option>Xandr</option>
+            <option>Amazon DSP</option><option>TTD</option><option>Outro</option>
+          </select>
+        </div>
+        <div><label>Data início</label><input id="date-start" type="date" oninput="updateReport()"></div>
+        <div><label>Data fim</label><input id="date-end" type="date" oninput="updateReport()"></div>
+      </div>
+      <div class="field-row">
+        <div><label>Responsável</label><input id="responsible" type="text" placeholder="Nome do AdOps" oninput="updateReport()"></div>
+        <div><label>Parceiro de verificação</label>
+          <select id="verify" onchange="updateReport()">
+            <option value="">Nenhum</option>
+            <option>IAS</option><option>DoubleVerify</option>
+            <option>MOAT</option><option>Nielsen</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Tags da campanha</div>
+      <div id="tags-list"></div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn-secondary" onclick="addTag()">+ Adicionar tag</button>
+        <button class="btn-secondary" onclick="addTagFromPaste()">📋 Colar e detectar</button>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:16px">
+      <button class="btn-primary" onclick="generateReport()">Gerar relatório</button>
+      <button class="btn-secondary" onclick="resetForm()">Limpar tudo</button>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div id="report-section" style="display:none">
+    <div class="btn-row" style="margin-bottom:14px">
+      <button class="btn-secondary" onclick="document.getElementById('form-section').style.display='';document.getElementById('report-section').style.display='none'">← Voltar ao formulário</button>
+      <button class="print-btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+      <button class="btn-secondary" onclick="copyHtml()">📋 Copiar HTML</button>
+    </div>
+    <div id="report-output"></div>
+  </div>
+
+</div>
+
+<!-- PASTE MODAL -->
+<div id="paste-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border-radius:12px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto">
+    <h3 style="margin-bottom:8px;color:var(--escuro)">Colar tag para detectar</h3>
+    <p style="font-size:12px;color:var(--body);margin-bottom:12px">Cole qualquer tag ou URL — o sistema detecta o tipo, extrai o nome e preenche os campos.</p>
+    <textarea id="paste-input" rows="6" placeholder="Cole aqui a tag…" style="margin-bottom:12px"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="detectAndAdd()">Detectar e adicionar</button>
+      <button class="btn-secondary" onclick="document.getElementById('paste-modal').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let tags=[];
+let tagCount=0;
+
+const TAG_TYPES={
+  'floodlight_counter':'Floodlight Counter',
+  'floodlight_sales':'Floodlight Sales',
+  'click_tracker':'Click Tracker CM360',
+  'vast':'VAST Tracking',
+  'gtag':'gtag.js (Floodlight)',
+  'ias':'IAS Tag',
+  'doubleverify':'DoubleVerify',
+  'moat':'MOAT',
+  'meta_pixel':'Meta Pixel',
+  'impression_tracker':'Impression Tracker',
+  'other':'Outro',
+};
+
+const PLATFORMS=['Amazon DSP','Criteo','DV360','Disney+/Star+','DOOH','Globoplay','Google AdX','Kwai','LinkedIn','Max','Meta','Netflix','Outbrain','Pinterest','Prime Video','Spotify','TikTok','TTD','Taboola','Twitter/X','YouTube','Outro'];
+
+const ENVS=['Web','App (iOS)','App (Android)','CTV','Native','DOOH','Áudio'];
+
+function detectType(raw){
+  if(/ad\.doubleclick\.net\/ddm\/activity/.test(raw)){
+    return /cost=/i.test(raw)?'floodlight_sales':'floodlight_counter';
+  }
+  if(/ad\.doubleclick\.net\/ddm\/clk/.test(raw)) return 'click_tracker';
+  if(/<Tracking event=/.test(raw)||/CDATA.*doubleclick.*ddm\/activity/.test(raw)) return 'vast';
+  if(/gtag\('event'|googletagmanager\.com\/gtag/.test(raw)) return 'gtag';
+  if(/adsafeprotected\.com/.test(raw)) return 'ias';
+  if(/doubleverify\.com|dvtp_src/.test(raw)) return 'doubleverify';
+  if(/moatads\.com/.test(raw)) return 'moat';
+  if(/fbevents\.js|fbq\(/.test(raw)) return 'meta_pixel';
+  if(/ddm\/ad\/|impression/.test(raw)) return 'impression_tracker';
+  return 'other';
+}
+
+function extractName(raw,type){
+  const catMatch=raw.match(/cat=([^;&?\s]+)/);
+  const typeMatch=raw.match(/type=([^;&?\s]+)/);
+  if(catMatch&&typeMatch) return `${typeMatch[1]} / ${catMatch[1]}`;
+  if(catMatch) return catMatch[1];
+  return TAG_TYPES[type]||'Tag';
+}
+
+function addTag(prefill={}){
+  tagCount++;
+  const id=tagCount;
+  tags.push({id,name:prefill.name||'',type:prefill.type||'floodlight_counter',
+    platform:prefill.platform||'',env:prefill.env||'Web',
+    tracker:prefill.tracker||'nao',status:prefill.status||'pendente',
+    raw:prefill.raw||''});
+  renderTagList();
+}
+
+function addTagFromPaste(){
+  document.getElementById('paste-modal').style.display='flex';
+  document.getElementById('paste-input').value='';
+  setTimeout(()=>document.getElementById('paste-input').focus(),100);
+}
+
+function detectAndAdd(){
+  const raw=document.getElementById('paste-input').value.trim();
+  if(!raw) return;
+  const type=detectType(raw);
+  const name=extractName(raw,type);
+  addTag({name,type,raw});
+  document.getElementById('paste-modal').style.display='none';
+}
+
+function removeTag(id){
+  tags=tags.filter(t=>t.id!==id);
+  renderTagList();
+}
+
+function updateTag(id,field,val){
+  const t=tags.find(t=>t.id===id);
+  if(t) t[field]=val;
+}
+
+function renderTagList(){
+  const el=document.getElementById('tags-list');
+  if(!tags.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">Nenhuma tag adicionada. Clique em "+ Adicionar tag" ou cole uma tag para começar.</div>';return;}
+  el.innerHTML=tags.map((t,i)=>`
+    <div class="tag-item" id="tag-${t.id}">
+      <div class="tag-item-head">
+        <span class="tag-num">#${i+1}</span>
+        <input class="tag-name-input" type="text" value="${escAttr(t.name)}" placeholder="Nome da tag / criativo" oninput="updateTag(${t.id},'name',this.value)">
+        <button class="remove-btn" onclick="removeTag(${t.id})">✕</button>
+      </div>
+      <div class="tag-body">
+        <div>
+          <label>Tipo</label>
+          <select onchange="updateTag(${t.id},'type',this.value)">
+            ${Object.entries(TAG_TYPES).map(([k,v])=>`<option value="${k}" ${t.type===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Plataforma</label>
+          <select onchange="updateTag(${t.id},'platform',this.value)">
+            <option value="">Selecione…</option>
+            ${PLATFORMS.map(p=>`<option ${t.platform===p?'selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Ambiente</label>
+          <select onchange="updateTag(${t.id},'env',this.value)">
+            ${ENVS.map(e=>`<option ${t.env===e?'selected':''}>${e}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Tracker necessário?</label>
+          <select onchange="updateTag(${t.id},'tracker',this.value)">
+            <option value="sim" ${t.tracker==='sim'?'selected':''}>Sim — Obrigatório</option>
+            <option value="rec" ${t.tracker==='rec'?'selected':''}>Recomendado</option>
+            <option value="nao" ${t.tracker==='nao'?'selected':''}>Não</option>
+          </select>
+        </div>
+        <div>
+          <label>Status</label>
+          <select onchange="updateTag(${t.id},'status',this.value)">
+            <option value="pendente" ${t.status==='pendente'?'selected':''}>Pendente</option>
+            <option value="ok" ${t.status==='ok'?'selected':''}>✅ Validada</option>
+            <option value="problema" ${t.status==='problema'?'selected':''}>⚠️ Problema</option>
+            <option value="enviada" ${t.status==='enviada'?'selected':''}>📤 Enviada ao veículo</option>
+            <option value="ao_vivo" ${t.status==='ao_vivo'?'selected':''}>🟢 Ao vivo</option>
+          </select>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function generateReport(){
+  const advertiser=v('advertiser')||'—';
+  const campaign=v('campaign')||'—';
+  const adserver=v('adserver');
+  const dateStart=v('date-start');
+  const dateEnd=v('date-end');
+  const responsible=v('responsible')||'—';
+  const verify=v('verify')||'Nenhum';
+  const now=new Date().toLocaleDateString('pt-BR');
+
+  const total=tags.length;
+  const validated=tags.filter(t=>t.status==='ok'||t.status==='ao_vivo').length;
+  const problems=tags.filter(t=>t.status==='problema').length;
+  const pending=tags.filter(t=>t.status==='pendente').length;
+  const trackerObr=tags.filter(t=>t.tracker==='sim').length;
+
+  const statusLabel=(s)=>({
+    ok:'✅ Validada',problema:'⚠️ Problema',enviada:'📤 Enviada',
+    ao_vivo:'🟢 Ao vivo',pendente:'⏳ Pendente'
+  }[s]||s);
+  const statusClass=(s)=>({
+    ok:'st-ok',problema:'st-err',enviada:'st-info',
+    ao_vivo:'st-ok',pendente:'st-warn'
+  }[s]||'st-info');
+  const trackerLabel=(t)=>({sim:'Obrigatório',rec:'Recomendado',nao:'Não'}[t]||t);
+  const trackerClass=(t)=>({sim:'st-err',rec:'st-warn',nao:'st-ok'}[t]||'');
+
+  const html=`
+    <div class="report-header">
+      <h2>Relatório de Tag — ${escHtml(campaign)}</h2>
+      <div class="report-meta">Anunciante: ${escHtml(advertiser)} · Ad Server: ${adserver} · Parceiro: ${verify} · Gerado em ${now} por ${escHtml(responsible)}</div>
+      ${dateStart?`<div class="report-meta">Período: ${dateStart} a ${dateEnd||'—'}</div>`:''}
+    </div>
+    <div class="report-body">
+      <div class="report-summary">
+        <div class="rstat"><div class="rstat-val">${total}</div><div class="rstat-label">Tags cadastradas</div></div>
+        <div class="rstat"><div class="rstat-val" style="color:var(--ok)">${validated}</div><div class="rstat-label">Validadas</div></div>
+        <div class="rstat"><div class="rstat-val" style="color:var(--warn)">${pending}</div><div class="rstat-label">Pendentes</div></div>
+        <div class="rstat"><div class="rstat-val" style="color:var(--err)">${problems}</div><div class="rstat-label">Com problema</div></div>
+        <div class="rstat"><div class="rstat-val">${trackerObr}</div><div class="rstat-label">Precisam de tracker</div></div>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tag / Criativo</th>
+            <th>Tipo</th>
+            <th>Plataforma</th>
+            <th>Ambiente</th>
+            <th>Tracker</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tags.map((t,i)=>`
+            <tr class="${t.status==='problema'?'issue-row':''}">
+              <td style="color:var(--muted);font-weight:600">${i+1}</td>
+              <td style="font-weight:600">${escHtml(t.name)||'(sem nome)'}</td>
+              <td>${TAG_TYPES[t.type]||t.type}</td>
+              <td>${escHtml(t.platform)||'—'}</td>
+              <td>${escHtml(t.env)}</td>
+              <td><span class="${trackerClass(t.tracker)}">${trackerLabel(t.tracker)}</span></td>
+              <td><span class="${statusClass(t.status)}">${statusLabel(t.status)}</span></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+
+      ${problems>0?`<div style="background:var(--err-bg);border:1px solid var(--err-bd);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--err)">
+        ⛔ ${problems} tag${problems>1?'s':''}  com problema identificado. Verifique antes do go-live.
+      </div>`:''}
+      ${trackerObr>0?`<div style="background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--warn)">
+        ⚠️ ${trackerObr} tag${trackerObr>1?'s':''} requerem Impression Tracker (ambiente sem suporte a JS). Confirme com o veículo antes do envio.
+      </div>`:''}
+    </div>`;
+
+  document.getElementById('report-output').innerHTML=html;
+  document.getElementById('form-section').style.display='none';
+  document.getElementById('report-section').style.display='';
+}
+
+function copyHtml(){
+  const html=document.getElementById('report-output').innerHTML;
+  navigator.clipboard.writeText(html).then(()=>{
+    const btn=document.querySelectorAll('#report-section .btn-secondary')[1];
+    if(btn){btn.textContent='✅ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar HTML',2000);}
+  });
+}
+
+function resetForm(){
+  tags=[];tagCount=0;
+  ['advertiser','campaign','responsible'].forEach(id=>{document.getElementById(id).value='';});
+  ['date-start','date-end'].forEach(id=>{document.getElementById(id).value='';});
+  renderTagList();
+}
+
+function v(id){return (document.getElementById(id)||{}).value||'';}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escAttr(s){return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function updateReport(){}  // placeholder for live update hook
+
+// Init with 2 example tags
+addTag({name:'Homepage — Floodlight Counter',type:'floodlight_counter',platform:'DV360',env:'Web',tracker:'nao',status:'ok'});
+addTag({name:'Pré-roll YouTube — VAST Tracking',type:'vast',platform:'YouTube',env:'Web',tracker:'nao',status:'pendente'});
+addTag({name:'Banner CTV — Impression Tracker',type:'impression_tracker',platform:'Prime Video',env:'CTV',tracker:'sim',status:'pendente'});
+</script>
+</body>
+</html>
