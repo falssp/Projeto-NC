@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Ad Servers | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--yellow:#F59E0B;--red:#EF4444;--gray:#94A3B8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:16px;height:56px;flex-wrap:wrap}
+.logo{color:#fff;font-size:15px;font-weight:700;white-space:nowrap}
+.logo span{color:var(--accent)}
+.search{flex:1;min-width:200px;max-width:340px;position:relative}
+.search input{width:100%;padding:7px 12px 7px 34px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:13px;outline:none}
+.search input::placeholder{color:rgba(255,255,255,.4)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:rgba(255,255,255,.4)}
+
+.filters{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:56px;z-index:90;display:flex;align-items:center;gap:8px;height:48px;overflow-x:auto}
+.filters::-webkit-scrollbar{display:none}
+.filter-label{font-size:11px;font-weight:700;color:var(--light);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;margin-right:4px}
+.pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.pill.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.divider-v{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
+.wrap{padding:20px 24px;max-width:1200px;margin:0 auto}
+.count-bar{font-size:12px;color:var(--light);margin-bottom:14px}
+
+/* GRID CARDS */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.card-head{display:flex;align-items:center;gap:14px;padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.card-info{}
+.card-name{font-size:14px;font-weight:700;color:var(--navy)}
+.card-owner{font-size:11px;color:var(--light);margin-top:1px}
+.card-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.03em}
+.b-plat{background:#EFF6FF;color:#1D4ED8}
+.b-tipo{background:#F0FDF4;color:#166534}
+.b-region{background:#FFF7ED;color:#9A3412}
+
+.card-body{padding:14px 18px}
+
+.section-mini{margin-bottom:12px}
+.mini-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--light);margin-bottom:6px}
+.compat-grid{display:flex;flex-wrap:wrap;gap:5px}
+.compat-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;display:flex;align-items:center;gap:4px}
+.cp-full{background:#D1FAE5;color:#065F46}
+.cp-partial{background:#FEF3C7;color:#92400E}
+.cp-no{background:#FEE2E2;color:#991B1B}
+.cp-native{background:#EDE9FE;color:#5B21B6}
+.cp-dot{width:6px;height:6px;border-radius:50%}
+.cp-full .cp-dot{background:#10B981}
+.cp-partial .cp-dot{background:#F59E0B}
+.cp-no .cp-dot{background:#EF4444}
+.cp-native .cp-dot{background:#8B5CF6}
+
+.when-list{list-style:none;display:flex;flex-direction:column;gap:3px}
+.when-list li{font-size:11px;color:var(--mid);display:flex;align-items:flex-start;gap:6px;line-height:1.5}
+.when-list li::before{content:'→';color:var(--accent);flex-shrink:0;font-weight:700}
+
+.obs-small{font-size:11px;color:var(--mid);background:#F7FAFC;border-radius:7px;padding:8px 10px;line-height:1.6;margin-top:8px}
+
+/* COMPARISON TABLE view */
+.table-wrap{overflow-x:auto}
+table.comp{width:100%;border-collapse:collapse;font-size:12px}
+table.comp th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;position:sticky;top:0}
+table.comp th:first-child{position:sticky;left:0;z-index:2;background:var(--navy)}
+table.comp td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+table.comp td:first-child{font-weight:700;color:var(--navy);background:var(--surface);position:sticky;left:0;z-index:1;white-space:nowrap;border-right:1px solid var(--border)}
+table.comp tr:hover td{background:#F7FAFC}
+table.comp tr:hover td:first-child{background:#F0F4F8}
+
+.view-toggle{display:flex;gap:6px;margin-left:auto}
+.vt{padding:5px 12px;border-radius:7px;border:1px solid var(--border);font-size:11px;font-weight:600;cursor:pointer;color:var(--mid);background:transparent}
+.vt.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mid);margin-bottom:14px;align-items:center}
+.leg{display:flex;align-items:center;gap:5px}
+.leg-dot{width:9px;height:9px;border-radius:50%}
+
+.empty{text-align:center;padding:60px;color:var(--light)}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:24px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Mapa de <span>Ad Servers</span></div>
+    <div class="search">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input type="text" id="search" placeholder="Buscar ad server, plataforma, formato…" oninput="applyFilters()">
+    </div>
+    <div class="view-toggle">
+      <button class="vt active" id="vt-card" onclick="setView('card')">Cards</button>
+      <button class="vt" id="vt-table" onclick="setView('table')">Tabela</button>
+    </div>
+  </div>
+</header>
+
+<div class="filters" id="filters">
+  <span class="filter-label">Plataforma:</span>
+  <button class="pill active" data-filter="plat" data-val="">Todas</button>
+  <button class="pill" data-filter="plat" data-val="Social">Social</button>
+  <button class="pill" data-filter="plat" data-val="Programático">Programático</button>
+  <button class="pill" data-filter="plat" data-val="Search">Search</button>
+  <button class="pill" data-filter="plat" data-val="Vídeo">Vídeo</button>
+  <button class="pill" data-filter="plat" data-val="Rich Media">Rich Media</button>
+  <div class="divider-v"></div>
+  <span class="filter-label">Tipo:</span>
+  <button class="pill active" data-filter="tipo" data-val="">Todos</button>
+  <button class="pill" data-filter="tipo" data-val="3rd party">3rd party</button>
+  <button class="pill" data-filter="tipo" data-val="self-serve">Self-serve</button>
+  <button class="pill" data-filter="tipo" data-val="publisher">Publisher</button>
+</div>
+
+<div class="wrap">
+  <div class="legend">
+    <span style="font-weight:700;color:var(--mid)">Compatibilidade:</span>
+    <span class="leg"><span class="leg-dot" style="background:#10B981"></span>Suportado</span>
+    <span class="leg"><span class="leg-dot" style="background:#F59E0B"></span>Parcial / Com restrições</span>
+    <span class="leg"><span class="leg-dot" style="background:#EF4444"></span>Não suportado</span>
+    <span class="leg"><span class="leg-dot" style="background:#8B5CF6"></span>Nativo (sem ad server)</span>
+  </div>
+  <div class="count-bar" id="count-bar"></div>
+  <div id="output"></div>
+</div>
+
+<footer>Mapa de Ad Servers · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+
+<script>
+const DATA = [
+  {
+    name:"CM360 (Campaign Manager 360)",
+    owner:"Google",
+    cat:"Programático",
+    tipo:"3rd party",
+    icon:"🔵",
+    iconBg:"#EFF6FF",
+    desc:"Ad server premium de mercado — padrão para campanhas Display, Video e Rich Media de médio/grande porte.",
+    plats:["DV360","Google Display","YouTube (VAST)","Publisher Premium BR"],
+    formats:[
+      {f:"Display IAB (300×250, 728×90, etc.)",s:"full"},
+      {f:"Rich Media / HTML5",s:"full"},
+      {f:"Video VAST/VPAID",s:"full"},
+      {f:"Native",s:"partial"},
+      {f:"Social (Meta, TikTok…)",s:"no"},
+      {f:"Search",s:"no"},
+      {f:"CTV/OTT",s:"partial"},
+      {f:"Audio",s:"partial"},
+    ],
+    when:["Campanhas Display/Video multi-publisher","Rich Media com expansão, cursor, skin","Remarketing cross-site com frequência centralizada","Relatório unificado Display + Video","Gestão de múltiplos publishers em uma única tag"],
+    obs:"Integra nativamente com DV360. Measurement Studio para relatórios pós-campanha. Viewability via Active View.",
+    region:"Global",
+  },
+  {
+    name:"Flashtalking",
+    owner:"Mediaocean",
+    cat:"Rich Media",
+    tipo:"3rd party",
+    icon:"⚡",
+    iconBg:"#FFFBEB",
+    desc:"Ad server especialista em personalização dinâmica (DCO) e Rich Media. Forte em campanhas com múltiplas variações.",
+    plats:["Publisher Premium BR","DV360","Programático Open Exchange","CTV (via VAST)"],
+    formats:[
+      {f:"Display IAB",s:"full"},
+      {f:"Rich Media / HTML5",s:"full"},
+      {f:"DCO (Dynamic Creative)",s:"full"},
+      {f:"Video VAST",s:"full"},
+      {f:"Native",s:"partial"},
+      {f:"Social",s:"no"},
+      {f:"Search",s:"no"},
+      {f:"CTV/OTT",s:"full"},
+    ],
+    when:["DCO com variações por segmento/produto","Rich Media complexo (expandable, peel, takeover)","Campanhas com muitas versões de criativo","E-commerce com feed de produto dinâmico"],
+    obs:"Forte integração com catálogos de produto. DCO com dados de 1st party. Alternativa ao CM360 para campanhas fora do ecossistema Google.",
+    region:"Global",
+  },
+  {
+    name:"Sizmek / Amazon Ad Server",
+    owner:"Amazon",
+    cat:"Programático",
+    tipo:"3rd party",
+    icon:"🟠",
+    iconBg:"#FFF7ED",
+    desc:"Ad server da Amazon — integração nativa com Amazon DSP e acesso a dados de compra.",
+    plats:["Amazon DSP","Publisher BR","Programático"],
+    formats:[
+      {f:"Display IAB",s:"full"},
+      {f:"Rich Media / HTML5",s:"full"},
+      {f:"Video VAST",s:"full"},
+      {f:"Native",s:"full"},
+      {f:"Social",s:"no"},
+      {f:"CTV/OTT",s:"full"},
+      {f:"Audio",s:"partial"},
+    ],
+    when:["Campanhas no Amazon DSP","Acesso a audiências de purchase intent da Amazon","Cross-device com dados Amazon"],
+    obs:"Vantagem competitiva quando a campanha usa Amazon DSP. Menor adoção fora do ecossistema Amazon.",
+    region:"Global",
+  },
+  {
+    name:"Adform",
+    owner:"Adform A/S",
+    cat:"Programático",
+    tipo:"3rd party",
+    icon:"🔷",
+    iconBg:"#EFF6FF",
+    desc:"Ad server independente (não Big Tech). Forte em LGPD/GDPR compliance e mercados europeus.",
+    plats:["DV360","Publisher BR","Trade Desk","Programático Open Exchange"],
+    formats:[
+      {f:"Display IAB",s:"full"},
+      {f:"Rich Media / HTML5",s:"full"},
+      {f:"Video VAST/VPAID",s:"full"},
+      {f:"Native",s:"partial"},
+      {f:"Social",s:"no"},
+      {f:"Search",s:"no"},
+      {f:"CTV/OTT",s:"partial"},
+      {f:"Audio",s:"partial"},
+    ],
+    when:["Anunciante com exigência de independência de BigTech","Campanhas com foco em LGPD/GDPR","Relatórios de attribution sem dependência Google"],
+    obs:"DSP e SSP próprios integrados. Alternativa independente ao CM360. Usado por agências europeias e globais.",
+    region:"Global",
+  },
+  {
+    name:"Meta Ads Manager",
+    owner:"Meta",
+    cat:"Social",
+    tipo:"self-serve",
+    icon:"🔵",
+    iconBg:"#EFF6FF",
+    desc:"Plataforma self-serve nativa do Meta. Obrigatória para Facebook, Instagram e Audience Network.",
+    plats:["Facebook","Instagram","Audience Network","WhatsApp (CTX Ads)"],
+    formats:[
+      {f:"Feed Image / Video",s:"native"},
+      {f:"Reels / Stories",s:"native"},
+      {f:"Carrossel",s:"native"},
+      {f:"Collection Ad",s:"native"},
+      {f:"Display (Audience Network)",s:"native"},
+      {f:"Native (AN)",s:"native"},
+      {f:"Social externo",s:"no"},
+      {f:"3rd party tag",s:"partial"},
+    ],
+    when:["Qualquer campanha Meta — obrigatório","Retargeting com Pixel Meta","Campanhas com catálogo de produtos","Reach & Frequency com reserva antecipada"],
+    obs:"3rd party tags (Impression Pixel, Click Macro) via CM360/Flashtalking são suportados mas limitados — não server-to-server. Pixel Meta essencial para conversão.",
+    region:"Global",
+  },
+  {
+    name:"TikTok Ads Manager",
+    owner:"ByteDance",
+    cat:"Social",
+    tipo:"self-serve",
+    icon:"⬛",
+    iconBg:"#F8FAFC",
+    desc:"Plataforma nativa TikTok. Único ponto de acesso para In-Feed, TopView, Spark Ads.",
+    plats:["TikTok","Pangle (Audience Network)"],
+    formats:[
+      {f:"In-Feed Video 9:16",s:"native"},
+      {f:"TopView",s:"native"},
+      {f:"Brand Takeover",s:"native"},
+      {f:"Spark Ad",s:"native"},
+      {f:"Display 3rd party",s:"no"},
+      {f:"3rd party tag (impression)",s:"partial"},
+    ],
+    when:["Qualquer campanha TikTok — obrigatório","Spark Ads com creators (autorização via plataforma)","Branded Hashtag Challenge","TopView / Brand Takeover com reserva"],
+    obs:"Aceita impression pixel de CM360 para tracking, mas sem server-to-server. Pixel TikTok via Events Manager para conversão.",
+    region:"Global",
+  },
+  {
+    name:"LinkedIn Campaign Manager",
+    owner:"Microsoft",
+    cat:"Social",
+    tipo:"self-serve",
+    icon:"🔷",
+    iconBg:"#EFF6FF",
+    desc:"Plataforma nativa LinkedIn. Único acesso a audiências B2B por cargo, empresa, setor.",
+    plats:["LinkedIn"],
+    formats:[
+      {f:"Single Image Ad",s:"native"},
+      {f:"Video Ad",s:"native"},
+      {f:"Carrossel Ad",s:"native"},
+      {f:"Document Ad",s:"native"},
+      {f:"Message Ad / InMail",s:"native"},
+      {f:"Dynamic Ad",s:"native"},
+      {f:"3rd party tag",s:"partial"},
+    ],
+    when:["Campanhas B2B — obrigatório","Account-Based Marketing (ABM)","Lead Gen Form para geração de leads qualificados","Employer Branding / Recrutamento"],
+    obs:"Insight Tag para conversão. Aceita impression pixel CM360. Carrossel e Document Ad não aceitam ad server externo.",
+    region:"Global",
+  },
+  {
+    name:"Google Ads",
+    owner:"Google",
+    cat:"Search",
+    tipo:"self-serve",
+    icon:"🔴",
+    iconBg:"#FEF2F2",
+    desc:"Plataforma self-serve Google. Mandatória para Search, Performance Max, Shopping e YouTube direto.",
+    plats:["Google Search","Google Display Network","YouTube","Performance Max","Shopping"],
+    formats:[
+      {f:"Search (RSA/ETA)",s:"native"},
+      {f:"Shopping / PMax",s:"native"},
+      {f:"Display (GDN)",s:"native"},
+      {f:"YouTube (linked)",s:"native"},
+      {f:"Rich Media",s:"no"},
+      {f:"3rd party tag",s:"partial"},
+    ],
+    when:["Search — obrigatório","Performance Max e Shopping","YouTube sem DV360","Campanhas App (UAC)"],
+    obs:"Campanhas Google Ads podem usar CM360 para tracking de Display/YouTube via tag de terceiro. Search não aceita ad server externo de criativo.",
+    region:"Global",
+  },
+  {
+    name:"DV360 (Display & Video 360)",
+    owner:"Google",
+    cat:"Programático",
+    tipo:"self-serve",
+    icon:"🟢",
+    iconBg:"#F0FDF4",
+    desc:"DSP programático premium do Google. Acessa inventário open exchange, PMPs e publishers diretos.",
+    plats:["Open Exchange","PMP/Deal","YouTube Reserve","Publisher BR via SSP"],
+    formats:[
+      {f:"Display IAB",s:"full"},
+      {f:"Rich Media (via CM360)",s:"full"},
+      {f:"Video VAST",s:"full"},
+      {f:"Native",s:"full"},
+      {f:"Audio",s:"partial"},
+      {f:"CTV/OTT",s:"full"},
+      {f:"Social",s:"no"},
+      {f:"Search",s:"no"},
+    ],
+    when:["Programático premium com controle total","Campanhas cross-format Display+Video+Audio","PMPs e deals privados com publishers BR","Remarketing com 1st party data no ecossistema Google"],
+    obs:"Integração nativa CM360 — toda tag de criativo vem do CM360. Audiences compartilhadas com Google Ads via conta Google Marketing Platform.",
+    region:"Global",
+  },
+  {
+    name:"Celtra",
+    owner:"Celtra",
+    cat:"Rich Media",
+    tipo:"3rd party",
+    icon:"✨",
+    iconBg:"#FDF4FF",
+    desc:"Especialista em Rich Media e DCO com foco em criativos interativos e Social.",
+    plats:["Publisher BR","DV360","Meta (limitado)","Programático"],
+    formats:[
+      {f:"Rich Media / HTML5",s:"full"},
+      {f:"DCO Dinâmico",s:"full"},
+      {f:"Display IAB",s:"full"},
+      {f:"Video",s:"partial"},
+      {f:"Social (Meta/LinkedIn)",s:"partial"},
+      {f:"CTV",s:"partial"},
+    ],
+    when:["Rich Media com alto nível de interatividade","DCO com personalização de criativo por audience","Campanhas com muitas versões criativas","Quando Flashtalking não está disponível"],
+    obs:"Concorrente direto do Flashtalking. Usado por grandes anunciantes de FMCG e Varejo. Suporte DCO avançado com dados de CRM/1st party.",
+    region:"Global",
+  },
+  {
+    name:"Xandr (Microsoft)",
+    owner:"Microsoft",
+    cat:"Programático",
+    tipo:"3rd party",
+    icon:"🟣",
+    iconBg:"#F5F3FF",
+    desc:"Ad server e DSP do Microsoft/Xandr. Alternativa independente com forte foco em PMPs premium.",
+    plats:["MSN","Microsoft Audience Network","Publisher BR via AppNexus SSP","Open Exchange"],
+    formats:[
+      {f:"Display IAB",s:"full"},
+      {f:"Video VAST",s:"full"},
+      {f:"Native",s:"full"},
+      {f:"Rich Media",s:"partial"},
+      {f:"Social",s:"no"},
+      {f:"CTV",s:"partial"},
+    ],
+    when:["Compra programática fora do ecossistema Google","PMPs com publishers BR via AppNexus","Campanhas Microsoft Ads / LinkedIn Display"],
+    obs:"Integrado ao LinkedIn Audience Network. Deal IDs via AppNexus (maior SSP independente). Menos usado no Brasil mas relevante para publishers globais.",
+    region:"Global",
+  },
+  {
+    name:"AdsWizz / Spotify Ad Studio",
+    owner:"Spotify/AdsWizz",
+    cat:"Áudio",
+    tipo:"self-serve",
+    icon:"🎵",
+    iconBg:"#F0FDF4",
+    desc:"Plataforma de compra de áudio digital — Spotify, rádios digitais e podcasts.",
+    plats:["Spotify","Deezer","SoundCloud","Rádios digitais BR","Podcasts"],
+    formats:[
+      {f:"Audio Spot 30s",s:"native"},
+      {f:"Audio Spot 15s",s:"native"},
+      {f:"Companion Banner 640×640",s:"native"},
+      {f:"Programmatic Audio (DAAST)",s:"full"},
+      {f:"Display",s:"no"},
+      {f:"Video",s:"no"},
+    ],
+    when:["Campanhas de áudio Spotify direto","Programático de áudio via DSP","Rádios digitais (Deezer, SoundCloud)","Podcast advertising"],
+    obs:"Spotify Ad Studio para pequenos anunciantes. AdsWizz para compra programática de áudio (via DV360 ou The Trade Desk). Entrega via DAAST tag.",
+    region:"Global / BR",
+  },
+];
+
+let activeFilters = {plat:'', tipo:''};
+let currentView = 'card';
+
+document.querySelectorAll('.pill').forEach(p=>{
+  p.addEventListener('click',function(){
+    const f = this.dataset.filter;
+    document.querySelectorAll(`.pill[data-filter="${f}"]`).forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    activeFilters[f] = this.dataset.val;
+    applyFilters();
+  });
+});
+
+function applyFilters(){
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const {plat, tipo} = activeFilters;
+  const res = DATA.filter(d=>{
+    if(tipo && d.tipo !== tipo) return false;
+    if(plat && d.cat !== plat) return false;
+    if(q){
+      const hay = [d.name, d.owner, d.cat, d.tipo, d.desc, ...d.plats, ...(d.when||[])].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  document.getElementById('count-bar').textContent = `${res.length} ad server${res.length!==1?'s':''} encontrado${res.length!==1?'s':''}`;
+  if(currentView==='card') renderCards(res);
+  else renderTable(res);
+}
+
+function statusClass(s){
+  return s==='full'?'cp-full':s==='partial'?'cp-partial':s==='no'?'cp-no':'cp-native';
+}
+function statusLabel(s){
+  return s==='full'?'Suportado':s==='partial'?'Parcial':s==='no'?'Não suportado':'Nativo';
+}
+
+function renderCards(data){
+  if(!data.length){document.getElementById('output').innerHTML='<div class="empty">Nenhum resultado encontrado.</div>';return;}
+  document.getElementById('output').innerHTML = `<div class="grid">${data.map(d=>`
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon" style="background:${d.iconBg}">${d.icon}</div>
+        <div class="card-info">
+          <div class="card-name">${d.name}</div>
+          <div class="card-owner">${d.owner}</div>
+          <div class="card-badges">
+            <span class="badge b-plat">${d.cat}</span>
+            <span class="badge b-tipo">${d.tipo}</span>
+            <span class="badge b-region">${d.region}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="section-mini">
+          <div class="mini-label">Descrição</div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.6">${d.desc}</div>
+        </div>
+        <div class="section-mini">
+          <div class="mini-label">Plataformas / Inventário</div>
+          <div class="compat-grid">${d.plats.map(p=>`<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;background:#F0F4F8;color:var(--mid)">${p}</span>`).join('')}</div>
+        </div>
+        <div class="section-mini">
+          <div class="mini-label">Formatos suportados</div>
+          <div class="compat-grid">${d.formats.map(f=>`<span class="compat-pill ${statusClass(f.s)}"><span class="cp-dot"></span>${f.f}</span>`).join('')}</div>
+        </div>
+        <div class="section-mini">
+          <div class="mini-label">Quando usar</div>
+          <ul class="when-list">${d.when.map(w=>`<li>${w}</li>`).join('')}</ul>
+        </div>
+        ${d.obs?`<div class="obs-small">💡 ${d.obs}</div>`:''}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function renderTable(data){
+  if(!data.length){document.getElementById('output').innerHTML='<div class="empty">Nenhum resultado encontrado.</div>';return;}
+  // All unique formats
+  const allFmts = [...new Set(DATA.flatMap(d=>d.formats.map(f=>f.f)))];
+  document.getElementById('output').innerHTML = `<div class="table-wrap"><table class="comp">
+    <thead><tr>
+      <th>Ad Server</th>
+      <th>Tipo</th>
+      <th>Categoria</th>
+      ${allFmts.map(f=>`<th>${f}</th>`).join('')}
+    </tr></thead>
+    <tbody>${data.map(d=>{
+      const fmtMap = {};
+      d.formats.forEach(f=>{fmtMap[f.f]=f.s;});
+      return `<tr>
+        <td>${d.icon} ${d.name}</td>
+        <td><span class="badge b-tipo">${d.tipo}</span></td>
+        <td><span class="badge b-plat">${d.cat}</span></td>
+        ${allFmts.map(f=>{
+          const s = fmtMap[f]||'—';
+          if(s==='—') return '<td style="color:var(--light);text-align:center">—</td>';
+          return `<td><span class="compat-pill ${statusClass(s)}" style="font-size:10px"><span class="cp-dot"></span>${statusLabel(s)}</span></td>`;
+        }).join('')}
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function setView(v){
+  currentView = v;
+  document.getElementById('vt-card').classList.toggle('active', v==='card');
+  document.getElementById('vt-table').classList.toggle('active', v==='table');
+  applyFilters();
+}
+
+applyFilters();
+</script>
+</body>
+</html>

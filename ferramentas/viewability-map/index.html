@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viewability & Brand Safety Map | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--yellow:#F59E0B;--red:#EF4444;--blue:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:16px;height:56px}
+.logo{color:#fff;font-size:15px;font-weight:700}
+.logo span{color:var(--accent)}
+.search-wrap{flex:1;position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--light);width:16px;height:16px;pointer-events:none}
+#search{width:100%;padding:7px 12px 7px 34px;border:1px solid #2A4A6E;border-radius:6px;background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none}
+#search::placeholder{color:#6B84A8}
+#search:focus{border-color:var(--accent)}
+
+.filter-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:56px;z-index:99}
+.filter-inner{display:flex;align-items:center;gap:6px;height:44px;overflow-x:auto;scrollbar-width:none}
+.filter-inner::-webkit-scrollbar{display:none}
+.filter-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.filter-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.filter-sep{width:1px;height:20px;background:var(--border);flex-shrink:0;margin:0 2px}
+
+main{padding:20px 24px 60px}
+
+.legend{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:1000px}
+thead tr{background:var(--navy)}
+thead th{padding:12px 14px;text-align:left;color:rgba(255,255,255,.7);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-right:1px solid rgba(255,255,255,.08)}
+thead th:last-child{border-right:none}
+thead th.th-main{color:#fff;font-size:13px;text-transform:none;letter-spacing:0;width:20%}
+.th-sub{display:block;font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;text-transform:none;letter-spacing:0}
+
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:#F7FAFC}
+tbody tr:hover{background:#EBF3FF}
+td{padding:10px 14px;vertical-align:middle;border-right:1px solid var(--border);font-size:12px}
+td:last-child{border-right:none}
+
+.td-name{font-weight:700;color:var(--text);font-size:13px}
+.td-type{font-size:10px;color:var(--light);margin-top:2px}
+
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap}
+.pill-full{background:#D1FAE5;color:#065F46}
+.pill-partial{background:#FEF3C7;color:#92400E}
+.pill-no{background:#FEE2E2;color:#991B1B}
+.pill-na{background:#F1F5F9;color:var(--mid)}
+
+.tool-badges{display:flex;flex-wrap:wrap;gap:3px}
+.tb{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.tb-ias{background:#1E3A5F;color:#93C5FD}
+.tb-dv{background:#1A2F1A;color:#86EFAC}
+.tb-moat{background:#3A2A1F;color:#FCD34D}
+.tb-ga{background:#2A1F4A;color:#DDD6FE}
+.tb-native{background:#2A3A2F;color:#6EE7B7}
+
+.sec-row td{background:#EEF3FA;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--light);padding:6px 14px}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Viewability & <span>Brand Safety</span> Map</div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input id="search" type="text" placeholder="Buscar plataforma ou parceiro…" autocomplete="off">
+    </div>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <div class="filter-inner">
+    <button class="filter-btn active" data-f="all">Todos</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-f="cat:Social">Social</button>
+    <button class="filter-btn" data-f="cat:Programático">Programático</button>
+    <button class="filter-btn" data-f="cat:Publisher">Publisher BR</button>
+    <button class="filter-btn" data-f="cat:Vídeo">Vídeo / CTV</button>
+    <button class="filter-btn" data-f="cat:Search">Search</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-f="view:full">Viewability Total</button>
+    <button class="filter-btn" data-f="bs:full">Brand Safety Total</button>
+    <button class="filter-btn" data-f="ias:sim">Tem IAS</button>
+    <button class="filter-btn" data-f="dv:sim">Tem DoubleVerify</button>
+  </div>
+</div>
+
+<main>
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#10B981"></div>Suporte completo / Nativo</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F59E0B"></div>Suporte parcial / Limitado</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#EF4444"></div>Não suportado</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#8B9BBF"></div>N/A para este canal</div>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+  <tr>
+    <th class="th-main">Plataforma / Publisher</th>
+    <th>Categoria<span class="th-sub">canal</span></th>
+    <th>Viewability MRC<span class="th-sub">mensuração padrão</span></th>
+    <th>Brand Safety<span class="th-sub">controle de contexto</span></th>
+    <th>IAS<span class="th-sub">Integral Ad Science</span></th>
+    <th>DoubleVerify<span class="th-sub">DV</span></th>
+    <th>MOAT<span class="th-sub">Oracle</span></th>
+    <th>Parceiros certificados<span class="th-sub">verificação</span></th>
+    <th>Observações</th>
+  </tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+</main>
+<footer>Viewability & Brand Safety Map · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+
+<script>
+function p(cls,txt,icon=''){return`<span class="pill ${cls}">${icon?icon+' ':''}${txt}</span>`}
+function tb(...args){return`<div class="tool-badges">${args.map(([cls,t])=>`<span class="tb ${cls}">${t}</span>`).join('')}</div>`}
+
+const DATA = [
+  // SOCIAL
+  {group:"Social", name:"Meta Ads", type:"Instagram · Facebook · Reels · Stories", cat:"Social",
+   view:"partial", bs:"partial",
+   ias:"partial", dv:"partial", moat:"partial",
+   tools: tb(['tb-ias','IAS Brand Safety'],['tb-dv','DV Fraud'],['tb-native','Meta Brand Safety nativo']),
+   obs:"Meta tem sistema próprio de brand safety (exclusão de categorias, publisher allowlist). IAS/DV integrados via parceria — não é tag no criativo, é integração de API. Viewability não é MRC oficial mas usa padrão próprio similar."},
+
+  {group:"Social", name:"TikTok Ads", type:"In-Feed · TopView · Brand Takeover", cat:"Social",
+   view:"partial", bs:"partial",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS TikTok'],['tb-dv','DV TikTok'],['tb-native','TikTok Brand Safety nativo']),
+   obs:"TikTok tem parceria com IAS e DV para mensuração de viewability e brand safety via integração direta — não exige tag no criativo. Ambiente 100% mobile — padrão de viewability diferente do desktop."},
+
+  {group:"Social", name:"LinkedIn Ads", type:"Feed · Message · Video", cat:"Social",
+   view:"partial", bs:"partial",
+   ias:"no", dv:"partial", moat:"no",
+   tools: tb(['tb-dv','DV parcial'],['tb-native','LinkedIn controls']),
+   obs:"Brand safety via controles nativos da plataforma (contexto profissional já é um filtro natural). DV disponível em formato limitado. Ambiente B2B tem menor risco de brand safety que open web."},
+
+  {group:"Social", name:"Pinterest", type:"Feed · Video", cat:"Social",
+   view:"partial", bs:"partial",
+   ias:"no", dv:"partial", moat:"no",
+   tools: tb(['tb-dv','DV parcial']),
+   obs:"Ambiente visual com menor risco de brand safety — conteúdo majoritariamente aspiracional. Viewability limitada."},
+
+  {group:"Social", name:"Snapchat", type:"Stories · Collection", cat:"Social",
+   view:"full", bs:"partial",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DV']),
+   obs:"Fullscreen nativo = alta viewability por design. Brand safety via parceria IAS/DV."},
+
+  {group:"Social", name:"X (Twitter) Ads", type:"Timeline · Video", cat:"Social",
+   view:"partial", bs:"partial",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DV']),
+   obs:"Brand safety mais complexo pós-mudança de gestão — recomendável usar IAS/DV pre-bid se disponível. Viewability parcial."},
+
+  // VIDEO / CTV
+  {group:"Vídeo & CTV", name:"YouTube", type:"In-Stream · Shorts · In-Feed", cat:"Vídeo",
+   view:"full", bs:"full",
+   ias:"full", dv:"full", moat:"full",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DoubleVerify'],['tb-moat','MOAT'],['tb-ga','Active View (MRC)']),
+   obs:"Melhor integração de viewability e brand safety do mercado. Active View é padrão MRC. Brand Suitability com 13 categorias de conteúdo sensível. DV/IAS pre-bid disponível via DV360."},
+
+  {group:"Vídeo & CTV", name:"Globoplay / Grupo Globo", type:"CTV · Pre-roll · Mid-roll", cat:"Vídeo",
+   view:"full", bs:"full",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS parcial'],['tb-native','Controle editorial Globo']),
+   obs:"Ambiente premium com curadoria editorial — menor risco de brand safety por natureza. Viewability alta em CTV. Integração IAS disponível em alguns formatos."},
+
+  {group:"Vídeo & CTV", name:"Samsung Ads (CTV)", type:"CTV · Smart TV", cat:"Vídeo",
+   view:"full", bs:"full",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DV']),
+   obs:"Ambiente CTV = tela cheia = 100% viewability por definição (IAB CTV standard). Brand safety via parceria IAS/DV. Não há usuário scrollando — atenção total."},
+
+  {group:"Vídeo & CTV", name:"SpotX / Magnite (CTV)", type:"CTV SSP", cat:"Vídeo",
+   view:"full", bs:"full",
+   ias:"full", dv:"full", moat:"no",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DoubleVerify']),
+   obs:"SSP com integração completa IAS/DV para brand safety e viewability em CTV."},
+
+  // PROGRAMÁTICO
+  {group:"Programático / Open Web", name:"DV360", type:"Display · Video · Audio · Native", cat:"Programático",
+   view:"full", bs:"full",
+   ias:"full", dv:"full", moat:"full",
+   tools: tb(['tb-ias','IAS pre-bid'],['tb-dv','DV pre-bid'],['tb-moat','MOAT'],['tb-ga','Active View']),
+   obs:"Melhor conjunto de controles disponível. IAS e DV pre-bid excluem impressões antes de comprar — o mais eficiente. Active View mede viewability em tempo real. Exclusão de apps, URLs e categorias de conteúdo."},
+
+  {group:"Programático / Open Web", name:"The Trade Desk (TTD)", type:"Display · Video · Audio · CTV", cat:"Programático",
+   view:"full", bs:"full",
+   ias:"full", dv:"full", moat:"full",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DoubleVerify'],['tb-moat','MOAT']),
+   obs:"Parceria completa com os três principais parceiros de verificação. Pre-bid disponível para todos."},
+
+  {group:"Programático / Open Web", name:"Amazon DSP", type:"Display · Video · OTT", cat:"Programático",
+   view:"full", bs:"full",
+   ias:"partial", dv:"full", moat:"partial",
+   tools: tb(['tb-dv','DV nativo'],['tb-ias','IAS parcial']),
+   obs:"DV integrado nativamente no Amazon DSP. Inventário Amazon tem alto padrão de brand safety por default. OTT/CTV com 100% viewability."},
+
+  {group:"Programático / Open Web", name:"Xandr (Microsoft)", type:"Display · Video", cat:"Programático",
+   view:"full", bs:"full",
+   ias:"full", dv:"full", moat:"partial",
+   tools: tb(['tb-ias','IAS'],['tb-dv','DoubleVerify']),
+   obs:""},
+
+  // PUBLISHERS BR
+  {group:"Publishers Premium BR", name:"UOL Ads", type:"Display · Video · Native", cat:"Publisher",
+   view:"partial", bs:"full",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS parcial'],['tb-native','Controle editorial']),
+   obs:"Publisher premium BR com controle editorial. Viewability variável por posicionamento. Negociar relatório de viewability na proposta."},
+
+  {group:"Publishers Premium BR", name:"Terra", type:"Display · Video", cat:"Publisher",
+   view:"partial", bs:"full",
+   ias:"partial", dv:"no", moat:"no",
+   tools: tb(['tb-ias','IAS parcial']),
+   obs:""},
+
+  {group:"Publishers Premium BR", name:"R7 / Record", type:"Display · Pre-roll", cat:"Publisher",
+   view:"partial", bs:"full",
+   ias:"no", dv:"no", moat:"no",
+   tools: tb(['tb-native','Editorial Record']),
+   obs:"Publisher com curadoria editorial. Verificação de viewability limitada — solicitar dados de viewability histórica ao publisher."},
+
+  {group:"Publishers Premium BR", name:"Estadão / Grupo Estado", type:"Display · Video", cat:"Publisher",
+   view:"partial", bs:"full",
+   ias:"partial", dv:"partial", moat:"no",
+   tools: tb(['tb-ias','IAS parcial'],['tb-dv','DV parcial']),
+   obs:"Ambiente jornalístico premium — brand safety elevado por curadoria. Integração IAS/DV disponível via tag."},
+
+  {group:"Publishers Premium BR", name:"Folha de S.Paulo", type:"Display · Video", cat:"Publisher",
+   view:"partial", bs:"full",
+   ias:"partial", dv:"no", moat:"no",
+   tools: tb(['tb-ias','IAS parcial']),
+   obs:""},
+
+  // SEARCH
+  {group:"Search", name:"Google Search Ads", type:"RSA · PMax · Shopping", cat:"Search",
+   view:"na", bs:"na",
+   ias:"no", dv:"no", moat:"no",
+   tools: `<span style="font-size:11px;color:var(--mid)">N/A — Paid Search</span>`,
+   obs:"Viewability e brand safety não aplicáveis para anúncios de busca — o formato é text-only e context-safe por natureza (usuário buscou intencionalmente)."},
+
+  {group:"Search", name:"Microsoft Ads (Bing)", type:"RSA · Shopping", cat:"Search",
+   view:"na", bs:"na",
+   ias:"no", dv:"no", moat:"no",
+   tools: `<span style="font-size:11px;color:var(--mid)">N/A — Paid Search</span>`,
+   obs:"Mesma lógica do Google Search — não requer verificação de viewability ou brand safety."},
+
+  // AUDIO
+  {group:"Áudio", name:"Spotify Ads", type:"Audio · Display · Video", cat:"Vídeo",
+   view:"partial", bs:"full",
+   ias:"partial", dv:"no", moat:"no",
+   tools: tb(['tb-ias','IAS Audio'],['tb-native','Spotify Brand Safety']),
+   obs:"Viewability de áudio é medida como 'audibility' — padrão diferente do display. Brand safety alto — Spotify controla o contexto (playlist). IAS mede audibility em alguns formatos."},
+
+  {group:"Áudio", name:"Deezer Ads", type:"Audio · Display", cat:"Vídeo",
+   view:"partial", bs:"full",
+   ias:"no", dv:"no", moat:"no",
+   tools: tb(['tb-native','Editorial Deezer']),
+   obs:""},
+];
+
+let activeFilter = 'all';
+function pillFor(v) {
+  if(v==='full') return p('pill-full','✓ Completo');
+  if(v==='partial') return p('pill-partial','◑ Parcial');
+  if(v==='no') return p('pill-no','✗ Não');
+  return p('pill-na','N/A');
+}
+
+function render(q='') {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  let currentGroup = '', visible = 0;
+  DATA.forEach(row => {
+    const hay = [row.name,row.type,row.cat,row.obs].join(' ').toLowerCase();
+    const mQ = !q || hay.includes(q.toLowerCase());
+    const mF = activeFilter==='all'
+      || (activeFilter==='cat:Social' && row.cat==='Social')
+      || (activeFilter==='cat:Programático' && row.cat==='Programático')
+      || (activeFilter==='cat:Publisher' && row.cat==='Publisher')
+      || (activeFilter==='cat:Vídeo' && row.cat==='Vídeo')
+      || (activeFilter==='cat:Search' && row.cat==='Search')
+      || (activeFilter==='view:full' && row.view==='full')
+      || (activeFilter==='bs:full' && row.bs==='full')
+      || (activeFilter==='ias:sim' && (row.ias==='full'||row.ias==='partial'))
+      || (activeFilter==='dv:sim' && (row.dv==='full'||row.dv==='partial'));
+    if(!mQ||!mF) return;
+    visible++;
+    if(row.group !== currentGroup) {
+      currentGroup = row.group;
+      const secTr = document.createElement('tr');
+      secTr.className = 'sec-row';
+      secTr.innerHTML = `<td colspan="9">${currentGroup}</td>`;
+      tbody.appendChild(secTr);
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="td-name">${row.name}</div><div class="td-type">${row.type}</div></td>
+      <td>${row.cat}</td>
+      <td>${pillFor(row.view)}</td>
+      <td>${pillFor(row.bs)}</td>
+      <td>${pillFor(row.ias)}</td>
+      <td>${pillFor(row.dv)}</td>
+      <td>${pillFor(row.moat)}</td>
+      <td>${row.tools}</td>
+      <td style="font-size:11px;color:var(--mid);line-height:1.5">${row.obs||'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('search').addEventListener('input', e=>render(e.target.value.trim()));
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.f;
+    render(document.getElementById('search').value.trim());
+  });
+});
+render();
+</script>
+</body>
+</html>
