@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Frequência | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--yellow:#F59E0B;--red:#EF4444;--blue:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:12px;height:56px}
+.logo{color:#fff;font-size:15px;font-weight:700}.logo span{color:var(--accent)}
+
+.wrap{max-width:960px;margin:0 auto;padding:24px;display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media(max-width:700px){.wrap{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.card.sticky{position:sticky;top:76px}
+h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--light);margin-bottom:14px}
+.form-g{margin-bottom:13px}
+.form-g label{font-size:11px;font-weight:600;color:var(--mid);display:block;margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;font-family:inherit}
+input:focus,select:focus{border-color:var(--blue)}
+.sep{height:1px;background:var(--border);margin:14px 0}
+.btn-calc{width:100%;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.btn-calc:hover{background:#1D4ED8}
+
+/* RESULTS */
+.result-col{display:flex;flex-direction:column;gap:14px}
+
+.rec-box{border-radius:10px;padding:16px}
+.rec-badge{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:10px;display:inline-block;margin-bottom:8px}
+.rec-main{font-size:28px;font-weight:900;color:var(--navy);line-height:1;margin-bottom:4px}
+.rec-sub{font-size:12px;color:var(--mid);line-height:1.6}
+
+.meter{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.meter h4{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:14px}
+.zones{display:flex;flex-direction:column;gap:6px}
+.zone{display:flex;align-items:center;gap:8px;font-size:12px}
+.zone-bar-wrap{flex:1;height:12px;border-radius:6px;background:#EEF2F7;overflow:hidden}
+.zone-bar{height:100%;border-radius:6px;transition:width .4s}
+.zone-label{min-width:70px;font-weight:700;color:var(--navy)}
+.zone-range{min-width:60px;color:var(--light);font-size:10px;text-align:right}
+.cur-marker{position:relative}
+.cur-dot{width:8px;height:8px;border-radius:50%;background:var(--navy2);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);position:absolute;top:-2px;margin-left:-4px;transition:left .4s}
+
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.det-card{background:var(--bg);border-radius:8px;padding:12px}
+.det-val{font-size:20px;font-weight:800;color:var(--navy)}
+.det-key{font-size:10px;color:var(--light);margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+
+/* BENCH GRID */
+.bench-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.bench-section h4{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);padding:12px 16px;background:#F8FAFC;border-bottom:1px solid var(--border)}
+.bench-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0;padding:0}
+.bench-item{padding:12px 16px;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.bench-item:nth-child(even){border-right:none}
+.bench-name{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:2px}
+.bench-range{font-size:10px;color:var(--mid)}
+.bench-range b{color:var(--blue)}
+
+.actions-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.actions-card h4{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:10px}
+.action-row{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.7;color:var(--mid);margin-bottom:5px}
+.a-num{min-width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:60px;text-align:center;color:var(--light);grid-column:2}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:20px;grid-column:1/-1}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Calculadora de <span>Frequência</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- INPUTS -->
+  <div class="card sticky">
+    <h3>Parâmetros da Campanha</h3>
+
+    <div class="form-g">
+      <label>Objetivo da campanha</label>
+      <select id="objetivo" onchange="calc()">
+        <option value="awareness">Brand Awareness / Alcance</option>
+        <option value="consideration">Consideração / Tráfego</option>
+        <option value="conversion">Conversão / Performance</option>
+        <option value="retargeting">Retargeting / Lower Funnel</option>
+        <option value="video">Video Views</option>
+        <option value="app">App Engagement</option>
+      </select>
+    </div>
+
+    <div class="form-g">
+      <label>Canal / Plataforma</label>
+      <select id="canal" onchange="calc()">
+        <option value="social">Social (Meta, TikTok, LinkedIn)</option>
+        <option value="display">Display / Banner</option>
+        <option value="video_online">Video Online (YouTube, CTV)</option>
+        <option value="prog">Programática Open</option>
+        <option value="search">Search (Google, Bing)</option>
+        <option value="ooh_digital">OOH / Digital Out-of-Home</option>
+      </select>
+    </div>
+
+    <div class="form-g">
+      <label>Duração da campanha (dias)</label>
+      <input type="number" id="duracao" value="30" min="1" max="365" oninput="calc()">
+    </div>
+
+    <div class="form-g">
+      <label>Formato do criativo</label>
+      <select id="formato" onchange="calc()">
+        <option value="banner">Banner / Imagem</option>
+        <option value="video15">Vídeo curto (≤15s)</option>
+        <option value="video30">Vídeo longo (30s+)</option>
+        <option value="carousel">Carrossel</option>
+        <option value="stories">Stories / Vertical</option>
+        <option value="reels">Reels / Short-form</option>
+        <option value="text">Texto / Sponsored Content</option>
+      </select>
+    </div>
+
+    <div class="form-g">
+      <label>Audience size (alcance potencial)</label>
+      <select id="audience" onchange="calc()">
+        <option value="broad">Ampla (>5M pessoas)</option>
+        <option value="mid">Média (500K–5M pessoas)</option>
+        <option value="narrow">Restrita (50K–500K pessoas)</option>
+        <option value="micro">Micro (< 50K pessoas)</option>
+      </select>
+    </div>
+
+    <div class="sep"></div>
+    <h3 style="margin-bottom:10px">Cálculo de Cap</h3>
+
+    <div class="form-g">
+      <label>Janela de frequência</label>
+      <select id="janela" onchange="calc()">
+        <option value="daily">Diária</option>
+        <option value="weekly" selected>Semanal</option>
+        <option value="monthly">Mensal (vida da campanha)</option>
+      </select>
+    </div>
+
+    <div class="form-g">
+      <label>Impressões totais planejadas</label>
+      <input type="number" id="impressoes" placeholder="Ex: 5000000" oninput="calc()">
+    </div>
+
+    <div class="form-g">
+      <label>Alcance estimado (usuários únicos)</label>
+      <input type="number" id="alcance" placeholder="Ex: 1000000" oninput="calc()">
+    </div>
+
+    <button class="btn-calc" onclick="calc()">🔢 Calcular</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="result-col" id="results">
+    <div class="empty">Preencha os parâmetros para calcular a frequência ideal</div>
+  </div>
+
+  <footer>Calculadora de Frequência · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none">← Projeto NC</a></footer>
+</div>
+
+<script>
+// Recommended freq by objective x canal x window
+const RECS = {
+  // [min, ideal, max, weekly_equiv]
+  awareness:{
+    social:      {daily:[1,2,3],   weekly:[3,5,7],   monthly:[8,12,18]},
+    display:     {daily:[1,2,3],   weekly:[3,5,8],   monthly:[10,15,25]},
+    video_online:{daily:[1,1,2],   weekly:[2,4,6],   monthly:[6,10,15]},
+    prog:        {daily:[1,2,4],   weekly:[4,7,12],  monthly:[12,20,30]},
+    search:      {daily:[1,3,5],   weekly:[5,10,20], monthly:[15,30,60]},
+    ooh_digital: {daily:[2,4,8],   weekly:[10,20,40],monthly:[30,60,120]},
+  },
+  consideration:{
+    social:      {daily:[1,2,4],   weekly:[4,7,12],  monthly:[12,18,25]},
+    display:     {daily:[2,3,5],   weekly:[5,8,12],  monthly:[15,20,30]},
+    video_online:{daily:[1,2,3],   weekly:[3,5,8],   monthly:[8,12,20]},
+    prog:        {daily:[2,3,5],   weekly:[6,10,15], monthly:[15,25,40]},
+    search:      {daily:[2,4,6],   weekly:[8,15,25], monthly:[20,40,80]},
+    ooh_digital: {daily:[3,6,10],  weekly:[15,30,50],monthly:[40,80,150]},
+  },
+  conversion:{
+    social:      {daily:[2,4,6],   weekly:[5,10,15], monthly:[15,25,40]},
+    display:     {daily:[3,5,8],   weekly:[8,12,20], monthly:[20,30,50]},
+    video_online:{daily:[1,2,4],   weekly:[4,7,12],  monthly:[10,18,30]},
+    prog:        {daily:[3,5,8],   weekly:[10,15,25],monthly:[25,40,60]},
+    search:      {daily:[3,6,10],  weekly:[10,20,35],monthly:[30,60,100]},
+    ooh_digital: {daily:[3,6,12],  weekly:[15,30,60],monthly:[40,80,150]},
+  },
+  retargeting:{
+    social:      {daily:[2,5,8],   weekly:[6,12,18], monthly:[20,35,55]},
+    display:     {daily:[3,6,10],  weekly:[10,15,25],monthly:[25,40,60]},
+    video_online:{daily:[2,4,6],   weekly:[6,10,16], monthly:[15,25,40]},
+    prog:        {daily:[3,6,12],  weekly:[12,20,35],monthly:[30,50,80]},
+    search:      {daily:[5,10,20], weekly:[15,30,50],monthly:[40,80,150]},
+    ooh_digital: {daily:[4,8,15],  weekly:[20,40,70],monthly:[50,100,200]},
+  },
+  video:{
+    social:      {daily:[1,2,3],   weekly:[2,4,7],   monthly:[6,10,15]},
+    display:     {daily:[1,2,4],   weekly:[3,6,10],  monthly:[8,12,20]},
+    video_online:{daily:[1,1,2],   weekly:[2,3,5],   monthly:[5,8,12]},
+    prog:        {daily:[1,2,3],   weekly:[4,7,10],  monthly:[10,15,22]},
+    search:      {daily:[1,3,5],   weekly:[5,10,18], monthly:[12,25,50]},
+    ooh_digital: {daily:[2,4,8],   weekly:[8,18,35], monthly:[20,50,100]},
+  },
+  app:{
+    social:      {daily:[2,4,7],   weekly:[5,10,16], monthly:[15,28,45]},
+    display:     {daily:[2,4,6],   weekly:[6,10,16], monthly:[15,25,40]},
+    video_online:{daily:[1,2,4],   weekly:[4,7,12],  monthly:[10,18,30]},
+    prog:        {daily:[2,4,7],   weekly:[8,14,22], monthly:[20,35,55]},
+    search:      {daily:[3,6,10],  weekly:[10,20,35],monthly:[25,55,90]},
+    ooh_digital: {daily:[3,5,10],  weekly:[12,25,45],monthly:[30,65,120]},
+  },
+};
+
+const FORMAT_MULT = {banner:1.0,video15:0.85,video30:0.7,carousel:0.9,stories:0.95,reels:0.9,text:0.85};
+const AUDIENCE_MULT = {broad:1.0,mid:1.1,narrow:1.25,micro:1.5};
+const OBJ_LABEL = {awareness:'Awareness',consideration:'Consideração',conversion:'Conversão',retargeting:'Retargeting',video:'Video Views',app:'App Engagement'};
+const CANAL_LABEL = {social:'Social',display:'Display',video_online:'Video Online',prog:'Programática',search:'Search',ooh_digital:'OOH Digital'};
+const JANELA_LABEL = {daily:'diária',weekly:'semanal',monthly:'mensal/campanha'};
+
+function calc(){
+  const objetivo = document.getElementById('objetivo').value;
+  const canal    = document.getElementById('canal').value;
+  const duracao  = +document.getElementById('duracao').value||30;
+  const formato  = document.getElementById('formato').value;
+  const audience = document.getElementById('audience').value;
+  const janela   = document.getElementById('janela').value;
+  const impressoes = +document.getElementById('impressoes').value;
+  const alcance    = +document.getElementById('alcance').value;
+
+  const base = RECS[objetivo][canal][janela];
+  const fMult = FORMAT_MULT[formato];
+  const aMult = AUDIENCE_MULT[audience];
+
+  const minCap  = Math.max(1, Math.round(base[0] * fMult * aMult));
+  const idealCap = Math.max(minCap, Math.round(base[1] * fMult * aMult));
+  const maxCap  = Math.max(idealCap, Math.round(base[2] * fMult * aMult));
+
+  // Estimated freq from inputs
+  let freqAtual = null, freqLabel = '';
+  if(impressoes > 0 && alcance > 0){
+    if(janela==='daily'){
+      freqAtual = impressoes / duracao / alcance * duracao; // total / days / reach → daily
+      freqAtual = impressoes / (alcance * duracao); // avg daily impressions per user
+      freqLabel = 'freq. diária estimada';
+    } else if(janela==='weekly'){
+      freqAtual = (impressoes / (duracao/7)) / alcance;
+      freqLabel = 'freq. semanal estimada';
+    } else {
+      freqAtual = impressoes / alcance;
+      freqLabel = 'freq. total estimada';
+    }
+  }
+
+  // Status
+  let status, statusColor, statusBg, statusText;
+  if(freqAtual !== null){
+    if(freqAtual < minCap){status='abaixo';statusColor='#EF4444';statusBg='#FEE2E2';statusText='#991B1B';}
+    else if(freqAtual <= idealCap){status='ideal';statusColor='#10B981';statusBg='#D1FAE5';statusText='#065F46';}
+    else if(freqAtual <= maxCap){status='elevada';statusColor='#F59E0B';statusBg='#FEF3C7';statusText='#92400E';}
+    else{status='excessiva';statusColor='#EF4444';statusBg='#FEE2E2';statusText='#991B1B';}
+  }
+
+  // Actions
+  const actions = getActions(objetivo, status, freqAtual, idealCap, maxCap, canal);
+
+  // Projections
+  const weeklyFromDaily = janela==='daily' ? (freqAtual||idealCap)*7 : (janela==='weekly'?freqAtual||idealCap:(freqAtual||idealCap)/Math.ceil(duracao/7));
+  const impNeededForIdeal = alcance > 0 ? Math.round(alcance * idealCap * (janela==='daily'?duracao:janela==='weekly'?Math.ceil(duracao/7):1)) : null;
+
+  const el = document.getElementById('results');
+  el.innerHTML = `
+    <div class="rec-box" style="background:${freqAtual?statusBg+'60':'#EFF6FF'};border:1px solid ${freqAtual?statusBg:'#BFDBFE'}">
+      <span class="rec-badge" style="background:${freqAtual?statusBg:'#DBEAFE'};color:${freqAtual?statusText:'#1D4ED8'}">
+        ${freqAtual?'📊 Frequência atual':'💡 Recomendação'}
+      </span>
+      ${freqAtual!==null?`
+        <div class="rec-main" style="color:${statusColor}">${freqAtual.toFixed(1)}x</div>
+        <div class="rec-sub">${freqLabel} · status: <b>${status}</b> · ideal: <b>${idealCap}x</b> ${JANELA_LABEL[janela]}</div>
+      `:`
+        <div class="rec-main">${idealCap}x <span style="font-size:14px;font-weight:500;color:var(--mid)">${JANELA_LABEL[janela]}</span></div>
+        <div class="rec-sub">Para ${OBJ_LABEL[objetivo]} via ${CANAL_LABEL[canal]} com formato ${document.getElementById('formato').options[document.getElementById('formato').selectedIndex].text}</div>
+      `}
+    </div>
+
+    <div class="meter">
+      <h4>Zonas de Frequência — ${JANELA_LABEL[janela]}</h4>
+      <div class="zones">
+        ${makeZone('🔕 Insuficiente','< '+minCap+'x','#FEE2E2','#EF4444',freqAtual,0,minCap,minCap)}
+        ${makeZone('✅ Ideal',minCap+'–'+idealCap+'x','#D1FAE5','#10B981',freqAtual,minCap,idealCap,minCap)}
+        ${makeZone('⚠️ Atenção',idealCap+'–'+maxCap+'x','#FEF3C7','#F59E0B',freqAtual,idealCap,maxCap,minCap)}
+        ${makeZone('❌ Ad Fatigue','> '+maxCap+'x','#FEE2E2','#EF4444',freqAtual,maxCap,maxCap*2,minCap)}
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="det-card"><div class="det-val">${minCap}x</div><div class="det-key">Mínimo efetivo</div></div>
+      <div class="det-card"><div class="det-val">${idealCap}x</div><div class="det-key">Cap ideal</div></div>
+      <div class="det-card"><div class="det-val">${maxCap}x</div><div class="det-key">Máximo recomendado</div></div>
+      <div class="det-card"><div class="det-val">${impNeededForIdeal!==null?fmtN(impNeededForIdeal):'—'}</div><div class="det-key">Impr. para freq ideal</div></div>
+      <div class="det-card"><div class="det-val">${duracao}d</div><div class="det-key">Duração</div></div>
+      <div class="det-card"><div class="det-val">${janela==='weekly'?Math.ceil(duracao/7)+'sem':janela==='daily'?duracao+'d':duracao+'d'}</div><div class="det-key">Janelas de cap</div></div>
+    </div>
+
+    <div class="actions-card">
+      <h4>Recomendações de Configuração</h4>
+      ${actions.map((a,i)=>`<div class="action-row"><span class="a-num">${i+1}</span><span>${a}</span></div>`).join('')}
+    </div>
+
+    ${renderBenchTable()}
+  `;
+}
+
+function makeZone(label, range, bg, color, freqAtual, zMin, zMax, scale){
+  const total = scale * 3 || 1;
+  const pct = Math.min(100, Math.round(((zMax-zMin)/(scale*3))*100));
+  const active = freqAtual !== null && freqAtual >= zMin && freqAtual < (zMax > zMin ? zMax*2 : Infinity);
+  return `<div class="zone">
+    <span style="min-width:130px;font-size:11px;font-weight:600;color:var(--text)">${label}</span>
+    <div class="zone-bar-wrap">
+      <div class="zone-bar" style="width:${pct}%;background:${active?color:bg}"></div>
+    </div>
+    <span class="zone-range">${range}</span>
+  </div>`;
+}
+
+function fmtN(n){
+  if(n>=1e6) return (n/1e6).toFixed(1)+'M';
+  if(n>=1e3) return (n/1e3).toFixed(0)+'K';
+  return n.toString();
+}
+
+function getActions(objetivo, status, freq, ideal, max, canal){
+  const base = [
+    `Configurar frequency cap de <b>${ideal}x/${document.getElementById('janela').options[document.getElementById('janela').selectedIndex].text}</b> na plataforma como ponto de partida`,
+    `Monitorar a curva de frequência durante os primeiros 7 dias para ajustar se necessário`,
+  ];
+
+  if(status==='abaixo'){
+    base.push('Frequência atual abaixo do mínimo: revisar tamanho de audiência — pode estar muito grande para o budget disponível');
+    base.push('Considerar reduzir o universo de alcance para concentrar as impressões e aumentar frequência');
+  } else if(status==='elevada'){
+    base.push('Frequência acima do ideal: ativar frequency cap na plataforma para limitar a entrega por usuário');
+    base.push('Rotacionar criativos a cada 7–10 dias para reduzir ad fatigue sem cortar a frequência total');
+  } else if(status==='excessiva'){
+    base.push('⚠️ URGENTE: frequência excessiva causa ad fatigue e aumento de CPM — reduzir cap imediatamente');
+    base.push('Expandir audiência ou pausar segmentos de alta sobreposição para distribuir melhor a entrega');
+    base.push('Verificar metric de "% frequency > Xcap" nas plataformas (Meta Audience Network, DV360) para identificar usuários saturados');
+  }
+
+  if(objetivo==='retargeting'){
+    base.push('Para retargeting, considerar segmentar por estágio do funil: freq. maior para abandonadores de carrinho, menor para visitantes frios');
+  }
+  if(objetivo==='awareness' && canal==='display'){
+    base.push('Em display, rotação de 3+ criativos distintos é essencial para sustentar a frequência sem queda de performance');
+  }
+  if(canal==='social'){
+    base.push('Em Social, frequência de 7+ por semana geralmente eleva CPM significativamente — use os dados de "Estimated Audience Size" da plataforma para validar');
+  }
+  return base;
+}
+
+function renderBenchTable(){
+  const rows = [
+    {obj:'Awareness',canal:'Social',min:3,ideal:5,max:7},
+    {obj:'Awareness',canal:'Display',min:3,ideal:6,max:10},
+    {obj:'Awareness',canal:'Video Online',min:2,ideal:4,max:6},
+    {obj:'Consideração',canal:'Social',min:4,ideal:7,max:12},
+    {obj:'Consideração',canal:'Display',min:5,ideal:8,max:14},
+    {obj:'Conversão',canal:'Social',min:5,ideal:10,max:15},
+    {obj:'Conversão',canal:'Display',min:8,ideal:14,max:22},
+    {obj:'Retargeting',canal:'Social',min:6,ideal:12,max:20},
+    {obj:'Retargeting',canal:'Display',min:10,ideal:18,max:30},
+    {obj:'Retargeting',canal:'Search',min:15,ideal:30,max:50},
+    {obj:'Video Views',canal:'Social',min:2,ideal:4,max:7},
+    {obj:'Video Views',canal:'Video Online',min:2,ideal:3,max:5},
+  ];
+  return `
+    <div class="bench-section">
+      <h4>Benchmarks de Frequência Semanal por Objetivo × Canal</h4>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:#F0F4F8">
+          <th style="padding:7px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)">Objetivo</th>
+          <th style="padding:7px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)">Canal</th>
+          <th style="padding:7px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)">Mínimo</th>
+          <th style="padding:7px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)">Ideal</th>
+          <th style="padding:7px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)">Máximo</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:7px 12px;font-weight:600;color:var(--navy)">${r.obj}</td>
+            <td style="padding:7px 12px;color:var(--mid)">${r.canal}</td>
+            <td style="padding:7px 12px;text-align:center;color:var(--light)">${r.min}x</td>
+            <td style="padding:7px 12px;text-align:center;font-weight:700;color:var(--blue)">${r.ideal}x</td>
+            <td style="padding:7px 12px;text-align:center;color:var(--yellow)">${r.max}x</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Run on load
+calc();
+</script>
+</body>
+</html>

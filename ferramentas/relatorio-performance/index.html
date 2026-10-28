@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Relatório | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--yellow:#F59E0B;--red:#EF4444;--blue:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:12px;height:56px}
+.logo{color:#fff;font-size:15px;font-weight:700}
+.logo span{color:var(--accent)}
+
+.layout{display:grid;grid-template-columns:300px 1fr;gap:20px;padding:24px;max-width:1200px;margin:0 auto;align-items:start}
+@media(max-width:760px){.layout{grid-template-columns:1fr}}
+
+.sidebar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:sticky;top:76px}
+.sidebar h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--light);margin-bottom:14px}
+.form-g{margin-bottom:12px}
+.form-g label{font-size:11px;font-weight:600;color:var(--mid);display:block;margin-bottom:3px}
+input,select,textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+textarea{resize:vertical;line-height:1.5;min-height:56px}
+.sep{height:1px;background:var(--border);margin:14px 0}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--light);margin-bottom:8px}
+
+.channels-list{}
+.ch-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.ch-item:last-child{border-bottom:none}
+.ch-check{width:14px;height:14px;cursor:pointer;accent-color:var(--blue)}
+.ch-name{font-size:12px;font-weight:600;color:var(--text);flex:1}
+.ch-icon{font-size:14px}
+
+.btn-main{width:100%;padding:9px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-top:14px}
+.btn-main:hover{background:#1D4ED8}
+.btn-sub{width:100%;padding:7px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:11px;font-weight:600;cursor:pointer;margin-top:6px}
+
+/* MAIN */
+.report-wrap{}
+.report-header-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.report-title{font-size:18px;font-weight:800;color:var(--navy)}
+.report-meta{font-size:11px;color:var(--light)}
+.btn-export{padding:7px 16px;border-radius:7px;border:none;background:var(--navy);color:#fff;font-size:11px;font-weight:700;cursor:pointer}
+
+.section-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.section-head{padding:12px 16px;background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.section-icon{font-size:16px}
+.section-title{font-size:12px;font-weight:700;color:var(--navy)}
+.section-body{padding:16px}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.kpi-card{background:var(--bg);border-radius:8px;padding:12px;text-align:center}
+.kpi-val{font-size:20px;font-weight:800;color:var(--navy);line-height:1}
+.kpi-label{font-size:10px;color:var(--light);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi-delta{font-size:10px;font-weight:700;margin-top:2px}
+.kpi-delta.up{color:var(--green)}
+.kpi-delta.down{color:var(--red)}
+
+/* TABLE */
+.perf-table{width:100%;border-collapse:collapse;font-size:11px}
+.perf-table th{padding:6px 10px;background:#F0F4F8;font-weight:700;text-align:left;color:var(--light);font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.perf-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+.perf-table tr:last-child td{border-bottom:none}
+.perf-table input{padding:4px 6px;font-size:11px;background:#fff;width:100%}
+.pill{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700}
+.pill-g{background:#D1FAE5;color:#065F46}
+.pill-y{background:#FEF3C7;color:#92400E}
+.pill-r{background:#FEE2E2;color:#991B1B}
+
+/* INSIGHT AREA */
+.insight-box{background:#F0F7FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px;margin-top:10px}
+.insight-title{font-size:10px;font-weight:700;color:var(--blue);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+.insight-item{font-size:11px;color:var(--mid);line-height:1.7;padding-left:12px;position:relative}
+.insight-item::before{content:'•';position:absolute;left:2px}
+
+/* NOTE area */
+.note-area{width:100%;padding:8px 10px;border:1px dashed var(--border);border-radius:7px;font-size:11px;background:#FAFBFD;color:var(--mid);font-family:inherit;resize:vertical;min-height:56px}
+
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:60px;text-align:center;color:var(--light)}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Gerador de <span>Relatório de Performance</span></div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h3>Configuração</h3>
+
+    <div class="form-g">
+      <label>Cliente / Campanha</label>
+      <input type="text" id="cliente" placeholder="Ex: MarcaX — Awareness Q4">
+    </div>
+    <div class="form-g">
+      <label>Período</label>
+      <div style="display:flex;gap:6px">
+        <input type="date" id="per-start">
+        <input type="date" id="per-end">
+      </div>
+    </div>
+    <div class="form-g">
+      <label>Responsável / Analista</label>
+      <input type="text" id="analista" placeholder="Seu nome">
+    </div>
+    <div class="form-g">
+      <label>Objetivo da campanha</label>
+      <select id="objetivo">
+        <option value="awareness">Brand Awareness / Alcance</option>
+        <option value="consideration">Consideração / Tráfego</option>
+        <option value="conversion">Conversão / Performance</option>
+        <option value="video">Video Views / Engajamento</option>
+        <option value="app">App Install / Engagement</option>
+      </select>
+    </div>
+
+    <div class="sep"></div>
+    <div class="section-label">Canais incluídos</div>
+    <div class="channels-list" id="channels">
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="meta" checked><span class="ch-icon">📘</span><span class="ch-name">Meta Ads</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="gads" checked><span class="ch-icon">🟢</span><span class="ch-name">Google Ads</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="dv360"><span class="ch-icon">📺</span><span class="ch-name">DV360</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="tiktok"><span class="ch-icon">🎵</span><span class="ch-name">TikTok Ads</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="linkedin"><span class="ch-icon">💼</span><span class="ch-name">LinkedIn Ads</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="twitter"><span class="ch-icon">🐦</span><span class="ch-name">X / Twitter Ads</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="programatica"><span class="ch-icon">⚙️</span><span class="ch-name">Programática</span></div>
+      <div class="ch-item"><input class="ch-check" type="checkbox" data-ch="youtube"><span class="ch-icon">▶️</span><span class="ch-name">YouTube</span></div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="form-g">
+      <label>Resumo executivo (opcional)</label>
+      <textarea id="resumo" rows="3" placeholder="Destaques da campanha para o cliente…"></textarea>
+    </div>
+
+    <button class="btn-main" onclick="generate()">📄 Gerar Relatório</button>
+    <button class="btn-sub" onclick="clearReport()">↺ Limpar</button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div class="empty">Configure os canais e clique em <b>Gerar Relatório</b> para criar a estrutura do relatório</div>
+  </div>
+
+  <footer>Gerador de Relatório · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none">← Projeto NC</a></footer>
+</div>
+
+<script>
+const CH_CONFIG = {
+  meta:      {name:'Meta Ads',       icon:'📘', metrics:['Impressões','Alcance','Freq. Média','Cliques','CTR','CPC','CPM','Conversões','CPA','Gasto (R$)'],          kpis:['imp','reach','freq','ctr','cpm','spend']},
+  gads:      {name:'Google Ads',     icon:'🟢', metrics:['Impressões','Cliques','CTR','CPC','Conversões','Taxa de Conv.','CPA','ROAS','Gasto (R$)'],                  kpis:['imp','clk','ctr','cpa','spend']},
+  dv360:     {name:'DV360',          icon:'📺', metrics:['Impressões','Cliques','CTR','CPM','Viewability','Brand Safety','Conversões View-Through','Gasto (R$)'],     kpis:['imp','viewability','cpm','spend']},
+  tiktok:    {name:'TikTok Ads',     icon:'🎵', metrics:['Impressões','Alcance','Freq. Média','Plays','Video Views','Watch Time Médio','CTR','CPM','Gasto (R$)'],    kpis:['imp','reach','views','ctr','spend']},
+  linkedin:  {name:'LinkedIn Ads',   icon:'💼', metrics:['Impressões','Alcance','Cliques','CTR','CPC','CPL','Conversões','Gasto (R$)'],                               kpis:['imp','clk','ctr','cpl','spend']},
+  twitter:   {name:'X / Twitter',    icon:'🐦', metrics:['Impressões','Engajamentos','Taxa de Eng.','Cliques','CPE','Gasto (R$)'],                                    kpis:['imp','eng','cpe','spend']},
+  programatica:{name:'Programática', icon:'⚙️', metrics:['Impressões','Cliques','CTR','CPM','Viewability','Brand Safety','Win Rate','Gasto (R$)'],                   kpis:['imp','viewability','cpm','spend']},
+  youtube:   {name:'YouTube',        icon:'▶️', metrics:['Impressões','Views','VTR','CPV','Tempo de Watch','CTR','Conversões','Gasto (R$)'],                          kpis:['imp','views','vtr','cpv','spend']},
+};
+
+const INSIGHTS = {
+  awareness:   ['Compare alcance único vs. impressões para calcular frequência efetiva', 'CPM acima de benchmark indica maior competição ou público muito restrito', 'Viewability > 70% é recomendada para campanhas de branding'],
+  consideration:['CTR acima de 1% em display é excelente — < 0,3% requer revisão criativa','CPC alto pode indicar alta competição no leilão — testar novas audiências','Bounce rate no site deve ser monitorado como indicador de qualidade do tráfego'],
+  conversion:  ['CPA acima do benchmark: revisar funil de conversão e matching de audiência','ROAS < 1 significa prejuízo — pausar segmentos não performáticos imediatamente','Testar automação de lances (Target CPA / Max Conversions) se volume permitir'],
+  video:       ['VTR (View-Through Rate) < 20% indica problema criativo nos primeiros 3 segundos','Compare views pagas vs. orgânicas para calcular custo real por visualização','Completion rate por quartil ajuda a identificar onde o usuário abandona o vídeo'],
+  app:         ['CPI (Custo por Install) varia muito por categoria — comparar com App Store benchmark','Medir ROAS de app D1/D7/D30 para avaliar qualidade dos usuários adquiridos','Taxa de ativação pós-install é o KPI mais importante para campanhas de app'],
+};
+
+const OBJ_LABEL = {awareness:'Brand Awareness / Alcance',consideration:'Consideração / Tráfego',conversion:'Conversão / Performance',video:'Video Views / Engajamento',app:'App Install / Engagement'};
+
+function generate(){
+  const cliente = document.getElementById('cliente').value || 'Campanha';
+  const perStart = document.getElementById('per-start').value;
+  const perEnd = document.getElementById('per-end').value;
+  const analista = document.getElementById('analista').value || '—';
+  const objetivo = document.getElementById('objetivo').value;
+  const resumo = document.getElementById('resumo').value;
+
+  const selected = [...document.querySelectorAll('.ch-check:checked')].map(el=>el.dataset.ch);
+  if(selected.length===0){
+    alert('Selecione pelo menos um canal.');
+    return;
+  }
+
+  const periodoStr = perStart && perEnd
+    ? `${fmtDate(perStart)} – ${fmtDate(perEnd)}`
+    : perStart ? `A partir de ${fmtDate(perStart)}` : 'Período não definido';
+
+  let html = `
+    <div class="report-header-bar">
+      <div>
+        <div class="report-title">📊 ${cliente}</div>
+        <div class="report-meta">${periodoStr} &nbsp;·&nbsp; ${OBJ_LABEL[objetivo]} &nbsp;·&nbsp; ${analista} &nbsp;·&nbsp; Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+      </div>
+      <button class="btn-export" onclick="exportTxt()">⬇ Exportar .txt</button>
+    </div>
+  `;
+
+  // Resumo executivo
+  if(resumo){
+    html += block('📝 Resumo Executivo', `<div style="font-size:13px;line-height:1.8;color:var(--mid)">${escHtml(resumo).replace(/\n/g,'<br>')}</div>`);
+  }
+
+  // Overview KPIs
+  html += block('📈 Overview Geral',
+    `<div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Total Impressões</div></div>
+      <div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Total Cliques</div></div>
+      <div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">CTR Médio</div></div>
+      <div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Invest. Total (R$)</div></div>
+      ${objetivo==='conversion'?'<div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Total Conversões</div></div><div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">CPA Médio</div></div>':''}
+      ${objetivo==='video'?'<div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Total Views</div></div><div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">VTR Médio</div></div>':''}
+      ${objetivo==='awareness'?'<div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Alcance Total</div></div><div class="kpi-card"><div class="kpi-val">—</div><div class="kpi-label">Freq. Média</div></div>':''}
+    </div>
+    <div class="insight-box">
+      <div class="insight-title">💡 Pontos de Análise — ${OBJ_LABEL[objetivo]}</div>
+      ${INSIGHTS[objetivo].map(i=>`<div class="insight-item">${i}</div>`).join('')}
+    </div>`
+  );
+
+  // Mix de canais
+  const mixRows = selected.map(ch=>{
+    const c = CH_CONFIG[ch];
+    return `<tr>
+      <td><span class="ch-icon">${c.icon}</span> ${c.name}</td>
+      <td><input placeholder="0" style="width:90px"></td>
+      <td><input placeholder="0" style="width:90px"></td>
+      <td><input placeholder="0,00" style="width:80px"></td>
+      <td><input placeholder="0%" style="width:70px"></td>
+      <td><input placeholder="R$ 0,00" style="width:90px"></td>
+    </tr>`;
+  }).join('');
+
+  html += block('📋 Mix de Canais',
+    `<table class="perf-table">
+      <thead><tr><th>Canal</th><th>Impressões</th><th>Cliques</th><th>CTR</th><th>% Budget</th><th>Investimento</th></tr></thead>
+      <tbody>${mixRows}</tbody>
+     </table>`
+  );
+
+  // Per-channel sections
+  for(const ch of selected){
+    const c = CH_CONFIG[ch];
+    const metricsTable = c.metrics.map(m=>`
+      <tr>
+        <td style="width:140px;font-weight:600;color:var(--navy)">${m}</td>
+        <td><input placeholder="—" style="width:110px"></td>
+        <td><input placeholder="—" style="width:110px"></td>
+        <td>
+          <select style="font-size:10px;padding:3px 5px;width:90px">
+            <option value="">—</option>
+            <option value="g">✅ Acima</option>
+            <option value="y">⚠️ Na meta</option>
+            <option value="r">❌ Abaixo</option>
+          </select>
+        </td>
+      </tr>`).join('');
+
+    html += block(`${c.icon} ${c.name}`,
+      `<table class="perf-table">
+        <thead><tr><th>Métrica</th><th>Resultado</th><th>Meta / Benchmark</th><th>Status</th></tr></thead>
+        <tbody>${metricsTable}</tbody>
+       </table>
+       <div style="margin-top:10px">
+         <div style="font-size:10px;font-weight:700;color:var(--light);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Destaques / Observações</div>
+         <textarea class="note-area" placeholder="Insira aqui os principais destaques deste canal…"></textarea>
+       </div>`
+    );
+  }
+
+  // Criativos top
+  html += block('🎨 Top Criativos',
+    `<table class="perf-table">
+      <thead><tr><th>#</th><th>Criativo / Formato</th><th>Canal</th><th>Impressões</th><th>CTR</th><th>Resultado principal</th><th>Status</th></tr></thead>
+      <tbody>
+        ${[1,2,3,4,5].map(n=>`<tr>
+          <td style="color:var(--light)">#${n}</td>
+          <td><input placeholder="Nome do criativo"></td>
+          <td><select style="font-size:10px;padding:3px 5px"><option>—</option>${selected.map(ch=>`<option>${CH_CONFIG[ch].name}</option>`).join('')}</select></td>
+          <td><input placeholder="0" style="width:80px"></td>
+          <td><input placeholder="0%" style="width:60px"></td>
+          <td><input placeholder="Ex: 50 conversões"></td>
+          <td><select style="font-size:10px;padding:3px 5px;width:80px"><option>—</option><option>✅ Top</option><option>⚠️ Médio</option><option>❌ Pausar</option></select></td>
+        </tr>`).join('')}
+      </tbody>
+     </table>`
+  );
+
+  // Próximos passos
+  html += block('🗓️ Próximos Passos',
+    `<table class="perf-table">
+      <thead><tr><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Prioridade</th></tr></thead>
+      <tbody>
+        ${[1,2,3,4].map(()=>`<tr>
+          <td><input placeholder="Descreva a ação…"></td>
+          <td><input placeholder="Nome" style="width:100px"></td>
+          <td><input type="date" style="width:120px"></td>
+          <td><select style="font-size:10px;padding:3px 5px;width:80px"><option>Alta</option><option>Média</option><option>Baixa</option></select></td>
+        </tr>`).join('')}
+      </tbody>
+     </table>`
+  );
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function block(title, body){
+  const [icon,...rest] = title.split(' ');
+  const isEmoji = /^\p{Emoji}/u.test(icon);
+  return `<div class="section-block">
+    <div class="section-head">
+      ${isEmoji?`<span class="section-icon">${icon}</span><span class="section-title">${rest.join(' ')}</span>`:`<span class="section-title">${title}</span>`}
+    </div>
+    <div class="section-body">${body}</div>
+  </div>`;
+}
+
+function fmtDate(d){
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function exportTxt(){
+  const cliente = document.getElementById('cliente').value||'Campanha';
+  const perStart = document.getElementById('per-start').value;
+  const perEnd   = document.getElementById('per-end').value;
+  const analista = document.getElementById('analista').value||'—';
+  const objetivo = document.getElementById('objetivo').value;
+  const periodoStr = perStart&&perEnd?`${fmtDate(perStart)} – ${fmtDate(perEnd)}`:perStart?`A partir de ${fmtDate(perStart)}`:'Período não definido';
+
+  const selected = [...document.querySelectorAll('.ch-check:checked')].map(el=>el.dataset.ch);
+
+  let txt = `RELATÓRIO DE PERFORMANCE\n`;
+  txt += `${'='.repeat(50)}\n`;
+  txt += `Campanha : ${cliente}\n`;
+  txt += `Período  : ${periodoStr}\n`;
+  txt += `Objetivo : ${OBJ_LABEL[objetivo]}\n`;
+  txt += `Analista : ${analista}\n`;
+  txt += `Gerado em: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+
+  txt += `CANAIS INCLUÍDOS\n${'-'.repeat(30)}\n`;
+  selected.forEach(ch=> txt+=`  • ${CH_CONFIG[ch].name}\n`);
+  txt+='\n';
+
+  const resumo = document.getElementById('resumo').value;
+  if(resumo){
+    txt+=`RESUMO EXECUTIVO\n${'-'.repeat(30)}\n${resumo}\n\n`;
+  }
+
+  selected.forEach(ch=>{
+    const c = CH_CONFIG[ch];
+    txt+=`\n${c.name.toUpperCase()}\n${'-'.repeat(30)}\n`;
+    c.metrics.forEach(m=>txt+=`  ${m.padEnd(30)}: _______________\n`);
+    txt+=`  Destaques:\n  _______________________________________________\n`;
+  });
+
+  txt+=`\nPRÓXIMOS PASSOS\n${'-'.repeat(30)}\n`;
+  [1,2,3,4].forEach(i=>txt+=`  ${i}. Ação: _______________________  Resp.: _______  Prazo: ________\n`);
+
+  const blob = new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `relatorio_${(cliente||'campanha').toLowerCase().replace(/\s+/g,'_')}.txt`;
+  a.click();
+}
+
+function clearReport(){
+  document.getElementById('main').innerHTML='<div class="empty">Configure os canais e clique em <b>Gerar Relatório</b> para criar a estrutura do relatório</div>';
+}
+</script>
+</body>
+</html>

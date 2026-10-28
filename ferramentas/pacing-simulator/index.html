@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Pacing | NC Tool</title>
+<style>
+:root{
+  --navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;
+  --bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;
+  --text:#0D2137;--mid:#4A5568;--light:#8B9BBF;
+  --green:#10B981;--green-bg:#D1FAE5;--green-text:#065F46;
+  --yellow:#F59E0B;--yellow-bg:#FEF3C7;--yellow-text:#92400E;
+  --red:#EF4444;--red-bg:#FEE2E2;--red-text:#991B1B;
+  --blue:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;gap:16px;height:56px}
+.logo{color:#fff;font-size:15px;font-weight:700}
+.logo span{color:var(--accent)}
+
+.wrap{padding:24px;max-width:1000px;margin:0 auto;display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media(max-width:720px){.wrap{grid-template-columns:1fr}}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:sticky;top:76px}
+.panel h3{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:16px}
+
+.form-group{margin-bottom:13px}
+.form-label{font-size:11px;font-weight:600;color:var(--mid);margin-bottom:4px;display:block}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;font-family:inherit}
+input:focus,select:focus{border-color:var(--blue)}
+.input-row{display:flex;gap:6px;align-items:center}
+.input-row input{flex:1}
+.unit{font-size:11px;color:var(--light);white-space:nowrap}
+
+.sep{height:1px;background:var(--border);margin:16px 0}
+
+.btn-calc{width:100%;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-calc:hover{background:#1D4ED8}
+.btn-reset{width:100%;padding:7px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:12px;font-weight:600;cursor:pointer;margin-top:6px}
+
+/* RIGHT */
+.result-panel{display:flex;flex-direction:column;gap:16px}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:500px){.stat-row{grid-template-columns:1fr 1fr}}
+
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+.stat-val{font-size:22px;font-weight:800;color:var(--navy);line-height:1}
+.stat-key{font-size:10px;font-weight:600;color:var(--light);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+
+.verdict-card{border-radius:10px;padding:16px}
+.verdict-badge{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 12px;border-radius:20px;display:inline-block;margin-bottom:8px}
+.verdict-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.verdict-desc{font-size:13px;line-height:1.7;color:var(--mid)}
+
+/* PACING BAR */
+.pacing-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.pacing-section h4{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--light);margin-bottom:12px}
+.bar-wrap{margin-bottom:12px}
+.bar-label{display:flex;justify-content:space-between;font-size:11px;color:var(--mid);margin-bottom:4px}
+.bar-track{height:10px;background:#EEF2F7;border-radius:10px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:10px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bar-marker{position:absolute;top:0;height:100%;width:2px;background:var(--navy2);border-radius:2px}
+
+/* PROJECTION TABLE */
+.proj-table{width:100%;border-collapse:collapse;font-size:12px}
+.proj-table th{text-align:left;padding:6px 10px;background:#F0F4F8;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light)}
+.proj-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.proj-table tr:last-child td{border-bottom:none}
+.pill-sm{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+
+/* ACTIONS */
+.actions-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.actions-card h4{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--light);margin-bottom:10px}
+.action-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.6;color:var(--mid);margin-bottom:6px}
+.action-num{min-width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:48px;text-align:center;color:var(--light)}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:20px;grid-column:1/-1}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Simulador de <span>Pacing</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="panel">
+    <h3>Dados da Campanha</h3>
+
+    <div class="form-group">
+      <label class="form-label">KPI principal</label>
+      <select id="kpi" onchange="updateLabels()">
+        <option value="imp">Impressões</option>
+        <option value="clk">Cliques</option>
+        <option value="conv">Conversões</option>
+        <option value="views">Views de Vídeo</option>
+        <option value="bud">Budget (R$)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" id="lbl-total">Total contratado</label>
+      <input type="number" id="total" placeholder="Ex: 1000000" oninput="calc()">
+    </div>
+
+    <div class="sep"></div>
+    <div class="panel" style="padding:0;border:none;position:static">
+      <div class="form-group">
+        <label class="form-label">Data de início</label>
+        <input type="date" id="dt-start" oninput="calc()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data de término</label>
+        <input type="date" id="dt-end" oninput="calc()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data de referência (hoje)</label>
+        <input type="date" id="dt-today" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="form-group">
+      <label class="form-label" id="lbl-entregue">Entregue até hoje</label>
+      <input type="number" id="entregue" placeholder="Ex: 350000" oninput="calc()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Budget total (R$) — opcional</label>
+      <input type="number" id="budget" placeholder="Ex: 50000" oninput="calc()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Gasto até hoje (R$) — opcional</label>
+      <input type="number" id="gasto" placeholder="Ex: 18000" oninput="calc()">
+    </div>
+
+    <button class="btn-calc" onclick="calc()">📊 Simular</button>
+    <button class="btn-reset" onclick="resetAll()">↺ Limpar</button>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="result-panel" id="result-panel">
+    <div class="empty">Configure a campanha ao lado para simular o pacing</div>
+  </div>
+
+  <footer>Simulador de Pacing · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+</div>
+
+<script>
+const KPI_LABELS = {
+  imp:{total:'Impressões contratadas',entregue:'Impressões entregues',unit:'impr.'},
+  clk:{total:'Cliques contratados',entregue:'Cliques entregues',unit:'cliques'},
+  conv:{total:'Conversões contratadas',entregue:'Conversões entregues',unit:'conv.'},
+  views:{total:'Views contratadas',entregue:'Views entregues',unit:'views'},
+  bud:{total:'Budget total (R$)',entregue:'Gasto até hoje (R$)',unit:'R$'},
+};
+
+function updateLabels(){
+  const kpi = document.getElementById('kpi').value;
+  const lbl = KPI_LABELS[kpi];
+  document.getElementById('lbl-total').textContent = lbl.total;
+  document.getElementById('lbl-entregue').textContent = lbl.entregue;
+}
+
+// Pre-fill today
+(function(){
+  const today = new Date();
+  document.getElementById('dt-today').value = today.toISOString().slice(0,10);
+})();
+
+function daysBetween(a,b){
+  return Math.round((new Date(b)-new Date(a))/(1000*60*60*24));
+}
+
+function fmt(n, kpi){
+  if(kpi==='bud') return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  if(n>=1e6) return (n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M';
+  if(n>=1e3) return (n/1e3).toFixed(1).replace(/\.?0+$/,'')+'K';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+
+function calc(){
+  const kpi = document.getElementById('kpi').value;
+  const total = +document.getElementById('total').value;
+  const dtStart = document.getElementById('dt-start').value;
+  const dtEnd = document.getElementById('dt-end').value;
+  const dtToday = document.getElementById('dt-today').value;
+  const entregue = +document.getElementById('entregue').value;
+  const budget = +document.getElementById('budget').value;
+  const gasto = +document.getElementById('gasto').value;
+
+  if(!total || !dtStart || !dtEnd || !dtToday || !entregue){
+    document.getElementById('result-panel').innerHTML='<div class="empty">Preencha todos os campos obrigatórios</div>';
+    return;
+  }
+
+  const totalDays = daysBetween(dtStart, dtEnd)+1;
+  const elapsedDays = Math.max(0, Math.min(daysBetween(dtStart, dtToday)+1, totalDays));
+  const remainDays = Math.max(0, totalDays - elapsedDays);
+
+  const pctTime = elapsedDays / totalDays;
+  const pctDelivered = entregue / total;
+
+  // Expected at this point (linear pacing)
+  const expected = total * pctTime;
+  const pacingIndex = pctDelivered / pctTime; // 1.0 = perfeito, >1 adiantado, <1 atrasado
+  const delta = entregue - expected;
+
+  // Projection: if keeps current daily rate
+  const dailyRate = elapsedDays > 0 ? entregue / elapsedDays : 0;
+  const projectedTotal = entregue + dailyRate * remainDays;
+  const projectedPct = projectedTotal / total * 100;
+
+  // Daily rate needed to hit 100%
+  const remaining = total - entregue;
+  const dailyNeeded = remainDays > 0 ? remaining / remainDays : Infinity;
+  const dailyIdeal = total / totalDays;
+
+  // Budget pacing
+  const hasBudget = budget > 0 && gasto > 0;
+  const budgetPct = hasBudget ? gasto/budget*100 : null;
+  const budgetExpected = hasBudget ? budget * pctTime : null;
+  const budgetDelta = hasBudget ? gasto - budgetExpected : null;
+
+  // Verdict
+  let severity, verdictTitle, verdictDesc, actions=[];
+  const pi = pacingIndex;
+
+  if(pi >= 1.15){
+    severity='warn';
+    verdictTitle='📈 Entrega adiantada — risco de underspend';
+    verdictDesc=`A campanha está ${((pi-1)*100).toFixed(0)}% acima do ritmo esperado. Se mantiver o ritmo atual, vai entregar ${fmt(projectedTotal,kpi)} — ${projectedPct>100?(projectedPct-100).toFixed(0)+'% acima':'dentro'} do contratado.`;
+    actions=[
+      'Revisar frequência de exibição — reduzir frequency cap para desacelerar a entrega',
+      'Restringir segmentação (geolocalização, horário) para diminuir volume diário',
+      'Verificar se o budget diário está acima do necessário — ajustar para distribui melhor',
+      remainDays>0?`Ritmo ideal: ${fmt(dailyIdeal,kpi)}/dia | Ritmo atual: ${fmt(dailyRate,kpi)}/dia — reduzir ~${(((dailyRate-dailyIdeal)/dailyIdeal)*100).toFixed(0)}%`:'Campanha encerrada.',
+    ];
+  } else if(pi >= 0.9){
+    severity='ok';
+    verdictTitle='✅ Pacing saudável';
+    verdictDesc=`A campanha está no ritmo esperado. Entregou ${fmt(entregue,kpi)} de ${fmt(expected,kpi)} esperados para este momento (${(pctDelivered*100).toFixed(1)}% do total).`;
+    actions=[
+      'Continuar monitorando diariamente — pacing pode mudar por sazonalidade ou leilão',
+      remainDays>0?`Ritmo necessário para entregar 100%: ${fmt(dailyNeeded,kpi)}/dia`:'',
+      projectedPct < 95 ? 'Projeção ligeiramente abaixo — acompanhar na próxima semana' : '',
+    ].filter(Boolean);
+  } else if(pi >= 0.7){
+    severity='warn';
+    verdictTitle='⚠️ Pacing abaixo — atenção necessária';
+    verdictDesc=`A campanha está ${((1-pi)*100).toFixed(0)}% abaixo do ritmo esperado. Mantendo o ritmo atual, vai entregar apenas ${fmt(projectedTotal,kpi)} (${projectedPct.toFixed(0)}% do contratado).`;
+    actions=[
+      `Aumentar bid: ritmo atual ${fmt(dailyRate,kpi)}/dia — necessário ${fmt(dailyNeeded,kpi)}/dia (${((dailyNeeded/dailyRate-1)*100).toFixed(0)}% de aumento)`,
+      'Ampliar segmentação — adicionar audiências, ampliar geolocalização ou horário',
+      'Revisar configuração de entrega: trocar de "Standard" para "ASAP" se necessário',
+      'Verificar se há restrições de frequência muito apertadas limitando o alcance',
+      'Checar aprovação de criativos na plataforma — criativos reprovados reduzem o inventário',
+    ];
+  } else {
+    severity='bad';
+    verdictTitle='❌ Pacing crítico — ação imediata';
+    verdictDesc=`A campanha está entregando muito abaixo do esperado. Apenas ${(pctDelivered*100).toFixed(1)}% entregue de ${(pctTime*100).toFixed(1)}% esperado. Projeção de ${projectedPct.toFixed(0)}% de entrega no fim do período.`;
+    actions=[
+      'URGENTE: contatar plataforma/publisher para verificar se há problemas técnicos',
+      'Verificar status dos criativos — podem estar todos em revisão ou reprovados',
+      'Revisar targeting: pode estar muito restrito (nicho pequeno + freq cap baixo)',
+      `Aumentar bid/CPM significativamente — ritmo necessário: ${fmt(dailyNeeded,kpi)}/dia vs atual ${fmt(dailyRate,kpi)}/dia`,
+      'Avaliar extensão do período de campanha com o cliente — make-good se necessário',
+      'Se budget diário com limitação: remover cap diário temporariamente para recuperar entrega',
+    ];
+  }
+
+  const sevColors = {ok:'#10B981',warn:'#F59E0B',bad:'#EF4444'};
+  const sevBg = {ok:'#D1FAE5',warn:'#FEF3C7',bad:'#FEE2E2'};
+  const sevText = {ok:'#065F46',warn:'#92400E',bad:'#991B1B'};
+  const col = sevColors[severity];
+
+  // Build pacing bar: three markers — expected (now), delivered (now), projected (end)
+  const barExpectedPct = Math.min(pctTime*100, 100);
+  const barDeliveredPct = Math.min(pctDelivered*100, 100);
+
+  document.getElementById('result-panel').innerHTML = `
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-val">${(pctDelivered*100).toFixed(1)}%</div>
+        <div class="stat-key">Entregue</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">${(pctTime*100).toFixed(1)}%</div>
+        <div class="stat-key">Tempo decorrido</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" style="color:${col}">${(pacingIndex*100).toFixed(0)}%</div>
+        <div class="stat-key">Índice de pacing</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">${elapsedDays}d</div>
+        <div class="stat-key">Dias decorridos</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">${remainDays}d</div>
+        <div class="stat-key">Dias restantes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">${fmt(dailyRate,kpi)}</div>
+        <div class="stat-key">Ritmo atual/dia</div>
+      </div>
+    </div>
+
+    <div class="verdict-card" style="background:${sevBg[severity]}40;border:1px solid ${sevBg[severity]}">
+      <span class="verdict-badge" style="background:${sevBg[severity]};color:${sevText[severity]}">${severity==='ok'?'✅ Saudável':severity==='warn'?'⚠️ Atenção':'❌ Crítico'}</span>
+      <div class="verdict-title">${verdictTitle}</div>
+      <div class="verdict-desc">${verdictDesc}</div>
+    </div>
+
+    <div class="pacing-section">
+      <h4>Visualização de Entrega</h4>
+      <div class="bar-wrap">
+        <div class="bar-label"><span>Entregue vs Esperado</span><span>${fmt(entregue,kpi)} / ${fmt(Math.round(expected),kpi)}</span></div>
+        <div class="bar-track" style="height:14px">
+          <div class="bar-fill" style="width:${barDeliveredPct}%;background:${col}"></div>
+          <div class="bar-marker" style="left:${barExpectedPct}%;opacity:.6"></div>
+        </div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-label"><span>Projeção de entrega</span><span>${fmt(Math.round(projectedTotal),kpi)} (${projectedPct.toFixed(0)}%)</span></div>
+        <div class="bar-track" style="height:10px">
+          <div class="bar-fill" style="width:${Math.min(projectedPct,100)}%;background:${projectedPct>=95?'#10B981':projectedPct>=80?'#F59E0B':'#EF4444'}"></div>
+        </div>
+      </div>
+      ${hasBudget?`
+      <div class="bar-wrap">
+        <div class="bar-label"><span>Budget gasto vs esperado</span><span>${fmt(gasto,'bud')} / ${fmt(Math.round(budgetExpected),'bud')}</span></div>
+        <div class="bar-track" style="height:10px">
+          <div class="bar-fill" style="width:${Math.min(budgetPct,100)}%;background:${gasto>budgetExpected*1.1?'#F59E0B':gasto<budgetExpected*0.9?'#EF4444':'#10B981'}"></div>
+          <div class="bar-marker" style="left:${Math.min(pctTime*100,100)}%;opacity:.6"></div>
+        </div>
+      </div>`:''}
+    </div>
+
+    <div class="pacing-section">
+      <h4>Projeção de Entrega</h4>
+      <table class="proj-table">
+        <thead><tr><th>Cenário</th><th>Entrega projetada</th><th>% do contrato</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Ritmo atual mantido</td>
+            <td><b>${fmt(Math.round(projectedTotal),kpi)}</b></td>
+            <td>${projectedPct.toFixed(1)}%</td>
+            <td><span class="pill-sm" style="background:${projectedPct>=95?'#D1FAE5':projectedPct>=80?'#FEF3C7':'#FEE2E2'};color:${projectedPct>=95?'#065F46':projectedPct>=80?'#92400E':'#991B1B'}">${projectedPct>=95?'✅ Ok':projectedPct>=80?'⚠️ Risco':'❌ Crítico'}</span></td>
+          </tr>
+          <tr>
+            <td>Ritmo necessário para 100%</td>
+            <td><b>${fmt(total,kpi)}</b></td>
+            <td>100%</td>
+            <td><span class="pill-sm" style="background:#EFF6FF;color:#1D4ED8">${remainDays>0?fmt(dailyNeeded,kpi)+'/dia':'—'}</span></td>
+          </tr>
+          ${remainDays>0?`<tr>
+            <td>Ritmo +20% vs atual</td>
+            <td><b>${fmt(Math.round(entregue+dailyRate*1.2*remainDays),kpi)}</b></td>
+            <td>${(((entregue+dailyRate*1.2*remainDays)/total)*100).toFixed(1)}%</td>
+            <td><span class="pill-sm" style="background:#F0F4F8;color:var(--mid)">Cenário bid +20%</span></td>
+          </tr>`:''}
+          ${hasBudget&&remainDays>0?`<tr>
+            <td>Budget restante</td>
+            <td><b>${fmt(budget-gasto,'bud')}</b></td>
+            <td>${(((budget-gasto)/budget)*100).toFixed(1)}% do budget</td>
+            <td><span class="pill-sm" style="background:#EDE9FE;color:#5B21B6">${fmt((budget-gasto)/remainDays,'bud')}/dia disponível</span></td>
+          </tr>`:''}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions-card">
+      <h4>Ações Recomendadas</h4>
+      ${actions.map((a,i)=>`<div class="action-item"><span class="action-num">${i+1}</span><span>${a}</span></div>`).join('')}
+    </div>
+  `;
+}
+
+function resetAll(){
+  ['total','dt-start','dt-end','entregue','budget','gasto'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('dt-today').value=today;
+  document.getElementById('result-panel').innerHTML='<div class="empty">Configure a campanha ao lado para simular o pacing</div>';
+}
+</script>
+</body>
+</html>
