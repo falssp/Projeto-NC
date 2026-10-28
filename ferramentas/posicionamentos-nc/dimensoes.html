@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dimensões & Specs — Mercado Digital</title>
+<style>
+  :root {
+    --navy: #0D2137;
+    --navy-mid: #1A3F63;
+    --blue: #2563EB;
+    --accent: #38BDF8;
+    --bg: #F0F4F8;
+    --surface: #FFFFFF;
+    --border: #DDE3EC;
+    --text: #0D2137;
+    --text-mid: #4A5568;
+    --text-light: #8B9BBF;
+    --row-alt: #F7FAFC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  header { background: var(--navy); padding: 0 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  .header-inner { display: flex; align-items: center; gap: 16px; height: 56px; }
+  .logo { color: #fff; font-size: 15px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .logo span { color: var(--accent); }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-light); width: 16px; height: 16px; pointer-events: none; }
+  #search { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid #2A4A6E; border-radius: 6px; background: rgba(255,255,255,.08); color: #fff; font-size: 13px; outline: none; transition: border-color .15s; }
+  #search::placeholder { color: #6B84A8; }
+  #search:focus { border-color: var(--accent); background: rgba(255,255,255,.12); }
+  .header-count { color: var(--text-light); font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+  .header-count b { color: var(--accent); }
+
+  .filter-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; position: sticky; top: 56px; z-index: 99; }
+  .filter-inner { display: flex; align-items: center; gap: 6px; height: 44px; overflow-x: auto; scrollbar-width: none; }
+  .filter-inner::-webkit-scrollbar { display: none; }
+  .filter-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-mid); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .15s; flex-shrink: 0; }
+  .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .filter-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+  main { padding: 20px 24px 48px; }
+
+  .section { margin-bottom: 24px; }
+  .section-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--navy-mid); border-radius: 8px 8px 0 0; cursor: pointer; user-select: none; }
+  .section-header h2 { color: #fff; font-size: 13px; font-weight: 600; flex: 1; }
+  .section-header .sec-count { color: rgba(255,255,255,.5); font-size: 12px; }
+  .section-header .chevron { color: rgba(255,255,255,.6); transition: transform .2s; }
+  .section-header.collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #EEF3FA; }
+  thead th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:hover { background: #EBF3FF; }
+  td { padding: 9px 12px; vertical-align: middle; }
+
+  .td-nome { font-weight: 600; color: var(--text); font-size: 13px; }
+  .td-dim { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: var(--blue); background: #EFF6FF; padding: 2px 8px; border-radius: 4px; white-space: nowrap; display: inline-block; }
+  .td-peso { font-size: 12px; color: var(--text-mid); }
+  .td-obs { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-canal  { background: #1E3A5F; color: #93C5FD; }
+  .badge-fmt    { background: #1A3A2A; color: #6EE7B7; }
+  .badge-disp   { background: #2A1F4A; color: #DDD6FE; }
+  .badge-tag    { background: #1F3020; color: #86EFAC; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+  .badge-warn   { background: #3A2A1F; color: #FCD34D; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+
+  .no-results { text-align: center; padding: 48px 24px; color: var(--text-light); display: none; }
+
+  footer { text-align: center; color: var(--text-light); font-size: 11px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">Dimensões & <span>Specs</span></div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input id="search" type="text" placeholder="Buscar formato, dimensão, canal, dispositivo…" autocomplete="off">
+    </div>
+    <div class="header-count">Exibindo <b id="count-vis">0</b> de <b id="count-total">0</b></div>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <div class="filter-inner">
+    <button class="filter-btn active" data-filter="all">Todos</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="canal:Display">Display</button>
+    <button class="filter-btn" data-filter="canal:Video">Video</button>
+    <button class="filter-btn" data-filter="canal:Audio">Audio</button>
+    <button class="filter-btn" data-filter="canal:Social">Social</button>
+    <button class="filter-btn" data-filter="canal:CTV">CTV / OTT</button>
+    <button class="filter-btn" data-filter="canal:Rich Media">Rich Media</button>
+    <button class="filter-btn" data-filter="canal:Search">Search</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="disp:Mobile">Mobile</button>
+    <button class="filter-btn" data-filter="disp:Desktop">Desktop</button>
+    <button class="filter-btn" data-filter="disp:TV">TV</button>
+  </div>
+</div>
+
+<main>
+  <div id="sections-wrap"></div>
+  <div class="no-results" id="no-results">Nenhum resultado para <b id="no-results-term"></b></div>
+</main>
+
+<footer>Dimensões & Specs · Mercado Digital · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+
+<script>
+const DATA = [
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // DISPLAY IAB
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Leaderboard", dim:"728×90px", ratio:"728:90", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Formato padrão topo de página. Altíssima disponibilidade de inventário."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Medium Rectangle", dim:"300×250px", ratio:"6:5", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Formato mais comprado do mercado. Aceito em praticamente todo publisher."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Half Page / Large Rectangle", dim:"300×600px", ratio:"1:2", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Alta visibilidade — ocupa meia página lateral. CPM premium."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Billboard", dim:"970×250px", ratio:"3.88:1", peso:"200KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Formato de impacto acima do fold em publishers premium."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Wide Skyscraper", dim:"160×600px", ratio:"4:15", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Lateral de página — boa visibilidade em leitura de conteúdo longo."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Skyscraper", dim:"120×600px", ratio:"1:5", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Versão estreita do skyscraper. Menos comum hoje."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Large Leaderboard", dim:"970×90px", ratio:"97:9", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Leaderboard expandido — mais impactante que o 728×90."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Desktop",
+   nome:"Super Leaderboard / Pushdown", dim:"970×66px", ratio:"~14.7:1", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:""},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Mobile",
+   nome:"Mobile Banner", dim:"320×50px", ratio:"32:5", peso:"100KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Formato padrão mobile. Topo ou rodapé de app/site."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Mobile",
+   nome:"Mobile Large Banner", dim:"320×100px", ratio:"16:5", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Versão dupla do mobile banner. Maior visibilidade."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Mobile",
+   nome:"Medium Rectangle Mobile", dim:"300×250px", ratio:"6:5", peso:"150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Mesmo formato do desktop — amplamente aceito em mobile também."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Mobile",
+   nome:"Interstitial Mobile", dim:"320×480px · 480×320px", ratio:"2:3 · 3:2", peso:"200KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Tela cheia em pontos de transição do app. Versão landscape: 480×320."},
+
+  {section:"Display IAB", canal:"Display", fmt:"Banner", disp:"Mobile",
+   nome:"Interstitial Full Screen", dim:"1080×1920px", ratio:"9:16", peso:"200KB",
+   ext:"JPG · PNG · HTML5", obs:"Fullscreen de alta resolução para dispositivos modernos."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // RICH MEDIA
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Rich Media", canal:"Rich Media", fmt:"Expandable", disp:"Desktop",
+   nome:"Expandable — Leaderboard", dim:"728×90px → 728×315px", ratio:"Variável", peso:"200KB inicial · 2MB expandido",
+   ext:"HTML5 (Flashtalking · Celtra · Adform)", obs:"Expande verticalmente ao hover ou clique. Peso inicial deve ser baixo para não impactar performance."},
+
+  {section:"Rich Media", canal:"Rich Media", fmt:"Expandable", disp:"Desktop",
+   nome:"Expandable — Half Page", dim:"300×250px → 600×250px", ratio:"Variável", peso:"200KB inicial · 2MB expandido",
+   ext:"HTML5 (Flashtalking · Celtra · Adform)", obs:"Expande lateralmente. Muito usado em publishers premium BR."},
+
+  {section:"Rich Media", canal:"Rich Media", fmt:"Expandable", disp:"Desktop",
+   nome:"Pushdown — Billboard", dim:"970×90px → 970×415px", ratio:"Variável", peso:"200KB inicial · 2MB expandido",
+   ext:"HTML5 (Flashtalking · Celtra)", obs:"Pushdown empurra o conteúdo da página para baixo ao expandir."},
+
+  {section:"Rich Media", canal:"Rich Media", fmt:"Interstitial", disp:"Desktop",
+   nome:"Interstitial Rich Media", dim:"800×600px", ratio:"4:3", peso:"2MB",
+   ext:"HTML5 (Flashtalking · Celtra · Adform)", obs:"Sobrepõe a página inteira com overlay. Requer botão de fechar visível."},
+
+  {section:"Rich Media", canal:"Rich Media", fmt:"Skin / Wallpaper", disp:"Desktop",
+   nome:"Skin / Wallpaper", dim:"Custom — laterais + topo", ratio:"Variável", peso:"200KB por parte",
+   ext:"HTML5 · JPG (Flashtalking · CM360)", obs:"Envolve todo o conteúdo do site. Exclusividade de página. Alta visibilidade."},
+
+  {section:"Rich Media", canal:"Rich Media", fmt:"Adhesion", disp:"Mobile",
+   nome:"Adhesion Banner Mobile", dim:"320×50px · 320×100px", ratio:"Fixo na base", peso:"100KB",
+   ext:"HTML5 · JPG (Flashtalking · Celtra)", obs:"Banner fixo no rodapé da tela durante o scroll. Alta viewability."},
+
+  {section:"Rich Media", canal:"Rich Media", fmt:"Interstitial", disp:"Mobile",
+   nome:"Interstitial Rich Media Mobile", dim:"320×480px", ratio:"2:3", peso:"1MB",
+   ext:"HTML5 (Flashtalking · Celtra · Adform)", obs:""},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // VIDEO
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Video", canal:"Video", fmt:"In-Stream / Outstream", disp:"Desktop · Mobile",
+   nome:"Landscape Standard", dim:"1280×720px (720p)", ratio:"16:9", peso:"≤50MB · bitrate 2–5Mbps",
+   ext:"MP4 (H.264) · WebM", obs:"Mínimo aceito pela maioria das plataformas. Preferir 1080p quando possível."},
+
+  {section:"Video", canal:"Video", fmt:"In-Stream / Outstream", disp:"Desktop · Mobile",
+   nome:"Landscape HD", dim:"1920×1080px (1080p)", ratio:"16:9", peso:"≤200MB · bitrate 8–15Mbps",
+   ext:"MP4 (H.264 · H.265) · MOV", obs:"Padrão para YouTube, DV360, TTD. Obrigatório para CTV/OTT."},
+
+  {section:"Video", canal:"Video", fmt:"In-Stream / Outstream", disp:"Desktop · Mobile",
+   nome:"Landscape 4K", dim:"3840×2160px", ratio:"16:9", peso:"≤500MB · bitrate 35–45Mbps",
+   ext:"MP4 (H.265) · MOV", obs:"Suportado por YouTube e alguns publishers premium. Raramente exigido."},
+
+  {section:"Video", canal:"Video", fmt:"Vertical", disp:"Mobile",
+   nome:"Vertical Full Screen", dim:"1080×1920px", ratio:"9:16", peso:"≤200MB · bitrate 8–15Mbps",
+   ext:"MP4 (H.264)", obs:"Padrão para Stories, Reels, TikTok, Shorts. Obrigatório — não adaptar de horizontal."},
+
+  {section:"Video", canal:"Video", fmt:"Vertical", disp:"Mobile",
+   nome:"Vertical Square", dim:"1080×1080px", ratio:"1:1", peso:"≤100MB · bitrate 4–8Mbps",
+   ext:"MP4 (H.264)", obs:"Feed quadrado — Meta, LinkedIn, Twitter/X. Versátil entre mobile e desktop."},
+
+  {section:"Video", canal:"Video", fmt:"Vertical", disp:"Mobile",
+   nome:"Vertical Portrait", dim:"1080×1350px", ratio:"4:5", peso:"≤100MB · bitrate 4–8Mbps",
+   ext:"MP4 (H.264)", obs:"Formato de feed vertical Meta — ocupa mais espaço na tela que o 1:1."},
+
+  {section:"Video", canal:"Video", fmt:"Bumper / Short", disp:"Desktop · Mobile",
+   nome:"Bumper 6s", dim:"1920×1080px", ratio:"16:9", peso:"≤10MB",
+   ext:"MP4 (H.264)", obs:"Máximo 6 segundos. Non-skippable. Ideal para reforço de mensagem."},
+
+  {section:"Video", canal:"Video", fmt:"Bumper / Short", disp:"Mobile",
+   nome:"Bumper 6s Vertical", dim:"1080×1920px", ratio:"9:16", peso:"≤10MB",
+   ext:"MP4 (H.264)", obs:"Versão vertical do bumper para Shorts, Reels, TikTok."},
+
+  {section:"Video", canal:"Video", fmt:"Duração padrão", disp:"Desktop · Mobile",
+   nome:"15s In-Stream", dim:"1920×1080px", ratio:"16:9", peso:"≤50MB",
+   ext:"MP4 (H.264)", obs:"Non-skippable padrão. Amplamente aceito em todos os players VAST."},
+
+  {section:"Video", canal:"Video", fmt:"Duração padrão", disp:"Desktop · Mobile",
+   nome:"30s In-Stream", dim:"1920×1080px", ratio:"16:9", peso:"≤100MB",
+   ext:"MP4 (H.264)", obs:"Formato tradicional de TV adaptado para digital. Skippable após 5s no YouTube."},
+
+  {section:"Video", canal:"Video", fmt:"Duração padrão", disp:"Desktop · Mobile",
+   nome:"60s In-Stream", dim:"1920×1080px", ratio:"16:9", peso:"≤200MB",
+   ext:"MP4 (H.264)", obs:"Skippable. Usado em Demand Gen, YouTube, Meta."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CTV / OTT
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"CTV / OTT", canal:"CTV", fmt:"Video", disp:"TV",
+   nome:"CTV Full HD", dim:"1920×1080px", ratio:"16:9", peso:"≤200MB · bitrate 15–20Mbps",
+   ext:"MP4 (H.264 · H.265) · MOV", obs:"Padrão obrigatório para CTV. Qualidade broadcast. Audio: AAC 256kbps estéreo."},
+
+  {section:"CTV / OTT", canal:"CTV", fmt:"Video", disp:"TV",
+   nome:"CTV 4K / UHD", dim:"3840×2160px", ratio:"16:9", peso:"≤1GB · bitrate 35–68Mbps",
+   ext:"MP4 (H.265) · MOV", obs:"Samsung Ads, Roku, Apple TV 4K. Exigido por poucos publishers hoje."},
+
+  {section:"CTV / OTT", canal:"CTV", fmt:"Companion Banner", disp:"TV",
+   nome:"CTV Companion Banner", dim:"1280×720px overlay", ratio:"16:9", peso:"≤50KB",
+   ext:"JPG · PNG", obs:"Banner exibido junto ao vídeo CTV (lateral ou inferior). Não aceita HTML5."},
+
+  {section:"CTV / OTT", canal:"CTV", fmt:"Pause Ad", disp:"TV",
+   nome:"Pause Ad CTV", dim:"1920×1080px", ratio:"16:9", peso:"≤200KB",
+   ext:"JPG · PNG", obs:"Exibido quando usuário pausa o conteúdo. Apenas imagem estática — sem vídeo ou HTML5."},
+
+  {section:"CTV / OTT", canal:"CTV", fmt:"Video", disp:"TV",
+   nome:"Addressable TV / Linear", dim:"1920×1080px broadcast", ratio:"16:9", peso:"Arquivo broadcast",
+   ext:"MPEG-2 · MP4 H.264", obs:"TV linear com segmentação digital. Specs de broadcast — entrega via operadora. Não via ad server tradicional."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // AUDIO
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Audio", canal:"Audio", fmt:"Streaming", disp:"Mobile · Desktop · Smart Speaker",
+   nome:"Audio Spot", dim:"N/A", ratio:"N/A", peso:"≤1MB",
+   ext:"MP3 (128–320kbps) · OGG · AAC", obs:"Duração: 15s, 30s ou 60s. Sample rate: 44.1kHz. Estéreo. Spotify exige MP3 128kbps+."},
+
+  {section:"Audio", canal:"Audio", fmt:"Companion Banner", disp:"Mobile · Desktop",
+   nome:"Spotify Companion Banner", dim:"640×640px", ratio:"1:1", peso:"≤200KB",
+   ext:"JPG · PNG", obs:"Exibido simultaneamente ao áudio no app Spotify. Clicável."},
+
+  {section:"Audio", canal:"Audio", fmt:"Companion Banner", disp:"Desktop",
+   nome:"Deezer Companion Banner", dim:"400×400px · 600×250px", ratio:"Variável", peso:"≤150KB",
+   ext:"JPG · PNG", obs:""},
+
+  {section:"Audio", canal:"Audio", fmt:"Podcast", disp:"Mobile · Desktop",
+   nome:"Podcast Host-Read", dim:"N/A", ratio:"N/A", peso:"N/A",
+   ext:"N/A — roteiro em texto", obs:"Lido pelo apresentador. Entregue como script de 30s, 60s ou 90s. Sem ad server."},
+
+  {section:"Audio", canal:"Audio", fmt:"Podcast", disp:"Mobile · Desktop",
+   nome:"Podcast Produzido", dim:"N/A", ratio:"N/A", peso:"≤5MB",
+   ext:"MP3 (192kbps+) · WAV", obs:"Spot produzido em estúdio. Inserido via DAI (Dynamic Ad Insertion) — AdsWizz, Triton Digital."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL — META
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social — Meta", canal:"Social", fmt:"Image", disp:"Mobile · Desktop",
+   nome:"Feed Image — Quadrado", dim:"1080×1080px", ratio:"1:1", peso:"≤30MB",
+   ext:"JPG · PNG", obs:"Formato mais seguro para feed Meta — aparece bem em mobile e desktop."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Image", disp:"Mobile",
+   nome:"Feed Image — Portrait", dim:"1080×1350px", ratio:"4:5", peso:"≤30MB",
+   ext:"JPG · PNG", obs:"Ocupa mais espaço no feed mobile — maior atenção. Recortado para 1:1 no desktop."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Image", disp:"Mobile · Desktop",
+   nome:"Feed Image — Landscape", dim:"1200×628px", ratio:"1.91:1", peso:"≤30MB",
+   ext:"JPG · PNG", obs:"Ratio de link share. Usado em campanhas de tráfego e conversão."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Video", disp:"Mobile",
+   nome:"Reels / Stories Video", dim:"1080×1920px", ratio:"9:16", peso:"≤4GB · bitrate 4Mbps+",
+   ext:"MP4 · MOV (H.264)", obs:"Fullscreen vertical. Duração: até 60s (Reels) / 15s (Stories). Manter elementos principais na zona segura central."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Video", disp:"Mobile · Desktop",
+   nome:"Feed Video — Quadrado", dim:"1080×1080px", ratio:"1:1", peso:"≤4GB",
+   ext:"MP4 · MOV (H.264)", obs:"Até 240 minutos. Autoplay sem som — texto/legenda obrigatório."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Video", disp:"Mobile",
+   nome:"Feed Video — Portrait", dim:"1080×1350px", ratio:"4:5", peso:"≤4GB",
+   ext:"MP4 · MOV (H.264)", obs:"Máxima área no feed mobile."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Carrossel", disp:"Mobile · Desktop",
+   nome:"Carrossel Image", dim:"1080×1080px por card", ratio:"1:1", peso:"≤30MB por card",
+   ext:"JPG · PNG", obs:"2–10 cards. Cada card pode ter título, descrição e CTA individuais."},
+
+  {section:"Social — Meta", canal:"Social", fmt:"Carrossel", disp:"Mobile · Desktop",
+   nome:"Carrossel Video", dim:"1080×1080px por card", ratio:"1:1", peso:"≤4GB por card",
+   ext:"MP4 · MOV", obs:"Vídeo por card. Até 240s por vídeo."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL — TIKTOK
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social — TikTok", canal:"Social", fmt:"Video", disp:"Mobile",
+   nome:"In-Feed Video", dim:"1080×1920px", ratio:"9:16", peso:"≤500MB · bitrate 516kbps+",
+   ext:"MP4 · MOV · AVI (H.264)", obs:"Duração: 5s–60s. Autoplay com som. Resolução mínima: 720×1280px."},
+
+  {section:"Social — TikTok", canal:"Social", fmt:"Video", disp:"Mobile",
+   nome:"TopView", dim:"1080×1920px", ratio:"9:16", peso:"≤500MB",
+   ext:"MP4 · MOV", obs:"Primeiro conteúdo ao abrir o app. Até 60s. Autoplay com som ativo."},
+
+  {section:"Social — TikTok", canal:"Social", fmt:"Video", disp:"Mobile",
+   nome:"Brand Takeover", dim:"1080×1920px · 1080×1080px", ratio:"9:16 · 1:1", peso:"≤2MB (imagem) · ≤50MB (vídeo)",
+   ext:"JPG · PNG · MP4", obs:"3–5s (imagem) ou até 5s (vídeo). Exclusividade de categoria/dia."},
+
+  {section:"Social — TikTok", canal:"Social", fmt:"Image", disp:"Mobile",
+   nome:"Spark Ads / Image", dim:"1080×1920px · 1080×1080px", ratio:"9:16 · 1:1", peso:"≤500KB",
+   ext:"JPG · PNG", obs:"Impulsionamento de conteúdo orgânico existente."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL — LINKEDIN
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social — LinkedIn", canal:"Social", fmt:"Image", disp:"Mobile · Desktop",
+   nome:"Single Image Ad", dim:"1200×627px · 1200×1200px", ratio:"1.91:1 · 1:1", peso:"≤5MB",
+   ext:"JPG · PNG", obs:"Ratio 1.91:1 para desktop, 1:1 funciona em ambos. Máx 100 caracteres no título."},
+
+  {section:"Social — LinkedIn", canal:"Social", fmt:"Video", disp:"Mobile · Desktop",
+   nome:"Video Ad", dim:"1920×1080px · 1080×1080px · 1080×1920px", ratio:"16:9 · 1:1 · 9:16", peso:"≤200MB · bitrate 192kbps+",
+   ext:"MP4 (H.264)", obs:"Duração: 3s–30min. Recomendado: até 30s. Autoplay sem som — legenda obrigatória."},
+
+  {section:"Social — LinkedIn", canal:"Social", fmt:"Carrossel", disp:"Mobile · Desktop",
+   nome:"Carrossel Ad", dim:"1080×1080px por card", ratio:"1:1", peso:"≤10MB por card",
+   ext:"JPG · PNG", obs:"2–10 cards. Formato nativo — não aceita ad server externo."},
+
+  {section:"Social — LinkedIn", canal:"Social", fmt:"Document", disp:"Mobile · Desktop",
+   nome:"Document Ad", dim:"PDF — qualquer tamanho", ratio:"N/A", peso:"≤100MB",
+   ext:"PDF", obs:"Conteúdo downloadable diretamente no feed. Gera leads qualificados B2B."},
+
+  {section:"Social — LinkedIn", canal:"Social", fmt:"Message", disp:"Mobile · Desktop",
+   nome:"Message Ad / InMail", dim:"N/A — texto + banner 300×250px", ratio:"N/A", peso:"≤40KB (banner)",
+   ext:"JPG · PNG (banner)", obs:"Enviado diretamente para o inbox. Banner companion opcional."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL — PINTEREST
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social — Pinterest", canal:"Social", fmt:"Image", disp:"Mobile · Desktop",
+   nome:"Standard Pin", dim:"1000×1500px", ratio:"2:3", peso:"≤20MB",
+   ext:"JPG · PNG", obs:"Ratio 2:3 é o padrão Pinterest — pins verticais têm melhor desempenho."},
+
+  {section:"Social — Pinterest", canal:"Social", fmt:"Image", disp:"Mobile · Desktop",
+   nome:"Square Pin", dim:"1000×1000px", ratio:"1:1", peso:"≤20MB",
+   ext:"JPG · PNG", obs:""},
+
+  {section:"Social — Pinterest", canal:"Social", fmt:"Video", disp:"Mobile · Desktop",
+   nome:"Video Pin", dim:"1080×1920px · 1080×1080px", ratio:"9:16 · 1:1", peso:"≤2GB · bitrate 1Mbps+",
+   ext:"MP4 · MOV · M4V (H.264)", obs:"Duração: 4s–15min. Autoplay sem som."},
+
+  {section:"Social — Pinterest", canal:"Social", fmt:"Carrossel", disp:"Mobile · Desktop",
+   nome:"Carrossel Pin", dim:"1000×1500px · 1000×1000px por card", ratio:"2:3 · 1:1", peso:"≤20MB por card",
+   ext:"JPG · PNG", obs:"2–5 cards."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL — SNAPCHAT
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social — Snapchat", canal:"Social", fmt:"Video", disp:"Mobile",
+   nome:"Snap Ad / Story Ad", dim:"1080×1920px", ratio:"9:16", peso:"≤32MB",
+   ext:"MP4 · MOV (H.264)", obs:"Duração: 3s–3min. Autoplay com som. Top Snap: 3–10s recomendado."},
+
+  {section:"Social — Snapchat", canal:"Social", fmt:"Image", disp:"Mobile",
+   nome:"Story Image", dim:"1080×1920px", ratio:"9:16", peso:"≤5MB",
+   ext:"JPG · PNG", obs:""},
+
+  {section:"Social — Snapchat", canal:"Social", fmt:"Collection", disp:"Mobile",
+   nome:"Collection Ad", dim:"1080×1920px (vídeo) + tiles 160×160px", ratio:"9:16", peso:"≤32MB",
+   ext:"MP4 + JPG", obs:"Vídeo principal + 4 tiles de produto clicáveis. Alta conversão para e-commerce."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL — X (TWITTER)
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social — X (Twitter)", canal:"Social", fmt:"Image", disp:"Mobile · Desktop",
+   nome:"Promoted Image", dim:"1200×675px · 1200×1200px", ratio:"16:9 · 1:1", peso:"≤5MB",
+   ext:"JPG · PNG · WEBP", obs:""},
+
+  {section:"Social — X (Twitter)", canal:"Social", fmt:"Video", disp:"Mobile · Desktop",
+   nome:"Promoted Video", dim:"1920×1080px · 1080×1080px · 1080×1920px", ratio:"16:9 · 1:1 · 9:16", peso:"≤1GB · bitrate 6000kbps+",
+   ext:"MP4 · MOV (H.264)", obs:"Duração: até 2m20s. Máximo recomendado: 15s. Autoplay sem som."},
+
+  {section:"Social — X (Twitter)", canal:"Social", fmt:"Carrossel", disp:"Mobile · Desktop",
+   nome:"Carrossel Ad", dim:"800×800px · 800×418px por card", ratio:"1:1 · 1.91:1", peso:"≤20MB por card",
+   ext:"JPG · PNG", obs:"2–6 cards."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // YOUTUBE
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"YouTube", canal:"Video", fmt:"In-Stream", disp:"Desktop · Mobile · TV",
+   nome:"Skippable In-Stream", dim:"1920×1080px", ratio:"16:9", peso:"≤256GB",
+   ext:"MP4 · MOV · AVI · WMV (H.264 recomendado)", obs:"Duração mínima: 12s. Skip após 5s. YouTube codifica internamente — entrar com alta qualidade."},
+
+  {section:"YouTube", canal:"Video", fmt:"In-Stream", disp:"Desktop · Mobile · TV",
+   nome:"Non-Skippable In-Stream", dim:"1920×1080px", ratio:"16:9", peso:"≤256GB",
+   ext:"MP4 · MOV · AVI · WMV", obs:"Máximo 15s (20s em alguns mercados). Não pode pular."},
+
+  {section:"YouTube", canal:"Video", fmt:"Bumper", disp:"Desktop · Mobile · TV",
+   nome:"Bumper Ad", dim:"1920×1080px", ratio:"16:9", peso:"≤256GB",
+   ext:"MP4 · MOV", obs:"Exatamente 6s. Non-skippable. Alta frequência a baixo CPM."},
+
+  {section:"YouTube", canal:"Video", fmt:"In-Feed", disp:"Desktop · Mobile",
+   nome:"In-Feed Video Ad", dim:"1920×1080px · thumbnail 1280×720px", ratio:"16:9", peso:"≤256GB",
+   ext:"MP4 · MOV", obs:"Aparece na página inicial, resultados de busca e sidebar. Cobrado ao clicar."},
+
+  {section:"YouTube", canal:"Video", fmt:"Shorts", disp:"Mobile",
+   nome:"Shorts Ad", dim:"1080×1920px", ratio:"9:16", peso:"≤256GB",
+   ext:"MP4 · MOV", obs:"Até 60s. Vertical obrigatório. Inserido entre Shorts organicos."},
+
+  {section:"YouTube", canal:"Display", fmt:"Companion / Overlay", disp:"Desktop",
+   nome:"Companion Banner", dim:"300×60px · 300×250px", ratio:"Variável", peso:"≤150KB",
+   ext:"JPG · PNG · GIF · HTML5", obs:"Exibido ao lado do player durante o vídeo in-stream."},
+
+  {section:"YouTube", canal:"Display", fmt:"Companion / Overlay", disp:"Desktop",
+   nome:"In-Video Overlay", dim:"480×70px", ratio:"~6.86:1", peso:"≤150KB",
+   ext:"JPG · PNG · GIF", obs:"Overlay sobre o player no terço inferior. Desktop apenas."},
+
+  {section:"YouTube", canal:"Video", fmt:"Masthead", disp:"Desktop · Mobile · TV",
+   nome:"YouTube Masthead", dim:"2560×1440px (desktop) · 600×500px (mobile)", ratio:"16:9", peso:"Compressão interna YouTube",
+   ext:"MP4 · MOV (autoplay sem som)", obs:"Exclusividade 24h por país. Reserva direta com Google. Alto investimento mínimo."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SEARCH / SHOPPING
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Search & Shopping", canal:"Search", fmt:"Text", disp:"Mobile · Desktop",
+   nome:"Responsive Search Ad (RSA)", dim:"N/A — texto", ratio:"N/A", peso:"N/A",
+   ext:"Texto puro", obs:"Até 15 títulos (30 chars cada) + 4 descrições (90 chars). Google combina automaticamente. Sem criativo gráfico."},
+
+  {section:"Search & Shopping", canal:"Search", fmt:"Text", disp:"Mobile · Desktop",
+   nome:"Performance Max — Assets", dim:"Variável por canal", ratio:"Variável", peso:"Variável",
+   ext:"JPG · PNG · MP4 · Texto", obs:"Imagens: 1200×628px (1.91:1) · 1200×1200px (1:1) · 960×1200px (4:5). Logos: 1200×1200px · 1200×300px. Vídeos: 1920×1080px · 1080×1920px."},
+
+  {section:"Search & Shopping", canal:"Search", fmt:"Shopping", disp:"Mobile · Desktop",
+   nome:"Product Listing Ad (PLA)", dim:"800×800px (imagem do produto)", ratio:"1:1", peso:"≤16MB",
+   ext:"JPG · PNG (via Google Merchant Center)", obs:"Imagem do produto sem texto sobreposto. Fundo branco recomendado. Não é criativo de ad server."},
+
+  {section:"Search & Shopping", canal:"Search", fmt:"Display", disp:"Mobile · Desktop",
+   nome:"Demand Gen — Imagens", dim:"1200×628px · 1200×1200px · 960×1200px", ratio:"1.91:1 · 1:1 · 4:5", peso:"≤5MB",
+   ext:"JPG · PNG", obs:"Google adapta ao inventário (Discover, Gmail, YouTube feed). Enviar todas as ratios."},
+
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const SECTIONS_ORDER = [
+  "Display IAB","Rich Media","Video","CTV / OTT","Audio",
+  "Social — Meta","Social — TikTok","Social — LinkedIn",
+  "Social — Pinterest","Social — Snapchat","Social — X (Twitter)",
+  "YouTube","Search & Shopping"
+];
+
+const SECTION_TOTALS = {};
+SECTIONS_ORDER.forEach(s => {
+  SECTION_TOTALS[s] = DATA.filter(d => d.section === s).length;
+});
+
+function buildSections(data) {
+  const wrap = document.getElementById("sections-wrap");
+  wrap.innerHTML = "";
+  const groups = {};
+  SECTIONS_ORDER.forEach(s => groups[s] = []);
+  data.forEach(d => { if (groups[d.section]) groups[d.section].push(d); });
+
+  let rendered = 0;
+  SECTIONS_ORDER.forEach(sec => {
+    const rows = groups[sec];
+    if (!rows.length) return;
+    rendered += rows.length;
+
+    const div = document.createElement("div");
+    div.className = "section";
+    div.innerHTML = `
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2>${sec}</h2>
+        <span class="sec-count">${rows.length} de ${SECTION_TOTALS[sec]}</span>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead><tr>
+            <th style="width:20%">Formato / Nome</th>
+            <th style="width:10%">Dimensões</th>
+            <th style="width:7%">Ratio</th>
+            <th style="width:7%">Peso máx</th>
+            <th style="width:8%">Dispositivo</th>
+            <th style="width:12%">Extensões aceitas</th>
+            <th>Observações</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(r => `
+            <tr>
+              <td class="td-nome">${r.nome}</td>
+              <td><span class="td-dim">${r.dim}</span></td>
+              <td style="font-size:12px;color:var(--text-mid)">${r.ratio}</td>
+              <td style="font-size:12px;color:var(--text-mid)">${r.peso}</td>
+              <td><span class="badge badge-disp">${r.disp}</span></td>
+              <td style="font-size:12px;color:var(--text-mid)">${r.ext}</td>
+              <td class="td-obs">${r.obs || '—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  return rendered;
+}
+
+function toggleSection(hdr) {
+  hdr.classList.toggle("collapsed");
+  hdr.nextElementSibling.style.display = hdr.classList.contains("collapsed") ? "none" : "";
+}
+
+let activeFilter = "all";
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    applyFilters();
+  });
+});
+document.getElementById("search").addEventListener("input", applyFilters);
+
+function matches(d, q, filter) {
+  const hay = [d.nome, d.dim, d.ratio, d.peso, d.ext, d.obs, d.canal, d.fmt, d.disp, d.section].join(" ").toLowerCase();
+  if (q && !hay.includes(q.toLowerCase())) return false;
+  if (filter === "all") return true;
+  const [key, val] = filter.split(":");
+  if (key === "canal") return d.canal === val || d.section.includes(val);
+  if (key === "disp") return d.disp.includes(val);
+  return true;
+}
+
+function applyFilters() {
+  const q = document.getElementById("search").value.trim();
+  const filtered = DATA.filter(d => matches(d, q, activeFilter));
+  const vis = buildSections(filtered);
+  document.getElementById("count-vis").textContent = vis;
+  const noRes = document.getElementById("no-results");
+  document.getElementById("sections-wrap").style.display = vis ? "" : "none";
+  noRes.style.display = vis ? "none" : "block";
+  if (!vis) document.getElementById("no-results-term").textContent = `"${q || activeFilter}"`;
+}
+
+document.getElementById("count-total").textContent = DATA.length;
+applyFilters();
+</script>
+</body>
+</html>

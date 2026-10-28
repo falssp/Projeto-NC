@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dicionário de Posicionamentos — Mercado Digital</title>
+<style>
+  :root {
+    --navy: #0D2137;
+    --navy-mid: #1A3F63;
+    --blue: #2563EB;
+    --blue-light: #3B82F6;
+    --accent: #38BDF8;
+    --bg: #F0F4F8;
+    --surface: #FFFFFF;
+    --border: #DDE3EC;
+    --text: #0D2137;
+    --text-mid: #4A5568;
+    --text-light: #8B9BBF;
+    --row-alt: #F7FAFC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  header {
+    background: var(--navy); padding: 0 24px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  .header-inner {
+    max-width: 100%; margin: 0;
+    display: flex; align-items: center; gap: 16px; height: 56px;
+  }
+  .logo { color: #fff; font-size: 15px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .logo span { color: var(--accent); }
+  .search-wrap { flex: 1; position: relative; }
+  .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-light); width: 16px; height: 16px; pointer-events: none; }
+  #search { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid #2A4A6E; border-radius: 6px; background: rgba(255,255,255,.08); color: #fff; font-size: 13px; outline: none; transition: border-color .15s, background .15s; }
+  #search::placeholder { color: #6B84A8; }
+  #search:focus { border-color: var(--accent); background: rgba(255,255,255,.12); }
+  .header-count { color: var(--text-light); font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+  .header-count b { color: var(--accent); }
+
+  .filter-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; position: sticky; top: 56px; z-index: 99; }
+  .filter-inner { max-width: 100%; margin: 0; display: flex; align-items: center; gap: 6px; height: 44px; overflow-x: auto; scrollbar-width: none; }
+  .filter-inner::-webkit-scrollbar { display: none; }
+  .filter-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-mid); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .15s; flex-shrink: 0; }
+  .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .filter-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+  main { max-width: 100%; margin: 0; padding: 20px 24px 48px; }
+
+  .section { margin-bottom: 24px; }
+  .section-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--navy-mid); border-radius: 8px 8px 0 0; cursor: pointer; user-select: none; }
+  .section-header h2 { color: #fff; font-size: 13px; font-weight: 600; flex: 1; }
+  .section-header .sec-count { color: rgba(255,255,255,.5); font-size: 12px; }
+  .section-header .chevron { color: rgba(255,255,255,.6); transition: transform .2s; }
+  .section-header.collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #EEF3FA; }
+  thead th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; }
+  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:hover { background: #EBF3FF; }
+  tbody tr.expanded { background: #EBF3FF; }
+  td { padding: 9px 12px; vertical-align: middle; }
+  .td-pos { font-weight: 600; color: var(--text); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .td-abbr { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; color: var(--blue); background: #EFF6FF; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+  .col-pos  { width: 18%; }
+  .col-abbr { width: 8%; }
+  .col-plat { width: 19%; }
+  .col-fmt  { width: 9%; }
+  .col-skip { width: 9%; }
+  .col-dur  { width: 6%; }
+  .col-obj  { width: 10%; }
+  .col-kpi  { width: 8%; }
+  .col-ads  { width: 9%; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-plat { background: #1E3A5F; color: #93C5FD; white-space: normal; word-break: break-word; }
+  .badge-fmt  { background: #1A3A2A; color: #6EE7B7; }
+  .badge-obj  { background: #3A1F5A; color: #C4B5FD; }
+  .badge-skip-s  { background: #1F3A1F; color: #86EFAC; }
+  .badge-skip-ns { background: #3A1F1F; color: #FCA5A5; }
+  .badge-skip-na { background: #2A2A3A; color: #CBD5E0; }
+  .badge-ads-y { background: #1F2F3A; color: #7DD3FC; }
+  .badge-ads-n { background: #2A2A2A; color: #9CA3AF; }
+
+  .expand-row { display: none; }
+  .expand-row.open { display: table-row; }
+  .expand-row td { padding: 0; }
+  .expand-inner {
+    padding: 16px 20px 20px; background: #F0F6FF; border-top: 1px solid #C3D9F5;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;
+  }
+  .detail-item label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); margin-bottom: 4px; }
+  .detail-item p { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .detail-item.full { grid-column: 1 / -1; }
+
+  .no-results { text-align: center; padding: 48px 24px; color: var(--text-light); display: none; }
+  .no-results svg { display: block; margin: 0 auto 12px; opacity: .3; }
+
+  footer { text-align: center; color: var(--text-light); font-size: 11px; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">Dicionário de <span>Posicionamentos</span></div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input id="search" type="text" placeholder="Buscar posicionamento, sigla, plataforma, ad server…" autocomplete="off">
+    </div>
+    <div class="header-count">Exibindo <b id="count-vis">0</b> de <b id="count-total">0</b></div>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <div class="filter-inner">
+    <button class="filter-btn active" data-filter="all">Todos</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="fmt:Video">Video</button>
+    <button class="filter-btn" data-filter="fmt:Display">Display</button>
+    <button class="filter-btn" data-filter="fmt:Audio">Audio</button>
+    <button class="filter-btn" data-filter="fmt:Native">Native</button>
+    <button class="filter-btn" data-filter="fmt:Rich Media">Rich Media</button>
+    <button class="filter-btn" data-filter="fmt:Search">Search</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="skip:Skippable">Skippable</button>
+    <button class="filter-btn" data-filter="skip:Non-Skippable">Non-Skippable</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="obj:Awareness">Awareness</button>
+    <button class="filter-btn" data-filter="obj:Consideration">Consideration</button>
+    <button class="filter-btn" data-filter="obj:Conversão">Conversão</button>
+    <div class="filter-sep"></div>
+    <button class="filter-btn" data-filter="ads:Sim">Requer Ad Server</button>
+  </div>
+</div>
+
+<main>
+  <div id="sections-wrap"></div>
+  <div class="no-results" id="no-results">
+    <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    Nenhum resultado para <b id="no-results-term"></b>
+  </div>
+</main>
+
+<footer>Dicionário de Posicionamentos · Mercado Digital · <a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none;">← Projeto NC</a></footer>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// AD SERVER REFERENCE (usado nos campos adsComp)
+// VAST/VPAID video:  CM360 · Flashtalking · Sizmek (Amazon) · Adform · Innovid (CTV)
+// Rich Media:        Flashtalking · Celtra · Adform · Google Web Designer (CM360)
+// Audio:             CM360 · Flashtalking · AdsWizz · Triton Digital
+// Social (nativo):   Tag nativa da plataforma (pixel/SDK) — ad server externo não se aplica
+// Search/Shopping:   Não requer ad server
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DATA = [
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // AUDIO
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Audio", pos:"Audio Everywhere Non-Skippable", abbr:"audevrynoskp",
+   plat:"Spotify · Deezer · Amazon Music", amb:"App / Web",
+   fmt:"Audio", compra:"Leilão / Reserva", disp:"Mobile / Desktop / Smart Speaker",
+   skip:"Non-Skippable", dur:"30s",
+   specs:"Áudio MP3/OGG + companion banner 640x640px",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · AdsWizz · Triton Digital",
+   seg:"Demo / Geo / Interesse / Comportamento / Playlist Context",
+   bs:"Sim", view:"N/A",
+   obs:"Áudio + banner companion simultâneos. Usuário não pode pular. Ideal para reforço de marca em contexto de escuta ativa."},
+
+  {section:"Audio", pos:"Audio Everywhere Skippable", abbr:"audevryskp",
+   plat:"Spotify · Deezer · Amazon Music", amb:"App / Web",
+   fmt:"Audio", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"30s",
+   specs:"Áudio MP3/OGG + companion banner 640x640px",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · AdsWizz · Triton Digital",
+   seg:"Demo / Geo / Interesse / Playlist Context",
+   bs:"Sim", view:"N/A",
+   obs:"Versão pulável após alguns segundos. Custo menor que non-skippable."},
+
+  {section:"Audio", pos:"Podcast Ad", abbr:"podcast",
+   plat:"Spotify · Apple Podcasts · Castbox · Publishers independentes", amb:"App / Web",
+   fmt:"Audio", compra:"Reserva / Programático", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"15s / 30s / 60s",
+   specs:"Áudio MP3 (host-read ou produzido)",
+   obj:"Awareness / Consideration", kpi:"CPM",
+   ads:"Não", adsComp:"Tag nativa da plataforma — ad server externo não se aplica",
+   seg:"Contextual (tema do podcast) / Demo / Geo / Interesse",
+   bs:"Parcial", view:"N/A",
+   obs:"Formato host-read (lido pelo apresentador) ou produzido (spot). Alta credibilidade e atenção. Não requer ad server."},
+
+  {section:"Audio", pos:"Streaming Radio Ad", abbr:"radstream",
+   plat:"Spotify · Deezer · Rádios digitais (iHeart, Antena 1 etc.)", amb:"App / Web",
+   fmt:"Audio", compra:"Leilão / Reserva", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"30s",
+   specs:"Áudio MP3 + companion banner 640x640px",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · AdsWizz · Triton Digital",
+   seg:"Demo / Geo / Gênero musical / Comportamento",
+   bs:"Sim", view:"N/A",
+   obs:"Rádio digital via app ou web player. Menor CPM que podcast, maior escala."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // DISPLAY & NATIVE
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Display & Native", pos:"First Screen / Masthead Display", abbr:"fstscrmast",
+   plat:"Publishers Premium (UOL, Globo, Terra, iG etc.)", amb:"Web / App",
+   fmt:"Display / Rich Media", compra:"Reserva", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"Custom acima do fold — geralmente 970x250, 320x100 mobile",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Adform · Sizmek",
+   seg:"Run of Platform / Seção / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Primeira posição visível ao abrir a página. Alta visibilidade garantida."},
+
+  {section:"Display & Native", pos:"In-Banner Video", abbr:"inbanvid",
+   plat:"Publishers / Programático (DV360 · TTD · Xandr)", amb:"Web / App",
+   fmt:"In-Banner Video", compra:"Leilão / Reserva", disp:"Mobile / Desktop",
+   skip:"Skippable / Non-Skippable", dur:"30s",
+   specs:"300x250 / 970x250 — vídeo MP4 dentro do banner",
+   obj:"Awareness / Consideration", kpi:"CPM / CPV",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Adform (VPAID/VAST + HTML5)",
+   seg:"Contextual / Interesse / Retargeting",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo reproduzido dentro do espaço de um banner display. Não exige player de vídeo na página."},
+
+  {section:"Display & Native", pos:"Interstitial Mobile", abbr:"interstit",
+   plat:"Apps Mobile / Programático (DV360 · TTD · AppLovin · IronSource)", amb:"App",
+   fmt:"Display / Rich Media", compra:"Leilão", disp:"Mobile",
+   skip:"N/A", dur:"N/A",
+   specs:"320x480 / 480x320 (landscape) — fullscreen",
+   obj:"Awareness / Consideration", kpi:"CPM / CPC",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Adform · Celtra",
+   seg:"Comportamento / Gênero de app / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Ocupa toda a tela em pontos de transição do app (entre fases, carregamentos). Alta visibilidade."},
+
+  {section:"Display & Native", pos:"Native Display", abbr:"ntvdsply",
+   plat:"Programático / Taboola · Outbrain · Publishers", amb:"Web / App",
+   fmt:"Native", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"Adaptativo ao publisher — título + imagem + descrição",
+   obj:"Consideration", kpi:"CPM / CPC",
+   ads:"Não", adsComp:"Tag nativa da plataforma / DSP — ad server externo raramente aplicável",
+   seg:"Contextual / Interesse / Comportamento",
+   bs:"Sim", view:"Sim",
+   obs:"Visual integrado ao conteúdo editorial. Alta aceitação do usuário. Geralmente não requer ad server."},
+
+  {section:"Display & Native", pos:"Native Video Non-Skippable", abbr:"ntvnoskp",
+   plat:"Programático / Taboola · Outbrain · Publishers", amb:"Web / App",
+   fmt:"Native", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"Adaptativo / 16:9 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Adform (VAST)",
+   seg:"Contextual / Interesse",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo em formato nativo, sem opção de pular. Combina atenção de vídeo com aceitação de native."},
+
+  {section:"Display & Native", pos:"Native Video Skippable", abbr:"ntvskp",
+   plat:"Programático / Taboola · Outbrain · Publishers", amb:"Web / App",
+   fmt:"Native", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"30s",
+   specs:"Adaptativo / 16:9 — MP4",
+   obj:"Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Adform (VAST)",
+   seg:"Contextual / Interesse",
+   bs:"Sim", view:"Sim",
+   obs:""},
+
+  {section:"Display & Native", pos:"Rich Media Display", abbr:"richdsply",
+   plat:"Programático / Publishers Premium", amb:"Web / App",
+   fmt:"Rich Media", compra:"Leilão / Reserva", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"300x250 / 970x250 / 320x100 / Custom — HTML5 interativo",
+   obj:"Awareness / Consideration", kpi:"CPM",
+   ads:"Sim", adsComp:"Flashtalking · Celtra · Adform · CM360 (Google Web Designer)",
+   seg:"Interesse / Contextual / Retargeting",
+   bs:"Sim", view:"Sim",
+   obs:"Formato interativo, expansível ou animado. Flashtalking e Celtra são os ad servers mais especializados neste formato."},
+
+  {section:"Display & Native", pos:"Roadblock / Takeover Display", abbr:"cuttedge",
+   plat:"Publishers Premium (UOL, Globo, Terra etc.)", amb:"Web",
+   fmt:"Display", compra:"Reserva", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"Múltiplos formatos simultâneos — 970x250 + 300x600 + 300x250",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Adform · Sizmek",
+   seg:"Run of Site / Seção editorial",
+   bs:"Sim", view:"Sim",
+   obs:"Domínio total de uma página — todos os espaços de um publisher ao mesmo tempo. Máxima visibilidade."},
+
+  {section:"Display & Native", pos:"Standard Display IAB", abbr:"standdisply",
+   plat:"Programático (DV360 · TTD · Xandr · Amazon DSP) / GDN / Publishers", amb:"Web / App",
+   fmt:"Display", compra:"Leilão / Prog. Garantido / Reserva", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"300x250 · 728x90 · 160x600 · 320x50 · 300x600",
+   obj:"Consideration / Conversão", kpi:"CPM / CPC",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek · Adform (todos os ad servers padrão)",
+   seg:"Interesse / Contextual / Retargeting / Lookalike",
+   bs:"Sim", view:"Sim",
+   obs:"Formatos IAB padrão — maior escala e compatibilidade de inventário do mercado."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PUBLISHERS PREMIUM BR
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Publishers Premium BR", pos:"Binge Ads — Globoplay", abbr:"bngead",
+   plat:"Globoplay", amb:"App / Web / CTV",
+   fmt:"Display / Video", compra:"Reserva", disp:"Mobile / Desktop / TV",
+   skip:"N/A", dur:"N/A",
+   specs:"Custom — entre episódios",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"Flashtalking · CM360",
+   seg:"Audiência logada do Globoplay / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Exibido entre episódios de séries. Alta atenção — usuário em modo maratona."},
+
+  {section:"Publishers Premium BR", pos:"First Screen Ad Tile — Dynamic", abbr:"fstscradtl",
+   plat:"Publishers Premium BR (Globo, UOL etc.)", amb:"Web / App",
+   fmt:"Rich Media", compra:"Reserva", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"Custom — posição de destaque no grid de conteúdo",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"Flashtalking · CM360 · Celtra",
+   seg:"Run of Platform / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Tile dinâmico na grade de conteúdo — formato exclusivo de publishers premium BR."},
+
+  {section:"Publishers Premium BR", pos:"Frame Ads — Globoplay", abbr:"framegplay",
+   plat:"Globoplay", amb:"App / Web / CTV",
+   fmt:"Display", compra:"Reserva", disp:"Mobile / Desktop / TV",
+   skip:"N/A", dur:"N/A",
+   specs:"Moldura ao redor do player de vídeo",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"Flashtalking · CM360",
+   seg:"Audiência logada do Globoplay / Conteúdo assistido",
+   bs:"Sim", view:"Sim",
+   obs:"Anúncio em formato de moldura ao redor do player. Alta visibilidade contextual."},
+
+  {section:"Publishers Premium BR", pos:"Mosaico — Globoplay", abbr:"mscogplay",
+   plat:"Globoplay", amb:"App / Web / CTV",
+   fmt:"Display", compra:"Reserva", disp:"Mobile / Desktop / TV",
+   skip:"N/A", dur:"N/A",
+   specs:"Múltiplos tiles na grade de conteúdo",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"Flashtalking · CM360",
+   seg:"Audiência logada / Demo",
+   bs:"Sim", view:"Sim",
+   obs:"Formato exclusivo Globoplay — ocupa múltiplos tiles da grade de conteúdo."},
+
+  {section:"Publishers Premium BR", pos:"Pause Ads — Globoplay", abbr:"psadsgplay",
+   plat:"Globoplay", amb:"App / Web / CTV",
+   fmt:"Display", compra:"Reserva", disp:"Mobile / Desktop / TV",
+   skip:"N/A", dur:"N/A",
+   specs:"Overlay sobre o player pausado",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"Flashtalking · CM360",
+   seg:"Audiência logada / Conteúdo assistido",
+   bs:"Sim", view:"Sim",
+   obs:"Exibido ao pausar o conteúdo. Formato não intrusivo — usuário em controle."},
+
+  {section:"Publishers Premium BR", pos:"Primeiríssima — Globoplay Skippable", abbr:"primgplay",
+   plat:"Globoplay", amb:"App / Web / CTV",
+   fmt:"Video", compra:"Reserva", disp:"Mobile / Desktop / TV",
+   skip:"Skippable", dur:"30s+",
+   specs:"16:9 — primeiro anúncio do break",
+   obj:"Awareness / Consideration", kpi:"CPM / Flat Fee",
+   ads:"Sim", adsComp:"Flashtalking · CM360",
+   seg:"Audiência logada do Globoplay / Demo / Geo / Conteúdo",
+   bs:"Sim", view:"Sim",
+   obs:"Primeira posição do break publicitário no Globoplay. Maior atenção do usuário."},
+
+  {section:"Publishers Premium BR", pos:"Segundíssima — Globoplay Skippable", abbr:"segungplay",
+   plat:"Globoplay", amb:"App / Web / CTV",
+   fmt:"Video", compra:"Reserva", disp:"Mobile / Desktop / TV",
+   skip:"Skippable", dur:"30s",
+   specs:"16:9 — segundo anúncio do break",
+   obj:"Awareness / Consideration", kpi:"CPM / Flat Fee",
+   ads:"Sim", adsComp:"Flashtalking · CM360",
+   seg:"Audiência logada do Globoplay / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Segunda posição do break. CPM menor que Primeiríssima, mesma audiência."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SEARCH & SHOPPING
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Search & Shopping", pos:"App Campaign", abbr:"appcamp",
+   plat:"Google · Meta · Apple Search Ads", amb:"App Store / Web / App",
+   fmt:"Video / Display", compra:"Leilão", disp:"Mobile",
+   skip:"Skippable / Non-Skippable", dur:"30s",
+   specs:"Múltiplos formatos — adapta automaticamente",
+   obj:"Conversão (instalação de app)", kpi:"CPI / CPA",
+   ads:"Não", adsComp:"Tag nativa da plataforma / MMP (AppsFlyer · Adjust · Branch)",
+   seg:"Interesse / Comportamento / Lookalike / Intenção de busca",
+   bs:"Sim", view:"Sim",
+   obs:"Campanha unificada focada em instalação. Usa MMP para atribuição, não ad server tradicional."},
+
+  {section:"Search & Shopping", pos:"Demand Gen", abbr:"dgen",
+   plat:"Google (Discover · Gmail · YouTube feed)", amb:"Web / App",
+   fmt:"Video / Display", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"60s",
+   specs:"Múltiplos formatos — adapta ao inventário",
+   obj:"Consideration / Conversão", kpi:"CPM / CPV / CPC",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tag de clique e impression)",
+   seg:"Interesse / Intenção / Lookalike / Custom Audience",
+   bs:"Sim", view:"Sim",
+   obs:"Campanha de geração de demanda em feeds do Google. Combina social signal com intent data."},
+
+  {section:"Search & Shopping", pos:"Performance Max", abbr:"pmax",
+   plat:"Google (Search · Display · YouTube · Shopping · Gmail · Maps)", amb:"Web / App / CTV",
+   fmt:"Video / Display / Search / Shopping", compra:"Leilão", disp:"All",
+   skip:"Skippable / Non-Skippable", dur:"Variável",
+   specs:"Múltiplos formatos — Google adapta automaticamente",
+   obj:"Awareness → Conversão", kpi:"CPA / ROAS / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tracking de clique — criativo gerado pela plataforma)",
+   seg:"Automático via Smart Bidding / Audience Signals",
+   bs:"Sim", view:"Sim",
+   obs:"Campanha unificada Google. Distribui budget entre todos os canais automaticamente via ML."},
+
+  {section:"Search & Shopping", pos:"Search Text Ad", abbr:"srchtxt",
+   plat:"Google · Bing / Microsoft Ads", amb:"Web",
+   fmt:"Search", compra:"Leilão (CPC)", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"Apenas texto — título (30 chars) + descrição (90 chars)",
+   obj:"Conversão", kpi:"CPC / CPL",
+   ads:"Não", adsComp:"Não requer ad server — gerenciado na plataforma",
+   seg:"Palavra-chave / Intenção de busca / Geo / Dispositivo",
+   bs:"N/A", view:"N/A",
+   obs:"Sem criativo gráfico. Leilão por palavras-chave. Atribuição via plataforma ou UTM + analytics."},
+
+  {section:"Search & Shopping", pos:"Shopping / PLA", abbr:"shopping",
+   plat:"Google · Bing / Microsoft Ads · Amazon", amb:"Web",
+   fmt:"Shopping", compra:"Leilão (CPC)", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"Imagem do produto + título + preço + loja",
+   obj:"Conversão", kpi:"CPC / ROAS",
+   ads:"Não", adsComp:"Não requer ad server — exige feed de catálogo (Google Merchant Center etc.)",
+   seg:"Feed de produtos / Palavra-chave / Remarketing de produto",
+   bs:"N/A", view:"N/A",
+   obs:"Product Listing Ads. Exige catálogo atualizado. Alta intenção de compra."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SOCIAL
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Social", pos:"Branded Effect / AR Filter", abbr:"beffect",
+   plat:"Meta · TikTok · Snapchat", amb:"App",
+   fmt:"Rich Media", compra:"Reserva / Leilão", disp:"Mobile",
+   skip:"N/A", dur:"N/A",
+   specs:"Filtro AR interativo — specs variam por plataforma",
+   obj:"Awareness / Engajamento", kpi:"CPM / Flat Fee / Engajamento",
+   ads:"Não", adsComp:"Tag nativa da plataforma — ad server externo não se aplica",
+   seg:"Audiência da plataforma",
+   bs:"Parcial", view:"Não",
+   obs:"Filtro ou efeito de realidade aumentada criado pela marca. Alta viralização orgânica."},
+
+  {section:"Social", pos:"Feed Display", abbr:"fed-dply",
+   plat:"Meta · Pinterest · X (Twitter) · LinkedIn", amb:"App / Web",
+   fmt:"Display", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"1:1 / 1.91:1 / 4:5 — JPG ou PNG",
+   obj:"Consideration / Conversão", kpi:"CPM / CPC",
+   ads:"Não", adsComp:"Tag nativa da plataforma — pixel de conversão via plataforma ou MMP",
+   seg:"Interesse / Comportamento / Retargeting / Lookalike",
+   bs:"Sim", view:"Sim",
+   obs:"Imagem estática ou carrossel no feed. Não requer ad server — apenas pixel da plataforma."},
+
+  {section:"Social", pos:"Feed Video Non-Skippable", abbr:"feednskp",
+   plat:"Meta · LinkedIn · X (Twitter)", amb:"App / Web",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"4:5 / 1:1 — MP4",
+   obj:"Awareness / Consideration", kpi:"CPM / CPV",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (via tag de terceiro — depende da plataforma aceitar)",
+   seg:"Interesse / Comportamento / Lookalike",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo no feed sem opção de pular. Meta aceita tag de ad server via parceria Business Manager."},
+
+  {section:"Social", pos:"Feed Video Skippable", abbr:"feedskp",
+   plat:"Meta · LinkedIn · X (Twitter)", amb:"App / Web",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"60s",
+   specs:"4:5 / 1:1 / 16:9 — MP4",
+   obj:"Consideration / Conversão", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (via tag de terceiro — depende da plataforma aceitar)",
+   seg:"Interesse / Comportamento / Lookalike",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo no feed que o usuário pode pular. Meta: ad server via parceria; TikTok: tag nativa apenas."},
+
+  {section:"Social", pos:"In-Feed Short Video Skippable", abbr:"ifeedshort",
+   plat:"TikTok · Instagram Reels · YouTube Shorts", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Skippable", dur:"60s",
+   specs:"9:16 — MP4 vertical fullscreen",
+   obj:"Awareness / Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (YouTube Shorts) · Tag nativa (TikTok / Meta)",
+   seg:"Interesse / Comportamento / Lookalike / For You Page",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo vertical curto no feed — Reels, Shorts, TikTok. Formato dominante de atenção mobile."},
+
+  {section:"Social", pos:"In-Stream Non-Skippable", abbr:"instm-nskip",
+   plat:"Meta · YouTube · TikTok (vídeos de parceiros)", amb:"App / Web",
+   fmt:"Video", compra:"Leilão / Reserva", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"16:9 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST)",
+   seg:"Interesse / Comportamento / Contextual",
+   bs:"Sim", view:"Sim",
+   obs:"Exibido dentro de vídeos de criadores ou publishers parceiros. Não pode ser pulado."},
+
+  {section:"Social", pos:"LinkedIn Display / Sponsored Content", abbr:"linkedindspy",
+   plat:"LinkedIn", amb:"App / Web",
+   fmt:"Display / Native", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"1.91:1 / 1:1 — JPG ou PNG",
+   obj:"Awareness / Consideration / Geração de Leads", kpi:"CPM / CPC / CPL",
+   ads:"Não", adsComp:"Tag nativa LinkedIn — Insight Tag para conversão",
+   seg:"Cargo / Setor / Empresa / Senioridade / Habilidades",
+   bs:"Sim", view:"Sim",
+   obs:"Único canal com segmentação profissional B2B real. Não aceita ad server externo."},
+
+  {section:"Social", pos:"LinkedIn Video Skippable", abbr:"linkedinvid",
+   plat:"LinkedIn", amb:"App / Web",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"30min (prático: até 30s)",
+   specs:"16:9 / 1:1 / 9:16 — MP4",
+   obj:"Awareness / Consideration", kpi:"CPV / CPM",
+   ads:"Não", adsComp:"Tag nativa LinkedIn — ad server externo não aceito",
+   seg:"Cargo / Setor / Empresa / Senioridade",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo no feed profissional. LinkedIn não aceita ad server externo — creative e tracking nativos."},
+
+  {section:"Social", pos:"Pinterest Display", abbr:"pntdsply",
+   plat:"Pinterest", amb:"App / Web",
+   fmt:"Display", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"N/A", dur:"N/A",
+   specs:"2:3 / 1:1 — JPG ou PNG",
+   obj:"Consideration / Conversão", kpi:"CPM / CPC",
+   ads:"Não", adsComp:"Tag nativa Pinterest — ad server externo raramente aceito",
+   seg:"Interesse / Palavra-chave / Comportamento de compra",
+   bs:"Sim", view:"Sim",
+   obs:"Pin patrocinado no feed de descoberta. Alta intenção de compra — usuários em modo de planejamento."},
+
+  {section:"Social", pos:"Pinterest Video Skippable", abbr:"pntvidskp",
+   plat:"Pinterest", amb:"App / Web",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"60s",
+   specs:"2:3 / 1:1 / 9:16 — MP4",
+   obj:"Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tag de clique via parceria) · Tag nativa Pinterest",
+   seg:"Interesse / Palavra-chave / Comportamento",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo pin patrocinado. Alta intenção — usuário buscando inspiração ativa."},
+
+  {section:"Social", pos:"Snapchat Commercials Non-Skippable", abbr:"snpcomnskp",
+   plat:"Snapchat", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Non-Skippable", dur:"6s",
+   specs:"9:16 — MP4 vertical",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tag de clique) · Tag nativa Snapchat",
+   seg:"Demo / Geo / Interesse / Comportamento",
+   bs:"Parcial", view:"Sim",
+   obs:"Bumper de 6s não pulável. Aparecem dentro do conteúdo de editores parceiros do Snapchat."},
+
+  {section:"Social", pos:"Snapchat Stories Skippable", abbr:"snpstor",
+   plat:"Snapchat", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Skippable", dur:"10s",
+   specs:"9:16 — MP4 vertical",
+   obj:"Awareness / Consideration", kpi:"CPM / CPV",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tag de clique) · Tag nativa Snapchat",
+   seg:"Demo / Geo / Interesse / Comportamento",
+   bs:"Parcial", view:"Sim",
+   obs:"Vídeo entre stories de outros usuários. Pulável com toque."},
+
+  {section:"Social", pos:"Stories Skippable", abbr:"stor",
+   plat:"Meta (Instagram · Facebook) · Snapchat", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Skippable", dur:"15s",
+   specs:"9:16 — MP4 vertical fullscreen",
+   obj:"Awareness / Consideration", kpi:"CPM / CPV",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (via parceria Meta/Snap) · Tag nativa da plataforma",
+   seg:"Interesse / Geo / Comportamento / Lookalike",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo vertical fullscreen entre stories. Pulável com toque. Formato de alta imersão mobile."},
+
+  {section:"Social", pos:"TikTok Pulse Skippable", abbr:"tkpulsesk",
+   plat:"TikTok", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Skippable", dur:"60s",
+   specs:"9:16 — MP4 vertical",
+   obj:"Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"Tag nativa TikTok — ad server externo não aceito nativamente",
+   seg:"Contextual (top 4% do conteúdo mais assistido) / Interesse",
+   bs:"Sim", view:"Sim",
+   obs:"Aparece ao lado de conteúdo viral. Segmentação contextual diferenciada."},
+
+  {section:"Social", pos:"Top Feed / TopView Skippable", abbr:"topfeed",
+   plat:"TikTok · Instagram · Facebook", amb:"App",
+   fmt:"Video", compra:"Reserva / Leilão", disp:"Mobile",
+   skip:"Skippable", dur:"60s",
+   specs:"9:16 — MP4 vertical",
+   obj:"Awareness", kpi:"CPM / Flat Fee",
+   ads:"Sim", adsComp:"Tag nativa da plataforma · CM360 (via parceria, depende da plataforma)",
+   seg:"Audiência da plataforma / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Primeiro anúncio exibido ao abrir o app ou no topo do feed. Máxima visibilidade no formato."},
+
+  {section:"Social", pos:"X Promoted Video Non-Skippable", abbr:"xvidnskp",
+   plat:"X (Twitter)", amb:"App / Web",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"16:9 / 1:1 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (via parceria X Ads)",
+   seg:"Interesse / Palavra-chave / Comportamento / Seguidor de conta",
+   bs:"Parcial", view:"Sim",
+   obs:""},
+
+  {section:"Social", pos:"X Promoted Video Skippable", abbr:"xvidskp",
+   plat:"X (Twitter)", amb:"App / Web",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"2m20s",
+   specs:"16:9 / 1:1 — MP4",
+   obj:"Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (via parceria X Ads)",
+   seg:"Interesse / Palavra-chave / Comportamento",
+   bs:"Parcial", view:"Sim",
+   obs:""},
+
+  {section:"Social", pos:"X Takeover", abbr:"xtakeover",
+   plat:"X (Twitter)", amb:"App / Web",
+   fmt:"Video / Display", compra:"Reserva", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"6s",
+   specs:"16:9 — MP4 ou imagem",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tag de clique e impression)",
+   seg:"Run of Platform",
+   bs:"Parcial", view:"Sim",
+   obs:"Domínio do Trending Topics e timeline por 24h. Exclusividade de posição."},
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // VIDEO
+  // ══════════════════════════════════════════════════════════════════════════
+  {section:"Video", pos:"Addressable TV / Linear TV Programática", abbr:"addrtv",
+   plat:"Operadoras de TV por assinatura / Programático CTV", amb:"TV / CTV",
+   fmt:"Video", compra:"Programático Garantido / Reserva", disp:"TV",
+   skip:"Non-Skippable", dur:"15s / 30s",
+   specs:"16:9 (1920x1080) — broadcast quality",
+   obj:"Awareness", kpi:"CPM / GRP",
+   ads:"Sim", adsComp:"Innovid · FreeWheel · CM360 (via VAST CTV)",
+   seg:"Demo / Geo / ACR Data / Household Graph / Comportamento de consumo",
+   bs:"Sim", view:"Sim",
+   obs:"TV linear com segmentação digital. Usa dados de audiência para substituir o spot convencional por um personalizado."},
+
+  {section:"Video", pos:"Bumper Non-Skippable", abbr:"bump",
+   plat:"YouTube · Video Platforms · Publishers", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão / Reserva", disp:"All",
+   skip:"Non-Skippable", dur:"6s",
+   specs:"16:9 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek · Adform (VAST)",
+   seg:"Interesse / Intenção / Contextual / Demo",
+   bs:"Sim", view:"Sim",
+   obs:"6s não puláveis — ideal para reforço de mensagem e frequência. Maior recall por segundo de vídeo."},
+
+  {section:"Video", pos:"In-Stream Non-Skippable", abbr:"instm-nskipyt",
+   plat:"YouTube · Publishers de Vídeo · Programático", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão / Reserva", disp:"All",
+   skip:"Non-Skippable", dur:"15s / 20s",
+   specs:"16:9 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek · Adform · Innovid (CTV) (VAST/VPAID)",
+   seg:"Interesse / Intenção / Contextual / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:""},
+
+  {section:"Video", pos:"In-Stream Skippable", abbr:"instm-skipyt",
+   plat:"YouTube · Publishers de Vídeo · Programático", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão / Reserva", disp:"All",
+   skip:"Skippable", dur:"Ilimitado (skip após 5s)",
+   specs:"16:9 — MP4",
+   obj:"Awareness / Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek · Adform · Innovid (CTV) (VAST/VPAID)",
+   seg:"Interesse / Intenção / Contextual / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Modelo TrueView (YouTube) — cobrado apenas em visualizações de 30s ou completas. Alto engagement intent."},
+
+  {section:"Video", pos:"Masthead / Homepage Video", abbr:"mstdvid",
+   plat:"YouTube · Publishers de Vídeo Premium", amb:"Web / App / CTV",
+   fmt:"Video / Display", compra:"Reserva", disp:"All",
+   skip:"Skippable", dur:"30s",
+   specs:"16:9 — MP4 autoplay (sem som)",
+   obj:"Awareness", kpi:"Flat Fee / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (tag de clique e impression)",
+   seg:"Run of Platform / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Posição de destaque na homepage. YouTube: exclusividade de 24h por país."},
+
+  {section:"Video", pos:"OTT / CTV Non-Skippable", abbr:"ottctv",
+   plat:"Smart TVs · Apple TV · Roku · Amazon Fire TV · Samsung Ads", amb:"CTV / Smart TV",
+   fmt:"Video", compra:"Programático Garantido / Reserva", disp:"TV",
+   skip:"Non-Skippable", dur:"15s / 30s",
+   specs:"16:9 (1920x1080) — broadcast quality MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"Innovid · FreeWheel · CM360 · Flashtalking (VAST CTV)",
+   seg:"Demo / Geo / ACR Data / Interesse / HH Income",
+   bs:"Sim", view:"Sim",
+   obs:"TV conectada — tela grande, 100% share of screen, sem skip. Innovid e FreeWheel são os ad servers líderes em CTV."},
+
+  {section:"Video", pos:"Outstream Non-Skippable", abbr:"outsnsk",
+   plat:"Programático (DV360 · TTD · Xandr) / Publishers", amb:"Web / App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"16:9 / Adaptativo — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek · Adform (VAST)",
+   seg:"Contextual / Interesse / Comportamento",
+   bs:"Sim", view:"Sim",
+   obs:"Vídeo fora de ambiente de player — aparece em scroll entre parágrafos ou conteúdo editorial."},
+
+  {section:"Video", pos:"Outstream Skippable", abbr:"outssk",
+   plat:"Programático (DV360 · TTD · Xandr) / Publishers", amb:"Web / App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile / Desktop",
+   skip:"Skippable", dur:"30s",
+   specs:"16:9 / Adaptativo — MP4",
+   obj:"Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek · Adform (VAST)",
+   seg:"Contextual / Interesse",
+   bs:"Sim", view:"Sim",
+   obs:""},
+
+  {section:"Video", pos:"Rewarded Video Non-Skippable", abbr:"rwdnoskip",
+   plat:"Apps Mobile / Programático (AppLovin · IronSource · Unity Ads)", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Non-Skippable", dur:"30s",
+   specs:"9:16 / 16:9 — MP4",
+   obj:"Consideration / Conversão", kpi:"CPM / CPA",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST) · Tag nativa da rede de apps",
+   seg:"Comportamento / Gênero de app / Demo",
+   bs:"Sim", view:"Sim",
+   obs:"Usuário opta por assistir em troca de recompensa in-app. Alta atenção e conclusão — visualização voluntária."},
+
+  {section:"Video", pos:"Rewarded Video Skippable", abbr:"rwrdskp",
+   plat:"Apps Mobile / Programático (AppLovin · IronSource · Unity Ads)", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Skippable", dur:"30s",
+   specs:"9:16 / 16:9 — MP4",
+   obj:"Consideration", kpi:"CPV / CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST) · Tag nativa da rede",
+   seg:"Comportamento / Gênero de app",
+   bs:"Sim", view:"Sim",
+   obs:"Versão pulável do rewarded. Menor conclusão, maior volume."},
+
+  {section:"Video", pos:"Vertical Short Video Non-Skippable", abbr:"vshortnskp",
+   plat:"TikTok · Instagram Reels · YouTube Shorts", amb:"App",
+   fmt:"Video", compra:"Leilão", disp:"Mobile",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"9:16 — MP4 vertical fullscreen",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking (YouTube Shorts) · Tag nativa (TikTok / Meta)",
+   seg:"Interesse / Comportamento / Lookalike",
+   bs:"Sim", view:"Sim",
+   obs:"Formato vertical não pulável em plataformas de vídeo curto. Exige creative nativo no formato."},
+
+  {section:"Video", pos:"Video Reach Campaign Non-Skippable", abbr:"vrcnskip",
+   plat:"YouTube / Google Video Partners", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão", disp:"All",
+   skip:"Non-Skippable", dur:"15s / 30s",
+   specs:"16:9 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST/VPAID)",
+   seg:"Interesse / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:"Campanha de alcance no YouTube. Otimizada para atingir o maior número de pessoas únicas ao menor CPM."},
+
+  {section:"Video", pos:"Video Reach Campaign Skippable", abbr:"vrcskip",
+   plat:"YouTube / Google Video Partners", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão", disp:"All",
+   skip:"Skippable", dur:"60s",
+   specs:"16:9 — MP4",
+   obj:"Awareness", kpi:"CPM / CPV",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST/VPAID)",
+   seg:"Interesse / Demo / Geo",
+   bs:"Sim", view:"Sim",
+   obs:""},
+
+  {section:"Video", pos:"Video View Campaign Non-Skippable", abbr:"vvcnskip",
+   plat:"YouTube / Google Video Partners", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão", disp:"All",
+   skip:"Non-Skippable", dur:"15s",
+   specs:"16:9 — MP4",
+   obj:"Awareness", kpi:"CPM",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST/VPAID)",
+   seg:"Interesse / Demo",
+   bs:"Sim", view:"Sim",
+   obs:"Otimizado para visualizações ao menor CPV. Combina In-Stream, In-Feed e Shorts."},
+
+  {section:"Video", pos:"Video View Campaign Skippable", abbr:"vvcskip",
+   plat:"YouTube / Google Video Partners", amb:"Web / App / CTV",
+   fmt:"Video", compra:"Leilão", disp:"All",
+   skip:"Skippable", dur:"60s",
+   specs:"16:9 — MP4",
+   obj:"Consideration", kpi:"CPV",
+   ads:"Sim", adsComp:"CM360 · Flashtalking · Sizmek (VAST/VPAID)",
+   seg:"Interesse / Demo",
+   bs:"Sim", view:"Sim",
+   obs:""},
+
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+const SECTIONS_ORDER = ["Audio","Display & Native","Publishers Premium BR","Search & Shopping","Social","Video"];
+
+// Totais reais por seção (para o contador "X de Y")
+const SECTION_TOTALS = {};
+SECTIONS_ORDER.forEach(s => {
+  SECTION_TOTALS[s] = DATA.filter(d => d.section === s).length;
+});
+
+function skipClass(s){
+  if(s==="Skippable") return "badge-skip-s";
+  if(s==="Non-Skippable") return "badge-skip-ns";
+  return "badge-skip-na";
+}
+function adClass(s){ return s==="Sim"?"badge-ads-y":"badge-ads-n"; }
+
+function buildSections(data){
+  const wrap = document.getElementById("sections-wrap");
+  wrap.innerHTML = "";
+  const groups = {};
+  SECTIONS_ORDER.forEach(s=>groups[s]=[]);
+  data.forEach(d=>{ if(groups[d.section]) groups[d.section].push(d); });
+
+  let rendered = 0;
+  SECTIONS_ORDER.forEach(sec=>{
+    const rows = groups[sec];
+    if(!rows.length) return;
+    rendered += rows.length;
+
+    const div = document.createElement("div");
+    div.className = "section";
+
+    div.innerHTML = `
+      <div class="section-header" onclick="toggleSection(this)">
+        <h2>${sec}</h2>
+        <span class="sec-count" data-sec="${sec}">${rows.length} de ${SECTION_TOTALS[sec]}</span>
+        <svg class="chevron" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+      <div class="section-body">
+        <table>
+          <thead><tr>
+            <th class="col-pos">Posicionamento</th>
+            <th class="col-abbr">Sigla</th>
+            <th class="col-plat">Plataforma</th>
+            <th class="col-fmt">Formato</th>
+            <th class="col-skip">Skip Type</th>
+            <th class="col-dur">Duração</th>
+            <th class="col-obj">Objetivo</th>
+            <th class="col-kpi">KPI</th>
+            <th class="col-ads">Ad Servers</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map((r,i)=>{
+              const rid = `row-${sec.replace(/\W+/g,'-')}-${i}`;
+              return `
+              <tr onclick="toggleRow(this,'${rid}')">
+                <td class="td-pos">${r.pos}</td>
+                <td><span class="td-abbr">${r.abbr}</span></td>
+                <td><span class="badge badge-plat">${r.plat}</span></td>
+                <td><span class="badge badge-fmt">${r.fmt}</span></td>
+                <td><span class="badge ${skipClass(r.skip)}">${r.skip}</span></td>
+                <td style="font-size:12px">${r.dur}</td>
+                <td><span class="badge badge-obj">${r.obj}</span></td>
+                <td style="font-size:12px;color:var(--text-mid)">${r.kpi}</td>
+                <td><span class="badge ${adClass(r.ads)}">${r.ads}</span></td>
+              </tr>
+              <tr class="expand-row" id="${rid}">
+                <td colspan="9">
+                  <div class="expand-inner">
+                    <div class="detail-item"><label>Ambiente</label><p>${r.amb}</p></div>
+                    <div class="detail-item"><label>Tipo de Compra</label><p>${r.compra}</p></div>
+                    <div class="detail-item"><label>Dispositivo</label><p>${r.disp}</p></div>
+                    <div class="detail-item"><label>Dimensões / Specs</label><p>${r.specs}</p></div>
+                    <div class="detail-item"><label>KPI Principal</label><p>${r.kpi}</p></div>
+                    <div class="detail-item"><label>Ad Servers Compatíveis</label><p>${r.adsComp}</p></div>
+                    <div class="detail-item"><label>Brand Safety</label><p>${r.bs}</p></div>
+                    <div class="detail-item"><label>Viewability</label><p>${r.view}</p></div>
+                    <div class="detail-item full"><label>Segmentação</label><p>${r.seg}</p></div>
+                    ${r.obs?`<div class="detail-item full"><label>Observações</label><p>${r.obs}</p></div>`:''}
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  return rendered;
+}
+
+function toggleSection(hdr){
+  hdr.classList.toggle("collapsed");
+  hdr.nextElementSibling.style.display = hdr.classList.contains("collapsed")?"none":"";
+}
+function toggleRow(tr, id){
+  const exp = document.getElementById(id);
+  if(!exp) return;
+  const open = exp.classList.toggle("open");
+  tr.classList.toggle("expanded", open);
+}
+
+let activeFilter = "all";
+document.querySelectorAll(".filter-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    applyFilters();
+  });
+});
+document.getElementById("search").addEventListener("input", applyFilters);
+
+function matches(d, q, filter){
+  const hay = [d.pos,d.abbr,d.plat,d.fmt,d.skip,d.obj,d.kpi,d.seg,d.obs,d.section,d.adsComp].join(" ").toLowerCase();
+  if(q && !hay.includes(q.toLowerCase())) return false;
+  if(filter==="all") return true;
+  const [key,val] = filter.split(":");
+  if(key==="fmt") return d.fmt.toLowerCase().includes(val.toLowerCase());
+  if(key==="skip") return d.skip===val;
+  if(key==="obj") return d.obj.includes(val);
+  if(key==="ads") return d.ads===val;
+  return true;
+}
+
+function applyFilters(){
+  const q = document.getElementById("search").value.trim();
+  const filtered = DATA.filter(d=>matches(d,q,activeFilter));
+  const vis = buildSections(filtered);
+  document.getElementById("count-vis").textContent = vis;
+  const noRes = document.getElementById("no-results");
+  document.getElementById("sections-wrap").style.display = vis?"":"none";
+  noRes.style.display = vis?"none":"block";
+  if(!vis) document.getElementById("no-results-term").textContent = `"${q||activeFilter}"`;
+}
+
+document.getElementById("count-total").textContent = DATA.length;
+applyFilters();
+</script>
+</body>
+</html>
