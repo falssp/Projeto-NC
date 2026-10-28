@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Validador de Floodlight | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
+  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
+  --info:#1d4ed8;--info-bg:#eff6ff;--info-bd:#bfdbfe;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:20px 24px 0;max-width:960px;margin:0 auto}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
+.main{max-width:960px;margin:0 auto;padding:0 24px 48px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:6px}
+textarea{width:100%;font-family:var(--mono);font-size:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--escuro);resize:vertical;min-height:100px;outline:none;transition:border-color .15s}
+textarea:focus{border-color:var(--azul)}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{padding:8px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* results */
+.result-section{margin-bottom:20px}
+.result-header{font-size:13px;font-weight:700;color:var(--body);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.finding{display:flex;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid;margin-bottom:8px;align-items:flex-start}
+.finding-err{background:var(--err-bg);border-color:var(--err-bd)}
+.finding-warn{background:var(--warn-bg);border-color:var(--warn-bd)}
+.finding-ok{background:var(--ok-bg);border-color:var(--ok-bd)}
+.finding-info{background:var(--info-bg);border-color:var(--info-bd)}
+.finding-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.finding-body{flex:1}
+.finding-title{font-size:13px;font-weight:600}
+.finding-err .finding-title{color:var(--err)}
+.finding-warn .finding-title{color:var(--warn)}
+.finding-ok .finding-title{color:var(--ok)}
+.finding-info .finding-title{color:var(--info)}
+.finding-desc{font-size:12px;color:var(--body);margin-top:3px;line-height:1.5}
+.finding-fix{font-size:12px;color:var(--body);margin-top:4px;font-family:var(--mono);background:rgba(0,0,0,.04);padding:3px 6px;border-radius:4px;display:inline-block}
+
+/* param table */
+.param-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.param-table th{background:var(--bg);padding:7px 10px;text-align:left;font-weight:600;color:var(--body);border-bottom:1px solid var(--border)}
+.param-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.param-table tr:last-child td{border-bottom:none}
+.param-key{font-family:var(--mono);font-weight:500;color:var(--azul)}
+.param-val{font-family:var(--mono);word-break:break-all}
+.param-status{white-space:nowrap}
+.st-ok{color:var(--ok);font-weight:600}
+.st-err{color:var(--err);font-weight:600}
+.st-warn{color:var(--warn);font-weight:600}
+.st-info{color:var(--info)}
+
+/* score */
+.score-bar{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid;margin-bottom:16px}
+.score-num{font-size:28px;font-weight:700;line-height:1}
+.score-label{font-size:12px;font-weight:500;margin-top:2px}
+
+/* examples */
+.example-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:99px;background:var(--surface);color:var(--body);cursor:pointer;font-family:inherit;transition:all .15s}
+.chip:hover{border-color:var(--azul);color:var(--azul)}
+
+/* multi input */
+.tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px}
+.vtab{padding:7px 16px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;transition:all .15s}
+.vtab:hover{color:var(--azul)}
+.vtab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.vpanel{display:none}
+.vpanel.active{display:block}
+</style>
+</head>
+<body>
+
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+
+<div class="header">
+  <h1>Validador de Floodlight</h1>
+  <p class="subtitle">Cola qualquer tag Floodlight (iFrame, impression URL, gtag, VAST) — o validador aponta erros críticos, alertas e boas práticas antes da tag ir ao ar.</p>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <div class="tab-row">
+      <button class="vtab active" onclick="switchMode('single',this)">Tag única</button>
+      <button class="vtab" onclick="switchMode('batch',this)">Batch (várias tags)</button>
+    </div>
+
+    <!-- SINGLE -->
+    <div id="mode-single" class="vpanel active">
+      <label>Cole a tag ou URL aqui</label>
+      <textarea id="tag-input" rows="6" placeholder="Cole o iFrame tag, a impression URL, o snippet gtag.js ou a VAST Tracking URL…"></textarea>
+      <div class="example-chips">
+        <span style="font-size:11px;color:var(--muted);align-self:center">Exemplos:</span>
+        <button class="chip" onclick="loadEx('fl_counter_ok')">Counter OK</button>
+        <button class="chip" onclick="loadEx('fl_counter_bad_ord')">Counter ord= errado</button>
+        <button class="chip" onclick="loadEx('fl_sales_ok')">Sales OK</button>
+        <button class="chip" onclick="loadEx('fl_sales_rand')">Sales [Random] ⚠️</button>
+        <button class="chip" onclick="loadEx('fl_sales_no_cost')">Sales sem cost=</button>
+        <button class="chip" onclick="loadEx('fl_missing_params')">Parâmetros faltando</button>
+        <button class="chip" onclick="loadEx('gtag_ok')">gtag.js</button>
+        <button class="chip" onclick="loadEx('vast_ok')">VAST</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="validate()">Validar</button>
+        <button class="btn-secondary" onclick="clearAll()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- BATCH -->
+    <div id="mode-batch" class="vpanel">
+      <label>Cole várias tags (uma por linha, ou separadas por linha em branco)</label>
+      <textarea id="batch-input" rows="10" placeholder="https://ad.doubleclick.net/ddm/activity/src=111;type=aa;cat=bb;ord=[Random]?&#10;https://ad.doubleclick.net/ddm/activity/src=222;type=cc;cat=dd;cost=99.90;ord=[Random]?&#10;..."></textarea>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="validateBatch()">Validar todas</button>
+        <button class="btn-secondary" onclick="document.getElementById('batch-input').value='';document.getElementById('batch-result').innerHTML=''">Limpar</button>
+      </div>
+      <div id="batch-result" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <div id="result"></div>
+
+</div>
+
+<script>
+const EX={
+  fl_counter_ok:`https://ad.doubleclick.net/ddm/activity/src=123456789;type=brand0;cat=home0;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=[Random]?`,
+  fl_counter_bad_ord:`https://ad.doubleclick.net/ddm/activity/src=123456789;type=brand0;cat=home0;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=1?`,
+  fl_sales_ok:`https://ad.doubleclick.net/ddm/activity/src=123456789;type=brand0;cat=purch0;qty=1;cost=199.90;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=ORDER_12345?`,
+  fl_sales_rand:`https://ad.doubleclick.net/ddm/activity/src=123456789;type=brand0;cat=purch0;qty=1;cost=199.90;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=[Random]?`,
+  fl_sales_no_cost:`https://ad.doubleclick.net/ddm/activity/src=123456789;type=brand0;cat=purch0;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=ORDER_999?`,
+  fl_missing_params:`https://ad.doubleclick.net/ddm/activity/src=;type=;cat=home0;ord=[Random]?`,
+  gtag_ok:`<script async src="https://www.googletagmanager.com/gtag/js?id=DC-123456789"><\/script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('config', 'DC-123456789');\n  gtag('event', 'conversion', {\n    'allow_custom_scripts': true,\n    'send_to': 'DC-123456789/brand0/home0+standard'\n  });\n<\/script>`,
+  vast_ok:`<Tracking event="midpoint"><![CDATA[https://ad.doubleclick.net/ddm/activity/src=123456789;type=brand0;cat=video0;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=1?]]></Tracking>`,
+};
+
+function loadEx(k){
+  document.getElementById('tag-input').value=EX[k]||'';
+  validate();
+}
+function clearAll(){
+  document.getElementById('tag-input').value='';
+  document.getElementById('result').innerHTML='';
+}
+function switchMode(m,btn){
+  document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.vpanel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('mode-'+m).classList.add('active');
+  document.getElementById('result').innerHTML='';
+}
+
+/* ── CORE VALIDATOR ── */
+function parseFL(raw){
+  // Extract URL from various formats
+  let url='';
+  const urlMatch=raw.match(/https?:\/\/ad\.doubleclick\.net\/ddm\/activity\/([^"'\s<>]+)/);
+  if(urlMatch) url='https://ad.doubleclick.net/ddm/activity/'+urlMatch[1];
+
+  // gtag send_to
+  const gtagMatch=raw.match(/send_to['":\s]+['"]([^'"]+)['"]/);
+  const dcIdMatch=raw.match(/DC-(\d+)/);
+  const gtagConfig=raw.match(/gtag\('config',\s*'(DC-[^']+)'/);
+  const allowCustom=/allow_custom_scripts.*true/i.test(raw);
+
+  // VAST
+  const vastMatch=raw.match(/<Tracking event="([^"]+)"[^>]*>[\s\S]*?(?:CDATA\[)?(https?:\/\/[^\]"<\s]+)/i);
+
+  // iFrame
+  const iframeMatch=raw.match(/iframe[^>]+src="([^"]+)"/i)||raw.match(/src="(https?:\/\/ad\.doubleclick[^"]+)"/i);
+
+  if(urlMatch||iframeMatch){
+    const rawUrl=url||(iframeMatch?iframeMatch[1]:'');
+    return {type:'fl_url',url:rawUrl,raw};
+  }
+  if(gtagMatch||dcIdMatch){
+    return {type:'gtag',sendTo:gtagMatch?gtagMatch[1]:'',dcId:dcIdMatch?dcIdMatch[1]:'',allowCustom,raw};
+  }
+  if(vastMatch){
+    return {type:'vast',event:vastMatch[1],url:vastMatch[2],raw};
+  }
+  return {type:'unknown',raw};
+}
+
+function parseParams(url){
+  // Parse ;key=value; style (Floodlight format)
+  const path=url.replace(/^https?:\/\/[^/]+\/ddm\/activity\//,'').replace(/\?$/,'');
+  const params={};
+  path.split(';').forEach(seg=>{
+    const eq=seg.indexOf('=');
+    if(eq<0)return;
+    const k=seg.slice(0,eq);
+    const v=seg.slice(eq+1);
+    if(k) params[k]=v;
+  });
+  return params;
+}
+
+function validateFL(parsed){
+  const findings=[];
+  const params=parseParams(parsed.url);
+  const isSales=('cost' in params)||/cat=.*pur|cat=.*sal|cat=.*comp/i.test(parsed.url);
+
+  // ── CRITICAL ──
+  if(!params.src||params.src===''){
+    findings.push({level:'err',title:'src= ausente ou vazio',desc:'O Advertiser ID (src=) é obrigatório. Sem ele a tag não atribui a nenhum anunciante no CM360.',fix:'src=SEU_ADVERTISER_ID'});
+  } else if(!/^\d+$/.test(params.src)){
+    findings.push({level:'err',title:'src= não é numérico',desc:`"${params.src}" não parece um Advertiser ID válido. Deve ser somente dígitos.`,fix:'src=123456789'});
+  }
+  if(!params.cat||params.cat===''){
+    findings.push({level:'err',title:'cat= ausente ou vazio',desc:'Activity Tag String (cat=) é obrigatório. Identifica a atividade/evento.',fix:'cat=home0'});
+  }
+  if(!params.type||params.type===''){
+    findings.push({level:'err',title:'type= ausente ou vazio',desc:'Group Tag String (type=) é obrigatório. Agrupa atividades por categoria.',fix:'type=brand0'});
+  }
+  if(!params.ord&&params.ord!==''){
+    findings.push({level:'err',title:'ord= ausente',desc:'O parâmetro ord= é obrigatório em todos os Floodlights.',fix:isSales?'ord=ORDER_ID_UNICO':'ord=[Random]'});
+  }
+
+  // ── SALES SPECIFIC ──
+  if(isSales){
+    if(params.ord==='[Random]'||params.ord==='[random]'){
+      findings.push({level:'err',title:'Sales com ord=[Random] — duplicata garantida!',desc:'Floodlight Sales precisa de um Order ID ÚNICO em ord=. Usar [Random] faz cada reload contar como nova transação, inflando receita.',fix:'ord=ORDER_ID_UNICO (ex: ord=98765)'});
+    } else if(params.ord==='1'||params.ord==='0'){
+      findings.push({level:'warn',title:'ord= fixo em Sales',desc:`ord=${params.ord} estático em Sales pode deduplicar TUDO como um pedido único se implementado em vários usuários. Certifique-se que é dinâmico.`});
+    }
+    if(!params.cost||params.cost===''){
+      findings.push({level:'err',title:'cost= ausente em Floodlight Sales',desc:'Floodlight Sales sem cost= não registra receita. O relatório de conversão fica sem valor monetário.',fix:'cost=VALOR_DA_TRANSACAO (ex: cost=199.90)'});
+    } else if(params.cost&&!/^[\d.]+$/.test(params.cost)&&!params.cost.startsWith('[')){
+      findings.push({level:'warn',title:'cost= com valor suspeito',desc:`"${params.cost}" — verifique se é numérico e sem símbolo de moeda (use 199.90, não R$199,90).`});
+    }
+  } else {
+    // Counter
+    if(params.ord&&params.ord!=='[Random]'&&params.ord!=='[random]'&&!/^\[/.test(params.ord)){
+      if(/^\d+$/.test(params.ord)){
+        findings.push({level:'warn',title:'Counter com ord= estático',desc:`ord=${params.ord} é estático. Se o browser cachear a requisição, disparos repetidos podem não ser contados. Use ord=[Random].`,fix:'ord=[Random]'});
+      }
+    }
+  }
+
+  // ── WARNINGS ──
+  if(!parsed.url.includes('dc_lat=')){
+    findings.push({level:'warn',title:'dc_lat= ausente',desc:'Parâmetro para Limit Ad Tracking (iOS/Android). Recomendado incluir (pode ficar vazio: dc_lat=).'});
+  }
+  if(!parsed.url.includes('npa=')){
+    findings.push({level:'warn',title:'npa= ausente',desc:'Non-Personalized Ads — necessário para conformidade LGPD/GDPR. Inclua npa= (vazio aceita personalização; npa=1 = sem personalização).'});
+  }
+  if(!parsed.url.includes('gdpr=')){
+    findings.push({level:'info',title:'gdpr= não encontrado',desc:'Parâmetro GDPR. Recomendado para campanhas com possível alcance europeu (gdpr=0 ou gdpr=1 + gdpr_consent=TCF_STRING).'});
+  }
+
+  // ── GOOD PRACTICES ──
+  if(params.src&&params.src.length>12){
+    findings.push({level:'warn',title:'src= com muitos dígitos',desc:`"${params.src}" tem ${params.src.length} dígitos. IDs CM360 normalmente têm 9-10. Confirme que não é um Campaign ID ou Placement ID no lugar do Advertiser ID.`});
+  }
+  if(parsed.url.includes('doubleclick.net/ddm/clk')){
+    findings.push({level:'info',title:'Esta é uma Click Tracker URL, não Floodlight',desc:'A URL contém /ddm/clk/ — é uma URL de rastreio de clique, não uma tag de conversão.'});
+  }
+
+  // ── ALL OK ──
+  const errors=findings.filter(f=>f.level==='err');
+  const warns=findings.filter(f=>f.level==='warn');
+  if(errors.length===0&&warns.length===0){
+    findings.push({level:'ok',title:'Tag válida — nenhum problema crítico encontrado',desc:isSales?'Floodlight Sales com parâmetros obrigatórios presentes.':'Floodlight Counter com parâmetros obrigatórios presentes.'});
+  }
+
+  return {findings,params,isSales,type:'fl_url'};
+}
+
+function validateGtag(parsed){
+  const findings=[];
+  if(!parsed.dcId){
+    findings.push({level:'err',title:'DC- ID não encontrado',desc:'Não foi possível detectar o Floodlight Configuration ID (DC-XXXXXXX). Verifique se está no formato correto.'});
+  }
+  if(!parsed.allowCustom){
+    findings.push({level:'warn',title:'allow_custom_scripts não detectado',desc:"Para Floodlight customizado via gtag, inclua 'allow_custom_scripts': true no objeto de evento."});
+  }
+  if(parsed.sendTo){
+    const parts=parsed.sendTo.split('/');
+    if(parts.length<3){
+      findings.push({level:'warn',title:'send_to com formato suspeito',desc:`"${parsed.sendTo}" — formato esperado: DC-[src]/[type]/[cat]+[countingMethod]`});
+    } else {
+      const method=parsed.sendTo.split('+')[1];
+      if(!method){
+        findings.push({level:'warn',title:'Método de contagem ausente no send_to',desc:'O send_to deve terminar com +standard (Counter) ou +transaction (Sales).',fix:'DC-ID/type/cat+standard ou +transaction'});
+      }
+    }
+  } else {
+    findings.push({level:'warn',title:'send_to não detectado',desc:"O parâmetro 'send_to' direciona o evento ao Floodlight correto. Verifique se está presente no gtag('event',...)."});
+  }
+  if(findings.filter(f=>f.level==='err').length===0&&findings.filter(f=>f.level==='warn').length===0){
+    findings.push({level:'ok',title:'gtag.js parece correto',desc:'Estrutura básica detectada. Valide o disparo real via Tag Assistant do Chrome.'});
+  }
+  findings.push({level:'info',title:'Dica: valide com Tag Assistant',desc:'Instale o Google Tag Assistant Legacy ou use o modo de Preview do GTM para confirmar o disparo em ambiente real.'});
+  return {findings,params:{},isSales:false,type:'gtag'};
+}
+
+function validateVAST(parsed){
+  const findings=[];
+  const validEvents=['impression','start','firstQuartile','midpoint','thirdQuartile','complete','click','creativeView','pause','resume','mute','unmute','skip'];
+  if(!validEvents.includes(parsed.event)){
+    findings.push({level:'warn',title:`Evento VAST desconhecido: "${parsed.event}"`,desc:'Eventos válidos: '+validEvents.join(', ')+'.'});
+  }
+  if(parsed.url){
+    const sub=validateFL({url:parsed.url,raw:parsed.raw});
+    findings.push(...sub.findings.filter(f=>f.level==='err'||f.level==='warn'));
+    if(findings.filter(f=>f.level==='err').length===0){
+      findings.push({level:'ok',title:`VAST Tracking válida — evento "${parsed.event}"`,desc:'URL de tracking detectada dentro do elemento <Tracking>.'});
+    }
+    return {findings,params:sub.params,isSales:false,type:'vast',event:parsed.event};
+  } else {
+    findings.push({level:'err',title:'URL não encontrada dentro do VAST <Tracking>',desc:'Certifique-se que a URL está dentro de <![CDATA[...]]>.'});
+    return {findings,params:{},isSales:false,type:'vast',event:parsed.event};
+  }
+}
+
+function runValidation(raw){
+  if(!raw||!raw.trim()) return null;
+  const parsed=parseFL(raw.trim());
+  if(parsed.type==='fl_url') return validateFL(parsed);
+  if(parsed.type==='gtag') return validateGtag(parsed);
+  if(parsed.type==='vast') return validateVAST(parsed);
+  return {findings:[{level:'warn',title:'Formato não reconhecido',desc:'Cole uma Floodlight URL (ad.doubleclick.net/ddm/activity/...), um snippet gtag.js, ou um elemento VAST <Tracking>.'}],params:{},isSales:false,type:'unknown'};
+}
+
+function validate(){
+  const raw=document.getElementById('tag-input').value;
+  const res=runValidation(raw);
+  if(!res){document.getElementById('result').innerHTML='';return;}
+  document.getElementById('result').innerHTML=renderResult(res,raw);
+}
+
+function renderResult(res,raw){
+  const errs=res.findings.filter(f=>f.level==='err');
+  const warns=res.findings.filter(f=>f.level==='warn');
+  const oks=res.findings.filter(f=>f.level==='ok');
+  const score=errs.length===0?warns.length===0?100:Math.max(40,100-warns.length*15):Math.max(0,100-errs.length*30-warns.length*10);
+  const scoreColor=score>=80?'var(--ok)':score>=50?'var(--warn)':'var(--err)';
+  const scoreBg=score>=80?'var(--ok-bg)':score>=50?'var(--warn-bg)':'var(--err-bg)';
+  const scoreBd=score>=80?'var(--ok-bd)':score>=50?'var(--warn-bd)':'var(--err-bd)';
+
+  let paramTable='';
+  if(Object.keys(res.params).length){
+    const paramDescs={
+      src:'Advertiser ID',type:'Group Tag String',cat:'Activity Tag String',
+      ord:'Ordinal (cache-buster / order ID)',cost:'Valor da transação',qty:'Quantidade',
+      dc_lat:'Limit Ad Tracking',dc_rdid:'Device ID (IDFA/GAID)',
+      tag_for_child_directed_treatment:'COPPA flag',tfua:'Tag For Users Under Age',
+      npa:'Non-Personalized Ads',gdpr:'GDPR aplicável',gdpr_consent:'TCF Consent String',
+    };
+    const requiredKeys=['src','type','cat','ord'];
+    const salesKeys=['cost'];
+    paramTable=`
+      <div class="result-section">
+        <div class="result-header">📋 Parâmetros detectados</div>
+        <table class="param-table">
+          <thead><tr><th>Parâmetro</th><th>Valor</th><th>Descrição</th><th>Status</th></tr></thead>
+          <tbody>
+            ${Object.entries(res.params).map(([k,v])=>{
+              const req=requiredKeys.includes(k)||(res.isSales&&salesKeys.includes(k));
+              const empty=v==='';
+              let st='',stClass='st-info';
+              if(req&&empty){st='⛔ Vazio';stClass='st-err';}
+              else if(req&&!empty){st='✅ OK';stClass='st-ok';}
+              else if(!req&&!empty){st='ℹ️ Presente';stClass='st-info';}
+              else{st='— Vazio';stClass='';}
+              const warn=(k==='ord'&&v==='[Random]'&&res.isSales);
+              if(warn){st='⚠️ Atenção';stClass='st-warn';}
+              return `<tr>
+                <td class="param-key">${k}=</td>
+                <td class="param-val">${v===''?'<span style="color:var(--muted)">(vazio)</span>':escHtml(v)}</td>
+                <td style="font-size:11px;color:var(--body)">${paramDescs[k]||''}</td>
+                <td class="param-status ${stClass}">${st}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  return `
+    <div class="card">
+      <div class="score-bar" style="background:${scoreBg};border-color:${scoreBd}">
+        <div class="score-num" style="color:${scoreColor}">${score}</div>
+        <div>
+          <div class="score-label" style="color:${scoreColor};font-weight:700">${score===100?'Tag válida':score>=80?'Quase lá':score>=50?'Atenção necessária':'Erros críticos'}</div>
+          <div class="score-label" style="color:var(--body)">${errs.length} erro${errs.length!==1?'s':''} · ${warns.length} alerta${warns.length!==1?'s':''} · Tipo: ${res.type==='fl_url'?res.isSales?'Floodlight Sales':'Floodlight Counter':res.type==='gtag'?'gtag.js':res.type==='vast'?`VAST (${res.event||'?'})`:'Desconhecido'}</div>
+        </div>
+      </div>
+
+      ${res.findings.map(f=>`
+        <div class="finding finding-${f.level}">
+          <div class="finding-icon">${f.level==='err'?'⛔':f.level==='warn'?'⚠️':f.level==='ok'?'✅':'ℹ️'}</div>
+          <div class="finding-body">
+            <div class="finding-title">${f.title}</div>
+            ${f.desc?`<div class="finding-desc">${f.desc}</div>`:''}
+            ${f.fix?`<div class="finding-fix">Sugestão: ${escHtml(f.fix)}</div>`:''}
+          </div>
+        </div>`).join('')}
+
+      ${paramTable}
+    </div>`;
+}
+
+/* BATCH */
+function validateBatch(){
+  const raw=document.getElementById('batch-input').value.trim();
+  if(!raw){return;}
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  const out=document.getElementById('batch-result');
+  let html='<div style="font-size:12px;font-weight:700;color:var(--body);margin-bottom:12px">'+lines.length+' tag(s) analisadas</div>';
+  lines.forEach((line,i)=>{
+    const res=runValidation(line);
+    if(!res)return;
+    const errs=res.findings.filter(f=>f.level==='err');
+    const warns=res.findings.filter(f=>f.level==='warn');
+    const score=errs.length===0?warns.length===0?100:Math.max(40,100-warns.length*15):Math.max(0,100-errs.length*30-warns.length*10);
+    const color=score>=80?'var(--ok)':score>=50?'var(--warn)':'var(--err)';
+    const bg=score>=80?'var(--ok-bg)':score>=50?'var(--warn-bg)':'var(--err-bg)';
+    const bd=score>=80?'var(--ok-bd)':score>=50?'var(--warn-bd)':'var(--err-bd)';
+    html+=`<div style="background:${bg};border:1px solid ${bd};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <div style="font-size:18px;font-weight:700;color:${color};min-width:36px">${score}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-family:var(--mono);word-break:break-all;color:var(--body);margin-bottom:4px">${escHtml(line.slice(0,120))}${line.length>120?'…':''}</div>
+          <div style="font-size:12px;color:${color}">${errs.length>0?errs.map(e=>e.title).join(' · '):warns.length>0?warns.map(w=>w.title).join(' · '):'✅ Válida'}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  out.innerHTML=html;
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>

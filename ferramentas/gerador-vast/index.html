@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de VAST Tag | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:20px 24px 0;max-width:1100px;margin:0 auto}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
+.main{max-width:1100px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+@media(max-width:800px){.main{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--azul)}
+.field{margin-bottom:12px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+button{padding:8px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff;width:100%}
+.btn-primary:hover{background:var(--escuro)}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.events-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.event-check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--body);cursor:pointer}
+.event-check input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--azul)}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:7px 16px;font-size:13px;font-weight:500;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;transition:all .15s}
+.tab:hover{color:var(--azul)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.panel{display:none}
+.panel.active{display:block}
+pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:auto;font-family:var(--mono);font-size:11px;line-height:1.6;white-space:pre;tab-size:2}
+.copy-btn{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.copy-btn button{display:flex;align-items:center;gap:5px}
+.output-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.badge{display:inline-block;padding:2px 8px;font-size:10px;font-weight:700;border-radius:99px;background:var(--light);color:var(--azul)}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+
+<div class="header">
+  <h1>Gerador de VAST Tag</h1>
+  <p class="subtitle">Gera XML VAST 2.0/3.0 completo com tracking de Floodlight para todos os eventos de vídeo — pronto para colar no ad server.</p>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: FORM -->
+  <div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchMode('inline',this)">Inline Ad</button>
+        <button class="tab" onclick="switchMode('wrapper',this)">Wrapper</button>
+      </div>
+
+      <!-- FLOODLIGHT PARAMS -->
+      <div class="section-title">Parâmetros Floodlight</div>
+      <div class="field">
+        <label>Advertiser ID (src=)</label>
+        <input id="v-src" type="text" placeholder="123456789" oninput="gen()">
+      </div>
+      <div class="field-row">
+        <div>
+          <label>Group Tag String (type=)</label>
+          <input id="v-type" type="text" placeholder="brand0" oninput="gen()">
+        </div>
+        <div>
+          <label>Activity Tag String (cat=)</label>
+          <input id="v-cat" type="text" placeholder="video0" oninput="gen()">
+        </div>
+      </div>
+
+      <!-- WRAPPER ONLY -->
+      <div id="wrapper-fields" class="panel">
+        <div class="field">
+          <label>URL do VAST a envolver (VASTAdTagURI)</label>
+          <input id="v-wrapper-url" type="text" placeholder="https://ad.doubleclick.net/ddm/pfadx/..." oninput="gen()">
+          <div class="hint">URL do tag VAST interno (fornecida pelo veículo ou DSP)</div>
+        </div>
+      </div>
+
+      <!-- INLINE ONLY -->
+      <div id="inline-fields" class="panel active">
+        <hr class="divider">
+        <div class="section-title">Configuração do Criativo</div>
+        <div class="field">
+          <label>URL do vídeo (MediaFile)</label>
+          <input id="v-media" type="text" placeholder="https://cdn.exemplo.com/video.mp4" oninput="gen()">
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Largura (px)</label>
+            <input id="v-w" type="number" value="1280" min="1" oninput="gen()">
+          </div>
+          <div>
+            <label>Altura (px)</label>
+            <input id="v-h" type="number" value="720" min="1" oninput="gen()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label>Tipo MIME</label>
+            <select id="v-mime" onchange="gen()">
+              <option>video/mp4</option>
+              <option>video/webm</option>
+              <option>video/ogg</option>
+              <option>application/x-mpegURL</option>
+            </select>
+          </div>
+          <div>
+            <label>Duração (HH:MM:SS)</label>
+            <input id="v-dur" type="text" value="00:00:30" oninput="gen()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Click-Through URL</label>
+          <input id="v-click" type="text" placeholder="https://www.marca.com.br/" oninput="gen()">
+        </div>
+        <div class="field">
+          <label>Click Tracker URL (opcional)</label>
+          <input id="v-clicktrack" type="text" placeholder="https://ad.doubleclick.net/ddm/clk/..." oninput="gen()">
+          <div class="hint">Redirect de rastreio de clique antes do destino final</div>
+        </div>
+      </div>
+
+      <hr class="divider">
+      <div class="section-title">Eventos de Tracking</div>
+      <div class="events-grid">
+        <label class="event-check"><input type="checkbox" id="ev-impression" checked onchange="gen()"> Impression</label>
+        <label class="event-check"><input type="checkbox" id="ev-start" checked onchange="gen()"> start</label>
+        <label class="event-check"><input type="checkbox" id="ev-firstQuartile" checked onchange="gen()"> firstQuartile</label>
+        <label class="event-check"><input type="checkbox" id="ev-midpoint" checked onchange="gen()"> midpoint</label>
+        <label class="event-check"><input type="checkbox" id="ev-thirdQuartile" checked onchange="gen()"> thirdQuartile</label>
+        <label class="event-check"><input type="checkbox" id="ev-complete" checked onchange="gen()"> complete</label>
+        <label class="event-check"><input type="checkbox" id="ev-mute" onchange="gen()"> mute</label>
+        <label class="event-check"><input type="checkbox" id="ev-unmute" onchange="gen()"> unmute</label>
+        <label class="event-check"><input type="checkbox" id="ev-pause" onchange="gen()"> pause</label>
+        <label class="event-check"><input type="checkbox" id="ev-resume" onchange="gen()"> resume</label>
+        <label class="event-check"><input type="checkbox" id="ev-skip" onchange="gen()"> skip</label>
+        <label class="event-check"><input type="checkbox" id="ev-fullscreen" onchange="gen()"> fullscreen</label>
+      </div>
+      <div class="hint" style="margin-bottom:12px">Os 6 eventos marcados são o padrão mínimo recomendado para Floodlight em vídeo.</div>
+
+      <hr class="divider">
+      <div class="section-title">Opções</div>
+      <div class="field-row">
+        <div>
+          <label>Versão VAST</label>
+          <select id="v-version" onchange="gen()">
+            <option value="3.0">3.0</option>
+            <option value="2.0">2.0</option>
+          </select>
+        </div>
+        <div>
+          <label>Ad Title</label>
+          <input id="v-title" type="text" placeholder="Video Ad" value="Video Ad" oninput="gen()">
+        </div>
+      </div>
+      <div class="field">
+        <label>Advertiser (opcional)</label>
+        <input id="v-advertiser" type="text" placeholder="Nome da Marca" oninput="gen()">
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: OUTPUT -->
+  <div>
+    <div class="card">
+      <div class="copy-btn">
+        <div class="output-label" style="flex:1">VAST XML gerado</div>
+        <button class="btn-sm" onclick="copyXML()">📋 Copiar XML</button>
+      </div>
+      <pre id="vast-out"><!-- preencha os campos ao lado --></pre>
+
+      <div id="tracking-list" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let mode='inline';
+function switchMode(m,btn){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('inline-fields').classList.toggle('active',m==='inline');
+  document.getElementById('wrapper-fields').classList.toggle('active',m==='wrapper');
+  gen();
+}
+
+const EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','complete','mute','unmute','pause','resume','skip','fullscreen'];
+
+function buildTrackingUrl(src,type,cat,event){
+  const base='https://ad.doubleclick.net/ddm/activity/';
+  return `${base}src=${src||'SRC'};type=${type||'TYPE'};cat=${cat||'CAT'};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=1?`;
+}
+
+function gen(){
+  const src=v('v-src'),type=v('v-type'),cat=v('v-cat'),
+    title=v('v-title')||'Video Ad',adv=v('v-advertiser'),
+    version=v('v-version')||'3.0';
+
+  const checkedEvents=EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked);
+
+  // Impression (special — goes in <Impression> not <Tracking>)
+  const hasImpression=document.getElementById('ev-impression').checked;
+  const impUrl=buildTrackingUrl(src,type,cat,'impression');
+
+  // Other events
+  const trackingEvents=checkedEvents.filter(e=>e!=='impression');
+
+  let xml='';
+
+  if(mode==='wrapper'){
+    const wUrl=v('v-wrapper-url')||'https://VAST_URL_AQUI';
+    xml=`<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="${version}">
+  <Ad id="1">
+    <Wrapper>
+      <AdSystem version="1.0">CM360 Floodlight</AdSystem>
+      <VASTAdTagURI><![CDATA[${wUrl}]]></VASTAdTagURI>
+${hasImpression?`      <Impression id="fl-impression"><![CDATA[${impUrl}]]></Impression>\n`:''}      <Creatives>
+        <Creative>
+          <Linear>
+            <TrackingEvents>
+${trackingEvents.map(e=>`              <Tracking event="${e}"><![CDATA[${buildTrackingUrl(src,type,cat,e)}]]></Tracking>`).join('\n')}
+            </TrackingEvents>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </Wrapper>
+  </Ad>
+</VAST>`;
+  } else {
+    const media=v('v-media')||'https://VIDEO_URL_AQUI.mp4',
+      w=v('v-w')||'1280',h=v('v-h')||'720',
+      mime=v('v-mime')||'video/mp4',dur=v('v-dur')||'00:00:30',
+      click=v('v-click')||'https://DESTINO_AQUI',
+      clickTrack=v('v-clicktrack');
+
+    xml=`<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="${version}">
+  <Ad id="1">
+    <InLine>
+      <AdSystem version="1.0">CM360 Floodlight</AdSystem>
+      <AdTitle>${esc(title)}</AdTitle>
+${adv?`      <Advertiser>${esc(adv)}</Advertiser>\n`:''}${hasImpression?`      <Impression id="fl-impression"><![CDATA[${impUrl}]]></Impression>\n`:''}      <Creatives>
+        <Creative>
+          <Linear>
+            <Duration>${dur}</Duration>
+            <TrackingEvents>
+${trackingEvents.map(e=>`              <Tracking event="${e}"><![CDATA[${buildTrackingUrl(src,type,cat,e)}]]></Tracking>`).join('\n')}
+            </TrackingEvents>
+            <VideoClicks>
+              <ClickThrough><![CDATA[${click}]]></ClickThrough>
+${clickTrack?`              <ClickTracking><![CDATA[${clickTrack}]]></ClickTracking>\n`:''}            </VideoClicks>
+            <MediaFiles>
+              <MediaFile type="${mime}" width="${w}" height="${h}" delivery="progressive"><![CDATA[${media}]]></MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>`;
+  }
+
+  document.getElementById('vast-out').textContent=xml;
+
+  // Tracking list summary
+  const all=hasImpression?['impression',...trackingEvents]:trackingEvents;
+  document.getElementById('tracking-list').innerHTML=`
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">URLs de tracking geradas (${all.length})</div>
+    ${all.map(e=>`
+      <div style="margin-bottom:6px">
+        <div style="font-size:11px;font-weight:600;color:var(--azul);margin-bottom:2px">${e}</div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--body);word-break:break-all;background:var(--bg);padding:4px 6px;border-radius:4px">${buildTrackingUrl(src,type,cat,e)}</div>
+      </div>`).join('')}`;
+}
+
+function v(id){return (document.getElementById(id)||{}).value||'';}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function copyXML(){
+  navigator.clipboard.writeText(document.getElementById('vast-out').textContent).then(()=>{
+    const btn=document.querySelector('.btn-sm');
+    btn.textContent='✅ Copiado!';
+    setTimeout(()=>btn.textContent='📋 Copiar XML',2000);
+  });
+}
+
+// Init
+gen();
+</script>
+</body>
+</html>
