@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Viabilidade AdOps | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
+  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:20px 24px 0;max-width:1600px;margin:0 auto}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
+.main{max-width:1600px;margin:0 auto;padding:0 24px 48px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:3px}
+.hint{font-size:11px;color:var(--muted);margin-top:2px}
+.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px}
+.fields-grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 16px}
+input,select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+input[type=number]{font-family:var(--mono);font-size:13px}
+.prefix-wrap{position:relative}
+.prefix-wrap span{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none;font-family:var(--mono)}
+.prefix-wrap input{padding-left:28px}
+.btn-primary{background:var(--azul);color:#fff;border:none;border-radius:8px;padding:9px 22px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.88}
+.btn-secondary{background:#fff;color:var(--azul);border:1.5px solid var(--azul);border-radius:8px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-secondary:hover{opacity:.75}
+.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+/* ─── TOGGLE SWITCHES ─── */
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tog{padding:5px 13px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;background:#fff;color:var(--body)}
+.tog.active{border-color:var(--azul);background:var(--light);color:var(--azul)}
+
+/* ─── RESULT CARDS ─── */
+#result{display:none}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:12px}
+
+.rec-card{border-radius:12px;padding:20px 22px;border:2px solid}
+.rec-card.yes{border-color:var(--ok-bd);background:var(--ok-bg)}
+.rec-card.no{border-color:var(--err-bd);background:var(--err-bg)}
+.rec-card.warn{border-color:var(--warn-bd);background:var(--warn-bg)}
+
+.rec-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.rec-icon{font-size:24px;line-height:1}
+.rec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;opacity:.7}
+.rec-verdict{font-size:18px;font-weight:700}
+.rec-card.yes .rec-verdict{color:var(--ok)}
+.rec-card.no .rec-verdict{color:var(--err)}
+.rec-card.warn .rec-verdict{color:var(--warn)}
+.rec-reason{font-size:12.5px;line-height:1.55;margin-top:6px;opacity:.85}
+.rec-defense{font-size:12px;line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,.08);font-style:italic;opacity:.8}
+
+/* ─── COST BREAKDOWN ─── */
+.breakdown-table{width:100%;border-collapse:collapse;font-size:13px}
+.breakdown-table th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;text-align:left;padding:5px 8px;border-bottom:2px solid var(--border)}
+.breakdown-table td{padding:7px 8px;border-bottom:1px solid var(--border)}
+.breakdown-table tr:last-child td{border-bottom:none;font-weight:700}
+.breakdown-table .val{font-family:var(--mono);font-size:12px}
+.breakdown-table .pct{font-family:var(--mono);font-size:12px}
+.pct-bar-wrap{width:100%;background:var(--light);border-radius:4px;height:6px;margin-top:3px}
+.pct-bar{height:6px;border-radius:4px;background:var(--azul);transition:width .4s}
+
+/* ─── SIGNAL CHIPS ─── */
+.signals{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+.chip.green{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-bd)}
+.chip.yellow{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-bd)}
+.chip.red{background:var(--err-bg);color:var(--err);border:1px solid var(--err-bd)}
+.chip.blue{background:var(--light);color:var(--azul);border:1px solid #c5caf5}
+
+/* ─── SUMMARY KPIs ─── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.kpi-value{font-size:20px;font-weight:700;color:var(--escuro);font-family:var(--mono);margin-top:2px}
+.kpi-sub{font-size:11px;color:var(--body);margin-top:1px}
+
+/* ─── HELP MODAL ─── */
+.help-btn{position:fixed;top:14px;right:18px;z-index:900;width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:#fff;color:var(--azul);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:background .15s,color .15s}
+.help-btn:hover{background:var(--azul);color:#fff}
+.help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
+.help-overlay.open{display:flex}
+.help-modal{background:#fff;border-radius:14px;padding:32px 36px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.22);position:relative}
+.help-modal h2{margin:0 0 4px;font-size:1.15rem;color:var(--escuro)}
+.help-modal .help-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:#555}
+.help-modal h3{font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;color:var(--azul);margin:16px 0 5px}
+.help-modal p,.help-modal li{font-size:.88rem;color:#333;line-height:1.55;margin:0 0 5px}
+.help-modal ul{padding-left:18px;margin:0 0 8px}
+</style>
+</head>
+<body>
+
+<button class="help-btn" onclick="openHelp()" title="Ajuda">?</button>
+
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+
+<div class="header">
+  <h1>Viabilidade AdOps</h1>
+  <p class="subtitle">Preencha os dados da campanha — a ferramenta recomenda se vale ativar ad server e ad verification, com breakdown de custos e defesa argumentada.</p>
+</div>
+
+<div class="main">
+
+  <!-- CAMPANHA -->
+  <div class="card">
+    <div class="section-title">Dados da campanha</div>
+    <div class="fields-grid">
+      <div>
+        <label>Modelo de compra</label>
+        <select id="buy-model" onchange="calc()">
+          <option value="cpm">CPM (custo por mil impressões)</option>
+          <option value="cpc">CPC (custo por clique)</option>
+          <option value="cpv">CPV (custo por view)</option>
+          <option value="flat">Flat fee (valor fixo)</option>
+        </select>
+      </div>
+      <div id="field-imps">
+        <label>Impressões planejadas</label>
+        <input id="imps" type="number" value="1000000" min="0" oninput="calc()" placeholder="ex: 1000000">
+        <div class="hint">Volume total da campanha</div>
+      </div>
+      <div id="field-clicks" style="display:none">
+        <label>Cliques planejados</label>
+        <input id="clicks" type="number" value="10000" min="0" oninput="calc()" placeholder="ex: 10000">
+      </div>
+      <div id="field-views" style="display:none">
+        <label>Views planejadas</label>
+        <input id="views" type="number" value="500000" min="0" oninput="calc()" placeholder="ex: 500000">
+      </div>
+      <div id="field-media-cpm">
+        <label>CPM de mídia (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="media-cpm" type="number" value="15" min="0" step="0.01" oninput="calc()"></div>
+        <div class="hint">Custo por mil impressões compradas</div>
+      </div>
+      <div id="field-media-cpc" style="display:none">
+        <label>CPC de mídia (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="media-cpc" type="number" value="2.50" min="0" step="0.01" oninput="calc()"></div>
+      </div>
+      <div id="field-media-flat" style="display:none">
+        <label>Valor da campanha (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="media-flat" type="number" value="50000" min="0" step="0.01" oninput="calc()"></div>
+      </div>
+      <div>
+        <label>Duração (dias)</label>
+        <input id="duration" type="number" value="30" min="1" oninput="calc()">
+      </div>
+      <div>
+        <label>Verticais / Contexto</label>
+        <select id="vertical" onchange="calc()">
+          <option value="brand">Branding / Awareness</option>
+          <option value="perf">Performance / Conversão</option>
+          <option value="video">Vídeo</option>
+          <option value="prem">Premium / Contexto sensível</option>
+          <option value="retail">Retail / E-commerce</option>
+        </select>
+      </div>
+      <div>
+        <label>Inventário principal</label>
+        <select id="inventory" onchange="calc()">
+          <option value="open">Open Web (programático aberto)</option>
+          <option value="pmp">PMP / Deal privado</option>
+          <option value="direct">Direct (site direto)</option>
+          <option value="social">Social / Walled Garden</option>
+          <option value="ctv">CTV / Streaming</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOS OPERACIONAIS -->
+  <div class="card">
+    <div class="section-title">Custos operacionais</div>
+    <div class="fields-grid-3">
+      <div>
+        <label>Ad Server — CPM de serving (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="as-cpm" type="number" value="0.25" min="0" step="0.01" oninput="calc()"></div>
+        <div class="hint">CM360: ~R$0,20–0,40 / DV360: incluso / custom: varia</div>
+      </div>
+      <div>
+        <label>Ad Server — Setup / fee fixo (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="as-fixed" type="number" value="0" min="0" step="0.01" oninput="calc()"></div>
+        <div class="hint">Licença mensal ou fee de campanha, se aplicável</div>
+      </div>
+      <div>
+        <label>Ad Verification — CPM (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="av-cpm" type="number" value="0.15" min="0" step="0.01" oninput="calc()"></div>
+        <div class="hint">IAS / DV / MOAT: ~R$0,10–0,25 por mil</div>
+      </div>
+      <div>
+        <label>Ad Verification — Fee fixo (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="av-fixed" type="number" value="0" min="0" step="0.01" oninput="calc()"></div>
+        <div class="hint">Licença mensal mínima, se houver</div>
+      </div>
+      <div>
+        <label>Custo AdOps — horas estimadas</label>
+        <input id="adops-hrs" type="number" value="4" min="0" step="0.5" oninput="calc()">
+        <div class="hint">Setup, trafficking, QA e monitoramento</div>
+      </div>
+      <div>
+        <label>Custo AdOps — hora (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input id="adops-rate" type="number" value="150" min="0" step="10" oninput="calc()"></div>
+        <div class="hint">Valor hora do profissional ou agência</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FATORES DE RISCO (opcionais) -->
+  <div class="card">
+    <div class="section-title">Fatores de risco e contexto <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none">(influenciam a recomendação)</span></div>
+    <div class="fields-grid">
+      <div>
+        <label>Histórico de brand safety com esse veículo?</label>
+        <select id="brand-safety" onchange="calc()">
+          <option value="unknown">Desconhecido / primeiro flight</option>
+          <option value="ok">Sem problemas anteriores</option>
+          <option value="risk">Incidentes anteriores ou inventário aberto</option>
+        </select>
+      </div>
+      <div>
+        <label>Risco de IVT / tráfego inválido?</label>
+        <select id="ivt-risk" onchange="calc()">
+          <option value="low">Baixo (PMP, direct, walled garden)</option>
+          <option value="medium">Médio (open web com whitelists)</option>
+          <option value="high">Alto (open web sem restrição)</option>
+        </select>
+      </div>
+      <div>
+        <label>Cliente exige relatório de 3º</label>
+        <select id="client-req" onchange="calc()">
+          <option value="no">Não exige</option>
+          <option value="yes">Sim — relatório de verificação no contrato</option>
+        </select>
+      </div>
+      <div>
+        <label>Campanha com criativos de vídeo?</label>
+        <select id="has-video" onchange="calc()">
+          <option value="no">Não</option>
+          <option value="yes">Sim</option>
+        </select>
+      </div>
+      <div>
+        <label>Multi-veículo / Multi-plataforma?</label>
+        <select id="multi-pub" onchange="calc()">
+          <option value="no">Não — veículo único</option>
+          <option value="yes">Sim — 2 ou mais veículos</option>
+        </select>
+      </div>
+      <div>
+        <label>Requer tag de retargeting / pixel?</label>
+        <select id="pixel" onchange="calc()">
+          <option value="no">Não</option>
+          <option value="yes">Sim</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-primary" onclick="calc();document.getElementById('result').scrollIntoView({behavior:'smooth'})">Calcular viabilidade</button>
+    <button class="btn-secondary" onclick="resetForm()">Limpar</button>
+  </div>
+
+  <!-- RESULTADO -->
+  <div id="result">
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="rec-grid" id="rec-grid"></div>
+
+    <div class="card">
+      <div class="section-title">Breakdown de custos</div>
+      <table class="breakdown-table" id="breakdown-table"></table>
+    </div>
+
+    <div class="card" id="signals-card">
+      <div class="section-title">Sinais considerados</div>
+      <div class="signals" id="signals-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div class="help-overlay" id="helpOverlay" onclick="if(event.target===this)closeHelp()">
+  <div class="help-modal">
+    <button class="help-close" onclick="closeHelp()">×</button>
+    <h2>Viabilidade AdOps</h2>
+    <h3>O que faz</h3>
+    <p>Calcula se vale financeiramente ativar ad server e ad verification numa campanha, com base no volume, CPM e custos operacionais. Usa critérios de mercado e fatores de risco para dar uma recomendação fundamentada.</p>
+    <h3>Como usar</h3>
+    <ul>
+      <li>Preencha os dados da campanha (modelo de compra, volume, CPM).</li>
+      <li>Informe os custos operacionais de ad server, ad verification e AdOps.</li>
+      <li>Ajuste os fatores de risco conforme o contexto.</li>
+      <li>Clique em <strong>Calcular viabilidade</strong>.</li>
+    </ul>
+    <h3>O que os resultados mostram</h3>
+    <ul>
+      <li><strong>✅ Recomendado / ⚠️ Avaliar / ❌ Não recomendado:</strong> veredicto por ferramenta com justificativa.</li>
+      <li><strong>Breakdown:</strong> custo estimado de cada item e % do budget total.</li>
+      <li><strong>Defesa:</strong> quando o custo é alto mas vale a pena, aparece o argumento de negócio.</li>
+      <li><strong>Sinais:</strong> os fatores que influenciaram a recomendação.</li>
+    </ul>
+    <h3>Critérios de mercado usados</h3>
+    <ul>
+      <li>Ad server: recomendado quando o custo de serving ≤ 5% do budget ou há multi-veículo / pixel.</li>
+      <li>Ad verification: recomendado quando há risco de brand safety, IVT ou exigência do cliente.</li>
+      <li>Threshold de atenção: custo operacional total > 15% do budget.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+/* ──────────────────────────────────────────
+   HELPERS
+────────────────────────────────────────── */
+const fmt = (n, dec=2) => n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec})
+const fmtR = (n) => 'R$ ' + fmt(n)
+const fmtPct = (n) => fmt(n,1) + '%'
+const n = (id) => parseFloat(document.getElementById(id).value)||0
+const v = (id) => document.getElementById(id).value
+
+/* ──────────────────────────────────────────
+   BUY MODEL UI
+────────────────────────────────────────── */
+document.getElementById('buy-model').addEventListener('change', function(){
+  const m = this.value
+  document.getElementById('field-imps').style.display    = m==='cpc'?'none':'block'
+  document.getElementById('field-clicks').style.display  = m==='cpc'?'block':'none'
+  document.getElementById('field-views').style.display   = m==='cpv'?'block':'none'
+  document.getElementById('field-media-cpm').style.display  = (m==='cpm'||m==='cpv')?'block':'none'
+  document.getElementById('field-media-cpc').style.display  = m==='cpc'?'block':'none'
+  document.getElementById('field-media-flat').style.display = m==='flat'?'block':'none'
+  // ad server CPM only relevant for impression-based
+  document.getElementById('as-cpm').closest('.fields-grid-3 > div').style.opacity = (m==='flat'||m==='cpc')?'.4':'1'
+  calc()
+})
+
+/* ──────────────────────────────────────────
+   CORE CALC
+────────────────────────────────────────── */
+function calc(){
+  const model    = v('buy-model')
+  const imps     = model==='cpc' ? 0 : model==='cpv' ? n('views') : n('imps')
+  const clicks   = model==='cpc' ? n('clicks') : 0
+  const impsMil  = imps/1000
+
+  // Media budget
+  let mediaBudget = 0
+  if(model==='cpm')   mediaBudget = impsMil * n('media-cpm')
+  else if(model==='cpc') mediaBudget = clicks * n('media-cpc')
+  else if(model==='cpv') mediaBudget = impsMil * n('media-cpm')
+  else if(model==='flat') mediaBudget = n('media-flat')
+
+  // Costs
+  const asCost   = (model==='flat'||model==='cpc') ? n('as-fixed') : (impsMil * n('as-cpm') + n('as-fixed'))
+  const avCost   = (model==='flat'||model==='cpc') ? n('av-fixed') : (impsMil * n('av-cpm') + n('av-fixed'))
+  const adopsCost = n('adops-hrs') * n('adops-rate')
+  const totalOps = asCost + avCost + adopsCost
+  const totalAll = mediaBudget + totalOps
+
+  const asPct    = mediaBudget > 0 ? (asCost / mediaBudget) * 100 : 0
+  const avPct    = mediaBudget > 0 ? (avCost / mediaBudget) * 100 : 0
+  const adopsPct = mediaBudget > 0 ? (adopsCost / mediaBudget) * 100 : 0
+  const opsPct   = mediaBudget > 0 ? (totalOps / mediaBudget) * 100 : 0
+
+  // Context signals
+  const bsSafety = v('brand-safety')
+  const ivtRisk  = v('ivt-risk')
+  const clientReq = v('client-req')
+  const hasVideo  = v('has-video')
+  const multiPub  = v('multi-pub')
+  const pixel     = v('pixel')
+  const inventory = v('inventory')
+  const vertical  = v('vertical')
+
+  // ── AD SERVER LOGIC ──
+  const asJustifications = []
+  const asDefenses = []
+  let asScore = 0  // positive = more reason to use
+
+  if(multiPub === 'yes'){ asScore += 3; asJustifications.push({t:'Multi-veículo', c:'green', msg:'Centraliza o tráfico e permite mensuração unificada entre veículos.'}) }
+  if(pixel === 'yes'){    asScore += 3; asJustifications.push({t:'Pixel / Retargeting', c:'green', msg:'Essencial para criar audiências e rastrear conversões com consistência.'}) }
+  if(asPct <= 2.5 && mediaBudget > 0){ asScore += 2; asJustifications.push({t:'Custo ≤ 2,5% do budget', c:'green', msg:'Custo de serving muito baixo em relação ao investimento.'}) }
+  else if(asPct <= 5 && mediaBudget > 0){ asScore += 1; asJustifications.push({t:'Custo ≤ 5% do budget', c:'green', msg:'Dentro do limite aceitável de mercado.'}) }
+  if(hasVideo === 'yes'){ asScore += 2; asJustifications.push({t:'Campanha com vídeo', c:'green', msg:'Ad server permite rastrear eventos VAST (start, complete, viewability).'}) }
+  if(vertical === 'prem'){ asScore += 2; asJustifications.push({t:'Contexto premium', c:'green', msg:'Controle granular de frequência e placement é crítico em inventário premium.'}) }
+  if(vertical === 'perf'){ asScore += 2; asJustifications.push({t:'Campanha de performance', c:'green', msg:'Tracking unificado de conversões requer pixel de floodlight ativo.'}) }
+  if(asPct > 10 && mediaBudget > 0){ asScore -= 2; asJustifications.push({t:`Custo alto (${fmtPct(asPct)} do budget)`, c:'yellow', msg:'Serving representa parcela relevante do investimento.'}) }
+  if(inventory === 'social'){ asScore -= 1; asJustifications.push({t:'Inventário social', c:'yellow', msg:'Walled gardens (Meta, TikTok etc.) limitam tracking externo.'}) }
+  if(model === 'flat' && multiPub === 'no' && pixel === 'no'){ asScore -= 1; asJustifications.push({t:'Flat fee sem pixel', c:'yellow', msg:'Serving variável perde relevância em compra de valor fixo sem rastreio.'}) }
+
+  if(asScore < 0 && (multiPub==='yes'||pixel==='yes')){
+    asDefenses.push('Mesmo com custo elevado, a centralização do tráfico em múltiplos veículos e o rastreio via pixel tornam o ad server indispensável para consistência de dados e otimização pós-campanha.')
+  }
+  if(asScore < 0 && hasVideo==='yes'){
+    asDefenses.push('O tracking de eventos VAST (start, complete, viewability) exige integração com ad server — sem ele, a análise de desempenho de vídeo fica limitada ao relatório do veículo.')
+  }
+
+  let asVerdict, asClass
+  if(asScore >= 3){       asVerdict = '✅ Recomendado'; asClass = 'yes' }
+  else if(asScore >= 1){  asVerdict = '⚠️ Avaliar caso a caso'; asClass = 'warn' }
+  else{                   asVerdict = '❌ Não recomendado'; asClass = 'no' }
+
+  // ── AD VERIFICATION LOGIC ──
+  const avJustifications = []
+  const avDefenses = []
+  let avScore = 0
+
+  if(clientReq === 'yes'){  avScore += 4; avJustifications.push({t:'Exigência contratual', c:'green', msg:'Cliente exige relatório de verificação — sem isso há risco de não pagamento ou auditoria.'}) }
+  if(ivtRisk === 'high'){   avScore += 3; avJustifications.push({t:'Alto risco de IVT', c:'red', msg:'Open web sem restrição tem historicamente 8–30% de tráfego inválido.'}) }
+  else if(ivtRisk === 'medium'){ avScore += 2; avJustifications.push({t:'Risco médio de IVT', c:'yellow', msg:'Open web com whitelist ainda apresenta risco relevante de bot traffic.'}) }
+  if(bsSafety === 'risk'){  avScore += 3; avJustifications.push({t:'Risco de brand safety', c:'red', msg:'Histórico de incidentes ou inventário aberto sem categorização segura.'}) }
+  else if(bsSafety === 'unknown'){ avScore += 2; avJustifications.push({t:'Primeiro flight com veículo', c:'yellow', msg:'Sem histórico, verificação serve como due diligence para a relação com o veículo.'}) }
+  if(vertical === 'prem'){  avScore += 2; avJustifications.push({t:'Contexto premium', c:'green', msg:'Anúncio em contexto premium exige garantia de adjacência de conteúdo.'}) }
+  if(hasVideo === 'yes'){   avScore += 2; avJustifications.push({t:'Vídeo — SIVT e viewability', c:'green', msg:'Fraude em vídeo (SIVT) e viewability são críticos para CPV e GRP digital.'}) }
+  if(inventory === 'ctv'){  avScore += 2; avJustifications.push({t:'CTV / Streaming', c:'green', msg:'CTV tem alta incidência de SIVT — verificação é considerada mandatória pelo mercado.'}) }
+  if(avPct > 10 && mediaBudget > 0){ avScore -= 1; avJustifications.push({t:`Custo alto (${fmtPct(avPct)} do budget)`, c:'yellow', msg:'Verificação representa parcela relevante — avaliar se o parceiro tem mínimo mensal.'}) }
+  if(inventory === 'social'){ avScore -= 1; avJustifications.push({t:'Walled garden', c:'yellow', msg:'Meta, TikTok e similares limitam ou impedem mensuração por terceiros.'}) }
+  if(inventory === 'direct'){ avScore -= 1; avJustifications.push({t:'Direct deal', c:'green', msg:'Inventário direct tem menor risco de IVT — monitoramento pode ser suficiente.'}) }
+
+  if(avScore < 3 && clientReq === 'yes'){
+    avDefenses.push('Independentemente do custo, a exigência contratual do cliente é inegociável. Não ativar verificação expõe o projeto a litígios e desgaste de relacionamento.')
+  }
+  if(avScore < 3 && ivtRisk === 'high'){
+    avDefenses.push('Em open web sem restrição, a verificação protege o budget contra bots. O custo da ferramenta costuma ser menor que a parcela de impressões inválidas que seriam pagas sem ela.')
+  }
+  if(avScore < 3 && bsSafety === 'risk'){
+    avDefenses.push('Um único incidente de brand safety em campanha de marca pode custar muito mais do que o fee de verificação — o custo é de gestão de risco, não de mensuração.')
+  }
+
+  let avVerdict, avClass
+  if(avScore >= 4){       avVerdict = '✅ Recomendado'; avClass = 'yes' }
+  else if(avScore >= 2){  avVerdict = '⚠️ Avaliar caso a caso'; avClass = 'warn' }
+  else{                   avVerdict = '❌ Não recomendado'; avClass = 'no' }
+
+  // ── RENDER ──
+  document.getElementById('result').style.display = 'block'
+
+  // KPIs
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Budget de mídia</div><div class="kpi-value">${mediaBudget>0?fmtR(mediaBudget):'—'}</div><div class="kpi-sub">${model==='cpm'?impsMil.toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil imps':model==='cpc'?clicks.toLocaleString('pt-BR')+' cliques':model==='flat'?'valor fixo':''}</div></div>
+    <div class="kpi"><div class="kpi-label">Custo Ad Server</div><div class="kpi-value">${fmtR(asCost)}</div><div class="kpi-sub">${mediaBudget>0?fmtPct(asPct)+' do budget':'—'}</div></div>
+    <div class="kpi"><div class="kpi-label">Custo Verification</div><div class="kpi-value">${fmtR(avCost)}</div><div class="kpi-sub">${mediaBudget>0?fmtPct(avPct)+' do budget':'—'}</div></div>
+    <div class="kpi"><div class="kpi-label">Custo AdOps</div><div class="kpi-value">${fmtR(adopsCost)}</div><div class="kpi-sub">${n('adops-hrs')}h × ${fmtR(n('adops-rate'))}/h</div></div>
+    <div class="kpi"><div class="kpi-label">Total operacional</div><div class="kpi-value" style="color:${opsPct>15?'var(--err)':opsPct>10?'var(--warn)':'var(--ok)'}">${fmtR(totalOps)}</div><div class="kpi-sub">${mediaBudget>0?fmtPct(opsPct)+' do budget de mídia':'—'}</div></div>
+    <div class="kpi"><div class="kpi-label">Investimento total</div><div class="kpi-value">${fmtR(totalAll)}</div><div class="kpi-sub">mídia + ops</div></div>
+  `
+
+  // Rec cards
+  const makeCard = (label, icon, verdict, cls, justs, defense) => {
+    const items = justs.map(j=>`<div style="display:flex;gap:7px;align-items:flex-start;margin-bottom:4px"><span class="chip ${j.c}" style="flex-shrink:0;margin-top:1px">${j.t}</span><span style="font-size:11.5px;color:#444;line-height:1.4">${j.msg}</span></div>`).join('')
+    const def = defense.length ? `<div class="rec-defense">💡 ${defense[0]}</div>` : ''
+    return `<div class="rec-card ${cls}">
+      <div class="rec-header"><div class="rec-icon">${icon}</div><div><div class="rec-label">${label}</div><div class="rec-verdict">${verdict}</div></div></div>
+      <div style="margin-top:6px">${items}</div>
+      ${def}
+    </div>`
+  }
+  document.getElementById('rec-grid').innerHTML =
+    makeCard('Ad Server', '🖥️', asVerdict, asClass, asJustifications, asDefenses) +
+    makeCard('Ad Verification', '🛡️', avVerdict, avClass, avJustifications, avDefenses)
+
+  // Breakdown table
+  const rows = [
+    ['Mídia', mediaBudget, mediaBudget>0?100:0, '#1F36C7'],
+    ['Ad Server (serving)', asCost, asPct, '#4a5fd4'],
+    ['Ad Verification', avCost, avPct, '#7b88e8'],
+    ['AdOps (horas)', adopsCost, adopsPct, '#a0aaed'],
+    ['Total operacional', totalOps, opsPct, opsPct>15?'var(--err)':opsPct>10?'var(--warn)':'var(--ok)'],
+  ]
+  document.getElementById('breakdown-table').innerHTML = `
+    <thead><tr><th>Item</th><th class="val">Custo estimado</th><th class="pct">% do budget mídia</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr style="${i===rows.length-1?'border-top:2px solid var(--border)':''}">
+      <td>${r[0]}</td>
+      <td class="val">${fmtR(r[1])}</td>
+      <td class="pct">${mediaBudget>0?`<div>${fmtPct(r[2])}</div><div class="pct-bar-wrap"><div class="pct-bar" style="width:${Math.min(r[2],100)}%;background:${r[3]}"></div></div>`:'-'}</td>
+    </tr>`).join('')}</tbody>`
+
+  // Signals
+  const allSigs = [
+    ...asJustifications.map(j=>({...j,src:'Ad Server'})),
+    ...avJustifications.map(j=>({...j,src:'Verification'}))
+  ]
+  const seen = new Set()
+  const unique = allSigs.filter(s=>{ const k=s.t; if(seen.has(k))return false; seen.add(k); return true })
+  document.getElementById('signals-list').innerHTML = unique.map(s=>`<span class="chip ${s.c}">${s.t}</span>`).join('')
+}
+
+function resetForm(){
+  document.querySelectorAll('input[type=number]').forEach(el=>el.value=el.defaultValue||'')
+  document.querySelectorAll('select').forEach(el=>el.selectedIndex=0)
+  document.getElementById('result').style.display='none'
+  document.getElementById('buy-model').dispatchEvent(new Event('change'))
+}
+
+function openHelp(){document.getElementById('helpOverlay').classList.add('open')}
+function closeHelp(){document.getElementById('helpOverlay').classList.remove('open')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp()})
+
+// init
+calc()
+</script>
+</body>
+</html>
