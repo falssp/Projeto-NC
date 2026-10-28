@@ -1,135 +1,166 @@
-# Projeto-NC · NC Tool Unilever BR
+# Projeto NC — Toolkit de AdOps & Mídia
 
-Sistema de naming conventions e gestão de campanhas para Unilever BR.
-Desenvolvido pela StormX em parceria com a Grasp.
+> Coleção de ferramentas offline para operações de mídia digital — rodando direto no browser, sem backend, sem dependências externas.
 
-## Ambientes
+🔗 **[Acessar o toolkit](https://falssp.github.io/Projeto-NC/)**
 
-| Ambiente | Conta | Descricao |
-|----------|-------|-----------|
-| **Corp** | felipe.lima@stormx.com.br | Ambiente original (producao) |
-| **Pessoal** | falssp@gmail.com | Ambiente backup — isolado do Corp |
+---
 
-> Corp e Pessoal sao completamente isolados. Corp nunca referencia Pessoal e vice-versa.
+## O que é
 
-## Portal
+O Projeto NC é um hub de ferramentas para profissionais de AdOps, mídia e AdTech. Cada ferramenta é um único arquivo HTML autocontido — abre em qualquer browser, funciona offline, sem login e sem enviar dados a nenhum servidor.
 
-**https://falssp.github.io/Projeto-NC/**  
-Hub de navegacao com status em tempo real de cada fase (via Cloudflare Workers proxy).
+---
 
-## Modulos
+## Ferramentas disponíveis
 
-| Fase | Nome | Status |
-|------|------|--------|
-| F1 | IDs AdServer | Implantado |
-| F2 | Gerador NC | Implantado |
-| F3 | Validador | Implantado |
-| F4 | Acessorios | Implantado |
-| F5 | FT Flashtalking Validator | Implantado |
-| Super App | Hub central | Implantado |
-
-## Ferramentas standalone
-
-Ferramentas HTML interativas hospedadas no GitHub Pages — sem build, sem backend.  
-Hub: **[falssp.github.io/Projeto-NC/ferramentas/](https://falssp.github.io/Projeto-NC/ferramentas/)**
-
-### Offline
+### AdOps & Mídia
 
 | Ferramenta | Descrição |
 |---|---|
-| **AI Detector** | Detecta conteúdo gerado por IA em vídeo, imagem, áudio e texto |
-| **Branded Buzz Taxonomy** | Preenche e gera linha de taxonomia de Branded Buzz pronta para Excel/Sheets |
-| **Comparador ADP** | Compara estrutura de duas abas ADP e aponta divergências |
-| **Conditional Format Builder** | Gera fórmulas de formatação condicional para Sheets e Excel |
-| **Contador ADP** | Conta linhas por aba e plataforma em planilhas ADP |
-| **Creative Taxonomy** | Gera taxonomia de criativos por asset (Plataforma + Brainsuite) |
-| **Cruzador de IDs** | Cruza IDs ADP × RM e aponta divergências |
-| **Excel Reference** | Referência trilíngue de fórmulas Excel/Sheets com assistente IA |
-| **Extractor de Fórmulas** | Extrai e deduplica fórmulas de .xlsx/.xlsm por aba |
-| **Extrator de Links** | Extrai links de perfil de influencers de planilhas RM/ADP |
-| **Galileo IDs** | Browser interativo de IDs e abreviações do sistema Galileo |
-| **Gerador de Fórmulas** | Gera fórmulas para o Dicionário de Influencers |
-| **Grasp Naming** | Referência de estrutura de naming por plataforma (Grasp 2026) |
-| **Mapeador RM→ADP** | Aplica mapeamento de nomes RM→ADP direto no .xlsx via ZIP patch |
-| **Merge RM→ADP** | Mescla dados do RM na estrutura ADP por plataforma |
-| **Removedor de Caracteres** | Remove/substitui caracteres especiais de textos de campanha |
+| [Calculadora de KPIs de Mídia](ferramentas/kpi-calc/) | CPM, CPC, CPA, CTR, ROAS, VTR — calcula em qualquer direção |
+| [Gerador de Naming Convention](ferramentas/naming-convention/) | Monta estrutura de nome de campanha com blocos drag-and-drop, export CSV |
+| [Checklist de Go-Live](ferramentas/checklist-golive/) | 40+ itens em 7 categorias, progresso visual, notas e export .txt |
+| [Conversor de Timezone para AdOps](ferramentas/timezone-converter/) | Converte horários entre 12 fusos, gera tabela de flight por plataforma |
+| [Calculadora de Alcance & Budget](ferramentas/alcance-budget/) | Budget ↔ Alcance ↔ Impressões com simulação de cenários |
+| [Glossário AdTech & Mídia](ferramentas/glossario-nc/) | 60+ termos com definições, fórmulas e exemplos PT/EN |
+| [Simulador de Pacing](ferramentas/pacing-simulator/) | Índice de pacing, projeção de entrega e ações corretivas |
+| [Gerador de Relatório de Performance](ferramentas/relatorio-performance/) | Estrutura de relatório editável por canal, export .txt |
+| [Calculadora de Frequência](ferramentas/freq-calculator/) | Frequency cap ideal por objetivo, canal, formato e audiência |
+| [Calculadora de Viewability](ferramentas/calculadora-viewability/) | VB%, CPVI, ajuste de IVT, benchmarks por formato e parceiro |
+| [Analisador de Discrepância](ferramentas/discrepancia/) | Diagnóstico de discrepância entre ad server e plataforma |
+| [Comparador de Tag](ferramentas/comparador-tag/) | Diff de tags/URLs com highlight de parâmetros adicionados/removidos |
+| [Checklist de QA](ferramentas/checklist-qa/) | QA por plataforma — CM360, Meta, Google Ads, DV360, LinkedIn, TikTok |
+| [Decodificador TCF](ferramentas/decodificador-tcf/) | Decodifica strings gdpr_consent (TCF v1 e v2) offline |
+| [Comparador de Plataformas](ferramentas/comparador-plataformas/) | Tabela comparativa de plataformas de mídia |
+| [Mapa de Viewability](ferramentas/viewability-map/) | Suporte a viewability e brand safety por plataforma |
+| [Brief Criativo](ferramentas/brief-criativo/) | Gerador de briefs com specs por plataforma e formato |
+| [Mapa de Ad Servers](ferramentas/adserver-map/) | Compatibilidade e quando usar cada ad server |
+| [Relatório de Tag](ferramentas/relatorio-tag/) | Cadastro e status de tags de campanha |
+| [Calculadora de Mídia](ferramentas/calculadora-midia/) | Calculadora geral de mídia |
+| [UTM Builder](ferramentas/utm-builder/) | Gerador de parâmetros UTM |
+| [Validador de Floodlight](ferramentas/validador-floodlight/) | Validação de tags Floodlight |
 
-### GAS (Google Apps Script)
-
-| Ferramenta | Descrição |
-|---|---|
-| **Ad Name Sync** | Sincroniza Ad Names entre planilhas RM e ADP |
-| **Dashboard Campaign Local** | Painel de Campaign Local via Web App |
-| **Dashboard Jira** | Sincroniza subtasks do Jira com Google Sheets |
-| **Extrator de Campaign Local** | Extrai dados de Campaign Local das planilhas |
-| **Extrator de Influs** | Extrai influencers do RM/ADP e valida duplicatas no dicionário |
-| **Gerador de IDs UL** | Gera e registra IDs SX/AMZ nas planilhas em uma operação |
-
-### Offline + Cloud Run
+### Naming & Taxonomia
 
 | Ferramenta | Descrição |
 |---|---|
-| **Influencer Name** | Padroniza nomes de influencers e extrai handles/seguidores |
+| [Grasp Naming](ferramentas/grasp-naming/) | Naming convention Grasp |
+| [Creative Taxonomy](ferramentas/creative-taxonomy/) | Taxonomia de criativos |
+| [Branded Buzz Taxo](ferramentas/branded-buzz-taxo/) | Taxonomia Branded Buzz |
+| [UL Taxonomias](ferramentas/ul-taxonomias/) | Taxonomias UL |
+| [Ad Name Sync](ferramentas/ad-name-sync/) | Sincronização de nomes de anúncios |
+| [Influ Name](ferramentas/influ-name/) | Naming de influenciadores |
 
-### Offline + GAS
+### Mensuração & Dados
 
 | Ferramenta | Descrição |
 |---|---|
-| **Dicionário de Taxonomias UL** | Dicionário interativo de todos os parâmetros Galileo e Freetext |
-| **Location** | Gera o campo Location do naming (cidade, estado, região, nacional) |
-| **Location 2** | Versão atualizada da taxonomia Location |
+| [AdOps Mensuração](ferramentas/adops-mensuracao/) | Guia de mensuração em AdOps |
+| [Extrator de Campanha](ferramentas/extrator-campanha/) | Extrator de dados de campanha |
+| [Extrator de Influenciadores](ferramentas/extrator-influs/) | Extrator de dados de influenciadores |
+| [Cruzador de IDs](ferramentas/cruzador-ids/) | Cruzamento de IDs entre plataformas |
+| [Dashboard CN](ferramentas/dashboard-cn/) | Dashboard de controle |
+
+---
+
+## Stack técnica
+
+- **HTML/CSS/JS puro** — sem frameworks, sem npm, sem build step
+- **Zero dependências externas** — tudo autocontido em um único arquivo por ferramenta
+- **GitHub Pages** — deploy automático via push na branch `main`
+- **Offline-first** — todas as ferramentas funcionam sem conexão à internet
+
+---
 
 ## Estrutura do repositório
 
 ```
 Projeto-NC/
-├── index.html               ← Portal (GitHub Pages)
-├── ferramentas/             ← Hub + 26 ferramentas standalone
-│   ├── index.html           ← Hub de ferramentas
-│   ├── ad-name-sync/
-│   ├── ai-detector/
-│   ├── branded-buzz-taxo/
-│   ├── char-cleaner/
-│   ├── comparador-adp/
-│   ├── conditional-format-builder/
-│   ├── contador-adp/
-│   ├── creative-taxonomy/
-│   ├── cruzador-ids/
-│   ├── dashboard-cn/
-│   ├── dashboard-jira/
-│   ├── excel-reference/
-│   ├── extractor-formulas/
-│   ├── extrator-campanha/
-│   ├── extrator-influs/
-│   ├── galileo-ids/
-│   ├── gerador-ids-ul/
-│   ├── grasp-naming/
-│   ├── influ-name/
-│   ├── influencer-formulas/
-│   ├── link-extrator/
-│   ├── location/
-│   ├── location-2/
-│   ├── mapeador-rm/
-│   ├── merge-rm-adp/
-│   └── ul-taxonomias/
-├── Treinamentos/
-│   └── RM_STORMX_ADP/
-├── dashboard/
-├── Arquivos/
-│   ├── 2025/ADP/
-│   └── 2026/ADP/ e RM/
-├── workers/
-│   └── worker.js            ← Cloudflare Workers proxy CORS
-└── docs/
-    ├── overview.md
-    └── links.md
+├── index.html                    # Landing page principal
+├── ferramentas/
+│   ├── index.html                # Hub de ferramentas (catálogo)
+│   ├── kpi-calc/index.html
+│   ├── naming-convention/index.html
+│   ├── checklist-golive/index.html
+│   ├── timezone-converter/index.html
+│   ├── alcance-budget/index.html
+│   ├── glossario-nc/index.html
+│   ├── pacing-simulator/index.html
+│   ├── relatorio-performance/index.html
+│   ├── freq-calculator/index.html
+│   └── ... (demais ferramentas)
+└── README.md
 ```
 
-## Stack
+---
 
-- Google Apps Script (GAS)
-- Google Sheets
-- HTML/CSS/JS vanilla
-- GitHub Pages (frontend portal)
-- Cloudflare Workers (proxy CORS)
-- Jira REST API v3
+## Contribuindo
+
+### Criando uma nova ferramenta
+
+1. Crie uma pasta em `ferramentas/nome-da-ferramenta/`
+2. Coloque o código em `ferramentas/nome-da-ferramenta/index.html`
+3. A ferramenta deve ser autocontida (sem arquivos externos)
+4. Use o sistema de design do projeto (variáveis CSS abaixo)
+5. Adicione o card no `ferramentas/index.html`
+
+### Sistema de design
+
+```css
+:root {
+  --navy:   #0D2137;  /* fundo header */
+  --navy2:  #1A3F63;  /* navy secundário */
+  --accent: #38BDF8;  /* azul destaque */
+  --bg:     #F0F4F8;  /* fundo da página */
+  --surface:#ffffff;  /* cards/painéis */
+  --border: #DDE3EC;  /* bordas */
+}
+```
+
+### Padrão de componentes
+
+- **Header** sticky de 56px de altura com `--navy`
+- **Layout** de duas colunas: sidebar de inputs (300–340px) + painel de resultados
+- **Cards** com `border-radius: 12px`, `border: 1px solid var(--border)`
+- **Botão primário**: `background: #2563EB`, `border-radius: 8px`
+- **Export**: Blob + anchor click para `.txt` ou `.csv`
+
+### Git workflow
+
+```bash
+# Clonar
+git clone https://github.com/falssp/Projeto-NC.git
+cd Projeto-NC
+
+# Criar/editar ferramenta
+# ...
+
+# Publicar
+git add .
+git commit -m "feat: adiciona ferramenta X"
+
+# Se houver conflito com remote (alguém fez push antes):
+git fetch origin main
+git rebase origin/main
+# Resolver conflitos mantendo TODOS os cards (remote + seus)
+git add ferramentas/index.html
+GIT_EDITOR=true git rebase --continue
+git push origin main
+```
+
+> ⚠️ **Regra de ouro em conflitos**: sempre mantém TODOS os cards de ambos os lados (remote + local). Nunca descarta cards do remote.
+
+---
+
+## Deploy
+
+O deploy é automático via **GitHub Pages** na branch `main`.
+
+Após o push, aguarde ~30s e acesse: `https://falssp.github.io/Projeto-NC/`
+
+---
+
+## Licença
+
+Uso interno. © 2026 NC Tool.

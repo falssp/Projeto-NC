@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Calculadora de KPIs | NC Tool</title>
+<style>
+:root{--navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;--bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;--text:#0D2137;--mid:#4A5568;--light:#8B9BBF;--green:#10B981;--yellow:#F59E0B;--red:#EF4444;--blue:#2563EB}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;height:56px;gap:12px}
+.logo{color:#fff;font-size:15px;font-weight:700}.logo span{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+
+.desc{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:14px 16px;font-size:12px;color:var(--navy2);line-height:1.7}
+
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.calc-grid{grid-template-columns:1fr}}
+
+.calc-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.calc-head{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.calc-icon{font-size:18px}
+.calc-title{font-size:13px;font-weight:700;color:var(--navy)}
+.calc-body{padding:16px;display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--light)}
+.field input{padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-weight:600;color:var(--text);background:var(--bg);outline:none;font-family:inherit}
+.field input:focus{border-color:var(--blue)}
+.field input.result{background:#F0F7FF;border-color:#BFDBFE;color:var(--blue);font-weight:800}
+.field input.highlight{background:#D1FAE5;border-color:#6EE7B7;color:#065F46;font-weight:800;font-size:16px}
+.divider{height:1px;background:var(--border)}
+.btn-row{display:flex;gap:6px}
+.btn-calc{flex:1;padding:9px;border-radius:7px;border:none;background:var(--blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.btn-calc:hover{background:#1D4ED8}
+.btn-clear{padding:9px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--mid);font-size:12px;font-weight:600;cursor:pointer}
+.status-row{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px}
+.pill-g{background:#D1FAE5;color:#065F46}
+.pill-y{background:#FEF3C7;color:#92400E}
+.pill-r{background:#FEE2E2;color:#991B1B}
+.pill-b{background:#EFF6FF;color:#1D4ED8}
+
+.bench-grid{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.bench-head{padding:12px 16px;background:#F8FAFC;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light)}
+.bench-table{width:100%;border-collapse:collapse;font-size:11px}
+.bench-table th{padding:6px 12px;background:#F0F4F8;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light);text-align:left}
+.bench-table td{padding:7px 12px;border-bottom:1px solid var(--border)}
+.bench-table tr:last-child td{border-bottom:none}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Calculadora de <span>KPIs de Mídia</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="desc">
+    Preencha quaisquer <b>dois campos</b> de cada calculadora — o resultado é calculado automaticamente. Todos os campos aceitam K (mil) e M (milhão), ex: <code>1.5M</code> ou <code>200K</code>.
+  </div>
+
+  <div class="calc-grid">
+
+    <!-- CPM -->
+    <div class="calc-card">
+      <div class="calc-head"><span class="calc-icon">📢</span><span class="calc-title">CPM — Custo por Mil Impressões</span></div>
+      <div class="calc-body">
+        <div class="field"><label>Budget (R$)</label><input id="cpm-budget" placeholder="Ex: 50000" oninput="calcCPM()"></div>
+        <div class="field"><label>Impressões</label><input id="cpm-imp" placeholder="Ex: 10M" oninput="calcCPM()"></div>
+        <div class="divider"></div>
+        <div class="field"><label>CPM (R$)</label><input id="cpm-result" class="result" placeholder="— calculado —" oninput="calcCPM('cpm')"></div>
+        <div class="btn-row"><button class="btn-calc" onclick="calcCPM()">Calcular</button><button class="btn-clear" onclick="clearCard('cpm-budget','cpm-imp','cpm-result')">↺</button></div>
+        <div class="status-row" id="cpm-status"></div>
+      </div>
+    </div>
+
+    <!-- CPC -->
+    <div class="calc-card">
+      <div class="calc-head"><span class="calc-icon">🖱️</span><span class="calc-title">CPC — Custo por Clique</span></div>
+      <div class="calc-body">
+        <div class="field"><label>Budget (R$)</label><input id="cpc-budget" placeholder="Ex: 10000" oninput="calcCPC()"></div>
+        <div class="field"><label>Cliques</label><input id="cpc-clk" placeholder="Ex: 5000" oninput="calcCPC()"></div>
+        <div class="divider"></div>
+        <div class="field"><label>CPC (R$)</label><input id="cpc-result" class="result" placeholder="— calculado —" oninput="calcCPC('cpc')"></div>
+        <div class="btn-row"><button class="btn-calc" onclick="calcCPC()">Calcular</button><button class="btn-clear" onclick="clearCard('cpc-budget','cpc-clk','cpc-result')">↺</button></div>
+        <div class="status-row" id="cpc-status"></div>
+      </div>
+    </div>
+
+    <!-- CPA -->
+    <div class="calc-card">
+      <div class="calc-head"><span class="calc-icon">🎯</span><span class="calc-title">CPA — Custo por Ação / Conversão</span></div>
+      <div class="calc-body">
+        <div class="field"><label>Budget (R$)</label><input id="cpa-budget" placeholder="Ex: 30000" oninput="calcCPA()"></div>
+        <div class="field"><label>Conversões</label><input id="cpa-conv" placeholder="Ex: 300" oninput="calcCPA()"></div>
+        <div class="divider"></div>
+        <div class="field"><label>CPA (R$)</label><input id="cpa-result" class="result" placeholder="— calculado —" oninput="calcCPA('cpa')"></div>
+        <div class="btn-row"><button class="btn-calc" onclick="calcCPA()">Calcular</button><button class="btn-clear" onclick="clearCard('cpa-budget','cpa-conv','cpa-result')">↺</button></div>
+        <div class="status-row" id="cpa-status"></div>
+      </div>
+    </div>
+
+    <!-- CTR -->
+    <div class="calc-card">
+      <div class="calc-head"><span class="calc-icon">📊</span><span class="calc-title">CTR — Taxa de Clique</span></div>
+      <div class="calc-body">
+        <div class="field"><label>Cliques</label><input id="ctr-clk" placeholder="Ex: 5000" oninput="calcCTR()"></div>
+        <div class="field"><label>Impressões</label><input id="ctr-imp" placeholder="Ex: 1M" oninput="calcCTR()"></div>
+        <div class="divider"></div>
+        <div class="field"><label>CTR (%)</label><input id="ctr-result" class="result" placeholder="— calculado —" oninput="calcCTR('ctr')"></div>
+        <div class="btn-row"><button class="btn-calc" onclick="calcCTR()">Calcular</button><button class="btn-clear" onclick="clearCard('ctr-clk','ctr-imp','ctr-result')">↺</button></div>
+        <div class="status-row" id="ctr-status"></div>
+      </div>
+    </div>
+
+    <!-- ROAS -->
+    <div class="calc-card">
+      <div class="calc-head"><span class="calc-icon">💰</span><span class="calc-title">ROAS — Retorno sobre Investimento em Mídia</span></div>
+      <div class="calc-body">
+        <div class="field"><label>Receita gerada (R$)</label><input id="roas-rev" placeholder="Ex: 150000" oninput="calcROAS()"></div>
+        <div class="field"><label>Investimento em mídia (R$)</label><input id="roas-inv" placeholder="Ex: 30000" oninput="calcROAS()"></div>
+        <div class="divider"></div>
+        <div class="field"><label>ROAS (x)</label><input id="roas-result" class="result" placeholder="— calculado —" oninput="calcROAS('roas')"></div>
+        <div class="btn-row"><button class="btn-calc" onclick="calcROAS()">Calcular</button><button class="btn-clear" onclick="clearCard('roas-rev','roas-inv','roas-result')">↺</button></div>
+        <div class="status-row" id="roas-status"></div>
+      </div>
+    </div>
+
+    <!-- VTR -->
+    <div class="calc-card">
+      <div class="calc-head"><span class="calc-icon">▶️</span><span class="calc-title">VTR — View-Through Rate (Vídeo)</span></div>
+      <div class="calc-body">
+        <div class="field"><label>Views completas</label><input id="vtr-views" placeholder="Ex: 250000" oninput="calcVTR()"></div>
+        <div class="field"><label>Impressões (iniciadas)</label><input id="vtr-imp" placeholder="Ex: 1M" oninput="calcVTR()"></div>
+        <div class="divider"></div>
+        <div class="field"><label>VTR (%)</label><input id="vtr-result" class="result" placeholder="— calculado —" oninput="calcVTR('vtr')"></div>
+        <div class="btn-row"><button class="btn-calc" onclick="calcVTR()">Calcular</button><button class="btn-clear" onclick="clearCard('vtr-views','vtr-imp','vtr-result')">↺</button></div>
+        <div class="status-row" id="vtr-status"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BENCHMARKS -->
+  <div class="bench-grid">
+    <div class="bench-head">Benchmarks de Referência — Mercado Brasil 2024/2025</div>
+    <table class="bench-table">
+      <thead><tr><th>KPI</th><th>Canal</th><th>Abaixo</th><th>Bom</th><th>Excelente</th></tr></thead>
+      <tbody>
+        <tr><td>CPM</td><td>Display (Programática Open)</td><td>> R$ 15</td><td>R$ 6–15</td><td>< R$ 6</td></tr>
+        <tr><td>CPM</td><td>Social (Meta)</td><td>> R$ 25</td><td>R$ 10–25</td><td>< R$ 10</td></tr>
+        <tr><td>CPM</td><td>Video Online (YouTube)</td><td>> R$ 30</td><td>R$ 12–30</td><td>< R$ 12</td></tr>
+        <tr><td>CTR</td><td>Display</td><td>< 0,05%</td><td>0,05–0,2%</td><td>> 0,2%</td></tr>
+        <tr><td>CTR</td><td>Social (Meta)</td><td>< 0,5%</td><td>0,5–2%</td><td>> 2%</td></tr>
+        <tr><td>CTR</td><td>Search</td><td>< 2%</td><td>2–8%</td><td>> 8%</td></tr>
+        <tr><td>VTR</td><td>YouTube TrueView</td><td>< 20%</td><td>20–40%</td><td>> 40%</td></tr>
+        <tr><td>VTR</td><td>Social (Meta Video)</td><td>< 15%</td><td>15–30%</td><td>> 30%</td></tr>
+        <tr><td>ROAS</td><td>E-commerce</td><td>< 2x</td><td>2–5x</td><td>> 5x</td></tr>
+        <tr><td>ROAS</td><td>Lead Generation</td><td>< 3x</td><td>3–8x</td><td>> 8x</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer><a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none">← Projeto NC</a></footer>
+</div>
+
+<script>
+function parseVal(s){
+  if(!s) return NaN;
+  s = s.toString().trim().replace(',','.');
+  if(/[kK]$/.test(s)) return parseFloat(s)*1e3;
+  if(/[mM]$/.test(s)) return parseFloat(s)*1e6;
+  return parseFloat(s);
+}
+function fmtBR(n,dec=2){return n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtN(n){if(n>=1e6)return(n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M';if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.?0+$/,'')+'K';return Math.round(n).toLocaleString('pt-BR')}
+
+function setStatus(id, pills){
+  document.getElementById(id).innerHTML = pills.map(([txt,cls])=>`<span class="pill ${cls}">${txt}</span>`).join('');
+}
+
+function calcCPM(mode){
+  const b=parseVal(document.getElementById('cpm-budget').value);
+  const i=parseVal(document.getElementById('cpm-imp').value);
+  const r=parseVal(document.getElementById('cpm-result').value);
+  let pills=[];
+  if(mode==='cpm'&&!isNaN(r)){
+    // solve for what's empty
+    if(!isNaN(b)&&isNaN(i)){document.getElementById('cpm-imp').value=fmtN(b/r*1000);}
+    else if(!isNaN(i)&&isNaN(b)){document.getElementById('cpm-budget').value=fmtBR(r*i/1000);}
+    return;
+  }
+  if(!isNaN(b)&&!isNaN(i)&&i>0){
+    const cpm=b/i*1000;
+    document.getElementById('cpm-result').value='R$ '+fmtBR(cpm);
+    pills=[['CPM R$ '+fmtBR(cpm),'pill-b']];
+    if(cpm<6)pills.push(['✅ Excelente','pill-g']);
+    else if(cpm<=15)pills.push(['👍 Bom','pill-g']);
+    else if(cpm<=25)pills.push(['⚠️ Atenção','pill-y']);
+    else pills.push(['❌ Alto','pill-r']);
+  }
+  setStatus('cpm-status',pills);
+}
+
+function calcCPC(mode){
+  const b=parseVal(document.getElementById('cpc-budget').value);
+  const c=parseVal(document.getElementById('cpc-clk').value);
+  const r=parseVal(document.getElementById('cpc-result').value);
+  let pills=[];
+  if(mode==='cpc'&&!isNaN(r)){
+    if(!isNaN(b)&&isNaN(c)){document.getElementById('cpc-clk').value=fmtN(Math.round(b/r));}
+    else if(!isNaN(c)&&isNaN(b)){document.getElementById('cpc-budget').value=fmtBR(r*c);}
+    return;
+  }
+  if(!isNaN(b)&&!isNaN(c)&&c>0){
+    const cpc=b/c;
+    document.getElementById('cpc-result').value='R$ '+fmtBR(cpc);
+    pills=[['CPC R$ '+fmtBR(cpc),'pill-b']];
+    if(cpc<1)pills.push(['✅ Excelente','pill-g']);
+    else if(cpc<=5)pills.push(['👍 Bom','pill-g']);
+    else if(cpc<=15)pills.push(['⚠️ Atenção','pill-y']);
+    else pills.push(['❌ Alto','pill-r']);
+  }
+  setStatus('cpc-status',pills);
+}
+
+function calcCPA(mode){
+  const b=parseVal(document.getElementById('cpa-budget').value);
+  const c=parseVal(document.getElementById('cpa-conv').value);
+  const r=parseVal(document.getElementById('cpa-result').value);
+  let pills=[];
+  if(mode==='cpa'&&!isNaN(r)){
+    if(!isNaN(b)&&isNaN(c)){document.getElementById('cpa-conv').value=fmtN(Math.round(b/r));}
+    else if(!isNaN(c)&&isNaN(b)){document.getElementById('cpa-budget').value=fmtBR(r*c);}
+    return;
+  }
+  if(!isNaN(b)&&!isNaN(c)&&c>0){
+    const cpa=b/c;
+    document.getElementById('cpa-result').value='R$ '+fmtBR(cpa);
+    pills=[['CPA R$ '+fmtBR(cpa),'pill-b'],'Compare com o ticket médio do produto para validar viabilidade'].slice(0,1);
+    pills.push(['Compare com ticket médio ↗','pill-y']);
+  }
+  setStatus('cpa-status',pills);
+}
+
+function calcCTR(mode){
+  const c=parseVal(document.getElementById('ctr-clk').value);
+  const i=parseVal(document.getElementById('ctr-imp').value);
+  const r=parseVal(document.getElementById('ctr-result').value);
+  let pills=[];
+  if(mode==='ctr'&&!isNaN(r)){
+    if(!isNaN(i)&&isNaN(c)){document.getElementById('ctr-clk').value=fmtN(Math.round(i*r/100));}
+    else if(!isNaN(c)&&isNaN(i)){document.getElementById('ctr-imp').value=fmtN(Math.round(c/(r/100)));}
+    return;
+  }
+  if(!isNaN(c)&&!isNaN(i)&&i>0){
+    const ctr=c/i*100;
+    document.getElementById('ctr-result').value=ctr.toFixed(3).replace('.',',')+'%';
+    pills=[['CTR '+ctr.toFixed(3).replace('.',',')+'%','pill-b']];
+    if(ctr>2)pills.push(['✅ Excelente','pill-g']);
+    else if(ctr>=0.5)pills.push(['👍 Bom (Social)','pill-g']);
+    else if(ctr>=0.05)pills.push(['📊 Normal (Display)','pill-y']);
+    else pills.push(['❌ Abaixo','pill-r']);
+  }
+  setStatus('ctr-status',pills);
+}
+
+function calcROAS(mode){
+  const rv=parseVal(document.getElementById('roas-rev').value);
+  const inv=parseVal(document.getElementById('roas-inv').value);
+  const r=parseVal(document.getElementById('roas-result').value);
+  let pills=[];
+  if(mode==='roas'&&!isNaN(r)){
+    if(!isNaN(inv)&&isNaN(rv)){document.getElementById('roas-rev').value=fmtBR(r*inv);}
+    else if(!isNaN(rv)&&isNaN(inv)){document.getElementById('roas-inv').value=fmtBR(rv/r);}
+    return;
+  }
+  if(!isNaN(rv)&&!isNaN(inv)&&inv>0){
+    const roas=rv/inv;
+    document.getElementById('roas-result').value=roas.toFixed(2).replace('.',',')+'x';
+    pills=[['ROAS '+roas.toFixed(2).replace('.',',')+'x','pill-b']];
+    if(roas>=5)pills.push(['✅ Excelente','pill-g']);
+    else if(roas>=2)pills.push(['👍 Positivo','pill-g']);
+    else if(roas>=1)pills.push(['⚠️ Marginal','pill-y']);
+    else pills.push(['❌ Prejuízo','pill-r']);
+  }
+  setStatus('roas-status',pills);
+}
+
+function calcVTR(mode){
+  const v=parseVal(document.getElementById('vtr-views').value);
+  const i=parseVal(document.getElementById('vtr-imp').value);
+  const r=parseVal(document.getElementById('vtr-result').value);
+  let pills=[];
+  if(mode==='vtr'&&!isNaN(r)){
+    if(!isNaN(i)&&isNaN(v)){document.getElementById('vtr-views').value=fmtN(Math.round(i*r/100));}
+    else if(!isNaN(v)&&isNaN(i)){document.getElementById('vtr-imp').value=fmtN(Math.round(v/(r/100)));}
+    return;
+  }
+  if(!isNaN(v)&&!isNaN(i)&&i>0){
+    const vtr=v/i*100;
+    document.getElementById('vtr-result').value=vtr.toFixed(1).replace('.',',')+'%';
+    pills=[['VTR '+vtr.toFixed(1).replace('.',',')+'%','pill-b']];
+    if(vtr>=40)pills.push(['✅ Excelente','pill-g']);
+    else if(vtr>=20)pills.push(['👍 Bom','pill-g']);
+    else if(vtr>=10)pills.push(['⚠️ Abaixo','pill-y']);
+    else pills.push(['❌ Baixo','pill-r']);
+  }
+  setStatus('vtr-status',pills);
+}
+
+function clearCard(...ids){ids.forEach(id=>{document.getElementById(id).value=''});}
+</script>
+</body>
+</html>

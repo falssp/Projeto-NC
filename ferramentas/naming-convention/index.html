@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gerador de Naming Convention | NC Tool</title>
+<style>
+:root{--navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;--bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;--text:#0D2137;--mid:#4A5568;--light:#8B9BBF;--blue:#2563EB}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;height:56px;gap:12px}
+.logo{color:#fff;font-size:15px;font-weight:700}.logo span{color:var(--accent)}
+.wrap{max-width:1040px;margin:0 auto;padding:24px;display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+@media(max-width:720px){.wrap{grid-template-columns:1fr}}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:sticky;top:76px}
+.panel h3{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--light);margin-bottom:14px}
+.form-g{margin-bottom:11px}
+.form-g label{font-size:11px;font-weight:600;color:var(--mid);display:block;margin-bottom:3px}
+input,select{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--bg);outline:none;font-family:inherit;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--blue)}
+.sep{height:1px;background:var(--border);margin:12px 0}
+
+/* STRUCTURE BUILDER */
+.struct-wrap{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;min-height:40px;align-items:center}
+.token{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:var(--navy);color:#fff;font-size:11px;font-weight:700;cursor:default}
+.token .rem{cursor:pointer;opacity:.6;font-size:12px;margin-left:2px}
+.token .rem:hover{opacity:1}
+.delim-token{background:var(--border);color:var(--mid);padding:3px 6px;border-radius:4px;font-size:11px}
+.add-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.chip{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--mid);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.chip:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.delim-row{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--mid)}
+.delim-btn{padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--mid);font-size:11px;cursor:pointer}
+.delim-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.btn-gen{width:100%;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px}
+.btn-gen:hover{background:#1D4ED8}
+
+/* RESULT */
+.result-col{display:flex;flex-direction:column;gap:14px}
+.preview-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.preview-box h4{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:10px}
+.name-preview{font-family:'Courier New',monospace;font-size:15px;font-weight:700;color:var(--navy);background:#F0F4F8;padding:12px 14px;border-radius:8px;word-break:break-all;line-height:1.6}
+.token-highlight{color:var(--blue)}
+.copy-btn{margin-top:8px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;color:var(--mid)}
+.copy-btn:hover{background:var(--navy);color:#fff}
+
+.batch-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.batch-box h4{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--light);margin-bottom:10px}
+.batch-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.batch-controls select{flex:1;font-size:11px}
+.batch-controls input{flex:1;font-size:11px;padding:5px 8px}
+.btn-add-row{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;color:var(--navy)}
+.btn-add-row:hover{background:var(--navy2);color:#fff}
+.batch-table{width:100%;border-collapse:collapse;font-size:11px}
+.batch-table th{padding:5px 8px;background:#F0F4F8;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--light);text-align:left}
+.batch-table td{padding:5px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.batch-table td input{padding:3px 6px;font-size:11px}
+.result-name{font-family:'Courier New',monospace;font-size:10px;color:var(--navy);font-weight:700}
+.btn-export{margin-top:10px;padding:7px 16px;border-radius:7px;border:none;background:var(--navy);color:#fff;font-size:11px;font-weight:700;cursor:pointer}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:16px;grid-column:1/-1}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Gerador de <span>Naming Convention</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="panel">
+    <h3>Estrutura do Nome</h3>
+    <p style="font-size:11px;color:var(--light);margin-bottom:10px">Clique nos blocos para montar a ordem do nome:</p>
+    <div class="struct-wrap" id="struct-tokens"></div>
+    <div class="add-chips" id="add-chips"></div>
+    <div class="delim-row">
+      Separador:
+      <button class="delim-btn active" onclick="setDelim('_',this)">_ underscore</button>
+      <button class="delim-btn" onclick="setDelim('-',this)">- hífen</button>
+      <button class="delim-btn" onclick="setDelim('|',this)">| pipe</button>
+      <button class="delim-btn" onclick="setDelim('.',this)">. ponto</button>
+    </div>
+
+    <div class="sep"></div>
+    <h3>Preencher Campos</h3>
+
+    <div id="fields-area">
+      <!-- dynamic -->
+    </div>
+
+    <button class="btn-gen" onclick="generate()">⚡ Gerar Nome</button>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="result-col">
+    <div class="preview-box">
+      <h4>Preview do Nome</h4>
+      <div class="name-preview" id="name-preview">— configure a estrutura e preencha os campos —</div>
+      <button class="copy-btn" onclick="copyName()">📋 Copiar</button>
+    </div>
+
+    <div class="batch-box">
+      <h4>Gerador em Lote</h4>
+      <p style="font-size:11px;color:var(--light);margin-bottom:10px">Varie um campo para gerar múltiplos nomes de uma vez (ex: vários formatos ou canais).</p>
+      <div class="batch-controls">
+        <select id="batch-field"></select>
+        <input id="batch-values" placeholder="Valor1, Valor2, Valor3 (separado por vírgula)">
+        <button class="btn-add-row" onclick="addBatch()">+ Gerar</button>
+      </div>
+      <table class="batch-table" id="batch-table">
+        <thead><tr><th>#</th><th>Nome gerado</th><th></th></tr></thead>
+        <tbody id="batch-body"></tbody>
+      </table>
+      <button class="btn-export" onclick="exportCSV()" style="display:none" id="btn-export">⬇ Exportar CSV</button>
+    </div>
+  </div>
+
+  <footer><a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none">← Projeto NC</a></footer>
+</div>
+
+<script>
+const ALL_TOKENS = [
+  {id:'cliente',  label:'Cliente',     hint:'Ex: MARCAX'},
+  {id:'produto',  label:'Produto',     hint:'Ex: SHAMPOO'},
+  {id:'canal',    label:'Canal',       hint:'Ex: META'},
+  {id:'objetivo', label:'Objetivo',    hint:'Ex: AWR'},
+  {id:'formato',  label:'Formato',     hint:'Ex: VIDEO15'},
+  {id:'publico',  label:'Público',     hint:'Ex: RETARG'},
+  {id:'criativo', label:'Criativo',    hint:'Ex: VERAO01'},
+  {id:'data',     label:'Data',        hint:'Ex: 202501'},
+  {id:'versao',   label:'Versão',      hint:'Ex: V1'},
+  {id:'idioma',   label:'Idioma',      hint:'Ex: PT'},
+  {id:'custom1',  label:'Custom 1',    hint:'Livre'},
+  {id:'custom2',  label:'Custom 2',    hint:'Livre'},
+];
+
+let structure = ['cliente','canal','objetivo','formato','data'];
+let delimiter = '_';
+let values = {};
+
+function renderStructure(){
+  const wrap = document.getElementById('struct-tokens');
+  wrap.innerHTML = '';
+  structure.forEach((tok, i) => {
+    if(i>0){
+      const d = document.createElement('span');
+      d.className='delim-token'; d.textContent=delimiter;
+      wrap.appendChild(d);
+    }
+    const t = document.createElement('span');
+    t.className='token';
+    const info = ALL_TOKENS.find(x=>x.id===tok);
+    t.innerHTML = `${info.label}<span class="rem" onclick="removeToken('${tok}')">✕</span>`;
+    wrap.appendChild(t);
+  });
+
+  // Available chips
+  const chips = document.getElementById('add-chips');
+  chips.innerHTML = '';
+  ALL_TOKENS.filter(t=>!structure.includes(t.id)).forEach(t=>{
+    const c = document.createElement('button');
+    c.className='chip'; c.textContent='+ '+t.label;
+    c.onclick = ()=>addToken(t.id);
+    chips.appendChild(c);
+  });
+
+  renderFields();
+  renderBatchSelect();
+}
+
+function addToken(id){ structure.push(id); renderStructure(); }
+function removeToken(id){ structure = structure.filter(x=>x!==id); renderStructure(); }
+
+function setDelim(d, btn){
+  delimiter = d;
+  document.querySelectorAll('.delim-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  generate();
+}
+
+function renderFields(){
+  const area = document.getElementById('fields-area');
+  area.innerHTML = '';
+  structure.forEach(tok=>{
+    const info = ALL_TOKENS.find(x=>x.id===tok);
+    const div = document.createElement('div');
+    div.className='form-g';
+    div.innerHTML=`<label>${info.label}</label><input id="field-${tok}" placeholder="${info.hint}" oninput="generate()" value="${values[tok]||''}">`;
+    area.appendChild(div);
+  });
+}
+
+function renderBatchSelect(){
+  const sel = document.getElementById('batch-field');
+  sel.innerHTML = structure.map(tok=>{
+    const info = ALL_TOKENS.find(x=>x.id===tok);
+    return `<option value="${tok}">${info.label}</option>`;
+  }).join('');
+}
+
+function generate(){
+  values = {};
+  structure.forEach(tok=>{
+    const el = document.getElementById('field-'+tok);
+    values[tok] = el ? el.value.toUpperCase().replace(/\s+/g,'') : '';
+  });
+  const name = structure.map(tok=>values[tok]||'['+tok.toUpperCase()+']').join(delimiter);
+  document.getElementById('name-preview').textContent = name;
+  return name;
+}
+
+function copyName(){
+  const name = document.getElementById('name-preview').textContent;
+  navigator.clipboard.writeText(name).then(()=>{
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent='✅ Copiado!';
+    setTimeout(()=>{btn.textContent='📋 Copiar'},1500);
+  });
+}
+
+function addBatch(){
+  const field = document.getElementById('batch-field').value;
+  const rawVals = document.getElementById('batch-values').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!rawVals.length) return;
+
+  const tbody = document.getElementById('batch-body');
+  const currentValues = {...values};
+  rawVals.forEach((val,i)=>{
+    const row = Object.assign({},currentValues,{[field]:val.toUpperCase().replace(/\s+/g,'')});
+    const name = structure.map(tok=>row[tok]||'['+tok.toUpperCase()+']').join(delimiter);
+    const tr = document.createElement('tr');
+    tr.innerHTML=`<td style="color:var(--light)">${tbody.children.length+1}</td><td class="result-name">${name}</td><td><button style="padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);font-size:10px;cursor:pointer" onclick="navigator.clipboard.writeText('${name}')">Copiar</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('btn-export').style.display='inline-block';
+  document.getElementById('batch-values').value='';
+}
+
+function exportCSV(){
+  const rows = document.querySelectorAll('#batch-body tr');
+  let csv = 'N,Nome\n';
+  rows.forEach((r,i)=>{
+    const name = r.querySelector('.result-name').textContent;
+    csv += `${i+1},"${name}"\n`;
+  });
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='naming_convention.csv';
+  a.click();
+}
+
+// Init
+renderStructure();
+</script>
+</body>
+</html>

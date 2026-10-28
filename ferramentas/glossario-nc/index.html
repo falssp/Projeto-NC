@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Glossário AdTech | NC Tool</title>
+<style>
+:root{--navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;--bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;--text:#0D2137;--mid:#4A5568;--light:#8B9BBF;--blue:#2563EB;--green:#10B981}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:var(--navy);padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.header-inner{display:flex;align-items:center;height:56px;gap:12px}
+.logo{color:#fff;font-size:15px;font-weight:700}.logo span{color:var(--accent)}
+.wrap{max-width:900px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+
+.search-bar{display:flex;gap:10px;align-items:center}
+.search-bar input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:var(--surface);outline:none;font-family:inherit}
+.search-bar input:focus{border-color:var(--blue)}
+.search-bar input::placeholder{color:var(--light)}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+.filter-chip{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--mid);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.filter-chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.stats-bar{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--light)}
+.stats-bar b{color:var(--mid)}
+
+.glossary-grid{display:flex;flex-direction:column;gap:0}
+.term-card{background:var(--surface);border:1px solid var(--border);border-radius:0;padding:16px 20px;border-bottom:none;transition:background .1s;cursor:pointer}
+.term-card:first-child{border-radius:10px 10px 0 0}
+.term-card:last-child{border-radius:0 0 10px 10px;border-bottom:1px solid var(--border)}
+.term-card:only-child{border-radius:10px;border-bottom:1px solid var(--border)}
+.term-card:hover{background:#FAFBFD}
+.term-card.open{background:#F0F7FF;border-left:3px solid var(--blue)}
+.term-head{display:flex;align-items:center;gap:10px}
+.term-abbr{font-size:14px;font-weight:900;color:var(--navy);min-width:90px}
+.term-name{font-size:12px;color:var(--mid);font-weight:500;flex:1}
+.term-cats{display:flex;gap:4px}
+.cat-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px}
+.cat-kpi{background:#EFF6FF;color:#1D4ED8}
+.cat-platform{background:#F0FDF4;color:#15803D}
+.cat-tech{background:#FFF7ED;color:#C2410C}
+.cat-strategy{background:#FDF4FF;color:#7E22CE}
+.cat-video{background:#FEF9C3;color:#854D0E}
+.cat-programatica{background:#F0FDFA;color:#0F766E}
+.cat-privacy{background:#FFF1F2;color:#BE123C}
+.term-chevron{font-size:10px;color:var(--light);transition:transform .2s;margin-left:4px}
+.term-card.open .term-chevron{transform:rotate(180deg)}
+.term-body{margin-top:10px;display:none;padding-top:10px;border-top:1px solid var(--border)}
+.term-card.open .term-body{display:block}
+.term-def{font-size:12px;color:var(--mid);line-height:1.7;margin-bottom:8px}
+.term-en{font-size:11px;color:var(--light);font-style:italic}
+.term-formula{background:#F0F4F8;border-radius:7px;padding:8px 12px;font-family:'Courier New',monospace;font-size:12px;color:var(--navy);font-weight:700;margin:8px 0}
+.term-example{background:#F0F7FF;border-left:3px solid var(--blue);padding:8px 12px;border-radius:0 6px 6px 0;font-size:11px;color:var(--navy2);line-height:1.7;margin-top:6px}
+.empty-state{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:48px;text-align:center;color:var(--light)}
+
+footer{text-align:center;color:var(--light);font-size:11px;padding:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo">Glossário <span>AdTech & Mídia</span></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="search-bar">
+    <input id="search" placeholder="🔍  Buscar termo, sigla ou definição…" oninput="render()">
+  </div>
+  <div class="filter-chips" id="filter-chips"></div>
+  <div class="stats-bar" id="stats-bar"></div>
+  <div class="glossary-grid" id="glossary-grid"></div>
+  <footer><a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none">← Projeto NC</a></footer>
+</div>
+
+<script>
+const TERMS = [
+  // KPIs
+  {abbr:'CPM',name:'Custo por Mil Impressões',cats:['kpi'],en:'Cost per Mille',
+   def:'Métrica de custo que representa quanto o anunciante paga a cada 1.000 impressões veiculadas. Principal métrica de compra em branding e awareness.',
+   formula:'CPM = (Investimento ÷ Impressões) × 1.000',
+   example:'Budget R$ 50.000, 5M impressões → CPM = R$ 10,00'},
+  {abbr:'CPC',name:'Custo por Clique',cats:['kpi'],en:'Cost per Click',
+   def:'Valor médio pago por cada clique gerado por um anúncio. Muito usado em search e performance.',
+   formula:'CPC = Investimento ÷ Cliques',
+   example:'R$ 10.000 e 2.000 cliques → CPC = R$ 5,00'},
+  {abbr:'CPA',name:'Custo por Ação (ou Conversão)',cats:['kpi'],en:'Cost per Action / Acquisition',
+   def:'Custo médio para gerar uma conversão definida (compra, lead, cadastro, download). KPI principal de campanhas de performance.',
+   formula:'CPA = Investimento ÷ Conversões',
+   example:'R$ 30.000 e 300 conversões → CPA = R$ 100,00'},
+  {abbr:'CTR',name:'Taxa de Clique',cats:['kpi'],en:'Click-Through Rate',
+   def:'Percentual de usuários que clicaram em um anúncio em relação ao total que o visualizou. Indica relevância do criativo e da segmentação.',
+   formula:'CTR = (Cliques ÷ Impressões) × 100',
+   example:'5.000 cliques em 1M impressões → CTR = 0,5%'},
+  {abbr:'CVR',name:'Taxa de Conversão',cats:['kpi'],en:'Conversion Rate',
+   def:'Percentual de usuários que realizaram a ação desejada após clicar no anúncio.',
+   formula:'CVR = (Conversões ÷ Cliques) × 100',
+   example:'300 conversões em 6.000 cliques → CVR = 5%'},
+  {abbr:'ROAS',name:'Retorno sobre Investimento em Mídia',cats:['kpi'],en:'Return on Ad Spend',
+   def:'Receita gerada para cada R$1 investido em mídia. Não confundir com ROI, que inclui custos de produção, operação etc.',
+   formula:'ROAS = Receita Gerada ÷ Investimento em Mídia',
+   example:'R$ 150K receita com R$ 30K investido → ROAS = 5x'},
+  {abbr:'VTR',name:'Taxa de Visualização Completa',cats:['kpi','video'],en:'View-Through Rate',
+   def:'Percentual de usuários que assistiram um vídeo até o final (ou até o ponto de conclusão da plataforma, ex.: 30s para YouTube TrueView).',
+   formula:'VTR = (Views Completas ÷ Impressões) × 100',
+   example:'250K views completas em 1M impressões → VTR = 25%'},
+  {abbr:'CPV',name:'Custo por View',cats:['kpi','video'],en:'Cost per View',
+   def:'Custo por visualização de vídeo. Cobrado somente quando o usuário assiste além do ponto skip (geralmente 5s). Usado no YouTube TrueView.',
+   formula:'CPV = Investimento ÷ Views',
+   example:'R$ 10.000 e 500.000 views → CPV = R$ 0,02'},
+  {abbr:'CPL',name:'Custo por Lead',cats:['kpi'],en:'Cost per Lead',
+   def:'Custo para gerar um lead qualificado (formulário preenchido, cadastro, contato). Variante do CPA focada em geração de leads.',
+   formula:'CPL = Investimento ÷ Leads gerados'},
+  {abbr:'CPUV',name:'Custo por Usuário Único',cats:['kpi'],en:'Cost per Unique Visitor',
+   def:'Custo para atingir um usuário único. Especialmente relevante em campanhas de branding com alcance.',
+   formula:'CPUV = Investimento ÷ Alcance único'},
+  {abbr:'Freq.',name:'Frequência',cats:['kpi','strategy'],en:'Frequency',
+   def:'Número médio de vezes que um usuário único viu um anúncio em um período. Equilíbrio entre reconhecimento e fadiga.',
+   formula:'Frequência = Impressões ÷ Alcance Único',
+   example:'3M impressões e 1M alcance → Frequência = 3x'},
+  {abbr:'ER',name:'Taxa de Engajamento',cats:['kpi'],en:'Engagement Rate',
+   def:'Percentual de interações (curtidas, comentários, compartilhamentos, saves) em relação às impressões. Usado especialmente em social media.',
+   formula:'ER = (Engajamentos ÷ Impressões) × 100'},
+
+  // Plataformas
+  {abbr:'DSP',name:'Demand-Side Platform',cats:['programatica','platform'],en:'DSP',
+   def:'Plataforma usada por anunciantes e agências para comprar inventário de mídia programaticamente em múltiplos SSPs e ad exchanges, com controles de segmentação, lances e frequência. Ex.: DV360, Trade Desk, Amazon DSP, Xandr.',
+   example:'DV360 conecta ao Google Ad Exchange, Xandr e outros SSPs para comprar display, video e mobile.'},
+  {abbr:'SSP',name:'Supply-Side Platform',cats:['programatica','platform'],en:'SSP',
+   def:'Plataforma usada por publishers para oferecer e gerenciar seu inventário de anúncios para múltiplos DSPs e ad exchanges, maximizando receita.',
+   example:'Google Ad Manager (GAM) é o principal SSP/DFP do mercado.'},
+  {abbr:'DMP',name:'Data Management Platform',cats:['tech','platform'],en:'DMP',
+   def:'Plataforma de gestão de dados que coleta, organiza e ativa dados de audiência (1st, 2nd e 3rd party) para segmentação em campanhas programáticas. Está em declínio com o fim dos cookies 3rd party.',
+   example:'Salesforce DMP, Oracle BlueKai, Adobe Audience Manager.'},
+  {abbr:'CDP',name:'Customer Data Platform',cats:['tech','platform'],en:'CDP',
+   def:'Plataforma que unifica dados de clientes de múltiplas fontes (CRM, web, mobile, offline) em um perfil único e persistente. Diferente da DMP, trabalha com dados 1st party identificados.',
+   example:'Segment, mParticle, Salesforce CDP.'},
+  {abbr:'CM360',name:'Campaign Manager 360',cats:['platform'],en:'Campaign Manager 360',
+   def:'Ad server da Google para trafficking, serving e mensuração de campanhas display, video e rich media. Antigo DoubleClick Campaign Manager. Parte do Google Marketing Platform.',
+   example:'Usado para gerar tags de ad serving, medir viewability e atribuição cross-channel.'},
+  {abbr:'DV360',name:'Display & Video 360',cats:['platform','programatica'],en:'Display & Video 360',
+   def:'DSP da Google integrado ao Google Marketing Platform. Permite compra programática de display, video, audio, CTV, e native. Integrado com CM360 e SA360.',
+   example:'Compra aberta via Google Ad Exchange e fechada via Deal IDs com publishers premium.'},
+  {abbr:'SA360',name:'Search Ads 360',cats:['platform'],en:'Search Ads 360',
+   def:'Plataforma de gestão de search unificada que integra Google Ads, Bing e outros buscadores com bidding automatizado e relatórios centralizados.',},
+  {abbr:'GAM',name:'Google Ad Manager',cats:['platform'],en:'Google Ad Manager',
+   def:'Ad server + SSP para publishers. Antigo DoubleClick for Publishers (DFP). Gerencia tráfego direto e programático, com suporte a header bidding.',},
+
+  // Tecnologia & AdTech
+  {abbr:'RTB',name:'Real-Time Bidding',cats:['programatica','tech'],en:'RTB',
+   def:'Processo de leilão programático no qual cada impressão é comprada em tempo real (< 100ms) via leilão entre DSPs. Base da mídia programática open market.',
+   example:'Usuário acessa site → SSP faz chamada → DSPs enviam bid → maior bid ganha e serve anúncio'},
+  {abbr:'PMP',name:'Private Marketplace',cats:['programatica'],en:'PMP',
+   def:'Leilão programático restrito a compradores selecionados pelo publisher. Oferece inventário premium com maior controle de brand safety, mas a preços mais altos que o open market.',
+   example:'Publisher de jornal reserva 20% do inventário homepage para PMPs com CPM mínimo de R$ 30.'},
+  {abbr:'PG',name:'Programmatic Guaranteed',cats:['programatica'],en:'Programmatic Guaranteed',
+   def:'Compra programática com inventário e volume garantidos e preço fixo negociado. Combina a eficiência da automação com a previsibilidade das compras diretas.',},
+  {abbr:'Deal ID',name:'Identificador de Deal Programático',cats:['programatica'],en:'Deal ID',
+   def:'Código único que identifica um acordo de compra programática (PMP ou PG) entre um comprador e um publisher, configurado no DSP e SSP.',},
+  {abbr:'Header Bidding',name:'Header Bidding (HB)',cats:['programatica','tech'],en:'Header Bidding',
+   def:'Tecnologia que permite publishers oferecer inventário a múltiplos compradores simultaneamente antes de chamar o ad server, aumentando receita vs. waterfall tradicional.',},
+  {abbr:'Floor Price',name:'Preço Mínimo de Leilão',cats:['programatica'],en:'Floor Price',
+   def:'CPM mínimo que um publisher aceita para uma impressão em leilão programático. Bids abaixo desse valor não são considerados.',
+   formula:'Se Floor Price = R$ 5 e Bid do DSP = R$ 3 → impressão não é vendida'},
+  {abbr:'Ad Server',name:'Servidor de Anúncios',cats:['tech','platform'],en:'Ad Server',
+   def:'Sistema que armazena, veicula e rastreia impressões de anúncios. Decide qual criativo servir a cada usuário com base em regras de targeting e prioridade. Ex.: CM360 (comprador), GAM (publisher).',},
+  {abbr:'Tag',name:'Tag de Anúncio (Ad Tag)',cats:['tech'],en:'Ad Tag',
+   def:'Trecho de código (JS, iframe ou URL) que chama o ad server para servir um anúncio. Implementado pelo publisher no site ou app.',},
+  {abbr:'Pixel',name:'Pixel de Rastreamento',cats:['tech'],en:'Tracking Pixel / Conversion Pixel',
+   def:'Imagem 1×1 invisível ou JavaScript que dispara uma chamada HTTP quando o usuário realiza uma ação, permitindo rastrear conversões, reações e audiências.',},
+  {abbr:'Floodlight',name:'Floodlight (CM360)',cats:['tech','platform'],en:'Floodlight',
+   def:'Tecnologia de rastreamento de conversão proprietária do CM360/DV360. Pode ser de atividade (venda, lead) ou de segmento (audiência). Equivalente ao pixel de conversão da Meta.',},
+  {abbr:'UTM',name:'Urchin Tracking Module',cats:['tech'],en:'UTM Parameters',
+   def:'Parâmetros de URL usados para rastrear origem de tráfego no Analytics. Padrão: utm_source, utm_medium, utm_campaign, utm_content, utm_term.',
+   example:'?utm_source=meta&utm_medium=cpc&utm_campaign=awareness_q4&utm_content=video15s'},
+  {abbr:'Cookie',name:'Cookie de Terceiro (3rd Party)',cats:['tech','privacy'],en:'Third-Party Cookie',
+   def:'Arquivo armazenado no navegador por um domínio diferente do site visitado. Usado para rastreamento cross-site e segmentação. Chrome está descontinuando em 2024/25.',},
+  {abbr:'IDFA',name:'Identificador para Anunciantes (iOS)',cats:['tech','privacy'],en:'Identifier for Advertisers',
+   def:'ID único de dispositivo iOS para rastreamento de anúncios. Após ATT (App Tracking Transparency) no iOS 14.5, usuários precisam optar ativamente (opt-in).',},
+  {abbr:'GAID',name:'Google Advertising ID (Android)',cats:['tech','privacy'],en:'Google Advertising ID',
+   def:'ID único de dispositivo Android para rastreamento de anúncios. Equivalente ao IDFA para Android. Usuário pode resetar ou desativar.',},
+
+  // Estratégia & Planning
+  {abbr:'Awareness',name:'Reconhecimento de Marca',cats:['strategy'],en:'Brand Awareness',
+   def:'Objetivo de campanha focado em aumentar o conhecimento e lembrança da marca. Métricas principais: alcance, impressões, frequência e brand lift. Compra geralmente por CPM.',},
+  {abbr:'Consideration',name:'Consideração',cats:['strategy'],en:'Consideration / Engagement',
+   def:'Objetivo de campanha intermediário: engajar usuários que já conhecem a marca para aumentar intenção de compra. Métricas: CTR, engajamento, views de vídeo, visitas ao site.',},
+  {abbr:'Conversion',name:'Conversão',cats:['strategy'],en:'Conversion / Performance',
+   def:'Objetivo de campanha focado em ações de fundo de funil (compra, lead, cadastro). Métricas: CPA, ROAS, CVR. Compra geralmente por CPC ou CPA.',},
+  {abbr:'Retargeting',name:'Remarketing / Retargeting',cats:['strategy'],en:'Retargeting / Remarketing',
+   def:'Estratégia de segmentar usuários que já interagiram com a marca (visitaram o site, adicionaram ao carrinho, assistiram a um vídeo). Alta eficiência de conversão.',},
+  {abbr:'Lookalike',name:'Audiência Similar',cats:['strategy'],en:'Lookalike Audience',
+   def:'Audiência criada pelo algoritmo da plataforma buscando usuários com perfil similar a uma audiência-semente (ex.: compradores anteriores). Meta: 1-3%, Google: "Similar Segments".',},
+  {abbr:'GRP',name:'Gross Rating Point',cats:['kpi','strategy'],en:'GRP',
+   def:'Métrica de planejamento de mídia off (TV, rádio) = Alcance(%) × Frequência. Equivalente digital seria TRP (Target Rating Point) para audiências segmentadas.',
+   formula:'GRP = Alcance% × Frequência',
+   example:'40% de alcance com 5x freq. = 200 GRPs'},
+  {abbr:'Share of Voice',name:'Participação de Voz',cats:['strategy'],en:'Share of Voice (SOV)',
+   def:'Percentual da presença publicitária de uma marca em relação ao total da categoria. Correlacionado a market share no longo prazo (regra de Binet & Field: SOV > SOM).',
+   formula:'SOV = Investimento marca ÷ Investimento total da categoria × 100'},
+  {abbr:'Brand Lift',name:'Estudo de Elevação de Marca',cats:['strategy','kpi'],en:'Brand Lift Study',
+   def:'Pesquisa que mede o impacto de uma campanha em métricas de marca: awareness, recall, intenção de compra. Conduzido via grupo exposto vs. controle. Disponível em Meta, Google, DV360.',},
+  {abbr:'Attribution',name:'Atribuição de Conversão',cats:['strategy','tech'],en:'Attribution',
+   def:'Processo de dar crédito a pontos de contato da jornada do usuário pela conversão. Modelos: last click, first click, linear, time decay, data-driven.',},
+  {abbr:'Viewability',name:'Visibilidade do Anúncio',cats:['kpi','tech'],en:'Viewability',
+   def:'Métrica que indica se um anúncio teve chance real de ser visto pelo usuário. Padrão MRC/IAB: display ≥ 50% pixels visíveis por ≥ 1s; vídeo ≥ 50% por ≥ 2s.',
+   formula:'VB% = Impressões visíveis ÷ Impressões mensuráveis × 100'},
+  {abbr:'Brand Safety',name:'Segurança de Marca',cats:['strategy'],en:'Brand Safety',
+   def:'Conjunto de medidas para garantir que anúncios não apareçam próximos a conteúdo inapropriado (violência, fake news, conteúdo adulto, discurso de ódio). Classificação GARM: tiers de risco 1-4.',},
+  {abbr:'Pacing',name:'Ritmo de Entrega',cats:['strategy'],en:'Pacing',
+   def:'Controle do ritmo de entrega de uma campanha ao longo do período. Pacing index = % entregue ÷ % do tempo. Ideal: 0,90–1,15 (ligeiramente acelerado).',},
+  {abbr:'Flight',name:'Período de Veiculação',cats:['strategy'],en:'Flight / Campaign Period',
+   def:'Janela de tempo definida para a campanha ou um conjunto de anúncios ficar ativo. Ex.: "Flight Q4: 01/10 a 31/12/2024".',},
+
+  // Vídeo
+  {abbr:'TrueView',name:'TrueView (YouTube)',cats:['video','platform'],en:'TrueView',
+   def:'Formato de anúncio em vídeo do YouTube onde o usuário pode pular após 5 segundos. Cobrado por CPV somente quando o usuário assiste 30s ou interage. Favorece criativos que engajam nos primeiros 5s.',},
+  {abbr:'Pre-roll',name:'Pré-roll',cats:['video'],en:'Pre-roll',
+   def:'Anúncio em vídeo exibido antes do conteúdo principal. Pode ser skippable (com botão "Pular") ou non-skippable (forçado, geralmente até 15s).',},
+  {abbr:'Bumper',name:'Bumper Ad',cats:['video','platform'],en:'Bumper Ad',
+   def:'Anúncio em vídeo de até 6 segundos non-skippable no YouTube. Ideal para reforço de mensagem (awareness) após uma campanha TrueView. Comprado por CPM.',},
+  {abbr:'CTV',name:'Connected TV',cats:['video','platform'],en:'CTV',
+   def:'Televisores com acesso à internet (smart TVs, Apple TV, Chromecast) que permitem veiculação de anúncios programáticos. Crescimento acelerado no Brasil com expansão de streaming.',},
+  {abbr:'OTT',name:'Over-The-Top',cats:['video','platform'],en:'OTT',
+   def:'Conteúdo de vídeo entregue via internet, bypassando operadoras de TV. Plataformas: Netflix (w/ ads), Globoplay, HBO Max, Disney+. OTT ≠ CTV: OTT é o conteúdo, CTV é o dispositivo.',},
+  {abbr:'VAST',name:'Video Ad Serving Template',cats:['tech','video'],en:'VAST',
+   def:'Protocolo IAB para servir anúncios em vídeo em players. Define estrutura XML com URLs do vídeo, tracking events (start, quartiles, complete) e recursos interativos.',},
+
+  // Privacy
+  {abbr:'LGPD',name:'Lei Geral de Proteção de Dados',cats:['privacy'],en:'LGPD (Brazil)',
+   def:'Lei brasileira de privacidade de dados (Lei 13.709/2018). Exige consentimento explícito do usuário para coleta e uso de dados pessoais. Essencial para compliance em rastreamento com pixels e cookies.',},
+  {abbr:'ATT',name:'App Tracking Transparency (Apple)',cats:['privacy','tech'],en:'App Tracking Transparency',
+   def:'Framework da Apple (iOS 14.5+) que exige que apps peçam permissão explícita para rastrear o usuário entre apps e sites de terceiros. Impactou significativamente o targeting no Meta Ads.',},
+  {abbr:'First Party Data',name:'Dados Próprios (1st Party)',cats:['privacy','strategy'],en:'First-Party Data',
+   def:'Dados coletados diretamente pela empresa de seus próprios clientes e usuários (site, CRM, app, newsletter). Com o fim dos cookies 3rd party, tornaram-se o ativo mais valioso em AdTech.',},
+  {abbr:'Cookieless',name:'Sem Cookies de Terceiro',cats:['privacy','tech'],en:'Cookieless',
+   def:'Cenário em que o rastreamento cross-site por cookies 3rd party não está disponível. Alternativas: FLoC/Topics API (Google), SKAdNetwork (Apple), UID2.0, first-party data.',},
+  {abbr:'IAS',name:'Integral Ad Science',cats:['tech','platform'],en:'IAS',
+   def:'Empresa de verificação de mídia que mede viewability, brand safety e fraude em campanhas. Parceiro de medibilidade terceira integrado aos principais DSPs e publishers.',},
+  {abbr:'MOAT',name:'MOAT (Oracle)',cats:['tech','platform'],en:'MOAT',
+   def:'Plataforma de analytics e verificação de mídia da Oracle que mede atenção, viewability e engajamento em campanhas de vídeo e display.',},
+  {abbr:'Invalid Traffic',name:'Tráfego Inválido (IVT)',cats:['tech','kpi'],en:'Invalid Traffic / Ad Fraud',
+   def:'Impressões e cliques gerados por bots ou atividades fraudulentas. Classificado em GIVT (general) e SIVT (sofisticado). Medido por IAS, DoubleVerify e MOAT.',},
+
+  // Mix
+  {abbr:'AdEx',name:'Ad Exchange',cats:['programatica'],en:'Ad Exchange',
+   def:'Marketplace digital onde impressões são compradas e vendidas em tempo real via RTB. Conecta DSPs (compradores) e SSPs (vendedores). Ex.: Google Ad Exchange, Xandr Marketplace.',},
+  {abbr:'3rd Party',name:'Dado de Terceiro',cats:['tech','privacy'],en:'Third-Party Data',
+   def:'Dados coletados por empresa sem relação direta com o usuário, vendidos para segmentação. Com fim dos cookies 3rd party e LGPD, uso está em declínio acelerado.',},
+  {abbr:'CPE',name:'Custo por Engajamento',cats:['kpi'],en:'Cost per Engagement',
+   def:'Custo por cada interação do usuário com o anúncio (curtida, comentário, share, expansão). Usado para formatos nativos e rich media.',
+   formula:'CPE = Investimento ÷ Engajamentos'},
+  {abbr:'SOV',name:'Share of Voice',cats:['strategy'],en:'Share of Voice',
+   def:'Percentual de impressões de uma marca em um site/contexto vs. total. Também referenciado em compras de homepage takeover onde se garante X% das impressões.',},
+  {abbr:'Trafficking',name:'Trafficking / Subida de Campanha',cats:['tech','platform'],en:'Ad Trafficking',
+   def:'Processo técnico de configurar uma campanha no ad server: upload de criativos, configuração de targeting, datas, orçamento e geração de tags para envio ao publisher.',},
+];
+
+const CAT_LABELS = {
+  kpi:{label:'KPI',cls:'cat-kpi'},
+  platform:{label:'Plataforma',cls:'cat-platform'},
+  tech:{label:'Tecnologia',cls:'cat-tech'},
+  strategy:{label:'Estratégia',cls:'cat-strategy'},
+  video:{label:'Vídeo',cls:'cat-video'},
+  programatica:{label:'Programática',cls:'cat-programatica'},
+  privacy:{label:'Privacy',cls:'cat-privacy'},
+};
+
+let activeFilter = 'all';
+let openTerm = null;
+
+function init(){
+  // Build filter chips
+  const cats = ['all', ...Object.keys(CAT_LABELS)];
+  const chips = document.getElementById('filter-chips');
+  cats.forEach(cat=>{
+    const btn = document.createElement('button');
+    btn.className='filter-chip'+(cat==='all'?' active':'');
+    btn.textContent = cat==='all'?'Todos':CAT_LABELS[cat].label;
+    btn.onclick=()=>{
+      activeFilter=cat;
+      document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    };
+    chips.appendChild(btn);
+  });
+  render();
+}
+
+function render(){
+  const q = document.getElementById('search').value.toLowerCase();
+  const grid = document.getElementById('glossary-grid');
+  grid.innerHTML='';
+
+  const filtered = TERMS
+    .filter(t=>{
+      const matchCat = activeFilter==='all'||t.cats.includes(activeFilter);
+      const matchQ = !q||(t.abbr.toLowerCase().includes(q)||t.name.toLowerCase().includes(q)||t.def.toLowerCase().includes(q)||(t.en&&t.en.toLowerCase().includes(q)));
+      return matchCat && matchQ;
+    })
+    .sort((a,b)=>a.abbr.localeCompare(b.abbr));
+
+  document.getElementById('stats-bar').innerHTML=`<b>${filtered.length}</b> termos encontrados de <b>${TERMS.length}</b> no glossário`;
+
+  if(!filtered.length){
+    grid.innerHTML='<div class="empty-state">Nenhum termo encontrado para "<b>'+q+'</b>"</div>';
+    return;
+  }
+
+  filtered.forEach((t,i)=>{
+    const isOpen = openTerm===t.abbr;
+    const div=document.createElement('div');
+    div.className='term-card'+(isOpen?' open':'');
+    div.onclick=()=>{openTerm=isOpen?null:t.abbr;render();};
+    div.innerHTML=`
+      <div class="term-head">
+        <span class="term-abbr">${highlight(t.abbr,q)}</span>
+        <span class="term-name">${highlight(t.name,q)}</span>
+        <div class="term-cats">${t.cats.map(c=>`<span class="cat-badge ${CAT_LABELS[c].cls}">${CAT_LABELS[c].label}</span>`).join('')}</div>
+        <span class="term-chevron">▼</span>
+      </div>
+      ${isOpen?`<div class="term-body">
+        ${t.en?`<div class="term-en">🌐 ${t.en}</div>`:''}
+        <div class="term-def" style="margin-top:6px">${highlight(t.def,q)}</div>
+        ${t.formula?`<div class="term-formula">📐 ${t.formula}</div>`:''}
+        ${t.example?`<div class="term-example">💡 <b>Exemplo:</b> ${t.example}</div>`:''}
+      </div>`:''}
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function highlight(text, q){
+  if(!q) return text;
+  const re = new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')', 'gi');
+  return text.replace(re,'<mark style="background:#FEF08A;border-radius:2px;padding:0 1px">$1</mark>');
+}
+
+init();
+</script>
+</body>
+</html>
