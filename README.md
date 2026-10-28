@@ -1,75 +1,37 @@
-# Projeto NC — Toolkit de AdOps & Mídia
+# NC Tool
 
-> Coleção de ferramentas offline para operações de mídia digital — rodando direto no browser, sem backend, sem dependências externas.
+Conjunto de ferramentas standalone de AdOps para operações de mídia digital — naming, validação, mensuração, KPIs e referências. Tudo roda direto no browser, sem instalação, sem backend.
 
-🔗 **[Acessar o toolkit](https://falssp.github.io/Projeto-NC/)**
-
----
-
-## O que é
-
-O Projeto NC é um hub de ferramentas para profissionais de AdOps, mídia e AdTech. Cada ferramenta é um único arquivo HTML autocontido — abre em qualquer browser, funciona offline, sem login e sem enviar dados a nenhum servidor.
+**Deploy:** [falssp.github.io/Projeto-NC/](https://falssp.github.io/Projeto-NC/)
 
 ---
 
-## Ferramentas disponíveis
+## Ferramentas AdOps Guide
 
-### AdOps & Mídia
+As ferramentas abaixo ficam em `/ferramentas/` e cobrem o fluxo completo de AdOps:
 
-| Ferramenta | Descrição |
-|---|---|
-| [Calculadora de KPIs de Mídia](ferramentas/kpi-calc/) | CPM, CPC, CPA, CTR, ROAS, VTR — calcula em qualquer direção |
-| [Gerador de Naming Convention](ferramentas/naming-convention/) | Monta estrutura de nome de campanha com blocos drag-and-drop, export CSV |
-| [Checklist de Go-Live](ferramentas/checklist-golive/) | 40+ itens em 7 categorias, progresso visual, notas e export .txt |
-| [Conversor de Timezone para AdOps](ferramentas/timezone-converter/) | Converte horários entre 12 fusos, gera tabela de flight por plataforma |
-| [Calculadora de Alcance & Budget](ferramentas/alcance-budget/) | Budget ↔ Alcance ↔ Impressões com simulação de cenários |
-| [Glossário AdTech & Mídia](ferramentas/glossario-nc/) | 60+ termos com definições, fórmulas e exemplos PT/EN |
-| [Simulador de Pacing](ferramentas/pacing-simulator/) | Índice de pacing, projeção de entrega e ações corretivas |
-| [Gerador de Relatório de Performance](ferramentas/relatorio-performance/) | Estrutura de relatório editável por canal, export .txt |
-| [Calculadora de Frequência](ferramentas/freq-calculator/) | Frequency cap ideal por objetivo, canal, formato e audiência |
-| [Calculadora de Viewability](ferramentas/calculadora-viewability/) | VB%, CPVI, ajuste de IVT, benchmarks por formato e parceiro |
-| [Analisador de Discrepância](ferramentas/discrepancia/) | Diagnóstico de discrepância entre ad server e plataforma |
-| [Comparador de Tag](ferramentas/comparador-tag/) | Diff de tags/URLs com highlight de parâmetros adicionados/removidos |
-| [Checklist de QA](ferramentas/checklist-qa/) | QA por plataforma — CM360, Meta, Google Ads, DV360, LinkedIn, TikTok |
-| [Decodificador TCF](ferramentas/decodificador-tcf/) | Decodifica strings gdpr_consent (TCF v1 e v2) offline |
-| [Comparador de Plataformas](ferramentas/comparador-plataformas/) | Tabela comparativa de plataformas de mídia |
-| [Mapa de Viewability](ferramentas/viewability-map/) | Suporte a viewability e brand safety por plataforma |
-| [Brief Criativo](ferramentas/brief-criativo/) | Gerador de briefs com specs por plataforma e formato |
-| [Mapa de Ad Servers](ferramentas/adserver-map/) | Compatibilidade e quando usar cada ad server |
-| [Relatório de Tag](ferramentas/relatorio-tag/) | Cadastro e status de tags de campanha |
-| [Calculadora de Mídia](ferramentas/calculadora-midia/) | Calculadora geral de mídia |
-| [UTM Builder](ferramentas/utm-builder/) | Gerador de parâmetros UTM |
-| [Validador de Floodlight](ferramentas/validador-floodlight/) | Validação de tags Floodlight |
+| Ferramenta | Descrição | Link |
+|---|---|---|
+| 📊 Calculadora de KPIs | CPM, CPC, CPA, CTR, ROAS e VTR em todas as direções — informe dois campos e o terceiro é calculado. Inclui benchmarks BR 2024/25. | `/ferramentas/kpi-calc/` |
+| 🏷️ Gerador de Naming Convention | Monte a estrutura do nome de campanha arrastando blocos, escolha o separador e gere nomes em lote. Export CSV. | `/ferramentas/naming-convention/` |
+| 🚀 Checklist de Go-Live | 40+ itens em 7 categorias: tracking, criativos, segmentação, budget, brand safety, ad server e processo. Progresso visual e export .txt. | `/ferramentas/checklist-golive/` |
+| 🕐 Conversor de Timezone | Converte horários entre BRT, EST, PST, GMT, CET, JST e mais 8 fusos. Gera tabela de flight por plataforma de ad server. | `/ferramentas/timezone-converter/` |
+| 📐 Calculadora de Alcance & Budget | Informe budget, alcance ou impressões (dois quaisquer) e calcula o terceiro. Simula cenários e compara CPM efetivo vs. benchmark. | `/ferramentas/alcance-budget/` |
+| 📖 Glossário AdTech & Mídia | 60+ termos com definições, fórmulas e exemplos. Filtros por categoria (KPI, Programática, Vídeo, Plataforma, Privacy, Estratégia). | `/ferramentas/glossario-nc/` |
 
-### Naming & Taxonomia
-
-| Ferramenta | Descrição |
-|---|---|
-| [Grasp Naming](ferramentas/grasp-naming/) | Naming convention Grasp |
-| [Creative Taxonomy](ferramentas/creative-taxonomy/) | Taxonomia de criativos |
-| [Branded Buzz Taxo](ferramentas/branded-buzz-taxo/) | Taxonomia Branded Buzz |
-| [UL Taxonomias](ferramentas/ul-taxonomias/) | Taxonomias UL |
-| [Ad Name Sync](ferramentas/ad-name-sync/) | Sincronização de nomes de anúncios |
-| [Influ Name](ferramentas/influ-name/) | Naming de influenciadores |
-
-### Mensuração & Dados
-
-| Ferramenta | Descrição |
-|---|---|
-| [AdOps Mensuração](ferramentas/adops-mensuracao/) | Guia de mensuração em AdOps |
-| [Extrator de Campanha](ferramentas/extrator-campanha/) | Extrator de dados de campanha |
-| [Extrator de Influenciadores](ferramentas/extrator-influs/) | Extrator de dados de influenciadores |
-| [Cruzador de IDs](ferramentas/cruzador-ids/) | Cruzamento de IDs entre plataformas |
-| [Dashboard CN](ferramentas/dashboard-cn/) | Dashboard de controle |
+Todas as ferramentas têm botão **❓ Como usar** com guia inline de uso.
 
 ---
 
-## Stack técnica
+## Outras ferramentas no repo
 
-- **HTML/CSS/JS puro** — sem frameworks, sem npm, sem build step
-- **Zero dependências externas** — tudo autocontido em um único arquivo por ferramenta
-- **GitHub Pages** — deploy automático via push na branch `main`
-- **Offline-first** — todas as ferramentas funcionam sem conexão à internet
+O portal `/ferramentas/` também lista ferramentas para outros fluxos:
+
+- **Naming & Taxonomia** — Creative Taxonomy, Dicionário UL, Grasp Naming, Location
+- **IDs & Cruzamento** — Cruzador de IDs, Galileo IDs, Gerador de IDs UL
+- **ADP & Planilhas** — Ad Name Sync, Comparador ADP, Contador ADP, Extractor de Fórmulas, Merge RM→ADP
+- **Influencers** — Extrator de Influs, Extrator de Links, Influencer Name, Branded Buzz Taxonomy
+- **AdOps Guide** — UTM Builder, Spec Finder, Calculadora de Mídia, Posicionamentos NC, Validador de Floodlight, Gerador de VAST Tag, Comparador de Tag, Checklist de QA, Decodificador TCF, Comparador de Plataformas, e mais
 
 ---
 
@@ -77,90 +39,77 @@ O Projeto NC é um hub de ferramentas para profissionais de AdOps, mídia e AdTe
 
 ```
 Projeto-NC/
-├── index.html                    # Landing page principal
+├── index.html              # Portal principal (NC Tool)
 ├── ferramentas/
-│   ├── index.html                # Hub de ferramentas (catálogo)
-│   ├── kpi-calc/index.html
-│   ├── naming-convention/index.html
-│   ├── checklist-golive/index.html
-│   ├── timezone-converter/index.html
-│   ├── alcance-budget/index.html
-│   ├── glossario-nc/index.html
-│   ├── pacing-simulator/index.html
-│   ├── relatorio-performance/index.html
-│   ├── freq-calculator/index.html
-│   └── ... (demais ferramentas)
+│   ├── index.html          # Índice de todas as ferramentas
+│   ├── kpi-calc/
+│   ├── naming-convention/
+│   ├── checklist-golive/
+│   ├── timezone-converter/
+│   ├── alcance-budget/
+│   ├── glossario-nc/
+│   └── ...                 # demais ferramentas
 └── README.md
 ```
 
 ---
 
-## Contribuindo
+## Tecnologia
 
-### Criando uma nova ferramenta
+- **HTML/CSS/JS puro** — sem frameworks, sem CDN, sem dependências externas
+- **Offline-first** — todas as ferramentas funcionam sem conexão após o primeiro carregamento
+- **Single-file** — cada ferramenta é um único `index.html` autocontido
+- **Deploy via GitHub Pages** — push para `main` publica automaticamente
 
-1. Crie uma pasta em `ferramentas/nome-da-ferramenta/`
-2. Coloque o código em `ferramentas/nome-da-ferramenta/index.html`
-3. A ferramenta deve ser autocontida (sem arquivos externos)
-4. Use o sistema de design do projeto (variáveis CSS abaixo)
-5. Adicione o card no `ferramentas/index.html`
+---
 
-### Sistema de design
+## Design
 
-```css
-:root {
-  --navy:   #0D2137;  /* fundo header */
-  --navy2:  #1A3F63;  /* navy secundário */
-  --accent: #38BDF8;  /* azul destaque */
-  --bg:     #F0F4F8;  /* fundo da página */
-  --surface:#ffffff;  /* cards/painéis */
-  --border: #DDE3EC;  /* bordas */
-}
+**Ferramentas AdOps Guide** usam a paleta `navy`:
+
+```
+--navy:   #0D2137
+--accent: #38BDF8
+--bg:     #F0F4F8
+--green:  #10B981
+--yellow: #F59E0B
+--red:    #EF4444
 ```
 
-### Padrão de componentes
+**Portal e índice** usam a paleta `azul`:
 
-- **Header** sticky de 56px de altura com `--navy`
-- **Layout** de duas colunas: sidebar de inputs (300–340px) + painel de resultados
-- **Cards** com `border-radius: 12px`, `border: 1px solid var(--border)`
-- **Botão primário**: `background: #2563EB`, `border-radius: 8px`
-- **Export**: Blob + anchor click para `.txt` ou `.csv`
-
-### Git workflow
-
-```bash
-# Clonar
-git clone https://github.com/falssp/Projeto-NC.git
-cd Projeto-NC
-
-# Criar/editar ferramenta
-# ...
-
-# Publicar
-git add .
-git commit -m "feat: adiciona ferramenta X"
-
-# Se houver conflito com remote (alguém fez push antes):
-git fetch origin main
-git rebase origin/main
-# Resolver conflitos mantendo TODOS os cards (remote + seus)
-git add ferramentas/index.html
-GIT_EDITOR=true git rebase --continue
-git push origin main
+```
+--azul:   #1F36C7
+--escuro: #1a237e
+--bg:     #f0f2ff
 ```
 
-> ⚠️ **Regra de ouro em conflitos**: sempre mantém TODOS os cards de ambos os lados (remote + local). Nunca descarta cards do remote.
+---
+
+## Como contribuir
+
+1. Clone o repo: `git clone https://github.com/falssp/Projeto-NC.git`
+2. Crie ou edite a ferramenta em `/ferramentas/<nome>/index.html`
+3. Adicione o card correspondente em `/ferramentas/index.html`
+4. Push para `main` — o GitHub Pages publica automaticamente
+
+**Padrão das ferramentas AdOps Guide:**
+- Arquivo único `index.html` autocontido
+- `max-width: 1400px` no layout
+- Botão `❓ Como usar` no header com modal de ajuda
+- Paleta navy (`--navy`, `--accent`, `--bg`, etc.)
+- Favicon NC inline (data URI SVG)
 
 ---
 
 ## Deploy
 
-O deploy é automático via **GitHub Pages** na branch `main`.
+GitHub Pages está configurado para servir a branch `main` da raiz do repositório.
 
-Após o push, aguarde ~30s e acesse: `https://falssp.github.io/Projeto-NC/`
+URL de produção: `https://falssp.github.io/Projeto-NC/`
+
+Não há pipeline de build — os arquivos HTML são servidos diretamente.
 
 ---
 
-## Licença
-
-Uso interno. © 2026 NC Tool.
+*NC Tool © 2026 · Unilever BR × Grasp*
