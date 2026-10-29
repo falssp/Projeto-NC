@@ -1,10 +1,10 @@
 # Audience Type × Audience Party — Guia de Referência
 
-> **Status:** v1. Matriz extraída do Dicionário Grasp 2026, do Glossário 2026 e da UNCC Digital Platform String Tool. O Remarket (Rmkt) só consta na UNCC e ainda não foi incorporado ao Dicionário/Glossário (ver *Pontos de atenção*).
+> **Status:** v2. Regra do Remarket (Rmkt) definida: somente 1PD-DID. As demais combinações foram extraídas do Dicionário Grasp 2026, do Glossário 2026 e da UNCC Digital Platform String Tool. O Rmkt ainda não foi incorporado ao Dicionário/Glossário (ver *Pontos de atenção*).
 
 ## Resposta rápida: Audience Type = Rmkt
 
-Permitido com **1PD-DAD**, **1PD-DID** e **1PD-DID+DAD**. **Nunca** com `No 1PD`.
+Permitido **somente com 1PD-DID**. Qualquer outro party (1PD-DAD, 1PD-DID+DAD, No 1PD) não é permitido.
 
 ## Os dois campos
 
@@ -32,7 +32,7 @@ Permitido com **1PD-DAD**, **1PD-DID** e **1PD-DID+DAD**. **Nunca** com `No 1PD`
 | DMP | `dmp` | — | ✅ | — | — |
 | Collected in-platform | `collpform` | — | ✅ | — | — |
 | Custom | `cust` | — | — | ✅ | ✅ |
-| Remarket *(só na UNCC)* | `rmkt` | ✅ | ✅ | ✅ | — |
+| Remarket | `rmkt` | — | ✅ | — | — |
 | Behavioural | `behav` | — | — | — | ✅ |
 | Demographic | `demog` | — | — | — | ✅ |
 | In-Market | `inmark` | — | — | — | ✅ |
@@ -42,14 +42,14 @@ Permitido com **1PD-DAD**, **1PD-DID** e **1PD-DID+DAD**. **Nunca** com `No 1PD`
 
 ## Visão inversa: Audience Party → Audience Types
 
-- **1PD-DAD:** CRM, Lookalike, CombinedAudiences, Remarket
+- **1PD-DAD:** CRM, Lookalike, CombinedAudiences
 - **1PD-DID:** Lookalike, DMP, Collected in-platform, Remarket
-- **1PD-DID+DAD:** Lookalike, CombinedAudiences, Custom, Remarket
+- **1PD-DID+DAD:** Lookalike, CombinedAudiences, Custom
 - **No 1PD:** CombinedAudiences, Custom, Behavioural, Demographic, In-Market, Interest/Affinity, In-Market & Lifestyle, Lifestyle/Life Events
 
 ## Pontos de atenção
 
-1. **Rmkt não está no nosso Dicionário, no Glossário nem no RM (`Dados`).** Está na aba `Mandated Values Freetext` da UNCC como *Remarket / Rmkt*, permitido com os três 1PD e não com `No 1PD`. Quem recebe taxonomia da UL com Rmkt precisa dessa regra, então falta incorporá-la ao Dicionário e ao Glossário.
+1. **Rmkt não está no nosso Dicionário, no Glossário nem no RM (`Dados`).** Está na aba `Mandated Values Freetext` da UNCC como *Remarket / Rmkt*, ali permitido com os três 1PD. A regra adotada aqui é mais restritiva (somente 1PD-DID): Rmkt com 1PD-DAD ou 1PD-DID+DAD, aceito na UNCC, não seria aceito por nós. Falta incorporar a regra ao Dicionário e ao Glossário.
 2. **Glossário com abreviações invertidas:** na aba `Galileo e Freetext`, a opção `1PD-DID` aparece com a abreviação `1pd-dad` (e vice-versa). Pelo texto do Significado e pelo Dicionário, o correto é DID → `1pd-did` e DAD → `1pd-dad`.
 3. **`None` como Audience Type:** consta na lista de tipos da UNCC (`Mandated Dimensions & Values`), mas não encontrei regra de party para ele.
 4. **DMP e remarketing:** o Glossário descreve DMP como audiência com dados próprios *ou segmentos de remarketing*, ambos com 1PD-DID.
@@ -57,7 +57,7 @@ Permitido com **1PD-DAD**, **1PD-DID** e **1PD-DID+DAD**. **Nunca** com `No 1PD`
 ## Quando a UL usar um type com party fora da matriz
 
 1. Confirmar na taxonomia enviada qual `gl_audience_party` veio junto.
-2. Se a combinação não estiver na matriz (ex.: Rmkt + `no1pd`), devolver o ajuste: ou o type muda, ou o party passa a ser um `1pd-*` compatível.
+2. Se a combinação não estiver na matriz (ex.: Rmkt + `1pd-dad`), devolver o ajuste: ou o type muda, ou o party passa a ser um `1pd-*` compatível.
 3. Se estiver na matriz, seguir normalmente.
 
 ## Fontes
