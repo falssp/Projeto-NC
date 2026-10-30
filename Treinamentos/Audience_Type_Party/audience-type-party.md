@@ -1,6 +1,6 @@
 # Audience Type × Audience Party — Guia de Referência
 
-> **Status:** v2. Regra do Remarket (Rmkt) definida: somente 1PD-DID. O Rmkt ainda não foi incorporado às listas de referência da taxonomia (ver *Pontos de atenção*).
+> **Status:** v3. Matriz completa — padrão de mercado. Sujeita a ajuste caso a taxonomia UL defina regras específicas.
 
 ## Resposta rápida: Audience Type = Rmkt
 
@@ -39,19 +39,20 @@ Permitido **somente com 1PD-DID**. Qualquer outro party (1PD-DAD, 1PD-DID+DAD, N
 | Interest/Affinity | `intaff` | — | — | — | ✅ |
 | In-Market & Lifestyle | `inmlst` | — | — | — | ✅ |
 | Lifestyle/Life Events | `lstyle` | — | — | — | ✅ |
+| None | `none` | — | — | — | ✅ |
 
 ## Visão inversa: Audience Party → Audience Types
 
 - **1PD-DAD:** CRM, Lookalike, CombinedAudiences
 - **1PD-DID:** Lookalike, DMP, Collected in-platform, Remarket
 - **1PD-DID+DAD:** Lookalike, CombinedAudiences, Custom
-- **No 1PD:** CombinedAudiences, Custom, Behavioural, Demographic, In-Market, Interest/Affinity, In-Market & Lifestyle, Lifestyle/Life Events
+- **No 1PD:** CombinedAudiences, Custom, Behavioural, Demographic, In-Market, Interest/Affinity, In-Market & Lifestyle, Lifestyle/Life Events, None
 
 ## Pontos de atenção
 
-1. **Rmkt ainda não consta nas listas de referência da taxonomia** (dicionário, glossário e planilha de RM). A regra acima precisa ser incorporada a elas.
-2. **Abreviações de DID e DAD invertidas em um dos materiais de apoio:** a opção `1PD-DID` aparece com a abreviação `1pd-dad` (e vice-versa). O correto é DID → `1pd-did` e DAD → `1pd-dad`.
-3. **`None` como Audience Type:** não há regra de party definida para ele.
+1. **Matriz baseada em padrão de mercado.** Se a taxonomia UL definir regras próprias que difiram daqui, este guia deve ser atualizado.
+2. **`None` como Audience Type** indica entrega sem segmentação → padrão de mercado = `No 1PD`.
+3. **Abreviações de DID e DAD:** confirme no dicionário da UL se estão corretas — em versões anteriores havia inversão (`1pd-did` ↔ `1pd-dad`).
 
 ## Quando a UL usar um type com party fora da matriz
 
