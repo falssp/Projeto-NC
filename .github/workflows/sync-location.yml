@@ -1,4 +1,4 @@
-name: Sync location.json
+name: Sync location.json (v2)
 
 on:
   schedule:
@@ -9,12 +9,16 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
 
       - name: Fetch Corp (fonte primária)
         id: corp
         run: |
-          STATUS=$(curl -s -o location.json -w "%{http_code}" \
+          STATUS=$(curl -s -o ferramentas/location/v2/location.json -w "%{http_code}" \
             "${{ secrets.CORP_WEBAPP_URL }}?action=json")
           echo "status=$STATUS" >> $GITHUB_OUTPUT
         continue-on-error: true
@@ -23,7 +27,7 @@ jobs:
         id: valid
         if: steps.corp.outputs.status == '200'
         run: |
-          python3 -c "import json,sys; d=json.load(open('location.json')); assert d.get('cidade'), 'vazio'" \
+          python3 -c "import json,sys; d=json.load(open('ferramentas/location/v2/location.json')); assert d.get('cidade'), 'vazio'" \
             && echo "ok=true" >> $GITHUB_OUTPUT || echo "ok=false" >> $GITHUB_OUTPUT
         continue-on-error: true
 
@@ -31,12 +35,12 @@ jobs:
         if: steps.corp.outputs.status != '200' || steps.valid.outputs.ok != 'true'
         run: |
           echo "⚠️  Corp falhou — usando Pessoal como fallback"
-          curl -sf "${{ secrets.PESSOAL_WEBAPP_URL }}?action=json" -o location.json
+          curl -sf "${{ secrets.PESSOAL_WEBAPP_URL }}?action=json" -o ferramentas/location/v2/location.json
 
-      - name: Commit location.json
+      - name: Commit location.json no gh-pages
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add location.json
+          git add ferramentas/location/v2/location.json
           git diff --staged --quiet || git commit -m "chore: sync location.json [skip ci]"
           git push

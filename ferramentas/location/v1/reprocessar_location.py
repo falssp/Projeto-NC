@@ -3,14 +3,15 @@
 reprocessar_location.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Lê o Excel UL_Location_Taxonomy.xlsx, aplica as alterações
-marcadas na coluna Status e gera um novo municipios.json.
+marcadas na coluna Status e atualiza municipios.json.
 
-USO:
+USO LOCAL:
   python reprocessar_location.py
+  → Gera municipios_updated.json para revisão.
+    Renomeie para municipios.json e suba no GitHub.
 
-  O script lê o Excel e o JSON da mesma pasta.
-  Gera municipios_updated.json (não sobrescreve o original).
-  Revise o resultado antes de subir no GitHub.
+USO EM CI (GitHub Actions — variável CI=true):
+  → Grava diretamente em municipios.json (sem revisão manual).
 
 COLUNA STATUS (nas abas Cidades, Estados, Regiões):
   ALTERAR   → atualiza o valor/label daquela linha
@@ -20,14 +21,17 @@ COLUNA STATUS (nas abas Cidades, Estados, Regiões):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
-import json, re, unicodedata, sys
+import json, os, re, unicodedata, sys
 from pathlib import Path
 import openpyxl
 
 # ── CONFIG ───────────────────────────────────────────────
 XLSX = Path("UL_Location_Taxonomy.xlsx")
 JSON_IN  = Path("municipios.json")
-JSON_OUT = Path("municipios_updated.json")
+# Em CI (GitHub Actions), grava direto no arquivo original.
+# Localmente, gera municipios_updated.json para revisão manual.
+CI = os.environ.get("CI", "").lower() == "true"
+JSON_OUT = JSON_IN if CI else Path("municipios_updated.json")
 
 # Colunas das abas (0-based index após Status ser col 8/7/5/4)
 # Aba Cidades:      A=valor, B=cidade, C=uf, D=estado, E=regiao, F=iata?, G=sigla_iata, H=Status
@@ -229,10 +233,11 @@ with open(JSON_OUT, 'w', encoding='utf-8') as f:
 total = sum(len(c) for r in DB['d'].values() for c in r.values())
 print(f"  Total de municípios no JSON: {total}")
 print(f"\n✔ Salvo em: {JSON_OUT}")
-print("""
+if not CI:
+    print("""
 Próximos passos:
   1. Revise o municipios_updated.json se quiser
   2. Renomeie para municipios.json
-  3. Suba no GitHub em ferramentas/location/
+  3. Suba no GitHub em ferramentas/location/v1/
      → ferramenta atualizada em ~1 min
 """)
