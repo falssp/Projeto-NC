@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UTM Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 /* ─── TOKENS ─── */
 :root {
@@ -25,47 +26,31 @@
   --faint:       #aaa;
   --header-h:    52px;
   --tab-h:       44px;
+  color-scheme:  light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --azul:        #6b83ff;
-    --azul-escuro: #4a63f0;
-    --azul-light:  #1a2060;
-    --cinza:       #1e2030;
-    --borda:       #2e3360;
-    --ok:          #34d058;
-    --ok-bg:       #0d2416;
-    --erro:        #ff6b6b;
-    --erro-bg:     #2a1010;
-    --warn:        #f0c040;
-    --warn-bg:     #2a2000;
-    --bg:          #141520;
-    --card:        #1e2030;
-    --text:        #e8eaf6;
-    --muted:       #9da3cc;
-    --faint:       #55607a;
+    --azul:        #6b83ff; --azul-escuro: #4a63f0; --azul-light: #1a2060;
+    --cinza:       #1e2030; --borda:       #2e3360;
+    --ok:          #34d058; --ok-bg:       #0d2416;
+    --erro:        #ff6b6b; --erro-bg:     #2a1010;
+    --warn:        #f0c040; --warn-bg:     #2a2000;
+    --bg:          #141520; --card:        #1e2030;
+    --text:        #e8eaf6; --muted:       #9da3cc; --faint: #55607a;
     color-scheme:  dark;
   }
 }
 :root[data-theme="dark"] {
-  --azul:        #6b83ff;
-  --azul-escuro: #4a63f0;
-  --azul-light:  #1a2060;
-  --cinza:       #1e2030;
-  --borda:       #2e3360;
-  --ok:          #34d058;
-  --ok-bg:       #0d2416;
-  --erro:        #ff6b6b;
-  --erro-bg:     #2a1010;
-  --warn:        #f0c040;
-  --warn-bg:     #2a2000;
-  --bg:          #141520;
-  --card:        #1e2030;
-  --text:        #e8eaf6;
-  --muted:       #9da3cc;
-  --faint:       #55607a;
+  --azul:        #6b83ff; --azul-escuro: #4a63f0; --azul-light: #1a2060;
+  --cinza:       #1e2030; --borda:       #2e3360;
+  --ok:          #34d058; --ok-bg:       #0d2416;
+  --erro:        #ff6b6b; --erro-bg:     #2a1010;
+  --warn:        #f0c040; --warn-bg:     #2a2000;
+  --bg:          #141520; --card:        #1e2030;
+  --text:        #e8eaf6; --muted:       #9da3cc; --faint: #55607a;
   color-scheme:  dark;
 }
+:root[data-theme="light"] { color-scheme: light; }
 
 /* ─── RESET ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,91 +59,89 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
 /* ─── HEADER ─── */
 .header {
   background: var(--azul-escuro); color: #fff;
-  padding: 0 24px; height: var(--header-h);
-  display: flex; align-items: center; gap: 14px;
+  padding: 0 20px; height: var(--header-h);
+  display: flex; align-items: center; gap: 10px;
   position: sticky; top: 0; z-index: 100;
 }
-.header h1 { font-size: 16px; font-weight: 700; }
+.header h1  { font-size: 15px; font-weight: 700; }
 .header .badge { font-size: 10px; background: rgba(255,255,255,.18); padding: 2px 8px; border-radius: 20px; }
-.header .ver   { font-size: 10px; opacity: .45; margin-left: auto; }
+.header .ver { font-size: 10px; opacity: .4; }
+.header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.btn-icon {
+  width: 30px; height: 30px; border: none; border-radius: 6px;
+  background: rgba(255,255,255,.12); color: #fff; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.btn-icon:hover { background: rgba(255,255,255,.22); }
 
 /* ─── TABS ─── */
 .tabs-bar {
   background: var(--card); border-bottom: 1px solid var(--borda);
-  display: flex; padding: 0 24px; gap: 0;
+  display: flex; padding: 0 20px; gap: 0;
   position: sticky; top: var(--header-h); z-index: 99;
   overflow-x: auto;
 }
 .tab-btn {
-  padding: 0 16px; height: var(--tab-h); border: none; background: none;
+  padding: 0 14px; height: var(--tab-h); border: none; background: none;
   color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
   border-bottom: 2px solid transparent; transition: color .12s, border-color .12s;
-  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
 }
 .tab-btn:hover { color: var(--text); }
 .tab-btn.active { color: var(--azul); border-bottom-color: var(--azul); }
-.tab-badge {
-  font-size: 10px; background: var(--azul-light); color: var(--azul);
-  padding: 1px 6px; border-radius: 10px; font-weight: 700;
-}
-
-/* ─── TAB PANELS ─── */
+.tab-badge { font-size: 10px; background: var(--azul-light); color: var(--azul); padding: 1px 6px; border-radius: 10px; font-weight: 700; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
 /* ─── LAYOUT ─── */
-.page      { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; max-width: 1200px; margin: 0 auto; }
-.page-wide { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.page      { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; max-width: 1200px; margin: 0 auto; }
+.page-wide { padding: 20px; max-width: 1200px; margin: 0 auto; }
 @media (max-width: 820px) { .page { grid-template-columns: 1fr; } }
 
 /* ─── CARDS ─── */
 .card { background: var(--card); border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; }
-.card-h {
-  padding: 13px 20px; background: var(--azul-light);
-  border-bottom: 1px solid var(--borda);
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
-}
-.card-h h2 { font-size: 14px; font-weight: 700; color: var(--azul-escuro); }
-.card-h p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.card-body { padding: 20px; }
+.card-h { padding: 11px 18px; background: var(--azul-light); border-bottom: 1px solid var(--borda); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.card-h h2 { font-size: 13px; font-weight: 700; color: var(--azul-escuro); }
+.card-h p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.card-body { padding: 18px; }
 
 /* ─── PLATFORM GRID ─── */
-.plat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 6px; }
-.plat-btn {
+.plat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 5px; }
+.plat-btn  {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 8px 4px; border: 1.5px solid var(--borda); border-radius: 8px;
+  padding: 7px 3px; border: 1.5px solid var(--borda); border-radius: 7px;
   background: var(--card); cursor: pointer; font-size: 10px; font-weight: 600;
   color: var(--muted); transition: border-color .12s, background .12s, color .12s;
   text-align: center; line-height: 1.2;
 }
 .plat-btn:hover  { border-color: var(--azul); background: var(--azul-light); color: var(--azul); }
 .plat-btn.active { border-color: var(--azul); background: var(--azul); color: #fff; }
-.plat-btn .pe   { font-size: 15px; }
+.plat-btn .pe   { font-size: 14px; }
 
 /* ─── FORM ─── */
-.section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); margin-bottom: 12px; }
-.field { margin-bottom: 10px; }
+.section-head { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); margin-bottom: 10px; }
+.field { margin-bottom: 9px; }
 .field:last-child { margin-bottom: 0; }
-.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 3px; }
 .field label .opt { font-weight: 400; color: var(--faint); margin-left: 4px; font-size: 11px; }
 .field input[type="text"],
 .field input[type="url"],
 .field select,
 .field textarea {
-  width: 100%; padding: 8px 12px;
+  width: 100%; padding: 7px 11px;
   border: 1.5px solid var(--borda); border-radius: 6px;
-  font-size: 13px; font-family: inherit;
-  color: var(--text); background: var(--card);
+  font-size: 12px; font-family: inherit; color: var(--text); background: var(--card);
   transition: border-color .12s;
 }
-.field textarea { resize: vertical; min-height: 72px; }
+.field textarea { resize: vertical; min-height: 68px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--azul); }
 .field .hint     { font-size: 11px; color: var(--faint); margin-top: 3px; }
 .field .hint.err { color: var(--erro); }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 
 /* ─── TOGGLES ─── */
-.toggles { display: flex; flex-direction: column; gap: 10px; }
+.toggles { display: flex; flex-direction: column; gap: 8px; }
 .toggle-row { display: flex; align-items: center; gap: 10px; }
 .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
@@ -169,137 +152,156 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
 .toggle-label { font-size: 12px; color: var(--muted); }
 
 /* ─── BUTTONS ─── */
-.btn-primary { width: 100%; padding: 10px; background: var(--azul); color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .12s; }
+.btn-primary { width: 100%; padding: 9px; background: var(--azul); color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .12s; }
 .btn-primary:hover { opacity: .88; }
 .btn-primary.ok { background: var(--ok); }
-.btn-outline  { width: 100%; margin-top: 8px; padding: 9px; background: var(--card); color: var(--azul); border: 1.5px solid var(--azul); border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .12s; }
+.btn-outline  { width: 100%; margin-top: 7px; padding: 8px; background: var(--card); color: var(--azul); border: 1.5px solid var(--azul); border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .12s; }
 .btn-outline:hover { background: var(--azul-light); }
-.btn-sm { padding: 5px 12px; background: var(--card); border: 1.5px solid var(--borda); border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--muted); transition: background .12s, border-color .12s; white-space: nowrap; }
+.btn-sm { padding: 5px 11px; background: var(--card); border: 1.5px solid var(--borda); border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--muted); transition: background .12s, border-color .12s; white-space: nowrap; }
 .btn-sm:hover { background: var(--cinza); }
 .btn-sm.primary { color: var(--azul); }
 .btn-sm.primary:hover { background: var(--azul-light); border-color: var(--azul); }
 .btn-sm.danger  { color: var(--erro); border-color: transparent; }
 .btn-sm.danger:hover { background: var(--erro-bg); }
+.btn-row { display: flex; gap: 7px; margin-top: 7px; }
+.btn-row .btn-primary { margin-top: 0; }
 
 /* ─── PREVIEW ─── */
-.preview-url { width: 100%; min-height: 78px; padding: 12px; background: var(--cinza); border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px; font-family: monospace; color: var(--text); word-break: break-all; line-height: 1.6; resize: none; white-space: pre-wrap; }
+.preview-url { width: 100%; min-height: 72px; padding: 11px; background: var(--cinza); border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px; font-family: monospace; color: var(--text); word-break: break-all; line-height: 1.6; resize: none; white-space: pre-wrap; }
 .preview-url.has-url { border-color: var(--azul); color: var(--azul); }
+.char-count { font-size: 11px; color: var(--faint); text-align: right; margin-top: 4px; }
+.char-count.warn { color: var(--warn); }
+.char-count.erro { color: var(--erro); }
+
+/* ─── QR CODE ─── */
+.qr-section { margin-top: 12px; }
+.qr-toggle { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; font-size: 12px; color: var(--azul); font-weight: 600; padding: 0; }
+.qr-toggle .arrow { font-size: 10px; transition: transform .2s; }
+.qr-toggle.open .arrow { transform: rotate(90deg); }
+.qr-box { display: none; padding: 14px; background: var(--cinza); border: 1px solid var(--borda); border-radius: 8px; margin-top: 8px; text-align: center; }
+.qr-box.open { display: block; }
+.qr-canvas-wrap { display: inline-block; background: #fff; padding: 10px; border-radius: 6px; }
+.qr-canvas-wrap canvas, .qr-canvas-wrap img { display: block; }
+.qr-btn-row { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
 
 /* ─── QA ─── */
-.qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.qa-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+.qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.qa-item { display: flex; align-items: center; gap: 7px; padding: 6px 9px; border-radius: 6px; font-size: 11px; font-weight: 500; }
 .qa-item.ok   { background: var(--ok-bg);   color: var(--ok);   }
 .qa-item.fail { background: var(--erro-bg); color: var(--erro); }
-.qa-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.qa-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .qa-item.ok   .qa-dot { background: var(--ok);   }
 .qa-item.fail .qa-dot { background: var(--erro); }
 
 /* ─── PARAM BREAKDOWN ─── */
-.param-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 12px; }
+.param-row { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border: 1px solid var(--borda); border-radius: 6px; font-size: 11px; }
 .param-key { font-weight: 700; color: var(--azul); min-width: 130px; font-family: monospace; }
 .param-val { color: var(--text); font-family: monospace; word-break: break-all; }
 
 /* ─── DECODER ─── */
-.decoder-box { border: 1.5px dashed var(--borda); border-radius: 8px; padding: 14px; background: var(--cinza); margin-bottom: 20px; }
-.decoder-box .dh { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin-bottom: 10px; }
-.decoder-box input { width: 100%; padding: 8px 12px; border: 1.5px solid var(--borda); border-radius: 6px; font-size: 12px; font-family: monospace; color: var(--text); background: var(--card); transition: border-color .12s; }
+.decoder-box { border: 1.5px dashed var(--borda); border-radius: 8px; padding: 12px; background: var(--cinza); margin-bottom: 18px; }
+.decoder-box .dh { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); margin-bottom: 8px; }
+.decoder-box input { width: 100%; padding: 7px 11px; border: 1.5px solid var(--borda); border-radius: 6px; font-size: 11px; font-family: monospace; color: var(--text); background: var(--card); }
 .decoder-box input:focus { outline: none; border-color: var(--azul); }
-.decoder-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.decoder-pill { display: flex; gap: 5px; align-items: center; padding: 4px 8px; background: var(--card); border: 1px solid var(--borda); border-radius: 20px; font-size: 11px; }
+.decoder-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.decoder-pill { display: flex; gap: 5px; align-items: center; padding: 3px 8px; background: var(--card); border: 1px solid var(--borda); border-radius: 20px; font-size: 11px; }
 .decoder-pill .dk { font-weight: 700; color: var(--azul); }
 .decoder-pill .dv { color: var(--text); font-family: monospace; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── CUSTOM PARAMS ─── */
-.custom-row { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 6px; align-items: center; margin-bottom: 6px; }
-.custom-row input { padding: 7px 10px; border: 1.5px solid var(--borda); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: var(--card); }
+.custom-row { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 5px; align-items: center; margin-bottom: 5px; }
+.custom-row input { padding: 6px 9px; border: 1.5px solid var(--borda); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: var(--card); }
 .custom-row input:focus { outline: none; border-color: var(--azul); }
 .btn-rm { width: 28px; height: 28px; border: none; background: none; color: var(--faint); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
 .btn-rm:hover { background: var(--erro-bg); color: var(--erro); }
-.btn-add-cp { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border: 1.5px dashed var(--borda); border-radius: 6px; background: none; color: var(--faint); font-size: 11px; font-weight: 600; cursor: pointer; transition: border-color .12s, color .12s, background .12s; margin-top: 4px; }
+.btn-add-cp { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1.5px dashed var(--borda); border-radius: 6px; background: none; color: var(--faint); font-size: 11px; font-weight: 600; cursor: pointer; transition: border-color .12s, color .12s, background .12s; margin-top: 4px; }
 .btn-add-cp:hover { border-color: var(--azul); color: var(--azul); background: var(--azul-light); }
 
 /* ─── TEMPLATES ─── */
-.tmpl-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--borda); border-radius: 7px; background: var(--card); margin-bottom: 6px; }
+.tmpl-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--borda); border-radius: 7px; background: var(--card); margin-bottom: 5px; }
 .tmpl-name    { font-size: 12px; font-weight: 700; color: var(--text); flex-shrink: 0; }
 .tmpl-preview { font-size: 11px; color: var(--faint); font-family: monospace; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tmpl-empty   { font-size: 12px; color: var(--faint); padding: 8px 0; }
+.tmpl-empty   { font-size: 12px; color: var(--faint); padding: 6px 0; }
 
 /* ─── HISTORY ─── */
-.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
-.filter-bar input, .filter-bar select { padding: 7px 11px; border: 1.5px solid var(--borda); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: var(--card); }
-.filter-bar input { flex: 1; }
+.filter-bar { display: flex; gap: 7px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+.filter-bar input, .filter-bar select { padding: 6px 10px; border: 1.5px solid var(--borda); border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text); background: var(--card); }
+.filter-bar input { flex: 1; min-width: 140px; }
 .filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: var(--azul); }
-.hist-item { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; background: var(--card); margin-bottom: 8px; }
-.hist-icon     { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.hist-item { display: flex; align-items: flex-start; gap: 9px; border: 1px solid var(--borda); border-radius: 8px; padding: 9px 11px; background: var(--card); margin-bottom: 7px; }
+.hist-item.pinned { border-color: var(--azul); background: var(--azul-light); }
+.hist-icon     { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
 .hist-info     { flex: 1; min-width: 0; }
 .hist-campaign { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
 .hist-url      { font-size: 11px; color: var(--faint); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-date     { font-size: 10px; color: var(--faint); margin-top: 3px; }
 .hist-actions  { display: flex; gap: 5px; flex-shrink: 0; }
 .hist-empty    { font-size: 13px; color: var(--faint); text-align: center; padding: 24px 0; }
+.pin-btn { font-size: 14px; line-height: 1; }
+.pin-btn.pinned { color: #f5c400; }
 
 /* ─── BATCH ─── */
-.batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
 @media (max-width: 820px) { .batch-grid { grid-template-columns: 1fr; } }
 .batch-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.batch-table th { text-align: left; padding: 8px 10px; background: var(--azul-light); border-bottom: 1px solid var(--borda); font-weight: 700; color: var(--azul-escuro); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
-.batch-table td { padding: 9px 10px; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+.batch-table th { text-align: left; padding: 7px 9px; background: var(--azul-light); border-bottom: 1px solid var(--borda); font-weight: 700; color: var(--azul-escuro); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.batch-table td { padding: 8px 9px; border-bottom: 1px solid var(--borda); vertical-align: middle; }
 .batch-table tr:last-child td { border-bottom: none; }
 .batch-table tr:hover td { background: var(--cinza); }
 .plat-cell { display: flex; align-items: center; gap: 6px; }
 .batch-url-col { font-family: monospace; font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 .batch-check { accent-color: var(--azul); cursor: pointer; width: 14px; height: 14px; }
-.selall-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+.selall-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+.file-input-wrap { position: relative; }
+.file-input-wrap input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.file-input-label { display: block; padding: 7px 11px; border: 1.5px dashed var(--borda); border-radius: 6px; font-size: 11px; color: var(--faint); text-align: center; cursor: pointer; transition: border-color .12s, color .12s; }
+.file-input-label:hover { border-color: var(--azul); color: var(--azul); }
 
 /* ─── ANALYZER ─── */
-.ana-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; align-items: start; }
+.ana-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 18px; align-items: start; }
 @media (max-width: 820px) { .ana-grid { grid-template-columns: 1fr; } }
-
-.score-ring {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 24px 20px; border-radius: 10px;
-  border: 1px solid var(--borda); background: var(--card);
-}
-.score-num {
-  font-size: 64px; font-weight: 900; line-height: 1;
-  transition: color .3s;
-}
+.score-ring { display: flex; flex-direction: column; align-items: center; padding: 22px 18px; border-radius: 10px; border: 1px solid var(--borda); background: var(--card); }
+.score-num   { font-size: 60px; font-weight: 900; line-height: 1; transition: color .3s; }
 .score-label { font-size: 13px; font-weight: 700; margin-top: 4px; }
 .score-sub   { font-size: 11px; color: var(--faint); margin-top: 2px; }
-.score-plat  { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding: 8px 14px; border: 1px solid var(--borda); border-radius: 20px; font-size: 12px; }
+.score-plat  { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 7px 13px; border: 1px solid var(--borda); border-radius: 20px; font-size: 12px; }
 .score-plat .sp-name { font-weight: 700; }
-
-.ana-check { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--borda); font-size: 12px; }
+.ana-check { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--borda); font-size: 12px; }
 .ana-check:last-child { border-bottom: none; }
-.ana-check .ac-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
-.ana-check .ac-info { flex: 1; }
+.ana-check .ac-icon  { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.ana-check .ac-info  { flex: 1; }
 .ana-check .ac-label { font-weight: 600; color: var(--text); }
 .ana-check .ac-msg   { font-size: 11px; color: var(--faint); margin-top: 1px; }
 .ana-check.ok   .ac-label { color: var(--ok); }
 .ana-check.warn .ac-label { color: var(--warn); }
 .ana-check.fail .ac-label { color: var(--erro); }
-.score-green { color: var(--ok);   }
-.score-yellow{ color: var(--warn); }
-.score-red   { color: var(--erro); }
-.ana-empty   { text-align: center; color: var(--faint); padding: 32px 0; font-size: 13px; }
-.ana-url-input { width: 100%; min-height: 80px; padding: 12px; border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px; font-family: monospace; color: var(--text); background: var(--card); resize: vertical; transition: border-color .12s; }
+.score-green  { color: var(--ok);   }
+.score-yellow { color: var(--warn); }
+.score-red    { color: var(--erro); }
+.ana-url-input { width: 100%; min-height: 76px; padding: 11px; border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px; font-family: monospace; color: var(--text); background: var(--card); resize: vertical; }
 .ana-url-input:focus { outline: none; border-color: var(--azul); }
-.ana-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-.ana-stat { text-align: center; padding: 10px; border: 1px solid var(--borda); border-radius: 8px; }
+.ana-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 12px; }
+.ana-stat { text-align: center; padding: 9px; border: 1px solid var(--borda); border-radius: 8px; }
 .ana-stat .as-val { font-size: 18px; font-weight: 800; color: var(--azul); }
 .ana-stat .as-lbl { font-size: 10px; color: var(--faint); margin-top: 2px; }
 
-/* ─── DIVIDER ─── */
-.divider { border: none; border-top: 1px solid var(--borda); margin: 16px 0; }
+/* ─── MISC ─── */
+.divider { border: none; border-top: 1px solid var(--borda); margin: 14px 0; }
+.kbd { display: inline-block; background: var(--cinza); border: 1px solid var(--borda); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 10px; color: var(--muted); }
+.shortcut-hint { font-size: 11px; color: var(--faint); margin-top: 4px; text-align: right; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <span style="font-size:20px">🔗</span>
+  <span style="font-size:18px">🔗</span>
   <h1>UTM Builder</h1>
   <span class="badge">NC Tool</span>
-  <span class="ver">v2.1 · 2026</span>
+  <span class="ver">v2.3</span>
+  <div class="header-right">
+    <button class="btn-icon" onclick="clearAll()" title="Limpar formulário">🗑</button>
+    <button class="btn-icon" onclick="toggleTheme()" title="Alternar tema" id="themeBtn">🌙</button>
+  </div>
 </div>
 
 <nav class="tabs-bar">
@@ -309,10 +311,10 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
   <button class="tab-btn" data-tab="analisador" onclick="switchTab('analisador',this)">🔍 Analisador</button>
 </nav>
 
-<!-- ══════ TAB 1: CONSTRUTOR ══════ -->
+<!-- ══ TAB 1: CONSTRUTOR ══ -->
 <div id="tab-construtor" class="tab-panel active">
   <div class="page">
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:18px;">
 
       <div class="card">
         <div class="card-h"><div><h2>1 · Plataforma</h2><p>Preenche source e medium automaticamente</p></div></div>
@@ -327,8 +329,8 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
 
           <div class="decoder-box">
             <div class="dh">🔍 Decodificar URL existente</div>
-            <input type="url" id="dec_url" placeholder="Cole aqui uma URL com UTMs para decompor..." oninput="onDecInput(this.value)">
-            <div style="display:flex;gap:8px;margin-top:8px;">
+            <input type="url" id="dec_url" placeholder="Cole uma URL com UTMs para decompor..." oninput="onDecInput(this.value)">
+            <div style="display:flex;gap:7px;margin-top:7px;">
               <button class="btn-sm primary" style="flex:1" onclick="decodeAndFill()">Decodificar → preencher formulário</button>
               <button class="btn-sm" onclick="clearDecoder()">Limpar</button>
             </div>
@@ -391,9 +393,9 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
         <div class="card-h"><div><h2>Templates</h2><p>Reutilize conjuntos de parâmetros</p></div></div>
         <div class="card-body">
           <div id="tmplList"></div>
-          <div style="display:flex;gap:8px;margin-top:10px;">
+          <div style="display:flex;gap:7px;margin-top:8px;">
             <input type="text" id="tmpl_name" placeholder="Nome do template..."
-              style="flex:1;padding:7px 10px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:var(--card);"
+              style="flex:1;padding:6px 10px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:var(--card);"
               onkeydown="if(event.key==='Enter') saveTemplate()">
             <button class="btn-sm primary" onclick="saveTemplate()">Salvar</button>
           </div>
@@ -402,30 +404,56 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
 
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div style="display:flex;flex-direction:column;gap:18px;">
 
       <div class="card">
         <div class="card-h"><h2>3 · URL Gerada</h2></div>
         <div class="card-body">
-          <textarea class="preview-url" id="preview" readonly placeholder="A URL com UTMs aparecerá aqui automaticamente..."></textarea>
-          <button class="btn-primary" id="btnCopy" onclick="copyURL()" style="margin-top:10px;">📋 Copiar URL</button>
-          <button class="btn-outline" id="btnSave" onclick="saveToHistory()">💾 Salvar no Histórico</button>
+          <textarea class="preview-url" id="preview" readonly placeholder="A URL com UTMs aparecerá aqui..."></textarea>
+          <div class="char-count" id="charCount"></div>
+          <div class="shortcut-hint">Dica: <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> copia · <span class="kbd">Ctrl</span>+<span class="kbd">Shift</span>+<span class="kbd">Enter</span> salva</div>
+
+          <div style="margin-top:8px;display:flex;flex-direction:column;gap:7px;">
+            <button class="btn-primary" id="btnCopy" onclick="copyURL()">📋 Copiar URL</button>
+            <div class="btn-row">
+              <button class="btn-outline" id="btnSave" onclick="saveToHistory()" style="flex:1;margin-top:0;">💾 Salvar no Histórico</button>
+              <button class="btn-sm primary" onclick="shareLink()" title="Copiar link com formulário pré-preenchido" style="min-width:36px;">🔗</button>
+              <button class="btn-sm primary" onclick="copyAsMarkdown()" title="Copiar como Markdown [Campanha](URL)" style="min-width:36px;">Md</button>
+            </div>
+          </div>
+
+          <!-- QR Code -->
+          <div class="qr-section" id="qrSection" style="display:none;">
+            <button class="qr-toggle" id="qrToggle" onclick="toggleQR()">
+              <span class="arrow">▶</span> QR Code
+            </button>
+            <div class="qr-box" id="qrBox">
+              <div class="qr-canvas-wrap">
+                <div id="qrCanvas"></div>
+              </div>
+              <div class="qr-btn-row">
+                <button class="btn-sm primary" onclick="downloadQR()">⬇ Download PNG</button>
+                <button class="btn-sm" onclick="copyQRDataURL()">📋 Copiar imagem</button>
+              </div>
+            </div>
+          </div>
+
           <hr class="divider">
-          <div class="section-head" style="margin-bottom:10px;">QA Checklist</div>
+          <div class="section-head" style="margin-bottom:8px;">QA Checklist</div>
           <div class="qa-grid" id="qaGrid"></div>
         </div>
       </div>
 
       <div class="card" id="breakdownCard" style="display:none;">
         <div class="card-h"><h2>Parâmetros decompostos</h2></div>
-        <div class="card-body" id="breakdownBody" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <div class="card-body" id="breakdownBody" style="display:flex;flex-direction:column;gap:5px;"></div>
       </div>
 
     </div>
   </div>
 </div>
 
-<!-- ══════ TAB 2: LOTE ══════ -->
+<!-- ══ TAB 2: LOTE ══ -->
 <div id="tab-lote" class="tab-panel">
   <div class="page-wide">
     <div class="batch-grid">
@@ -448,6 +476,15 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
             <label>utm_term <span class="opt">opcional</span></label>
             <input type="text" id="b_term" placeholder="palavra-chave" oninput="buildBatch()">
           </div>
+
+          <hr class="divider">
+          <div class="section-head">Importar via CSV</div>
+          <div class="file-input-wrap" style="margin-bottom:6px;">
+            <div class="file-input-label">📁 Clique para importar CSV (url, campaign, content, term)</div>
+            <input type="file" accept=".csv,.txt" onchange="importBatchCSV(this)">
+          </div>
+          <div class="hint">Colunas: <code>url</code>, <code>campaign</code>, <code>content</code>, <code>term</code> — linha 1 = cabeçalho</div>
+
           <hr class="divider">
           <div class="section-head">Plataformas</div>
           <div class="selall-row">
@@ -456,8 +493,13 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
           </div>
           <div class="plat-grid" id="batchPlatGrid"></div>
           <hr class="divider">
-          <button class="btn-primary" onclick="exportLoteCSV()">⬇ Exportar como CSV</button>
-          <button class="btn-outline" onclick="saveAllLote()">💾 Salvar todas no Histórico</button>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <button class="btn-primary" onclick="exportLoteCSV()">⬇ Exportar como CSV</button>
+            <div class="btn-row">
+              <button class="btn-outline" style="flex:1;margin-top:0;" onclick="saveAllLote()">💾 Salvar no Histórico</button>
+              <button class="btn-sm primary" onclick="copyAllURLs()" title="Copiar todas as URLs como lista">📋 Copiar lista</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -482,22 +524,28 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
   </div>
 </div>
 
-<!-- ══════ TAB 3: HISTÓRICO ══════ -->
+<!-- ══ TAB 3: HISTÓRICO ══ -->
 <div id="tab-historico" class="tab-panel">
   <div class="page-wide">
     <div class="card">
       <div class="card-h">
-        <div><h2>Histórico de URLs</h2><p>Salvo no navegador · <span id="hist-total">0</span> entradas</p></div>
-        <div style="display:flex;gap:8px;">
+        <div><h2>Histórico de URLs</h2><p><span id="hist-total">0</span> entradas</p></div>
+        <div style="display:flex;gap:7px;">
           <button class="btn-sm primary" onclick="exportHistCSV()">⬇ CSV</button>
-          <button class="btn-sm danger"  onclick="clearHistory()">🗑 Limpar tudo</button>
+          <button class="btn-sm danger"  onclick="clearHistory()">🗑 Limpar</button>
         </div>
       </div>
       <div class="card-body">
         <div class="filter-bar">
-          <input type="text" id="hist_q" placeholder="Buscar campanha, plataforma ou URL..." oninput="renderHistory()">
+          <input type="text" id="hist_q" placeholder="Buscar..." oninput="renderHistory()">
           <select id="hist_plat" onchange="renderHistory()">
             <option value="">Todas as plataformas</option>
+          </select>
+          <select id="hist_sort" onchange="renderHistory()">
+            <option value="date_desc">Mais recente</option>
+            <option value="date_asc">Mais antiga</option>
+            <option value="platform">Plataforma A→Z</option>
+            <option value="campaign">Campanha A→Z</option>
           </select>
         </div>
         <div id="histList"></div>
@@ -506,28 +554,24 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
   </div>
 </div>
 
-<!-- ══════ TAB 4: ANALISADOR ══════ -->
+<!-- ══ TAB 4: ANALISADOR ══ -->
 <div id="tab-analisador" class="tab-panel">
   <div class="page-wide">
-
-    <div class="card" style="margin-bottom:20px;">
-      <div class="card-h"><div><h2>Analisador de URLs</h2><p>Cole qualquer URL com UTMs para diagnóstico completo</p></div></div>
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-h"><div><h2>Analisador de URLs</h2><p>Diagnóstico completo de qualquer URL com UTMs</p></div></div>
       <div class="card-body">
-        <textarea class="ana-url-input" id="ana_input" placeholder="Cole aqui a URL completa com parâmetros UTM...
-Ex: https://site.com.br/pagina?utm_source=meta&utm_medium=paid_social&utm_campaign=black-friday-2026"></textarea>
-        <div style="display:flex;gap:8px;margin-top:10px;">
+        <textarea class="ana-url-input" id="ana_input" placeholder="Cole a URL completa com parâmetros UTM...&#10;Ex: https://site.com.br/pagina?utm_source=meta&utm_medium=paid_social&utm_campaign=black-friday-2026"></textarea>
+        <div style="display:flex;gap:7px;margin-top:9px;">
           <button class="btn-primary" style="flex:1" onclick="analyzeURL()">🔍 Analisar URL</button>
           <button class="btn-sm" onclick="document.getElementById('ana_input').value='';document.getElementById('ana_results').style.display='none'">Limpar</button>
-          <button class="btn-sm primary" onclick="loadFromAna()">✏️ Carregar no Construtor</button>
+          <button class="btn-sm primary" onclick="loadFromAna()">✏️ No Construtor</button>
         </div>
       </div>
     </div>
 
     <div id="ana_results" style="display:none;">
       <div class="ana-grid">
-
-        <!-- ── Esquerda: score + stats ── -->
-        <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="score-ring" id="scoreRing">
             <div class="score-num" id="scoreNum">—</div>
             <div class="score-label" id="scoreLabel">—</div>
@@ -537,28 +581,20 @@ Ex: https://site.com.br/pagina?utm_source=meta&utm_medium=paid_social&utm_campai
               <span class="sp-name" id="scorePlatName"></span>
             </div>
           </div>
-
           <div class="card">
             <div class="card-h"><h2>Estatísticas</h2></div>
-            <div class="card-body">
-              <div class="ana-stats" id="anaStats"></div>
-            </div>
+            <div class="card-body"><div class="ana-stats" id="anaStats"></div></div>
           </div>
         </div>
-
-        <!-- ── Direita: checks + params ── -->
-        <div style="display:flex;flex-direction:column;gap:16px;">
-
+        <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="card">
             <div class="card-h"><h2>Diagnóstico</h2></div>
             <div class="card-body" id="anaChecks"></div>
           </div>
-
           <div class="card">
-            <div class="card-h"><div><h2>Parâmetros encontrados</h2></div><button class="btn-sm primary" onclick="copyAnaParams()">📋 Copiar JSON</button></div>
-            <div class="card-body" id="anaParams" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div class="card-h"><div><h2>Parâmetros encontrados</h2></div><button class="btn-sm primary" onclick="copyAnaParams()">📋 JSON</button></div>
+            <div class="card-body" id="anaParams" style="display:flex;flex-direction:column;gap:5px;"></div>
           </div>
-
         </div>
       </div>
     </div>
@@ -567,7 +603,7 @@ Ex: https://site.com.br/pagina?utm_source=meta&utm_medium=paid_social&utm_campai
 
 <script>
 /* ════════════════════════════════════════
-   PLATFORMS  (56 · ordem alfabética)
+   PLATFORMS (56 · ordem alfabética)
 ════════════════════════════════════════ */
 const PLATFORMS = [
   { id:'adroll',     label:'AdRoll',             emoji:'🎯', source:'adroll',        medium:'retargeting'  },
@@ -628,8 +664,28 @@ const PLATFORMS = [
   { id:'yt',         label:'YouTube',            emoji:'▶️',  source:'youtube',       medium:'video'        },
 ];
 
-const KNOWN_SOURCES  = new Set(PLATFORMS.map(p => p.source));
-const KNOWN_MEDIUMS  = new Set(['cpc','paid_social','display','video','email','programmatic','retargeting','native','audio','retail_media','social','search','sms','push','organic','referral']);
+const KNOWN_SOURCES = new Set(PLATFORMS.map(p => p.source));
+const KNOWN_MEDIUMS = new Set(['cpc','paid_social','display','video','email','programmatic','retargeting','native','audio','retail_media','social','search','sms','push','organic','referral','mobile','ctv']);
+
+/* ════════════════════════════════════════
+   THEME
+════════════════════════════════════════ */
+(function initTheme() {
+  try {
+    const saved = localStorage.getItem('utm_theme');
+    if (saved && saved !== 'system') document.documentElement.setAttribute('data-theme', saved);
+  } catch {}
+})();
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const cur  = html.getAttribute('data-theme');
+  const isDark = cur === 'dark' || (!cur && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('utm_theme', next); } catch {}
+}
 
 /* ════════════════════════════════════════
    TAB SWITCHING
@@ -643,10 +699,9 @@ function switchTab(id, btn) {
 }
 
 /* ════════════════════════════════════════
-   CONSTRUTOR — PLATFORM GRID
+   PLATFORM GRID (Construtor)
 ════════════════════════════════════════ */
 let activePlat = null;
-
 (function() {
   const g = document.getElementById('platGrid');
   PLATFORMS.forEach(p => {
@@ -675,7 +730,7 @@ function selectPlatform(p) {
 }
 
 /* ════════════════════════════════════════
-   FORMAT
+   FORMAT / BUILD / QA
 ════════════════════════════════════════ */
 function fmt(v) {
   let s = v.trim();
@@ -684,9 +739,6 @@ function fmt(v) {
   return s;
 }
 
-/* ════════════════════════════════════════
-   BUILD URL
-════════════════════════════════════════ */
 function buildURL() {
   const base     = document.getElementById('f_url').value.trim();
   const source   = fmt(document.getElementById('f_source').value);
@@ -709,17 +761,14 @@ function buildURL() {
   return url.toString();
 }
 
-/* ════════════════════════════════════════
-   QA
-════════════════════════════════════════ */
 function runQA() {
   const base     = document.getElementById('f_url').value.trim();
   const source   = document.getElementById('f_source').value.trim();
   const medium   = document.getElementById('f_medium').value.trim();
   const campaign = document.getElementById('f_campaign').value.trim();
   const vals     = [source, medium, campaign,
-                    document.getElementById('f_content').value.trim(),
-                    document.getElementById('f_term').value.trim()];
+    document.getElementById('f_content').value.trim(),
+    document.getElementById('f_term').value.trim()];
   let validURL = false;
   try { new URL(base); validURL = !!base; } catch {}
   return [
@@ -732,9 +781,6 @@ function runQA() {
   ];
 }
 
-/* ════════════════════════════════════════
-   BREAKDOWN
-════════════════════════════════════════ */
 function renderBreakdown(url) {
   const card = document.getElementById('breakdownCard');
   const body = document.getElementById('breakdownBody');
@@ -753,42 +799,162 @@ function renderBreakdown(url) {
   } catch { card.style.display = 'none'; }
 }
 
-/* ════════════════════════════════════════
-   UPDATE
-════════════════════════════════════════ */
+/* ── QR Code ── */
+let qrInstance = null;
+let qrCurrentURL = '';
+
+function updateQR(url) {
+  const section = document.getElementById('qrSection');
+  if (!url) { section.style.display = 'none'; qrCurrentURL = ''; return; }
+  section.style.display = '';
+  if (url === qrCurrentURL) return;
+  qrCurrentURL = url;
+  const wrap = document.getElementById('qrCanvas');
+  wrap.innerHTML = '';
+  qrInstance = new QRCode(wrap, {
+    text: url, width: 180, height: 180,
+    colorDark: '#1a237e', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+}
+
+function toggleQR() {
+  const box = document.getElementById('qrBox');
+  const btn = document.getElementById('qrToggle');
+  box.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
+function downloadQR() {
+  const canvas = document.querySelector('#qrCanvas canvas');
+  if (!canvas) { alert('Gere uma URL válida primeiro.'); return; }
+  const a = Object.assign(document.createElement('a'), {
+    href: canvas.toDataURL('image/png'),
+    download: `utm-qr-${(document.getElementById('f_campaign').value||'qrcode').trim().replace(/\s+/g,'-')}.png`
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function copyQRDataURL() {
+  const canvas = document.querySelector('#qrCanvas canvas');
+  if (!canvas) return;
+  canvas.toBlob(blob => {
+    try {
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(() => alert('Imagem copiada!'));
+    } catch { alert('Use o botão Download para salvar o QR Code.'); }
+  });
+}
+
+/* ── Main update ── */
 function update() {
-  const url = buildURL();
+  const url  = buildURL();
   const prev = document.getElementById('preview');
   prev.value     = url || '';
   prev.className = 'preview-url' + (url ? ' has-url' : '');
+
+  const cc = document.getElementById('charCount');
+  if (url) {
+    const len = url.length;
+    cc.textContent = `${len} caracteres`;
+    cc.className   = 'char-count' + (len > 2000 ? ' erro' : len > 1500 ? ' warn' : '');
+  } else { cc.textContent = ''; cc.className = 'char-count'; }
+
   const base = document.getElementById('f_url').value.trim();
   const hint = document.getElementById('url_hint');
   if (base && !url) { hint.textContent = '⚠ URL inválida — inclua https://'; hint.className = 'hint err'; }
   else              { hint.textContent = ''; hint.className = 'hint'; }
+
   document.getElementById('qaGrid').innerHTML = runQA().map(c => `
     <div class="qa-item ${c.ok ? 'ok' : 'fail'}">
       <span class="qa-dot"></span>${c.label}
     </div>`).join('');
+
   renderBreakdown(url);
+  updateQR(url);
 }
 
 /* ════════════════════════════════════════
-   COPY
+   COPY / SHARE / MARKDOWN
 ════════════════════════════════════════ */
 function copyURL() {
   const url = document.getElementById('preview').value;
   if (!url) return;
   const btn = document.getElementById('btnCopy');
-  const ok  = () => { btn.textContent='✅ Copiado!'; btn.classList.add('ok'); setTimeout(()=>{ btn.textContent='📋 Copiar URL'; btn.classList.remove('ok'); }, 2000); };
-  navigator.clipboard.writeText(url).then(ok).catch(() => {
-    const ta = Object.assign(document.createElement('textarea'), { value: url });
+  clipCopy(url, btn, '📋 Copiar URL', '✅ Copiado!');
+}
+
+function clipCopy(text, btn, original, success) {
+  const orig = success ? original : btn?.textContent;
+  const ok   = () => { if (btn && success) { btn.textContent = success; setTimeout(() => btn.textContent = orig, 1800); } };
+  navigator.clipboard.writeText(text).then(ok).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); ok();
   });
 }
 
-function clipCopy(url, btn) {
-  navigator.clipboard.writeText(url).then(() => { const o = btn.textContent; btn.textContent='✅'; setTimeout(()=>btn.textContent=o, 1500); })
-  .catch(() => { const ta = Object.assign(document.createElement('textarea'),{value:url}); document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); });
+function shareLink() {
+  const state = {
+    u: document.getElementById('f_url').value,
+    s: document.getElementById('f_source').value,
+    m: document.getElementById('f_medium').value,
+    c: document.getElementById('f_campaign').value,
+    co: document.getElementById('f_content').value,
+    t: document.getElementById('f_term').value,
+    p: activePlat || '',
+  };
+  try {
+    const encoded   = btoa(encodeURIComponent(JSON.stringify(state)));
+    const shareURL  = location.href.split('#')[0] + '#state=' + encoded;
+    clipCopy(shareURL, null);
+    const btn = document.querySelector('[onclick="shareLink()"]');
+    if (btn) { const o = btn.textContent; btn.textContent = '✅'; setTimeout(() => btn.textContent = o, 1600); }
+  } catch {}
+}
+
+function copyAsMarkdown() {
+  const url      = document.getElementById('preview').value;
+  const campaign = document.getElementById('f_campaign').value.trim() || 'Link';
+  if (!url) return;
+  clipCopy(`[${campaign}](${url})`, document.querySelector('[onclick="copyAsMarkdown()"]'), 'Md', '✅');
+}
+
+/* ── Load from hash ── */
+function loadFromHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#state=')) return;
+  try {
+    const state = JSON.parse(decodeURIComponent(atob(hash.slice(7))));
+    if (state.u)  document.getElementById('f_url').value      = state.u;
+    if (state.s)  document.getElementById('f_source').value   = state.s;
+    if (state.m)  document.getElementById('f_medium').value   = state.m;
+    if (state.c)  document.getElementById('f_campaign').value = state.c;
+    if (state.co) document.getElementById('f_content').value  = state.co;
+    if (state.t)  document.getElementById('f_term').value     = state.t;
+    if (state.p)  { activePlat = state.p; document.getElementById('plat_' + activePlat)?.classList.add('active'); }
+    update();
+    history.replaceState(null, '', location.pathname);
+  } catch {}
+}
+
+/* ════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); copyURL(); }
+    if (e.key === 'Enter' &&  e.shiftKey) { e.preventDefault(); saveToHistory(); }
+  }
+});
+
+/* ════════════════════════════════════════
+   CLEAR ALL
+════════════════════════════════════════ */
+function clearAll() {
+  ['f_url','f_source','f_medium','f_campaign','f_content','f_term'].forEach(id => document.getElementById(id).value = '');
+  if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
+  document.getElementById('customParams').innerHTML = '';
+  clearDecoder();
+  update();
 }
 
 /* ════════════════════════════════════════
@@ -806,16 +972,14 @@ function decodeAndFill() {
   const pills = [];
   url.searchParams.forEach((v, k) => {
     const fId = UTM_FIELDS[k];
-    if (fId) { document.getElementById(fId).value = decodeURIComponent(v); pills.push({k,v:decodeURIComponent(v)}); }
+    if (fId) { document.getElementById(fId).value = decodeURIComponent(v); pills.push({ k, v: decodeURIComponent(v) }); }
   });
   if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
+  const src = url.searchParams.get('utm_source');
+  if (src) { const m = PLATFORMS.find(p => p.source === src); if (m) { activePlat = m.id; document.getElementById('plat_' + m.id)?.classList.add('active'); } }
   const pillsEl = document.getElementById('decPills');
   pillsEl.style.display = pills.length ? 'flex' : 'none';
-  pillsEl.innerHTML = pills.map(p => `
-    <div class="decoder-pill">
-      <span class="dk">${p.k}</span>
-      <span class="dv" title="${p.v}">${p.v}</span>
-    </div>`).join('');
+  pillsEl.innerHTML = pills.map(p => `<div class="decoder-pill"><span class="dk">${p.k}</span><span class="dv" title="${p.v}">${p.v}</span></div>`).join('');
   update();
 }
 
@@ -848,15 +1012,26 @@ function setHistory(h) { try { localStorage.setItem(HIST_KEY, JSON.stringify(h))
 function saveToHistory(url, platId, campaign) {
   const finalUrl = url || buildURL();
   if (!finalUrl) { alert('Gere uma URL válida antes de salvar.'); return; }
+
+  // Duplicate check
+  const h = getHistory();
+  if (!url && h.some(e => e.url === finalUrl)) {
+    const btn = document.getElementById('btnSave');
+    btn.textContent = '⚠ Já existe!';
+    setTimeout(() => btn.textContent = '💾 Salvar no Histórico', 1800);
+    return;
+  }
+
   const pid  = platId || activePlat;
   const plat = pid ? PLATFORMS.find(x => x.id === pid) : null;
   const entry = {
-    id: Date.now(), emoji: plat ? plat.emoji : '🔗',
+    id: Date.now(), pinned: false,
+    emoji: plat ? plat.emoji : '🔗',
     platform: plat ? plat.label : 'Manual', platformId: plat ? plat.id : '',
     campaign: campaign || document.getElementById('f_campaign').value.trim() || '(sem campanha)',
     url: finalUrl, ts: new Date().toISOString(),
   };
-  const h = getHistory(); h.unshift(entry); setHistory(h); updateHistBadge();
+  h.unshift(entry); setHistory(h); updateHistBadge();
   if (!url) {
     const btn = document.getElementById('btnSave');
     btn.textContent = '✅ Salvo!';
@@ -864,12 +1039,16 @@ function saveToHistory(url, platId, campaign) {
   }
 }
 
-function deleteHistItem(id) { setHistory(getHistory().filter(e => e.id !== id)); renderHistory(); updateHistBadge(); }
-
-function clearHistory() {
-  if (!confirm('Apagar todo o histórico?')) return;
-  setHistory([]); renderHistory(); updateHistBadge();
+function togglePin(id) {
+  const h = getHistory();
+  const i = h.findIndex(e => e.id === id);
+  if (i < 0) return;
+  h[i].pinned = !h[i].pinned;
+  setHistory(h); renderHistory();
 }
+
+function deleteHistItem(id) { setHistory(getHistory().filter(e => e.id !== id)); renderHistory(); updateHistBadge(); }
+function clearHistory()     { if (!confirm('Apagar todo o histórico?')) return; setHistory([]); renderHistory(); updateHistBadge(); }
 
 function loadHistItem(id) {
   const e = getHistory().find(x => x.id === id);
@@ -893,23 +1072,36 @@ function loadHistItem(id) {
   window.scrollTo(0, 0);
 }
 
+function sortHistory(arr) {
+  const mode = document.getElementById('hist_sort')?.value || 'date_desc';
+  const pinned   = arr.filter(e => e.pinned);
+  const unpinned = arr.filter(e => !e.pinned);
+  const sortFn = {
+    date_desc: (a,b) => b.id - a.id,
+    date_asc:  (a,b) => a.id - b.id,
+    platform:  (a,b) => (a.platform||'').localeCompare(b.platform||''),
+    campaign:  (a,b) => (a.campaign||'').localeCompare(b.campaign||''),
+  }[mode] || ((a,b) => b.id - a.id);
+  return [...pinned.sort(sortFn), ...unpinned.sort(sortFn)];
+}
+
 function renderHistory() {
   const q    = (document.getElementById('hist_q')?.value || '').toLowerCase();
   const plat = document.getElementById('hist_plat')?.value || '';
   const all  = getHistory();
   document.getElementById('hist-total').textContent = all.length;
-  const filtered = all.filter(e => {
-    const qs = !q || [e.campaign, e.platform, e.url].some(s => s.toLowerCase().includes(q));
+  const filtered = sortHistory(all.filter(e => {
+    const qs = !q || [e.campaign, e.platform, e.url].some(s => (s||'').toLowerCase().includes(q));
     const ps = !plat || e.platformId === plat;
     return qs && ps;
-  });
+  }));
   const el = document.getElementById('histList');
   if (!filtered.length) {
     el.innerHTML = `<div class="hist-empty">${all.length ? 'Nenhum resultado.' : 'Nenhuma URL salva ainda.'}</div>`;
     return;
   }
   el.innerHTML = filtered.map(e => `
-    <div class="hist-item">
+    <div class="hist-item${e.pinned ? ' pinned' : ''}">
       <span class="hist-icon">${e.emoji}</span>
       <div class="hist-info">
         <div class="hist-campaign">${e.platform} · ${e.campaign}</div>
@@ -917,8 +1109,9 @@ function renderHistory() {
         <div class="hist-date">${e.ts ? new Date(e.ts).toLocaleString('pt-BR') : ''}</div>
       </div>
       <div class="hist-actions">
-        <button class="btn-sm primary" onclick="loadHistItem(${e.id})" title="Carregar no construtor">✏️</button>
-        <button class="btn-sm" onclick="clipCopy('${e.url.replace(/'/g,"\\'")}', this)">📋</button>
+        <button class="btn-sm pin-btn${e.pinned ? ' pinned' : ''}" onclick="togglePin(${e.id})" title="${e.pinned ? 'Desafixar' : 'Fixar'}">${e.pinned ? '⭐' : '☆'}</button>
+        <button class="btn-sm primary" onclick="loadHistItem(${e.id})" title="Editar no construtor">✏️</button>
+        <button class="btn-sm" onclick="clipCopy('${e.url.replace(/'/g,"\\'")}')">📋</button>
         <button class="btn-sm danger" onclick="deleteHistItem(${e.id})">✕</button>
       </div>
     </div>`).join('');
@@ -936,7 +1129,8 @@ function refreshHistFilter() {
 function updateHistBadge() {
   const n = getHistory().length;
   document.getElementById('hist-badge').textContent = n;
-  if (document.getElementById('hist-total')) document.getElementById('hist-total').textContent = n;
+  const t = document.getElementById('hist-total');
+  if (t) t.textContent = n;
 }
 
 function exportHistCSV() {
@@ -945,7 +1139,7 @@ function exportHistCSV() {
   const rows = [['Data','Plataforma','Campanha','URL'],
     ...h.map(e => [e.ts ? new Date(e.ts).toLocaleString('pt-BR') : '', e.platform, e.campaign, e.url])
   ].map(r => r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  dlCSV('﻿' + rows, `utm_historico_${today()}.csv`);
+  dlCSV('\uFEFF' + rows, `utm_historico_${today()}.csv`);
 }
 
 /* ════════════════════════════════════════
@@ -959,12 +1153,12 @@ function saveTemplate() {
   const name = document.getElementById('tmpl_name').value.trim();
   if (!name) { alert('Digite um nome para o template.'); return; }
   const t = [{ id: Date.now(), name,
-    source:   document.getElementById('f_source').value,
-    medium:   document.getElementById('f_medium').value,
+    source: document.getElementById('f_source').value,
+    medium: document.getElementById('f_medium').value,
     campaign: document.getElementById('f_campaign').value,
-    content:  document.getElementById('f_content').value,
-    term:     document.getElementById('f_term').value,
-    platId:   activePlat,
+    content: document.getElementById('f_content').value,
+    term: document.getElementById('f_term').value,
+    platId: activePlat,
   }, ...getTemplates()];
   setTemplates(t);
   document.getElementById('tmpl_name').value = '';
@@ -974,11 +1168,11 @@ function saveTemplate() {
 function loadTemplate(id) {
   const t = getTemplates().find(x => x.id === id);
   if (!t) return;
-  document.getElementById('f_source').value   = t.source;
-  document.getElementById('f_medium').value   = t.medium;
-  document.getElementById('f_campaign').value = t.campaign;
-  document.getElementById('f_content').value  = t.content || '';
-  document.getElementById('f_term').value     = t.term    || '';
+  document.getElementById('f_source').value   = t.source   || '';
+  document.getElementById('f_medium').value   = t.medium   || '';
+  document.getElementById('f_campaign').value = t.campaign || '';
+  document.getElementById('f_content').value  = t.content  || '';
+  document.getElementById('f_term').value     = t.term     || '';
   if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
   if (t.platId) { activePlat = t.platId; document.getElementById('plat_' + activePlat)?.classList.add('active'); }
   update();
@@ -1002,7 +1196,6 @@ function renderTemplates() {
    BATCH
 ════════════════════════════════════════ */
 const batchSel = new Set();
-
 (function() {
   const g = document.getElementById('batchPlatGrid');
   PLATFORMS.forEach(p => {
@@ -1051,19 +1244,17 @@ function buildBatch() {
     return;
   }
   body.innerHTML = sel.map(p => {
-    const url = buildBatchURL(p);
+    const url  = buildBatchURL(p);
     const safe = url.replace(/'/g,"\\'");
     return `<tr>
       <td><input type="checkbox" class="batch-check" checked data-plat="${p.id}"></td>
-      <td><div class="plat-cell"><span>${p.emoji}</span><span style="font-size:12px;font-weight:600;">${p.label}</span></div></td>
+      <td><div class="plat-cell"><span>${p.emoji}</span><span style="font-size:11px;font-weight:600;">${p.label}</span></div></td>
       <td style="font-family:monospace;font-size:11px;">${p.source}</td>
       <td style="font-family:monospace;font-size:11px;">${p.medium}</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="batch-url-col" title="${url}">${url || '—'}</span>
-          ${url ? `<button class="btn-sm" onclick="clipCopy('${safe}', this)">📋</button>` : ''}
-        </div>
-      </td>
+      <td><div style="display:flex;align-items:center;gap:7px;">
+        <span class="batch-url-col" title="${url}">${url || '—'}</span>
+        ${url ? `<button class="btn-sm" onclick="clipCopy('${safe}')">📋</button>` : ''}
+      </div></td>
     </tr>`;
   }).join('');
 }
@@ -1076,12 +1267,12 @@ function getCheckedBatchItems() {
 
 function exportLoteCSV() {
   const items = getCheckedBatchItems().filter(i => i.url);
-  if (!items.length) { alert('Nenhuma URL gerada. Preencha URL base e campanha.'); return; }
+  if (!items.length) { alert('Nenhuma URL gerada.'); return; }
   const campaign = document.getElementById('b_campaign').value.trim();
   const rows = [['Plataforma','utm_source','utm_medium','utm_campaign','URL'],
     ...items.map(i => [i.plat.label, i.plat.source, i.plat.medium, campaign, i.url])
   ].map(r => r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  dlCSV('﻿' + rows, `utm_lote_${campaign||'campanha'}_${today()}.csv`);
+  dlCSV('\uFEFF' + rows, `utm_lote_${campaign||'campanha'}_${today()}.csv`);
 }
 
 function saveAllLote() {
@@ -1093,152 +1284,114 @@ function saveAllLote() {
   alert(`${items.length} URL${items.length>1?'s salvas':' salva'} no histórico.`);
 }
 
+function copyAllURLs() {
+  const items = getCheckedBatchItems().filter(i => i.url);
+  if (!items.length) { alert('Nenhuma URL gerada.'); return; }
+  clipCopy(items.map(i => `${i.plat.label}\n${i.url}`).join('\n\n'));
+  const btn = document.querySelector('[onclick="copyAllURLs()"]');
+  if (btn) { const o = btn.textContent; btn.textContent = '✅ Copiado!'; setTimeout(() => btn.textContent = o, 1600); }
+}
+
+function importBatchCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const lines   = e.target.result.split(/\r?\n/).filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase());
+      const rows    = lines.slice(1).map(l => {
+        const vals = [];
+        let cur = ''; let inQ = false;
+        for (const ch of l) {
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { vals.push(cur); cur = ''; }
+          else { cur += ch; }
+        }
+        vals.push(cur);
+        const obj = {};
+        headers.forEach((h, i) => obj[h] = (vals[i]||'').trim());
+        return obj;
+      }).filter(r => r.url || r.campaign);
+      if (!rows.length) { alert('CSV vazio ou sem colunas reconhecidas.'); return; }
+      const first = rows[0];
+      if (first.url)      document.getElementById('b_url').value      = first.url;
+      if (first.campaign) document.getElementById('b_campaign').value = first.campaign;
+      if (first.content)  document.getElementById('b_content').value  = first.content || '';
+      if (first.term)     document.getElementById('b_term').value     = first.term    || '';
+      buildBatch();
+      alert(`CSV importado: ${rows.length} linha${rows.length>1?'s':''} encontrada${rows.length>1?'s':''}.`);
+    } catch { alert('Erro ao ler CSV.'); }
+    input.value = '';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
 /* ════════════════════════════════════════
    ANALISADOR
 ════════════════════════════════════════ */
-let lastAnalyzed = null;
-
 function analyzeURL() {
   const raw = document.getElementById('ana_input').value.trim();
   if (!raw) return;
-
   let url;
   try { url = new URL(raw); }
-  catch {
-    document.getElementById('ana_results').style.display = 'none';
-    alert('URL inválida. Verifique se começa com https://');
-    return;
-  }
+  catch { document.getElementById('ana_results').style.display = 'none'; alert('URL inválida.'); return; }
 
-  lastAnalyzed = raw;
   const params = {};
   url.searchParams.forEach((v, k) => { params[k] = decodeURIComponent(v); });
-
   const source   = params['utm_source']   || '';
   const medium   = params['utm_medium']   || '';
   const campaign = params['utm_campaign'] || '';
   const content  = params['utm_content']  || '';
-  const term     = params['utm_term']     || '';
-  const utmVals  = [source, medium, campaign, content, term].filter(Boolean);
+  const utmVals  = [source, medium, campaign, content, params['utm_term']||''].filter(Boolean);
   const allVals  = Object.values(params);
 
-  // ── Detect platform ──
   const detectedPlat = PLATFORMS.find(p => p.source === source);
 
-  // ── Checks (required = conta pro score) ──
   const checks = [
-    {
-      required: true,
-      ok:  !!source,
-      label: 'utm_source presente',
-      msg:  !source ? 'Parâmetro obrigatório ausente.' : `Valor: "${source}"`
-    },
-    {
-      required: true,
-      ok: !!medium,
-      label: 'utm_medium presente',
-      msg: !medium ? 'Parâmetro obrigatório ausente.' : `Valor: "${medium}"`
-    },
-    {
-      required: true,
-      ok: !!campaign,
-      label: 'utm_campaign presente',
-      msg: !campaign ? 'Parâmetro obrigatório ausente.' : `Valor: "${campaign}"`
-    },
-    {
-      required: true,
-      ok: !allVals.some(v => /\s/.test(v)),
-      label: 'Sem espaços nos valores',
-      msg: allVals.some(v => /\s/.test(v)) ? 'Espaços detectados — use hífens ou underscores.' : 'OK'
-    },
-    {
-      required: true,
-      ok: utmVals.every(v => v === v.toLowerCase()),
-      label: 'Valores em minúsculas',
-      msg: utmVals.some(v => v !== v.toLowerCase()) ? 'Maiúsculas detectadas em um ou mais parâmetros UTM.' : 'OK'
-    },
-    {
-      required: true,
-      ok: !raw.includes('&&') && !raw.includes('=='),
-      label: 'Estrutura de URL íntegra',
-      msg: (raw.includes('&&') || raw.includes('==')) ? 'Caracteres duplicados detectados (&& ou ==).' : 'OK'
-    },
-    {
-      required: false,
-      ok: KNOWN_SOURCES.has(source),
-      label: 'utm_source reconhecido',
-      msg: source && !KNOWN_SOURCES.has(source) ? `"${source}" não está na lista de plataformas conhecidas.` : (source ? `"${source}" reconhecido.` : '—')
-    },
-    {
-      required: false,
-      ok: KNOWN_MEDIUMS.has(medium),
-      label: 'utm_medium semântico',
-      msg: medium && !KNOWN_MEDIUMS.has(medium) ? `"${medium}" não é um medium padrão.` : (medium ? `"${medium}" é válido.` : '—')
-    },
-    {
-      required: false,
-      ok: !!content,
-      label: 'utm_content presente',
-      msg: !content ? 'Recomendado para rastrear criativos.' : `Valor: "${content}"`
-    },
-    {
-      required: false,
-      ok: raw.length < 2000,
-      label: 'URL dentro do limite de tamanho',
-      msg: raw.length >= 2000 ? `URL com ${raw.length} caracteres (recomendado < 2000).` : `${raw.length} caracteres — OK.`
-    },
+    { required:true,  ok:!!source,   label:'utm_source presente',   msg: !source ? 'Parâmetro obrigatório ausente.' : `Valor: "${source}"` },
+    { required:true,  ok:!!medium,   label:'utm_medium presente',   msg: !medium ? 'Parâmetro obrigatório ausente.' : `Valor: "${medium}"` },
+    { required:true,  ok:!!campaign, label:'utm_campaign presente', msg: !campaign ? 'Parâmetro obrigatório ausente.' : `Valor: "${campaign}"` },
+    { required:true,  ok:!allVals.some(v => /\s/.test(v)),           label:'Sem espaços nos valores',    msg: allVals.some(v => /\s/.test(v)) ? 'Espaços detectados — use hífens.' : 'OK' },
+    { required:true,  ok:utmVals.every(v => v === v.toLowerCase()),  label:'Valores em minúsculas',      msg: utmVals.some(v => v !== v.toLowerCase()) ? 'Maiúsculas detectadas.' : 'OK' },
+    { required:true,  ok:!raw.includes('&&') && !raw.includes('=='), label:'Estrutura de URL íntegra',   msg: (raw.includes('&&')||raw.includes('==')) ? 'Caracteres duplicados (&& ou ==).' : 'OK' },
+    { required:false, ok:KNOWN_SOURCES.has(source),   label:'utm_source reconhecido',     msg: source && !KNOWN_SOURCES.has(source) ? `"${source}" não está na lista conhecida.` : (source ? `"${source}" reconhecido.` : '—') },
+    { required:false, ok:KNOWN_MEDIUMS.has(medium),   label:'utm_medium semântico',        msg: medium && !KNOWN_MEDIUMS.has(medium) ? `"${medium}" não é um medium padrão.` : (medium ? `"${medium}" válido.` : '—') },
+    { required:false, ok:!!content,                   label:'utm_content presente',        msg: !content ? 'Recomendado para rastrear criativos.' : `Valor: "${content}"` },
+    { required:false, ok:raw.length < 2000,           label:'URL dentro do limite',        msg: raw.length >= 2000 ? `${raw.length} caracteres (recomendado < 2000).` : `${raw.length} caracteres — OK.` },
   ];
 
   const required = checks.filter(c => c.required);
-  const passed   = required.filter(c => c.ok).length;
-  const score    = Math.round((passed / required.length) * 100);
+  const score    = Math.round(required.filter(c => c.ok).length / required.length * 100);
 
-  // ── Score display ──
-  const scoreEl    = document.getElementById('scoreNum');
-  const labelEl    = document.getElementById('scoreLabel');
-  const subEl      = document.getElementById('scoreSub');
-  const platEl     = document.getElementById('scorePlat');
-  scoreEl.textContent = score + '%';
-  scoreEl.className   = 'score-num ' + (score >= 90 ? 'score-green' : score >= 60 ? 'score-yellow' : 'score-red');
-  labelEl.textContent = score >= 90 ? '🟢 Excelente' : score >= 75 ? '🟡 Bom' : score >= 50 ? '🟠 Regular' : '🔴 Revisar';
-  labelEl.style.color = score >= 90 ? 'var(--ok)' : score >= 60 ? 'var(--warn)' : 'var(--erro)';
-  subEl.textContent   = `${passed} de ${required.length} verificações obrigatórias`;
+  // Score display
+  document.getElementById('scoreNum').textContent   = score + '%';
+  document.getElementById('scoreNum').className     = 'score-num ' + (score >= 90 ? 'score-green' : score >= 60 ? 'score-yellow' : 'score-red');
+  document.getElementById('scoreLabel').textContent = score >= 90 ? '🟢 Excelente' : score >= 75 ? '🟡 Bom' : score >= 50 ? '🟠 Regular' : '🔴 Revisar';
+  document.getElementById('scoreLabel').style.color = score >= 90 ? 'var(--ok)' : score >= 60 ? 'var(--warn)' : 'var(--erro)';
+  document.getElementById('scoreSub').textContent   = `${required.filter(c=>c.ok).length} de ${required.length} verificações obrigatórias`;
 
+  const platEl = document.getElementById('scorePlat');
   if (detectedPlat) {
     platEl.style.display = 'flex';
     document.getElementById('scorePlatEmoji').textContent = detectedPlat.emoji;
     document.getElementById('scorePlatName').textContent  = detectedPlat.label;
-  } else {
-    platEl.style.display = 'none';
-  }
+  } else { platEl.style.display = 'none'; }
 
-  // ── Checks list ──
   document.getElementById('anaChecks').innerHTML = checks.map(c => {
     const cls  = c.ok ? 'ok' : (c.required ? 'fail' : 'warn');
     const icon = c.ok ? '✅' : (c.required ? '❌' : '⚠️');
-    const req  = c.required ? '' : '<span style="font-size:10px;color:var(--faint);margin-left:4px;">(opcional)</span>';
-    return `<div class="ana-check ${cls}">
-      <span class="ac-icon">${icon}</span>
-      <div class="ac-info">
-        <div class="ac-label">${c.label}${req}</div>
-        <div class="ac-msg">${c.msg}</div>
-      </div>
-    </div>`;
+    const opt  = c.required ? '' : '<span style="font-size:10px;color:var(--faint);margin-left:4px;">(opcional)</span>';
+    return `<div class="ana-check ${cls}"><span class="ac-icon">${icon}</span><div class="ac-info"><div class="ac-label">${c.label}${opt}</div><div class="ac-msg">${c.msg}</div></div></div>`;
   }).join('');
 
-  // ── Params ──
-  const paramKeys  = Object.keys(params);
-  const utmKeys    = paramKeys.filter(k => k.startsWith('utm_'));
-  const otherKeys  = paramKeys.filter(k => !k.startsWith('utm_'));
+  const paramKeys = Object.keys(params);
   document.getElementById('anaParams').innerHTML = paramKeys.length
-    ? paramKeys.map(k => `
-        <div class="param-row">
-          <span class="param-key">${k}</span>
-          <span class="param-val">${params[k]}</span>
-        </div>`).join('')
-    : '<span style="color:var(--faint);font-size:12px;">Nenhum parâmetro encontrado.</span>';
+    ? paramKeys.map(k => `<div class="param-row"><span class="param-key">${k}</span><span class="param-val">${params[k]}</span></div>`).join('')
+    : '<span style="color:var(--faint);font-size:12px;">Nenhum parâmetro.</span>';
 
-  // ── Stats ──
+  const utmKeys   = paramKeys.filter(k => k.startsWith('utm_'));
+  const otherKeys = paramKeys.filter(k => !k.startsWith('utm_'));
   document.getElementById('anaStats').innerHTML = [
     { val: utmKeys.length,   lbl: 'UTM params' },
     { val: otherKeys.length, lbl: 'Outros params' },
@@ -1259,11 +1412,8 @@ function loadFromAna() {
   document.getElementById('f_content').value  = url.searchParams.get('utm_content')  || '';
   document.getElementById('f_term').value     = url.searchParams.get('utm_term')     || '';
   if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
-  const source = url.searchParams.get('utm_source') || '';
-  if (source) {
-    const match = PLATFORMS.find(p => p.source === source);
-    if (match) { activePlat = match.id; document.getElementById('plat_' + activePlat)?.classList.add('active'); }
-  }
+  const src = url.searchParams.get('utm_source');
+  if (src) { const m = PLATFORMS.find(p => p.source === src); if (m) { activePlat = m.id; document.getElementById('plat_' + m.id)?.classList.add('active'); } }
   update();
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('[data-tab="construtor"]').classList.add('active');
@@ -1275,20 +1425,20 @@ function loadFromAna() {
 function copyAnaParams() {
   const raw = document.getElementById('ana_input').value.trim();
   if (!raw) return;
-  try {
-    const url = new URL(raw);
-    const obj = {};
-    url.searchParams.forEach((v, k) => obj[k] = decodeURIComponent(v));
-    clipCopy(JSON.stringify(obj, null, 2), document.querySelector('[onclick="copyAnaParams()"]'));
-  } catch {}
+  try { const url = new URL(raw); const obj = {}; url.searchParams.forEach((v,k) => obj[k]=decodeURIComponent(v)); clipCopy(JSON.stringify(obj,null,2)); }
+  catch {}
+  const btn = document.querySelector('[onclick="copyAnaParams()"]');
+  if (btn) { const o = btn.textContent; btn.textContent = '✅'; setTimeout(() => btn.textContent = o, 1400); }
 }
 
 /* ════════════════════════════════════════
-   UTILITIES
+   UTILS
 ════════════════════════════════════════ */
 function dlCSV(content, filename) {
-  const blob = new Blob([content], { type:'text/csv;charset=utf-8;' });
-  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([content], { type:'text/csv;charset=utf-8;' })),
+    download: filename,
+  });
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
@@ -1300,6 +1450,14 @@ function today() { return new Date().toISOString().slice(0, 10); }
 update();
 renderTemplates();
 updateHistBadge();
+loadFromHash();
+
+// Update theme button icon on init
+(function() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+})();
 </script>
 </body>
 </html>
