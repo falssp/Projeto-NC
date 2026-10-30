@@ -9,8 +9,8 @@ const CORP = {
   ABA_REGIAO:   'Região',
   ABA_ESTADO:   'Estado',
   ABA_CIDADE:   'Cidade',
-  // Colunas: A=sigla, B=label, C=ativo (TRUE/FALSE)
-  COL: { SIGLA: 0, LABEL: 1, ATIVO: 2 }
+  // Colunas: A=sigla, B=label, C=ativo (TRUE/FALSE), D=uf (só na aba Cidade)
+  COL: { SIGLA: 0, LABEL: 1, ATIVO: 2, UF: 3 }
 };
 
 // ------------------------------------------------------------
@@ -55,7 +55,15 @@ function lerAba_(ss, nomeAba) {
     const c = CORP.COL;
     return rows
       .filter(r => r[c.SIGLA] && (r[c.ATIVO] === true || String(r[c.ATIVO]).toUpperCase() === 'TRUE'))
-      .map(r => ({ sigla: String(r[c.SIGLA]).trim().toLowerCase(), label: String(r[c.LABEL]).trim() }));
+      .map(r => {
+        const sigla = String(r[c.SIGLA]).trim().toLowerCase();
+        const obj = { sigla, label: String(r[c.LABEL]).trim() };
+        // Estado: deriva UF da sigla (est-sp → SP)
+        if (sigla.startsWith('est-')) obj.uf = sigla.slice(4).toUpperCase();
+        // Cidade: lê UF da coluna D
+        else if (sigla.startsWith('cid-') && r[c.UF]) obj.uf = String(r[c.UF]).trim().toUpperCase();
+        return obj;
+      });
   } catch(e) {
     console.error(`Erro ao ler "${nomeAba}": ${e}`);
     return [];
