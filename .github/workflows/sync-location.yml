@@ -9,11 +9,8 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout gh-pages
+      - name: Checkout main
         uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          fetch-depth: 0
 
       - name: Fetch Corp (fonte primária)
         id: corp
@@ -37,10 +34,12 @@ jobs:
           echo "⚠️  Corp falhou — usando Pessoal como fallback"
           curl -sf "${{ secrets.PESSOAL_WEBAPP_URL }}?action=json" -o ferramentas/location/v2/location.json
 
-      - name: Commit location.json no gh-pages
+      - name: Commit location.json no main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ferramentas/location/v2/location.json
           git diff --staged --quiet || git commit -m "chore: sync location.json [skip ci]"
           git push
+          # [skip ci] evita que deploy.yml rode neste commit.
+          # O arquivo chega ao gh-pages no próximo push real para main.
