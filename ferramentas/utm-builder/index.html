@@ -5,120 +5,327 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UTM Builder</title>
 <style>
+/* ─── TOKENS ─── */
 :root {
-  --azul: #1F36C7;
+  --azul:        #1F36C7;
   --azul-escuro: #1a237e;
-  --azul-light: #e8ecfd;
-  --cinza: #f4f5fb;
-  --borda: #d6dbf2;
-  --ok: #1b8a3a;
-  --ok-bg: #e8f4ea;
-  --erro: #c0392b;
-  --erro-bg: #fde8e8;
-  --warn: #9a7b00;
-  --header-h: 52px;
+  --azul-light:  #e8ecfd;
+  --cinza:       #f4f5fb;
+  --borda:       #d6dbf2;
+  --ok:          #1b8a3a;
+  --ok-bg:       #e8f4ea;
+  --erro:        #c0392b;
+  --erro-bg:     #fde8e8;
+  --bg:          #f4f5fb;
+  --card:        #fff;
+  --text:        #222;
+  --muted:       #666;
+  --faint:       #aaa;
+  --header-h:    52px;
+  --tab-h:       44px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--cinza); color: #222; min-height: 100vh; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --azul:        #6b83ff;
+    --azul-escuro: #4a63f0;
+    --azul-light:  #1a2060;
+    --cinza:       #1e2030;
+    --borda:       #2e3360;
+    --ok:          #34d058;
+    --ok-bg:       #0d2416;
+    --erro:        #ff6b6b;
+    --erro-bg:     #2a1010;
+    --bg:          #141520;
+    --card:        #1e2030;
+    --text:        #e8eaf6;
+    --muted:       #9da3cc;
+    --faint:       #55607a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --azul:        #6b83ff;
+  --azul-escuro: #4a63f0;
+  --azul-light:  #1a2060;
+  --cinza:       #1e2030;
+  --borda:       #2e3360;
+  --ok:          #34d058;
+  --ok-bg:       #0d2416;
+  --erro:        #ff6b6b;
+  --erro-bg:     #2a1010;
+  --bg:          #141520;
+  --card:        #1e2030;
+  --text:        #e8eaf6;
+  --muted:       #9da3cc;
+  --faint:       #55607a;
+  color-scheme: dark;
+}
 
-/* HEADER */
-.header { background: var(--azul-escuro); color: #fff; padding: 0 24px; height: var(--header-h); display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 100; }
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ─── HEADER ─── */
+.header {
+  background: var(--azul-escuro); color: #fff;
+  padding: 0 24px; height: var(--header-h);
+  display: flex; align-items: center; gap: 14px;
+  position: sticky; top: 0; z-index: 100;
+}
 .header h1 { font-size: 16px; font-weight: 700; }
-.header .badge { font-size: 10px; background: rgba(255,255,255,.15); padding: 2px 8px; border-radius: 20px; }
-.header .ver { font-size: 10px; opacity: .5; margin-left: auto; }
+.header .badge { font-size: 10px; background: rgba(255,255,255,.18); padding: 2px 8px; border-radius: 20px; }
+.header .ver { font-size: 10px; opacity: .45; margin-left: auto; }
 
-/* LAYOUT */
-.page { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-@media (max-width: 800px) { .page { grid-template-columns: 1fr; } }
+/* ─── TABS ─── */
+.tabs-bar {
+  background: var(--card); border-bottom: 1px solid var(--borda);
+  display: flex; padding: 0 24px; gap: 0;
+  position: sticky; top: var(--header-h); z-index: 99;
+}
+.tab-btn {
+  padding: 0 18px; height: var(--tab-h); border: none; background: none;
+  color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color .12s, border-color .12s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--azul); border-bottom-color: var(--azul); }
+.tab-badge {
+  font-size: 10px; background: var(--azul-light); color: var(--azul);
+  padding: 1px 6px; border-radius: 10px; font-weight: 700;
+}
 
-/* CARDS */
-.card { background: #fff; border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; }
-.card-h { padding: 14px 20px; background: var(--azul-light); border-bottom: 1px solid var(--borda); }
+/* ─── TAB PANELS ─── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ─── LAYOUT ─── */
+.page {
+  padding: 24px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  align-items: start; max-width: 1200px; margin: 0 auto;
+}
+.page-wide { padding: 24px; max-width: 1200px; margin: 0 auto; }
+@media (max-width: 820px) { .page { grid-template-columns: 1fr; } }
+
+/* ─── CARDS ─── */
+.card { background: var(--card); border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; }
+.card-h {
+  padding: 13px 20px; background: var(--azul-light);
+  border-bottom: 1px solid var(--borda);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+}
 .card-h h2 { font-size: 14px; font-weight: 700; color: var(--azul-escuro); }
-.card-h p { font-size: 12px; color: #666; margin-top: 2px; }
+.card-h p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .card-body { padding: 20px; }
 
-/* PLATFORM GRID */
-.plat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 0; }
-.plat-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border: 1.5px solid var(--borda); border-radius: 8px; background: #fff; cursor: pointer; font-size: 11px; font-weight: 600; color: #555; transition: all .12s; text-align: center; }
+/* ─── PLATFORM GRID ─── */
+.plat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 7px; }
+.plat-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 9px 4px; border: 1.5px solid var(--borda); border-radius: 8px;
+  background: var(--card); cursor: pointer; font-size: 10px; font-weight: 600;
+  color: var(--muted); transition: border-color .12s, background .12s, color .12s;
+  text-align: center; line-height: 1.2;
+}
 .plat-btn:hover { border-color: var(--azul); background: var(--azul-light); color: var(--azul); }
 .plat-btn.active { border-color: var(--azul); background: var(--azul); color: #fff; }
-.plat-btn .pe { font-size: 18px; }
+.plat-btn .pe { font-size: 16px; }
 
-/* FORM */
-.form-section { margin-bottom: 20px; }
-.form-section:last-child { margin-bottom: 0; }
-.form-section h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #aaa; margin-bottom: 12px; }
-.field { margin-bottom: 12px; }
-.field label { display: block; font-size: 12px; font-weight: 600; color: #444; margin-bottom: 4px; }
-.field label .opt { font-weight: 400; color: #aaa; margin-left: 4px; }
-.field input[type="text"], .field input[type="url"] {
-  width: 100%; padding: 8px 12px; border: 1.5px solid var(--borda); border-radius: 6px;
-  font-size: 13px; font-family: inherit; color: #222; transition: border-color .12s; background: #fff;
+/* ─── FORM ELEMENTS ─── */
+.section-head {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--faint); margin-bottom: 12px;
 }
-.field input:focus { outline: none; border-color: var(--azul); }
-.field input.error { border-color: var(--erro); }
-.field .hint { font-size: 11px; color: #999; margin-top: 3px; }
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.field label .opt { font-weight: 400; color: var(--faint); margin-left: 4px; font-size: 11px; }
+.field input[type="text"],
+.field input[type="url"],
+.field select {
+  width: 100%; padding: 8px 12px;
+  border: 1.5px solid var(--borda); border-radius: 6px;
+  font-size: 13px; font-family: inherit;
+  color: var(--text); background: var(--card);
+  transition: border-color .12s;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--azul); }
+.field .hint     { font-size: 11px; color: var(--faint); margin-top: 3px; }
+.field .hint.err { color: var(--erro); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-/* TOGGLES */
+/* ─── TOGGLES ─── */
 .toggles { display: flex; flex-direction: column; gap: 10px; }
 .toggle-row { display: flex; align-items: center; gap: 10px; }
 .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-track { position: absolute; inset: 0; background: #ddd; border-radius: 20px; cursor: pointer; transition: background .2s; }
-.toggle input:checked + .toggle-track { background: var(--azul); }
-.toggle-track::after { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; }
-.toggle input:checked + .toggle-track::after { transform: translateX(16px); }
-.toggle-label { font-size: 12px; color: #555; }
-
-/* PREVIEW */
-.preview-url {
-  width: 100%; min-height: 80px; padding: 12px; background: #f8f9ff;
-  border: 1.5px solid var(--borda); border-radius: 8px; font-size: 12px;
-  font-family: monospace; color: #333; word-break: break-all; line-height: 1.6;
-  resize: none; white-space: pre-wrap;
+.toggle-track {
+  position: absolute; inset: 0; background: #ccc; border-radius: 20px;
+  cursor: pointer; transition: background .2s;
 }
-.preview-url.has-url { border-color: var(--azul); color: var(--azul-escuro); }
-.btn-copy {
-  width: 100%; margin-top: 10px; padding: 10px; background: var(--azul);
+.toggle input:checked + .toggle-track { background: var(--azul); }
+.toggle-track::after {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s;
+}
+.toggle input:checked + .toggle-track::after { transform: translateX(16px); }
+.toggle-label { font-size: 12px; color: var(--muted); }
+
+/* ─── BUTTONS ─── */
+.btn-primary {
+  width: 100%; padding: 10px; background: var(--azul);
   color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 700;
   cursor: pointer; transition: opacity .12s;
 }
-.btn-copy:hover { opacity: .9; }
-.btn-copy.copied { background: var(--ok); }
-.btn-save {
-  width: 100%; margin-top: 8px; padding: 9px; background: #fff;
+.btn-primary:hover { opacity: .88; }
+.btn-primary.ok { background: var(--ok); }
+.btn-outline {
+  width: 100%; margin-top: 8px; padding: 9px; background: var(--card);
   color: var(--azul); border: 1.5px solid var(--azul); border-radius: 7px;
   font-size: 13px; font-weight: 700; cursor: pointer; transition: background .12s;
 }
-.btn-save:hover { background: var(--azul-light); }
+.btn-outline:hover { background: var(--azul-light); }
+.btn-sm {
+  padding: 5px 12px; background: var(--card); border: 1.5px solid var(--borda);
+  border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer;
+  color: var(--muted); transition: background .12s, border-color .12s; white-space: nowrap;
+}
+.btn-sm:hover { background: var(--cinza); }
+.btn-sm.primary { color: var(--azul); }
+.btn-sm.primary:hover { background: var(--azul-light); border-color: var(--azul); }
+.btn-sm.danger { color: var(--erro); border-color: transparent; }
+.btn-sm.danger:hover { background: var(--erro-bg); }
 
-/* QA */
+/* ─── PREVIEW ─── */
+.preview-url {
+  width: 100%; min-height: 78px; padding: 12px;
+  background: var(--cinza); border: 1.5px solid var(--borda); border-radius: 8px;
+  font-size: 12px; font-family: monospace; color: var(--text);
+  word-break: break-all; line-height: 1.6; resize: none; white-space: pre-wrap;
+}
+.preview-url.has-url { border-color: var(--azul); color: var(--azul); }
+
+/* ─── QA ─── */
 .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.qa-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
-.qa-item.ok { background: var(--ok-bg); color: var(--ok); }
+.qa-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+}
+.qa-item.ok   { background: var(--ok-bg);   color: var(--ok);   }
 .qa-item.fail { background: var(--erro-bg); color: var(--erro); }
 .qa-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.qa-item.ok .qa-dot { background: var(--ok); }
+.qa-item.ok   .qa-dot { background: var(--ok);   }
 .qa-item.fail .qa-dot { background: var(--erro); }
 
-/* HISTORY */
-.history-list { display: flex; flex-direction: column; gap: 8px; }
-.hist-item { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; }
+/* ─── PARAM BREAKDOWN ─── */
+.param-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 12px;
+}
+.param-key { font-weight: 700; color: var(--azul); min-width: 120px; font-family: monospace; }
+.param-val { color: var(--text); font-family: monospace; word-break: break-all; }
+
+/* ─── DECODER ─── */
+.decoder-box {
+  border: 1.5px dashed var(--borda); border-radius: 8px;
+  padding: 14px; background: var(--cinza); margin-bottom: 20px;
+}
+.decoder-box .dh {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--faint); margin-bottom: 10px;
+}
+.decoder-box input {
+  width: 100%; padding: 8px 12px;
+  border: 1.5px solid var(--borda); border-radius: 6px;
+  font-size: 12px; font-family: monospace;
+  color: var(--text); background: var(--card); transition: border-color .12s;
+}
+.decoder-box input:focus { outline: none; border-color: var(--azul); }
+.decoder-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.decoder-pill {
+  display: flex; gap: 5px; align-items: center;
+  padding: 4px 8px; background: var(--card); border: 1px solid var(--borda);
+  border-radius: 20px; font-size: 11px;
+}
+.decoder-pill .dk { font-weight: 700; color: var(--azul); }
+.decoder-pill .dv { color: var(--text); font-family: monospace; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ─── CUSTOM PARAMS ─── */
+.custom-row {
+  display: grid; grid-template-columns: 1fr 1fr 28px;
+  gap: 6px; align-items: center; margin-bottom: 6px;
+}
+.custom-row input {
+  padding: 7px 10px; border: 1.5px solid var(--borda); border-radius: 6px;
+  font-size: 12px; font-family: inherit; color: var(--text); background: var(--card);
+}
+.custom-row input:focus { outline: none; border-color: var(--azul); }
+.btn-rm {
+  width: 28px; height: 28px; border: none; background: none;
+  color: var(--faint); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; border-radius: 4px;
+}
+.btn-rm:hover { background: var(--erro-bg); color: var(--erro); }
+.btn-add-cp {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border: 1.5px dashed var(--borda); border-radius: 6px;
+  background: none; color: var(--faint); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: border-color .12s, color .12s, background .12s;
+  margin-top: 4px;
+}
+.btn-add-cp:hover { border-color: var(--azul); color: var(--azul); background: var(--azul-light); }
+
+/* ─── TEMPLATES ─── */
+.tmpl-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border: 1px solid var(--borda); border-radius: 7px;
+  background: var(--card); margin-bottom: 6px;
+}
+.tmpl-name    { font-size: 12px; font-weight: 700; color: var(--text); flex-shrink: 0; }
+.tmpl-preview { font-size: 11px; color: var(--faint); font-family: monospace; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tmpl-empty   { font-size: 12px; color: var(--faint); padding: 8px 0; }
+
+/* ─── HISTORY ─── */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
+.filter-bar input, .filter-bar select {
+  padding: 7px 11px; border: 1.5px solid var(--borda); border-radius: 6px;
+  font-size: 12px; font-family: inherit; color: var(--text); background: var(--card);
+}
+.filter-bar input { flex: 1; }
+.filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: var(--azul); }
+.hist-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  border: 1px solid var(--borda); border-radius: 8px;
+  padding: 10px 12px; background: var(--card); margin-bottom: 8px;
+}
 .hist-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
 .hist-info { flex: 1; min-width: 0; }
-.hist-campaign { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 2px; }
-.hist-url { font-size: 11px; color: #888; word-break: break-all; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hist-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.hist-btn { padding: 4px 8px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--borda); background: #fff; color: #555; }
-.hist-btn:hover { background: var(--cinza); }
-.hist-btn.del { color: var(--erro); border-color: #f5c6c6; }
-.hist-btn.del:hover { background: var(--erro-bg); }
-.hist-empty { font-size: 13px; color: #bbb; text-align: center; padding: 20px 0; }
-.btn-clear { display: block; margin-top: 10px; padding: 7px 14px; background: none; border: 1.5px solid #eee; border-radius: 6px; font-size: 12px; color: #aaa; cursor: pointer; }
-.btn-clear:hover { border-color: var(--erro); color: var(--erro); }
+.hist-campaign { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.hist-url { font-size: 11px; color: var(--faint); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-date { font-size: 10px; color: var(--faint); margin-top: 3px; }
+.hist-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.hist-empty { font-size: 13px; color: var(--faint); text-align: center; padding: 24px 0; }
 
-/* DIVIDER */
+/* ─── BATCH ─── */
+.batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 820px) { .batch-grid { grid-template-columns: 1fr; } }
+.batch-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.batch-table th {
+  text-align: left; padding: 8px 10px;
+  background: var(--azul-light); border-bottom: 1px solid var(--borda);
+  font-weight: 700; color: var(--azul-escuro); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+.batch-table td { padding: 9px 10px; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+.batch-table tr:last-child td { border-bottom: none; }
+.batch-table tr:hover td { background: var(--cinza); }
+.plat-cell { display: flex; align-items: center; gap: 6px; }
+.batch-url-col { font-family: monospace; font-size: 11px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.batch-check { accent-color: var(--azul); cursor: pointer; width: 14px; height: 14px; }
+.selall-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+
+/* ─── DIVIDER ─── */
 .divider { border: none; border-top: 1px solid var(--borda); margin: 16px 0; }
 </style>
 </head>
@@ -127,47 +334,66 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
 <div class="header">
   <span style="font-size:20px">🔗</span>
   <h1>UTM Builder</h1>
-  <span class="badge"></span>
-  <span class="ver">v1.0 · 2026</span>
+  <span class="badge">NC Tool</span>
+  <span class="ver">v2.0 · 2026</span>
 </div>
 
-<div class="page">
+<nav class="tabs-bar">
+  <button class="tab-btn active" data-tab="construtor" onclick="switchTab('construtor', this)">🔧 Construtor</button>
+  <button class="tab-btn" data-tab="lote" onclick="switchTab('lote', this)">📋 Lote <span class="tab-badge" id="lote-count">0</span></button>
+  <button class="tab-btn" data-tab="historico" onclick="switchTab('historico', this)">📂 Histórico <span class="tab-badge" id="hist-badge">0</span></button>
+</nav>
 
-  <!-- LEFT COLUMN -->
-  <div style="display:flex;flex-direction:column;gap:20px;">
+<!-- ══════════════════════════ TAB 1: CONSTRUTOR ══════════════════════════ -->
+<div id="tab-construtor" class="tab-panel active">
+  <div class="page">
 
-    <!-- PLATFORM PRESETS -->
-    <div class="card">
-      <div class="card-h"><h2>1 · Plataforma</h2><p>Selecione para preencher source e medium automaticamente</p></div>
-      <div class="card-body">
-        <div class="plat-grid" id="platGrid"></div>
+    <!-- ── LEFT COLUMN ── -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Platform -->
+      <div class="card">
+        <div class="card-h"><div><h2>1 · Plataforma</h2><p>Preenche source e medium automaticamente</p></div></div>
+        <div class="card-body">
+          <div class="plat-grid" id="platGrid"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- FORM -->
-    <div class="card">
-      <div class="card-h"><h2>2 · Parâmetros</h2></div>
-      <div class="card-body">
+      <!-- Form -->
+      <div class="card">
+        <div class="card-h"><h2>2 · Parâmetros</h2></div>
+        <div class="card-body">
 
-        <div class="form-section">
+          <!-- Decoder -->
+          <div class="decoder-box">
+            <div class="dh">🔍 Decodificar URL existente</div>
+            <input type="url" id="dec_url" placeholder="Cole aqui uma URL com UTMs para decompor..." oninput="onDecInput(this.value)">
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button class="btn-sm primary" style="flex:1" onclick="decodeAndFill()">Decodificar → preencher formulário</button>
+              <button class="btn-sm" onclick="clearDecoder()">Limpar</button>
+            </div>
+            <div class="decoder-pills" id="decPills" style="display:none;"></div>
+          </div>
+
+          <!-- URL Base -->
           <div class="field">
             <label>URL Base</label>
             <input type="url" id="f_url" placeholder="https://www.exemplo.com.br/pagina" oninput="update()">
             <div class="hint" id="url_hint"></div>
           </div>
-        </div>
 
-        <hr class="divider">
+          <hr class="divider">
+          <div class="section-head">Parâmetros UTM</div>
 
-        <div class="form-section">
-          <h3>Parâmetros UTM</h3>
-          <div class="field">
-            <label>utm_source</label>
-            <input type="text" id="f_source" placeholder="meta" oninput="update()">
-          </div>
-          <div class="field">
-            <label>utm_medium</label>
-            <input type="text" id="f_medium" placeholder="paid_social" oninput="update()">
+          <div class="field-row">
+            <div class="field">
+              <label>utm_source</label>
+              <input type="text" id="f_source" placeholder="meta" oninput="update()">
+            </div>
+            <div class="field">
+              <label>utm_medium</label>
+              <input type="text" id="f_medium" placeholder="paid_social" oninput="update()">
+            </div>
           </div>
           <div class="field">
             <label>utm_campaign</label>
@@ -178,91 +404,215 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
             <input type="text" id="f_content" placeholder="formato-criativo" oninput="update()">
           </div>
           <div class="field">
-            <label>utm_term <span class="opt">opcional — keywords de busca</span></label>
+            <label>utm_term <span class="opt">opcional</span></label>
             <input type="text" id="f_term" placeholder="palavra-chave" oninput="update()">
           </div>
-        </div>
 
-        <hr class="divider">
+          <hr class="divider">
+          <div class="section-head">Parâmetros customizados</div>
+          <div id="customParams"></div>
+          <button class="btn-add-cp" onclick="addCustomParam()">＋ Adicionar parâmetro</button>
 
-        <div class="form-section">
-          <h3>Formatação</h3>
+          <hr class="divider">
+          <div class="section-head">Formatação</div>
           <div class="toggles">
             <div class="toggle-row">
               <label class="toggle"><input type="checkbox" id="t_lower" checked onchange="update()"><span class="toggle-track"></span></label>
-              <span class="toggle-label">Converter tudo para minúsculas</span>
+              <span class="toggle-label">Converter para minúsculas</span>
             </div>
             <div class="toggle-row">
               <label class="toggle"><input type="checkbox" id="t_hyphens" checked onchange="update()"><span class="toggle-track"></span></label>
               <span class="toggle-label">Substituir espaços por hífens</span>
             </div>
           </div>
+
         </div>
-
       </div>
+
+      <!-- Templates -->
+      <div class="card">
+        <div class="card-h"><div><h2>Templates</h2><p>Reutilize conjuntos de parâmetros</p></div></div>
+        <div class="card-body">
+          <div id="tmplList"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <input type="text" id="tmpl_name" placeholder="Nome do template..."
+              style="flex:1;padding:7px 10px;border:1.5px solid var(--borda);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:var(--card);"
+              onkeydown="if(event.key==='Enter') saveTemplate()">
+            <button class="btn-sm primary" onclick="saveTemplate()">Salvar</button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
+    <!-- ── RIGHT COLUMN ── -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Preview -->
+      <div class="card">
+        <div class="card-h"><h2>3 · URL Gerada</h2></div>
+        <div class="card-body">
+          <textarea class="preview-url" id="preview" readonly placeholder="A URL com UTMs aparecerá aqui automaticamente..."></textarea>
+          <button class="btn-primary" id="btnCopy" onclick="copyURL()" style="margin-top:10px;">📋 Copiar URL</button>
+          <button class="btn-outline" id="btnSave" onclick="saveToHistory()">💾 Salvar no Histórico</button>
+
+          <hr class="divider">
+          <div class="section-head" style="margin-bottom:10px;">QA Checklist</div>
+          <div class="qa-grid" id="qaGrid"></div>
+        </div>
+      </div>
+
+      <!-- Breakdown -->
+      <div class="card" id="breakdownCard" style="display:none;">
+        <div class="card-h"><h2>Parâmetros decompostos</h2></div>
+        <div class="card-body" id="breakdownBody" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+    </div>
   </div>
+</div>
 
-  <!-- RIGHT COLUMN -->
-  <div style="display:flex;flex-direction:column;gap:20px;">
+<!-- ══════════════════════════ TAB 2: LOTE ══════════════════════════ -->
+<div id="tab-lote" class="tab-panel">
+  <div class="page-wide">
+    <div class="batch-grid">
 
-    <!-- PREVIEW + QA -->
+      <!-- Lote form -->
+      <div class="card">
+        <div class="card-h"><div><h2>Geração em lote</h2><p>Uma campanha para múltiplas plataformas</p></div></div>
+        <div class="card-body">
+          <div class="field">
+            <label>URL Base</label>
+            <input type="url" id="b_url" placeholder="https://www.exemplo.com.br/pagina" oninput="buildBatch()">
+          </div>
+          <div class="field">
+            <label>utm_campaign</label>
+            <input type="text" id="b_campaign" placeholder="nome-da-campanha" oninput="buildBatch()">
+          </div>
+          <div class="field">
+            <label>utm_content <span class="opt">opcional</span></label>
+            <input type="text" id="b_content" placeholder="formato-criativo" oninput="buildBatch()">
+          </div>
+          <div class="field">
+            <label>utm_term <span class="opt">opcional</span></label>
+            <input type="text" id="b_term" placeholder="palavra-chave" oninput="buildBatch()">
+          </div>
+
+          <hr class="divider">
+          <div class="section-head">Plataformas</div>
+          <div class="selall-row">
+            <input type="checkbox" id="b_selAll" onchange="toggleAllBatch(this.checked)" style="accent-color:var(--azul);">
+            <span>Selecionar todas</span>
+          </div>
+          <div class="plat-grid" id="batchPlatGrid"></div>
+
+          <hr class="divider">
+          <button class="btn-primary" onclick="exportLoteCSV()">⬇ Exportar como CSV</button>
+          <button class="btn-outline" onclick="saveAllLote()">💾 Salvar todas no Histórico</button>
+        </div>
+      </div>
+
+      <!-- Lote table -->
+      <div class="card">
+        <div class="card-h"><h2>Preview</h2></div>
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+          <table class="batch-table">
+            <thead>
+              <tr>
+                <th style="width:30px;"></th>
+                <th>Plataforma</th>
+                <th>Source</th>
+                <th>Medium</th>
+                <th>URL gerada</th>
+              </tr>
+            </thead>
+            <tbody id="batchBody">
+              <tr><td colspan="5" style="text-align:center;padding:28px;color:var(--faint);font-size:12px;">
+                Selecione plataformas e preencha a campanha
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ TAB 3: HISTÓRICO ══════════════════════════ -->
+<div id="tab-historico" class="tab-panel">
+  <div class="page-wide">
     <div class="card">
-      <div class="card-h"><h2>3 · URL Gerada</h2></div>
+      <div class="card-h">
+        <div><h2>Histórico de URLs</h2><p>Salvo no navegador · <span id="hist-total">0</span> entradas</p></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-sm primary" onclick="exportHistCSV()">⬇ CSV</button>
+          <button class="btn-sm danger" onclick="clearHistory()">🗑 Limpar tudo</button>
+        </div>
+      </div>
       <div class="card-body">
-        <textarea class="preview-url" id="preview" readonly placeholder="A URL com UTMs aparecerá aqui automaticamente..."></textarea>
-        <button class="btn-copy" id="btnCopy" onclick="copyURL()">📋 Copiar URL</button>
-        <button class="btn-save" onclick="saveToHistory()">💾 Gerar e Salvar no Histórico</button>
-
-        <hr class="divider">
-
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#aaa;margin-bottom:10px;">QA Checklist</div>
-        <div class="qa-grid" id="qaGrid"></div>
+        <div class="filter-bar">
+          <input type="text" id="hist_q" placeholder="Buscar campanha, plataforma ou URL..." oninput="renderHistory()">
+          <select id="hist_plat" onchange="renderHistory()">
+            <option value="">Todas as plataformas</option>
+          </select>
+        </div>
+        <div id="histList"></div>
       </div>
     </div>
-
-    <!-- HISTORY -->
-    <div class="card">
-      <div class="card-h"><h2>4 · Histórico</h2><p>Últimas 10 URLs geradas (salvo no navegador)</p></div>
-      <div class="card-body">
-        <div class="history-list" id="histList"></div>
-        <button class="btn-clear" onclick="clearHistory()">🗑 Limpar histórico</button>
-      </div>
-    </div>
-
   </div>
 </div>
 
 <script>
-/* ── PLATFORMS ── */
+/* ════════════════════════════════════════════════════
+   PLATFORMS
+════════════════════════════════════════════════════ */
 const PLATFORMS = [
-  { id:'meta',     label:'Meta Ads',        emoji:'📘', source:'meta',      medium:'paid_social' },
-  { id:'gads_s',   label:'Google Search',   emoji:'🔵', source:'google',    medium:'cpc' },
-  { id:'gads_d',   label:'Google Display',  emoji:'🔷', source:'google',    medium:'display' },
-  { id:'dv360',    label:'DV360',           emoji:'🟡', source:'dv360',     medium:'programmatic' },
-  { id:'cm360',    label:'CM360',           emoji:'🔴', source:'cm360',     medium:'display' },
-  { id:'linkedin', label:'LinkedIn',        emoji:'🔷', source:'linkedin',  medium:'paid_social' },
-  { id:'tiktok',   label:'TikTok',          emoji:'⬛', source:'tiktok',    medium:'paid_social' },
-  { id:'x',        label:'X Ads',           emoji:'🐦', source:'x',         medium:'paid_social' },
-  { id:'pinterest',label:'Pinterest',       emoji:'📌', source:'pinterest', medium:'paid_social' },
-  { id:'kwai',     label:'Kwai',            emoji:'🎬', source:'kwai',      medium:'paid_social' },
-  { id:'email',    label:'E-mail',          emoji:'📧', source:'email',     medium:'email' },
-  { id:'whatsapp', label:'WhatsApp',        emoji:'💬', source:'whatsapp',  medium:'social' },
+  { id:'meta',      label:'Meta Ads',       emoji:'📘', source:'meta',      medium:'paid_social'  },
+  { id:'ig',        label:'Instagram',      emoji:'📷', source:'instagram', medium:'paid_social'  },
+  { id:'gads_s',    label:'Google Search',  emoji:'🔵', source:'google',    medium:'cpc'          },
+  { id:'gads_d',    label:'Google Display', emoji:'🔷', source:'google',    medium:'display'      },
+  { id:'yt',        label:'YouTube',        emoji:'▶️',  source:'youtube',   medium:'video'        },
+  { id:'dv360',     label:'DV360',          emoji:'🟡', source:'dv360',     medium:'programmatic' },
+  { id:'cm360',     label:'CM360',          emoji:'🔴', source:'cm360',     medium:'display'      },
+  { id:'linkedin',  label:'LinkedIn',       emoji:'🔷', source:'linkedin',  medium:'paid_social'  },
+  { id:'tiktok',    label:'TikTok',         emoji:'⬛', source:'tiktok',    medium:'paid_social'  },
+  { id:'x',         label:'X Ads',          emoji:'🐦', source:'x',         medium:'paid_social'  },
+  { id:'pinterest', label:'Pinterest',      emoji:'📌', source:'pinterest', medium:'paid_social'  },
+  { id:'kwai',      label:'Kwai',           emoji:'🎬', source:'kwai',      medium:'paid_social'  },
+  { id:'spotify',   label:'Spotify',        emoji:'🟢', source:'spotify',   medium:'audio'        },
+  { id:'globo',     label:'Globo',          emoji:'🟠', source:'globo',     medium:'display'      },
+  { id:'email',     label:'E-mail',         emoji:'📧', source:'email',     medium:'email'        },
+  { id:'whatsapp',  label:'WhatsApp',       emoji:'💬', source:'whatsapp',  medium:'social'       },
 ];
 
+/* ════════════════════════════════════════════════════
+   TAB SWITCHING
+════════════════════════════════════════════════════ */
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'historico') { renderHistory(); refreshHistFilter(); }
+}
+
+/* ════════════════════════════════════════════════════
+   CONSTRUTOR — PLATFORM GRID
+════════════════════════════════════════════════════ */
 let activePlat = null;
 
-/* ── RENDER PLATFORMS ── */
-const platGrid = document.getElementById('platGrid');
-PLATFORMS.forEach(p => {
-  const btn = document.createElement('button');
-  btn.className = 'plat-btn';
-  btn.id = 'plat_' + p.id;
-  btn.innerHTML = `<span class="pe">${p.emoji}</span>${p.label}`;
-  btn.onclick = () => selectPlatform(p);
-  platGrid.appendChild(btn);
-});
+(function renderPlatGrid() {
+  const g = document.getElementById('platGrid');
+  PLATFORMS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'plat-btn';
+    btn.id = 'plat_' + p.id;
+    btn.innerHTML = `<span class="pe">${p.emoji}</span>${p.label}`;
+    btn.onclick = () => selectPlatform(p);
+    g.appendChild(btn);
+  });
+})();
 
 function selectPlatform(p) {
   if (activePlat === p.id) {
@@ -280,17 +630,21 @@ function selectPlatform(p) {
   update();
 }
 
-/* ── FORMAT ── */
+/* ════════════════════════════════════════════════════
+   FORMAT
+════════════════════════════════════════════════════ */
 function fmt(v) {
-  let s = v;
+  let s = v.trim();
   if (document.getElementById('t_hyphens').checked) s = s.replace(/\s+/g, '-');
-  if (document.getElementById('t_lower').checked) s = s.toLowerCase();
-  return s.trim();
+  if (document.getElementById('t_lower').checked)   s = s.toLowerCase();
+  return s;
 }
 
-/* ── BUILD URL ── */
+/* ════════════════════════════════════════════════════
+   BUILD URL
+════════════════════════════════════════════════════ */
 function buildURL() {
-  const base = document.getElementById('f_url').value.trim();
+  const base     = document.getElementById('f_url').value.trim();
   const source   = fmt(document.getElementById('f_source').value);
   const medium   = fmt(document.getElementById('f_medium').value);
   const campaign = fmt(document.getElementById('f_campaign').value);
@@ -298,7 +652,6 @@ function buildURL() {
   const term     = fmt(document.getElementById('f_term').value);
 
   if (!base) return '';
-
   let url;
   try { url = new URL(base); } catch { return ''; }
 
@@ -308,147 +661,483 @@ function buildURL() {
   if (content)  url.searchParams.set('utm_content',  content);
   if (term)     url.searchParams.set('utm_term',      term);
 
+  document.querySelectorAll('.custom-row').forEach(row => {
+    const k = row.querySelector('.cp-key').value.trim();
+    const v = row.querySelector('.cp-val').value.trim();
+    if (k && v) url.searchParams.set(k, v);
+  });
+
   return url.toString();
 }
 
-/* ── QA ── */
+/* ════════════════════════════════════════════════════
+   QA
+════════════════════════════════════════════════════ */
 function runQA() {
   const base     = document.getElementById('f_url').value.trim();
   const source   = document.getElementById('f_source').value.trim();
   const medium   = document.getElementById('f_medium').value.trim();
   const campaign = document.getElementById('f_campaign').value.trim();
-  const allVals  = [source, medium, campaign,
+  const vals     = [source, medium, campaign,
                     document.getElementById('f_content').value.trim(),
                     document.getElementById('f_term').value.trim()];
 
   let validURL = false;
   try { new URL(base); validURL = !!base; } catch {}
 
-  const hasSpaces = allVals.some(v => /\s/.test(v));
-  const allLower  = allVals.filter(Boolean).every(v => v === v.toLowerCase());
-
   return [
-    { label: 'URL válida',             ok: validURL },
-    { label: 'utm_source preenchido',  ok: !!source },
-    { label: 'utm_medium preenchido',  ok: !!medium },
-    { label: 'utm_campaign preenchido',ok: !!campaign },
-    { label: 'Sem espaços',            ok: !hasSpaces },
-    { label: 'Tudo em minúsculas',     ok: allLower },
+    { label: 'URL válida',              ok: validURL },
+    { label: 'utm_source preenchido',   ok: !!source },
+    { label: 'utm_medium preenchido',   ok: !!medium },
+    { label: 'utm_campaign preenchido', ok: !!campaign },
+    { label: 'Sem espaços',             ok: !vals.some(v => /\s/.test(v)) },
+    { label: 'Tudo em minúsculas',      ok: vals.filter(Boolean).every(v => v === v.toLowerCase()) },
   ];
 }
 
-/* ── UPDATE ── */
-function update() {
-  const url = buildURL();
-  const preview = document.getElementById('preview');
-  preview.value = url || '';
-  preview.className = 'preview-url' + (url ? ' has-url' : '');
-
-  // URL hint
-  const base = document.getElementById('f_url').value.trim();
-  const hint = document.getElementById('url_hint');
-  if (base && !url) {
-    hint.textContent = '⚠ URL inválida — inclua https://';
-    hint.style.color = '#c0392b';
-  } else {
-    hint.textContent = '';
-  }
-
-  // QA
-  const checks = runQA();
-  const qaGrid = document.getElementById('qaGrid');
-  qaGrid.innerHTML = checks.map(c => `
-    <div class="qa-item ${c.ok ? 'ok' : 'fail'}">
-      <span class="qa-dot"></span>${c.label}
-    </div>
-  `).join('');
+/* ════════════════════════════════════════════════════
+   PARAM BREAKDOWN
+════════════════════════════════════════════════════ */
+function renderBreakdown(url) {
+  const card = document.getElementById('breakdownCard');
+  const body = document.getElementById('breakdownBody');
+  if (!url) { card.style.display = 'none'; return; }
+  try {
+    const u = new URL(url);
+    const params = [];
+    u.searchParams.forEach((v, k) => params.push({ k, v }));
+    if (!params.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    body.innerHTML = params.map(p => `
+      <div class="param-row">
+        <span class="param-key">${p.k}</span>
+        <span class="param-val">${decodeURIComponent(p.v)}</span>
+      </div>
+    `).join('');
+  } catch { card.style.display = 'none'; }
 }
 
-/* ── COPY ── */
+/* ════════════════════════════════════════════════════
+   UPDATE
+════════════════════════════════════════════════════ */
+function update() {
+  const url = buildURL();
+  const prev = document.getElementById('preview');
+  prev.value     = url || '';
+  prev.className = 'preview-url' + (url ? ' has-url' : '');
+
+  const base = document.getElementById('f_url').value.trim();
+  const hint = document.getElementById('url_hint');
+  if (base && !url) { hint.textContent = '⚠ URL inválida — inclua https://'; hint.className = 'hint err'; }
+  else              { hint.textContent = ''; hint.className = 'hint'; }
+
+  document.getElementById('qaGrid').innerHTML = runQA().map(c => `
+    <div class="qa-item ${c.ok ? 'ok' : 'fail'}">
+      <span class="qa-dot"></span>${c.label}
+    </div>`).join('');
+
+  renderBreakdown(url);
+}
+
+/* ════════════════════════════════════════════════════
+   COPY
+════════════════════════════════════════════════════ */
 function copyURL() {
   const url = document.getElementById('preview').value;
   if (!url) return;
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = document.getElementById('btnCopy');
+  const btn = document.getElementById('btnCopy');
+  const ok = () => {
     btn.textContent = '✅ Copiado!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '📋 Copiar URL'; btn.classList.remove('copied'); }, 2000);
+    btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = '📋 Copiar URL'; btn.classList.remove('ok'); }, 2000);
+  };
+  navigator.clipboard.writeText(url).then(ok).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), { value: url });
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); ok();
   });
 }
 
-/* ── HISTORY ── */
-function getHistory() {
-  try { return JSON.parse(localStorage.getItem('utm_history') || '[]'); } catch { return []; }
-}
-function saveHistory(h) {
-  try { localStorage.setItem('utm_history', JSON.stringify(h)); } catch {}
+/* ════════════════════════════════════════════════════
+   DECODER
+════════════════════════════════════════════════════ */
+const UTM_FIELDS = { utm_source:'f_source', utm_medium:'f_medium', utm_campaign:'f_campaign', utm_content:'f_content', utm_term:'f_term' };
+
+function onDecInput(v) {
+  if (v.includes('utm_')) decodeAndFill();
 }
 
-function saveToHistory() {
-  const url = buildURL();
-  if (!url) { alert('Preencha a URL base e ao menos utm_source para salvar.'); return; }
+function decodeAndFill() {
+  const raw = document.getElementById('dec_url').value.trim();
+  if (!raw) return;
+  let url; try { url = new URL(raw); } catch { return; }
 
-  const plat = activePlat ? PLATFORMS.find(p => p.id === activePlat) : null;
+  document.getElementById('f_url').value = url.origin + url.pathname;
+
+  const pills = [];
+  url.searchParams.forEach((v, k) => {
+    const fieldId = UTM_FIELDS[k];
+    if (fieldId) {
+      document.getElementById(fieldId).value = decodeURIComponent(v);
+      pills.push({ k, v: decodeURIComponent(v) });
+    }
+  });
+
+  // deselect platform
+  if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
+
+  const pillsEl = document.getElementById('decPills');
+  pillsEl.style.display = pills.length ? 'flex' : 'none';
+  pillsEl.innerHTML = pills.map(p => `
+    <div class="decoder-pill">
+      <span class="dk">${p.k}</span>
+      <span class="dv" title="${p.v}">${p.v}</span>
+    </div>`).join('');
+
+  update();
+}
+
+function clearDecoder() {
+  document.getElementById('dec_url').value = '';
+  document.getElementById('decPills').style.display = 'none';
+  document.getElementById('decPills').innerHTML = '';
+}
+
+/* ════════════════════════════════════════════════════
+   CUSTOM PARAMS
+════════════════════════════════════════════════════ */
+let cpIdx = 0;
+function addCustomParam(key = '', val = '') {
+  const n = cpIdx++;
+  const row = document.createElement('div');
+  row.className = 'custom-row'; row.id = 'cp_' + n;
+  row.innerHTML = `
+    <input type="text" class="cp-key" placeholder="chave" value="${key}" oninput="update()">
+    <input type="text" class="cp-val" placeholder="valor" value="${val}" oninput="update()">
+    <button class="btn-rm" onclick="this.closest('.custom-row').remove();update();" title="Remover">×</button>`;
+  document.getElementById('customParams').appendChild(row);
+  update();
+}
+
+/* ════════════════════════════════════════════════════
+   HISTORY (localStorage)
+════════════════════════════════════════════════════ */
+const HIST_KEY = 'utm_history_v2';
+function getHistory()          { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch { return []; } }
+function setHistory(h)         { try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch {} }
+
+function saveToHistory(url, platId, campaign) {
+  const finalUrl = url || buildURL();
+  if (!finalUrl) { alert('Gere uma URL válida antes de salvar.'); return; }
+
+  const pid  = platId || activePlat;
+  const plat = pid ? PLATFORMS.find(x => x.id === pid) : null;
   const entry = {
-    id: Date.now(),
-    emoji: plat ? plat.emoji : '🔗',
-    platform: plat ? plat.label : 'Manual',
-    campaign: document.getElementById('f_campaign').value.trim() || '(sem campanha)',
-    url,
+    id:         Date.now(),
+    emoji:      plat ? plat.emoji : '🔗',
+    platform:   plat ? plat.label : 'Manual',
+    platformId: plat ? plat.id : '',
+    campaign:   campaign || document.getElementById('f_campaign').value.trim() || '(sem campanha)',
+    url:        finalUrl,
+    ts:         new Date().toISOString(),
   };
 
   const h = getHistory();
   h.unshift(entry);
-  if (h.length > 10) h.pop();
-  saveHistory(h);
-  renderHistory();
+  setHistory(h);
+  updateHistBadge();
 
-  const btn = document.querySelector('.btn-save');
-  btn.textContent = '✅ Salvo!';
-  setTimeout(() => btn.textContent = '💾 Gerar e Salvar no Histórico', 1800);
+  if (!url) {
+    const btn = document.getElementById('btnSave');
+    btn.textContent = '✅ Salvo!';
+    setTimeout(() => btn.textContent = '💾 Salvar no Histórico', 1800);
+  }
 }
 
-function deleteHistoryItem(id) {
-  const h = getHistory().filter(e => e.id !== id);
-  saveHistory(h);
-  renderHistory();
+function deleteHistItem(id) {
+  setHistory(getHistory().filter(e => e.id !== id));
+  renderHistory(); updateHistBadge();
 }
 
 function clearHistory() {
   if (!confirm('Apagar todo o histórico?')) return;
-  saveHistory([]);
-  renderHistory();
+  setHistory([]); renderHistory(); updateHistBadge();
 }
 
-function copyHistItem(url) {
-  navigator.clipboard.writeText(url).catch(() => {});
+function loadHistItem(id) {
+  const entry = getHistory().find(e => e.id === id);
+  if (!entry) return;
+  try {
+    const u = new URL(entry.url);
+    document.getElementById('f_url').value      = u.origin + u.pathname;
+    document.getElementById('f_source').value   = u.searchParams.get('utm_source')   || '';
+    document.getElementById('f_medium').value   = u.searchParams.get('utm_medium')   || '';
+    document.getElementById('f_campaign').value = u.searchParams.get('utm_campaign') || '';
+    document.getElementById('f_content').value  = u.searchParams.get('utm_content')  || '';
+    document.getElementById('f_term').value     = u.searchParams.get('utm_term')     || '';
+  } catch {}
+
+  if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
+  if (entry.platformId) {
+    activePlat = entry.platformId;
+    document.getElementById('plat_' + activePlat)?.classList.add('active');
+  }
+  update();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-tab="construtor"]').classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-construtor').classList.add('active');
+  window.scrollTo(0, 0);
 }
 
 function renderHistory() {
-  const list = document.getElementById('histList');
-  const h = getHistory();
-  if (!h.length) {
-    list.innerHTML = '<div class="hist-empty">Nenhuma URL salva ainda.</div>';
+  const q    = (document.getElementById('hist_q')?.value || '').toLowerCase();
+  const plat = document.getElementById('hist_plat')?.value || '';
+  const all  = getHistory();
+
+  document.getElementById('hist-total').textContent = all.length;
+
+  const filtered = all.filter(e => {
+    const qs = !q || [e.campaign, e.platform, e.url].some(s => s.toLowerCase().includes(q));
+    const ps = !plat || e.platformId === plat;
+    return qs && ps;
+  });
+
+  const el = document.getElementById('histList');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="hist-empty">${all.length ? 'Nenhum resultado para este filtro.' : 'Nenhuma URL salva ainda.'}</div>`;
     return;
   }
-  list.innerHTML = h.map(e => `
+  el.innerHTML = filtered.map(e => `
     <div class="hist-item">
       <span class="hist-icon">${e.emoji}</span>
       <div class="hist-info">
         <div class="hist-campaign">${e.platform} · ${e.campaign}</div>
-        <div class="hist-url">${e.url}</div>
+        <div class="hist-url" title="${e.url}">${e.url}</div>
+        <div class="hist-date">${e.ts ? new Date(e.ts).toLocaleString('pt-BR') : ''}</div>
       </div>
       <div class="hist-actions">
-        <button class="hist-btn" onclick="copyHistItem('${e.url.replace(/'/g,"\\'")}')">📋</button>
-        <button class="hist-btn del" onclick="deleteHistoryItem(${e.id})">✕</button>
+        <button class="btn-sm primary" title="Carregar no construtor" onclick="loadHistItem(${e.id})">✏️</button>
+        <button class="btn-sm" title="Copiar URL" onclick="clipCopy('${e.url.replace(/'/g, "\\'")}', this)">📋</button>
+        <button class="btn-sm danger" title="Excluir" onclick="deleteHistItem(${e.id})">✕</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-/* ── INIT ── */
+function refreshHistFilter() {
+  const sel = document.getElementById('hist_plat');
+  const cur = sel.value;
+  const ids = [...new Set(getHistory().map(e => e.platformId).filter(Boolean))];
+  sel.innerHTML = '<option value="">Todas as plataformas</option>' +
+    ids.map(id => { const p = PLATFORMS.find(x => x.id === id); return `<option value="${id}">${p ? p.emoji + ' ' + p.label : id}</option>`; }).join('');
+  sel.value = cur;
+}
+
+function updateHistBadge() {
+  const n = getHistory().length;
+  document.getElementById('hist-badge').textContent = n;
+  if (document.getElementById('hist-total')) document.getElementById('hist-total').textContent = n;
+}
+
+function exportHistCSV() {
+  const h = getHistory();
+  if (!h.length) { alert('Histórico vazio.'); return; }
+  const rows = [['Data','Plataforma','Campanha','URL'],
+    ...h.map(e => [e.ts ? new Date(e.ts).toLocaleString('pt-BR') : '', e.platform, e.campaign, e.url])
+  ].map(r => r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlCSV('﻿' + rows, `utm_historico_${today()}.csv`);
+}
+
+/* ════════════════════════════════════════════════════
+   TEMPLATES
+════════════════════════════════════════════════════ */
+const TMPL_KEY = 'utm_templates_v2';
+function getTemplates()  { try { return JSON.parse(localStorage.getItem(TMPL_KEY) || '[]'); } catch { return []; } }
+function setTemplates(t) { try { localStorage.setItem(TMPL_KEY, JSON.stringify(t)); } catch {} }
+
+function saveTemplate() {
+  const name = document.getElementById('tmpl_name').value.trim();
+  if (!name) { alert('Digite um nome para o template.'); return; }
+  const t = [{
+    id:       Date.now(), name,
+    source:   document.getElementById('f_source').value,
+    medium:   document.getElementById('f_medium').value,
+    campaign: document.getElementById('f_campaign').value,
+    content:  document.getElementById('f_content').value,
+    term:     document.getElementById('f_term').value,
+    platId:   activePlat,
+  }, ...getTemplates()];
+  setTemplates(t);
+  document.getElementById('tmpl_name').value = '';
+  renderTemplates();
+}
+
+function loadTemplate(id) {
+  const t = getTemplates().find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('f_source').value   = t.source;
+  document.getElementById('f_medium').value   = t.medium;
+  document.getElementById('f_campaign').value = t.campaign;
+  document.getElementById('f_content').value  = t.content || '';
+  document.getElementById('f_term').value     = t.term    || '';
+  if (activePlat) { document.getElementById('plat_' + activePlat)?.classList.remove('active'); activePlat = null; }
+  if (t.platId) {
+    activePlat = t.platId;
+    document.getElementById('plat_' + activePlat)?.classList.add('active');
+  }
+  update();
+}
+
+function deleteTemplate(id) {
+  setTemplates(getTemplates().filter(x => x.id !== id));
+  renderTemplates();
+}
+
+function renderTemplates() {
+  const t = getTemplates();
+  document.getElementById('tmplList').innerHTML = !t.length
+    ? '<div class="tmpl-empty">Nenhum template salvo.</div>'
+    : t.map(x => `
+      <div class="tmpl-item">
+        <div class="tmpl-name">${x.name}</div>
+        <div class="tmpl-preview">${[x.source, x.medium, x.campaign].filter(Boolean).join(' · ')}</div>
+        <button class="btn-sm primary" onclick="loadTemplate(${x.id})">Usar</button>
+        <button class="btn-sm danger" onclick="deleteTemplate(${x.id})">✕</button>
+      </div>`).join('');
+}
+
+/* ════════════════════════════════════════════════════
+   BATCH
+════════════════════════════════════════════════════ */
+const batchSel = new Set();
+let batchCount = 0;
+
+(function renderBatchGrid() {
+  const g = document.getElementById('batchPlatGrid');
+  PLATFORMS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'plat-btn'; btn.id = 'bp_' + p.id;
+    btn.innerHTML = `<span class="pe">${p.emoji}</span>${p.label}`;
+    btn.onclick = () => {
+      if (batchSel.has(p.id)) { batchSel.delete(p.id); btn.classList.remove('active'); }
+      else                    { batchSel.add(p.id);    btn.classList.add('active');    }
+      updateLoteCount();
+      buildBatch();
+    };
+    g.appendChild(btn);
+  });
+})();
+
+function toggleAllBatch(on) {
+  PLATFORMS.forEach(p => {
+    if (on) batchSel.add(p.id); else batchSel.delete(p.id);
+    document.getElementById('bp_' + p.id)?.classList.toggle('active', on);
+  });
+  updateLoteCount();
+  buildBatch();
+}
+
+function updateLoteCount() {
+  document.getElementById('lote-count').textContent = batchSel.size;
+}
+
+function buildBatchURL(plat) {
+  const base     = document.getElementById('b_url').value.trim();
+  const campaign = document.getElementById('b_campaign').value.trim().replace(/\s+/g, '-').toLowerCase();
+  const content  = document.getElementById('b_content').value.trim().replace(/\s+/g, '-').toLowerCase();
+  const term     = document.getElementById('b_term').value.trim().replace(/\s+/g, '-').toLowerCase();
+  if (!base || !campaign) return '';
+  let url; try { url = new URL(base); } catch { return ''; }
+  url.searchParams.set('utm_source',   plat.source);
+  url.searchParams.set('utm_medium',   plat.medium);
+  url.searchParams.set('utm_campaign', campaign);
+  if (content) url.searchParams.set('utm_content', content);
+  if (term)    url.searchParams.set('utm_term',    term);
+  return url.toString();
+}
+
+function buildBatch() {
+  const sel = PLATFORMS.filter(p => batchSel.has(p.id));
+  const body = document.getElementById('batchBody');
+  if (!sel.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--faint);font-size:12px;">Selecione plataformas e preencha a campanha</td></tr>';
+    return;
+  }
+  body.innerHTML = sel.map(p => {
+    const url = buildBatchURL(p);
+    const safe = url.replace(/'/g, "\\'");
+    return `
+      <tr>
+        <td><input type="checkbox" class="batch-check" checked data-plat="${p.id}"></td>
+        <td><div class="plat-cell"><span>${p.emoji}</span><span style="font-size:12px;font-weight:600;">${p.label}</span></div></td>
+        <td style="font-family:monospace;font-size:11px;">${p.source}</td>
+        <td style="font-family:monospace;font-size:11px;">${p.medium}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="batch-url-col" title="${url}">${url || '—'}</span>
+            ${url ? `<button class="btn-sm" onclick="clipCopy('${safe}', this)">📋</button>` : ''}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function getCheckedBatchItems() {
+  return [...document.querySelectorAll('.batch-check:checked')]
+    .map(cb => {
+      const plat = PLATFORMS.find(p => p.id === cb.dataset.plat);
+      return plat ? { plat, url: buildBatchURL(plat) } : null;
+    }).filter(Boolean);
+}
+
+function exportLoteCSV() {
+  const items = getCheckedBatchItems().filter(i => i.url);
+  if (!items.length) { alert('Nenhuma URL gerada para exportar. Preencha URL base e campanha.'); return; }
+  const campaign = document.getElementById('b_campaign').value.trim();
+  const rows = [['Plataforma','utm_source','utm_medium','utm_campaign','URL'],
+    ...items.map(i => [i.plat.label, i.plat.source, i.plat.medium, campaign, i.url])
+  ].map(r => r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlCSV('﻿' + rows, `utm_lote_${campaign || 'campanha'}_${today()}.csv`);
+}
+
+function saveAllLote() {
+  const items = getCheckedBatchItems().filter(i => i.url);
+  if (!items.length) { alert('Nenhuma URL gerada.'); return; }
+  const campaign = document.getElementById('b_campaign').value.trim();
+  items.forEach(i => saveToHistory(i.url, i.plat.id, campaign));
+  updateHistBadge();
+  alert(`${items.length} URL${items.length > 1 ? 's salvas' : ' salva'} no histórico.`);
+}
+
+/* ════════════════════════════════════════════════════
+   UTILITIES
+════════════════════════════════════════════════════ */
+function clipCopy(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✅';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), { value: url });
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  });
+}
+
+function dlCSV(content, filename) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob), download: filename
+  });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function today() { return new Date().toISOString().slice(0, 10); }
+
+/* ════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════ */
 update();
-renderHistory();
+renderTemplates();
+updateHistBadge();
 </script>
 </body>
 </html>
