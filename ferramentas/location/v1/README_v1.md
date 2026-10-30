@@ -1,23 +1,26 @@
-# Location Taxonomy · Unilever BR
+# Location Taxonomy · Unilever BR (v1)
 
-> 🔗 **[Abrir ferramenta](https://falssp.github.io/Projeto-NC/ferramentas/location/)**
+> 🔗 **[Abrir ferramenta](https://falssp.github.io/Projeto-NC/ferramentas/location/v1/)**
 
 Ferramenta de consulta da taxonomia `Location` para campanhas Unilever BR.
 Gera valores no formato `cid-sao-rio`, `est-sp`, `reg-ne`, `nac` — prontos para copiar e usar no NC Tool.
+
+Base estática (JSON local). Para a versão com integração Google Sheets, veja [`v2/`](../v2/).
 
 ---
 
 ## Arquivos
 
 ```
-ferramentas/location/
+ferramentas/location/v1/
 ├── index.html                  ← Ferramenta (interface web)
 ├── municipios.json             ← Base de municípios BR (5.499 cidades, IBGE 2024)
 ├── UL_Location_Taxonomy.xlsx   ← Referência de valores + fluxo de alterações
 ├── reprocessar_location.py     ← Script de atualização da base
 ├── CORP_location.gs            ← Apps Script (ambiente Corp)
 ├── PESSOAL_location.gs         ← Apps Script (ambiente Pessoal / dev)
-└── README.md
+├── faq.html                    ← FAQ standalone
+└── README_v1.md
 ```
 
 ---
@@ -70,12 +73,14 @@ A coluna **Status** nas abas de dados aceita dropdown:
 3. Preencha os dados e selecione o Status no dropdown
 4. Envie o arquivo para a equipe StormX
 
-Após receber o Excel, a equipe roda o script de reprocessamento:
+Após receber o Excel, a equipe sobe o arquivo em `ferramentas/location/v1/` no GitHub.
+O workflow `reprocessar-location.yml` detecta a mudança e atualiza `municipios.json` automaticamente.
+
+Para rodar manualmente:
 
 ```bash
-# Coloque o Excel e o municipios.json na mesma pasta e rode:
+cd ferramentas/location/v1/
 python reprocessar_location.py
-
 # Revise o municipios_updated.json gerado
 # Renomeie para municipios.json e suba no GitHub
 ```
@@ -101,6 +106,4 @@ Para usar a ferramenta dentro de uma planilha Google Sheets via Apps Script:
 | Branch | Ambiente |
 |--------|----------|
 | `main` | Desenvolvimento — source of truth |
-| `gh-pages` | Produção — servido pelo GitHub Pages |
-
-> ⚠️ Sempre sincronize `main` → `gh-pages` após alterações.
+| `gh-pages` | Produção — espelha main via `deploy.yml` (não editar diretamente) |

@@ -2,8 +2,8 @@
 
 Ferramenta web para geração de valores do campo **Location** na taxonomia Unilever BR.
 
-**Link:** https://falssp.github.io/Projeto-NC/ferramentas/location-2/location-ul.html
-**Repositório:** https://github.com/falssp/Projeto-NC/tree/main/ferramentas/location-2
+**Link:** https://falssp.github.io/Projeto-NC/ferramentas/location/v2/
+**Repositório:** https://github.com/falssp/Projeto-NC/tree/main/ferramentas/location/v2
 
 ---
 
