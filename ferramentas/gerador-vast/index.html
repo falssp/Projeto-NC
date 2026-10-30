@@ -68,6 +68,19 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
 .btn-copy-url{padding:3px 7px;font-size:10px;font-weight:600;background:var(--light);color:var(--azul);border:1px solid var(--border);border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:all .15s}
 .btn-copy-url:hover{background:var(--border)}
 
+/* HISTORY */
+.history-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px}
+.history-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.history-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.history-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;transition:border-color .15s}
+.history-item:hover{border-color:var(--azul)}
+.history-item-info{flex:1;min-width:0}
+.history-item-title{font-size:12px;font-weight:600;color:var(--escuro);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.history-item-actions{display:flex;gap:5px;flex-shrink:0}
+.history-empty{font-size:12px;color:var(--muted);text-align:center;padding:12px 0}
+
 .panel{display:none}
 .panel.active{display:contents}
 
@@ -226,12 +239,22 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
       <div class="output-actions">
         <button class="btn-sm" id="btn-copy" onclick="copyXML()">📋 Copiar XML</button>
         <button class="btn-sm" id="btn-download" onclick="downloadXML()">⬇ Download XML</button>
+        <button class="btn-sm" id="btn-save" onclick="saveToHistory()">💾 Salvar no histórico</button>
       </div>
     </div>
     <div class="output-body">
       <pre id="vast-out"><!-- preencha os campos acima --></pre>
       <div id="tracking-list" class="tracking-list"></div>
     </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-card" id="history-card" style="display:none">
+    <div class="history-header">
+      <div class="history-label">📁 Histórico local</div>
+      <button class="btn-danger" onclick="clearHistory()">🗑 Limpar tudo</button>
+    </div>
+    <div class="history-list" id="history-list"></div>
   </div>
 
 </div>
@@ -349,7 +372,10 @@ ${clickTrack?`              <ClickTracking><![CDATA[${clickTrack}]]></ClickTrack
 
   const all=hasImpression?['impression',...trackingEvents]:trackingEvents;
   document.getElementById('tracking-list').innerHTML=`
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">URLs de tracking (${all.length})</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1">URLs de tracking (${all.length})</div>
+      <button class="btn-copy-url" id="btn-copy-all" onclick="copyAllUrls(this)" style="font-size:10px;padding:3px 8px">📋 Copiar todas</button>
+    </div>
     ${all.map((e,i)=>`
       <div class="tracking-item">
         <div style="font-size:11px;font-weight:600;color:var(--azul)">${e}</div>
@@ -390,6 +416,120 @@ function copyUrl(i,btn){
   });
 }
 
+function copyAllUrls(btn){
+  const items=document.querySelectorAll('.tracking-url-text');
+  if(!items.length)return;
+  const text=[...items].map(el=>el.textContent.trim()).join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='✅ Copiadas!';
+    setTimeout(()=>btn.textContent='📋 Copiar todas',2000);
+  });
+}
+
+// HISTORY
+const HIST_KEY='vast_history';
+const HIST_MAX=5;
+
+function saveToHistory(){
+  const xml=document.getElementById('vast-out').textContent;
+  if(!xml||xml.includes('preencha os campos'))return;
+  const title=v('v-title')||'Video Ad';
+  const src=v('v-src'),type=v('v-type'),cat=v('v-cat');
+  const entry={
+    id:Date.now(),
+    title,
+    mode,
+    version:v('v-version')||'3.0',
+    ts:new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),
+    fields:{
+      src,type,cat,
+      title,
+      advertiser:v('v-advertiser'),
+      version:v('v-version')||'3.0',
+      media:v('v-media'),
+      w:v('v-w'),h:v('v-h'),
+      mime:v('v-mime'),
+      dur:v('v-dur'),
+      click:v('v-click'),
+      clicktrack:v('v-clicktrack'),
+      wrapperUrl:v('v-wrapper-url'),
+    },
+    events:EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked),
+    xml
+  };
+  let hist=getHistory();
+  // remove duplicata pelo mesmo title+src+type+cat+mode
+  hist=hist.filter(h=>!(h.title===title&&h.fields.src===src&&h.fields.type===type&&h.fields.cat===cat&&h.mode===mode));
+  hist.unshift(entry);
+  if(hist.length>HIST_MAX)hist=hist.slice(0,HIST_MAX);
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}
+  renderHistory();
+  const btn=document.getElementById('btn-save');
+  btn.textContent='✅ Salvo!';
+  setTimeout(()=>btn.textContent='💾 Salvar no histórico',2000);
+}
+
+function getHistory(){
+  try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return[];}
+}
+
+function renderHistory(){
+  const hist=getHistory();
+  const card=document.getElementById('history-card');
+  const list=document.getElementById('history-list');
+  if(!hist.length){card.style.display='none';return;}
+  card.style.display='';
+  list.innerHTML=hist.map(h=>`
+    <div class="history-item" onclick="loadHistory(${h.id})">
+      <div class="history-item-info">
+        <div class="history-item-title">${esc(h.title)} <span style="font-weight:400;color:var(--muted)">(${h.mode}, VAST ${h.version})</span></div>
+        <div class="history-item-meta">${h.ts} · src=${esc(h.fields.src||'—')} · type=${esc(h.fields.type||'—')} · cat=${esc(h.fields.cat||'—')}</div>
+      </div>
+      <div class="history-item-actions" onclick="event.stopPropagation()">
+        <button class="btn-copy-url" title="Copiar XML" onclick="copyHistXml(${h.id},this)">📋</button>
+        <button class="btn-copy-url" style="color:#c62828;border-color:#ffcdd2" title="Remover" onclick="deleteHistory(${h.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadHistory(id){
+  const h=getHistory().find(x=>x.id===id);
+  if(!h)return;
+  const f=h.fields;
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val||'';};
+  set('v-src',f.src);set('v-type',f.type);set('v-cat',f.cat);
+  set('v-title',f.title);set('v-advertiser',f.advertiser);
+  set('v-version',f.version);set('v-media',f.media);
+  set('v-w',f.w);set('v-h',f.h);set('v-mime',f.mime);set('v-dur',f.dur);
+  set('v-click',f.click);set('v-clicktrack',f.clicktrack);
+  set('v-wrapper-url',f.wrapperUrl);
+  EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=h.events.includes(e);});
+  // switch mode
+  const modeBtn=document.querySelector(`.tab[onclick*="'${h.mode}'"]`);
+  if(modeBtn)switchMode(h.mode,modeBtn);
+  else gen();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function copyHistXml(id,btn){
+  const h=getHistory().find(x=>x.id===id);
+  if(!h)return;
+  navigator.clipboard.writeText(h.xml).then(()=>{
+    btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);
+  });
+}
+
+function deleteHistory(id){
+  let hist=getHistory().filter(h=>h.id!==id);
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}
+  renderHistory();
+}
+
+function clearHistory(){
+  try{localStorage.removeItem(HIST_KEY);}catch(e){}
+  renderHistory();
+}
+
 function resetForm(){
   ['v-src','v-type','v-cat','v-title','v-advertiser','v-media','v-click','v-clicktrack','v-wrapper-url'].forEach(id=>{
     const el=document.getElementById(id);
@@ -409,6 +549,7 @@ function resetForm(){
 }
 
 gen();
+renderHistory();
 
 function openHelp(){document.getElementById('helpOverlay').classList.add('open')}
 function closeHelp(){document.getElementById('helpOverlay').classList.remove('open')}
@@ -427,6 +568,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp()})
       <li><strong>Wrapper:</strong> o XML aponta para outro VAST (encadeamento). Informe a URL do VAST de destino.</li>
       <li>Marque os eventos de tracking que devem ser disparados (ex.: <em>start</em>, <em>complete</em>, <em>impression</em>).</li>
       <li>Clique em <strong>Copiar XML</strong> ou <strong>Download XML</strong> para usar a tag.</li>
+      <li>Use <strong>📋 Copiar todas</strong> no painel de tracking para copiar o bloco inteiro de URLs de uma vez (útil para QA).</li>
+      <li>Use <strong>💾 Salvar no histórico</strong> para guardar até 5 XMLs no browser — clique em um item do histórico para recarregar os campos.</li>
       <li>Use <strong>↺ Limpar campos</strong> para resetar o formulário.</li>
     </ul>
     <h3>Atenção</h3>
