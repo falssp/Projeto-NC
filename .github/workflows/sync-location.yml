@@ -12,34 +12,33 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
-      - name: Fetch Corp (fonte primária)
-        id: corp
+      - name: Fetch location.json do Web App
         run: |
           STATUS=$(curl -s -o ferramentas/location/v2/location.json -w "%{http_code}" \
-            "${{ secrets.CORP_WEBAPP_URL }}?action=json")
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-        continue-on-error: true
+            "${{ secrets.LOCATION_WEBAPP_URL }}?action=json")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Fetch falhou (HTTP $STATUS) — location.json não atualizado"
+            exit 1
+          fi
+          echo "✅ location.json obtido (HTTP $STATUS)"
 
-      - name: Validar JSON da Corp
-        id: valid
-        if: steps.corp.outputs.status == '200'
+      - name: Validar JSON
         run: |
-          python3 -c "import json,sys; d=json.load(open('ferramentas/location/v2/location.json')); assert d.get('cidade'), 'vazio'" \
-            && echo "ok=true" >> $GITHUB_OUTPUT || echo "ok=false" >> $GITHUB_OUTPUT
-        continue-on-error: true
-
-      - name: Fallback para Pessoal
-        if: steps.corp.outputs.status != '200' || steps.valid.outputs.ok != 'true'
-        run: |
-          echo "⚠️  Corp falhou — usando Pessoal como fallback"
-          curl -sf "${{ secrets.PESSOAL_WEBAPP_URL }}?action=json" -o ferramentas/location/v2/location.json
+          python3 -c "
+          import json, sys
+          with open('ferramentas/location/v2/location.json') as f:
+              d = json.load(f)
+          for chave in ('nacional','região','estado','cidade'):
+              if chave not in d and chave.replace('ã','a') not in d:
+                  print(f'❌ Chave ausente: {chave}'); sys.exit(1)
+          total = len(d.get('cidade', d.get('cidade',[])))
+          print(f'✅ JSON válido — {total} cidades')
+          "
 
       - name: Commit location.json no main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add ferramentas/location/v2/location.json
-          git diff --staged --quiet || git commit -m "chore: sync location.json [skip ci]"
-          git push
-          # [skip ci] evita que deploy.yml rode neste commit.
-          # O arquivo chega ao gh-pages no próximo push real para main.
+          git diff --staged --quiet && echo "Sem alterações." || \
+            git commit -m "chore: sync location.json [skip ci]" && git push

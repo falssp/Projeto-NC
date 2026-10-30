@@ -116,12 +116,11 @@ Gerado a partir do arquivo `UL_Location_Taxonomy.xlsx` com:
 5. Publicar → Web App → Acesso: **Somente eu**
 6. Guardar URL como secret `PESSOAL_WEBAPP_URL` no GitHub
 
-### GitHub Secrets necessários
+### GitHub Secret necessário
 
 | Secret | Valor |
 |---|---|
-| `CORP_WEBAPP_URL` | URL do Web App Corp |
-| `PESSOAL_WEBAPP_URL` | URL do Web App Pessoal |
+| `LOCATION_WEBAPP_URL` | URL do Web App GAS (conta pessoal) |
 
 ---
 
