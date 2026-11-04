@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<title>Taxonomy Builder</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+/* ==================== TOKENS ==================== */
+:root {
+  --bg:           #f1f4f9;
+  --fg:           #1a1d23;
+  --card:         #ffffff;
+  --card-border:  rgba(0,0,0,.08);
+  --header:       #0d1117;
+  --header-fg:    #e6edf3;
+  --accent:       #2563eb;
+  --accent-fg:    #ffffff;
+  --ok:           #22c55e;
+  --warn:         #f59e0b;
+  --erro:         #ef4444;
+  --faint:        rgba(0,0,0,.38);
+  --pill:         #e2e8f0;
+  --input-bg:     #ffffff;
+  --input-border: rgba(0,0,0,.18);
+  --tag-req-bg:   #dbeafe;
+  --tag-req-fg:   #1d4ed8;
+  --tag-opt-bg:   #dcfce7;
+  --tag-opt-fg:   #166534;
+  --overlay:      rgba(0,0,0,.45);
+  --modal:        #ffffff;
+  --shadow:       0 1px 4px rgba(0,0,0,.08), 0 2px 10px rgba(0,0,0,.06);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,.18);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) {
+    --bg:           #0d1117;
+    --fg:           #e6edf3;
+    --card:         #161b22;
+    --card-border:  rgba(255,255,255,.08);
+    --faint:        rgba(255,255,255,.38);
+    --pill:         #21262d;
+    --input-bg:     #0d1117;
+    --input-border: rgba(255,255,255,.18);
+    --tag-req-bg:   rgba(37,99,235,.2);
+    --tag-req-fg:   #93c5fd;
+    --tag-opt-bg:   rgba(22,101,52,.2);
+    --tag-opt-fg:   #86efac;
+    --overlay:      rgba(0,0,0,.65);
+    --modal:        #161b22;
+    --shadow:       0 1px 4px rgba(0,0,0,.3), 0 2px 10px rgba(0,0,0,.25);
+    --shadow-lg:    0 8px 32px rgba(0,0,0,.55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:           #0d1117;
+  --fg:           #e6edf3;
+  --card:         #161b22;
+  --card-border:  rgba(255,255,255,.08);
+  --faint:        rgba(255,255,255,.38);
+  --pill:         #21262d;
+  --input-bg:     #0d1117;
+  --input-border: rgba(255,255,255,.18);
+  --tag-req-bg:   rgba(37,99,235,.2);
+  --tag-req-fg:   #93c5fd;
+  --tag-opt-bg:   rgba(22,101,52,.2);
+  --tag-opt-fg:   #86efac;
+  --overlay:      rgba(0,0,0,.65);
+  --modal:        #161b22;
+  --shadow:       0 1px 4px rgba(0,0,0,.3), 0 2px 10px rgba(0,0,0,.25);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,.55);
+  color-scheme: dark;
+}
+
+/* ==================== RESET ==================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+body {
+  font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  font-size:14px;
+  background:var(--bg);
+  color:var(--fg);
+  min-height:100vh;
+}
+
+/* ==================== HEADER ==================== */
+.header {
+  background:var(--header);
+  color:var(--header-fg);
+  position:sticky;
+  top:0;
+  z-index:100;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+
+.header-inner {
+  padding:11px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.header-left{display:flex;align-items:center;gap:10px;}
+.logo{font-size:22px;line-height:1;}
+.site-title{font-size:16px;font-weight:700;color:#e6edf3;letter-spacing:-.3px;}
+.site-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px;}
+
+.header-right{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+
+#clientSelect {
+  background:rgba(255,255,255,.1);
+  color:var(--header-fg);
+  border:1.5px solid rgba(255,255,255,.2);
+  border-radius:8px;
+  padding:5px 10px;
+  font-size:13px;
+  cursor:pointer;
+  outline:none;
+  max-width:180px;
+}
+#clientSelect:focus{border-color:rgba(255,255,255,.4);}
+#clientSelect option{background:#1c2128;color:#e6edf3;}
+
+.btn-icon {
+  background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.2);
+  border-radius:8px;
+  padding:5px 9px;
+  color:var(--header-fg);
+  cursor:pointer;
+  font-size:14px;
+  transition:background .12s;
+}
+.btn-icon:hover{background:rgba(255,255,255,.18);}
+
+/* ==================== TABS ==================== */
+.tabs {
+  background:var(--header);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  display:flex;
+  padding:0 20px;
+  gap:2px;
+  overflow-x:auto;
+}
+
+.tab {
+  background:none;
+  border:none;
+  border-bottom:2px solid transparent;
+  color:rgba(255,255,255,.45);
+  padding:10px 15px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:color .12s, border-color .12s;
+}
+.tab:hover{color:rgba(255,255,255,.8);}
+.tab.active{color:#fff;border-bottom-color:var(--accent);}
+
+/* ==================== LAYOUT ==================== */
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+.page{padding:20px;}
+
+/* ==================== CARD ==================== */
+.card {
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:10px;
+  padding:18px;
+  box-shadow:var(--shadow);
+  margin-bottom:14px;
+}
+
+.card-h {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:16px;
+}
+.card-h h2{font-size:15px;font-weight:700;}
+.card-h p{font-size:12px;color:var(--faint);margin-top:2px;}
+
+/* ==================== BUTTONS ==================== */
+.btn {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 14px;
+  border-radius:7px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  transition:opacity .12s;
+  white-space:nowrap;
+}
+.btn:hover{opacity:.85;}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+
+.btn.primary{background:var(--accent);color:#fff;}
+.btn.secondary{background:var(--pill);color:var(--fg);border:1px solid var(--card-border);}
+.btn.danger{background:rgba(239,68,68,.1);color:var(--erro);border:1px solid rgba(239,68,68,.2);}
+
+.action-bar{display:flex;gap:7px;flex-wrap:wrap;}
+
+/* ==================== CLIENT GRID ==================== */
+.client-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:14px;
+}
+
+.client-card {
+  background:var(--card);
+  border:2px solid var(--card-border);
+  border-radius:10px;
+  padding:16px;
+  cursor:pointer;
+  transition:border-color .15s, box-shadow .15s;
+  position:relative;
+  box-shadow:var(--shadow);
+}
+.client-card.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12),var(--shadow);}
+.client-card:hover:not(.active){border-color:rgba(37,99,235,.4);}
+
+.client-card-actions {
+  position:absolute;
+  top:10px;right:10px;
+  display:flex;gap:4px;
+  opacity:0;
+  transition:opacity .15s;
+}
+.client-card:hover .client-card-actions{opacity:1;}
+.client-card-actions button {
+  background:var(--bg);
+  border:1px solid var(--card-border);
+  border-radius:5px;
+  padding:3px 7px;font-size:11px;
+  cursor:pointer;color:var(--fg);
+}
+.client-card-actions button:hover{background:var(--pill);}
+
+.active-badge {
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(37,99,235,.12);color:var(--accent);
+  border-radius:20px;padding:2px 8px;
+  font-size:10px;font-weight:700;
+  margin-bottom:7px;
+}
+
+.client-card-name{font-size:15px;font-weight:700;margin-bottom:5px;}
+.client-card-meta{font-size:12px;color:var(--faint);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+
+.sep-chip{font-family:monospace;background:var(--pill);padding:1px 6px;border-radius:4px;font-size:11px;}
+
+.segments-strip{display:flex;flex-wrap:wrap;gap:4px;}
+
+.seg-tag {
+  font-size:10px;padding:2px 6px;border-radius:20px;font-weight:700;
+}
+.seg-tag.required{background:var(--tag-req-bg);color:var(--tag-req-fg);}
+.seg-tag.optional {background:var(--tag-opt-bg);color:var(--tag-opt-fg);}
+
+/* ==================== PILLS ==================== */
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+
+.pill {
+  padding:5px 13px;border-radius:20px;
+  background:var(--pill);color:var(--fg);
+  border:1.5px solid transparent;
+  font-size:12px;font-weight:600;
+  cursor:pointer;transition:all .12s;
+}
+.pill:hover:not(.active){border-color:var(--accent);}
+.pill.active{background:var(--accent);color:#fff;}
+
+/* ==================== TERM LIST ==================== */
+.term-list{display:flex;flex-direction:column;gap:5px;}
+
+.term-row {
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;
+  background:var(--bg);
+  border:1px solid var(--card-border);
+  border-radius:7px;
+  font-size:13px;
+  position:relative;
+}
+.term-row-num{font-size:11px;color:var(--faint);min-width:20px;text-align:right;}
+.term-row-value{font-family:monospace;font-size:12px;color:var(--accent);min-width:110px;font-weight:600;}
+.term-row-label{flex:1;font-weight:500;}
+.term-row-desc{color:var(--faint);font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.term-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s;flex-shrink:0;}
+.term-row:hover .term-actions{opacity:1;}
+.term-actions button {
+  background:none;border:1px solid var(--card-border);
+  border-radius:4px;padding:2px 6px;font-size:11px;
+  cursor:pointer;color:var(--faint);
+}
+.term-actions button:hover{background:var(--pill);}
+.term-actions button.del:hover{color:var(--erro);border-color:var(--erro);background:rgba(239,68,68,.07);}
+
+/* Add term form */
+.add-term-form{margin-top:14px;}
+.add-term-form-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:7px;}
+.add-term-row{display:grid;grid-template-columns:140px 1fr 1.5fr auto;gap:7px;align-items:start;}
+
+@media (max-width:640px) {
+  .add-term-row{grid-template-columns:1fr 1fr;}
+  .add-term-row > div:nth-child(3){grid-column:1/-1;}
+}
+
+.add-term-row input {
+  width:100%;padding:7px 10px;
+  border:1px solid var(--input-border);
+  border-radius:6px;font-size:13px;
+  background:var(--input-bg);color:var(--fg);
+}
+.add-term-row input:focus{outline:none;border-color:var(--accent);}
+
+/* Inline edit row */
+.term-row.editing{flex-wrap:wrap;}
+.term-row.editing input {
+  flex:1;padding:4px 8px;
+  border:1px solid var(--input-border);
+  border-radius:5px;font-size:12px;
+  background:var(--input-bg);color:var(--fg);
+  min-width:80px;
+}
+.term-row.editing input:focus{outline:none;border-color:var(--accent);}
+
+/* ==================== BUILDER ==================== */
+.builder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+
+.builder-seg{
+  background:var(--bg);border:1px solid var(--card-border);
+  border-radius:8px;padding:12px;
+}
+.builder-seg-label{
+  font-size:11px;font-weight:700;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--faint);
+  margin-bottom:7px;display:flex;align-items:center;gap:5px;
+}
+.builder-seg select, .builder-seg input[type=text] {
+  width:100%;padding:8px 10px;
+  border:1px solid var(--input-border);border-radius:6px;
+  font-size:13px;background:var(--input-bg);color:var(--fg);
+}
+.builder-seg select:focus, .builder-seg input[type=text]:focus{outline:none;border-color:var(--accent);}
+
+.preview-box {
+  background:var(--bg);
+  border:2px solid var(--card-border);
+  border-radius:8px;
+  padding:16px 18px;
+  font-family:monospace;
+  font-size:15px;
+  letter-spacing:.01em;
+  color:var(--accent);
+  word-break:break-all;
+  min-height:54px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:1px;
+  line-height:1.6;
+}
+.preview-sep{color:var(--faint);margin:0 1px;}
+.preview-seg.missing{color:var(--erro);font-style:italic;}
+
+/* ==================== VALIDADOR ==================== */
+.val-textarea {
+  width:100%;padding:10px 14px;
+  border:1px solid var(--input-border);border-radius:8px;
+  font-size:14px;font-family:monospace;
+  background:var(--input-bg);color:var(--fg);
+  resize:vertical;min-height:60px;
+}
+.val-textarea:focus{outline:none;border-color:var(--accent);}
+
+.val-results{display:flex;flex-direction:column;gap:6px;margin-top:14px;}
+
+.val-seg {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:8px;
+  font-size:13px;border:1px solid;
+}
+.val-seg.ok{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.22);}
+.val-seg.warn{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.22);}
+.val-seg.err{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.22);}
+.val-seg.info{background:rgba(37,99,235,.07);border-color:rgba(37,99,235,.22);}
+
+.val-seg-icon{font-size:16px;flex-shrink:0;}
+.val-seg-name{font-weight:700;min-width:90px;flex-shrink:0;}
+.val-seg-value{font-family:monospace;font-size:12px;color:var(--accent);}
+.val-seg-msg{color:var(--faint);font-size:12px;margin-left:auto;text-align:right;}
+
+/* ==================== MODAL ==================== */
+.overlay {
+  position:fixed;inset:0;
+  background:var(--overlay);
+  z-index:200;
+  display:none;
+  backdrop-filter:blur(2px);
+}
+.overlay.show{display:block;}
+
+.modal {
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:var(--modal);
+  border-radius:12px;padding:24px;
+  width:min(560px,calc(100vw - 32px));
+  max-height:calc(100vh - 64px);
+  overflow-y:auto;
+  z-index:201;
+  box-shadow:var(--shadow-lg);
+  display:none;
+  border:1px solid var(--card-border);
+}
+.modal.show{display:block;}
+
+.modal-title {
+  font-size:17px;font-weight:700;
+  margin-bottom:20px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--faint);line-height:1;padding:2px;}
+.modal-close:hover{color:var(--fg);}
+
+.field-group{margin-bottom:14px;}
+.field-group label {
+  display:block;font-size:11px;font-weight:700;
+  margin-bottom:5px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.field-group input,.field-group select {
+  width:100%;padding:8px 10px;
+  border:1px solid var(--input-border);border-radius:7px;
+  font-size:14px;background:var(--input-bg);color:var(--fg);
+}
+.field-group input:focus,.field-group select:focus{outline:none;border-color:var(--accent);}
+.field-group .hint{font-size:11px;color:var(--faint);margin-top:4px;}
+
+/* Segment editor in modal */
+.seg-editor-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+.seg-editor-row {
+  display:flex;align-items:center;gap:6px;
+  padding:8px 10px;
+  background:var(--bg);border:1px solid var(--card-border);border-radius:6px;
+}
+.seg-order-btns{display:flex;flex-direction:column;gap:1px;}
+.seg-order-btn {
+  background:none;border:none;cursor:pointer;color:var(--faint);
+  font-size:12px;line-height:1;padding:1px 3px;
+}
+.seg-order-btn:hover{color:var(--fg);}
+
+.seg-editor-row input {
+  flex:1;padding:5px 8px;
+  border:1px solid var(--input-border);border-radius:5px;
+  font-size:13px;background:var(--input-bg);color:var(--fg);
+}
+.seg-editor-row input:focus{outline:none;border-color:var(--accent);}
+
+.req-toggle {
+  font-size:10px;font-weight:700;padding:3px 8px;
+  border-radius:20px;cursor:pointer;border:1.5px solid;
+  transition:all .12s;white-space:nowrap;
+}
+.req-toggle.required{background:var(--tag-req-bg);color:var(--tag-req-fg);border-color:var(--tag-req-fg);}
+.req-toggle.optional{background:var(--tag-opt-bg);color:var(--tag-opt-fg);border-color:var(--tag-opt-fg);}
+
+.seg-del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:17px;line-height:1;padding:1px;}
+.seg-del:hover{color:var(--erro);}
+
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-state{text-align:center;padding:36px 20px;color:var(--faint);}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:14px;}
+
+/* ==================== TOAST ==================== */
+#toast {
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:#1a1d23;color:#e6edf3;
+  padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;
+  opacity:0;transition:opacity .2s, transform .2s;
+  pointer-events:none;z-index:999;white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <span class="logo">🏷️</span>
+      <div>
+        <div class="site-title">Taxonomy Builder</div>
+        <div class="site-sub">Nomenclatura de campanhas por cliente</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <select id="clientSelect" onchange="switchClient(this.value)" title="Cliente ativo"></select>
+      <button class="btn-icon" id="themeBtn" onclick="cycleTheme()" title="Alternar tema">🌓</button>
+    </div>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs">
+  <button class="tab active"  data-tab="clientes"   onclick="switchTab('clientes')">👥 Clientes</button>
+  <button class="tab"         data-tab="dicionario" onclick="switchTab('dicionario')">📚 Dicionário</button>
+  <button class="tab"         data-tab="builder"    onclick="switchTab('builder')">🏗️ Builder</button>
+  <button class="tab"         data-tab="validador"  onclick="switchTab('validador')">✅ Validador</button>
+</nav>
+
+<!-- TAB: CLIENTES -->
+<div id="tab-clientes" class="tab-content active">
+  <div class="page">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <h2>Clientes</h2>
+          <p>Cada cliente tem estrutura própria de segmentos e dicionário de termos</p>
+        </div>
+        <div class="action-bar">
+          <button class="btn secondary btn-sm" onclick="triggerImport()">⬆ Importar JSON</button>
+          <button class="btn primary btn-sm" onclick="openAddClient()">+ Novo cliente</button>
+        </div>
+      </div>
+      <div id="clientGrid" class="client-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: DICIONÁRIO -->
+<div id="tab-dicionario" class="tab-content">
+  <div class="page">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <h2 id="dictTitle">Dicionário</h2>
+          <p id="dictMeta">Selecione um cliente para gerenciar os termos</p>
+        </div>
+        <div class="action-bar">
+          <button class="btn secondary btn-sm" onclick="exportJSON()">⬇ JSON</button>
+          <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
+        </div>
+      </div>
+      <div id="dictSegPills" class="pills"></div>
+      <div id="dictTermArea"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: BUILDER -->
+<div id="tab-builder" class="tab-content">
+  <div class="page">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h">
+        <div>
+          <h2>Builder</h2>
+          <p id="builderMeta">Selecione um cliente para começar</p>
+        </div>
+        <div class="action-bar">
+          <button class="btn secondary btn-sm" onclick="clearBuilder()">✕ Limpar</button>
+        </div>
+      </div>
+      <div id="builderSegs" class="builder-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div><h2>Nome gerado</h2><p>Clique para copiar</p></div>
+        <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
+      </div>
+      <div id="previewBox" class="preview-box"><span style="color:var(--faint)">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: VALIDADOR -->
+<div id="tab-validador" class="tab-content">
+  <div class="page">
+    <div class="card">
+      <div class="card-h">
+        <div><h2>Validador</h2><p id="valMeta">Cole o nome da campanha para validar segmento a segmento</p></div>
+        <button class="btn secondary btn-sm" onclick="clearValidator()">✕ Limpar</button>
+      </div>
+      <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video_q1-2026" oninput="validateName()"></textarea>
+      <div id="valResults" class="val-results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + MODAL -->
+<div id="overlay" class="overlay" onclick="closeModal()"></div>
+<div id="modal" class="modal">
+  <div class="modal-title">
+    <span id="modalTitle">Novo cliente</span>
+    <button class="modal-close" onclick="closeModal()">×</button>
+  </div>
+  <div id="modalBody"></div>
+  <div class="modal-actions">
+    <button class="btn secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveClient()">Salvar</button>
+  </div>
+</div>
+
+<!-- Hidden import input -->
+<input type="file" id="importInput" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* =============================================
+   DATA + STORAGE
+   ============================================= */
+
+const STORE_KEY  = 'taxo_clients_v1';
+const ACTIVE_KEY = 'taxo_active_v1';
+const THEME_KEY  = 'taxo_theme_v1';
+
+const DEFAULT_CLIENTS = [
+  {
+    id:'ul',
+    name:'Unilever BR',
+    separator:'_',
+    segments:[
+      {id:'advertiser', label:'Advertiser', required:true},
+      {id:'produto',    label:'Produto',    required:true},
+      {id:'objetivo',   label:'Objetivo',   required:true},
+      {id:'formato',    label:'Formato',    required:false},
+      {id:'periodo',    label:'Período',    required:false},
+    ],
+    dictionary:{
+      advertiser:[
+        {value:'axe',       label:'Axe'},
+        {value:'cif',       label:'Cif'},
+        {value:'closeup',   label:'Close Up'},
+        {value:'dove',      label:'Dove'},
+        {value:'hellmanns', label:"Hellmann's"},
+        {value:'knorr',     label:'Knorr'},
+        {value:'omo',       label:'OMO'},
+        {value:'rexona',    label:'Rexona'},
+        {value:'seda',      label:'Seda'},
+        {value:'tresemme',  label:'TRESemmé'},
+        {value:'vaseline',  label:'Vaseline'},
+      ],
+      produto:[
+        {value:'body-lotion',   label:'Body Lotion'},
+        {value:'condicionador', label:'Condicionador'},
+        {value:'creme-de-pele', label:'Creme de Pele'},
+        {value:'desodorante',   label:'Desodorante'},
+        {value:'detergente',    label:'Detergente'},
+        {value:'hidratante',    label:'Hidratante'},
+        {value:'multiuso',      label:'Multiuso'},
+        {value:'sabonete',      label:'Sabonete'},
+        {value:'shampoo',       label:'Shampoo'},
+      ],
+      objetivo:[
+        {value:'awareness',     label:'Awareness'},
+        {value:'consideration', label:'Consideration'},
+        {value:'conversion',    label:'Conversion'},
+        {value:'engagement',    label:'Engagement'},
+        {value:'lead',          label:'Lead Generation'},
+        {value:'reach',         label:'Reach'},
+        {value:'traffic',       label:'Traffic'},
+        {value:'views',         label:'Views'},
+      ],
+      formato:[
+        {value:'banner',     label:'Banner'},
+        {value:'carousel',   label:'Carousel'},
+        {value:'collection', label:'Collection'},
+        {value:'display',    label:'Display'},
+        {value:'nativo',     label:'Nativo'},
+        {value:'reel',       label:'Reel'},
+        {value:'story',      label:'Story'},
+        {value:'texto',      label:'Texto'},
+        {value:'video',      label:'Vídeo'},
+      ],
+      periodo:[
+        {value:'q1-2025',label:'Q1 2025'},{value:'q2-2025',label:'Q2 2025'},
+        {value:'q3-2025',label:'Q3 2025'},{value:'q4-2025',label:'Q4 2025'},
+        {value:'q1-2026',label:'Q1 2026'},{value:'q2-2026',label:'Q2 2026'},
+        {value:'q3-2026',label:'Q3 2026'},{value:'q4-2026',label:'Q4 2026'},
+        {value:'jan25',label:'Jan/25'},{value:'fev25',label:'Fev/25'},{value:'mar25',label:'Mar/25'},
+        {value:'abr25',label:'Abr/25'},{value:'mai25',label:'Mai/25'},{value:'jun25',label:'Jun/25'},
+        {value:'jul25',label:'Jul/25'},{value:'ago25',label:'Ago/25'},{value:'set25',label:'Set/25'},
+        {value:'out25',label:'Out/25'},{value:'nov25',label:'Nov/25'},{value:'dez25',label:'Dez/25'},
+        {value:'jan26',label:'Jan/26'},{value:'fev26',label:'Fev/26'},{value:'mar26',label:'Mar/26'},
+        {value:'abr26',label:'Abr/26'},{value:'mai26',label:'Mai/26'},{value:'jun26',label:'Jun/26'},
+        {value:'jul26',label:'Jul/26'},{value:'ago26',label:'Ago/26'},{value:'set26',label:'Set/26'},
+        {value:'out26',label:'Out/26'},{value:'nov26',label:'Nov/26'},{value:'dez26',label:'Dez/26'},
+      ],
+    }
+  }
+];
+
+let clients   = [];
+let activeId  = null;
+let activeSeg = null;   // active segment id in dictionary tab
+let builderVals = {};   // segId → value
+let modalMode = 'add';  // 'add'|'edit'
+let editingId = null;
+let modalSegs = [];     // working segments in modal
+
+function loadData() {
+  try { clients = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') || deepCopy(DEFAULT_CLIENTS); }
+  catch { clients = deepCopy(DEFAULT_CLIENTS); }
+  try { activeId = localStorage.getItem(ACTIVE_KEY) || clients[0]?.id || null; }
+  catch { activeId = clients[0]?.id || null; }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(clients));
+    localStorage.setItem(ACTIVE_KEY, activeId || '');
+  } catch {}
+}
+
+function getClient(id) { return clients.find(c=>c.id===id)||null; }
+function active()       { return getClient(activeId); }
+function deepCopy(o)    { return JSON.parse(JSON.stringify(o)); }
+
+/* =============================================
+   THEME
+   ============================================= */
+const THEMES = ['system','light','dark'];
+let themeIdx = 0;
+
+function loadTheme() {
+  try { themeIdx = Math.max(0, THEMES.indexOf(localStorage.getItem(THEME_KEY)||'system')); } catch {}
+  applyTheme();
+}
+
+function cycleTheme() {
+  themeIdx = (themeIdx+1)%THEMES.length;
+  try { localStorage.setItem(THEME_KEY, THEMES[themeIdx]); } catch {}
+  applyTheme();
+}
+
+function applyTheme() {
+  const root = document.documentElement;
+  const t = THEMES[themeIdx];
+  root.removeAttribute('data-theme');
+  if(t!=='system') root.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = {system:'🌓',light:'☀️',dark:'🌙'}[t];
+}
+
+/* =============================================
+   TAB SWITCHING
+   ============================================= */
+let currentTab = 'clientes';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  renderCurrent();
+}
+
+function renderCurrent() {
+  if(currentTab==='clientes')   renderClientes();
+  if(currentTab==='dicionario') renderDicionario();
+  if(currentTab==='builder')    renderBuilder();
+  if(currentTab==='validador')  renderValidador();
+}
+
+function renderClientSelect() {
+  const sel = document.getElementById('clientSelect');
+  sel.innerHTML = '';
+  if(!clients.length) {
+    sel.innerHTML = '<option value="">Nenhum cliente</option>';
+    return;
+  }
+  clients.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name; o.selected = c.id===activeId;
+    sel.appendChild(o);
+  });
+}
+
+function switchClient(id) {
+  activeId = id;
+  activeSeg = null;
+  builderVals = {};
+  saveData();
+  renderCurrent();
+}
+
+/* =============================================
+   TAB: CLIENTES
+   ============================================= */
+function renderClientes() {
+  const grid = document.getElementById('clientGrid');
+  if(!clients.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><p>Nenhum cliente. Clique em <strong>+ Novo cliente</strong> para começar.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  clients.forEach(c => {
+    const isAct = c.id===activeId;
+    const termCount = Object.values(c.dictionary||{}).reduce((a,b)=>a+b.length, 0);
+    const segsHtml = c.segments.map(s=>
+      `<span class="seg-tag ${s.required?'required':'optional'}">${esc(s.label)}</span>`
+    ).join('');
+
+    const div = document.createElement('div');
+    div.className = 'client-card'+(isAct?' active':'');
+    div.onclick = () => { activeId=c.id; activeSeg=null; builderVals={}; saveData(); renderClientSelect(); renderClientes(); };
+    div.innerHTML = `
+      <div class="client-card-actions">
+        <button title="Editar" onclick="event.stopPropagation();openEditClient('${c.id}')">✏️</button>
+        <button title="Exportar JSON" onclick="event.stopPropagation();exportJSON('${c.id}')">⬇️</button>
+        <button title="Excluir" onclick="event.stopPropagation();deleteClient('${c.id}')">🗑️</button>
+      </div>
+      ${isAct ? '<div class="active-badge">✓ Ativo</div>' : ''}
+      <div class="client-card-name">${esc(c.name)}</div>
+      <div class="client-card-meta">
+        <span>Sep: <span class="sep-chip">${esc(c.separator)}</span></span>
+        <span>${c.segments.length} segmentos</span>
+        <span>${termCount} termos</span>
+      </div>
+      <div class="segments-strip">${segsHtml}</div>
+    `;
+    grid.appendChild(div);
+  });
+  renderClientSelect();
+}
+
+function deleteClient(id) {
+  const c = getClient(id);
+  if(!c || !confirm(`Excluir "${c.name}"? Todos os dados serão perdidos.`)) return;
+  clients = clients.filter(x=>x.id!==id);
+  if(activeId===id) { activeId = clients[0]?.id||null; activeSeg=null; builderVals={}; }
+  saveData(); renderClientSelect(); renderClientes();
+}
+
+/* =============================================
+   MODAL: ADD / EDIT CLIENT
+   ============================================= */
+function openAddClient() {
+  modalMode='add'; editingId=null;
+  modalSegs = [{id:genId(), label:'', required:true}];
+  document.getElementById('modalTitle').textContent='Novo cliente';
+  renderModalBody({name:'',separator:'_'});
+  showModal();
+}
+
+function openEditClient(id) {
+  modalMode='edit'; editingId=id;
+  const c=getClient(id); if(!c) return;
+  modalSegs = c.segments.map(s=>({...s}));
+  document.getElementById('modalTitle').textContent='Editar cliente';
+  renderModalBody(c);
+  showModal();
+}
+
+function renderModalBody(c) {
+  const name = c.name||''; const sep = c.separator||'_';
+
+  const segsHtml = modalSegs.map((s,i)=>`
+    <div class="seg-editor-row" id="srow-${s.id}">
+      <div class="seg-order-btns">
+        <button class="seg-order-btn" title="Subir" onclick="moveModalSeg(${i},-1)">▲</button>
+        <button class="seg-order-btn" title="Descer" onclick="moveModalSeg(${i},1)">▼</button>
+      </div>
+      <input type="text" placeholder="Nome do segmento" value="${esc(s.label)}" data-si="${i}"
+        oninput="modalSegs[${i}].label=this.value">
+      <button class="req-toggle ${s.required?'required':'optional'}" onclick="toggleReq(${i})">
+        ${s.required?'Obrigatório':'Opcional'}
+      </button>
+      <button class="seg-del" title="Remover" onclick="removeModalSeg(${i})">×</button>
+    </div>
+  `).join('');
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="field-group">
+      <label>Nome do cliente</label>
+      <input type="text" id="mName" value="${esc(name)}" placeholder="Ex: Unilever BR">
+    </div>
+    <div class="field-group">
+      <label>Separador</label>
+      <input type="text" id="mSep" value="${esc(sep)}" maxlength="3" style="max-width:70px">
+      <div class="hint">Caractere entre os segmentos (ex: _ ou -)</div>
+    </div>
+    <div class="field-group">
+      <label>Segmentos (em ordem)</label>
+      <div class="seg-editor-list" id="segList">${segsHtml}</div>
+      <button class="btn secondary btn-sm" onclick="addModalSeg()">+ Segmento</button>
+    </div>
+  `;
+}
+
+function readModalInputs() {
+  document.querySelectorAll('#segList input[data-si]').forEach(inp=>{
+    const i = +inp.dataset.si;
+    if(modalSegs[i]) modalSegs[i].label = inp.value.trim();
+  });
+}
+
+function addModalSeg() {
+  readModalInputs();
+  modalSegs.push({id:genId(), label:'', required:true});
+  renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
+}
+
+function removeModalSeg(i) {
+  readModalInputs();
+  modalSegs.splice(i,1);
+  renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
+}
+
+function moveModalSeg(i, dir) {
+  readModalInputs();
+  const j = i+dir;
+  if(j<0||j>=modalSegs.length) return;
+  [modalSegs[i],modalSegs[j]] = [modalSegs[j],modalSegs[i]];
+  renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
+}
+
+function toggleReq(i) {
+  readModalInputs();
+  modalSegs[i].required = !modalSegs[i].required;
+  renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
+}
+
+function saveClient() {
+  readModalInputs();
+  const name = document.getElementById('mName')?.value.trim();
+  const sep  = document.getElementById('mSep')?.value || '_';
+  if(!name) { showToast('Digite o nome do cliente.'); return; }
+  const validSegs = modalSegs.filter(s=>s.label.trim());
+  if(!validSegs.length) { showToast('Adicione pelo menos um segmento.'); return; }
+
+  if(modalMode==='add') {
+    const id = slug(name);
+    if(clients.find(c=>c.id===id)) { showToast('Já existe cliente com esse nome.'); return; }
+    const dict = {};
+    validSegs.forEach(s=>{ dict[s.id]=[]; });
+    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required})), dictionary:dict});
+    activeId = id;
+  } else {
+    const c = getClient(editingId); if(!c) return;
+    const newDict = {};
+    validSegs.forEach(s=>{ newDict[s.id] = c.dictionary[s.id]||[]; });
+    c.name=name; c.separator=sep;
+    c.segments=validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required}));
+    c.dictionary=newDict;
+  }
+
+  saveData(); closeModal(); activeSeg=null; builderVals={};
+  renderClientSelect(); renderClientes();
+  if(currentTab==='dicionario') renderDicionario();
+  if(currentTab==='builder') renderBuilder();
+  if(currentTab==='validador') renderValidador();
+}
+
+function showModal()  { document.getElementById('overlay').classList.add('show'); document.getElementById('modal').classList.add('show'); setTimeout(()=>document.getElementById('mName')?.focus(),80); }
+function closeModal() { document.getElementById('overlay').classList.remove('show'); document.getElementById('modal').classList.remove('show'); }
+
+/* =============================================
+   TAB: DICIONÁRIO
+   ============================================= */
+function renderDicionario() {
+  const c = active();
+  document.getElementById('dictTitle').textContent = c ? `Dicionário · ${c.name}` : 'Dicionário';
+  document.getElementById('dictMeta').textContent  = c
+    ? `Separador: "${c.separator}" · ${c.segments.length} segmentos`
+    : 'Selecione um cliente';
+
+  const pillsEl = document.getElementById('dictSegPills');
+  const areaEl  = document.getElementById('dictTermArea');
+
+  if(!c) {
+    pillsEl.innerHTML='';
+    areaEl.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><p>Selecione um cliente.</p></div>';
+    return;
+  }
+
+  // Ensure activeSeg is valid
+  if(!c.segments.find(s=>s.id===activeSeg)) activeSeg = c.segments[0]?.id||null;
+
+  pillsEl.innerHTML='';
+  c.segments.forEach(s=>{
+    const count = (c.dictionary[s.id]||[]).length;
+    const btn = document.createElement('button');
+    btn.className='pill'+(s.id===activeSeg?' active':'');
+    btn.textContent = `${s.label} ${count?`(${count})`:''}`;
+    btn.onclick=()=>{ activeSeg=s.id; renderDicionario(); };
+    pillsEl.appendChild(btn);
+  });
+
+  renderTermArea(c);
+}
+
+function renderTermArea(c) {
+  const areaEl = document.getElementById('dictTermArea');
+  if(!activeSeg||!c) { areaEl.innerHTML=''; return; }
+
+  const seg   = c.segments.find(s=>s.id===activeSeg);
+  if(!seg) return;
+  const terms = c.dictionary[activeSeg]||[];
+
+  let listHtml='';
+  if(!terms.length) {
+    listHtml='<div class="empty-state" style="padding:16px 0"><p>Nenhum termo em <strong>'+esc(seg.label)+'</strong>. Adicione abaixo.</p></div>';
+  } else {
+    listHtml=`<div class="term-list">`+terms.map((t,i)=>`
+      <div class="term-row" id="tr-${i}">
+        <span class="term-row-num">${i+1}</span>
+        <span class="term-row-value">${esc(t.value)}</span>
+        <span class="term-row-label">${esc(t.label)}</span>
+        ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
+        <div class="term-actions">
+          <button onclick="editTerm(${i})">✏️</button>
+          <button class="del" onclick="deleteTerm(${i})">✕</button>
+        </div>
+      </div>
+    `).join('')+`</div>`;
+  }
+
+  areaEl.innerHTML=`${listHtml}
+    <div class="add-term-form">
+      <div class="add-term-form-title">Novo termo</div>
+      <div class="add-term-row">
+        <div><input type="text" id="tv" placeholder="valor (ex: dove)" oninput="autoSlug()"></div>
+        <div><input type="text" id="tl" placeholder="Label (ex: Dove)"></div>
+        <div><input type="text" id="td" placeholder="Descrição (opcional)"></div>
+        <div><button class="btn primary" onclick="addTerm()">+ Add</button></div>
+      </div>
+    </div>
+  `;
+
+  // Enter key on add inputs
+  ['tv','tl','td'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') addTerm(); });
+  });
+  setTimeout(()=>document.getElementById('tv')?.focus(),50);
+}
+
+function autoSlug() {
+  const inp=document.getElementById('tv'); if(!inp) return;
+  inp.value=inp.value.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/\s+/g,'-').replace(/[^a-z0-9\-_.]/g,'');
+}
+
+function addTerm() {
+  const c=active(); if(!c||!activeSeg) return;
+  const val   = document.getElementById('tv')?.value.trim();
+  const label = document.getElementById('tl')?.value.trim();
+  const desc  = document.getElementById('td')?.value.trim();
+  if(!val)   { highlight('tv'); return; }
+  if(!label) { highlight('tl'); return; }
+  if(!c.dictionary[activeSeg]) c.dictionary[activeSeg]=[];
+  if(c.dictionary[activeSeg].find(t=>t.value===val)) { highlight('tv'); showToast('Valor já existe neste segmento'); return; }
+  c.dictionary[activeSeg].push({value:val, label, ...(desc?{desc}:{})});
+  saveData(); renderDicionario();
+}
+
+function deleteTerm(i) {
+  const c=active(); if(!c||!activeSeg) return;
+  c.dictionary[activeSeg].splice(i,1);
+  saveData(); renderDicionario();
+}
+
+function editTerm(i) {
+  const c=active(); if(!c||!activeSeg) return;
+  const t=c.dictionary[activeSeg][i]; if(!t) return;
+  const row=document.getElementById(`tr-${i}`); if(!row) return;
+  row.classList.add('editing');
+  row.innerHTML=`
+    <span class="term-row-num">${i+1}</span>
+    <input type="text" value="${esc(t.value)}" id="ev" style="font-family:monospace;color:var(--accent);flex:0 0 110px">
+    <input type="text" value="${esc(t.label)}" id="el" style="flex:1">
+    <input type="text" value="${esc(t.desc||'')}" id="ed" placeholder="Descrição" style="flex:1.5">
+    <button class="btn primary btn-sm" onclick="saveEditTerm(${i})">✓</button>
+    <button class="btn secondary btn-sm" onclick="renderDicionario()">✕</button>
+  `;
+  document.getElementById('ev')?.focus();
+  ['ev','el','ed'].forEach(id=>{
+    document.getElementById(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') saveEditTerm(i); if(e.key==='Escape') renderDicionario(); });
+  });
+}
+
+function saveEditTerm(i) {
+  const c=active(); if(!c||!activeSeg) return;
+  const val   = document.getElementById('ev')?.value.trim();
+  const label = document.getElementById('el')?.value.trim();
+  const desc  = document.getElementById('ed')?.value.trim();
+  if(!val||!label) return;
+  c.dictionary[activeSeg][i]={value:val, label, ...(desc?{desc}:{})};
+  saveData(); renderDicionario();
+}
+
+/* =============================================
+   EXPORT / IMPORT
+   ============================================= */
+function exportJSON(id) {
+  const c=getClient(id||activeId); if(!c) { showToast('Nenhum cliente selecionado'); return; }
+  dlBlob(JSON.stringify(c,null,2), `taxo-${c.id}.json`, 'application/json');
+  showToast('JSON exportado');
+}
+
+function exportCSV(id) {
+  const c=getClient(id||activeId); if(!c) { showToast('Nenhum cliente selecionado'); return; }
+  const rows=[['cliente','segmento','valor','label','descricao']];
+  c.segments.forEach(s=>{
+    (c.dictionary[s.id]||[]).forEach(t=>{
+      rows.push([c.name, s.label, t.value, t.label, t.desc||'']);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  dlBlob('﻿'+csv, `taxo-${c.id}.csv`, 'text/csv');
+  showToast('CSV exportado');
+}
+
+function triggerImport() { document.getElementById('importInput').click(); }
+
+function handleImport(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try {
+      const data=JSON.parse(ev.target.result);
+      const list=Array.isArray(data)?data:[data];
+      let imported=0;
+      list.forEach(c=>{
+        if(!c.id||!c.name||!c.segments) return;
+        if(!c.dictionary) c.dictionary={};
+        c.segments.forEach(s=>{ if(!c.dictionary[s.id]) c.dictionary[s.id]=[]; });
+        const idx=clients.findIndex(x=>x.id===c.id);
+        if(idx>=0) clients[idx]=c; else clients.push(c);
+        imported++;
+      });
+      if(imported) {
+        activeId=list[0]?.id||activeId;
+        activeSeg=null; builderVals={};
+        saveData(); renderClientSelect(); renderClientes();
+        showToast(`${imported} cliente(s) importado(s)`);
+      } else {
+        showToast('Nenhum cliente válido no arquivo');
+      }
+    } catch { showToast('Erro ao ler o arquivo JSON'); }
+  };
+  r.readAsText(f);
+  e.target.value='';
+}
+
+/* =============================================
+   TAB: BUILDER
+   ============================================= */
+function renderBuilder() {
+  const c=active();
+  document.getElementById('builderMeta').textContent=c
+    ? `${c.name} · separador: "${c.separator}"`
+    : 'Selecione um cliente para começar';
+
+  const segsEl=document.getElementById('builderSegs');
+  if(!c) {
+    segsEl.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🏗️</div><p>Selecione um cliente.</p></div>';
+    updatePreview();
+    return;
+  }
+
+  segsEl.innerHTML='';
+  c.segments.forEach(s=>{
+    const terms=c.dictionary[s.id]||[];
+    const curVal=builderVals[s.id]||'';
+    const div=document.createElement('div');
+    div.className='builder-seg';
+
+    const badge=`<span class="seg-tag ${s.required?'required':'optional'}" style="font-size:9px;padding:1px 5px">${s.required?'req':'opt'}</span>`;
+
+    if(terms.length>0) {
+      div.innerHTML=`
+        <div class="builder-seg-label">${esc(s.label)} ${badge}</div>
+        <select onchange="builderVals['${s.id}']=this.value;updatePreview()">
+          <option value="">${s.required?'— selecione —':'— vazio (opcional) —'}</option>
+          ${terms.map(t=>`<option value="${esc(t.value)}"${curVal===t.value?' selected':''}>${esc(t.label)}</option>`).join('')}
+        </select>
+      `;
+    } else {
+      div.innerHTML=`
+        <div class="builder-seg-label">${esc(s.label)} ${badge} <span style="color:var(--warn);font-size:10px">(sem termos)</span></div>
+        <input type="text" placeholder="valor livre" value="${esc(curVal)}"
+          oninput="builderVals['${s.id}']=this.value;updatePreview()">
+      `;
+    }
+    segsEl.appendChild(div);
+  });
+  updatePreview();
+}
+
+function updatePreview() {
+  const c=active();
+  const box=document.getElementById('previewBox');
+  if(!c) { box.innerHTML='<span style="color:var(--faint)">—</span>'; return; }
+
+  const sep=c.separator;
+  let parts=c.segments.map(s=>({val:builderVals[s.id]||'',required:s.required,label:s.label}));
+
+  // Trim trailing empty optional segments
+  while(parts.length>0 && !parts[parts.length-1].val && !parts[parts.length-1].required) parts.pop();
+
+  if(parts.every(p=>!p.val)) {
+    box.innerHTML='<span style="color:var(--faint)">Preencha os campos acima</span>';
+    return;
+  }
+
+  box.innerHTML=parts.map((p,i)=>{
+    const seg=p.val?`<span class="preview-seg">${esc(p.val)}</span>`:`<span class="preview-seg missing">[${esc(p.label)}]</span>`;
+    const dot=i<parts.length-1?`<span class="preview-sep">${esc(sep)}</span>`:'';
+    return seg+dot;
+  }).join('');
+}
+
+function clearBuilder() { builderVals={}; renderBuilder(); }
+
+function copyBuilder() {
+  const c=active(); if(!c) return;
+  const sep=c.separator;
+  const parts=c.segments.map(s=>builderVals[s.id]||'');
+  while(parts.length>0&&!parts[parts.length-1]) parts.pop();
+  const result=parts.join(sep);
+  if(!result) return;
+  navigator.clipboard.writeText(result).then(()=>showToast('Copiado!')).catch(()=>{
+    // Fallback: select text in preview box
+    const range=document.createRange();
+    range.selectNode(document.getElementById('previewBox'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    showToast('Selecione e copie (Ctrl+C)');
+  });
+}
+
+/* =============================================
+   TAB: VALIDADOR
+   ============================================= */
+function renderValidador() {
+  const c=active();
+  document.getElementById('valMeta').textContent=c
+    ? `${c.name} · separador: "${c.separator}"`
+    : 'Selecione um cliente para validar';
+  validateName();
+}
+
+function validateName() {
+  const c=active();
+  const resultsEl=document.getElementById('valResults');
+  const raw=document.getElementById('valInput')?.value.trim()||'';
+  if(!raw||!c) { resultsEl.innerHTML=''; return; }
+
+  const sep=c.separator;
+  const parts=raw.split(sep);
+  const segs=c.segments;
+  let html='';
+
+  // Extra segments check
+  if(parts.length>segs.length) {
+    html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Estrutura</span><span></span><span class="val-seg-msg">${parts.length} segmentos encontrados, máximo ${segs.length}</span></div>`;
+  }
+
+  segs.forEach((s,i)=>{
+    const part=parts[i];
+    if(part===undefined||part==='') {
+      if(s.required) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">—</span><span class="val-seg-msg">Obrigatório, não encontrado</span></div>`;
+      return;
+    }
+    const terms=c.dictionary[s.id]||[];
+    if(!terms.length) {
+      html+=`<div class="val-seg warn"><span class="val-seg-icon">⚠️</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">Sem dicionário</span></div>`;
+      return;
+    }
+    const found=terms.find(t=>t.value===part);
+    if(found) {
+      html+=`<div class="val-seg ok"><span class="val-seg-icon">✅</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(found.label)}</span></div>`;
+    } else {
+      html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">Não está no dicionário</span></div>`;
+    }
+  });
+
+  // Extra parts beyond expected segments
+  for(let i=segs.length; i<parts.length; i++) {
+    html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra #${i+1}</span><span class="val-seg-value">${esc(parts[i])}</span><span class="val-seg-msg">Segmento não esperado</span></div>`;
+  }
+
+  resultsEl.innerHTML=html;
+}
+
+function clearValidator() {
+  const inp=document.getElementById('valInput'); if(inp) inp.value='';
+  document.getElementById('valResults').innerHTML='';
+}
+
+/* =============================================
+   UTILS
+   ============================================= */
+function esc(str){
+  return String(str||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function slug(str){
+  return str.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
+function genId(){
+  return 's'+Math.random().toString(36).slice(2,8);
+}
+
+function dlBlob(content, name, type){
+  const url=URL.createObjectURL(new Blob([content],{type}));
+  const a=document.createElement('a');
+  a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function highlight(id){
+  const el=document.getElementById(id); if(!el) return;
+  el.style.borderColor='var(--erro)';
+  setTimeout(()=>el.style.borderColor='',1600);
+  el.focus();
+}
+
+let toastTimer=null;
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+/* =============================================
+   INIT
+   ============================================= */
+loadTheme();
+loadData();
+if(!activeId && clients.length) activeId=clients[0].id;
+renderClientSelect();
+renderClientes();
+</script>
+</body>
+</html>
