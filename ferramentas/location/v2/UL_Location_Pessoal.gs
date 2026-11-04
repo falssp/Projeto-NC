@@ -5,14 +5,14 @@
 // A Corp nunca sabe da existência deste ambiente.
 // ============================================================
 
+// Mesma estrutura da planilha Corp — abas espelhadas via IMPORTRANGE preservam colunas
 const PESSOAL = {
-  ABA_ESPELHO:  'Espelho_Corp',  // alimentada via IMPORTRANGE da Corp
-  ABA_NACIONAL: 'Nacional',
-  ABA_REGIAO:   'Região',
-  ABA_ESTADO:   'Estado',
-  ABA_CIDADE:   'Cidade',
-  // Colunas: A=sigla, B=label, C=ativo (TRUE/FALSE), D=uf (só na aba Cidade)
-  COL: { SIGLA: 0, LABEL: 1, ATIVO: 2, UF: 3 }
+  ABAS: {
+    NACIONAL: { nome: 'Nacional', SIGLA: 0, LABEL: 1, STATUS: -1 },
+    REGIAO:   { nome: 'Regiões',  SIGLA: 0, LABEL: 1, STATUS:  3 },
+    ESTADO:   { nome: 'Estados',  SIGLA: 0, LABEL: 2, STATUS:  4 },
+    CIDADE:   { nome: 'Cidades',  SIGLA: 0, LABEL: 1, STATUS:  7, UF: 2 },
+  }
 };
 
 // ------------------------------------------------------------
@@ -39,35 +39,35 @@ function doGet(e) {
 // ------------------------------------------------------------
 function getDadosPessoal_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ab = PESSOAL.ABAS;
   return {
     geradoEm: new Date().toISOString(),
     fonte: 'pessoal',
-    nacional: lerAba_(ss, PESSOAL.ABA_NACIONAL),
-    região:   lerAba_(ss, PESSOAL.ABA_REGIAO),
-    estado:   lerAba_(ss, PESSOAL.ABA_ESTADO),
-    cidade:   lerAba_(ss, PESSOAL.ABA_CIDADE),
+    nacional: lerAba_(ss, ab.NACIONAL),
+    região:   lerAba_(ss, ab.REGIAO),
+    estado:   lerAba_(ss, ab.ESTADO),
+    cidade:   lerAba_(ss, ab.CIDADE),
   };
 }
 
-function lerAba_(ss, nomeAba) {
+// cfg = { nome, SIGLA, LABEL, STATUS (-1 = sem filtro), UF (opcional) }
+function lerAba_(ss, cfg) {
   try {
-    const aba = ss.getSheetByName(nomeAba);
-    if (!aba) { console.warn(`Aba não encontrada: ${nomeAba}`); return []; }
+    const aba = ss.getSheetByName(cfg.nome);
+    if (!aba) { console.warn(`Aba não encontrada: ${cfg.nome}`); return []; }
     const rows = aba.getDataRange().getValues().slice(1);
-    const c = PESSOAL.COL;
     return rows
-      .filter(r => r[c.SIGLA] && (r[c.ATIVO] === true || String(r[c.ATIVO]).toUpperCase() === 'TRUE'))
+      .filter(r => r[cfg.SIGLA] && (cfg.STATUS < 0 || !r[cfg.STATUS]))
       .map(r => {
-        const sigla = String(r[c.SIGLA]).trim().toLowerCase();
-        const obj = { sigla, label: String(r[c.LABEL]).trim() };
-        // Estado: deriva UF da sigla (est-sp → SP)
+        const sigla = String(r[cfg.SIGLA]).trim().toLowerCase();
+        const obj   = { sigla, label: String(r[cfg.LABEL]).trim() };
         if (sigla.startsWith('est-')) obj.uf = sigla.slice(4).toUpperCase();
-        // Cidade: lê UF da coluna D
-        else if (sigla.startsWith('cid-') && r[c.UF]) obj.uf = String(r[c.UF]).trim().toUpperCase();
+        else if (sigla.startsWith('cid-') && cfg.UF >= 0 && r[cfg.UF])
+          obj.uf = String(r[cfg.UF]).trim().toUpperCase();
         return obj;
       });
   } catch(e) {
-    console.error(`Erro ao ler "${nomeAba}": ${e}`);
+    console.error(`Erro ao ler "${cfg.nome}": ${e}`);
     return [];
   }
 }
@@ -84,14 +84,15 @@ function configurarEspelho() {
 
   const url = resp.getResponseText().trim();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const abas = ['Nacional','Região','Estado','Cidade'];
+  // Nomes de aba idênticos à Corp para preservar estrutura de colunas
+  const abas = ['Nacional','Regiões','Estados','Cidades'];
 
   abas.forEach(nome => {
     let aba = ss.getSheetByName(nome);
     if (!aba) aba = ss.insertSheet(nome);
     aba.clearContents();
-    aba.getRange('A1:D1').setValues([['sigla','label','ativo','uf']]);
-    aba.getRange('A2').setFormula(`=IMPORTRANGE("${url}","${nome}!A2:D")`);
+    // IMPORTRANGE inclui cabeçalho (A1) para preservar estrutura de colunas da Corp
+    aba.getRange('A1').setFormula(`=IMPORTRANGE("${url}","${nome}!A1:Z")`);
   });
 
   ui.alert('Espelho configurado.\n\nAceite a permissão do IMPORTRANGE que aparecerá na célula A2 de cada aba.');
