@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -714,6 +713,9 @@ tr:hover td{background:var(--g50)}
         <button class="mb" data-fml-sidebar-patched="1" id="nav-formulas" onclick="goTo('formulas','Extrator de Fórmulas',this)">
           <span class="ico">🧮</span> Extrator de Fórmulas
         </button>
+        <button class="mb" id="nav-fmlgen" onclick="goTo('fmlgen','Gerador de Fórmulas — Influencer',this)">
+          <span class="ico">🧮</span> Gerador de Fórmulas
+        </button>
         <button class="mb" id="nav-rmv" onclick="goTo('rmv','Removedor de Caracteres',this)">
           <span class="ico">🧹</span> Removedor de Caracteres
         </button>
@@ -835,32 +837,30 @@ tr:hover td{background:var(--g50)}
 
 
   <!-- ══ REMOVEDOR DE CARACTERES ══ -->
-  <div class="page" id="page-rmv">
+  <!-- ══ GERADOR DE FÓRMULAS — INFLUENCER ══ -->
+  <div class="page" id="page-fmlgen">
     <div class="tool-card">
       <div class="tool-hdr">
-        <div class="tool-ico">🧹</div>
+        <div class="tool-ico">🧮</div>
         <div class="tool-meta">
-          <div class="tool-title">Removedor de Caracteres</div>
-          <div class="tool-desc">Identifica caracteres especiais e sugere versão limpa do texto</div>
+          <div class="tool-title">Gerador de Fórmulas — Influencer</div>
+          <div class="tool-desc">Adiciona redes sociais e gera fórmulas D, E e formatação condicional prontas para colar na planilha</div>
         </div>
         <div class="tool-actions">
-          <button class="btn btn-g" onclick="rmvReset()">Limpar</button>
+          <button class="btn btn-g" onclick="fmlgenReset()">Limpar</button>
         </div>
       </div>
-      <div class="tool-body">
-        <div class="rmv-input-wrap">
-          <label class="rmv-label">Cole os textos aqui — um por linha</label>
-          <textarea id="rmv-input" placeholder="Ex: modular_es|retail_mercado-livre" oninput="rmvRun()" rows="6"></textarea>
+            <div class="tool-body" style="padding:20px 0 0">
+        <div class="ib" style="margin-bottom:16px">
+          O Gerador de Fórmulas está disponível como ferramenta standalone — abre em nova aba com Extrair URL automático, persistência de redes adicionadas e fórmulas B/C/D/E/F completas.
         </div>
-        <div id="rmv-table-wrap" style="display:none">
-          <div class="rmv-grid-header">
-            <span>Original</span>
-            <span>Caracteres encontrados</span>
-            <span>Sugestão limpa <button class="btn btn-s btn-g" onclick="rmvCopyAll(this)" style="margin-left:8px">📋 Copiar tudo</button></span>
-          </div>
-          <div id="rmv-rows"></div>
-        </div>
-        <div id="rmv-empty" class="rmv-empty" style="display:none">✅ Nenhum caractere especial encontrado.</div>
+        <a href="https://falssp.github.io/Projeto-NC/ferramentas/influencer-formulas/"
+           target="_blank"
+           style="display:inline-flex;align-items:center;gap:8px;background:var(--ul);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none"
+           onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          🧮 Abrir Gerador de Fórmulas
+        </a>
+        <p style="font-size:11px;color:var(--g500);margin-top:10px">Redes adicionadas ficam salvas no browser — não é necessário recadastrar a cada sessão.</p>
       </div>
     </div>
   </div>
@@ -3033,7 +3033,7 @@ function ansParseFiles(){
     var rd=new FileReader();
     rd.onload=function(ev){
       try{
-        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:true,cellHTML:false,raw:false});
+        var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellFormula:false,cellHTML:false,raw:true});
         wb.SheetNames.forEach(function(sn){
           var key=ansFindMapKey(sn);if(!key)return;
           var ws=wb.Sheets[sn];
@@ -3058,8 +3058,7 @@ function ansParseFiles(){
             if(!ansParsedData[sn])ansParsedData[sn]=[];
             ansParsedData[sn].push({id:idv,ad:adv,row:ri+1,platform:sn,file:f.name});
           });
-        });;
-
+        });
       }catch(e){console.error(e);}
       done++;if(done===ansUploadedFiles.length){ansRenderParseInfo();ansCheckReady();}
     };
@@ -3332,7 +3331,12 @@ function ansShowSt(el,type,msg){el.className='ans-sbar '+type;el.innerHTML=msg;}
 
 
 /* ══ GERADOR DE IDs ══ */
-var GID_PROXY='https://script.google.com/macros/s/AKfycbxiWW0zVuFdRJCvzwCBeH8OIqsFJyKkhqZotgHX8vrD0UARbU3SUtJ7IxZsg2BXc_QrPw/exec';
+var GID_PROXY='https://script.google.com/macros/s/AKfycbxsWwjHesITTTtSefT8ALksQn50ap1DUb2BrR_JNfvjooBKgIKSVGFeshOIG1BTwzy4FQ/exec';
+var NC_TOKEN='9ba40c66efec04b4f348282400f98cdbeb8ece88a735ab67';
+function gidWarmUp(){
+  // Ping silencioso para manter o GAS aquecido
+  fetch(GID_PROXY+'?action=ping').catch(function(){});
+}
 var F4_PROXY='https://script.google.com/macros/s/AKfycbxPWhUtZS9mZIf1KtkGjhr9Ypj8gQkEJdr-25jbZCkFJ_nv9K5rMGX_qrbafIPMiXeX/exec';
 var GID_PLATAFORMAS=[
   {cat:"🛒 E-commerce"},
@@ -3386,7 +3390,7 @@ function gidCarregarContadores(tentativa){
   tentativa=tentativa||1;
   var bar=document.getElementById('gid-counters-bar');
   if(tentativa===1)bar.innerHTML='⏳ Carregando contadores...';
-  fetch(GID_PROXY+'?action=contadores')
+  fetch(GID_PROXY+'?action=contadores&token='+NC_TOKEN)
     .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível');return r.json();})
     .then(function(d){
       if(!d.ok)throw new Error(d.error);
@@ -3411,6 +3415,7 @@ function gidInit(){
   _gidRenderTabs();
   _gidShowTabContent(null);
   gidCarregarContadores();
+  gidWarmUp();
   sbgInit();
 }
 function _gidAllPlats(){return GID_PLATAFORMAS.filter(function(p){return!p.cat;});}
@@ -3550,31 +3555,41 @@ function gidConfirmarGerar(){
   document.getElementById('gid-res-ids').innerHTML='';
   document.getElementById('gid-exp-wrap').style.display='none';
   var ewt2=document.getElementById('gid-exp-wrap-top');if(ewt2)ewt2.style.display='none';
-  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote})})
-    .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('O servidor de IDs está indisponível ou expirou. Nenhum ID foi criado. Tente novamente em instantes.');return r.json();})
-    .then(function(data){
-      clearInterval(progInt);fill.style.width='100%';
-      setTimeout(function(){
-        prog.classList.remove('show');
-        if(data.error){
-          gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
-          return;
+  (function gidFetchComRetry(tentativa){
+    if(tentativa>1) gidShowSt(document.getElementById('gid-st3'),'info','⏳ Tentativa '+tentativa+' de 3...');
+    fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({itens:gidLote,token:NC_TOKEN})})
+      .then(function(r){
+        var ct=r.headers.get('content-type')||'';
+        if(!ct.includes('json')){
+          if(tentativa<3){setTimeout(function(){gidFetchComRetry(tentativa+1);},2500);return null;}
+          throw new Error('Servidor não respondeu após 3 tentativas. Verifique a planilha antes de tentar novamente — os IDs podem ter sido gerados.');
         }
-        gidResultado=data.resultado||[];
-        gidRenderResultado(gidResultado);
-        // mostra Exportar sempre que houver resultado
-        if(gidResultado.length){
-          document.getElementById('gid-exp-wrap').style.display='';
-          var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
-        }
-        gidShowSt(document.getElementById('gid-st3'),'ok',
-          '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
-      },300);
-    })
-    .catch(function(e){
-      clearInterval(progInt);prog.classList.remove('show');
-      gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
-    });
+        return r.json();
+      })
+      .then(function(data){
+        if(!data)return;
+        clearInterval(progInt);fill.style.width='100%';
+        setTimeout(function(){
+          prog.classList.remove('show');
+          if(data.error){
+            gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+data.error);
+            return;
+          }
+          gidResultado=data.resultado||[];
+          gidRenderResultado(gidResultado);
+          if(gidResultado.length){
+            document.getElementById('gid-exp-wrap').style.display='';
+            var ewt=document.getElementById('gid-exp-wrap-top');if(ewt)ewt.style.display='';
+          }
+          gidShowSt(document.getElementById('gid-st3'),'ok',
+            '✅ '+data.linhasGeradas+' linhas criadas a partir da linha '+data.primeiraLinha+' nas duas planilhas.');
+        },300);
+      })
+      .catch(function(e){
+        clearInterval(progInt);prog.classList.remove('show');
+        gidShowSt(document.getElementById('gid-st3'),'err','❌ Erro: '+e.message);
+      });
+  })(1);
 }
 
 function gidRenderResultado(resultado){
@@ -3733,7 +3748,7 @@ function gidEnviarAdNames(){
   gidShowSt(document.getElementById('gid-st4'),'ok','⏳ Salvando na planilha...');
   var _ctrl=new AbortController();
   var _tid=setTimeout(function(){_ctrl.abort();},38000);
-  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'fillAdNames',itens:gidAdnamesParaEnviar}),signal:_ctrl.signal})
+  fetch(GID_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'fillAdNames',itens:gidAdnamesParaEnviar,token:NC_TOKEN}),signal:_ctrl.signal})
     .then(function(r){
       clearTimeout(_tid);
       var ct=r.headers.get('content-type')||'';
@@ -4047,7 +4062,7 @@ function clIrDuplicatas(){
     });
     var nUnicos=itens.length;
     fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'checkDuplicatas',aba:aba,itens:itens})})
+      body:JSON.stringify({action:'checkDuplicatas',aba:aba,itens:itens,token:NC_TOKEN})})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Tente novamente.');return r.json();})
       .then(function(d){
         document.getElementById('cl-st3').className='ans-sbar';
@@ -4094,7 +4109,7 @@ function clIrDuplicatas(){
     _doCheck(aba);
   } else {
     fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'getCLSheets'})})
+      body:JSON.stringify({action:'getCLSheets',token:NC_TOKEN})})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Tente novamente.');return r.json();})
       .then(function(d){
         var tabs=d.tabs&&d.tabs.length?d.tabs:['2026','2025'];
@@ -4131,7 +4146,7 @@ function clIrSalvar(){
   // Usar cache se disponível
   if(clTabsCache){_clRenderTabs(clTabsCache);return;}
   fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'getCLSheets'})})
+    body:JSON.stringify({action:'getCLSheets',token:NC_TOKEN})})
     .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Tente novamente.');return r.json();})
     .then(function(d){
       var tabs=d.tabs&&d.tabs.length?d.tabs:['2026','2025'];
@@ -4159,7 +4174,7 @@ function clSalvar(){
   document.getElementById('cl-btn-save').disabled=true;
   _clShowSt('cl-st4','ok','⏳ Salvando na aba "'+aba+'"...');
   fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveCampaignLocal',linhas:clResultado,aba:aba})})
+    body:JSON.stringify({action:'saveCampaignLocal',linhas:clResultado,aba:aba,token:NC_TOKEN})})
     .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Dados não salvos. Tente novamente.');return r.json();})
     .then(function(d){
       document.getElementById('cl-btn-save').disabled=false;
@@ -4441,7 +4456,7 @@ function dicRmLinkLoad(){
   btn.disabled=true; btn.textContent='⟳ Carregando...';
   _clShowSt('dic-st1','ok','⏳ Lendo planilha...');
   fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'readRmSheet',sheetId:sheetId})})
+    body:JSON.stringify({action:'readRmSheet',sheetId:sheetId,token:NC_TOKEN})})
     .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Tente novamente.');return r.json();})
     .then(function(d){
       btn.disabled=false; btn.textContent='Carregar →';
@@ -4595,7 +4610,7 @@ function dicIrDuplicatas(){
   _clShowSt('dic-st3','ok','⏳ Verificando duplicatas...');
   var itens=dicResultado.map(function(r){return{h:r.h||'',f:r.f||'',d:r.d||''};}).filter(function(x){return x.h||x.f;});
   fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'checkDicDuplicatas',itens:itens})})
+    body:JSON.stringify({action:'checkDicDuplicatas',itens:itens,token:NC_TOKEN})})
     .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Tente novamente.');return r.json();})
     .then(function(d){
       if(!d.ok){_clShowSt('dic-st3','err','❌ '+(d.error||'Erro'));return;}
@@ -4626,7 +4641,7 @@ function dicSalvar(){
   // Enviar nome(A) e link(H) — B/C/D/E/F são fórmulas no Sheets, G é livre
   var linhas=dicResultado.map(function(r){return[r.a||'',r.h||''];});
   fetch(F4_PROXY,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'saveDicionario',linhas:linhas})})
+    body:JSON.stringify({action:'saveDicionario',linhas:linhas,token:NC_TOKEN})})
     .then(function(r){var ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('Servidor indisponível. Dicionário não salvo. Tente novamente.');return r.json();})
     .then(function(d){
       if(d.ok){
@@ -4748,7 +4763,7 @@ async function influSyncFromWebApps(){
   var url=influGetUrlCorp();
   if(!url){statusEl.innerHTML='<span style="color:var(--warn)">⚠ Configure a URL do Web App corporativo</span>';return;}
   statusEl.textContent='Sincronizando...';
-  try{var r=await influFetchTimeout(url+(url.indexOf('?')>=0?'&':'?')+'action=list',10000);if(!r.ok)throw new Error('Status '+r.status);var d=await r.json();if(d.links&&Array.isArray(d.links)){d.links.forEach(function(u){influExistingLinks.add(influNormalizeUrl(u));});influSaveLinks();influUpdateBadge();statusEl.innerHTML='<span style="color:var(--ok)">✓ Corp: '+d.links.length+' links carregados</span>';}
+  try{var r=await influFetchTimeout(url+(url.indexOf('?')>=0?'&':'?')+'action=list&token='+NC_TOKEN,10000);if(!r.ok)throw new Error('Status '+r.status);var d=await r.json();if(d.links&&Array.isArray(d.links)){d.links.forEach(function(u){influExistingLinks.add(influNormalizeUrl(u));});influSaveLinks();influUpdateBadge();statusEl.innerHTML='<span style="color:var(--ok)">✓ Corp: '+d.links.length+' links carregados</span>';}
   }catch(e){statusEl.innerHTML='<span style="color:var(--err)">✗ '+e.message+'</span>';}
 }
 async function influTestCloudRun(){var statusEl=document.getElementById('influ-sync-status');var base=influGetCloudRunBase();if(!base){statusEl.innerHTML='<span style="color:var(--warn)">⚠ URL do Cloud Run não configurada</span>';return;}statusEl.textContent='Testando...';try{var r=await influFetchTimeout(base+'/health',8000);if(!r.ok)throw new Error('Status '+r.status);var d=await r.json();statusEl.innerHTML='<span style="color:var(--ok)">✓ Cloud Run OK: '+JSON.stringify(d)+'</span>';}catch(e){statusEl.innerHTML='<span style="color:var(--err)">✗ '+e.message+'</span>';}}
