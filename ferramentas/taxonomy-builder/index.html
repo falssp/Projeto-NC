@@ -542,6 +542,65 @@ body {
 .empty-icon{font-size:36px;margin-bottom:10px;}
 .empty-state p{font-size:14px;}
 
+/* ==================== MULTI-SEP & ESTRUTURAS ==================== */
+/* Per-segment sep selector in modal */
+.seg-sep-wrap{display:flex;align-items:center;gap:3px;flex-shrink:0;}
+.seg-sep-wrap > span{font-size:9px;color:var(--faint);white-space:nowrap;user-select:none;}
+.seg-sep-select{
+  padding:3px 4px;border:1px solid var(--input-border);border-radius:4px;
+  font-size:11px;font-family:monospace;background:var(--input-bg);color:var(--accent);
+  cursor:pointer;min-width:46px;
+}
+
+/* Val-seg similar (amarelo — capitalização / variante) */
+.val-seg.similar{background:rgba(234,179,8,.07);border-color:rgba(234,179,8,.22);}
+
+/* Estruturas */
+.structure-list{display:flex;flex-direction:column;gap:8px;}
+.structure-item{
+  background:var(--bg);border:1px solid var(--card-border);
+  border-radius:8px;padding:12px 14px;position:relative;
+}
+.structure-item-head{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.structure-item-platform{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  background:var(--accent);color:#fff;border-radius:20px;padding:2px 7px;
+}
+.structure-item-level{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  background:var(--pill);color:var(--faint);border-radius:20px;padding:2px 7px;
+}
+.structure-item-label{font-size:14px;font-weight:700;}
+.structure-pattern{font-size:12px;margin-top:5px;word-break:break-all;line-height:1.6;}
+.pat-seg{color:var(--fg);font-weight:600;}
+.pat-sep{color:var(--faint);font-weight:700;font-family:monospace;}
+.structure-notes{font-size:12px;color:var(--faint);margin-top:4px;}
+.structure-actions{
+  position:absolute;top:10px;right:10px;
+  display:flex;gap:4px;opacity:0;transition:opacity .15s;
+}
+.structure-item:hover .structure-actions{opacity:1;}
+.structure-actions button{
+  background:var(--bg);border:1px solid var(--card-border);
+  border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer;color:var(--fg);
+}
+.structure-actions button:hover{background:var(--pill);}
+.pat-preview{
+  margin-top:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--card-border);
+  border-radius:6px;font-size:12px;line-height:1.6;min-height:32px;word-break:break-all;
+}
+
+/* Structure selector in validator */
+.val-struct-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.val-struct-row label{
+  font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;
+  letter-spacing:.05em;white-space:nowrap;
+}
+.val-struct-row select{
+  padding:5px 8px;border:1px solid var(--input-border);border-radius:6px;
+  font-size:12px;background:var(--input-bg);color:var(--fg);flex:1;max-width:280px;
+}
+
 /* ==================== TOAST ==================== */
 #toast {
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
@@ -574,10 +633,11 @@ body {
 
 <!-- TABS -->
 <nav class="tabs">
-  <button class="tab active"  data-tab="clientes"   onclick="switchTab('clientes')">👥 Clientes</button>
-  <button class="tab"         data-tab="dicionario" onclick="switchTab('dicionario')">📚 Dicionário</button>
-  <button class="tab"         data-tab="builder"    onclick="switchTab('builder')">🏗️ Builder</button>
-  <button class="tab"         data-tab="validador"  onclick="switchTab('validador')">✅ Validador</button>
+  <button class="tab active"  data-tab="clientes"    onclick="switchTab('clientes')">👥 Clientes</button>
+  <button class="tab"         data-tab="dicionario"  onclick="switchTab('dicionario')">📚 Dicionário</button>
+  <button class="tab"         data-tab="estruturas"  onclick="switchTab('estruturas')">🗂️ Estruturas</button>
+  <button class="tab"         data-tab="builder"     onclick="switchTab('builder')">🏗️ Builder</button>
+  <button class="tab"         data-tab="validador"   onclick="switchTab('validador')">✅ Validador</button>
 </nav>
 
 <!-- TAB: CLIENTES -->
@@ -620,6 +680,22 @@ body {
   </div>
 </div>
 
+<!-- TAB: ESTRUTURAS -->
+<div id="tab-estruturas" class="tab-content">
+  <div class="page">
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <h2 id="structTitle">Estruturas</h2>
+          <p id="structMeta">Padrões de nomenclatura por plataforma e nível</p>
+        </div>
+        <button class="btn primary btn-sm" onclick="openAddStructure()">+ Nova estrutura</button>
+      </div>
+      <div id="structList" class="structure-list"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TAB: BUILDER -->
 <div id="tab-builder" class="tab-content">
   <div class="page">
@@ -653,7 +729,13 @@ body {
         <div><h2>Validador</h2><p id="valMeta">Cole o nome da campanha para validar segmento a segmento</p></div>
         <button class="btn secondary btn-sm" onclick="clearValidator()">✕ Limpar</button>
       </div>
-      <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video_q1-2026" oninput="validateName()"></textarea>
+      <div class="val-struct-row">
+        <label>Estrutura:</label>
+        <select id="valStructSel" onchange="validateName()">
+          <option value="">— segmentos do cliente (padrão) —</option>
+        </select>
+      </div>
+      <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video|q1-2026" oninput="validateName()"></textarea>
       <div id="valResults" class="val-results"></div>
     </div>
   </div>
@@ -670,6 +752,20 @@ body {
   <div class="modal-actions">
     <button class="btn secondary" onclick="closeModal()">Cancelar</button>
     <button class="btn primary" onclick="saveClient()">Salvar</button>
+  </div>
+</div>
+
+<!-- STRUCTURE MODAL -->
+<div id="structOverlay" class="overlay" onclick="closeStructModal()"></div>
+<div id="structModal" class="modal">
+  <div class="modal-title">
+    <span id="structModalTitle">Nova Estrutura</span>
+    <button class="modal-close" onclick="closeStructModal()">×</button>
+  </div>
+  <div id="structModalBody"></div>
+  <div class="modal-actions">
+    <button class="btn secondary" onclick="closeStructModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveStructure()">Salvar</button>
   </div>
 </div>
 
@@ -754,11 +850,29 @@ const DEFAULT_CLIENTS = [
     name:'Unilever BR',
     separator:'_',
     segments:[
-      {id:'advertiser', label:'Advertiser', required:true},
-      {id:'produto',    label:'Produto',    required:true},
-      {id:'objetivo',   label:'Objetivo',   required:true},
-      {id:'formato',    label:'Formato',    required:false},
-      {id:'periodo',    label:'Período',    required:false},
+      {id:'advertiser', label:'Advertiser', required:true,  sep:'_'},
+      {id:'produto',    label:'Produto',    required:true,  sep:'_'},
+      {id:'objetivo',   label:'Objetivo',   required:true,  sep:'|'},
+      {id:'formato',    label:'Formato',    required:false, sep:'|'},
+      {id:'periodo',    label:'Período',    required:false, sep:''},
+    ],
+    structures:[
+      {
+        id:'ulst1',
+        label:'Campanha Google Search',
+        platform:'Google Search',
+        level:'Campaign',
+        pattern:'{advertiser}_{produto}_{objetivo}|{formato}|{periodo}',
+        notes:'Galileo (global, sep _) + Freetext local (sep |). Baseado no ADP.'
+      },
+      {
+        id:'ulst2',
+        label:'Campanha Meta',
+        platform:'Meta',
+        level:'Campaign',
+        pattern:'{advertiser}_{produto}_{objetivo}|{formato}|{periodo}',
+        notes:''
+      },
     ],
     dictionary:{
       advertiser:[
@@ -835,6 +949,8 @@ let modalSegs = [];     // working segments in modal
 function loadData() {
   try { clients = JSON.parse(localStorage.getItem(STORE_KEY) || 'null') || deepCopy(DEFAULT_CLIENTS); }
   catch { clients = deepCopy(DEFAULT_CLIENTS); }
+  // Migration: ensure structures array and seg sep exist on all clients
+  clients.forEach(c=>{ if(!c.structures) c.structures=[]; });
   try { activeId = localStorage.getItem(ACTIVE_KEY) || clients[0]?.id || null; }
   catch { activeId = clients[0]?.id || null; }
 }
@@ -892,6 +1008,7 @@ function switchTab(tab) {
 function renderCurrent() {
   if(currentTab==='clientes')   renderClientes();
   if(currentTab==='dicionario') renderDicionario();
+  if(currentTab==='estruturas') renderEstruturas();
   if(currentTab==='builder')    renderBuilder();
   if(currentTab==='validador')  renderValidador();
 }
@@ -948,7 +1065,7 @@ function renderClientes() {
       ${isAct ? '<div class="active-badge">✓ Ativo</div>' : ''}
       <div class="client-card-name">${esc(c.name)}</div>
       <div class="client-card-meta">
-        <span>Sep: <span class="sep-chip">${esc(c.separator)}</span></span>
+        <span>Sep: ${[...new Set([c.separator,...c.segments.filter(s=>s.sep!==undefined&&s.sep!=='').map(s=>s.sep)])].filter(Boolean).map(sp=>`<span class="sep-chip">${esc(sp)}</span>`).join(' + ')}</span>
         <span>${c.segments.length} segmentos</span>
         <span>${termCount} termos</span>
       </div>
@@ -972,7 +1089,7 @@ function deleteClient(id) {
    ============================================= */
 function openAddClient() {
   modalMode='add'; editingId=null;
-  modalSegs = [{id:genId(), label:'', required:true}];
+  modalSegs = [{id:genId(), label:'', required:true, sep:'_'}];
   document.getElementById('modalTitle').textContent='Novo cliente';
   renderModalBody({name:'',separator:'_'});
   showModal();
@@ -990,7 +1107,10 @@ function openEditClient(id) {
 function renderModalBody(c) {
   const name = c.name||''; const sep = c.separator||'_';
 
-  const segsHtml = modalSegs.map((s,i)=>`
+  const SEP_OPTS = ['_','|','-','.',''];
+  const segsHtml = modalSegs.map((s,i)=>{
+    const curSep = s.sep !== undefined ? s.sep : sep;
+    return `
     <div class="seg-editor-row" id="srow-${s.id}">
       <div class="seg-order-btns">
         <button class="seg-order-btn" title="Subir" onclick="moveModalSeg(${i},-1)">▲</button>
@@ -1001,9 +1121,15 @@ function renderModalBody(c) {
       <button class="req-toggle ${s.required?'required':'optional'}" onclick="toggleReq(${i})">
         ${s.required?'Obrigatório':'Opcional'}
       </button>
+      <div class="seg-sep-wrap" title="Separador após este segmento">
+        <span>sep→</span>
+        <select class="seg-sep-select" onchange="modalSegs[${i}].sep=this.value">
+          ${SEP_OPTS.map(o=>`<option value="${o}"${curSep===o?' selected':''}>${o===''?'∅':o}</option>`).join('')}
+        </select>
+      </div>
       <button class="seg-del" title="Remover" onclick="removeModalSeg(${i})">×</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   document.getElementById('modalBody').innerHTML = `
     <div class="field-group">
@@ -1011,9 +1137,9 @@ function renderModalBody(c) {
       <input type="text" id="mName" value="${esc(name)}" placeholder="Ex: Unilever BR">
     </div>
     <div class="field-group">
-      <label>Separador</label>
+      <label>Separador padrão</label>
       <input type="text" id="mSep" value="${esc(sep)}" maxlength="3" style="max-width:70px">
-      <div class="hint">Caractere entre os segmentos (ex: _ ou -)</div>
+      <div class="hint">Fallback para segmentos sem sep individual (ex: _ ou -)</div>
     </div>
     <div class="field-group">
       <label>Segmentos (em ordem)</label>
@@ -1032,7 +1158,8 @@ function readModalInputs() {
 
 function addModalSeg() {
   readModalInputs();
-  modalSegs.push({id:genId(), label:'', required:true});
+  const sep = document.getElementById('mSep')?.value || '_';
+  modalSegs.push({id:genId(), label:'', required:true, sep:sep});
   renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
 }
 
@@ -1069,14 +1196,14 @@ function saveClient() {
     if(clients.find(c=>c.id===id)) { showToast('Já existe cliente com esse nome.'); return; }
     const dict = {};
     validSegs.forEach(s=>{ dict[s.id]=[]; });
-    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required})), dictionary:dict});
+    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})})), dictionary:dict, structures:[]});
     activeId = id;
   } else {
     const c = getClient(editingId); if(!c) return;
     const newDict = {};
     validSegs.forEach(s=>{ newDict[s.id] = c.dictionary[s.id]||[]; });
     c.name=name; c.separator=sep;
-    c.segments=validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required}));
+    c.segments=validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})}));
     c.dictionary=newDict;
   }
 
@@ -1481,8 +1608,9 @@ function confirmImport() {
    ============================================= */
 function renderBuilder() {
   const c=active();
+  const uniqSeps=c?[...new Set([c.separator,...c.segments.filter(s=>s.sep!==undefined&&s.sep!=='').map(s=>s.sep)])].filter(Boolean):[];
   document.getElementById('builderMeta').textContent=c
-    ? `${c.name} · separador: "${c.separator}"`
+    ? `${c.name} · sep: ${uniqSeps.join(' + ')}`
     : 'Selecione um cliente para começar';
 
   const segsEl=document.getElementById('builderSegs');
@@ -1526,8 +1654,10 @@ function updatePreview() {
   const box=document.getElementById('previewBox');
   if(!c) { box.innerHTML='<span style="color:var(--faint)">—</span>'; return; }
 
-  const sep=c.separator;
-  let parts=c.segments.map(s=>({val:builderVals[s.id]||'',required:s.required,label:s.label}));
+  let parts=c.segments.map(s=>({
+    val:builderVals[s.id]||'',required:s.required,label:s.label,
+    sep:s.sep!==undefined?s.sep:c.separator
+  }));
 
   // Trim trailing empty optional segments
   while(parts.length>0 && !parts[parts.length-1].val && !parts[parts.length-1].required) parts.pop();
@@ -1539,7 +1669,7 @@ function updatePreview() {
 
   box.innerHTML=parts.map((p,i)=>{
     const seg=p.val?`<span class="preview-seg">${esc(p.val)}</span>`:`<span class="preview-seg missing">[${esc(p.label)}]</span>`;
-    const dot=i<parts.length-1?`<span class="preview-sep">${esc(sep)}</span>`:'';
+    const dot=(i<parts.length-1&&p.sep)?`<span class="preview-sep">${esc(p.sep)}</span>`:'';
     return seg+dot;
   }).join('');
 }
@@ -1548,10 +1678,18 @@ function clearBuilder() { builderVals={}; renderBuilder(); }
 
 function copyBuilder() {
   const c=active(); if(!c) return;
-  const sep=c.separator;
-  const parts=c.segments.map(s=>builderVals[s.id]||'');
-  while(parts.length>0&&!parts[parts.length-1]) parts.pop();
-  const result=parts.join(sep);
+  const segs=c.segments;
+  const vals=segs.map(s=>builderVals[s.id]||'');
+  while(vals.length>0&&!vals[vals.length-1]) vals.pop();
+  if(!vals.length) return;
+  let result='';
+  for(let i=0;i<vals.length;i++){
+    result+=vals[i];
+    if(i<vals.length-1){
+      const sp=segs[i].sep!==undefined?segs[i].sep:c.separator;
+      result+=sp;
+    }
+  }
   if(!result) return;
   navigator.clipboard.writeText(result).then(()=>showToast('Copiado!')).catch(()=>{
     // Fallback: select text in preview box
@@ -1569,50 +1707,104 @@ function copyBuilder() {
 function renderValidador() {
   const c=active();
   document.getElementById('valMeta').textContent=c
-    ? `${c.name} · separador: "${c.separator}"`
+    ? `${c.name} · cole o nome para validar segmento a segmento`
     : 'Selecione um cliente para validar';
+
+  // Populate structure selector
+  const sel=document.getElementById('valStructSel');
+  if(sel){
+    const structs=c?(c.structures||[]):[];
+    sel.innerHTML='<option value="">— segmentos do cliente (padrão) —</option>'+
+      structs.map(st=>`<option value="${st.id}">${esc(st.label)}</option>`).join('');
+  }
   validateName();
+}
+
+/* Parse {seg}sep{seg}sep… pattern → [{segId, sep}] */
+function parsePattern(pattern) {
+  const regex=/\{([^}]+)\}([^{]*)/g;
+  const result=[]; let m;
+  while((m=regex.exec(pattern))!==null) result.push({segId:m[1],sep:m[2]||''});
+  return result;
+}
+
+/* Render pattern as colored HTML */
+function renderPatternHtml(pattern, segments) {
+  const parsed=parsePattern(pattern);
+  if(!parsed.length) return '<span style="color:var(--faint)">—</span>';
+  return parsed.map(({segId,sep})=>{
+    const seg=segments.find(s=>s.id===segId);
+    const lbl=seg?seg.label:segId;
+    return `<span class="pat-seg">[${esc(lbl)}]</span>${sep?`<span class="pat-sep">${esc(sep)}</span>`:''}`;
+  }).join('');
+}
+
+/* Sequential scan split using per-segment seps */
+function parseNameBySegments(name, segDefs, defaultSep) {
+  const parts=[]; let remaining=name;
+  for(let i=0;i<segDefs.length;i++){
+    const seg=segDefs[i];
+    const sepAfter=(seg.sep!==undefined&&seg.sep!==null)?seg.sep:defaultSep;
+    if(i===segDefs.length-1||!sepAfter){
+      parts.push(remaining); remaining=''; break;
+    }
+    const idx=remaining.indexOf(sepAfter);
+    if(idx===-1){ parts.push(remaining); remaining=''; break; }
+    else{ parts.push(remaining.slice(0,idx)); remaining=remaining.slice(idx+sepAfter.length); }
+  }
+  return {parts, extra:remaining};
+}
+
+/* Validate one value against dictionary: ok / similar / warn / err */
+function validateValue(part, terms) {
+  if(!terms.length) return {status:'warn',msg:'Sem dicionário'};
+  const exact=terms.find(t=>t.value===part);
+  if(exact) return {status:'ok',match:exact,msg:exact.label};
+  const ci=terms.find(t=>t.value.toLowerCase()===part.toLowerCase());
+  if(ci) return {status:'similar',match:ci,msg:`Capitalização: use "${ci.value}"`};
+  const lbl=terms.find(t=>t.label.toLowerCase()===part.toLowerCase());
+  if(lbl) return {status:'similar',match:lbl,msg:`Valor correto: "${lbl.value}"`};
+  return {status:'err',msg:'Não está no dicionário'};
 }
 
 function validateName() {
   const c=active();
   const resultsEl=document.getElementById('valResults');
   const raw=document.getElementById('valInput')?.value.trim()||'';
-  if(!raw||!c) { resultsEl.innerHTML=''; return; }
+  if(!raw||!c){ resultsEl.innerHTML=''; return; }
 
-  const sep=c.separator;
-  const parts=raw.split(sep);
-  const segs=c.segments;
+  // Determine seg definitions — from selected structure or client default
+  const structId=document.getElementById('valStructSel')?.value||'';
+  const struct=structId?(c.structures||[]).find(s=>s.id===structId):null;
+  let segDefs;
+  if(struct&&struct.pattern){
+    const parsed=parsePattern(struct.pattern);
+    segDefs=parsed.map(p=>{
+      const seg=c.segments.find(s=>s.id===p.segId);
+      return {id:p.segId,sep:p.sep,label:seg?seg.label:p.segId,required:seg?seg.required:false};
+    });
+  } else {
+    segDefs=c.segments.map(s=>({
+      id:s.id,sep:s.sep!==undefined?s.sep:c.separator,label:s.label,required:s.required
+    }));
+  }
+
+  const {parts,extra}=parseNameBySegments(raw,segDefs,c.separator);
+  const icons={ok:'✅',similar:'⚠️',warn:'⚠️',err:'❌'};
   let html='';
 
-  // Extra segments check
-  if(parts.length>segs.length) {
-    html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Estrutura</span><span></span><span class="val-seg-msg">${parts.length} segmentos encontrados, máximo ${segs.length}</span></div>`;
-  }
-
-  segs.forEach((s,i)=>{
+  segDefs.forEach((seg,i)=>{
     const part=parts[i];
-    if(part===undefined||part==='') {
-      if(s.required) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">—</span><span class="val-seg-msg">Obrigatório, não encontrado</span></div>`;
+    if(part===undefined||part===''){
+      if(seg.required) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">—</span><span class="val-seg-msg">Obrigatório, não encontrado</span></div>`;
       return;
     }
-    const terms=c.dictionary[s.id]||[];
-    if(!terms.length) {
-      html+=`<div class="val-seg warn"><span class="val-seg-icon">⚠️</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">Sem dicionário</span></div>`;
-      return;
-    }
-    const found=terms.find(t=>t.value===part);
-    if(found) {
-      html+=`<div class="val-seg ok"><span class="val-seg-icon">✅</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(found.label)}</span></div>`;
-    } else {
-      html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(s.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">Não está no dicionário</span></div>`;
-    }
+    const terms=c.dictionary[seg.id]||[];
+    const result=validateValue(part,terms);
+    html+=`<div class="val-seg ${result.status}"><span class="val-seg-icon">${icons[result.status]}</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(result.msg)}</span></div>`;
   });
 
-  // Extra parts beyond expected segments
-  for(let i=segs.length; i<parts.length; i++) {
-    html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra #${i+1}</span><span class="val-seg-value">${esc(parts[i])}</span><span class="val-seg-msg">Segmento não esperado</span></div>`;
-  }
+  if(extra) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`;
 
   resultsEl.innerHTML=html;
 }
@@ -1620,6 +1812,145 @@ function validateName() {
 function clearValidator() {
   const inp=document.getElementById('valInput'); if(inp) inp.value='';
   document.getElementById('valResults').innerHTML='';
+}
+
+/* =============================================
+   TAB: ESTRUTURAS
+   ============================================= */
+function renderEstruturas() {
+  const c=active();
+  const titleEl=document.getElementById('structTitle');
+  const metaEl=document.getElementById('structMeta');
+  if(titleEl) titleEl.textContent=c?`Estruturas · ${c.name}`:'Estruturas';
+  if(metaEl) metaEl.textContent=c?'Padrões de nomenclatura por plataforma e nível':'Selecione um cliente';
+
+  const listEl=document.getElementById('structList');
+  if(!listEl) return;
+
+  if(!c){
+    listEl.innerHTML='<div class="empty-state"><div class="empty-icon">🗂️</div><p>Selecione um cliente.</p></div>';
+    return;
+  }
+  const structs=c.structures||[];
+  if(!structs.length){
+    listEl.innerHTML='<div class="empty-state"><div class="empty-icon">🗂️</div><p>Nenhuma estrutura. Clique em <strong>+ Nova estrutura</strong>.</p></div>';
+    return;
+  }
+  listEl.innerHTML='';
+  structs.forEach(st=>{
+    const div=document.createElement('div');
+    div.className='structure-item';
+    div.innerHTML=`
+      <div class="structure-actions">
+        <button onclick="openEditStructure('${st.id}')">✏️</button>
+        <button onclick="deleteStructure('${st.id}')">🗑️</button>
+      </div>
+      <div class="structure-item-head">
+        ${st.platform?`<span class="structure-item-platform">${esc(st.platform)}</span>`:''}
+        ${st.level?`<span class="structure-item-level">${esc(st.level)}</span>`:''}
+        <span class="structure-item-label">${esc(st.label)}</span>
+      </div>
+      <div class="structure-pattern">${renderPatternHtml(st.pattern,c.segments)}</div>
+      ${st.notes?`<div class="structure-notes">${esc(st.notes)}</div>`:''}
+    `;
+    listEl.appendChild(div);
+  });
+}
+
+let structModalMode='add';
+let editingStructId=null;
+
+function openAddStructure() {
+  const c=active(); if(!c){showToast('Selecione um cliente primeiro.');return;}
+  structModalMode='add'; editingStructId=null;
+  document.getElementById('structModalTitle').textContent='Nova Estrutura';
+  renderStructModalBody({});
+  document.getElementById('structOverlay').classList.add('show');
+  document.getElementById('structModal').classList.add('show');
+  setTimeout(()=>document.getElementById('sLabel')?.focus(),80);
+}
+
+function openEditStructure(id) {
+  const c=active(); if(!c) return;
+  const st=(c.structures||[]).find(s=>s.id===id); if(!st) return;
+  structModalMode='edit'; editingStructId=id;
+  document.getElementById('structModalTitle').textContent='Editar Estrutura';
+  renderStructModalBody(st);
+  document.getElementById('structOverlay').classList.add('show');
+  document.getElementById('structModal').classList.add('show');
+  setTimeout(()=>document.getElementById('sLabel')?.focus(),80);
+}
+
+function closeStructModal() {
+  document.getElementById('structOverlay').classList.remove('show');
+  document.getElementById('structModal').classList.remove('show');
+}
+
+function renderStructModalBody(st) {
+  const c=active();
+  const segHints=c?c.segments.map(s=>`{${s.id}}`).join(', '):'';
+  document.getElementById('structModalBody').innerHTML=`
+    <div class="field-group">
+      <label>Label (identificação)</label>
+      <input type="text" id="sLabel" value="${esc(st.label||'')}" placeholder="Ex: Campanha Google Search">
+    </div>
+    <div class="field-group">
+      <label>Plataforma</label>
+      <input type="text" id="sPlatform" value="${esc(st.platform||'')}" placeholder="Google Search, Meta, TikTok, YouTube…">
+    </div>
+    <div class="field-group">
+      <label>Nível</label>
+      <input type="text" id="sLevel" value="${esc(st.level||'')}" placeholder="Campaign / Ad Group / Ad / UTM">
+    </div>
+    <div class="field-group">
+      <label>Padrão</label>
+      <input type="text" id="sPattern" value="${esc(st.pattern||'')}"
+        placeholder="{advertiser}_{produto}|{formato}"
+        oninput="previewStructPattern()">
+      <div class="hint">Use {id-do-segmento} e os separadores entre eles. Disponíveis: <code>${esc(segHints)}</code></div>
+      <div id="sPatternPreview" class="pat-preview"></div>
+    </div>
+    <div class="field-group">
+      <label>Observações (opcional)</label>
+      <input type="text" id="sNotes" value="${esc(st.notes||'')}" placeholder="Ex: Campo CN-Code preenchido via ADP">
+    </div>
+  `;
+  previewStructPattern();
+}
+
+function previewStructPattern() {
+  const c=active(); if(!c) return;
+  const pattern=document.getElementById('sPattern')?.value||'';
+  const prevEl=document.getElementById('sPatternPreview');
+  if(!prevEl) return;
+  prevEl.innerHTML=pattern?renderPatternHtml(pattern,c.segments):'<span style="color:var(--faint)">—</span>';
+}
+
+function saveStructure() {
+  const c=active(); if(!c) return;
+  const label=document.getElementById('sLabel')?.value.trim();
+  const platform=document.getElementById('sPlatform')?.value.trim();
+  const level=document.getElementById('sLevel')?.value.trim();
+  const pattern=document.getElementById('sPattern')?.value.trim();
+  const notes=document.getElementById('sNotes')?.value.trim();
+  if(!label){showToast('Digite o label da estrutura.');return;}
+  if(!pattern){showToast('Digite o padrão da estrutura.');return;}
+  if(!c.structures) c.structures=[];
+  if(structModalMode==='add'){
+    c.structures.push({id:genId(),label,platform,level,pattern,notes});
+  } else {
+    const idx=c.structures.findIndex(s=>s.id===editingStructId);
+    if(idx>=0) c.structures[idx]={id:editingStructId,label,platform,level,pattern,notes};
+  }
+  saveData(); closeStructModal(); renderEstruturas(); renderValidador();
+  showToast('Estrutura salva');
+}
+
+function deleteStructure(id) {
+  const c=active(); if(!c) return;
+  if(!confirm('Excluir esta estrutura?')) return;
+  c.structures=(c.structures||[]).filter(s=>s.id!==id);
+  saveData(); renderEstruturas(); renderValidador();
 }
 
 /* =============================================
