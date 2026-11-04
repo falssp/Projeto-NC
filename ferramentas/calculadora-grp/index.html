@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de GRP/TRP | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;--mono:'JetBrains Mono',monospace;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;--ok:#a5d6a7;--ok-bg:#0a2010;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+input,select{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}.btn-sm:hover{background:var(--border)}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* kpi tiles */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kpi-tile{border-radius:10px;padding:12px 14px;border:1px solid var(--border);background:var(--light)}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.kpi-val{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--azul);line-height:1.1;margin:4px 0 2px}
+.kpi-sub{font-size:10px;color:var(--muted)}
+
+/* scenario table */
+.sc-table{width:100%;border-collapse:collapse}
+.sc-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:5px 10px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap}
+.sc-table td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;font-family:var(--mono)}
+.sc-table tr:hover td{background:var(--light)}
+.sc-table tr:last-child td{border:none}
+
+/* formula box */
+.formula-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8}
+.formula-box code{font-family:var(--mono);background:var(--light);padding:1px 5px;border-radius:4px;font-size:11px;color:var(--azul)}
+
+/* tabs */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:14px}
+.tab{padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;color:var(--muted);border:none;background:transparent;font-family:inherit;transition:all .15s}
+.tab.active{background:var(--azul);color:#fff}
+.tab-panel{display:none}.tab-panel.active{display:block}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Calculadora de GRP / TRP</h1>
+  <p class="subtitle">Calcula GRP, TRP, Reach %, frequência média e universo para campanhas de vídeo, TV e mídia massiva. Simule diferentes combinações e compare cenários.</p>
+</div>
+<div class="main">
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('calc')">Calculadora</button>
+    <button class="tab" onclick="showTab('sim')">Simulador de cenários</button>
+    <button class="tab" onclick="showTab('ref')">Referência</button>
+  </div>
+
+  <!-- CALCULADORA -->
+  <div class="tab-panel active" id="tab-calc">
+    <div class="section-title">Informe 2 campos — o terceiro é calculado automaticamente</div>
+    <div class="row3" style="margin-bottom:12px">
+      <div>
+        <label>GRP / TRP</label>
+        <input id="grp" type="number" placeholder="ex: 150" min="0" oninput="calcGrp('grp')">
+        <div class="hint">Gross Rating Points</div>
+      </div>
+      <div>
+        <label>Reach % (1+)</label>
+        <input id="reach" type="number" placeholder="ex: 60" min="0" max="100" step="0.1" oninput="calcGrp('reach')">
+        <div class="hint">% do universo alcançado ao menos 1×</div>
+      </div>
+      <div>
+        <label>Frequência média</label>
+        <input id="freq" type="number" placeholder="ex: 2.5" min="0" step="0.1" oninput="calcGrp('freq')">
+        <div class="hint">OTS médio por pessoa alcançada</div>
+      </div>
+    </div>
+    <div class="row3" style="margin-bottom:16px">
+      <div>
+        <label>Universo (pessoas)</label>
+        <input id="universe" type="number" placeholder="ex: 10000000" min="0" oninput="calcGrp('universe')">
+        <div class="hint">Tamanho do target (pop. total para TRP)</div>
+      </div>
+      <div>
+        <label>Impressões</label>
+        <input id="impressions" type="number" placeholder="ex: 6000000" min="0" oninput="calcGrp('impressions')">
+        <div class="hint">Total de impressões/exposições</div>
+      </div>
+      <div>
+        <label>Reach absoluto (pessoas)</label>
+        <input id="reach-abs" type="number" placeholder="auto" min="0" oninput="calcGrp('reach-abs')">
+        <div class="hint">Número absoluto de pessoas únicas</div>
+      </div>
+    </div>
+    <div id="grp-result" class="kpi-grid"></div>
+    <div style="display:flex;gap:5px;margin-top:10px">
+      <button class="btn-sm" onclick="copyGrp()">📋 Copiar métricas</button>
+      <button class="btn-sm" onclick="clearGrp()">✕ Limpar</button>
+    </div>
+  </div>
+
+  <!-- SIMULADOR -->
+  <div class="tab-panel" id="tab-sim">
+    <div class="row3" style="margin-bottom:12px">
+      <div>
+        <label>Universo base (pessoas)</label>
+        <input id="sim-universe" type="number" value="10000000" oninput="runSim()">
+      </div>
+      <div>
+        <label>GRP mínimo</label>
+        <input id="sim-grp-min" type="number" value="50" oninput="runSim()">
+      </div>
+      <div>
+        <label>GRP máximo</label>
+        <input id="sim-grp-max" type="number" value="300" oninput="runSim()">
+      </div>
+    </div>
+    <div class="row3" style="margin-bottom:12px">
+      <div>
+        <label>Frequência assumida</label>
+        <input id="sim-freq" type="number" value="3" step="0.5" oninput="runSim()">
+      </div>
+      <div>
+        <label>CPM (R$)</label>
+        <input id="sim-cpm" type="number" value="25" step="0.5" oninput="runSim()">
+      </div>
+      <div>
+        <label>Passos da simulação</label>
+        <input id="sim-steps" type="number" value="6" min="2" max="12" oninput="runSim()">
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="sc-table" id="sim-table">
+        <thead><tr><th>GRP</th><th>Reach %</th><th>Reach abs.</th><th>Impressões</th><th>Budget est.</th></tr></thead>
+        <tbody id="sim-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REFERÊNCIA -->
+  <div class="tab-panel" id="tab-ref">
+    <div class="formula-box">
+      <div style="margin-bottom:10px"><strong>Fórmulas base</strong></div>
+      <div><code>GRP = Reach% × Freq. média</code> — pontos brutos de audiência</div>
+      <div><code>TRP = Reach% (target) × Freq. média</code> — focado no público-alvo</div>
+      <div><code>Reach% = GRP / Freq. média</code></div>
+      <div><code>Freq. média = GRP / Reach%</code></div>
+      <div style="margin-top:10px"><strong>Com universo</strong></div>
+      <div><code>Reach abs. = Universo × Reach%/100</code></div>
+      <div><code>Impressões = Universo × GRP/100</code></div>
+      <div><code>GRP = (Impressões / Universo) × 100</code></div>
+      <div style="margin-top:10px"><strong>Benchmarks de mercado</strong></div>
+      <div>• Campanha de alcance: 100–200 GRPs</div>
+      <div>• Lançamento / awareness: 200–400 GRPs</div>
+      <div>• Frequência recomendada: 3–5× para fixação</div>
+      <div>• Freq. ≥ 7+ pode causar saturação (wear-out)</div>
+      <div style="margin-top:10px"><strong>Diferença GRP vs TRP</strong></div>
+      <div>GRP usa a população total como denominador. TRP usa apenas o público-alvo (target). TRP é sempre ≥ GRP se o target for menor que o universo total.</div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';}
+function showTab(id){document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));document.querySelector(`[onclick="showTab('${id}')"]`).classList.add('active');document.getElementById(`tab-${id}`).classList.add('active');}
+
+function vn(id){return parseFloat(document.getElementById(id).value)||0;}
+function fmtN(n,d=0){if(!isFinite(n)||n===null)return'—';return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);}
+function fmtM(n){return'R$ '+fmtN(n,2);}
+function tile(label,val,sub=''){return`<div class="kpi-tile"><div class="kpi-label">${esc(label)}</div><div class="kpi-val">${esc(val)}</div>${sub?`<div class="kpi-sub">${esc(sub)}</div>`:''}</div>`;}
+
+function calcGrp(changed){
+  let grp=vn('grp'),reach=vn('reach'),freq=vn('freq'),uni=vn('universe'),impr=vn('impressions'),reachAbs=vn('reach-abs');
+
+  // Derive missing
+  if(changed!=='grp'&&reach&&freq)grp=reach*freq;
+  if(changed!=='reach'&&grp&&freq)reach=grp/freq;
+  if(changed!=='freq'&&grp&&reach)freq=grp/reach;
+  if(!reachAbs&&uni&&reach)reachAbs=uni*(reach/100);
+  if(!impr&&uni&&grp)impr=uni*(grp/100);
+  if(!uni&&impr&&grp)uni=(impr/grp)*100;
+  if(!reachAbs&&uni&&reach)reachAbs=uni*(reach/100);
+
+  // Update inputs silently for derived ones
+  if(changed!=='grp'&&grp)document.getElementById('grp').value=grp.toFixed(1);
+  if(changed!=='reach'&&reach)document.getElementById('reach').value=reach.toFixed(2);
+  if(changed!=='freq'&&freq)document.getElementById('freq').value=freq.toFixed(2);
+  if(!vn('reach-abs')&&reachAbs)document.getElementById('reach-abs').value=Math.round(reachAbs);
+  if(!vn('impressions')&&impr)document.getElementById('impressions').value=Math.round(impr);
+
+  const tiles=[];
+  if(grp)tiles.push(tile('GRP',fmtN(grp,1),'Gross Rating Points'));
+  if(reach)tiles.push(tile('Reach %',fmtN(reach,2)+'%','pop. alcançada 1+ vez'));
+  if(freq)tiles.push(tile('Freq. média',fmtN(freq,2)+'×','OTS por pessoa'));
+  if(reachAbs)tiles.push(tile('Reach abs.',fmtN(reachAbs),'pessoas únicas'));
+  if(impr)tiles.push(tile('Impressões',fmtN(impr),'exposições totais'));
+  if(uni)tiles.push(tile('Universo',fmtN(uni),'tamanho do target'));
+
+  document.getElementById('grp-result').innerHTML=tiles.join('');
+  window._grpData={grp,reach,freq,reachAbs,impr,uni};
+}
+
+function clearGrp(){
+  ['grp','reach','freq','universe','impressions','reach-abs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('grp-result').innerHTML='';
+}
+
+function copyGrp(){
+  const d=window._grpData;if(!d)return;
+  const lines=[
+    ['GRP',d.grp?.toFixed(1)],
+    ['Reach %',d.reach?.toFixed(2)+'%'],
+    ['Freq. média',d.freq?.toFixed(2)+'×'],
+    ['Reach absoluto',d.reachAbs?Math.round(d.reachAbs):''],
+    ['Impressões',d.impr?Math.round(d.impr):''],
+    ['Universo',d.uni?Math.round(d.uni):''],
+  ].filter(r=>r[1]).map(r=>r.join('\t')).join('\n');
+  navigator.clipboard.writeText(lines).then(()=>toast('Copiado para Sheets!'));
+}
+
+function runSim(){
+  const uni=parseFloat(document.getElementById('sim-universe').value)||10000000;
+  const gMin=parseFloat(document.getElementById('sim-grp-min').value)||50;
+  const gMax=parseFloat(document.getElementById('sim-grp-max').value)||300;
+  const freq=parseFloat(document.getElementById('sim-freq').value)||3;
+  const cpm=parseFloat(document.getElementById('sim-cpm').value)||25;
+  const steps=Math.max(2,Math.min(12,parseInt(document.getElementById('sim-steps').value)||6));
+
+  const rows=[];
+  for(let i=0;i<steps;i++){
+    const grp=gMin+((gMax-gMin)/(steps-1))*i;
+    const reach=(grp/freq);
+    const reachAbs=uni*(reach/100);
+    const impr=uni*(grp/100);
+    const budget=(impr/1000)*cpm;
+    rows.push({grp,reach,reachAbs,impr,budget});
+  }
+
+  document.getElementById('sim-body').innerHTML=rows.map(r=>`<tr>
+    <td>${fmtN(r.grp,0)}</td>
+    <td>${fmtN(r.reach,1)}%</td>
+    <td>${fmtN(r.reachAbs,0)}</td>
+    <td>${fmtN(r.impr,0)}</td>
+    <td>${fmtM(r.budget)}</td>
+  </tr>`).join('');
+}
+
+runSim();
+</script>
+</body>
+</html>
