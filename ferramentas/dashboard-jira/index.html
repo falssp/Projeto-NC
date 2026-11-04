@@ -112,6 +112,9 @@ body.compact .mk-header{padding:4px 14px 4px 40px !important;}
 .camp-progress-bar{width:60px;height:5px;border-radius:3px;background:var(--surf2);overflow:hidden;display:inline-block;vertical-align:middle;}
 .camp-progress-fill{height:100%;border-radius:3px;transition:width .3s;}
 /* ── Toast ─── */
+/* Scroll to top */
+#djira-top{position:fixed;bottom:24px;right:24px;width:36px;height:36px;border-radius:50%;background:var(--acc);color:#fff;border:none;cursor:pointer;font-size:16px;line-height:36px;text-align:center;z-index:9998;opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+#djira-top.show{opacity:1;transform:translateY(0);pointer-events:auto;}
 #djira-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e2333;border:1px solid var(--brd);color:var(--txt);padding:8px 18px;border-radius:20px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;}
 #djira-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 /* ── Contador topbar ─── */
@@ -150,7 +153,7 @@ body.compact .mk-header{padding:4px 14px 4px 40px !important;}
 .camp-sep-name{font-size:12px;font-weight:600;color:var(--txt2);}
 .solo-badge{background:#2d1a3a;color:#c89bff;font-size:10px;padding:1px 6px;border-radius:3px;}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:#0e1220;color:var(--mut);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--brd);white-space:nowrap;}
+th{background:#0e1220;color:var(--mut);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--brd);white-space:nowrap;position:sticky;top:52px;z-index:10;}
 td{padding:7px 10px;border-bottom:1px solid #1e2333;vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#191d2e;}
@@ -394,6 +397,10 @@ tr:hover td{background:#191d2e;}
         <input type="checkbox" id="filtIncompletos" onchange="renderizar()" style="accent-color:var(--org);width:14px;height:14px;">
         Só incompletos
       </label>
+    </div>
+    <div class="filter-group" style="min-width:160px;">
+      <div class="filter-label">🔍 Busca rápida</div>
+      <input type="text" id="filtBusca" placeholder="campanha, veículo…" oninput="renderizar()" autocomplete="off" style="width:100%;background:var(--surf2);border:1px solid var(--brd);border-radius:5px;padding:5px 8px;font-size:12px;color:var(--txt);outline:none;">
     </div>
   </div>
   <div class="date-sep">
@@ -888,6 +895,8 @@ function limparFiltros() {
   document.getElementById('filtMarca').value = '';
   var cb = document.getElementById('filtIncompletos');
   if (cb) cb.checked = false;
+  var fb = document.getElementById('filtBusca');
+  if (fb) fb.value = '';
   limparCampanha();
   limparFilho();
   popularMarcas();
@@ -904,7 +913,8 @@ function atualizarBtnLimpar() {
   var camp = (document.getElementById('filtCampanhaVal')||{}).value;
   var filho = (document.getElementById('filtFilhoVal')||{}).value;
   var inc = document.getElementById('filtIncompletos') && document.getElementById('filtIncompletos').checked;
-  btn.style.display = (ativos || datas || camp || filho || inc || kpiFiltroAtivo) ? '' : 'none';
+  var busca = (document.getElementById('filtBusca')||{}).value;
+  btn.style.display = (ativos || datas || camp || filho || inc || kpiFiltroAtivo || busca) ? '' : 'none';
 }
 
 function filtrado() {
@@ -954,6 +964,12 @@ function filtrado() {
     }
     var soIncompletos = document.getElementById('filtIncompletos') && document.getElementById('filtIncompletos').checked;
     if (soIncompletos && !_ehIncompleto(r)) return false;
+    var busca = (document.getElementById('filtBusca')||{}).value;
+    if (busca) {
+      var q = busca.toLowerCase();
+      var haystack = [gS(r,'SUMMARY (FILHO)'),gS(r,'PAI_SUMMARY'),gS(r,'CAMP. MÍDIA'),gS(r,'VEÍCULO'),gS(r,'PLATAFORMA'),gS(r,'RESPONSÁVEL'),gS(r,'PAI_KEY'),gS(r,'FILHO_KEY')].join(' ').toLowerCase();
+      if (haystack.indexOf(q) === -1) return false;
+    }
     return true;
   });
 }
@@ -1537,11 +1553,26 @@ document.addEventListener('DOMContentLoaded', function(){
       if (exp) exp.style.display = 'none';
       var cfg = document.getElementById('cfgOverlay');
       if (cfg) cfg.classList.remove('show');
+      // Se nenhum modal aberto, Esc limpa filtros
+      var algumAberto = (exp&&exp.style.display!=='none')||(cfg&&cfg.classList.contains('show'));
+      if (!algumAberto) limparFiltros();
+    }
+    // Atalho / ou F abre busca rápida
+    if (e.key === '/' || e.key === 'f') {
+      var fb = document.getElementById('filtBusca');
+      if (fb) { fb.focus(); fb.select(); e.preventDefault(); }
     }
   });
 
   // Restaurar modo compacto do localStorage
   if (localStorage.getItem('djira-compacto') === '1') { document.body.classList.add('compact'); var bc=document.getElementById('btnCompacto'); if(bc){bc.textContent='⊟ Normal';bc.style.borderColor='var(--acc)';bc.style.color='var(--acc)';} }
+
+  // Scroll-to-top button
+  window.addEventListener('scroll', function(){
+    var btn = document.getElementById('djira-top');
+    if (!btn) return;
+    if (window.scrollY > 300) btn.classList.add('show'); else btn.classList.remove('show');
+  }, {passive:true});
 });
 
 // ── Modo compacto ──────────────────────────────────────────────
@@ -1847,5 +1878,6 @@ async function djiraAnalisarIA(){
   </div>
 </div>
 <div id="djira-toast"></div>
+<button id="djira-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Voltar ao topo">↑</button>
 </body>
 </html>
