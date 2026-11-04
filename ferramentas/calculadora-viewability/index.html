@@ -1,392 +1,292 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Calculadora de Viewability | NC Tool</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Viewability — AdOps Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
-  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
-  --text:#1a237e;--body:#3d4a8a;
-  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
-  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
-  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
-  --mono:'JetBrains Mono',monospace;
-}
-body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
-a.back:hover{opacity:1}
-.header{padding:20px 24px 0;width:100%;box-sizing:border-box}
-h1{font-size:22px;font-weight:700;color:var(--escuro)}
-.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:20px}
-.main{width:100%;box-sizing:border-box;padding:0 24px 48px;display:flex;flex-direction:column;gap:12px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
-.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
-label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:3px}
-.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px}
-.field{display:flex;flex-direction:column}
-input,select{width:100%;font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
-input:focus,select:focus{border-color:var(--azul)}
-.hint{font-size:11px;color:var(--muted);margin-top:2px}
-.divider{border:none;border-top:1px solid var(--border);margin:10px 0}
-/* results */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px}
-.kpi{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
-.kpi-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px}
-.kpi-val{font-size:22px;font-weight:700;color:var(--escuro);line-height:1}
-.kpi-sub{font-size:11px;color:var(--body);margin-top:4px}
-.kpi-ok{border-color:var(--ok-bd);background:var(--ok-bg)}
-.kpi-ok .kpi-val{color:var(--ok)}
-.kpi-warn{border-color:var(--warn-bd);background:var(--warn-bg)}
-.kpi-warn .kpi-val{color:var(--warn)}
-.kpi-err{border-color:var(--err-bd);background:var(--err-bg)}
-.kpi-err .kpi-val{color:var(--err)}
-/* benchmark table */
-.bench-table{width:100%;border-collapse:collapse;font-size:12px}
-.bench-table th{background:var(--bg);padding:7px 10px;text-align:left;font-weight:700;color:var(--body);font-size:11px;border-bottom:1px solid var(--border)}
-.bench-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
-.bench-table tr:last-child td{border-bottom:none}
-.bench-table tr.highlight td{font-weight:700;background:var(--light)}
-.bar-wrap{background:var(--border);border-radius:99px;height:6px;width:100%;margin-top:6px}
-.bar-fill{height:6px;border-radius:99px;background:var(--azul);transition:width .3s}
-.insight{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:8px;border:1px solid;display:flex;gap:8px}
-.insight-ok{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok)}
-.insight-warn{background:var(--warn-bg);border-color:var(--warn-bd);color:var(--warn)}
-.insight-err{background:var(--err-bg);border-color:var(--err-bd);color:var(--err)}
-.insight-icon{font-size:14px;flex-shrink:0}
-
-  /* ─── HELP MODAL ─── */
-  .help-btn{position:fixed;top:14px;right:18px;z-index:900;width:34px;height:34px;border-radius:50%;border:2px solid #1F36C7;background:#fff;color:#1F36C7;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:background .15s,color .15s}
-  .help-btn:hover{background:#1F36C7;color:#fff}
-  .help-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
-  .help-overlay.open{display:flex}
-  .help-modal{background:#fff;border-radius:14px;padding:32px 36px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.22);position:relative;font-family:'Space Grotesk',sans-serif}
-  .help-modal h2{margin:0 0 4px;font-size:1.15rem;color:#1a237e}
-  .help-modal .help-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:#555;line-height:1}
-  .help-modal h3{font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;color:#1F36C7;margin:18px 0 6px}
-  .help-modal p,.help-modal li{font-size:.9rem;color:#333;line-height:1.55;margin:0 0 6px}
-  .help-modal ul{padding-left:18px;margin:0 0 8px}
-  .help-modal .help-tag{display:inline-block;background:#f0f2ff;border:1px solid #c5caf5;border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#1a237e}
-
-/* ── Como usar modal ─────────────────────────────── */
-.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
-.qa-overlay.open{display:flex}
-.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
-.qa-header h2{font-size:15px;font-weight:800;color:#1a237e}
-.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
-.qa-body{padding:20px 24px}
-.help-section{margin-bottom:20px}
-.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--azul,#1F36C7);margin-bottom:10px}
-.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
-.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
-.help-num{min-width:22px;height:22px;border-radius:50%;background:var(--azul,#1F36C7);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.help-txt{font-size:12px;color:#475569;line-height:1.55}
-.help-txt b{color:#1e293b}
-.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
-.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
-.btn-qa{background:transparent;border:1.5px solid rgba(255,255,255,.7);color:rgba(255,255,255,.9);font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
-.btn-qa:hover{background:rgba(255,255,255,.2)}
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--border:#d0d5f0;--text:#1a1a2e;--muted:#5a5f8a;--green:#1b8c3e;--red:#c0392b;--warn:#e67e22;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--border:#2a2d4a;--text:#e8ecff;--muted:#8890c0;--light:#1e2140;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;}
+header a:hover{color:#fff;}
+h1{color:#fff;font-size:1.4rem;font-weight:700;}
+.sub{color:rgba(255,255,255,.75);font-size:.85rem;margin-top:.2rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem;}
+.wrap{max-width:960px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+@media(max-width:650px){.grid2{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:1.2rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em;}
+input,select{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--bg);color:var(--text);transition:.2s;}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.field{margin-bottom:1rem;}
+.btn{padding:.5rem 1rem;border:none;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer;font-size:.88rem;transition:.15s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-sm{padding:.35rem .7rem;font-size:.8rem;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;margin-bottom:1rem;}
+.kpi{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.8rem;text-align:center;}
+.kpi-val{font-size:1.4rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:.2rem;}
+.sep{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+.warn-box{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:.7rem 1rem;font-size:.82rem;color:#7d5a00;margin-bottom:.6rem;}
+.ok-box{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:.7rem 1rem;font-size:.82rem;color:#1b5e20;margin-bottom:.6rem;}
+.bad-box{background:#fce4e4;border:1px solid #ef9a9a;border-radius:8px;padding:.7rem 1rem;font-size:.82rem;color:var(--red);margin-bottom:.6rem;}
+.gauge-wrap{position:relative;width:160px;height:80px;margin:0 auto 1rem;}
+.gauge-bg{fill:none;stroke:var(--border);stroke-width:18;}
+.gauge-fill{fill:none;stroke-width:18;stroke-linecap:round;transition:.5s;}
+.gauge-text{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;fill:var(--text);}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{text-align:left;padding:.4rem .6rem;color:var(--muted);font-weight:600;border-bottom:2px solid var(--border);}
+td{padding:.4rem .6rem;border-bottom:1px solid var(--border);}
+.chip-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem;}
+.chip{padding:.3rem .7rem;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);font-size:.78rem;cursor:pointer;color:var(--muted);font-family:inherit;transition:.15s;}
+.chip.on{background:var(--azul);color:#fff;border-color:var(--azul);}
 </style>
 </head>
 <body>
-<button class="help-btn" onclick="openHelp()" title="Ajuda">?</button>
-<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
-<div class="header">
-  <h1>Calculadora de Viewability</h1>
-  <p class="subtitle">Calcule viewable rate, custo por viewable impression (CPVI), IVT-adjusted reach e compare com benchmarks do mercado por formato e vendor.</p>
+<header>
+  <div>
+    <div style="font-size:.8rem;margin-bottom:.3rem;"><a href="../">← Ferramentas AdOps</a></div>
+    <h1>👁 Calculadora de Viewability</h1>
+    <div class="sub">Impressões viewable, vCPM, impacto no reach e análise vs. benchmarks MRC/IAB</div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
 
-  <button class="btn-qa" onclick="abrirAjuda()">❓ Como usar</button></div>
-<div class="main">
-  <!-- FORM -->
-  <div class="card">
-    <div class="fields-grid">
+<div class="wrap">
+  <div class="grid2">
+    <!-- INPUTS -->
+    <div class="card">
+      <h2>Dados de entrega</h2>
+
       <div class="field">
-        <label>Formato do anúncio</label>
-        <select id="fmt" onchange="calc()">
-          <option value="display_300x250">Display 300×250</option>
-          <option value="display_728x90">Display 728×90 (Leaderboard)</option>
-          <option value="display_160x600">Display 160×600 (Skyscraper)</option>
-          <option value="display_970x250">Display 970×250 (Billboard)</option>
-          <option value="video_pre">Vídeo Pre-roll (in-stream)</option>
-          <option value="video_out">Vídeo Out-stream</option>
-          <option value="native">Native</option>
-          <option value="ctv">CTV / Connected TV</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Parceiro de verificação</label>
-        <select id="vendor" onchange="calc()">
-          <option value="ias">IAS (Integral Ad Science)</option>
-          <option value="dv">DoubleVerify</option>
-          <option value="moat">MOAT (Oracle)</option>
-          <option value="cm360">CM360 Active View</option>
-          <option value="none">Sem verificação</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Impressões servidas</label>
-        <input id="imp-served" type="number" value="1000000" min="0" oninput="calc()">
-      </div>
-      <div class="field">
-        <label>Impressões mensuráveis</label>
-        <input id="imp-measurable" type="number" value="850000" min="0" oninput="calc()">
-        <div class="hint">Onde viewability pôde ser medida</div>
+        <label>Total de impressões medidas</label>
+        <input type="number" id="total-impr" placeholder="1000000" oninput="calc()">
       </div>
       <div class="field">
         <label>Impressões viewable</label>
-        <input id="imp-viewable" type="number" value="510000" min="0" oninput="calc()">
-        <div class="hint">Passaram no critério MRC/JICWEBS</div>
+        <input type="number" id="viewable-impr" placeholder="720000" oninput="calc()">
       </div>
       <div class="field">
-        <label>Gasto total (R$)</label>
-        <input id="spend" type="number" value="15000" min="0" step="100" oninput="calc()">
+        <label>Total investido (R$)</label>
+        <input type="number" id="total-spend" placeholder="12000" oninput="calc()">
       </div>
+
+      <div class="sep"></div>
+
       <div class="field">
-        <label>CPM contratado (R$)</label>
-        <input id="cpm" type="number" value="15" min="0" step="0.5" oninput="calc()">
+        <label>Formato / canal</label>
+        <select id="format" onchange="applyBenchmark()">
+          <option value="display">Display (banner)</option>
+          <option value="video">Video in-stream</option>
+          <option value="native">Nativo</option>
+          <option value="social">Social feed</option>
+          <option value="ctv">CTV / OTT</option>
+          <option value="ooh">DOOH</option>
+        </select>
       </div>
+
       <div class="field">
-        <label>IVT rate (%)</label>
-        <input id="ivt" type="number" value="3" min="0" max="100" step="0.1" oninput="calc()">
+        <label>Meta de viewability (%)</label>
+        <input type="number" id="view-goal" placeholder="70" oninput="calc()">
       </div>
+
+      <div class="sep"></div>
+
       <div class="field">
-        <label>SIVT rate (%) <span style="font-size:10px;color:var(--muted)">subset</span></label>
-        <input id="sivt" type="number" value="0.5" min="0" max="100" step="0.1" oninput="calc()">
-        <div class="hint">Sophisticated IVT</div>
+        <label>CPM total cobrado (R$)</label>
+        <input type="number" id="cpm-total" placeholder="12.00" oninput="calc()">
+      </div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;">
+        <button class="btn btn-primary" onclick="calc()">Calcular</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadSample()">Exemplo</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAll()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="card">
+        <h2>Métricas principais</h2>
+        <div id="gauge-wrap" style="text-align:center;margin-bottom:.5rem;">
+          <svg viewBox="0 0 200 110" width="200" height="110">
+            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--border)" stroke-width="20"/>
+            <path id="gauge-arc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--azul)" stroke-width="20" stroke-dasharray="0 251.2"/>
+            <text id="gauge-pct" x="100" y="88" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="22" font-weight="700" fill="var(--text)">—</text>
+            <text x="100" y="105" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="11" fill="var(--muted)">viewability</text>
+          </svg>
+        </div>
+        <div class="kpi-grid" id="kpis">
+          <div class="kpi"><div class="kpi-val" style="color:var(--azul);">—</div><div class="kpi-lbl">Viewability %</div></div>
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Impr. viewable</div></div>
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">vCPM</div></div>
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Custo/1k viewable</div></div>
+        </div>
+        <div id="verdict"></div>
+      </div>
+
+      <div class="card">
+        <h2>Análise de eficiência</h2>
+        <div id="efficiency"><p style="color:var(--muted);font-size:.85rem;">Preencha os campos para ver a análise.</p></div>
       </div>
     </div>
   </div>
 
-  <!-- RESULTS -->
-  <div class="card" id="result-card">
-    <div style="font-size:13px;color:var(--muted)">Preencha os dados acima para calcular.</div>
+  <!-- BENCHMARKS -->
+  <div class="card">
+    <h2>Benchmarks de viewability por canal</h2>
+    <div class="chip-row" id="bench-chips"></div>
+    <div id="bench-detail"></div>
+    <div class="sep"></div>
+    <table>
+      <thead><tr><th>Canal</th><th>MRC mínimo</th><th>IAB Gold</th><th>Excelente</th><th>Critério de viewability</th></tr></thead>
+      <tbody>
+        <tr><td>Display</td><td>50%</td><td>70%</td><td>80%+</td><td>≥50% da área por ≥1s</td></tr>
+        <tr><td>Video</td><td>50%</td><td>70%</td><td>80%+</td><td>≥50% da área por ≥2s</td></tr>
+        <tr><td>Large Format (≥242k px)</td><td>30%</td><td>60%</td><td>75%+</td><td>≥30% da área por ≥1s</td></tr>
+        <tr><td>CTV / OTT</td><td>—</td><td>95%+</td><td>100%</td><td>Tela cheia sempre visível</td></tr>
+        <tr><td>Social Feed</td><td>50%</td><td>65%</td><td>80%+</td><td>Scroll: ≥50% por ≥1s</td></tr>
+        <tr><td>DOOH</td><td>—</td><td>85%+</td><td>95%+</td><td>Presença física + loopplay</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
 <script>
-/* Benchmarks por formato [viewableRate, measurableRate] - fonte: IAS H2 2024, DV benchmarks */
 const BENCHMARKS={
-  display_300x250:{label:'Display 300×250',vr:0.62,mr:0.84,mrc:'50% pixel por ≥1s',vrVideo:null},
-  display_728x90:{label:'Leaderboard 728×90',vr:0.58,mr:0.82,mrc:'50% pixel por ≥1s',vrVideo:null},
-  display_160x600:{label:'Skyscraper 160×600',vr:0.65,mr:0.80,mrc:'50% pixel por ≥1s',vrVideo:null},
-  display_970x250:{label:'Billboard 970×250',vr:0.68,mr:0.83,mrc:'50% pixel por ≥1s',vrVideo:null},
-  video_pre:{label:'Vídeo Pre-roll',vr:0.73,mr:0.90,mrc:'50% pixel por ≥2s',vrVideo:true},
-  video_out:{label:'Vídeo Out-stream',vr:0.54,mr:0.78,mrc:'50% pixel por ≥2s',vrVideo:true},
-  native:{label:'Native',vr:0.70,mr:0.86,mrc:'50% pixel por ≥1s',vrVideo:null},
-  ctv:{label:'CTV',vr:0.95,mr:0.97,mrc:'100% pixel por ≥2s',vrVideo:true},
+  display:{min:50,gold:70,great:80,std:'≥50% da área, ≥1 segundo'},
+  video:{min:50,gold:70,great:80,std:'≥50% da área, ≥2 segundos'},
+  native:{min:50,gold:65,great:75,std:'≥50% da área, ≥1 segundo'},
+  social:{min:50,gold:65,great:80,std:'≥50% da área, ≥1 segundo'},
+  ctv:{min:90,gold:95,great:98,std:'Tela cheia — quase sempre 100%'},
+  ooh:{min:80,gold:85,great:95,std:'Presença física + loop'},
 };
+const FORMAT_LABELS={display:'Display',video:'Vídeo',native:'Nativo',social:'Social',ctv:'CTV',ooh:'DOOH'};
 
-const VENDOR_NOTES={
-  ias:'IAS define viewability conforme padrão MRC. Relatório inclui Viewability Rate, IVT e Brand Safety.',
-  dv:'DoubleVerify usa metodologia MRC + própria. Pode diferir do IAS em até 5–8pp em alguns formatos.',
-  moat:'MOAT (Oracle) descontinuado para novos contratos desde 2023. Dados legados ainda presentes em campanhas existentes.',
-  cm360:'CM360 Active View usa padrão MRC. Disponível nativamente em campanhas DV360/CM360.',
-  none:'Sem parceiro de verificação — dados de viewability baseados em estimativa do publisher ou ad server.',
-};
+function fmt(n){if(!isFinite(n))return'—';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'k';return Math.round(n).toLocaleString('pt-BR');}
+function fmtCur(n){return'R$ '+Number(n).toFixed(2).replace('.',',');}
 
-function n(id){return parseFloat(document.getElementById(id).value)||0;}
-
-function fmt(v,dec=1){return v.toLocaleString('pt-BR',{maximumFractionDigits:dec,minimumFractionDigits:dec});}
-function fmtPct(v){return fmt(v*100,1)+'%';}
-function fmtBRL(v){return 'R$ '+fmt(v,2);}
-function fmtM(v){return v>=1e6?fmt(v/1e6,2)+'M':v>=1e3?fmt(v/1e3,1)+'k':fmt(v,0);}
-
-function statusClass(actual,benchmark,higher=true){
-  const ratio=actual/benchmark;
-  if(higher) return ratio>=0.95?'kpi-ok':ratio>=0.80?'kpi-warn':'kpi-err';
-  return ratio<=1.05?'kpi-ok':ratio<=1.20?'kpi-warn':'kpi-err';
+function applyBenchmark(){
+  const fmt=document.getElementById('format').value;
+  const b=BENCHMARKS[fmt];
+  if(!document.getElementById('view-goal').value) document.getElementById('view-goal').value=b.gold;
+  calc();
 }
 
 function calc(){
-  const served=n('imp-served')||1;
-  const measurable=n('imp-measurable');
-  const viewable=n('imp-viewable');
-  const spend=n('spend');
-  const cpm=n('cpm');
-  const ivt=n('ivt')/100;
-  const sivt=n('sivt')/100;
-  const fmt_key=document.getElementById('fmt').value;
-  const vendor=document.getElementById('vendor').value;
-  const bench=BENCHMARKS[fmt_key];
+  const total=parseFloat(document.getElementById('total-impr').value)||0;
+  const viewable=parseFloat(document.getElementById('viewable-impr').value)||0;
+  const spend=parseFloat(document.getElementById('total-spend').value)||0;
+  const goal=parseFloat(document.getElementById('view-goal').value)||70;
+  const cpmTotal=parseFloat(document.getElementById('cpm-total').value)||0;
+  const fmt=document.getElementById('format').value;
+  const bench=BENCHMARKS[fmt];
 
-  // Core metrics
-  const measurableRate=measurable/served;
-  const viewableRate=viewable/measurable||0;
-  const viewableOfServed=viewable/served;
-  const ivtAdj=Math.max(0,viewable*(1-ivt));
-  const cpmCalc=spend/(served/1000)||0;
-  const cpvi=viewable>0?spend/(viewable/1000):0;
-  const cpviAdj=ivtAdj>0?spend/(ivtAdj/1000):0;
-  const cpmViewable=cpmCalc/viewableOfServed||0;
+  if(!total||!viewable){
+    updateGauge(null);
+    document.getElementById('kpis').innerHTML='<div class="kpi"><div class="kpi-val" style="color:var(--azul);">—</div><div class="kpi-lbl">Viewability</div></div><div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Impr. viewable</div></div><div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">vCPM</div></div><div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Custo/1k viewable</div></div>';
+    document.getElementById('verdict').innerHTML='';
+    document.getElementById('efficiency').innerHTML='<p style="color:var(--muted);font-size:.85rem;">Preencha os campos para ver a análise.</p>';
+    return;
+  }
 
-  // vs benchmark
-  const vrDiff=viewableRate-bench.vr;
-  const mrDiff=measurableRate-bench.mr;
+  const viewPct=(viewable/total*100);
+  const vcpm=spend&&viewable?(spend/viewable*1000):null;
+  const cpmViewable=cpmTotal&&viewPct?(cpmTotal/(viewPct/100)):null;
 
-  // Insights
-  const insights=[];
-  if(viewableRate>=bench.vr*1.05) insights.push({t:'ok',msg:`Viewable rate ${fmtPct(viewableRate)} está ${fmt(vrDiff*100,1)}pp acima do benchmark (${fmtPct(bench.vr)}). Excelente performance.`});
-  else if(viewableRate>=bench.vr*0.90) insights.push({t:'warn',msg:`Viewable rate ${fmtPct(viewableRate)} está ligeiramente abaixo do benchmark (${fmtPct(bench.vr)}). Avalie posicionamentos e frequency cap.`});
-  else insights.push({t:'err',msg:`Viewable rate ${fmtPct(viewableRate)} está ${fmt(Math.abs(vrDiff)*100,1)}pp abaixo do benchmark (${fmtPct(bench.vr)}). Revise inventário — considere filtro de posicionamentos low-viewability.`});
+  updateGauge(viewPct);
 
-  if(measurableRate<0.70) insights.push({t:'warn',msg:`Taxa de mensuração baixa (${fmtPct(measurableRate)}). Inventário com alta presença de ambientes sem tag JS (app nativo, CTV) pode reduzir mensurabilidade.`});
+  const color=viewPct>=bench.great?'var(--green)':viewPct>=bench.gold?'var(--azul)':viewPct>=bench.min?'var(--warn)':'var(--red)';
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-val" style="color:${color};">${viewPct.toFixed(1)}%</div><div class="kpi-lbl">Viewability</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(viewable)}</div><div class="kpi-lbl">Impr. viewable</div></div>
+    <div class="kpi"><div class="kpi-val">${vcpm?fmtCur(vcpm):'—'}</div><div class="kpi-lbl">vCPM</div></div>
+    <div class="kpi"><div class="kpi-val">${cpmViewable?fmtCur(cpmViewable):'—'}</div><div class="kpi-lbl">CPM efetivo viewable</div></div>
+  `;
 
-  if(ivt>=0.05) insights.push({t:'err',msg:`IVT rate de ${fmtPct(ivt)} está acima do limiar aceitável (5%). Revise listas de exclusão e considere compra com garantia de IVT.`});
-  else if(ivt>=0.03) insights.push({t:'warn',msg:`IVT rate de ${fmtPct(ivt)} — monitorar. Benchmark de mercado aceitável: < 3%.`});
-  else insights.push({t:'ok',msg:`IVT rate de ${fmtPct(ivt)} dentro do limite aceitável (< 3%).`});
+  // Verdict
+  let verdict='';
+  if(viewPct>=bench.great) verdict=`<div class="ok-box">🌟 Excelente viewability (${viewPct.toFixed(1)}% ≥ ${bench.great}% — nível "great" para ${FORMAT_LABELS[fmt]})</div>`;
+  else if(viewPct>=bench.gold) verdict=`<div class="ok-box">✅ Viewability dentro do padrão IAB Gold (${viewPct.toFixed(1)}% ≥ ${bench.gold}%)</div>`;
+  else if(viewPct>=bench.min) verdict=`<div class="warn-box">⚠️ Viewability acima do mínimo MRC mas abaixo do benchmark gold (meta: ${bench.gold}%)</div>`;
+  else verdict=`<div class="bad-box">❌ Viewability abaixo do mínimo MRC para ${FORMAT_LABELS[fmt]} (${bench.min}%). Revisar placement e ambiente.</div>`;
+  if(goal&&viewPct<goal) verdict+=`<div class="warn-box">⚠️ Abaixo da meta contratada: ${viewPct.toFixed(1)}% vs. meta de ${goal}%</div>`;
+  document.getElementById('verdict').innerHTML=verdict;
 
-  if(vendor==='moat') insights.push({t:'warn',msg:'MOAT (Oracle) está descontinuado para novos contratos desde 2023. Avalie migração para IAS ou DoubleVerify.'});
+  // Efficiency
+  if(spend&&viewable){
+    const nonViewable=total-viewable;
+    const spendWasted=spend*(nonViewable/total);
+    const spendEffective=spend-spendWasted;
+    document.getElementById('efficiency').innerHTML=`
+      <table>
+        <tr><td style="color:var(--muted);">Impressões não viewable</td><td><strong>${fmt(nonViewable)} (${(100-viewPct).toFixed(1)}%)</strong></td></tr>
+        <tr><td style="color:var(--muted);">Investimento "desperdiçado"</td><td><strong style="color:var(--red);">${fmtCur(spendWasted)}</strong></td></tr>
+        <tr><td style="color:var(--muted);">Investimento efetivo</td><td><strong style="color:var(--green);">${fmtCur(spendEffective)}</strong></td></tr>
+        <tr><td style="color:var(--muted);">CPM total pago</td><td><strong>${cpmTotal?fmtCur(cpmTotal):'—'}</strong></td></tr>
+        <tr><td style="color:var(--muted);">CPM efetivo (só viewable)</td><td><strong>${cpmViewable?fmtCur(cpmViewable):'—'}</strong></td></tr>
+        <tr><td style="color:var(--muted);">Multiplicador de custo</td><td><strong>${cpmViewable&&cpmTotal?(cpmViewable/cpmTotal).toFixed(2)+'×':'—'}</strong></td></tr>
+      </table>
+      <p style="font-size:.75rem;color:var(--muted);margin-top:.6rem;">Para atingir ${goal}% de viewability mantendo o mesmo volume de impr. viewable, você precisaria de ${fmt(viewable/(goal/100))} impr. totais.</p>
+    `;
+  }
 
-  document.getElementById('result-card').innerHTML=`
-    <div class="section-title">Resultados — ${bench.label}</div>
-
-    <div class="kpi-grid">
-      <div class="kpi ${statusClass(viewableRate,bench.vr)}">
-        <div class="kpi-label">Viewable Rate</div>
-        <div class="kpi-val">${fmtPct(viewableRate)}</div>
-        <div class="kpi-sub">Benchmark: ${fmtPct(bench.vr)}</div>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,viewableRate*100)}%"></div></div>
-      </div>
-      <div class="kpi ${statusClass(measurableRate,bench.mr)}">
-        <div class="kpi-label">Taxa de Mensuração</div>
-        <div class="kpi-val">${fmtPct(measurableRate)}</div>
-        <div class="kpi-sub">Benchmark: ${fmtPct(bench.mr)}</div>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,measurableRate*100)}%"></div></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Impressões Viewable</div>
-        <div class="kpi-val">${fmtM(viewable)}</div>
-        <div class="kpi-sub">${fmtM(ivtAdj)} após IVT adj.</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">CPM servido</div>
-        <div class="kpi-val">${fmtBRL(cpmCalc)}</div>
-        <div class="kpi-sub">Contratado: ${fmtBRL(n('cpm'))}</div>
-      </div>
-      <div class="kpi ${cpvi<=cpm*3?'kpi-ok':cpvi<=cpm*5?'kpi-warn':'kpi-err'}">
-        <div class="kpi-label">CPVI (viewable)</div>
-        <div class="kpi-val">${fmtBRL(cpvi)}</div>
-        <div class="kpi-sub">Custo por 1k viewable</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">CPVI ajust. IVT</div>
-        <div class="kpi-val">${fmtBRL(cpviAdj)}</div>
-        <div class="kpi-sub">Após descontar IVT</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">IVT Rate</div>
-        <div class="kpi-val ${ivt>=0.05?'':''}${ivt>=0.05?'':''}">${fmtPct(ivt)}</div>
-        <div class="kpi-sub">SIVT: ${fmtPct(sivt)}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Impressões Válidas</div>
-        <div class="kpi-val">${fmtM(ivtAdj)}</div>
-        <div class="kpi-sub">Viewable sem IVT</div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:14px">
-      ${insights.map(i=>`<div class="insight insight-${i.t}"><div class="insight-icon">${i.t==='ok'?'✅':i.t==='warn'?'⚠️':'⛔'}</div><div>${i.msg}</div></div>`).join('')}
-    </div>
-
-    <div class="divider" style="margin-bottom:14px"></div>
-
-    <div class="section-title">Benchmarks de mercado — ${bench.label}</div>
-    <table class="bench-table">
-      <thead><tr><th>Padrão</th><th>Viewable Rate</th><th>Critério MRC</th></tr></thead>
-      <tbody>
-        <tr><td>Mínimo aceitável</td><td>50%</td><td rowspan="4">${bench.mrc}</td></tr>
-        <tr><td>Benchmark de mercado BR</td><td>${fmtPct(bench.vr)}</td></tr>
-        <tr><td>Premium / Top publishers</td><td>${fmtPct(bench.vr+0.08)}</td></tr>
-        <tr class="highlight"><td>Sua campanha</td><td>${fmtPct(viewableRate)}</td></tr>
-      </tbody>
-    </table>
-
-    <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:7px;border:1px solid var(--border);font-size:12px;color:var(--body)">
-      <b>${['ias','dv','moat','cm360','none'].includes(vendor)?['IAS','DoubleVerify','MOAT','CM360 Active View','Sem verificação'][['ias','dv','moat','cm360','none'].indexOf(vendor)]:vendor}:</b> ${VENDOR_NOTES[vendor]||''}
-    </div>`;
+  renderBenchChips();
 }
 
-// Init
-calc();
+function updateGauge(pct){
+  const arc=document.getElementById('gauge-arc');
+  const txt=document.getElementById('gauge-pct');
+  const total=251.2;
+  if(pct===null){
+    arc.setAttribute('stroke-dasharray','0 '+total);
+    txt.textContent='—';
+    return;
+  }
+  const filled=Math.min(pct/100,1)*total;
+  arc.setAttribute('stroke-dasharray',filled+' '+(total-filled));
+  const color=pct>=80?'#1b8c3e':pct>=70?'#1F36C7':pct>=50?'#e67e22':'#c0392b';
+  arc.setAttribute('stroke',color);
+  txt.textContent=pct.toFixed(1)+'%';
+}
 
-function openHelp(){document.getElementById('helpOverlay').classList.add('open')}
-function closeHelp(){document.getElementById('helpOverlay').classList.remove('open')}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeHelp()})
+function renderBenchChips(){
+  const chips=document.getElementById('bench-chips');
+  chips.innerHTML=Object.entries(BENCHMARKS).map(([k,v])=>`<button class="chip on" style="cursor:default;">${FORMAT_LABELS[k]}: ${v.gold}% gold</button>`).join('');
+}
 
+function loadSample(){
+  document.getElementById('total-impr').value=1500000;
+  document.getElementById('viewable-impr').value=1050000;
+  document.getElementById('total-spend').value=18000;
+  document.getElementById('format').value='display';
+  document.getElementById('view-goal').value=70;
+  document.getElementById('cpm-total').value=12;
+  calc();
+}
 
-function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
-function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+function clearAll(){
+  ['total-impr','viewable-impr','total-spend','view-goal','cpm-total'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('format').value='display';
+  calc();
+}
 
+function toggleTheme(){
+  const html=document.documentElement;
+  html.setAttribute('data-theme',html.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+
+renderBenchChips();
 </script>
-
-<div class="help-overlay" id="helpOverlay" onclick="if(event.target===this)closeHelp()">
-  <div class="help-modal">
-    <button class="help-close" onclick="closeHelp()">×</button>
-    <h2>Calculadora de Viewability</h2>
-    <h3>O que faz</h3>
-    <p>Calcula as métricas de visibilidade da sua campanha e compara com benchmarks do mercado — para saber se o resultado está bom ou precisa de ação.</p>
-    <h3>Como usar</h3>
-    <ul>
-      <li>Preencha o formato do anúncio, o partner de mensuração e os números de impressão (servidas, mensuráveis, viewable).</li>
-      <li>Gasto e CPM são opcionais — só precisam se quiser ver o CPVI (custo por impressão viewable).</li>
-      <li>IVT e SIVT também são opcionais — pegue esses números no relatório do seu partner de verificação.</li>
-    </ul>
-    <h3>O que os KPIs significam</h3>
-    <ul>
-      <li><strong>Viewable Rate:</strong> % de impressões que foram efetivamente visíveis. Padrão MRC: ≥ 50% do anúncio por ≥ 1 segundo.</li>
-      <li><strong>CPVI:</strong> quanto você pagou por cada impressão de fato viewable.</li>
-      <li><strong>IVT:</strong> tráfego inválido (bots e fraude). Quanto menor, melhor.</li>
-    </ul>
-    <h3>Cores dos KPIs</h3>
-    <ul>
-      <li>🟢 Verde = dentro ou acima do benchmark · 🟡 Amarelo = próximo do limite · 🔴 Vermelho = abaixo do esperado</li>
-    </ul>
-  </div>
-</div>
-
-<!-- ── Como usar modal ─────────────────────────────── -->
-<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
-  <div class="qa-modal">
-    <div class="qa-header">
-      <h2>🧮 Como usar · Calculadora de Viewability</h2>
-      <button class="qa-close" onclick="fecharAjuda()">✕</button>
-    </div>
-    <div class="qa-body">
-      <div class="help-section">
-        <h3>Visão geral</h3>
-        <p>Use a <b>Calculadora de Viewability</b> para calcular métricas de mídia digital com precisão.</p>
-      </div>
-      <div class="help-section">
-        <h3>Passo a passo</h3>
-      <div class="help-step">
-        <div class="help-num">1</div>
-        <div class="help-txt"><b>Preencha os campos</b><br>Insira os valores disponíveis nos campos de entrada. Os campos obrigatórios são marcados com asterisco.</div>
-      </div>
-      <div class="help-step">
-        <div class="help-num">2</div>
-        <div class="help-txt"><b>Execute o cálculo</b><br>Clique em <b>Calcular</b> ou pressione <b>Enter</b>. O resultado aparece instantaneamente.</div>
-      </div>
-      <div class="help-step">
-        <div class="help-num">3</div>
-        <div class="help-txt"><b>Interprete o resultado</b><br>Os valores calculados são exibidos com benchmarks de referência quando disponíveis.</div>
-      </div>
-      <div class="help-step">
-        <div class="help-num">4</div>
-        <div class="help-txt"><b>Exporte se necessário</b><br>Use o botão de cópia ou exportação para levar os dados para outra ferramenta.</div>
-      </div>
-      </div>
-      <div class="help-tip">
-        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
-      </div>
-    </div>
-  </div>
-</div>
 </body>
 </html>

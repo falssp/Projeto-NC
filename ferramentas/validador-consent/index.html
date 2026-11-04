@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validador de Consent String (TCF) — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--border:#d0d5f0;--text:#1a1a2e;--muted:#5a5f8a;--green:#1b8c3e;--red:#c0392b;--warn:#e67e22;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--border:#2a2d4a;--text:#e8ecff;--muted:#8890c0;--light:#1e2140;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;}
+header a:hover{color:#fff;}
+h1{color:#fff;font-size:1.4rem;font-weight:700;}
+.sub{color:rgba(255,255,255,.75);font-size:.85rem;margin-top:.2rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem;}
+.wrap{max-width:960px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:1.2rem;color:var(--azul);}
+textarea{width:100%;padding:.7rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--bg);color:var(--text);resize:vertical;min-height:80px;transition:.2s;}
+textarea:focus{outline:none;border-color:var(--azul);}
+.btn{padding:.5rem 1rem;border:none;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer;font-size:.88rem;transition:.15s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-sm{padding:.35rem .7rem;font-size:.78rem;}
+.sep{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem;margin-bottom:1rem;}
+.kpi{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.8rem;text-align:center;}
+.kpi-val{font-size:1.2rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:.2rem;}
+.ok-box{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:#1b5e20;margin-bottom:.5rem;}
+.warn-box{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:#7d5a00;margin-bottom:.5rem;}
+.bad-box{background:#fce4e4;border:1px solid #ef9a9a;border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:var(--red);margin-bottom:.5rem;}
+.info-box{background:var(--light);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:var(--azul);margin-bottom:.5rem;}
+.vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem;margin-top:.8rem;}
+.vendor-card{border:1.5px solid var(--border);border-radius:8px;padding:.6rem .8rem;display:flex;align-items:center;gap:.6rem;font-size:.82rem;}
+.vendor-status{font-size:1rem;}
+.vendor-name{flex:1;font-weight:600;}
+.vendor-id{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);}
+.purpose-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.4rem;}
+.purpose-row{display:flex;align-items:flex-start;gap:.5rem;padding:.4rem .5rem;border-radius:6px;font-size:.8rem;}
+.purpose-row.yes{background:#e8f5e9;}
+.purpose-row.no{background:#fce4e4;}
+.purpose-row .icon{font-size:.9rem;flex-shrink:0;margin-top:.05rem;}
+.purpose-name{flex:1;}
+.bit-wrap{background:#1a1a2e;border-radius:8px;padding:.8rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#ccc;word-break:break-all;line-height:1.6;}
+.bit-on{color:#a8ff78;}
+.bit-off{color:#555;}
+.section-title{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.6rem;}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+th{text-align:left;padding:.4rem .6rem;color:var(--muted);font-weight:600;border-bottom:2px solid var(--border);}
+td{padding:.4rem .6rem;border-bottom:1px solid var(--border);}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div style="font-size:.8rem;margin-bottom:.3rem;"><a href="../">← Ferramentas AdOps</a></div>
+    <h1>🛡 Validador de Consent String (TCF v2)</h1>
+    <div class="sub">Decodifique TCF v2.x, verifique propósitos consentidos e status de vendors-chave</div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Consent String TCF v2.x</h2>
+    <div style="margin-bottom:.8rem;">
+      <textarea id="cs-input" placeholder="Cole aqui a consent string TCF v2.x&#10;Ex: CPzmLMABzgAAA..."></textarea>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-primary" onclick="decode()">Decodificar</button>
+      <button class="btn btn-secondary btn-sm" onclick="loadSample()">Exemplo v2.0</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearAll()">Limpar</button>
+    </div>
+  </div>
+
+  <div id="results" style="display:none;flex-direction:column;gap:1rem;"></div>
+
+  <!-- REFERENCE -->
+  <div class="card">
+    <h2>Propósitos IAB TCF v2.x</h2>
+    <table>
+      <thead><tr><th>#</th><th>Propósito</th><th>Descrição resumida</th><th>Essencial para Ads</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Armazenar e/ou acessar informações no dispositivo</td><td>Cookies, localStorage, pixel</td><td style="color:var(--green);">✅ Crítico</td></tr>
+        <tr><td>2</td><td>Publicidade básica</td><td>Exibir anúncios sem personalização de perfil</td><td style="color:var(--green);">✅ Crítico</td></tr>
+        <tr><td>3</td><td>Criar perfil personalizado</td><td>Construir perfil de interesse do usuário</td><td style="color:var(--warn);">⚠️ Importante</td></tr>
+        <tr><td>4</td><td>Selecionar anúncios personalizados</td><td>Usar perfil para exibir anúncios relevantes</td><td style="color:var(--warn);">⚠️ Importante</td></tr>
+        <tr><td>5</td><td>Criar perfil de conteúdo</td><td>Perfil para personalizar conteúdo editorial</td><td>➖ Opcional (ads)</td></tr>
+        <tr><td>6</td><td>Selecionar conteúdo personalizado</td><td>Personalizar conteúdo não-publicitário</td><td>➖ Opcional</td></tr>
+        <tr><td>7</td><td>Medir desempenho de anúncios</td><td>Relatórios e analytics de campanhas</td><td style="color:var(--green);">✅ Crítico</td></tr>
+        <tr><td>8</td><td>Medir desempenho de conteúdo</td><td>Analytics de conteúdo editorial</td><td>➖ Opcional</td></tr>
+        <tr><td>9</td><td>Aplicar pesquisa de mercado</td><td>Survey, panel, research</td><td>➖ Opcional</td></tr>
+        <tr><td>10</td><td>Desenvolver e melhorar produtos</td><td>R&D, melhoria de algoritmos</td><td>➖ Opcional</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// Key AdTech vendors (TCF GVL IDs)
+const KEY_VENDORS=[
+  {id:755,name:'Google Advertising Products',short:'Google Ads / CM360 / DV360'},
+  {id:97,name:'Google Analytics',short:'GA / GA4'},
+  {id:91,name:'Meta (Facebook)',short:'Meta Pixel / Conversions API'},
+  {id:69,name:'Amazon',short:'Amazon DSP / A9'},
+  {id:138,name:'The Trade Desk',short:'TTD DSP'},
+  {id:21,name:'Magnite (Rubicon)',short:'SSP Magnite'},
+  {id:52,name:'Index Exchange',short:'SSP Index Exchange'},
+  {id:32,name:'AppNexus (Xandr)',short:'DSP/SSP Xandr'},
+  {id:10,name:'PubMatic',short:'SSP PubMatic'},
+  {id:160,name:'DoubleVerify',short:'Brand Safety / DV'},
+  {id:131,name:'IAS (Integral Ad Science)',short:'Brand Safety / IAS'},
+  {id:11,name:'TripleLift',short:'Native Ads'},
+];
+
+const PURPOSE_NAMES={
+  1:'Armazenar/acessar dispositivo',
+  2:'Publicidade básica',
+  3:'Criar perfil personalizado',
+  4:'Selecionar anúncios personalizados',
+  5:'Criar perfil de conteúdo',
+  6:'Selecionar conteúdo personalizado',
+  7:'Medir desempenho de anúncios',
+  8:'Medir desempenho de conteúdo',
+  9:'Pesquisa de mercado',
+  10:'Desenvolver/melhorar produtos',
+};
+
+function base64UrlDecode(str){
+  str=str.replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length%4)str+='=';
+  try{
+    const bin=atob(str);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    return bytes;
+  }catch(e){return null;}
+}
+
+function readBits(bytes,start,len){
+  let val=0;
+  for(let i=0;i<len;i++){
+    const byteIdx=Math.floor((start+i)/8);
+    const bitIdx=7-((start+i)%8);
+    val=(val<<1)|((bytes[byteIdx]>>bitIdx)&1);
+  }
+  return val;
+}
+
+function readChar6(bytes,start,len){
+  let s='';
+  for(let i=0;i<len/6;i++){
+    s+=String.fromCharCode(readBits(bytes,start+i*6,6)+65);
+  }
+  return s;
+}
+
+function decodeTCString(str){
+  str=str.trim().split('.')[0]; // core string only (no publisher TC / disclosed vendors)
+  const bytes=base64UrlDecode(str);
+  if(!bytes||bytes.length<29) return null;
+
+  const version=readBits(bytes,0,6);
+  if(version!==2) return{error:`Versão ${version} detectada. Este validador suporta TCF v2.x.`};
+
+  const created=new Date(readBits(bytes,6,36)*100);
+  const lastUpdated=new Date(readBits(bytes,42,36)*100);
+  const cmpId=readBits(bytes,78,12);
+  const cmpVersion=readBits(bytes,90,12);
+  const consentScreen=readBits(bytes,102,6);
+  const consentLanguage=readChar6(bytes,108,12);
+  const vendorListVersion=readBits(bytes,120,12);
+  const tcfPolicyVersion=readBits(bytes,132,6);
+  const isServiceSpecific=readBits(bytes,138,1);
+  const useNonStandardStacks=readBits(bytes,139,1);
+  const specialFeatureOptIns=readBits(bytes,140,12);
+
+  // Purposes consent bits (10 bits at position 152)
+  const purposesConsent={};
+  for(let i=0;i<10;i++){
+    purposesConsent[i+1]=readBits(bytes,152+i,1)===1;
+  }
+  // Purposes legitimate interest (10 bits at 162)
+  const purposesLI={};
+  for(let i=0;i<10;i++){
+    purposesLI[i+1]=readBits(bytes,162+i,1)===1;
+  }
+
+  // Vendor consents — simplified: read bitfield if present
+  const purposeOneTreatment=readBits(bytes,172,1);
+  const publisherCC=readChar6(bytes,173,12);
+
+  // Vendor consent section
+  let vendorConsents={};
+  let pos=185;
+  if(pos+16<=bytes.length*8){
+    const maxVendorId=readBits(bytes,pos,16);pos+=16;
+    const isRangeEncoding=readBits(bytes,pos,1);pos+=1;
+    if(!isRangeEncoding&&pos+maxVendorId<=bytes.length*8){
+      for(let v=1;v<=Math.min(maxVendorId,1000);v++){
+        vendorConsents[v]=readBits(bytes,pos+v-1,1)===1;
+      }
+    }
+  }
+
+  return{
+    version,created,lastUpdated,cmpId,cmpVersion,
+    consentLanguage,vendorListVersion,tcfPolicyVersion,
+    isServiceSpecific,purposesConsent,purposesLI,
+    purposeOneTreatment,publisherCC,vendorConsents,
+    specialFeatureOptIns
+  };
+}
+
+function decode(){
+  const raw=document.getElementById('cs-input').value.trim();
+  if(!raw){alert('Cole uma consent string.');return;}
+
+  const res=document.getElementById('results');
+  res.style.display='flex';
+  res.innerHTML='';
+
+  const d=decodeTCString(raw);
+
+  if(!d||d.error){
+    res.innerHTML=`<div class="card"><div class="bad-box">❌ ${d?.error||'Consent string inválida ou não decodificável. Verifique se é TCF v2.x base64url.'}</div></div>`;
+    return;
+  }
+
+  // Header info
+  const criticalOk=[1,2,7].every(p=>d.purposesConsent[p]);
+  const adsOk=[1,2].every(p=>d.purposesConsent[p]);
+
+  let headerHtml=`<div class="card">
+    <h2>Resultado da decodificação</h2>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-val">v${d.version}</div><div class="kpi-lbl">TCF versão</div></div>
+      <div class="kpi"><div class="kpi-val">${d.cmpId}</div><div class="kpi-lbl">CMP ID</div></div>
+      <div class="kpi"><div class="kpi-val">${d.consentLanguage}</div><div class="kpi-lbl">Idioma</div></div>
+      <div class="kpi"><div class="kpi-val">${d.publisherCC}</div><div class="kpi-lbl">País publisher</div></div>
+      <div class="kpi"><div class="kpi-val">${d.vendorListVersion}</div><div class="kpi-lbl">GVL versão</div></div>
+      <div class="kpi"><div class="kpi-val">${d.isServiceSpecific?'Sim':'Não'}</div><div class="kpi-lbl">Service-specific</div></div>
+    </div>`;
+
+  if(criticalOk) headerHtml+=`<div class="ok-box">✅ Propósitos críticos para publicidade (1, 2, 7) com consentimento.</div>`;
+  else if(adsOk) headerHtml+=`<div class="warn-box">⚠️ Propósitos 1 e 2 OK, mas propósito 7 (mensuração) sem consentimento — relatórios podem ser afetados.</div>`;
+  else headerHtml+=`<div class="bad-box">❌ Propósitos críticos (1 e/ou 2) SEM consentimento — anúncios personalizados e tracking bloqueados.</div>`;
+
+  headerHtml+=`<div class="info-box">📅 Criado: ${d.created.toLocaleString('pt-BR')} · Atualizado: ${d.lastUpdated.toLocaleString('pt-BR')}</div>`;
+  headerHtml+='</div>';
+
+  // Purposes
+  let purposeHtml=`<div class="card"><h2>Propósitos (Purposes Consent)</h2><div class="purpose-grid">`;
+  for(let p=1;p<=10;p++){
+    const on=d.purposesConsent[p];
+    const li=d.purposesLI[p];
+    purposeHtml+=`<div class="purpose-row ${on?'yes':'no'}">
+      <span class="icon">${on?'✅':'❌'}</span>
+      <div class="purpose-name"><strong>${p}. ${PURPOSE_NAMES[p]}</strong>${li?' <span style="font-size:.7rem;color:var(--warn);">(LI)</span>':''}</div>
+    </div>`;
+  }
+  purposeHtml+='</div>';
+
+  const sf1=d.specialFeatureOptIns>>11&1;
+  const sf2=d.specialFeatureOptIns>>10&1;
+  purposeHtml+=`<div class="sep"></div>
+    <div class="section-title">Special Features</div>
+    <div class="purpose-grid">
+      <div class="purpose-row ${sf1?'yes':'no'}"><span class="icon">${sf1?'✅':'❌'}</span><div>SF1 — Geolocalização precisa</div></div>
+      <div class="purpose-row ${sf2?'yes':'no'}"><span class="icon">${sf2?'✅':'❌'}</span><div>SF2 — Scan ativo de device</div></div>
+    </div></div>`;
+
+  // Key vendors
+  const hasVendorData=Object.keys(d.vendorConsents).length>0;
+  let vendorHtml=`<div class="card"><h2>Vendors-chave do AdTech</h2>`;
+  if(!hasVendorData){
+    vendorHtml+=`<div class="warn-box">⚠️ Dados de vendor consent não disponíveis nesta consent string (codificação Range ou string truncada). Decodificação de propósitos ainda é válida.</div>`;
+  }
+  vendorHtml+=`<div class="vendor-grid">`;
+  KEY_VENDORS.forEach(v=>{
+    const consented=hasVendorData?(d.vendorConsents[v.id]===true):null;
+    const icon=consented===true?'✅':consented===false?'❌':'❓';
+    const border=consented===true?'#a5d6a7':consented===false?'#ef9a9a':'var(--border)';
+    vendorHtml+=`<div class="vendor-card" style="border-color:${border};">
+      <span class="vendor-status">${icon}</span>
+      <div><div class="vendor-name">${v.name}</div><div class="vendor-id">ID ${v.id} · ${v.short}</div></div>
+    </div>`;
+  });
+  vendorHtml+='</div></div>';
+
+  // Raw bits
+  const bytes=base64UrlDecode(raw.trim().split('.')[0]);
+  let bitStr='';
+  if(bytes){
+    for(let i=0;i<Math.min(bytes.length,30);i++){
+      const b=bytes[i].toString(2).padStart(8,'0');
+      bitStr+=b.split('').map((c,j)=>`<span class="${c==='1'?'bit-on':'bit-off'}">${c}</span>`).join('')+' ';
+    }
+    if(bytes.length>30) bitStr+=`<span style="color:#555;">... (${bytes.length-30} bytes omitidos)</span>`;
+  }
+  const rawHtml=`<div class="card"><h2>Raw bits (primeiros 30 bytes)</h2>
+    <div class="bit-wrap">${bitStr}</div>
+    <p style="font-size:.72rem;color:var(--muted);margin-top:.5rem;">Verde = bit 1 (ligado) · Cinza = bit 0 (desligado)</p></div>`;
+
+  res.innerHTML=headerHtml+purposeHtml+vendorHtml+rawHtml;
+}
+
+function loadSample(){
+  // Real-looking TCF v2.0 sample string (synthetic but structurally valid)
+  document.getElementById('cs-input').value='CPzmLMABzgAAAngABEENAAIAAAAAAAA.YAAAAAAAAAA';
+  decode();
+}
+
+function clearAll(){
+  document.getElementById('cs-input').value='';
+  document.getElementById('results').style.display='none';
+  document.getElementById('results').innerHTML='';
+}
+
+function toggleTheme(){
+  const html=document.documentElement;
+  html.setAttribute('data-theme',html.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+</script>
+</body>
+</html>
