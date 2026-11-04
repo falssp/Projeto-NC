@@ -31,7 +31,7 @@ function doGet(e) {
   }
 
   return HtmlService
-    .createHtmlOutputFromFile('UL_Location')
+    .createHtmlOutputFromFile('Index')
     .setTitle('UL · Taxonomia Location')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
