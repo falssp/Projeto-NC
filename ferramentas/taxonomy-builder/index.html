@@ -481,6 +481,62 @@ body {
 
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
 
+/* ==================== PASTE IMPORT MODAL ==================== */
+.import-modal {
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:var(--modal);
+  border-radius:12px;padding:24px;
+  width:min(640px,calc(100vw - 32px));
+  max-height:calc(100vh - 64px);
+  overflow-y:auto;
+  z-index:201;
+  box-shadow:var(--shadow-lg);
+  display:none;
+  border:1px solid var(--card-border);
+}
+.import-modal.show{display:block;}
+
+.import-textarea {
+  width:100%;height:120px;padding:9px 11px;
+  border:1px solid var(--input-border);border-radius:7px;
+  font-family:monospace;font-size:12px;
+  background:var(--input-bg);color:var(--fg);
+  resize:vertical;
+}
+.import-textarea:focus{outline:none;border-color:var(--accent);}
+
+.import-cols {
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  margin-top:10px;
+}
+
+.import-preview {
+  margin-top:12px;
+  max-height:160px;overflow-y:auto;
+  border:1px solid var(--card-border);border-radius:7px;
+  font-size:12px;
+}
+.import-preview-row {
+  display:grid;grid-template-columns:28px 1fr 1fr 1.5fr;
+  gap:6px;padding:5px 10px;border-bottom:1px solid var(--card-border);
+  align-items:center;
+}
+.import-preview-row:last-child{border-bottom:none;}
+.import-preview-row.head{background:var(--bg);font-weight:700;font-size:11px;color:var(--faint);text-transform:uppercase;}
+.import-preview-row.dup{opacity:.4;text-decoration:line-through;}
+.import-preview-mono{font-family:monospace;color:var(--accent);}
+
+.import-stats{font-size:12px;color:var(--faint);margin-top:7px;}
+.import-stats strong{color:var(--fg);}
+.import-mode-toggle{display:flex;gap:6px;margin-top:8px;}
+.import-mode-btn {
+  flex:1;padding:6px;border-radius:6px;font-size:12px;font-weight:600;
+  border:1.5px solid var(--card-border);background:var(--bg);
+  cursor:pointer;color:var(--fg);transition:all .12s;text-align:center;
+}
+.import-mode-btn.active{border-color:var(--accent);background:rgba(37,99,235,.1);color:var(--accent);}
+
 /* ==================== EMPTY STATE ==================== */
 .empty-state{text-align:center;padding:36px 20px;color:var(--faint);}
 .empty-icon{font-size:36px;margin-bottom:10px;}
@@ -553,6 +609,7 @@ body {
           <p id="dictMeta">Selecione um cliente para gerenciar os termos</p>
         </div>
         <div class="action-bar">
+          <button class="btn secondary btn-sm" onclick="openPasteModal()">⬆ Importar</button>
           <button class="btn secondary btn-sm" onclick="exportJSON()">⬇ JSON</button>
           <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
         </div>
@@ -618,6 +675,66 @@ body {
 
 <!-- Hidden import input -->
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<!-- PASTE IMPORT MODAL -->
+<div id="pasteOverlay" class="overlay" onclick="closePasteModal()"></div>
+<div id="pasteModal" class="import-modal">
+  <div class="modal-title">
+    <span>⬆ Importar termos do Sheets / Excel</span>
+    <button class="modal-close" onclick="closePasteModal()">×</button>
+  </div>
+
+  <div class="field-group">
+    <label>Segmento de destino</label>
+    <select id="importSegSelect" onchange="previewImport()"></select>
+  </div>
+
+  <div class="field-group">
+    <label>Cole os dados aqui (copie direto do Sheets/Excel)</label>
+    <textarea id="pasteArea" class="import-textarea"
+      placeholder="Cole aqui as colunas copiadas do Google Sheets ou Excel.&#10;&#10;Pode ser 1 coluna (só valor) ou 2–3 colunas (valor ↦ label ↦ descrição).&#10;Linhas com tab entre colunas são detectadas automaticamente."
+      oninput="previewImport()"></textarea>
+    <div class="hint" style="font-size:11px;color:var(--faint);margin-top:5px">Dica: no Sheets selecione as células → Ctrl+C → clique aqui → Ctrl+V</div>
+  </div>
+
+  <div class="field-group">
+    <label>Mapeamento de colunas</label>
+    <div class="import-cols">
+      <div>
+        <label style="font-size:11px;color:var(--faint);text-transform:none;margin-bottom:3px;display:block">Coluna do <strong>valor</strong></label>
+        <select id="colVal" onchange="previewImport()" style="width:100%;padding:6px 8px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);font-size:13px;"></select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--faint);text-transform:none;margin-bottom:3px;display:block">Coluna do <strong>label</strong></label>
+        <select id="colLabel" onchange="previewImport()" style="width:100%;padding:6px 8px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);font-size:13px;"></select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--faint);text-transform:none;margin-bottom:3px;display:block">Coluna da <strong>descrição</strong></label>
+        <select id="colDesc" onchange="previewImport()" style="width:100%;padding:6px 8px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);font-size:13px;"></select>
+      </div>
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;text-transform:none;">
+        <input type="checkbox" id="hasHeader" onchange="previewImport()"> Primeira linha é cabeçalho (ignorar)
+      </label>
+    </div>
+  </div>
+
+  <div class="field-group">
+    <label>Modo de importação</label>
+    <div class="import-mode-toggle">
+      <div class="import-mode-btn active" id="modeAppend" onclick="setImportMode('append')">➕ Adicionar novos (manter existentes)</div>
+      <div class="import-mode-btn"        id="modeReplace" onclick="setImportMode('replace')">🔄 Substituir todos os termos</div>
+    </div>
+  </div>
+
+  <div id="importPreviewBox"></div>
+
+  <div class="modal-actions">
+    <button class="btn secondary" onclick="closePasteModal()">Cancelar</button>
+    <button class="btn primary" id="confirmImportBtn" onclick="confirmImport()" disabled>Importar</button>
+  </div>
+</div>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -1160,6 +1277,203 @@ function handleImport(e) {
   };
   r.readAsText(f);
   e.target.value='';
+}
+
+/* =============================================
+   PASTE IMPORT MODAL
+   ============================================= */
+let importMode = 'append'; // 'append' | 'replace'
+let parsedImportRows = [];  // [{value, label, desc, isDup}]
+
+function openPasteModal() {
+  const c = active();
+  if(!c) { showToast('Selecione um cliente primeiro'); return; }
+
+  // Populate segment selector
+  const sel = document.getElementById('importSegSelect');
+  sel.innerHTML = c.segments.map(s=>`<option value="${s.id}">${s.label}</option>`).join('');
+  if(activeSeg) sel.value = activeSeg;
+
+  // Reset state
+  document.getElementById('pasteArea').value = '';
+  document.getElementById('hasHeader').checked = false;
+  importMode = 'append';
+  document.getElementById('modeAppend').classList.add('active');
+  document.getElementById('modeReplace').classList.remove('active');
+  document.getElementById('importPreviewBox').innerHTML = '';
+  document.getElementById('confirmImportBtn').disabled = true;
+  parsedImportRows = [];
+  updateColSelects(1);
+
+  document.getElementById('pasteOverlay').classList.add('show');
+  document.getElementById('pasteModal').classList.add('show');
+  setTimeout(()=>document.getElementById('pasteArea').focus(), 80);
+}
+
+function closePasteModal() {
+  document.getElementById('pasteOverlay').classList.remove('show');
+  document.getElementById('pasteModal').classList.remove('show');
+}
+
+function setImportMode(m) {
+  importMode = m;
+  document.getElementById('modeAppend').classList.toggle('active',  m==='append');
+  document.getElementById('modeReplace').classList.toggle('active', m==='replace');
+  previewImport();
+}
+
+function parsePasteData(raw) {
+  // Detect delimiter: if any line has tabs → TSV, else try CSV comma, else single-column
+  const lines = raw.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return { rows:[], numCols:1 };
+  const hasTabs = lines.some(l=>l.includes('\t'));
+  const hasComma = lines.some(l=>l.includes(','));
+  let delim = hasTabs ? '\t' : (hasComma ? ',' : null);
+
+  if(!delim) {
+    // Single-column: each line is a value
+    return { rows: lines.map(l=>[l.trim()]), numCols: 1 };
+  }
+
+  // Split by delimiter, handle quoted CSV fields
+  function splitLine(line, d) {
+    if(d === '\t') return line.split('\t').map(v=>v.trim());
+    // Simple CSV split (handles double-quoted fields)
+    const cols = [];
+    let cur = '', inQ = false;
+    for(let i=0;i<line.length;i++) {
+      const ch=line[i];
+      if(ch==='"' && !inQ) { inQ=true; continue; }
+      if(ch==='"' && inQ) {
+        if(line[i+1]==='"') { cur+='"'; i++; } else { inQ=false; }
+        continue;
+      }
+      if(ch===d && !inQ) { cols.push(cur.trim()); cur=''; continue; }
+      cur+=ch;
+    }
+    cols.push(cur.trim());
+    return cols;
+  }
+
+  const rows = lines.map(l=>splitLine(l,delim));
+  const numCols = Math.max(...rows.map(r=>r.length));
+  return { rows, numCols };
+}
+
+function updateColSelects(numCols) {
+  const opts = ['—(nenhuma)'];
+  for(let i=1;i<=numCols;i++) opts.push(`Col ${i}`);
+  ['colVal','colLabel','colDesc'].forEach((id,idx)=>{
+    const el=document.getElementById(id);
+    const prev=el.value;
+    el.innerHTML=opts.map((o,i)=>`<option value="${i}">${o}</option>`).join('');
+    // defaults: val→col1, label→col2 (if exists), desc→none
+    if(idx===0) el.value=Math.min(1,numCols);
+    else if(idx===1) el.value=numCols>=2?2:0;
+    else el.value=numCols>=3?3:0;
+  });
+}
+
+function previewImport() {
+  const c=active(); if(!c) return;
+  const raw=document.getElementById('pasteArea').value.trim();
+  if(!raw) {
+    document.getElementById('importPreviewBox').innerHTML='';
+    document.getElementById('confirmImportBtn').disabled=true;
+    parsedImportRows=[];
+    return;
+  }
+
+  const {rows, numCols} = parsePasteData(raw);
+  updateColSelects(numCols);
+
+  const hasHeader = document.getElementById('hasHeader').checked;
+  const iVal   = parseInt(document.getElementById('colVal').value)||0;
+  const iLabel = parseInt(document.getElementById('colLabel').value)||0;
+  const iDesc  = parseInt(document.getElementById('colDesc').value)||0;
+
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+  const segId = document.getElementById('importSegSelect').value;
+  const existing = new Set((c.dictionary[segId]||[]).map(t=>t.value));
+
+  function getCol(row, idx) { return idx>0 ? (row[idx-1]||'').trim() : ''; }
+
+  function slugify(s) {
+    return s.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/\s+/g,'-').replace(/[^a-z0-9\-_.]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  }
+
+  parsedImportRows = dataRows
+    .map(row=>{
+      let val   = getCol(row,iVal);
+      let label = getCol(row,iLabel) || val;
+      let desc  = getCol(row,iDesc);
+      if(!val) return null;
+      val = slugify(val);
+      if(!val) return null;
+      const isDup = importMode==='append' && existing.has(val);
+      return {value:val, label, desc, isDup};
+    })
+    .filter(Boolean);
+
+  const toAdd = parsedImportRows.filter(r=>!r.isDup);
+  const dups  = parsedImportRows.filter(r=>r.isDup);
+
+  // Build preview (show first 20 rows)
+  const preview = parsedImportRows.slice(0,20);
+  const hasDesc = iDesc>0;
+
+  let html=`<div class="import-preview">
+    <div class="import-preview-row head">
+      <span>#</span><span class="import-preview-mono">valor</span><span>label</span>${hasDesc?'<span>descrição</span>':'<span></span>'}
+    </div>`;
+  preview.forEach((r,i)=>{
+    html+=`<div class="import-preview-row${r.isDup?' dup':''}">
+      <span style="color:var(--faint)">${i+1}</span>
+      <span class="import-preview-mono">${esc(r.value)}</span>
+      <span>${esc(r.label)}</span>
+      <span style="color:var(--faint);font-size:11px">${hasDesc?esc(r.desc||''):r.isDup?'já existe':''}</span>
+    </div>`;
+  });
+  if(parsedImportRows.length>20) html+=`<div style="padding:6px 10px;font-size:11px;color:var(--faint)">… e mais ${parsedImportRows.length-20} linha(s)</div>`;
+  html+=`</div>`;
+
+  let statsHtml=`<div class="import-stats">`;
+  statsHtml+=`<strong>${toAdd.length}</strong> termos novos para importar`;
+  if(dups.length) statsHtml+=` · <strong>${dups.length}</strong> duplicatas serão ignoradas`;
+  if(importMode==='replace') statsHtml+=` · <strong>substituirá</strong> todos os ${existing.size} termos existentes`;
+  statsHtml+=`</div>`;
+
+  document.getElementById('importPreviewBox').innerHTML=html+statsHtml;
+  document.getElementById('confirmImportBtn').disabled=(toAdd.length===0 && importMode!=='replace');
+}
+
+function confirmImport() {
+  const c=active(); if(!c) return;
+  const segId=document.getElementById('importSegSelect').value;
+  if(!c.dictionary[segId]) c.dictionary[segId]=[];
+
+  if(importMode==='replace') {
+    c.dictionary[segId]=parsedImportRows.map(r=>({
+      value:r.value, label:r.label, ...(r.desc?{desc:r.desc}:{})
+    }));
+  } else {
+    const existing=new Set(c.dictionary[segId].map(t=>t.value));
+    parsedImportRows.filter(r=>!existing.has(r.value)).forEach(r=>{
+      c.dictionary[segId].push({value:r.value, label:r.label, ...(r.desc?{desc:r.desc}:{})});
+    });
+  }
+
+  const count = importMode==='replace'
+    ? parsedImportRows.length
+    : parsedImportRows.filter(r=>!r.isDup).length;
+
+  activeSeg=segId;
+  saveData();
+  renderDicionario();
+  closePasteModal();
+  showToast(`${count} termos importados em "${c.segments.find(s=>s.id===segId)?.label}"`);
 }
 
 /* =============================================
