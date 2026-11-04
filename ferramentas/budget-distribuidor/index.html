@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Distribuidor de Budget | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;--mono:'JetBrains Mono',monospace;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;
+  --warn:#e65100;--warn-bg:#fff3e0;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+  --ok:#a5d6a7;--ok-bg:#0a2010;
+  --warn:#ffcc80;--warn-bg:#2a1800;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+input,select{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+input[type="range"]{padding:4px 0;border:none;background:transparent}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.btn-xs{padding:3px 8px;font-size:11px;background:var(--light);color:var(--azul);border:1px solid var(--border);border-radius:6px;cursor:pointer}
+.btn-xs:hover{background:var(--border)}
+.btn-danger-xs{padding:3px 8px;font-size:11px;background:#fce4e4;color:#c62828;border:1px solid #ef9a9a;border-radius:6px;cursor:pointer}
+.btn-danger-xs:hover{background:#ef9a9a}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* channel rows */
+.ch-row{display:grid;grid-template-columns:28px 2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:5px;font-size:12px}
+.ch-drag{cursor:grab;color:var(--muted);font-size:14px;user-select:none}
+.ch-name{font-size:12px;padding:4px 8px}
+.ch-pct-wrap{display:flex;align-items:center;gap:5px}
+.ch-pct{width:60px;text-align:center;font-size:12px;padding:4px 6px;font-family:var(--mono)}
+.ch-bar-wrap{height:6px;background:var(--border);border-radius:3px;margin-top:2px;overflow:hidden}
+.ch-bar{height:100%;border-radius:3px;transition:width .3s}
+
+/* result table */
+.res-table{width:100%;border-collapse:collapse}
+.res-table th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:5px 10px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap}
+.res-table td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+.res-table tr:last-child td{border-bottom:none;font-weight:700;background:var(--light)}
+.res-table tr:hover:not(:last-child) td{background:var(--light)}
+.num{font-family:var(--mono);text-align:right}
+.bar-cell{min-width:80px}
+.mini-bar-wrap{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:3px}
+.mini-bar{height:100%;border-radius:3px}
+
+/* pacing table */
+.pac-table{width:100%;border-collapse:collapse;font-size:11px}
+.pac-table th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 8px;border-bottom:2px solid var(--border);text-align:left}
+.pac-table td{padding:4px 8px;border-bottom:1px solid var(--border);font-family:var(--mono)}
+.pac-table tr:last-child td{border-bottom:none;font-weight:700;background:var(--light)}
+
+/* channel colors */
+.c0{background:#1F36C7}.c1{background:#059669}.c2{background:#7c3aed}.c3{background:#db2777}
+.c4{background:#0891b2}.c5{background:#d97706}.c6{background:#374151}.c7{background:#be123c}
+.c8{background:#0f766e}.c9{background:#7e22ce}
+
+/* preset chips */
+.preset-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--bg);color:var(--body);cursor:pointer;transition:all .15s}
+.chip:hover,.chip.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn" title="Tema">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Distribuidor de Budget</h1>
+  <p class="subtitle">Distribua o budget total entre canais, defina % por canal, configure CPM/CPC estimados e obtenha projeção de impressões, cliques, budget semanal e pacing ideal.</p>
+</div>
+<div class="main">
+
+<!-- CONFIG GERAL -->
+<div class="card">
+  <div class="section-title">Campanha</div>
+  <div class="row4">
+    <div>
+      <label>Budget total (R$)</label>
+      <input id="total-budget" type="number" value="50000" min="0" step="100" oninput="calc()">
+    </div>
+    <div>
+      <label>Data início</label>
+      <input id="dt-start" type="date" oninput="calc()">
+    </div>
+    <div>
+      <label>Data fim</label>
+      <input id="dt-end" type="date" oninput="calc()">
+    </div>
+    <div>
+      <label>Moeda</label>
+      <select id="currency" onchange="calc()">
+        <option value="BRL">R$ (BRL)</option>
+        <option value="USD">$ (USD)</option>
+        <option value="EUR">€ (EUR)</option>
+      </select>
+    </div>
+  </div>
+  <div id="flight-info" class="hint" style="margin-top:8px"></div>
+</div>
+
+<!-- CANAIS -->
+<div class="card">
+  <div class="section-title">Canais</div>
+  <div class="preset-chips">
+    <span class="chip" onclick="loadPreset('branding')">✨ Branding</span>
+    <span class="chip" onclick="loadPreset('performance')">📈 Performance</span>
+    <span class="chip" onclick="loadPreset('video')">🎬 Vídeo</span>
+    <span class="chip" onclick="loadPreset('full')">🌐 Full Mix</span>
+  </div>
+  <div id="ch-list"></div>
+  <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+    <button class="btn-sm" onclick="addChannel()">+ Canal</button>
+    <button class="btn-sm" onclick="equalizeAll()">⚖️ Equalizar</button>
+    <button class="btn-sm" onclick="clearChannels()">✕ Limpar</button>
+  </div>
+  <div id="pct-warning" class="hint" style="margin-top:6px;color:var(--warn);display:none">⚠️ Total diferente de 100%</div>
+</div>
+
+<!-- RESULTADOS -->
+<div class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+    <div class="section-title" style="margin:0">Projeção por canal</div>
+    <div style="display:flex;gap:5px">
+      <button class="btn-sm" onclick="copyTable()">📋 Copiar tabela</button>
+      <button class="btn-sm" onclick="copyCsv()">📋 CSV</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="res-table" id="res-table">
+      <thead><tr>
+        <th>Canal</th>
+        <th class="num">Budget</th>
+        <th class="num">%</th>
+        <th class="num">KPI</th>
+        <th class="num">CPM/CPC</th>
+        <th class="num">Impr./Cliques proj.</th>
+        <th class="bar-cell">Distribuição</th>
+      </tr></thead>
+      <tbody id="res-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PACING SEMANAL -->
+<div class="card" id="pacing-card" style="display:none">
+  <div class="section-title">Budget semanal projetado</div>
+  <div style="overflow-x:auto">
+    <table class="pac-table" id="pac-table">
+      <thead><tr><th>Semana</th><th>Período</th><th>Dias</th><th>Budget ideal</th><th>% do total</th></tr></thead>
+      <tbody id="pac-body"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+<script>
+const CHANNEL_COLORS=['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9'];
+const PRESETS={
+  branding:[
+    {name:'YouTube',pct:35,kpi:'CPM',rate:28},
+    {name:'Display Prog.',pct:25,kpi:'CPM',rate:8},
+    {name:'Meta (Awareness)',pct:25,kpi:'CPM',rate:18},
+    {name:'LinkedIn',pct:15,kpi:'CPM',rate:65},
+  ],
+  performance:[
+    {name:'Google Search',pct:40,kpi:'CPC',rate:2.5},
+    {name:'Meta (Conversão)',pct:30,kpi:'CPC',rate:3.2},
+    {name:'Google Shopping',pct:20,kpi:'CPC',rate:1.8},
+    {name:'Display Retarg.',pct:10,kpi:'CPM',rate:6},
+  ],
+  video:[
+    {name:'YouTube InStream',pct:40,kpi:'CPM',rate:28},
+    {name:'TikTok',pct:25,kpi:'CPM',rate:22},
+    {name:'Meta Video',pct:25,kpi:'CPM',rate:20},
+    {name:'Prog. CTV',pct:10,kpi:'CPM',rate:45},
+  ],
+  full:[
+    {name:'Google Search',pct:25,kpi:'CPC',rate:2.5},
+    {name:'YouTube',pct:20,kpi:'CPM',rate:28},
+    {name:'Meta',pct:20,kpi:'CPM',rate:18},
+    {name:'Display Prog.',pct:15,kpi:'CPM',rate:8},
+    {name:'TikTok',pct:10,kpi:'CPM',rate:22},
+    {name:'LinkedIn',pct:10,kpi:'CPC',rate:8},
+  ],
+};
+
+let _channels=[];
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';try{localStorage.setItem('budgetd_theme',dark?'light':'dark');}catch(e){}}
+function loadTheme(){try{if(localStorage.getItem('budgetd_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('theme-btn').textContent='☀️';}}catch(e){}}
+
+function fmt(n){return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}).format(n);}
+function fmtMoney(n){const sym={BRL:'R$',USD:'$',EUR:'€'}[document.getElementById('currency').value]||'R$';return`${sym} ${fmt(n)}`;}
+
+function addChannel(ch={name:'',pct:0,kpi:'CPM',rate:20}){
+  _channels.push({...ch,id:Math.random().toString(36).substring(2,8)});
+  renderChannels();calc();
+}
+
+function removeChannel(id){_channels=_channels.filter(c=>c.id!==id);renderChannels();calc();}
+
+function clearChannels(){_channels=[];renderChannels();calc();}
+
+function equalizeAll(){
+  const pct=Math.round(100/_channels.length);
+  _channels.forEach((c,i)=>c.pct=i===_channels.length-1?100-pct*(i):pct);
+  renderChannels();calc();
+}
+
+function loadPreset(key){
+  _channels=PRESETS[key].map(c=>({...c,id:Math.random().toString(36).substring(2,8)}));
+  renderChannels();calc();
+}
+
+function syncFromDom(){
+  _channels.forEach(c=>{
+    const row=document.querySelector(`[data-ch="${c.id}"]`);
+    if(!row)return;
+    c.name=row.querySelector('.ch-name-inp').value;
+    c.pct=parseFloat(row.querySelector('.ch-pct-inp').value)||0;
+    c.kpi=row.querySelector('.ch-kpi').value;
+    c.rate=parseFloat(row.querySelector('.ch-rate').value)||0;
+  });
+}
+
+function renderChannels(){
+  const list=document.getElementById('ch-list');
+  list.innerHTML=_channels.map((c,i)=>`
+    <div class="ch-row" data-ch="${c.id}">
+      <span class="ch-drag">⠿</span>
+      <input class="ch-name ch-name-inp" value="${esc(c.name)}" placeholder="Nome do canal" oninput="syncAndCalc()">
+      <div class="ch-pct-wrap">
+        <input class="ch-pct ch-pct-inp" type="number" value="${c.pct}" min="0" max="100" step="1" oninput="syncAndCalc()">
+        <span style="font-size:11px;color:var(--muted)">%</span>
+      </div>
+      <select class="ch-kpi" style="font-size:11px;padding:4px 6px;width:70px" onchange="syncAndCalc()">
+        <option${c.kpi==='CPM'?' selected':''}>CPM</option>
+        <option${c.kpi==='CPC'?' selected':''}>CPC</option>
+        <option${c.kpi==='CPV'?' selected':''}>CPV</option>
+      </select>
+      <input class="ch-rate" type="number" value="${c.rate}" min="0" step="0.5" placeholder="R$ KPI" style="font-size:11px;padding:4px 6px;width:80px;font-family:var(--mono)" oninput="syncAndCalc()">
+      <button class="btn-danger-xs" onclick="removeChannel('${c.id}')">✕</button>
+    </div>`).join('');
+}
+
+function syncAndCalc(){syncFromDom();calc();}
+
+function calc(){
+  const total=parseFloat(document.getElementById('total-budget').value)||0;
+  const dtStart=document.getElementById('dt-start').value;
+  const dtEnd=document.getElementById('dt-end').value;
+  syncFromDom();
+
+  const totalPct=_channels.reduce((s,c)=>s+c.pct,0);
+  document.getElementById('pct-warning').style.display=Math.abs(totalPct-100)>0.5&&_channels.length?'block':'none';
+
+  // Flight info
+  let days=0,weeks=0;
+  if(dtStart&&dtEnd){
+    const s=new Date(dtStart),e=new Date(dtEnd);
+    days=Math.round((e-s)/(1000*60*60*24))+1;
+    weeks=days/7;
+    document.getElementById('flight-info').textContent=`Flight: ${days} dias · ${weeks.toFixed(1)} semanas · Budget/dia: ${fmtMoney(total/days)} · Budget/semana: ${fmtMoney(total/weeks)}`;
+  } else {
+    document.getElementById('flight-info').textContent='';
+  }
+
+  // Result table
+  const tbody=document.getElementById('res-body');
+  let totalBudget=0,totalImpr=0;
+  const rows=_channels.map((c,i)=>{
+    const budget=(c.pct/100)*total;
+    totalBudget+=budget;
+    let proj=0,projLabel='—';
+    if(c.rate>0){
+      if(c.kpi==='CPM'){proj=(budget/c.rate)*1000;projLabel=fmt(proj)+' impr.';}
+      else if(c.kpi==='CPC'){proj=budget/c.rate;projLabel=fmt(proj)+' cliques';}
+      else if(c.kpi==='CPV'){proj=budget/c.rate;projLabel=fmt(proj)+' views';}
+      totalImpr+=proj;
+    }
+    return{c,budget,proj,projLabel,i};
+  });
+
+  tbody.innerHTML=rows.map(({c,budget,proj,projLabel,i})=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:7px"><div style="width:10px;height:10px;border-radius:50%;flex-shrink:0" class="${CHANNEL_COLORS[i%10]}"></div>${esc(c.name||`Canal ${i+1}`)}</div></td>
+    <td class="num">${fmtMoney(budget)}</td>
+    <td class="num">${c.pct}%</td>
+    <td class="num" style="font-size:10px">${esc(c.kpi)}</td>
+    <td class="num">${fmtMoney(c.rate)}</td>
+    <td class="num">${projLabel}</td>
+    <td class="bar-cell">
+      <div class="mini-bar-wrap"><div class="mini-bar ${CHANNEL_COLORS[i%10]}" style="width:${c.pct}%"></div></div>
+    </td>
+  </tr>`).join('')+`<tr>
+    <td>TOTAL</td>
+    <td class="num">${fmtMoney(totalBudget)}</td>
+    <td class="num">${totalPct.toFixed(0)}%</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="bar-cell"></td>
+  </tr>`;
+
+  // Pacing semanal
+  if(dtStart&&dtEnd&&days>0){
+    const pacCard=document.getElementById('pacing-card');
+    const pacBody=document.getElementById('pac-body');
+    pacCard.style.display='block';
+    const s=new Date(dtStart);
+    const e=new Date(dtEnd);
+    const weekRows=[];
+    let cur=new Date(s);
+    let w=1;
+    while(cur<=e){
+      const wEnd=new Date(cur);
+      wEnd.setDate(wEnd.getDate()+6);
+      if(wEnd>e){wEnd.setTime(e.getTime());}
+      const wDays=Math.round((wEnd-cur)/(1000*60*60*24))+1;
+      const wBudget=(wDays/days)*total;
+      const wPct=(wDays/days)*100;
+      weekRows.push({w,start:cur.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),end:wEnd.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),days:wDays,budget:wBudget,pct:wPct});
+      cur=new Date(wEnd);cur.setDate(cur.getDate()+1);w++;
+    }
+    pacBody.innerHTML=weekRows.map(r=>`<tr>
+      <td>Sem ${r.w}</td>
+      <td>${r.start} – ${r.end}</td>
+      <td>${r.days}d</td>
+      <td>${fmtMoney(r.budget)}</td>
+      <td>${r.pct.toFixed(1)}%</td>
+    </tr>`).join('')+`<tr><td>TOTAL</td><td>${new Date(dtStart).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} – ${new Date(dtEnd).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</td><td>${days}d</td><td>${fmtMoney(total)}</td><td>100%</td></tr>`;
+    window._pacRows=weekRows;
+  }
+
+  window._tableRows=rows;
+}
+
+function copyTable(){
+  if(!window._tableRows){return;}
+  const header='Canal\tBudget\t%\tKPI\tCPM/CPC\tProjeção';
+  const rows=window._tableRows.map(({c,budget,proj,projLabel,i})=>`${c.name||'Canal '+(i+1)}\t${budget.toFixed(2)}\t${c.pct}%\t${c.kpi}\t${c.rate}\t${projLabel}`);
+  navigator.clipboard.writeText([header,...rows].join('\n')).then(()=>toast('Tabela copiada para Sheets!'));
+}
+
+function copyCsv(){
+  if(!window._tableRows){return;}
+  const header='Canal,Budget,Pct,KPI,Rate,Projecao';
+  const rows=window._tableRows.map(({c,budget,proj,projLabel,i})=>`"${c.name||'Canal '+(i+1)}","${budget.toFixed(2)}","${c.pct}%","${c.kpi}","${c.rate}","${projLabel}"`);
+  navigator.clipboard.writeText([header,...rows].join('\n')).then(()=>toast('CSV copiado!'));
+}
+
+// Set default dates
+function initDates(){
+  const today=new Date();
+  const end=new Date(today);end.setDate(end.getDate()+29);
+  document.getElementById('dt-start').value=today.toISOString().substring(0,10);
+  document.getElementById('dt-end').value=end.toISOString().substring(0,10);
+}
+
+loadTheme();
+initDates();
+loadPreset('full');
+</script>
+</body>
+</html>
