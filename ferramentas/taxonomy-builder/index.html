@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <title>Taxonomy Builder</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>
@@ -666,20 +667,26 @@ body {
   pointer-events:none;z-index:999;white-space:nowrap;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-#toast.has-undo{pointer-events:auto;cursor:default;padding-right:10px;display:flex;align-items:center;gap:10px;}
-#toastUndoBtn{background:rgba(255,255,255,.18);border:none;color:#e6edf3;font-size:12px;font-weight:700;
-  padding:3px 9px;border-radius:5px;cursor:pointer;white-space:nowrap;}
-#toastUndoBtn:hover{background:rgba(255,255,255,.3);}
 
-/* ==================== DICT SORT ==================== */
-.dict-sort-btn{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--card-border);
-  background:var(--bg);color:var(--faint);cursor:pointer;white-space:nowrap;transition:all .12s;}
-.dict-sort-btn:hover{border-color:var(--accent);color:var(--accent);}
-
-/* ==================== KEYBOARD HINT ==================== */
-.kbd-hint{display:inline-block;font-size:10px;color:var(--faint);background:var(--bg);
-  border:1px solid var(--card-border);border-radius:3px;padding:0 4px;vertical-align:middle;
-  font-family:monospace;line-height:1.6;}
+/* ── Como usar modal ─────────────────────────────── */
+.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.qa-overlay.open{display:flex}
+.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.qa-header h2{font-size:15px;font-weight:800;color:#0f172a}
+.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
+.qa-body{padding:20px 24px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#3b82f6;margin-bottom:10px}
+.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
+.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
+.help-num{min-width:22px;height:22px;border-radius:50%;background:#1e3a5f;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-txt{font-size:12px;color:#475569;line-height:1.55}
+.help-txt b{color:#1e293b}
+.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
+.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
+.btn-qa{background:transparent;border:1.5px solid currentColor;color:inherit;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s;opacity:.8}
+.btn-qa:hover{opacity:1}
 </style>
 </head>
 <body>
@@ -695,6 +702,7 @@ body {
       </div>
     </div>
     <div class="header-right">
+  <button class="btn-qa" onclick="abrirAjuda()" style="margin-left:auto">❓ Como usar</button>
       <select id="clientSelect" onchange="switchClient(this.value)" title="Cliente ativo"></select>
       <button class="btn-icon" id="themeBtn" onclick="cycleTheme()" title="Alternar tema">🌓</button>
     </div>
@@ -744,10 +752,7 @@ body {
           <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <div id="dictSegPills" class="pills" style="flex:1;min-width:0"></div>
-        <button class="dict-sort-btn" onclick="sortTermsAZ()" title="Ordenar termos A→Z">↕ A–Z</button>
-      </div>
+      <div id="dictSegPills" class="pills"></div>
       <div id="dictTermArea"></div>
     </div>
   </div>
@@ -947,7 +952,7 @@ body {
 </div>
 
 <!-- Toast -->
-<div id="toast"><span id="toastMsg"></span><button id="toastUndoBtn" style="display:none" onclick="undoDelete()">Desfazer</button></div>
+<div id="toast"></div>
 
 <script>
 /* =============================================
@@ -1486,6 +1491,12 @@ function addTerm() {
   saveData(); renderDicionario();
 }
 
+function deleteTerm(i) {
+  const c=active(); if(!c||!activeSeg) return;
+  c.dictionary[activeSeg].splice(i,1);
+  saveData(); renderDicionario();
+}
+
 function editTerm(i) {
   const c=active(); if(!c||!activeSeg) return;
   const t=c.dictionary[activeSeg][i]; if(!t) return;
@@ -1511,8 +1522,6 @@ function saveEditTerm(i) {
   const label = document.getElementById('el')?.value.trim();
   const desc  = document.getElementById('ed')?.value.trim();
   if(!val||!label) return;
-  const dup = c.dictionary[activeSeg].find((t,idx)=>t.value===val && idx!==i);
-  if(dup) { showToast(`"${val}" já existe neste segmento`); return; }
   c.dictionary[activeSeg][i]={value:val, label, ...(desc?{desc}:{})};
   saveData(); renderDicionario();
 }
@@ -2316,86 +2325,12 @@ function highlight(id){
 }
 
 let toastTimer=null;
-function showToast(msg, undoable){
+function showToast(msg){
   const el=document.getElementById('toast');
-  document.getElementById('toastMsg').textContent=msg;
-  const btn=document.getElementById('toastUndoBtn');
-  btn.style.display = undoable ? '' : 'none';
-  el.classList.toggle('has-undo', !!undoable);
-  el.classList.add('show');
+  el.textContent=msg; el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>{ el.classList.remove('show','has-undo'); _undoStack=null; }, undoable?5000:2200);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
 }
-
-/* =============================================
-   UNDO DELETE TERM
-   ============================================= */
-let _undoStack = null; // {clientId, segId, index, term}
-
-function deleteTerm(i) {
-  const c=active(); if(!c||!activeSeg) return;
-  const term = c.dictionary[activeSeg][i];
-  _undoStack = {clientId: c.id, segId: activeSeg, index: i, term};
-  c.dictionary[activeSeg].splice(i,1);
-  saveData(); renderDicionario();
-  showToast(`"${term.value}" removido`, true);
-}
-
-function undoDelete() {
-  if(!_undoStack) return;
-  const {clientId, segId, index, term} = _undoStack;
-  const c = getClient(clientId); if(!c) return;
-  if(!c.dictionary[segId]) c.dictionary[segId]=[];
-  c.dictionary[segId].splice(index, 0, term);
-  _undoStack = null;
-  saveData(); renderDicionario();
-  showToast('Termo restaurado');
-}
-
-/* =============================================
-   SORT TERMS A-Z
-   ============================================= */
-function sortTermsAZ() {
-  const c=active(); if(!c||!activeSeg) return;
-  const terms = c.dictionary[activeSeg]; if(!terms||!terms.length) return;
-  terms.sort((a,b)=>a.value.localeCompare(b.value,'pt'));
-  saveData(); renderDicionario();
-  showToast('Termos ordenados A→Z');
-}
-
-/* =============================================
-   KEYBOARD SHORTCUTS
-   ============================================= */
-const TAB_ORDER = ['clientes','dicionario','estruturas','builder','validador'];
-
-document.addEventListener('keydown', e => {
-  // Ctrl/Cmd + 1-5 → switch tabs
-  if((e.ctrlKey||e.metaKey) && e.key>='1' && e.key<='5') {
-    const idx = +e.key - 1;
-    if(idx < TAB_ORDER.length) {
-      e.preventDefault();
-      switchTab(TAB_ORDER[idx]);
-    }
-    return;
-  }
-  // Ctrl+Z → undo delete (only when no input focused)
-  if((e.ctrlKey||e.metaKey) && e.key==='z' && _undoStack) {
-    const tag = document.activeElement?.tagName;
-    if(tag!=='INPUT' && tag!=='TEXTAREA' && tag!=='SELECT') {
-      e.preventDefault();
-      undoDelete();
-    }
-  }
-  // Escape → close modals
-  if(e.key==='Escape') {
-    const ij = document.getElementById('importJsonModal');
-    const pm = document.getElementById('pasteModal');
-    const mo = document.getElementById('modal');
-    if(ij && ij.style.display!=='none') closeImportJsonModal();
-    else if(pm && pm.classList.contains('show')) closePasteModal();
-    else if(mo && mo.classList.contains('show')) closeModal();
-  }
-});
 
 /* =============================================
    INIT
@@ -2405,6 +2340,49 @@ loadData();
 if(!activeId && clients.length) activeId=clients[0].id;
 renderClientSelect();
 renderClientes();
+
+
+function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
+function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
 </script>
+
+<!-- ── Como usar modal ─────────────────────────────── -->
+<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
+  <div class="qa-modal">
+    <div class="qa-header">
+      <h2>⚙️ Como usar · Taxonomy Builder</h2>
+      <button class="qa-close" onclick="fecharAjuda()">✕</button>
+    </div>
+    <div class="qa-body">
+      <div class="help-section">
+        <h3>Visão geral</h3>
+        <p>Use o <b>Taxonomy Builder</b> para gerar estruturas padronizadas de forma rápida e consistente.</p>
+      </div>
+      <div class="help-section">
+        <h3>Passo a passo</h3>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-txt"><b>Configure as opções</b><br>Preencha os campos e selecione as opções desejadas no painel de configuração.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-txt"><b>Visualize a prévia</b><br>O resultado é gerado em tempo real conforme você preenche os campos.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-txt"><b>Copie ou exporte</b><br>Clique em <b>Copiar</b> para área de transferência ou use o botão de exportação.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-txt"><b>Valide o resultado</b><br>Verifique se a tag ou string gerada está correta antes de usar em produção.</div>
+      </div>
+      </div>
+      <div class="help-tip">
+        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
