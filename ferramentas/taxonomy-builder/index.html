@@ -601,6 +601,35 @@ body {
   font-size:12px;background:var(--input-bg);color:var(--fg);flex:1;max-width:280px;
 }
 
+/* ==================== VAL HISTORY ==================== */
+.val-hist-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;min-height:0;}
+.val-hist-chip{padding:3px 10px;border-radius:20px;border:1px solid var(--card-border);
+  font-size:11px;font-family:monospace;cursor:pointer;background:var(--bg);color:var(--accent);
+  transition:all .12s;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+.val-hist-chip:hover{border-color:var(--accent);background:rgba(37,99,235,.07);}
+.val-hist-clear{font-size:10px;color:var(--faint);cursor:pointer;padding:3px 7px;border-radius:20px;
+  border:1px solid transparent;background:none;white-space:nowrap;}
+.val-hist-clear:hover{border-color:var(--faint);background:var(--bg);}
+
+/* ==================== BATCH VALIDATOR ==================== */
+.batch-textarea{width:100%;padding:10px 14px;border:1px solid var(--input-border);border-radius:8px;
+  font-size:13px;font-family:monospace;background:var(--input-bg);color:var(--fg);
+  resize:vertical;min-height:120px;}
+.batch-textarea:focus{outline:none;border-color:var(--accent);}
+.batch-results{margin-top:14px;display:flex;flex-direction:column;gap:4px;}
+.batch-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;
+  gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--card-border);
+  font-size:12px;background:var(--bg);}
+.batch-row.all-ok{border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.04);}
+.batch-row.has-err{border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.04);}
+.batch-row.has-warn{border-color:rgba(234,179,8,.22);background:rgba(234,179,8,.04);}
+.batch-row-name{font-family:monospace;font-size:12px;color:var(--accent);
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.batch-row-counts{font-size:11px;color:var(--faint);white-space:nowrap;}
+.batch-row-status{font-size:13px;flex-shrink:0;}
+.batch-summary{font-size:12px;color:var(--faint);margin-top:7px;}
+.batch-summary strong{color:var(--fg);}
+
 /* ==================== TOAST ==================== */
 #toast {
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);
@@ -727,7 +756,10 @@ body {
     <div class="card">
       <div class="card-h">
         <div><h2>Validador</h2><p id="valMeta">Cole o nome da campanha para validar segmento a segmento</p></div>
-        <button class="btn secondary btn-sm" onclick="clearValidator()">✕ Limpar</button>
+        <div class="action-bar">
+          <button class="btn secondary btn-sm" id="valModeBtn" onclick="toggleValMode()">📋 Batch</button>
+          <button class="btn secondary btn-sm" onclick="clearValidator()">✕ Limpar</button>
+        </div>
       </div>
       <div class="val-struct-row">
         <label>Estrutura:</label>
@@ -735,8 +767,20 @@ body {
           <option value="">— segmentos do cliente (padrão) —</option>
         </select>
       </div>
-      <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video|q1-2026" oninput="validateName()"></textarea>
-      <div id="valResults" class="val-results"></div>
+      <!-- Single mode -->
+      <div id="valSingleMode">
+        <div id="valHistRow" class="val-hist-row"></div>
+        <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video|q1-2026" oninput="validateName()"></textarea>
+        <div id="valResults" class="val-results"></div>
+      </div>
+      <!-- Batch mode -->
+      <div id="valBatchMode" style="display:none">
+        <p style="font-size:12px;color:var(--faint);margin-bottom:8px">Um nome por linha. Usa a estrutura e o cliente selecionados acima.</p>
+        <textarea id="valBatchInput" class="batch-textarea"
+          placeholder="dove_shampoo_awareness|video|q1-2026&#10;axe_desodorante_reach|banner|q2-2026&#10;rexona_body-lotion_conversion|carousel|jan26"
+          oninput="validateBatch()"></textarea>
+        <div id="valBatchResults" class="batch-results"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -843,6 +887,7 @@ body {
 const STORE_KEY  = 'taxo_clients_v1';
 const ACTIVE_KEY = 'taxo_active_v1';
 const THEME_KEY  = 'taxo_theme_v1';
+const VAL_HIST_KEY = 'taxo_val_hist_v1';
 
 const DEFAULT_CLIENTS = [
   {
@@ -1059,6 +1104,7 @@ function renderClientes() {
     div.innerHTML = `
       <div class="client-card-actions">
         <button title="Editar" onclick="event.stopPropagation();openEditClient('${c.id}')">✏️</button>
+        <button title="Duplicar" onclick="event.stopPropagation();duplicateClient('${c.id}')">📋</button>
         <button title="Exportar JSON" onclick="event.stopPropagation();exportJSON('${c.id}')">⬇️</button>
         <button title="Excluir" onclick="event.stopPropagation();deleteClient('${c.id}')">🗑️</button>
       </div>
@@ -1082,6 +1128,17 @@ function deleteClient(id) {
   clients = clients.filter(x=>x.id!==id);
   if(activeId===id) { activeId = clients[0]?.id||null; activeSeg=null; builderVals={}; }
   saveData(); renderClientSelect(); renderClientes();
+}
+
+function duplicateClient(id) {
+  const c = getClient(id); if(!c) return;
+  const copy = deepCopy(c);
+  copy.id = slug(c.name + '-copia') + '-' + genId();
+  copy.name = c.name + ' (cópia)';
+  clients.push(copy);
+  activeId = copy.id;
+  saveData(); renderClientSelect(); renderClientes();
+  showToast('Cliente duplicado');
 }
 
 /* =============================================
@@ -1718,6 +1775,7 @@ function renderValidador() {
       structs.map(st=>`<option value="${st.id}">${esc(st.label)}</option>`).join('');
   }
   validateName();
+  renderValHistory();
 }
 
 /* Parse {seg}sep{seg}sep… pattern → [{segId, sep}] */
@@ -1807,11 +1865,115 @@ function validateName() {
   if(extra) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`;
 
   resultsEl.innerHTML=html;
+  if(raw) addToValHistory(raw);
 }
 
 function clearValidator() {
   const inp=document.getElementById('valInput'); if(inp) inp.value='';
   document.getElementById('valResults').innerHTML='';
+  const bi=document.getElementById('valBatchInput'); if(bi) bi.value='';
+  const br=document.getElementById('valBatchResults'); if(br) br.innerHTML='';
+}
+
+let valBatchMode = false;
+
+function toggleValMode() {
+  valBatchMode = !valBatchMode;
+  document.getElementById('valSingleMode').style.display = valBatchMode ? 'none' : '';
+  document.getElementById('valBatchMode').style.display  = valBatchMode ? '' : 'none';
+  document.getElementById('valModeBtn').textContent = valBatchMode ? '✏️ Single' : '📋 Batch';
+  if(valBatchMode) setTimeout(()=>document.getElementById('valBatchInput')?.focus(), 50);
+}
+
+/* Val history */
+function addToValHistory(name) {
+  if(!name || !activeId) return;
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(VAL_HIST_KEY) || '[]'); } catch {}
+  hist = hist.filter(h => !(h.name === name && h.clientId === activeId));
+  hist.unshift({name, clientId: activeId});
+  if(hist.length > 10) hist.length = 10;
+  try { localStorage.setItem(VAL_HIST_KEY, JSON.stringify(hist)); } catch {}
+  renderValHistory();
+}
+
+function clearValHistory() {
+  try { localStorage.setItem(VAL_HIST_KEY, '[]'); } catch {}
+  renderValHistory();
+}
+
+function renderValHistory() {
+  const row = document.getElementById('valHistRow'); if(!row) return;
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(VAL_HIST_KEY) || '[]'); } catch {}
+  const clientHist = hist.filter(h => h.clientId === activeId);
+  if(!clientHist.length) { row.innerHTML=''; return; }
+  row.innerHTML = clientHist.map(h =>
+    `<button class="val-hist-chip" title="${esc(h.name)}" onclick="useHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name)}</button>`
+  ).join('') + `<button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>`;
+}
+
+function useHistItem(name) {
+  const inp = document.getElementById('valInput'); if(!inp) return;
+  inp.value = name;
+  validateName();
+}
+
+/* Batch validator */
+function validateBatch() {
+  const c = active();
+  const resultsEl = document.getElementById('valBatchResults');
+  const raw = document.getElementById('valBatchInput')?.value || '';
+  const lines = raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length || !c) { resultsEl.innerHTML=''; return; }
+
+  const structId = document.getElementById('valStructSel')?.value || '';
+  const struct = structId ? (c.structures||[]).find(s=>s.id===structId) : null;
+  let segDefs;
+  if(struct && struct.pattern) {
+    const parsed = parsePattern(struct.pattern);
+    segDefs = parsed.map(p=>{
+      const seg = c.segments.find(s=>s.id===p.segId);
+      return {id:p.segId, sep:p.sep, label:seg?seg.label:p.segId, required:seg?seg.required:false};
+    });
+  } else {
+    segDefs = c.segments.map(s=>({
+      id:s.id, sep:s.sep!==undefined?s.sep:c.separator, label:s.label, required:s.required
+    }));
+  }
+
+  let okCount=0, errCount=0, warnCount=0;
+  const rows = lines.map(name=>{
+    const {parts, extra} = parseNameBySegments(name, segDefs, c.separator);
+    let ok=0, similar=0, err=0;
+    segDefs.forEach((seg,i)=>{
+      const part = parts[i];
+      if(part===undefined||part===''){
+        if(seg.required) err++;
+        return;
+      }
+      const terms = c.dictionary[seg.id]||[];
+      const result = validateValue(part, terms);
+      if(result.status==='ok') ok++;
+      else if(result.status==='similar' || result.status==='warn') similar++;
+      else err++;
+    });
+    if(extra) err++;
+    const total = segDefs.length + (extra?1:0);
+    let cls='', icon='';
+    if(err>0)         { cls='has-err'; icon='❌'; errCount++; }
+    else if(similar>0){ cls='has-warn'; icon='⚠️'; warnCount++; }
+    else              { cls='all-ok'; icon='✅'; okCount++; }
+    const counts = err||similar ? `${ok}✅${similar?` ${similar}⚠️`:''}${err?` ${err}❌`:''}` : `${ok}/${total}`;
+    return `<div class="batch-row ${cls}">
+      <span class="batch-row-name" title="${esc(name)}">${esc(name)}</span>
+      <span class="batch-row-counts">${esc(counts)}</span>
+      <span class="batch-row-status">${icon}</span>
+    </div>`;
+  });
+
+  const summary = `<div class="batch-summary">${lines.length} nomes · <strong>${okCount}</strong> ok · <strong>${warnCount}</strong> avisos · <strong>${errCount}</strong> erros</div>`;
+  resultsEl.innerHTML = rows.join('') + summary;
 }
 
 /* =============================================
