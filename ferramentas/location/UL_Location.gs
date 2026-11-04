@@ -19,14 +19,57 @@ const CFG = {
 };
 
 // ------------------------------------------------------------
+// HUB de logs
+// ------------------------------------------------------------
+const HUB_ID  = '1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA';
+const HUB_ABA = 'Location';
+
+function logHub_(status, alteracoes, execucoes) {
+  try {
+    const hub  = SpreadsheetApp.openById(HUB_ID);
+    const aba  = hub.getSheetByName(HUB_ABA);
+    if (!aba) return;
+    const url  = ScriptApp.getService().getUrl();
+    const agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
+    // Mantém só as 10 últimas execuções (além do cabeçalho)
+    const linhas = aba.getLastRow();
+    if (linhas >= 11) aba.deleteRow(2);
+    aba.insertRowAfter(1);
+    aba.getRange(2, 1, 1, 7).setValues([[
+      'Location (Taxonomy)',
+      agora,
+      status,
+      url,
+      'GitHub → location.json',
+      alteracoes,
+      execucoes
+    ]]);
+  } catch(err) {
+    console.warn('logHub_ falhou: ' + err);
+  }
+}
+
+// ------------------------------------------------------------
 // Web App
 // ------------------------------------------------------------
 function doGet(e) {
   const action = (e && e.parameter && e.parameter.action) || '';
 
   if (action === 'json') {
+    let dados, status = '✅ OK — SINCRONIZADA', total = 0;
+    try {
+      dados = getDados_();
+      total = (dados.nacional||[]).length + (dados.região||[]).length +
+              (dados.estado||[]).length  + (dados.cidade||[]).length;
+    } catch(err) {
+      status = '❌ Erro ao ler planilha: ' + err;
+      logHub_(status, 0, 1);
+      return ContentService.createTextOutput(JSON.stringify({erro: String(err)}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    logHub_(status, total, 1);
     return ContentService
-      .createTextOutput(JSON.stringify(getDados_()))
+      .createTextOutput(JSON.stringify(dados))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
