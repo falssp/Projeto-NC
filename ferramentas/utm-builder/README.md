@@ -1,4 +1,4 @@
-# UTM Builder v2.4
+# UTM Builder v2.5
 
 Ferramenta web para criação, gerenciamento e análise de parâmetros UTM — hospedada no GitHub Pages, sem backend, 100% client-side.
 
@@ -21,7 +21,10 @@ Ferramenta web para criação, gerenciamento e análise de parâmetros UTM — h
 ### Construtor
 - **56 plataformas** cobertas: Meta, Google Ads, DV360, CM360, SA360, TikTok, LinkedIn, Pinterest, Kwai, Spotify, Netflix Ads, Amazon DSP, e mais
 - **Filtro por categoria** (pills): Paid Social · Search · Display & Prog. · Retail Media · Video & Áudio · Retarg. & Native · Mobile & CTV · Mensageria
-- Campos obrigatórios destacados por plataforma
+- **⭐ Favoritos** — estrela em cada plataforma, pill "Favoritos" aparece no filtro
+- **Validador de campos** — destaca em vermelho campos com espaços, acentos ou caracteres inválidos
+- **Sugestão de campaign** — ao selecionar plataforma, sugere formato de nome por categoria
+- **Modo NC Tool** — botão NC no header valida `utm_campaign` contra padrão de 5 segmentos (`advertiser_produto_objetivo_formato_período`)
 - Preview da URL final em tempo real
 - Botão de cópia com feedback visual
 - Suporte a **QR Code** para URLs geradas
@@ -37,6 +40,7 @@ Ferramenta web para criação, gerenciamento e análise de parâmetros UTM — h
 - Filtro por plataforma (pills coloridos)
 - Busca por nome ou sintaxe
 - Click-to-copy com flash de confirmação
+- **Export CSV** — baixa os macros visíveis (filtro + busca aplicados)
 
 ---
 
@@ -64,6 +68,7 @@ Todas as URLs geradas e templates ficam no `localStorage` do navegador — nada 
 | `utm_history_v2` | Histórico das últimas 50 UTMs |
 | `utm_templates_v2` | Templates salvos pelo usuário |
 | `utm_theme` | Preferência de tema (light/dark/system) |
+| `utm_fav_platforms` | Plataformas marcadas como favoritas |
 
 ---
 
@@ -71,6 +76,7 @@ Todas as URLs geradas e templates ficam no `localStorage` do navegador — nada 
 
 | Versão | Destaques |
 |--------|-----------|
+| v2.5 | Favoritos de plataforma · Validador de campos · Sugestão de campaign por categoria · Modo NC Tool · Export CSV de macros · Layout full-width |
 | v2.4 | Filtro de categorias (Construtor + Lote) · Aba ⚙️ Macros com 50+ macros |
 | v2.3 | 56 plataformas · Lote com CSV · Histórico · Analisador · QR Code · Share link · Dark mode |
 | v2.2 | Templates · Export CSV com BOM · Melhorias de UX |
