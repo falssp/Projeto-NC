@@ -100,6 +100,17 @@ input[type=date]{color-scheme:dark;}
 .kpi-value{font-size:20px;font-weight:700;line-height:1;}
 .kpi-label{font-size:10px;color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.5px;}
 .kpi-value.green{color:var(--grn);}.kpi-value.yellow{color:var(--ylw);}.kpi-value.orange{color:var(--org);}.kpi-value.muted{color:var(--mut);}
+/* ── Modo compacto ─── */
+body.compact td{padding:3px 10px !important;}
+body.compact th{padding:4px 10px !important;}
+body.compact .camp-sep-row td{padding:5px 12px !important;}
+body.compact .bu-header{padding:7px 14px !important;}
+body.compact .ag-header{padding:5px 14px 5px 26px !important;}
+body.compact .mk-header{padding:4px 14px 4px 40px !important;}
+/* ── Barra de progresso campanha ─── */
+.camp-progress{display:inline-flex;align-items:center;gap:5px;margin-left:8px;vertical-align:middle;}
+.camp-progress-bar{width:60px;height:5px;border-radius:3px;background:var(--surf2);overflow:hidden;display:inline-block;vertical-align:middle;}
+.camp-progress-fill{height:100%;border-radius:3px;transition:width .3s;}
 .main{padding:0 20px 40px;}
 .state-msg{text-align:center;padding:60px 20px;color:var(--mut);}
 .state-msg .icon{font-size:36px;margin-bottom:10px;}
@@ -285,6 +296,7 @@ tr:hover td{background:#191d2e;}
       <div class="sync-dot" id="syncDot"></div>
       <span id="syncLabel">Carregando...</span>
     </div>
+    <button class="btn-ghost" id="btnCompacto" onclick="toggleCompacto()" style="padding:4px 10px;font-size:11px;" title="Modo compacto (atalho: C)">⊟ Compacto</button>
     <button class="btn-ghost" id="btnExpandir" onclick="toggleTudo()" style="padding:4px 10px;font-size:11px;">⊞ Expandir tudo</button>
     <button class="btn-ghost" onclick="abrirExportador()" style="padding:4px 10px;font-size:11px;">⬇️ Exportar</button>
     <button class="btn-ghost" onclick="abrirFAQ()" style="padding:4px 10px;font-size:11px;">📖 Guia</button>
@@ -1038,6 +1050,7 @@ function renderizar() {
   var rows=filtrado();
   renderKPIs(rows);
   atualizarBtnLimpar();
+  sincronizarURL();
   var secInc = document.getElementById('incSection');
   if (secInc && incorretos && incorretos.length) {
     var temFiltroEspecifico = document.getElementById('filtCampanhaVal').value
@@ -1086,10 +1099,13 @@ function renderizar() {
           var completosCamp = unicosCamp.filter(function(r){ return !_ehIncompleto(r); }).length;
           var badgeCompletude = '';
           if (totalCamp > 0) {
-            var corBadge = completosCamp === totalCamp ? '#16a34a' : completosCamp === 0 ? '#dc2626' : '#d97706';
-            var bgBadge  = completosCamp === totalCamp ? '#f0fdf4' : completosCamp === 0 ? '#fef2f2' : '#fffbeb';
-            var bdBadge  = completosCamp === totalCamp ? '#86efac' : completosCamp === 0 ? '#fca5a5' : '#fcd34d';
-            badgeCompletude = '<span style="margin-left:8px;font-size:10px;padding:1px 7px;border-radius:3px;background:'+bgBadge+';color:'+corBadge+';border:1px solid '+bdBadge+';font-weight:700;">'+completosCamp+'/'+totalCamp+' completos</span>';
+            var pct100 = Math.round((completosCamp / totalCamp) * 100);
+            var fillColor = completosCamp === totalCamp ? 'var(--grn)' : completosCamp === 0 ? 'var(--red)' : 'var(--ylw)';
+            var txtColor  = completosCamp === totalCamp ? 'var(--grn)' : completosCamp === 0 ? 'var(--red)' : 'var(--ylw)';
+            badgeCompletude = '<span class="camp-progress" title="'+completosCamp+'/'+totalCamp+' concluídos">'
+              +'<span class="camp-progress-bar"><span class="camp-progress-fill" style="width:'+pct100+'%;background:'+fillColor+';"></span></span>'
+              +'<span style="font-size:10px;color:'+txtColor+';font-weight:700;">'+completosCamp+'/'+totalCamp+'</span>'
+              +'</span>';
           }
           var totCamp=totalCamp;
           var campMidia=gS(campRows[0],'CAMP. MÍDIA');
@@ -1476,8 +1492,10 @@ function _init(){
   }
 
   popularFiltros();
+  restaurarFiltrosURL();
   renderIncorretos();
   renderizar();
+  pedirNotificacaoToken(dados.avisoToken);
 }
 </script>
 
@@ -1491,10 +1509,11 @@ document.addEventListener('DOMContentLoaded', function(){
   var badge = document.getElementById('faqBadge');
   if (badge) { badge.textContent = DJIRA_FAQ.length; badge.style.display=''; }
 
-  // Atalhos de teclado: G = Guia, Esc = fechar modais
+  // Atalhos de teclado: G = Guia, C = Compacto, Esc = fechar modais
   document.addEventListener('keydown', function(e){
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
     if (e.key === 'g' || e.key === 'G') { abrirFAQ(); }
+    if (e.key === 'c' || e.key === 'C') { toggleCompacto(); }
     if (e.key === 'Escape') {
       fecharFAQ();
       var exp = document.getElementById('modalExportador');
@@ -1503,7 +1522,71 @@ document.addEventListener('DOMContentLoaded', function(){
       if (cfg) cfg.classList.remove('show');
     }
   });
+
+  // Restaurar modo compacto do localStorage
+  if (localStorage.getItem('djira-compacto') === '1') { document.body.classList.add('compact'); var bc=document.getElementById('btnCompacto'); if(bc){bc.textContent='⊟ Normal';bc.style.borderColor='var(--acc)';bc.style.color='var(--acc)';} }
 });
+
+// ── Modo compacto ──────────────────────────────────────────────
+function toggleCompacto(){
+  var on = document.body.classList.toggle('compact');
+  var btn = document.getElementById('btnCompacto');
+  if (btn) { btn.textContent = on ? '⊟ Normal' : '⊟ Compacto'; btn.style.borderColor = on ? 'var(--acc)' : ''; btn.style.color = on ? 'var(--acc)' : ''; }
+  try { localStorage.setItem('djira-compacto', on ? '1' : '0'); } catch(e){}
+}
+
+// ── URL com filtros ────────────────────────────────────────────
+var _urlSyncTimer = null;
+function sincronizarURL() {
+  clearTimeout(_urlSyncTimer);
+  _urlSyncTimer = setTimeout(function(){
+    try {
+      var p = new URLSearchParams();
+      var ids = ['filtBU','filtAgencia','filtMarca','filtVeiculo','filtStatusAdp','filtPlataforma','filtStatus'];
+      ids.forEach(function(id){ var el=document.getElementById(id); if(el&&el.value) p.set(id,el.value); });
+      var de=document.getElementById('dateDe'), ate=document.getElementById('dateAte');
+      if(de&&de.value) p.set('dateDe',de.value);
+      if(ate&&ate.value) p.set('dateAte',ate.value);
+      var camp=(document.getElementById('filtCampanhaVal')||{}).value;
+      var campTxt=(document.getElementById('filtCampanhaSearch')||{}).value;
+      if(camp) { p.set('filtCampanhaVal',camp); if(campTxt) p.set('filtCampanhaTxt',campTxt); }
+      if(kpiFiltroAtivo) p.set('kpi',kpiFiltroAtivo);
+      var url = window.location.pathname + (p.toString() ? '?' + p.toString() : '');
+      window.history.replaceState(null,'',url);
+    } catch(e){}
+  }, 300);
+}
+function restaurarFiltrosURL() {
+  try {
+    var p = new URLSearchParams(window.location.search);
+    var ids = ['filtBU','filtAgencia','filtMarca','filtVeiculo','filtStatusAdp','filtPlataforma','filtStatus'];
+    ids.forEach(function(id){ var v=p.get(id); if(v){ var el=document.getElementById(id); if(el) el.value=v; } });
+    var de=p.get('dateDe'), ate=p.get('dateAte');
+    if(de){ var eld=document.getElementById('dateDe'); if(eld) eld.value=de; }
+    if(ate){ var ela=document.getElementById('dateAte'); if(ela) ela.value=ate; }
+    var camp=p.get('filtCampanhaVal'), campTxt=p.get('filtCampanhaTxt');
+    if(camp){ var cv=document.getElementById('filtCampanhaVal'); if(cv) cv.value=camp; var cs=document.getElementById('filtCampanhaSearch'); if(cs&&campTxt) cs.value=campTxt; }
+    var kpi=p.get('kpi'); if(kpi) { kpiFiltroAtivo=kpi; atualizarBannerKpi(); }
+  } catch(e){}
+}
+
+// ── Notificação de token expirando (browser Notification API) ──
+function pedirNotificacaoToken(avisoToken) {
+  if (!avisoToken || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    _mostrarNotifToken(avisoToken);
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(function(p){ if(p==='granted') _mostrarNotifToken(avisoToken); });
+  }
+}
+function _mostrarNotifToken(av) {
+  try {
+    var msg = av.dias <= 0
+      ? 'Token do Jira EXPIRADO — sync automático parou.'
+      : 'Token do Jira vence em ' + av.dias + ' dia' + (av.dias===1?'':'s') + ' (' + av.expira + ')';
+    new Notification('[UL] Dashboard_Taxonomias', { body: msg });
+  } catch(e){}
+}
 
 
 // ── Nav Tabs (djira) ──────────────────────────────────────────────
