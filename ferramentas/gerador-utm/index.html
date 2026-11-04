@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de UTM | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+input,select{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* URL preview */
+.url-box{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;word-break:break-all;line-height:1.6;min-height:48px;color:var(--body)}
+.url-base{color:var(--escuro);font-weight:600}
+.url-sep{color:var(--muted)}
+.url-param{color:#059669}
+.url-eq{color:var(--muted)}
+.url-val{color:var(--azul)}
+
+/* platform chips */
+.platform-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.p-chip{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--bg);color:var(--body);cursor:pointer;transition:all .15s}
+.p-chip:hover,.p-chip.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+
+/* history */
+.hist-item{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-bottom:5px;cursor:pointer;transition:background .15s;font-size:11px}
+.hist-item:hover{background:var(--light)}
+.hist-url{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+
+/* param highlight */
+.param-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--light);color:var(--azul);margin:1px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn" title="Tema">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Gerador de UTM</h1>
+  <p class="subtitle">Monte URLs com parâmetros UTM. Presets por plataforma, preview em tempo real, histórico local e cópia com um clique.</p>
+</div>
+<div class="main">
+
+<div class="card">
+  <div class="section-title">Plataforma (presets)</div>
+  <div class="platform-chips">
+    <span class="p-chip" onclick="loadPlatform('cm360')">CM360</span>
+    <span class="p-chip" onclick="loadPlatform('meta')">Meta</span>
+    <span class="p-chip" onclick="loadPlatform('google_ads')">Google Ads</span>
+    <span class="p-chip" onclick="loadPlatform('dv360')">DV360</span>
+    <span class="p-chip" onclick="loadPlatform('linkedin')">LinkedIn</span>
+    <span class="p-chip" onclick="loadPlatform('tiktok')">TikTok</span>
+    <span class="p-chip" onclick="loadPlatform('newsletter')">Newsletter</span>
+    <span class="p-chip" onclick="loadPlatform('custom')">Custom</span>
+  </div>
+
+  <div style="margin-bottom:10px">
+    <label>URL de destino</label>
+    <input id="base-url" type="url" placeholder="https://www.seusite.com.br/pagina" oninput="buildUrl()">
+  </div>
+
+  <div class="row3" style="margin-bottom:10px">
+    <div>
+      <label>utm_source</label>
+      <input id="utm-source" placeholder="google" oninput="buildUrl()">
+      <div class="hint" id="hint-source"></div>
+    </div>
+    <div>
+      <label>utm_medium</label>
+      <input id="utm-medium" placeholder="cpc" oninput="buildUrl()">
+      <div class="hint" id="hint-medium"></div>
+    </div>
+    <div>
+      <label>utm_campaign</label>
+      <input id="utm-campaign" placeholder="nome-campanha" oninput="buildUrl()">
+    </div>
+  </div>
+  <div class="row3" style="margin-bottom:10px">
+    <div>
+      <label>utm_content</label>
+      <input id="utm-content" placeholder="banner-300x250" oninput="buildUrl()">
+    </div>
+    <div>
+      <label>utm_term</label>
+      <input id="utm-term" placeholder="palavra-chave" oninput="buildUrl()">
+    </div>
+    <div>
+      <label>utm_id <span style="font-size:10px;color:var(--muted)">(opcional)</span></label>
+      <input id="utm-id" placeholder="id da campanha" oninput="buildUrl()">
+    </div>
+  </div>
+
+  <!-- Dynamic macros section -->
+  <div id="macro-section" style="display:none;margin-bottom:12px">
+    <div class="section-title">Macros dinâmicas disponíveis</div>
+    <div id="macro-tags"></div>
+  </div>
+
+  <div style="margin-bottom:10px">
+    <label>Preview da URL</label>
+    <div class="url-box" id="url-preview">—</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button class="btn-primary" onclick="copyUrl()">📋 Copiar URL</button>
+    <button class="btn-sm" onclick="saveHistory()">💾 Salvar no histórico</button>
+    <button class="btn-sm" onclick="clearForm()">✕ Limpar</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="card" id="hist-card" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div class="section-title" style="margin:0">Histórico</div>
+    <button class="btn-sm" onclick="clearHistory()">Limpar histórico</button>
+  </div>
+  <div id="hist-list"></div>
+</div>
+
+</div>
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';}
+
+const PLATFORMS={
+  cm360:{
+    source:'doubleclick',medium:'cpm',campaign:'',content:'{{placement}}',term:'',id:'{{campaign_id}}',
+    macros:['{{placement}}','{{campaign_id}}','{{creative_id}}','{{site_id}}','%%CACHEBUSTER%%'],
+    hints:{source:'Servidor de anúncios CM360',medium:'Tipo de mídia (cpm, cpc, cpv…)'},
+  },
+  meta:{
+    source:'facebook',medium:'paid_social',campaign:'{{campaign.name}}',content:'{{adset.name}}_{{ad.name}}',term:'',id:'{{campaign.id}}',
+    macros:['{{campaign.name}}','{{adset.name}}','{{ad.name}}','{{campaign.id}}','{{adset.id}}','{{ad.id}}','{{placement}}'],
+    hints:{source:'facebook ou instagram — a Meta serve automaticamente',medium:'paid_social'},
+  },
+  google_ads:{
+    source:'google',medium:'cpc',campaign:'{campaignname}',content:'{adgroupname}',term:'{keyword}',id:'{campaignid}',
+    macros:['{campaignname}','{adgroupname}','{keyword}','{campaignid}','{creative}','{placement}','{network}'],
+    hints:{source:'google',medium:'cpc / cpm / display'},
+  },
+  dv360:{
+    source:'dv360',medium:'display',campaign:'${CAMPAIGN_ID}',content:'${CREATIVE_ID}',term:'',id:'${INSERTION_ORDER_ID}',
+    macros:['${CAMPAIGN_ID}','${CREATIVE_ID}','${INSERTION_ORDER_ID}','${LINE_ITEM_ID}','${SITE_ID}','${CACHEBUSTER}'],
+    hints:{source:'dv360',medium:'display / video'},
+  },
+  linkedin:{
+    source:'linkedin',medium:'paid_social',campaign:'',content:'',term:'',id:'',
+    macros:[],
+    hints:{source:'linkedin',medium:'paid_social'},
+  },
+  tiktok:{
+    source:'tiktok',medium:'paid_social',campaign:'__CAMPAIGN_NAME__',content:'__CID_NAME__',term:'',id:'__CAMPAIGN_ID__',
+    macros:['__CAMPAIGN_NAME__','__CAMPAIGN_ID__','__CID_NAME__','__AID_NAME__','__PLACEMENT_TYPE__'],
+    hints:{source:'tiktok',medium:'paid_social'},
+  },
+  newsletter:{
+    source:'newsletter',medium:'email',campaign:'',content:'',term:'',id:'',
+    macros:[],
+    hints:{source:'nome-da-newsletter',medium:'email'},
+  },
+  custom:{
+    source:'',medium:'',campaign:'',content:'',term:'',id:'',macros:[],hints:{},
+  },
+};
+
+function loadPlatform(key){
+  const p=PLATFORMS[key];
+  document.getElementById('utm-source').value=p.source;
+  document.getElementById('utm-medium').value=p.medium;
+  document.getElementById('utm-campaign').value=p.campaign;
+  document.getElementById('utm-content').value=p.content;
+  document.getElementById('utm-term').value=p.term;
+  document.getElementById('utm-id').value=p.id;
+  document.getElementById('hint-source').textContent=p.hints.source||'';
+  document.getElementById('hint-medium').textContent=p.hints.medium||'';
+
+  const ms=document.getElementById('macro-section');
+  const mt=document.getElementById('macro-tags');
+  if(p.macros&&p.macros.length){
+    ms.style.display='block';
+    mt.innerHTML=p.macros.map(m=>`<span class="param-tag" title="Clique para inserir em utm_content" onclick="appendMacro('${esc(m)}')">${esc(m)}</span>`).join(' ');
+  } else {
+    ms.style.display='none';
+  }
+
+  document.querySelectorAll('.p-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`[onclick="loadPlatform('${key}')"]`).classList.add('active');
+  buildUrl();
+}
+
+function appendMacro(m){
+  const f=document.getElementById('utm-content');
+  f.value=(f.value?f.value+'_':'')+m;
+  buildUrl();
+}
+
+function getField(id){return document.getElementById(id).value.trim();}
+
+function buildUrl(){
+  const base=getField('base-url');
+  const params=[
+    ['utm_source',getField('utm-source')],
+    ['utm_medium',getField('utm-medium')],
+    ['utm_campaign',getField('utm-campaign')],
+    ['utm_content',getField('utm-content')],
+    ['utm_term',getField('utm-term')],
+    ['utm_id',getField('utm-id')],
+  ].filter(([,v])=>v);
+
+  const preview=document.getElementById('url-preview');
+  if(!base){preview.innerHTML='<span style="color:var(--muted)">Informe a URL de destino.</span>';return;}
+
+  const q=params.map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+  const full=base+(base.includes('?')?'&':'?')+q;
+  window._lastUrl=full;
+
+  const displayQ=params.map(([k,v])=>`<span class="url-param">${esc(k)}</span><span class="url-eq">=</span><span class="url-val">${esc(v)}</span>`).join('<span class="url-sep">&</span>');
+  preview.innerHTML=`<span class="url-base">${esc(base)}</span><span class="url-sep">${params.length?'?':''}</span>${displayQ}`;
+}
+
+function copyUrl(){
+  if(!window._lastUrl){toast('Preencha a URL primeiro.');return;}
+  navigator.clipboard.writeText(window._lastUrl).then(()=>toast('URL copiada!'));
+}
+
+function clearForm(){
+  ['base-url','utm-source','utm-medium','utm-campaign','utm-content','utm-term','utm-id'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('url-preview').innerHTML='—';
+  document.querySelectorAll('.p-chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById('macro-section').style.display='none';
+  window._lastUrl='';
+}
+
+// History
+function saveHistory(){
+  if(!window._lastUrl){toast('Sem URL para salvar.');return;}
+  try{
+    let h=JSON.parse(localStorage.getItem('utm_history')||'[]');
+    const entry={url:window._lastUrl,ts:Date.now(),source:getField('utm-source'),medium:getField('utm-medium'),campaign:getField('utm-campaign')};
+    h=h.filter(e=>e.url!==entry.url);
+    h.unshift(entry);
+    h=h.slice(0,20);
+    localStorage.setItem('utm_history',JSON.stringify(h));
+    renderHistory();
+    toast('Salvo no histórico!');
+  }catch(e){}
+}
+
+function renderHistory(){
+  try{
+    const h=JSON.parse(localStorage.getItem('utm_history')||'[]');
+    const card=document.getElementById('hist-card');
+    const list=document.getElementById('hist-list');
+    if(!h.length){card.style.display='none';return;}
+    card.style.display='block';
+    list.innerHTML=h.map((e,i)=>`<div class="hist-item" onclick="restoreHistory(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong style="font-size:12px">${esc(e.source||'—')} / ${esc(e.medium||'—')} / ${esc(e.campaign||'—')}</strong>
+        <span style="font-size:10px;color:var(--muted)">${new Date(e.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div class="hist-url">${esc(e.url)}</div>
+    </div>`).join('');
+  }catch(e){}
+}
+
+function restoreHistory(i){
+  try{
+    const h=JSON.parse(localStorage.getItem('utm_history')||'[]');
+    const e=h[i];
+    if(!e)return;
+    const url=new URL(e.url);
+    document.getElementById('base-url').value=url.origin+url.pathname;
+    document.getElementById('utm-source').value=url.searchParams.get('utm_source')||'';
+    document.getElementById('utm-medium').value=url.searchParams.get('utm_medium')||'';
+    document.getElementById('utm-campaign').value=url.searchParams.get('utm_campaign')||'';
+    document.getElementById('utm-content').value=url.searchParams.get('utm_content')||'';
+    document.getElementById('utm-term').value=url.searchParams.get('utm_term')||'';
+    document.getElementById('utm-id').value=url.searchParams.get('utm_id')||'';
+    buildUrl();
+  }catch(err){}
+}
+
+function clearHistory(){
+  try{localStorage.removeItem('utm_history');}catch(e){}
+  renderHistory();
+}
+
+renderHistory();
+</script>
+</body>
+</html>

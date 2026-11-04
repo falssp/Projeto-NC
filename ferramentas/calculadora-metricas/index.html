@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de Métricas | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;--mono:'JetBrains Mono',monospace;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;--warn:#e65100;--warn-bg:#fff3e0;
+  --good:#1565c0;--good-bg:#e3f2fd;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+  --ok:#a5d6a7;--ok-bg:#0a2010;
+  --warn:#ffcc80;--warn-bg:#2a1800;
+  --good:#90caf9;--good-bg:#0a1829;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+input,select{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* KPI tiles */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.kpi-tile{border-radius:10px;padding:12px 14px;border:1px solid var(--border);background:var(--light)}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.kpi-val{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--azul);line-height:1.1;margin:4px 0 2px}
+.kpi-sub{font-size:10px;color:var(--muted)}
+.kpi-tile.ok{background:var(--ok-bg);border-color:var(--ok)}
+.kpi-tile.ok .kpi-val{color:var(--ok)}
+.kpi-tile.warn{background:var(--warn-bg);border-color:var(--warn)}
+.kpi-tile.warn .kpi-val{color:var(--warn)}
+.kpi-tile.info{background:var(--good-bg);border-color:var(--good)}
+.kpi-tile.info .kpi-val{color:var(--good)}
+
+/* comparison */
+.cmp-row{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:7px;background:var(--bg);margin-bottom:4px;font-size:12px}
+.cmp-label{flex:1;font-weight:600;color:var(--body)}
+.cmp-p1,.cmp-p2{font-family:var(--mono);min-width:80px;text-align:right}
+.cmp-delta{min-width:60px;text-align:right;font-family:var(--mono);font-size:11px}
+.up{color:var(--ok)}.down{color:var(--warn)}.flat{color:var(--muted)}
+
+/* tabs */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:14px}
+.tab{padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;color:var(--muted);border:none;background:transparent;font-family:inherit;transition:all .15s}
+.tab.active{background:var(--azul);color:#fff}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* preset chips */
+.preset-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--bg);color:var(--body);cursor:pointer;transition:all .15s}
+.chip:hover{background:var(--azul);color:#fff;border-color:var(--azul)}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn" title="Tema">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Calculadora de Métricas</h1>
+  <p class="subtitle">Informe os dados brutos da campanha e calcule automaticamente CTR, VTR, viewability, CPM, CPC, CPA, CVR e mais. Suporta comparativo entre dois períodos.</p>
+</div>
+<div class="main">
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('simples')">Simples</button>
+    <button class="tab" onclick="showTab('comparativo')">Comparativo A/B</button>
+  </div>
+
+  <!-- SIMPLES -->
+  <div class="tab-panel active" id="tab-simples">
+    <div class="preset-chips">
+      <span class="chip" onclick="loadPreset('display')">Display</span>
+      <span class="chip" onclick="loadPreset('video')">Vídeo</span>
+      <span class="chip" onclick="loadPreset('search')">Search</span>
+      <span class="chip" onclick="loadPreset('social')">Social</span>
+    </div>
+    <div class="row4" style="margin-bottom:10px">
+      <div>
+        <label>Impressões</label>
+        <input id="s-impr" type="number" placeholder="0" min="0" oninput="calcSimples()">
+      </div>
+      <div>
+        <label>Viewable impr.</label>
+        <input id="s-view" type="number" placeholder="0" min="0" oninput="calcSimples()">
+      </div>
+      <div>
+        <label>Cliques</label>
+        <input id="s-clicks" type="number" placeholder="0" min="0" oninput="calcSimples()">
+      </div>
+      <div>
+        <label>Conversões</label>
+        <input id="s-conv" type="number" placeholder="0" min="0" oninput="calcSimples()">
+      </div>
+    </div>
+    <div class="row4" style="margin-bottom:14px">
+      <div>
+        <label>Spend (R$)</label>
+        <input id="s-spend" type="number" placeholder="0.00" min="0" step="0.01" oninput="calcSimples()">
+      </div>
+      <div>
+        <label>Views completos (vídeo)</label>
+        <input id="s-views-comp" type="number" placeholder="0" min="0" oninput="calcSimples()">
+      </div>
+      <div>
+        <label>Reach (alcance)</label>
+        <input id="s-reach" type="number" placeholder="0" min="0" oninput="calcSimples()">
+      </div>
+      <div>
+        <label>Freq. média</label>
+        <input id="s-freq" type="number" placeholder="auto" min="0" step="0.1" oninput="calcSimples()">
+      </div>
+    </div>
+    <div id="s-result" class="kpi-grid"></div>
+  </div>
+
+  <!-- COMPARATIVO -->
+  <div class="tab-panel" id="tab-comparativo">
+    <div class="row2" style="margin-bottom:12px">
+      <div>
+        <div class="section-title" style="margin-bottom:8px">Período A</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div class="row2">
+            <div><label>Impressões</label><input id="a-impr" type="number" placeholder="0" oninput="calcCmp()"></div>
+            <div><label>Viewable</label><input id="a-view" type="number" placeholder="0" oninput="calcCmp()"></div>
+          </div>
+          <div class="row2">
+            <div><label>Cliques</label><input id="a-clicks" type="number" placeholder="0" oninput="calcCmp()"></div>
+            <div><label>Conversões</label><input id="a-conv" type="number" placeholder="0" oninput="calcCmp()"></div>
+          </div>
+          <div class="row2">
+            <div><label>Spend (R$)</label><input id="a-spend" type="number" placeholder="0" oninput="calcCmp()"></div>
+            <div><label>Views completos</label><input id="a-vcomp" type="number" placeholder="0" oninput="calcCmp()"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="margin-bottom:8px">Período B</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div class="row2">
+            <div><label>Impressões</label><input id="b-impr" type="number" placeholder="0" oninput="calcCmp()"></div>
+            <div><label>Viewable</label><input id="b-view" type="number" placeholder="0" oninput="calcCmp()"></div>
+          </div>
+          <div class="row2">
+            <div><label>Cliques</label><input id="b-clicks" type="number" placeholder="0" oninput="calcCmp()"></div>
+            <div><label>Conversões</label><input id="b-conv" type="number" placeholder="0" oninput="calcCmp()"></div>
+          </div>
+          <div class="row2">
+            <div><label>Spend (R$)</label><input id="b-spend" type="number" placeholder="0" oninput="calcCmp()"></div>
+            <div><label>Views completos</label><input id="b-vcomp" type="number" placeholder="0" oninput="calcCmp()"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="cmp-result"></div>
+  </div>
+</div>
+
+<div class="card" id="copy-card" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+    <span class="section-title" style="margin:0">Exportar</span>
+    <div style="display:flex;gap:5px">
+      <button class="btn-sm" onclick="copyMetrics()">📋 Copiar para Sheets</button>
+      <button class="btn-sm" onclick="clearAll()">✕ Limpar</button>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';}
+
+function showTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(el=>el.classList.remove('active'));
+  document.querySelector(`[onclick="showTab('${id}')"]`).classList.add('active');
+  document.getElementById(`tab-${id}`).classList.add('active');
+}
+
+function v(id){return parseFloat(document.getElementById(id).value)||0;}
+
+function pct(a,b){if(!b)return null;return(a/b)*100;}
+function safe(n,decimals=2){if(!isFinite(n)||n===null)return null;return n;}
+
+function fmtPct(n,d=2){if(n===null||!isFinite(n))return'—';return n.toFixed(d)+'%';}
+function fmtNum(n,d=0){if(n===null||!isFinite(n))return'—';return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);}
+function fmtMoney(n,d=2){if(n===null||!isFinite(n))return'—';return'R$ '+fmtNum(n,d);}
+
+function computeMetrics(impr,view,clicks,conv,spend,vcomp,reach,freq){
+  const viewRate=pct(view,impr);
+  const ctr=pct(clicks,impr);
+  const cvr=pct(conv,clicks);
+  const cpm=impr&&spend?(spend/impr)*1000:null;
+  const cpc=clicks&&spend?spend/clicks:null;
+  const cpa=conv&&spend?spend/conv:null;
+  const vtr=vcomp&&impr?(vcomp/impr)*100:null;
+  const freqCalc=reach&&impr?(impr/reach):freq||null;
+  const cpp=reach&&spend?spend/reach:null;
+  return{impr,view,clicks,conv,spend,vcomp,reach,viewRate,ctr,cvr,cpm,cpc,cpa,vtr,freq:freqCalc,cpp};
+}
+
+const PRESETS={
+  display:{impr:500000,view:300000,clicks:1200,conv:60,spend:4000,vcomp:0,reach:150000},
+  video:{impr:200000,view:160000,clicks:800,conv:0,spend:5600,vcomp:120000,reach:0},
+  search:{impr:30000,view:0,clicks:3600,conv:200,spend:3200,vcomp:0,reach:0},
+  social:{impr:800000,view:600000,clicks:4000,conv:120,spend:6000,vcomp:0,reach:280000},
+};
+
+function loadPreset(key){
+  const p=PRESETS[key];
+  document.getElementById('s-impr').value=p.impr||'';
+  document.getElementById('s-view').value=p.view||'';
+  document.getElementById('s-clicks').value=p.clicks||'';
+  document.getElementById('s-conv').value=p.conv||'';
+  document.getElementById('s-spend').value=p.spend||'';
+  document.getElementById('s-views-comp').value=p.vcomp||'';
+  document.getElementById('s-reach').value=p.reach||'';
+  document.getElementById('s-freq').value='';
+  calcSimples();
+}
+
+function tile(label,val,sub,cls=''){
+  return`<div class="kpi-tile ${cls}"><div class="kpi-label">${esc(label)}</div><div class="kpi-val">${esc(val)}</div>${sub?`<div class="kpi-sub">${esc(sub)}</div>`:''}</div>`;
+}
+
+function calcSimples(){
+  const m=computeMetrics(v('s-impr'),v('s-view'),v('s-clicks'),v('s-conv'),v('s-spend'),v('s-views-comp'),v('s-reach'),v('s-freq'));
+  const tiles=[];
+  if(m.impr)tiles.push(tile('Impressões',fmtNum(m.impr),'',''));
+  if(m.viewRate!==null)tiles.push(tile('Viewability',fmtPct(m.viewRate),fmtNum(m.view)+' viewable',m.viewRate>=50?'ok':'warn'));
+  if(m.ctr!==null)tiles.push(tile('CTR',fmtPct(m.ctr,3),fmtNum(m.clicks)+' cliques',m.ctr>=0.1?'ok':''));
+  if(m.vtr!==null)tiles.push(tile('VTR',fmtPct(m.vtr),fmtNum(m.vcomp)+' views comp.',m.vtr>=50?'ok':''));
+  if(m.cvr!==null)tiles.push(tile('CVR',fmtPct(m.cvr),fmtNum(m.conv)+' conversões',m.cvr>=2?'ok':''));
+  if(m.cpm!==null)tiles.push(tile('CPM',fmtMoney(m.cpm),'custo por mil impr.','info'));
+  if(m.cpc!==null)tiles.push(tile('CPC',fmtMoney(m.cpc),'custo por clique','info'));
+  if(m.cpa!==null)tiles.push(tile('CPA',fmtMoney(m.cpa),'custo por conversão','info'));
+  if(m.freq)tiles.push(tile('Freq. média',fmtNum(m.freq,1)+'x','impressões/reach',m.freq>5?'warn':''));
+  if(m.cpp!==null)tiles.push(tile('CPP (cost/reach)',fmtMoney(m.cpp,3),'custo por pessoa',''));
+  document.getElementById('s-result').innerHTML=tiles.join('');
+  document.getElementById('copy-card').style.display=tiles.length?'block':'none';
+  window._lastMetrics=m;
+}
+
+function calcCmp(){
+  const a=computeMetrics(v('a-impr'),v('a-view'),v('a-clicks'),v('a-conv'),v('a-spend'),v('a-vcomp'),0,0);
+  const b=computeMetrics(v('b-impr'),v('b-view'),v('b-clicks'),v('b-conv'),v('b-spend'),v('b-vcomp'),0,0);
+  const metrics=[
+    {label:'Impressões',fa:fmtNum(a.impr),fb:fmtNum(b.impr),va:a.impr,vb:b.impr,higher:'b'},
+    {label:'Viewability',fa:fmtPct(a.viewRate),fb:fmtPct(b.viewRate),va:a.viewRate,vb:b.viewRate,higher:'b'},
+    {label:'CTR',fa:fmtPct(a.ctr,3),fb:fmtPct(b.ctr,3),va:a.ctr,vb:b.ctr,higher:'b'},
+    {label:'VTR',fa:fmtPct(a.vtr),fb:fmtPct(b.vtr),va:a.vtr,vb:b.vtr,higher:'b'},
+    {label:'CVR',fa:fmtPct(a.cvr),fb:fmtPct(b.cvr),va:a.cvr,vb:b.cvr,higher:'b'},
+    {label:'CPM',fa:fmtMoney(a.cpm),fb:fmtMoney(b.cpm),va:a.cpm,vb:b.cpm,higher:'a'},
+    {label:'CPC',fa:fmtMoney(a.cpc),fb:fmtMoney(b.cpc),va:a.cpc,vb:b.cpc,higher:'a'},
+    {label:'CPA',fa:fmtMoney(a.cpa),fb:fmtMoney(b.cpa),va:a.cpa,vb:b.cpa,higher:'a'},
+  ].filter(m=>m.va||m.vb);
+
+  const rows=metrics.map(m=>{
+    let deltaHtml='—';
+    if(m.va&&m.vb){
+      const diff=((m.vb-m.va)/Math.abs(m.va))*100;
+      const better=(m.higher==='b'&&diff>0)||(m.higher==='a'&&diff<0);
+      const worse=(m.higher==='b'&&diff<0)||(m.higher==='a'&&diff>0);
+      const cls=better?'up':worse?'down':'flat';
+      deltaHtml=`<span class="${cls}">${diff>0?'+':''}${diff.toFixed(1)}%</span>`;
+    }
+    return`<div class="cmp-row">
+      <div class="cmp-label">${esc(m.label)}</div>
+      <div class="cmp-p1">${esc(m.fa)}</div>
+      <div class="cmp-p2">${esc(m.fb)}</div>
+      <div class="cmp-delta">${deltaHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('cmp-result').innerHTML=rows?`
+    <div style="display:flex;gap:6px;margin-bottom:6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:0 10px">
+      <div style="flex:1">Métrica</div>
+      <div style="min-width:80px;text-align:right">Período A</div>
+      <div style="min-width:80px;text-align:right">Período B</div>
+      <div style="min-width:60px;text-align:right">Δ B vs A</div>
+    </div>${rows}`:'<p style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Preencha os dados dos dois períodos.</p>';
+  document.getElementById('copy-card').style.display=rows?'block':'none';
+}
+
+function copyMetrics(){
+  const m=window._lastMetrics;
+  if(!m){toast('Sem dados para copiar.');return;}
+  const lines=[
+    ['Métrica','Valor'],
+    ['Impressões',m.impr],
+    ['Viewable',m.view],
+    ['Viewability %',m.viewRate?.toFixed(2)+'%'],
+    ['Cliques',m.clicks],
+    ['CTR',m.ctr?.toFixed(3)+'%'],
+    ['Conversões',m.conv],
+    ['CVR',m.cvr?.toFixed(2)+'%'],
+    ['VTR',m.vtr?.toFixed(2)+'%'],
+    ['Spend',m.spend?.toFixed(2)],
+    ['CPM',m.cpm?.toFixed(2)],
+    ['CPC',m.cpc?.toFixed(2)],
+    ['CPA',m.cpa?.toFixed(2)],
+  ].filter(r=>r[1]&&r[1]!=='undefined%'&&r[1]!=='null%').map(r=>r.join('\t')).join('\n');
+  navigator.clipboard.writeText(lines).then(()=>toast('Métricas copiadas para Sheets!'));
+}
+
+function clearAll(){
+  document.querySelectorAll('input').forEach(i=>i.value='');
+  document.getElementById('s-result').innerHTML='';
+  document.getElementById('cmp-result').innerHTML='';
+  document.getElementById('copy-card').style.display='none';
+}
+</script>
+</body>
+</html>
