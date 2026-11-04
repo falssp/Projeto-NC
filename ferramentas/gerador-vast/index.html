@@ -95,6 +95,10 @@ button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:
 .comp-row{display:grid;grid-template-columns:60px 60px 115px 1fr 1fr 28px;gap:5px;align-items:end;margin-bottom:5px}
 .comp-row .flabel{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px}
 
+/* VERIFICATION */
+.verif-row{display:grid;grid-template-columns:120px 1fr 1fr 28px;gap:5px;align-items:end;margin-bottom:5px}
+.verif-row .flabel{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px}
+
 /* OUTPUT */
 .output-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 .output-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1}
@@ -107,6 +111,16 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
 .tracking-url-row{display:flex;align-items:flex-start;gap:4px}
 .tracking-url-text{font-size:10px;font-family:var(--mono);color:var(--body);word-break:break-all;background:var(--bg);padding:4px 6px;border-radius:4px;flex:1}
 .tracking-extra{opacity:.65;font-size:9px}
+
+/* PREVIEW PLAYER */
+.player-wrap{margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.player-toolbar{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.player-url-input{flex:1;min-width:200px;font-size:11px}
+#vast-player{width:100%;max-height:320px;background:#000;display:block}
+.player-log{font-family:var(--mono);font-size:10px;padding:8px 12px;color:var(--body);max-height:80px;overflow-y:auto;line-height:1.5}
+.log-line{padding:1px 0}
+.log-ev{color:var(--azul)}
+.log-time{color:var(--muted);margin-right:4px}
 
 /* HISTORY */
 .history-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px}
@@ -136,6 +150,8 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
 .modal ul{padding-left:18px;margin:0 0 8px}
 .htag{display:inline-block;background:var(--light);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.78rem;color:var(--escuro)}
 .json-ta{width:100%;height:220px;resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--body);margin-top:10px}
+.share-url-box{display:flex;gap:6px;margin-top:10px}
+.share-url-box input{font-family:var(--mono);font-size:11px}
 
 /* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-family:'Space Grotesk',sans-serif;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2)}
@@ -155,7 +171,7 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
 
 <div class="header">
   <h1>Gerador de VAST Tag</h1>
-  <p class="subtitle">Gera XML VAST 2.0 / 3.0 / 4.1 com tracking de Floodlight — suporte a múltiplos MediaFiles, skippable, companions e pixels de terceiros.</p>
+  <p class="subtitle">Gera XML VAST 2.0 / 3.0 / 4.1 com tracking de Floodlight — suporte a múltiplos MediaFiles, skippable, companions, viewability e pixels de terceiros.</p>
 </div>
 
 <div class="main">
@@ -186,6 +202,7 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div class="section-title" style="margin-bottom:0">Parâmetros Floodlight</div>
           <div style="display:flex;gap:6px">
+            <button class="btn-sm" onclick="openShareModal()">🔗 Compartilhar</button>
             <button class="btn-sm" onclick="openJsonModal()">⇅ JSON</button>
             <button class="btn-danger" onclick="resetForm()">↺ Limpar campos</button>
           </div>
@@ -318,6 +335,23 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
           </div>
         </div>
 
+        <!-- VERIFICATION / VIEWABILITY (collapsible) -->
+        <div class="collapsible" id="verif-section">
+          <div class="collapsible-header" onclick="toggleColl('verif-section')">
+            👁 Verificação / Viewability (OMID)
+            <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px" id="verif-count"></span>
+            <span class="coll-arrow">▼</span>
+          </div>
+          <div class="collapsible-body">
+            <div id="verif-list"></div>
+            <button class="btn-xs" onclick="addVerif()" style="margin-top:6px">+ Adicionar vendor</button>
+            <div class="hint" style="margin-top:5px">
+              Gera <code style="font-family:var(--mono);font-size:10px">&lt;AdVerifications&gt;</code> (VAST 4.1) ou <code style="font-family:var(--mono);font-size:10px">&lt;Extension type="AdVerification"&gt;</code> (2.0/3.0).
+              Vendors comuns: IAS (<code style="font-family:var(--mono);font-size:10px">ias.com</code>), Moat (<code style="font-family:var(--mono);font-size:10px">moatads.com</code>), DoubleVerify (<code style="font-family:var(--mono);font-size:10px">doubleverify.com</code>).
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -364,12 +398,36 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
         <button class="btn-sm" id="btn-copy" onclick="copyXML()">📋 Copiar XML</button>
         <button class="btn-sm" id="btn-download" onclick="downloadXML()">⬇ Download XML</button>
         <button class="btn-sm" onclick="openValidator()">🔍 Validar (IAB)</button>
+        <button class="btn-sm" onclick="openImaTest()">▶ Teste IMA</button>
         <button class="btn-sm" id="btn-save" onclick="saveToHistory()">💾 Salvar</button>
       </div>
     </div>
     <div class="output-body">
       <pre id="vast-out"><!-- preencha os campos acima --></pre>
       <div id="tracking-list" class="tracking-list"></div>
+    </div>
+
+    <!-- PREVIEW PLAYER (collapsible) -->
+    <div class="collapsible" id="player-section" style="margin-top:12px">
+      <div class="collapsible-header" onclick="toggleColl('player-section');initPlayer()">
+        🎬 Preview do vídeo
+        <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:4px">Reproduz o arquivo de vídeo diretamente (não simula o VAST completo)</span>
+        <span class="coll-arrow">▼</span>
+      </div>
+      <div class="collapsible-body" style="padding:0">
+        <div class="player-wrap" style="margin-top:0;border:none;border-radius:0">
+          <div class="player-toolbar">
+            <input class="player-url-input" id="player-url" type="text" placeholder="URL do vídeo (preenchida automaticamente do primeiro MediaFile)">
+            <button class="btn-xs" onclick="playerLoad()">▶ Carregar</button>
+            <button class="btn-xs" onclick="document.getElementById('vast-player').pause()">⏸ Pausar</button>
+            <button class="btn-xs" onclick="playerStop()">⏹ Parar</button>
+            <button class="btn-xs" onclick="document.getElementById('player-log').innerHTML=''">🗑 Log</button>
+            <a id="ima-link" href="https://googleads.github.io/googleads-ima-html5/vsi/" target="_blank" class="btn-xs" style="text-decoration:none">🔗 IMA SDK</a>
+          </div>
+          <video id="vast-player" controls style="width:100%;max-height:320px;background:#000;display:block"></video>
+          <div class="player-log" id="player-log"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -382,6 +440,20 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
     <div class="history-list" id="history-list"></div>
   </div>
 
+</div>
+
+<!-- SHARE MODAL -->
+<div class="overlay" id="share-overlay" onclick="if(event.target===this)closeShareModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeShareModal()">×</button>
+    <h2>🔗 Compartilhar configuração</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:4px">Link direto com toda a configuração atual codificada na URL. Qualquer pessoa com o link abre o gerador já preenchido.</p>
+    <div class="share-url-box">
+      <input type="text" id="share-url-input" readonly style="font-size:10px">
+      <button class="btn-primary" onclick="copyShareUrl()">📋 Copiar</button>
+    </div>
+    <div class="hint" style="margin-top:8px">O link pode ser longo — use um encurtador se precisar compartilhar em mensagem.</div>
+  </div>
 </div>
 
 <!-- JSON MODAL -->
@@ -413,24 +485,29 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
       <li><strong>Pulável</strong>: marque "skippable" e defina o offset para gerar o atributo <span class="htag">skipoffset</span> no Linear.</li>
       <li><strong>Companion Ads</strong>: adicione banners exibidos junto ao player (StaticResource, IFrame ou HTML).</li>
       <li><strong>Pixels 3rd party</strong>: adicione pixels de terceiros por evento (DV360, Sizmek, viewability, etc.).</li>
+      <li><strong>Verificação / Viewability</strong>: adicione vendors OMID (IAS, Moat, DV) — gera <span class="htag">&lt;AdVerifications&gt;</span> em VAST 4.1 ou <span class="htag">&lt;Extension&gt;</span> em 2.0/3.0.</li>
       <li><strong>Error URL</strong>: URL disparada quando o player falha ao servir o anúncio — recomendada em produção.</li>
       <li><strong>Progress</strong>: marque o evento e defina o offset de disparo (ex: 00:00:15 = 15 segundos).</li>
-      <li><strong>VAST 4.1</strong>: versão mais recente — adiciona namespace e <span class="htag">UniversalAdId</span>. Consulte o ad server para compatibilidade.</li>
+      <li><strong>VAST 4.1</strong>: versão mais recente — adiciona namespace, <span class="htag">UniversalAdId</span> e <span class="htag">AdVerifications</span> nativo. Consulte o ad server para compatibilidade.</li>
     </ul>
     <h3>Ações de output</h3>
     <ul>
       <li><strong>📋 Copiar XML</strong>: copia o XML completo.</li>
       <li><strong>⬇ Download XML</strong>: baixa como arquivo <span class="htag">.xml</span>.</li>
       <li><strong>🔍 Validar (IAB)</strong>: copia o XML e abre o validador da IAB Tech Lab — cole lá para validar.</li>
+      <li><strong>▶ Teste IMA</strong>: abre o Video Suite Inspector do Google com a URL do VAST pré-preenchida (testa o VAST completo com o IMA SDK).</li>
+      <li><strong>🔗 Compartilhar</strong>: gera um link com toda a configuração codificada — quem abre já vê o gerador preenchido.</li>
       <li><strong>⇅ JSON</strong>: exporta ou importa todos os campos como JSON (para compartilhar com o time).</li>
       <li><strong>💾 Salvar</strong>: salva no histórico local do browser (últimos 10).</li>
       <li><strong>📋 Copiar todas</strong>: copia o bloco de URLs de tracking de uma vez (útil para QA).</li>
+      <li><strong>🎬 Preview do vídeo</strong>: reproduz o arquivo de vídeo do primeiro MediaFile diretamente no browser (não simula o VAST completo — use o Teste IMA para isso).</li>
     </ul>
     <h3>Atenção</h3>
     <ul>
       <li>Campos com * são obrigatórios — ficam vermelhos se vazios.</li>
       <li>VAST 3.0 é o padrão recomendado para campanhas novas. Use 2.0 para ad servers legados.</li>
-      <li>O histórico fica salvo apenas no browser local — não sincroniza entre dispositivos. Use o JSON para compartilhar.</li>
+      <li>O link de compartilhar codifica a config em Base64 na URL — pode ser longo; use um encurtador se precisar.</li>
+      <li>O histórico fica salvo apenas no browser local — não sincroniza entre dispositivos. Use o JSON ou o link para compartilhar.</li>
     </ul>
   </div>
 </div>
@@ -441,6 +518,7 @@ let mode='inline';
 let mediaFiles=[{url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'}];
 let companions=[];
 let extraPixels=[];
+let verifications=[];
 
 const EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','complete',
               'mute','unmute','pause','resume','skip','fullscreen',
@@ -489,13 +567,12 @@ function switchMode(m,btn){
   document.getElementById('inline-fields').style.display=m==='inline'?'contents':'none';
   document.getElementById('wrapper-fields').style.display=m==='inline'?'none':'';
   document.getElementById('comp-section').style.display=m==='inline'?'':'none';
+  document.getElementById('verif-section').style.display=m==='inline'?'':'none';
   gen();
 }
 
 // ─── COLLAPSIBLE ───
-function toggleColl(id){
-  document.getElementById(id).classList.toggle('open');
-}
+function toggleColl(id){document.getElementById(id).classList.toggle('open');}
 
 // ─── SKIPPABLE ───
 function toggleSkippable(){
@@ -562,113 +639,74 @@ function renderMFList(){
     </div>`).join('');
 }
 function mfChange(i){
-  mediaFiles[i]={
-    url:v('mf-url-'+i),mime:v('mf-mime-'+i)||'video/mp4',
+  mediaFiles[i]={url:v('mf-url-'+i),mime:v('mf-mime-'+i)||'video/mp4',
     w:v('mf-w-'+i)||'1280',h:v('mf-h-'+i)||'720',
-    bitrate:v('mf-bitrate-'+i),delivery:v('mf-delivery-'+i)||'progressive'
-  };
+    bitrate:v('mf-bitrate-'+i),delivery:v('mf-delivery-'+i)||'progressive'};
   gen();
 }
-function addMF(){
-  mediaFiles.push({url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'});
-  renderMFList();gen();
-}
-function removeMF(i){
-  if(mediaFiles.length===1)return;
-  mediaFiles.splice(i,1);renderMFList();gen();
-}
+function addMF(){mediaFiles.push({url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'});renderMFList();gen();}
+function removeMF(i){if(mediaFiles.length===1)return;mediaFiles.splice(i,1);renderMFList();gen();}
 
 // ─── COMPANIONS ───
 function renderCompList(){
   const list=document.getElementById('comp-list');
   const badge=document.getElementById('comp-count');
   badge.textContent=companions.length?`(${companions.length})`:'';
-  if(!companions.length){
-    list.innerHTML='<div class="hint">Nenhum companion adicionado.</div>';return;
-  }
+  if(!companions.length){list.innerHTML='<div class="hint">Nenhum companion adicionado.</div>';return;}
   list.innerHTML=companions.map((c,i)=>`
     <div class="comp-row">
-      <div>
-        ${i===0?'<div class="flabel">L (px)</div>':''}
-        <input id="comp-w-${i}" type="number" value="${c.w||300}" placeholder="300" oninput="compChange(${i})">
-      </div>
-      <div>
-        ${i===0?'<div class="flabel">A (px)</div>':''}
-        <input id="comp-h-${i}" type="number" value="${c.h||250}" placeholder="250" oninput="compChange(${i})">
-      </div>
-      <div>
-        ${i===0?'<div class="flabel">Tipo</div>':''}
+      <div>${i===0?'<div class="flabel">L (px)</div>':''}<input id="comp-w-${i}" type="number" value="${c.w||300}" placeholder="300" oninput="compChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">A (px)</div>':''}<input id="comp-h-${i}" type="number" value="${c.h||250}" placeholder="250" oninput="compChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Tipo</div>':''}
         <select id="comp-type-${i}" onchange="compChange(${i})">
-          ${COMP_TYPES.map(t=>`<option${t===c.resourceType?' selected':''}>${t}</option>`).join('')}
-        </select>
-      </div>
-      <div>
-        ${i===0?'<div class="flabel">Resource URL</div>':''}
-        <input id="comp-res-${i}" type="text" value="${esc(c.resource)}" placeholder="https://..." oninput="compChange(${i})">
-      </div>
-      <div>
-        ${i===0?'<div class="flabel">Click URL</div>':''}
-        <input id="comp-click-${i}" type="text" value="${esc(c.click)}" placeholder="https://..." oninput="compChange(${i})">
-      </div>
-      <div style="${i===0?'padding-top:17px':''}">
-        <button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeComp(${i})">🗑</button>
-      </div>
+          ${['StaticResource','IFrameResource','HTMLResource'].map(t=>`<option${t===c.resourceType?' selected':''}>${t}</option>`).join('')}
+        </select></div>
+      <div>${i===0?'<div class="flabel">Resource URL</div>':''}<input id="comp-res-${i}" type="text" value="${esc(c.resource)}" placeholder="https://..." oninput="compChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Click URL</div>':''}<input id="comp-click-${i}" type="text" value="${esc(c.click)}" placeholder="https://..." oninput="compChange(${i})"></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeComp(${i})">🗑</button></div>
     </div>`).join('');
 }
-function compChange(i){
-  companions[i]={
-    w:v('comp-w-'+i)||'300',h:v('comp-h-'+i)||'250',
-    resourceType:v('comp-type-'+i)||'StaticResource',
-    resource:v('comp-res-'+i),click:v('comp-click-'+i)
-  };
-  gen();
-}
-function addCompanion(){
-  if(!document.getElementById('comp-section').classList.contains('open'))toggleColl('comp-section');
-  companions.push({w:'300',h:'250',resourceType:'StaticResource',resource:'',click:''});
-  renderCompList();gen();
-}
-function removeComp(i){
-  companions.splice(i,1);renderCompList();gen();
-}
+function compChange(i){companions[i]={w:v('comp-w-'+i)||'300',h:v('comp-h-'+i)||'250',resourceType:v('comp-type-'+i)||'StaticResource',resource:v('comp-res-'+i),click:v('comp-click-'+i)};gen();}
+function addCompanion(){if(!document.getElementById('comp-section').classList.contains('open'))toggleColl('comp-section');companions.push({w:'300',h:'250',resourceType:'StaticResource',resource:'',click:''});renderCompList();gen();}
+function removeComp(i){companions.splice(i,1);renderCompList();gen();}
 
 // ─── EXTRA PIXELS ───
 function renderEPList(){
   const list=document.getElementById('ep-list');
   const badge=document.getElementById('ep-count');
   badge.textContent=extraPixels.length?`(${extraPixels.length})`:'';
-  if(!extraPixels.length){
-    list.innerHTML='<div class="hint">Nenhum pixel adicionado.</div>';return;
-  }
+  if(!extraPixels.length){list.innerHTML='<div class="hint">Nenhum pixel adicionado.</div>';return;}
   list.innerHTML=extraPixels.map((ep,i)=>`
     <div class="ep-row">
-      <div>
-        ${i===0?'<div class="flabel">Evento</div>':''}
+      <div>${i===0?'<div class="flabel">Evento</div>':''}
         <select id="ep-event-${i}" onchange="epChange(${i})">
           ${EP_EVENTS.map(e=>`<option${e===ep.event?' selected':''}>${e}</option>`).join('')}
-        </select>
-      </div>
-      <div>
-        ${i===0?'<div class="flabel">Pixel URL</div>':''}
-        <input id="ep-url-${i}" type="text" value="${esc(ep.url)}" placeholder="https://pixel.3rdparty.com/..." oninput="epChange(${i})">
-      </div>
-      <div style="${i===0?'padding-top:17px':''}">
-        <button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeEP(${i})">🗑</button>
-      </div>
+        </select></div>
+      <div>${i===0?'<div class="flabel">Pixel URL</div>':''}<input id="ep-url-${i}" type="text" value="${esc(ep.url)}" placeholder="https://pixel.3rdparty.com/..." oninput="epChange(${i})"></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeEP(${i})">🗑</button></div>
     </div>`).join('');
 }
-function epChange(i){
-  extraPixels[i]={event:v('ep-event-'+i)||'impression',url:v('ep-url-'+i)};
-  gen();
+function epChange(i){extraPixels[i]={event:v('ep-event-'+i)||'impression',url:v('ep-url-'+i)};gen();}
+function addEP(){if(!document.getElementById('ep-section').classList.contains('open'))toggleColl('ep-section');extraPixels.push({event:'impression',url:''});renderEPList();gen();}
+function removeEP(i){extraPixels.splice(i,1);renderEPList();gen();}
+
+// ─── VERIFICATION ───
+function renderVerifList(){
+  const list=document.getElementById('verif-list');
+  const badge=document.getElementById('verif-count');
+  badge.textContent=verifications.length?`(${verifications.length})`:'';
+  if(!verifications.length){list.innerHTML='<div class="hint">Nenhum vendor adicionado.</div>';return;}
+  list.innerHTML=verifications.map((vf,i)=>`
+    <div class="verif-row">
+      <div>${i===0?'<div class="flabel">Vendor</div>':''}<input id="vf-vendor-${i}" type="text" value="${esc(vf.vendor)}" placeholder="ias.com" oninput="verifChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">JS Resource URL</div>':''}<input id="vf-js-${i}" type="text" value="${esc(vf.js)}" placeholder="https://cdn.ias.com/tags/..." oninput="verifChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Parâmetros (opcional)</div>':''}<input id="vf-params-${i}" type="text" value="${esc(vf.params)}" placeholder='{"publisherId":"123"}' oninput="verifChange(${i})"></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeVerif(${i})">🗑</button></div>
+    </div>`).join('');
 }
-function addEP(){
-  if(!document.getElementById('ep-section').classList.contains('open'))toggleColl('ep-section');
-  extraPixels.push({event:'impression',url:''});
-  renderEPList();gen();
-}
-function removeEP(i){
-  extraPixels.splice(i,1);renderEPList();gen();
-}
+function verifChange(i){verifications[i]={vendor:v('vf-vendor-'+i),js:v('vf-js-'+i),params:v('vf-params-'+i)};gen();}
+function addVerif(){if(!document.getElementById('verif-section').classList.contains('open'))toggleColl('verif-section');verifications.push({vendor:'',js:'',params:''});renderVerifList();gen();}
+function removeVerif(i){verifications.splice(i,1);renderVerifList();gen();}
 
 // ─── GENERATION ───
 function buildTrackingUrl(src,type,cat){
@@ -693,43 +731,34 @@ function gen(){
   const skipoffset=v('v-skipoffset')||'00:00:05';
   const progressOffset=v('v-progress-offset')||'00:00:15';
 
-  // Build impression block
+  // Impression block
   const impLines=[];
   if(hasImp){
     impLines.push(`      <Impression id="fl-impression"><![CDATA[${trackUrl}]]></Impression>`);
-    getEPs('impression').forEach((url,j)=>{
-      impLines.push(`      <Impression id="ext-${j+1}"><![CDATA[${url}]]></Impression>`);
-    });
+    getEPs('impression').forEach((url,j)=>{impLines.push(`      <Impression id="ext-${j+1}"><![CDATA[${url}]]></Impression>`);});
   }
   const impBlock=impLines.length?impLines.join('\n')+'\n':'';
 
-  // Build tracking events block
+  // Tracking events
   const tLines=[];
   trackEvs.forEach(e=>{
     const offset=e==='progress'?` offset="${progressOffset}"`:'';
     tLines.push(`              <Tracking event="${e}"${offset}><![CDATA[${trackUrl}]]></Tracking>`);
-    getEPs(e).forEach(url=>{
-      tLines.push(`              <Tracking event="${e}"${offset}><![CDATA[${url}]]></Tracking>`);
-    });
+    getEPs(e).forEach(url=>{tLines.push(`              <Tracking event="${e}"${offset}><![CDATA[${url}]]></Tracking>`);});
   });
   const tBlock=tLines.join('\n');
 
-  // Build extra click tracking
+  // Click tracking extras
   const ctLines=getEPs('clickTracking').map(url=>`              <ClickTracking><![CDATA[${url}]]></ClickTracking>`);
 
-  // Build MediaFiles
+  // MediaFiles
   const mfLines=mediaFiles.map(mf=>{
-    const attrs=[
-      `type="${mf.mime||'video/mp4'}"`,
-      `width="${mf.w||1280}"`,
-      `height="${mf.h||720}"`,
-      mf.bitrate?`bitrate="${mf.bitrate}"`:null,
-      `delivery="${mf.delivery||'progressive'}"`,
-    ].filter(Boolean).join(' ');
+    const attrs=[`type="${mf.mime||'video/mp4'}"`,`width="${mf.w||1280}"`,`height="${mf.h||720}"`,
+      mf.bitrate?`bitrate="${mf.bitrate}"`:null,`delivery="${mf.delivery||'progressive'}"`].filter(Boolean).join(' ');
     return `              <MediaFile ${attrs}><![CDATA[${mf.url||'https://VIDEO_URL_AQUI.mp4'}]]></MediaFile>`;
   }).join('\n');
 
-  // Build companions
+  // Companions
   let compXml='';
   if(mode==='inline'&&companions.length){
     const cItems=companions.map((c,i)=>{
@@ -748,12 +777,24 @@ function gen(){
     compXml=`\n        <Creative>\n          <CompanionAds required="any">\n${cItems}\n          </CompanionAds>\n        </Creative>`;
   }
 
+  // Verifications
+  let verifBlock='';
+  const activeVerifs=verifications.filter(vf=>vf.js.trim());
+  if(mode==='inline'&&activeVerifs.length){
+    const vItems=activeVerifs.map(vf=>`    <Verification vendor="${esc(vf.vendor||'unknown')}">\n      <JavaScriptResource apiFramework="omid" browserOptional="true"><![CDATA[${vf.js}]]></JavaScriptResource>${vf.params?`\n      <VerificationParameters><![CDATA[${vf.params}]]></VerificationParameters>`:''}\n    </Verification>`).join('\n');
+    if(version==='4.1'){
+      verifBlock=`\n      <AdVerifications>\n${vItems}\n      </AdVerifications>`;
+    } else {
+      const extItems=activeVerifs.map(vf=>`        <Extension type="AdVerification" vendor="${esc(vf.vendor||'unknown')}">\n          <JavaScriptResource apiFramework="omid"><![CDATA[${vf.js}]]></JavaScriptResource>${vf.params?`\n          <VerificationParameters><![CDATA[${vf.params}]]></VerificationParameters>`:''}\n        </Extension>`).join('\n');
+      verifBlock=`\n      <Extensions>\n${extItems}\n      </Extensions>`;
+    }
+  }
+
   // VAST 4.1 extras
   const vastNS=version==='4.1'?' xmlns:xs="http://www.w3.org/2001/XMLSchema"':'';
   const univAdId=version==='4.1'?`\n      <UniversalAdId idRegistry="Ad-ID">${adId}</UniversalAdId>`:'';
 
   let xml='';
-
   if(mode==='wrapper'){
     const wUrl=v('v-wrapper-url')||'https://VAST_URL_AQUI';
     xml=`<?xml version="1.0" encoding="UTF-8"?>
@@ -775,17 +816,14 @@ ${tBlock}
   </Ad>
 </VAST>`;
   } else {
-    const dur=v('v-dur')||'00:00:30',
-      click=v('v-click')||'https://DESTINO_AQUI',
-      clicktrack=v('v-clicktrack');
-
+    const dur=v('v-dur')||'00:00:30',click=v('v-click')||'https://DESTINO_AQUI',clicktrack=v('v-clicktrack');
     xml=`<?xml version="1.0" encoding="UTF-8"?>
 <VAST version="${version}"${vastNS}>
   <Ad id="${adId}">
     <InLine>
       <AdSystem version="1.0">CM360 Floodlight</AdSystem>
       <AdTitle>${esc(title)}</AdTitle>${univAdId}
-${adv?`      <Advertiser>${esc(adv)}</Advertiser>\n`:''}${desc?`      <Description>${esc(desc)}</Description>\n`:''}${errUrl?`      <Error><![CDATA[${errUrl}]]></Error>\n`:''}${impBlock}      <Creatives>
+${adv?`      <Advertiser>${esc(adv)}</Advertiser>\n`:''}${desc?`      <Description>${esc(desc)}</Description>\n`:''}${errUrl?`      <Error><![CDATA[${errUrl}]]></Error>\n`:''}${impBlock}${verifBlock?verifBlock+'\n':''}      <Creatives>
         <Creative>
           <Linear${skippable?` skipoffset="${skipoffset}"`:''}>\
             <Duration>${dur}</Duration>
@@ -800,13 +838,17 @@ ${mfLines}
             </MediaFiles>
           </Linear>
         </Creative>${compXml}
-      </Creatives>
+      </Creatives>${version!=='4.1'&&verifBlock&&verifBlock.includes('Extensions')?verifBlock:''}
     </InLine>
   </Ad>
 </VAST>`;
   }
 
   document.getElementById('vast-out').textContent=xml;
+
+  // Update player URL suggestion
+  const firstMF=mediaFiles[0]?.url;
+  if(firstMF&&firstMF.trim())document.getElementById('player-url').value=firstMF.trim();
 
   // Tracking panel
   const all=hasImp?['impression',...trackEvs]:trackEvs;
@@ -834,8 +876,7 @@ ${mfLines}
 // ─── CLIPBOARD / DOWNLOAD ───
 function copyXML(){
   navigator.clipboard.writeText(document.getElementById('vast-out').textContent).then(()=>{
-    const btn=document.getElementById('btn-copy');
-    btn.textContent='✅ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar XML',2000);
+    const btn=document.getElementById('btn-copy');btn.textContent='✅ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar XML',2000);
   });
 }
 function downloadXML(){
@@ -846,24 +887,16 @@ function downloadXML(){
   a.click();URL.revokeObjectURL(a.href);
 }
 function copyUrl(i,btn){
-  const el=document.getElementById('turl-'+i);
-  if(!el)return;
-  navigator.clipboard.writeText(el.textContent).then(()=>{
-    btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);
-  });
+  const el=document.getElementById('turl-'+i);if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);});
 }
 function copyUrlText(text,btn){
-  navigator.clipboard.writeText(text).then(()=>{
-    btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);
-  });
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);});
 }
 function copyAllUrls(btn){
-  const items=document.querySelectorAll('.tracking-url-text');
-  if(!items.length)return;
+  const items=document.querySelectorAll('.tracking-url-text');if(!items.length)return;
   const text=[...items].map(el=>el.textContent.trim()).join('\n');
-  navigator.clipboard.writeText(text).then(()=>{
-    btn.textContent='✅ Copiadas!';setTimeout(()=>btn.textContent='📋 Copiar todas',2000);
-  });
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅ Copiadas!';setTimeout(()=>btn.textContent='📋 Copiar todas',2000);});
 }
 function openValidator(){
   const xml=document.getElementById('vast-out').textContent;
@@ -871,6 +904,73 @@ function openValidator(){
     toast('XML copiado! Cole no validador para verificar.');
     setTimeout(()=>window.open('https://vastcheck.iabtechlab.com/','_blank'),300);
   }).catch(()=>window.open('https://vastcheck.iabtechlab.com/','_blank'));
+}
+function openImaTest(){
+  // Google IMA Video Suite Inspector — accepts a VAST tag URL via ad_tag_url param
+  // Since we have inline XML, we open the VSI and show instructions
+  const xml=document.getElementById('vast-out').textContent;
+  navigator.clipboard.writeText(xml).then(()=>toast('XML copiado! Cole como "VAST XML" no IMA Video Suite Inspector.'));
+  window.open('https://googleads.github.io/googleads-ima-html5/vsi/','_blank');
+}
+
+// ─── SHARE VIA URL ───
+function buildShareUrl(){
+  try{
+    const state=getFormState();
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    const base=location.href.split('#')[0];
+    return base+'#cfg='+encoded;
+  }catch(e){return location.href;}
+}
+function openShareModal(){
+  const url=buildShareUrl();
+  document.getElementById('share-url-input').value=url;
+  document.getElementById('share-overlay').classList.add('open');
+}
+function closeShareModal(){document.getElementById('share-overlay').classList.remove('open');}
+function copyShareUrl(){
+  const url=document.getElementById('share-url-input').value;
+  navigator.clipboard.writeText(url).then(()=>toast('Link copiado!'));
+}
+function loadFromHash(){
+  try{
+    const h=location.hash;
+    if(!h.startsWith('#cfg='))return;
+    const encoded=h.slice(5);
+    const state=JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    if(state&&typeof state==='object'){applyFormState(state);toast('Configuração carregada do link!');}
+  }catch(e){}
+}
+
+// ─── PREVIEW PLAYER ───
+let playerInited=false;
+function initPlayer(){
+  if(playerInited)return;playerInited=true;
+  const vid=document.getElementById('vast-player');
+  const log=document.getElementById('player-log');
+  function logEv(name){
+    const t=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const line=document.createElement('div');
+    line.className='log-line';
+    line.innerHTML=`<span class="log-time">${t}</span><span class="log-ev">${name}</span>`;
+    log.appendChild(line);log.scrollTop=log.scrollHeight;
+  }
+  ['play','pause','ended','timeupdate','canplay','error','waiting','stalled'].forEach(ev=>{
+    vid.addEventListener(ev,()=>{if(ev!=='timeupdate')logEv(ev);});
+  });
+  // Auto-fill URL from first mediafile if present
+  const firstUrl=mediaFiles[0]?.url;
+  if(firstUrl&&firstUrl.trim())document.getElementById('player-url').value=firstUrl.trim();
+}
+function playerLoad(){
+  const url=document.getElementById('player-url').value.trim();
+  if(!url){toast('Informe a URL do vídeo');return;}
+  const vid=document.getElementById('vast-player');
+  vid.src=url;vid.load();vid.play();
+}
+function playerStop(){
+  const vid=document.getElementById('vast-player');
+  vid.pause();vid.currentTime=0;vid.src='';
 }
 
 // ─── PRESETS ───
@@ -886,28 +986,16 @@ const PRESETS={
   wrapper:{mode:'wrapper',title:'Wrapper Tag',version:'3.0',
     events:['impression','start','firstQuartile','midpoint','thirdQuartile','complete']},
 };
-
 function loadPreset(key){
   const p=PRESETS[key];if(!p)return;
-  if(p.mode!==mode){
-    const btn=document.querySelector(`.tab[onclick*="'${p.mode}'"]`);
-    if(btn)switchMode(p.mode,btn);
-  }
+  if(p.mode!==mode){const btn=document.querySelector(`.tab[onclick*="'${p.mode}'"]`);if(btn)switchMode(p.mode,btn);}
   if(p.title)document.getElementById('v-title').value=p.title;
   if(p.version)document.getElementById('v-version').value=p.version;
   if(p.dur)document.getElementById('v-dur').value=p.dur;
-  if(typeof p.skip!=='undefined'){
-    document.getElementById('v-skippable').checked=p.skip;
-    toggleSkippable();
-  }
+  if(typeof p.skip!=='undefined'){document.getElementById('v-skippable').checked=p.skip;toggleSkippable();}
   if(p.skipoffset)document.getElementById('v-skipoffset').value=p.skipoffset;
-  EVENTS.forEach(e=>{
-    const el=document.getElementById('ev-'+e);
-    if(el)el.checked=p.events.includes(e);
-  });
-  toggleProgress();
-  gen();
-  toast(`Preset "${key}" carregado`);
+  EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=p.events.includes(e);});
+  toggleProgress();gen();toast(`Preset "${key}" carregado`);
 }
 
 // ─── JSON EXPORT / IMPORT ───
@@ -919,21 +1007,17 @@ function getFormState(){
     skippable:!!document.getElementById('v-skippable')?.checked,
     skipoffset:v('v-skipoffset')||'00:00:05',
     dur:v('v-dur'),click:v('v-click'),clicktrack:v('v-clicktrack'),
-    wrapperUrl:v('v-wrapper-url'),
-    progressOffset:v('v-progress-offset')||'00:00:15',
+    wrapperUrl:v('v-wrapper-url'),progressOffset:v('v-progress-offset')||'00:00:15',
     mediaFiles:JSON.parse(JSON.stringify(mediaFiles)),
     companions:JSON.parse(JSON.stringify(companions)),
     extraPixels:JSON.parse(JSON.stringify(extraPixels)),
+    verifications:JSON.parse(JSON.stringify(verifications)),
     events:EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked),
   };
 }
-
 function applyFormState(s){
   if(!s)return;
-  if(s.mode&&s.mode!==mode){
-    const btn=document.querySelector(`.tab[onclick*="'${s.mode}'"]`);
-    if(btn)switchMode(s.mode,btn);
-  }
+  if(s.mode&&s.mode!==mode){const btn=document.querySelector(`.tab[onclick*="'${s.mode}'"]`);if(btn)switchMode(s.mode,btn);}
   const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;};
   set('v-version',s.version);set('v-title',s.title);set('v-adid',s.adId);
   set('v-advertiser',s.advertiser);set('v-desc',s.desc);set('v-error-url',s.errorUrl);
@@ -942,64 +1026,46 @@ function applyFormState(s){
   set('v-wrapper-url',s.wrapperUrl);set('v-progress-offset',s.progressOffset);
   if(typeof s.skippable!=='undefined'){
     document.getElementById('v-skippable').checked=s.skippable;
-    if(s.skipoffset)set('v-skipoffset',s.skipoffset);
-    toggleSkippable();
+    if(s.skipoffset)set('v-skipoffset',s.skipoffset);toggleSkippable();
   }
   if(Array.isArray(s.mediaFiles)&&s.mediaFiles.length){mediaFiles=s.mediaFiles;renderMFList();}
   if(Array.isArray(s.companions)){companions=s.companions;renderCompList();}
   if(Array.isArray(s.extraPixels)){extraPixels=s.extraPixels;renderEPList();}
+  if(Array.isArray(s.verifications)){verifications=s.verifications;renderVerifList();}
   if(Array.isArray(s.events)){
-    EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=s.events.includes(e);});
-    toggleProgress();
+    EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=s.events.includes(e);});toggleProgress();
   }
   gen();
 }
-
 function openJsonModal(){
   document.getElementById('json-ta').value=JSON.stringify(getFormState(),null,2);
   document.getElementById('json-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('json-ta').focus(),50);
 }
 function closeJsonModal(){document.getElementById('json-overlay').classList.remove('open');}
-function copyJsonTA(){
-  navigator.clipboard.writeText(document.getElementById('json-ta').value).then(()=>toast('JSON copiado!'));
-}
+function copyJsonTA(){navigator.clipboard.writeText(document.getElementById('json-ta').value).then(()=>toast('JSON copiado!'));}
 function doImportJson(){
-  try{
-    applyFormState(JSON.parse(document.getElementById('json-ta').value));
-    closeJsonModal();toast('Configuração importada!');
-  }catch(e){toast('JSON inválido — verifique o formato.');}
+  try{applyFormState(JSON.parse(document.getElementById('json-ta').value));closeJsonModal();toast('Configuração importada!');}
+  catch(e){toast('JSON inválido — verifique o formato.');}
 }
 
 // ─── HISTORY ───
-const HIST_KEY='vast_history_v3';
-const HIST_MAX=10;
-
 function saveToHistory(){
   const xml=document.getElementById('vast-out').textContent;
   if(!xml||xml.includes('preencha os campos'))return;
   const state=getFormState();
-  const entry={id:Date.now(),title:state.title||'Video Ad',mode:state.mode,
-    version:state.version,
-    ts:new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),
-    state,xml};
+  const entry={id:Date.now(),title:state.title||'Video Ad',mode:state.mode,version:state.version,
+    ts:new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),state,xml};
   let hist=getHistory();
   hist=hist.filter(h=>!(h.title===entry.title&&h.state.src===state.src&&h.state.type===state.type&&h.state.cat===state.cat&&h.mode===state.mode));
-  hist.unshift(entry);
-  if(hist.length>HIST_MAX)hist=hist.slice(0,HIST_MAX);
+  hist.unshift(entry);if(hist.length>HIST_MAX)hist=hist.slice(0,HIST_MAX);
   try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}
   renderHistory();
-  const btn=document.getElementById('btn-save');
-  btn.textContent='✅ Salvo!';setTimeout(()=>btn.textContent='💾 Salvar',2000);
+  const btn=document.getElementById('btn-save');btn.textContent='✅ Salvo!';setTimeout(()=>btn.textContent='💾 Salvar',2000);
 }
-
-function getHistory(){
-  try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return[];}
-}
-
+function getHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return[];}}
 function renderHistory(){
-  const hist=getHistory();
-  const card=document.getElementById('history-card');
+  const hist=getHistory();const card=document.getElementById('history-card');
   if(!hist.length){card.style.display='none';return;}
   card.style.display='';
   document.getElementById('history-list').innerHTML=hist.map(h=>`
@@ -1010,39 +1076,39 @@ function renderHistory(){
       </div>
       <div class="history-item-actions" onclick="event.stopPropagation()">
         <button class="btn-xs" onclick="copyHistXml(${h.id},this)">📋 XML</button>
+        <button class="btn-xs" onclick="shareHistEntry(${h.id})">🔗</button>
         <button class="btn-xs" onclick="exportHistJson(${h.id})">⇅ JSON</button>
         <button class="btn-xs" style="color:var(--err);border-color:var(--err-bg)" onclick="deleteHist(${h.id})">✕</button>
       </div>
     </div>`).join('');
 }
-
 function loadHistEntry(id){
-  const h=getHistory().find(x=>x.id===id);
-  if(!h)return;
+  const h=getHistory().find(x=>x.id===id);if(!h)return;
   if(h.state)applyFormState(h.state);
-  window.scrollTo({top:0,behavior:'smooth'});
-  toast('Configuração restaurada!');
+  window.scrollTo({top:0,behavior:'smooth'});toast('Configuração restaurada!');
 }
 function copyHistXml(id,btn){
-  const h=getHistory().find(x=>x.id===id);
-  if(!h)return;
+  const h=getHistory().find(x=>x.id===id);if(!h)return;
   navigator.clipboard.writeText(h.xml).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋 XML',2000);});
 }
+function shareHistEntry(id){
+  const h=getHistory().find(x=>x.id===id);if(!h||!h.state)return;
+  try{
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(h.state))));
+    const url=location.href.split('#')[0]+'#cfg='+encoded;
+    navigator.clipboard.writeText(url).then(()=>toast('Link copiado!'));
+  }catch(e){toast('Erro ao gerar link.');}
+}
 function exportHistJson(id){
-  const h=getHistory().find(x=>x.id===id);
-  if(!h)return;
+  const h=getHistory().find(x=>x.id===id);if(!h)return;
   document.getElementById('json-ta').value=JSON.stringify(h.state,null,2);
   document.getElementById('json-overlay').classList.add('open');
 }
 function deleteHist(id){
   let hist=getHistory().filter(h=>h.id!==id);
-  try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}
-  renderHistory();
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}renderHistory();
 }
-function clearHistory(){
-  try{localStorage.removeItem(HIST_KEY);}catch(e){}
-  renderHistory();
-}
+function clearHistory(){try{localStorage.removeItem(HIST_KEY);}catch(e){}renderHistory();}
 
 // ─── RESET ───
 function resetForm(){
@@ -1052,6 +1118,7 @@ function resetForm(){
   document.getElementById('inline-fields').style.display='contents';
   document.getElementById('wrapper-fields').style.display='none';
   document.getElementById('comp-section').style.display='';
+  document.getElementById('verif-section').style.display='';
   ['v-src','v-type','v-cat','v-advertiser','v-desc','v-error-url','v-click','v-clicktrack','v-wrapper-url'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.value='';el.classList.remove('field-error');}
   });
@@ -1063,29 +1130,23 @@ function resetForm(){
   document.getElementById('skipoffset-wrap').style.display='none';
   document.getElementById('v-skipoffset').value='00:00:05';
   document.getElementById('v-progress-offset').value='00:00:15';
-  EVENTS.forEach(e=>{
-    const el=document.getElementById('ev-'+e);
-    if(el)el.checked=['impression','start','firstQuartile','midpoint','thirdQuartile','complete'].includes(e);
-  });
+  EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=['impression','start','firstQuartile','midpoint','thirdQuartile','complete'].includes(e);});
   toggleProgress();
   mediaFiles=[{url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'}];
-  companions=[];extraPixels=[];
-  renderMFList();renderCompList();renderEPList();
-  gen();
+  companions=[];extraPixels=[];verifications=[];
+  renderMFList();renderCompList();renderEPList();renderVerifList();gen();
+  history.replaceState(null,'',location.pathname+location.search);
 }
 
 // ─── HELP ───
 function openHelp(){document.getElementById('help-overlay').classList.add('open');}
 function closeHelp(){document.getElementById('help-overlay').classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeHelp();closeJsonModal();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeHelp();closeJsonModal();closeShareModal();}});
 
 // ─── INIT ───
-renderMFList();
-renderCompList();
-renderEPList();
-gen();
-renderHistory();
-loadDarkPref();
+renderMFList();renderCompList();renderEPList();renderVerifList();
+gen();renderHistory();loadDarkPref();
+loadFromHash();
 </script>
 </body>
 </html>
