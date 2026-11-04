@@ -234,6 +234,27 @@ body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(-
 .divider{border:none;border-top:1px solid var(--borda);margin:14px 0;}
 .kbd{display:inline-block;background:var(--cinza);border:1px solid var(--borda);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:10px;color:var(--muted);}
 .shortcut-hint{font-size:11px;color:var(--faint);margin-top:4px;text-align:right;}
+/* Validation */
+.field.invalid input,.field.invalid select{border-color:var(--erro)!important;}
+.field.valid input,.field.valid select{border-color:var(--ok)!important;}
+.field .hint.warn{color:var(--warn);}
+/* Favorites */
+.plat-btn{position:relative;}
+.fav-star{position:absolute;top:2px;right:2px;font-size:9px;line-height:1;opacity:0;transition:opacity .12s;cursor:pointer;padding:1px;}
+.plat-btn:hover .fav-star{opacity:.5;}
+.fav-star.active{opacity:1!important;}
+/* NC Mode */
+.nc-toggle{padding:4px 10px;border:1.5px solid rgba(255,255,255,.25);border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;color:rgba(255,255,255,.7);background:rgba(255,255,255,.1);transition:all .12s;white-space:nowrap;}
+.nc-toggle.active{border-color:#34d058;color:#34d058;background:rgba(52,208,88,.15);}
+.nc-panel{background:var(--cinza);border:1.5px solid var(--borda);border-radius:8px;padding:12px;margin-top:10px;display:none;}
+.nc-panel.show{display:block;}
+.nc-seg{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--borda);font-size:11px;}
+.nc-seg:last-child{border-bottom:none;}
+.nc-seg .ns-icon{font-size:12px;flex-shrink:0;}
+.nc-seg .ns-key{font-weight:700;color:var(--azul);font-family:monospace;min-width:85px;}
+.nc-seg .ns-val{color:var(--text);font-family:monospace;flex:1;}
+.nc-seg .ns-msg{color:var(--faint);font-size:10px;font-style:italic;}
+.nc-score{font-size:11px;font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--borda);}
 </style>
 </head>
 <body>
@@ -241,10 +262,11 @@ body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(-
   <span style="font-size:18px">🔗</span>
   <h1>UTM Builder</h1>
   <span class="badge">NC Tool</span>
-  <span class="ver">v2.4</span>
+  <span class="ver">v2.5</span>
   <div class="header-right">
     <button class="btn-icon" onclick="clearAll()" title="Limpar">🗑</button>
     <button class="btn-icon" onclick="toggleTheme()" title="Tema" id="themeBtn">🌙</button>
+    <button class="nc-toggle" id="ncToggle" onclick="toggleNCMode()" title="Modo Naming Convention">NC</button>
   </div>
 </div>
 <nav class="tabs-bar">
@@ -285,7 +307,7 @@ body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(-
             <div class="field"><label>utm_source</label><input type="text" id="f_source" placeholder="meta" oninput="update()"></div>
             <div class="field"><label>utm_medium</label><input type="text" id="f_medium" placeholder="paid_social" oninput="update()"></div>
           </div>
-          <div class="field"><label>utm_campaign</label><input type="text" id="f_campaign" placeholder="nome-da-campanha" oninput="update()"></div>
+          <div class="field"><label>utm_campaign</label><input type="text" id="f_campaign" placeholder="nome-da-campanha" oninput="update()"><div class="hint" id="campaign_hint" style="font-style:italic;color:var(--faint);"></div></div>
           <div class="field"><label>utm_content <span class="opt">opcional</span></label><input type="text" id="f_content" placeholder="formato-criativo" oninput="update()"></div>
           <div class="field"><label>utm_term <span class="opt">opcional</span></label><input type="text" id="f_term" placeholder="palavra-chave" oninput="update()"></div>
           <hr class="divider">
@@ -339,6 +361,7 @@ body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(-
           <hr class="divider">
           <div class="section-head" style="margin-bottom:8px;">QA Checklist</div>
           <div class="qa-grid" id="qaGrid"></div>
+          <div id="ncPanel" class="nc-panel"><div class="nc-score" id="ncScore"></div><div id="ncSegs"></div></div>
         </div>
       </div>
       <div class="card" id="breakdownCard" style="display:none;">
@@ -458,7 +481,7 @@ body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(-
 <div id="tab-macros" class="tab-panel">
   <div class="page-wide">
     <div class="card">
-      <div class="card-h"><div><h2>Macros Dinâmicos</h2><p>Placeholders por plataforma — clique para copiar</p></div></div>
+      <div class="card-h"><div><h2>Macros Dinâmicos</h2><p>Placeholders por plataforma — clique para copiar</p></div><button class="btn-sm primary" onclick="exportMacrosCSV()">⬇ CSV</button></div>
       <div class="card-body">
         <input type="text" class="macro-search" id="macroSearch" placeholder="Buscar macro ou descrição..." oninput="renderMacros()">
         <div class="macro-nav" id="macroNav"></div>
@@ -610,6 +633,13 @@ const MACROS=[
   {plat:'meta',macro:'{{product.name}}',label:'Product Name',desc:'Nome do produto — catálogos dinâmicos'},
 ];
 
+/* ═══════════ FAVORITES ═══════════ */
+const FAV_KEY='utm_fav_platforms';
+function getFavs(){try{return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]'));}catch{return new Set();}}
+function setFavs(s){try{localStorage.setItem(FAV_KEY,JSON.stringify([...s]));}catch{}}
+function toggleFav(id){const f=getFavs();f.has(id)?f.delete(id):f.add(id);setFavs(f);refreshFavStars();buildCatFilter('catFilter','platGrid',false);if(activeCat==='favs')applyCat('favs','catFilter','platGrid',false);}
+function refreshFavStars(){const f=getFavs();PLATFORMS.forEach(p=>{const el=document.getElementById('fstar_'+p.id);if(el){const on=f.has(p.id);el.textContent=on?'⭐':'☆';el.classList.toggle('active',on);}});}
+
 /* ═══════════ THEME ═══════════ */
 (function(){try{const s=localStorage.getItem('utm_theme');if(s&&s!=='system')document.documentElement.setAttribute('data-theme',s);}catch{}})();
 function toggleTheme(){const h=document.documentElement;const cur=h.getAttribute('data-theme');const isDark=cur==='dark'||(!cur&&window.matchMedia('(prefers-color-scheme: dark)').matches);const next=isDark?'light':'dark';h.setAttribute('data-theme',next);document.getElementById('themeBtn').textContent=next==='dark'?'☀️':'🌙';try{localStorage.setItem('utm_theme',next);}catch{}}
@@ -628,9 +658,13 @@ function switchTab(id,btn){
 let activeCat='all',activeBCat='all';
 function buildCatFilter(containerId,gridId,isBatch){
   const el=document.getElementById(containerId);
+  el.innerHTML='';
+  const activeCatId=isBatch?activeBCat:activeCat;
+  if(!isBatch){const favs=getFavs();const fc=PLATFORMS.filter(p=>favs.has(p.id)).length;if(fc>0){const fb=document.createElement('button');fb.className='cat-pill'+(activeCatId==='favs'?' active':'');fb.dataset.catId='favs';fb.textContent=`⭐ Favoritos ${fc}`;fb.onclick=()=>applyCat('favs',containerId,gridId,isBatch);el.appendChild(fb);}}
   CATEGORIES.forEach(c=>{
     const btn=document.createElement('button');
-    btn.className='cat-pill'+(c.id==='all'?' active':'');
+    btn.className='cat-pill'+(c.id===activeCatId?' active':'');
+    btn.dataset.catId=c.id;
     btn.textContent=c.label+' '+c.count;
     btn.onclick=()=>applyCat(c.id,containerId,gridId,isBatch);
     el.appendChild(btn);
@@ -638,11 +672,15 @@ function buildCatFilter(containerId,gridId,isBatch){
 }
 function applyCat(catId,containerId,gridId,isBatch){
   if(isBatch)activeBCat=catId;else activeCat=catId;
-  document.querySelectorAll('#'+containerId+' .cat-pill').forEach((b,i)=>{b.classList.toggle('active',CATEGORIES[i].id===catId);});
+  document.querySelectorAll('#'+containerId+' .cat-pill').forEach(b=>{b.classList.toggle('active',b.dataset.catId===catId);});
+  const favs=getFavs();
   document.querySelectorAll('#'+gridId+' .plat-btn').forEach(btn=>{
     const id=btn.id.replace(isBatch?'bp_':'plat_','');
     const plat=PLATFORMS.find(p=>p.id===id);
-    btn.hidden=!!(plat&&catId!=='all'&&plat.cat!==catId);
+    if(!plat){btn.hidden=false;return;}
+    if(catId==='all')btn.hidden=false;
+    else if(catId==='favs')btn.hidden=!favs.has(id);
+    else btn.hidden=plat.cat!==catId;
   });
 }
 
@@ -652,11 +690,11 @@ let activePlat=null;
   buildCatFilter('catFilter','platGrid',false);
   buildCatFilter('bCatFilter','batchPlatGrid',true);
   const g=document.getElementById('platGrid');
-  PLATFORMS.forEach(p=>{const btn=document.createElement('button');btn.className='plat-btn';btn.id='plat_'+p.id;btn.innerHTML=`<span class="pe">${p.emoji}</span>${p.label}`;btn.onclick=()=>selectPlatform(p);g.appendChild(btn);});
+  PLATFORMS.forEach(p=>{const btn=document.createElement('button');btn.className='plat-btn';btn.id='plat_'+p.id;btn.innerHTML=`<span class="pe">${p.emoji}</span>${p.label}<span class="fav-star" id="fstar_${p.id}" onclick="event.stopPropagation();toggleFav('${p.id}')">☆</span>`;btn.onclick=()=>selectPlatform(p);g.appendChild(btn);});
 })();
 function selectPlatform(p){
   if(activePlat===p.id){activePlat=null;document.getElementById('plat_'+p.id).classList.remove('active');document.getElementById('f_source').value='';document.getElementById('f_medium').value='';}
-  else{if(activePlat)document.getElementById('plat_'+activePlat)?.classList.remove('active');activePlat=p.id;document.getElementById('plat_'+p.id).classList.add('active');document.getElementById('f_source').value=p.source;document.getElementById('f_medium').value=p.medium;}
+  else{if(activePlat)document.getElementById('plat_'+activePlat)?.classList.remove('active');activePlat=p.id;document.getElementById('plat_'+p.id).classList.add('active');document.getElementById('f_source').value=p.source;document.getElementById('f_medium').value=p.medium;showPlatHint(p);}
   update();
 }
 
@@ -705,7 +743,7 @@ function update(){
   const base=document.getElementById('f_url').value.trim();const hint=document.getElementById('url_hint');
   if(base&&!url){hint.textContent='⚠ URL inválida — inclua https://';hint.className='hint err';}else{hint.textContent='';hint.className='hint';}
   document.getElementById('qaGrid').innerHTML=runQA().map(c=>`<div class="qa-item ${c.ok?'ok':'fail'}"><span class="qa-dot"></span>${c.label}</div>`).join('');
-  renderBreakdown(url);updateQR(url);
+  renderBreakdown(url);updateQR(url);validateFields();validateNC();
 }
 
 /* ═══════════ COPY / SHARE ═══════════ */
@@ -904,12 +942,53 @@ function copyMacroEnc(enc,card){
   if(card){card.style.borderColor='var(--ok)';card.style.background='var(--ok-bg)';setTimeout(()=>{card.style.borderColor='';card.style.background='';},1000);}
 }
 
+/* ═══════════ NC MODE ═══════════ */
+let ncMode=false;
+const NC_SEGMENTS=[{key:'advertiser',hint:'marca/anunciante'},{key:'produto',hint:'linha ou produto'},{key:'objetivo',hint:'awareness·conversao·trafego'},{key:'formato',hint:'video·banner·carrossel'},{key:'período',hint:'ex: nov25·q1-2025'}];
+function toggleNCMode(){ncMode=!ncMode;document.getElementById('ncToggle').classList.toggle('active',ncMode);document.getElementById('ncPanel').classList.toggle('show',ncMode);if(ncMode)validateNC();}
+function validateNC(){
+  const panel=document.getElementById('ncPanel');if(!panel||!panel.classList.contains('show'))return;
+  const campaign=document.getElementById('f_campaign').value.trim();
+  if(!campaign){document.getElementById('ncScore').textContent='Digite utm_campaign para validar.';document.getElementById('ncSegs').innerHTML='';return;}
+  const segs=campaign.split('_');
+  const badChars=/[^a-z0-9\-]/.test(campaign);const hasUpper=/[A-Z]/.test(campaign);
+  const html=NC_SEGMENTS.map((s,i)=>{const val=segs[i]||'';const ok=!!val&&/^[a-z0-9\-]+$/.test(val);const icon=val?(ok?'✅':'❌'):'⚪';const msg=!val?`<em>${s.hint}</em>`:(!ok?'char inválido':'OK');return`<div class="nc-seg"><span class="ns-icon">${icon}</span><span class="ns-key">${s.key}</span><span class="ns-val">${val||'—'}</span><span class="ns-msg">${msg}</span></div>`;}).join('');
+  const filled=Math.min(segs.filter(v=>v.trim()).length,NC_SEGMENTS.length);
+  const valid=filled>=2&&!badChars&&!hasUpper;
+  const warn=(hasUpper?' · ⚠ maiúsculas':'')+(badChars?' · ⚠ chars inválidos':'');
+  document.getElementById('ncScore').innerHTML=`<span style="color:${valid?'var(--ok)':'var(--warn)'}">${valid?'✅':'❌'} ${filled}/${NC_SEGMENTS.length} segmentos${warn}</span>`;
+  document.getElementById('ncSegs').innerHTML=html;
+}
+/* ═══════════ FIELD VALIDATION ═══════════ */
+const INVALID_UTM_RE=/[\s<>"{}|\\^[\]`À-￿]/;
+function validateFields(){
+  ['f_source','f_medium','f_campaign','f_content','f_term'].forEach(id=>{
+    const el=document.getElementById(id);const field=el?.closest('.field');if(!field)return;
+    const v=el.value;if(!v){field.classList.remove('valid','invalid');const h=field.querySelector('.hint.validation');if(h)h.remove();return;}
+    const bad=INVALID_UTM_RE.test(v);
+    field.classList.toggle('invalid',bad);field.classList.toggle('valid',!bad);
+    let h=field.querySelector('.hint.validation');
+    if(bad){if(!h){h=document.createElement('div');h.className='hint err validation';field.appendChild(h);}h.textContent='⚠ Contém espaços ou caracteres inválidos (use hífens)';}
+    else if(h)h.remove();
+  });
+}
+/* ═══════════ PLATFORM HINTS ═══════════ */
+const CAT_HINTS={social:'sugerido: brand_produto_objetivo_video',search:'sugerido: brand_produto_conversao_exata',display:'sugerido: brand_produto_alcance_banner',retail:'sugerido: brand_produto_promo_novembro',video_audio:'sugerido: brand_produto_alcance_preroll',retargeting:'sugerido: brand_produto_retargeting-carrossel',mobile:'sugerido: brand_produto-install-interstitial',messaging:'sugerido: brand_produto_engajamento-cta'};
+function showPlatHint(p){const h=document.getElementById('campaign_hint');if(!h)return;h.textContent=p&&p.cat&&CAT_HINTS[p.cat]?CAT_HINTS[p.cat]:'';}
+/* ═══════════ MACRO EXPORT ═══════════ */
+function exportMacrosCSV(){
+  const q=(document.getElementById('macroSearch')?.value||'').toLowerCase();
+  const filtered=MACROS.filter(m=>{const catOk=activeMacroCat==='all'||m.plat===activeMacroCat;const qOk=!q||[m.macro,m.label,m.desc,m.plat].some(s=>s.toLowerCase().includes(q));return catOk&&qOk;});
+  if(!filtered.length){alert('Nenhum macro visível.');return;}
+  const rows=[['Plataforma','Macro','Nome','Descrição'],...filtered.map(m=>{const mp=MACRO_PLATFORMS.find(x=>x.id===m.plat);return[mp?.label||m.plat,m.macro,m.label,m.desc];})].map(r=>r.map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlCSV('﻿'+rows,`macros_${activeMacroCat}_${today()}.csv`);
+}
 /* ═══════════ UTILS ═══════════ */
 function dlCSV(content,filename){const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8;'})),download:filename});document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function today(){return new Date().toISOString().slice(0,10);}
 
 /* ═══════════ INIT ═══════════ */
-update();renderTemplates();updateHistBadge();loadFromHash();
+update();renderTemplates();updateHistBadge();loadFromHash();refreshFavStars();
 (function(){const isDark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.getElementById('themeBtn').textContent=isDark?'☀️':'🌙';})();
 </script>
 </body>
