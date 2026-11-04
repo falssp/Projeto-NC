@@ -155,6 +155,26 @@ button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:
 .empty-title{font-size:15px;font-weight:600;color:var(--body);margin-bottom:4px}
 .empty-sub{font-size:12px}
 
+/* HEALTH CHECK */
+.hc-panel{margin-top:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px}
+.hc-row{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11px;font-family:var(--mono)}
+.hc-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .2s}
+.hc-ok{background:var(--ok)!important}
+.hc-err{background:var(--err)!important}
+.hc-label{color:var(--muted);min-width:80px;flex-shrink:0}
+.hc-url{color:var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+/* HISTORY */
+.hist-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.hist-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);cursor:pointer;transition:background .15s}
+.hist-item:hover{background:var(--light)}
+.hist-score{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;border:2px solid}
+.hist-info{flex:1;min-width:0}
+.hist-title{font-size:12px;font-weight:600;color:var(--escuro);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.hist-del{font-size:11px;color:var(--muted);padding:3px 6px;border-radius:4px;background:transparent;border:none;cursor:pointer;flex-shrink:0}
+.hist-del:hover{background:var(--err-bg);color:var(--err)}
+
 /* PRINT */
 @media print{
   .fixed-btns,.input-card,a.back,.header button{display:none!important}
@@ -192,8 +212,18 @@ button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:
       <button class="btn-sm" onclick="pasteFromClipboard()">📋 Colar XML</button>
       <button class="btn-sm" onclick="loadSample()">📄 Exemplo</button>
       <button class="btn-sm" onclick="clearAll()">✕ Limpar</button>
-      <span class="hint">Suporta VAST 2.0 / 3.0 / 4.1 · Inline Ad · Wrapper</span>
+      <span class="hint">Suporta VAST 2.0 / 3.0 / 4.1 · Inline Ad · Wrapper · Ctrl+Enter para analisar</span>
     </div>
+    <div id="hc-panel" style="display:none"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="history-card" class="card" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="section-title" style="margin:0">Histórico de auditorias</div>
+      <button class="btn-xs" onclick="clearHistory()">Limpar tudo</button>
+    </div>
+    <div id="hist-list" class="hist-list"></div>
   </div>
 
   <!-- RESULTS -->
@@ -321,6 +351,8 @@ function audit(){
   }
 
   const data=extractData(doc,raw,tagUrl);
+  const {score}=calcScore(data);
+  saveHistory(data,score);
   renderResults(data);
 }
 
@@ -690,6 +722,7 @@ function renderResults(data){
         </div>
         <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
           <button class="btn-sm" onclick="copyReport()">📋 Copiar relatório</button>
+          <button class="btn-sm" id="btn-hc" onclick="checkAllUrls()">🔗 Check URLs</button>
           <button class="btn-sm" onclick="window.print()">🖨 Imprimir</button>
         </div>
       </div>
@@ -883,11 +916,110 @@ function loadSample(){
   toast('Exemplo carregado — clique em Analisar.');
 }
 
+// ═══════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════
+function saveHistory(data,score){
+  try{
+    const h=JSON.parse(localStorage.getItem('auditor_history')||'[]');
+    const entry={
+      ts:Date.now(),
+      adType:data.adType,
+      version:data.version,
+      adServer:data.adServer?data.adServer.short:'?',
+      adTitle:data.adTitle||data.tagUrl||'Tag sem título',
+      score,
+      xml:data.raw.substring(0,2000),
+      tagUrl:data.tagUrl,
+    };
+    h.unshift(entry);
+    localStorage.setItem('auditor_history',JSON.stringify(h.slice(0,5)));
+    renderHistory();
+  }catch(e){}
+}
+
+function renderHistory(){
+  try{
+    const h=JSON.parse(localStorage.getItem('auditor_history')||'[]');
+    const card=document.getElementById('history-card');
+    const list=document.getElementById('hist-list');
+    if(!h.length){card.style.display='none';return;}
+    card.style.display='';
+    const scoreColor=s=>s>=80?'var(--ok)':s>=50?'var(--warn)':'var(--err)';
+    list.innerHTML=h.map((e,i)=>`
+      <div class="hist-item" onclick="restoreHistory(${i})">
+        <div class="hist-score" style="color:${scoreColor(e.score)};border-color:${scoreColor(e.score)}">${e.score}</div>
+        <div class="hist-info">
+          <div class="hist-title">${esc(e.adTitle.substring(0,60))}</div>
+          <div class="hist-meta">VAST ${esc(e.version)} · ${esc(e.adType)} · ${esc(e.adServer)} · ${new Date(e.ts).toLocaleString('pt-BR')}</div>
+        </div>
+        <button class="hist-del" onclick="event.stopPropagation();deleteHistory(${i})" title="Remover">✕</button>
+      </div>`).join('');
+  }catch(e){}
+}
+
+function restoreHistory(i){
+  try{
+    const h=JSON.parse(localStorage.getItem('auditor_history')||'[]');
+    const e=h[i];if(!e)return;
+    document.getElementById('vast-input').value=e.xml;
+    if(e.tagUrl)document.getElementById('tag-url-input').value=e.tagUrl;
+    audit();toast('Auditoria restaurada do histórico.');
+  }catch(err){}
+}
+
+function deleteHistory(i){
+  try{
+    const h=JSON.parse(localStorage.getItem('auditor_history')||'[]');
+    h.splice(i,1);
+    localStorage.setItem('auditor_history',JSON.stringify(h));
+    renderHistory();
+  }catch(e){}
+}
+
+function clearHistory(){
+  try{localStorage.removeItem('auditor_history');}catch(e){}
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════
+// URL HEALTH CHECK
+// ═══════════════════════════════════════════════════════
+async function checkAllUrls(){
+  const raw=document.getElementById('vast-input').value.trim();
+  if(!raw){toast('Analise uma tag primeiro.');return;}
+  const btn=document.getElementById('btn-hc');
+  btn.disabled=true;btn.textContent='⏳ Verificando...';
+
+  const doc=new DOMParser().parseFromString(raw,'application/xml');
+  const urls=[];
+  [...doc.querySelectorAll('MediaFile')].forEach((mf,i)=>{const u=mf.textContent.trim();if(u)urls.push({label:`MF ${i+1}`,u});});
+  [...doc.querySelectorAll('Impression')].forEach((el,i)=>{const u=el.textContent.trim();if(u)urls.push({label:`Impression ${i+1}`,u});});
+  [...doc.querySelectorAll('VASTAdTagURI')].forEach((el,i)=>{const u=el.textContent.trim();if(u)urls.push({label:'Wrapper URL',u});});
+  [...doc.querySelectorAll('Error')].forEach(el=>{const u=el.textContent.trim();if(u)urls.push({label:'Error URL',u});});
+  [...doc.querySelectorAll('JavaScriptResource')].forEach((el,i)=>{const u=el.textContent.trim();if(u)urls.push({label:`OMID ${i+1}`,u});});
+
+  if(!urls.length){toast('Nenhuma URL encontrada no XML.');btn.disabled=false;btn.textContent='🔗 Check URLs';return;}
+
+  const panel=document.getElementById('hc-panel');
+  panel.style.display='';
+  panel.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px">Verificando ${urls.length} URL(s)...</div>`+
+    urls.map((u,i)=>`<div class="hc-row"><div class="hc-dot" id="hcd-${i}"></div><span class="hc-label">${esc(u.label)}</span><span class="hc-url">${esc(u.u.substring(0,80))}${u.u.length>80?'…':''}</span></div>`).join('');
+
+  for(let i=0;i<urls.length;i++){
+    const dot=document.getElementById('hcd-'+i);
+    try{await fetch(urls[i].u,{method:'HEAD',mode:'no-cors',cache:'no-cache'});dot.className='hc-dot hc-ok';}
+    catch(e){dot.className='hc-dot hc-err';}
+  }
+  btn.disabled=false;btn.textContent='🔗 Check URLs';
+}
+
 document.addEventListener('keydown',e=>{
   if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();audit();}
 });
 
 loadTheme();
+renderHistory();
 </script>
 </body>
 </html>

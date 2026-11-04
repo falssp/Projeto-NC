@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decodificador de VAST URL | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --mono:'JetBrains Mono',monospace;
+  --err:#c62828;--err-bg:#fff5f5;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;
+  --warn:#e65100;--warn-bg:#fff3e0;
+  --info:#0277bd;--info-bg:#e1f5fe;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+  --err:#ef9a9a;--err-bg:#2a1010;
+  --ok:#a5d6a7;--ok-bg:#0a2010;
+  --warn:#ffcc80;--warn-bg:#2a1800;
+  --info:#81d4fa;--info-bg:#0a1e2a;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+input,select,textarea{width:100%;font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--azul)}
+.hint{font-size:11px;color:var(--muted);margin-top:2px}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.btn-primary{padding:8px 20px;font-size:13px;background:var(--azul);color:#fff;border:none}
+.btn-primary:hover{opacity:.85}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+[data-theme="dark"] .toast{background:var(--azul)}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid}
+.badge-blue{background:var(--light);color:var(--azul);border-color:var(--azul)}
+.badge-ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}
+.badge-warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn)}
+.badge-muted{background:var(--bg);color:var(--muted);border-color:var(--border)}
+
+/* param table */
+.param-table{width:100%;border-collapse:collapse}
+.param-table th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-bottom:2px solid var(--border);text-align:left}
+.param-table td{padding:5px 8px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+.param-table tr:last-child td{border-bottom:none}
+.param-table tr:hover td{background:var(--light)}
+.p-key{font-family:var(--mono);font-weight:600;color:var(--azul);white-space:nowrap}
+.p-val{font-family:var(--mono);color:var(--body);word-break:break-all}
+.p-decoded{color:var(--ok);font-size:11px}
+.p-desc{color:var(--muted);font-size:11px;line-height:1.4}
+.p-macro{background:var(--warn-bg);color:var(--warn);padding:1px 5px;border-radius:3px;font-size:10px;font-family:var(--mono)}
+.p-empty{color:var(--err);font-size:10px}
+.p-highlight{background:var(--ok-bg)}
+
+/* url display */
+.url-display{font-family:var(--mono);font-size:11px;word-break:break-all;padding:10px;background:var(--bg);border-radius:7px;border:1px solid var(--border);line-height:1.6}
+.url-base{color:var(--azul);font-weight:600}
+.url-sep{color:var(--muted)}
+.url-param-k{color:var(--escuro)}
+.url-param-v{color:var(--body)}
+.url-macro{color:var(--warn);background:var(--warn-bg);border-radius:2px;padding:0 2px}
+
+/* macro legend */
+.macro-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-top:6px}
+.macro-item{padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg)}
+.macro-name{font-family:var(--mono);font-size:10px;color:var(--warn);font-weight:600}
+.macro-desc{font-size:11px;color:var(--body);margin-top:1px}
+
+.empty-state{text-align:center;padding:36px;color:var(--muted)}
+.empty-icon{font-size:38px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn" title="Tema">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Decodificador de VAST URL</h1>
+  <p class="subtitle">Cole uma URL de VAST tag ou Floodlight — todos os parâmetros são quebrados, macros identificados, ad server detectado e campos FL extraídos.</p>
+</div>
+<div class="main">
+
+  <div class="card">
+    <div class="section-title">URL para decodificar</div>
+    <textarea id="url-input" rows="3" placeholder="Cole aqui a URL — ex: https://ad.doubleclick.net/ddm/pfadx/N123456.123/B987654321.1;sz=640x360;ord=[timestamp];click=%%CLICK_URL_ESC%%;dcmt=text/xml?" style="font-family:var(--mono);font-size:11px" oninput="decode()"></textarea>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="decode()">🔍 Decodificar</button>
+      <button class="btn-sm" onclick="pasteAndDecode()">📋 Colar</button>
+      <button class="btn-sm" onclick="loadSample('cm360')">Exemplo CM360</button>
+      <button class="btn-sm" onclick="loadSample('xandr')">Exemplo Xandr</button>
+      <button class="btn-sm" onclick="loadSample('fl')">Exemplo Floodlight</button>
+      <button class="btn-sm" onclick="clearAll()">✕ Limpar</button>
+    </div>
+    <div class="hint" style="margin-top:6px">Ctrl+Enter para decodificar</div>
+  </div>
+
+  <div id="results">
+    <div class="card">
+      <div class="empty-state">
+        <div class="empty-icon">🔗</div>
+        <div style="font-size:14px;font-weight:600;color:var(--body)">Cole uma URL acima</div>
+        <div style="font-size:12px;margin-top:4px">Suporta VAST, Floodlight, pixels e qualquer URL com parâmetros</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATABASES
+// ═══════════════════════════════════════════════════════════
+const AD_SERVERS=[
+  {name:'Campaign Manager 360',short:'CM360',
+   patterns:['ad.doubleclick.net/ddm/pfadx','ad.doubleclick.net/ddm/jump','ad.doubleclick.net/ddm/ad','ad.doubleclick.net/ddm/trackclk','googleads.g.doubleclick.net']},
+  {name:'Floodlight (CM360)',short:'FL',
+   patterns:['ad.doubleclick.net/ddm/activity','fls.doubleclick.net']},
+  {name:'Google Ad Manager',short:'GAM',
+   patterns:['securepubads.g.doubleclick.net','pubads.g.doubleclick.net','pagead2.googlesyndication.com']},
+  {name:'Xandr / AppNexus',short:'Xandr',
+   patterns:['ib.adnxs.com','secure.adnxs.com','cdn.adnxs.com']},
+  {name:'Amazon / Sizmek',short:'Sizmek',
+   patterns:['bs.serving-sys.com','mads.amazon-adsystem.com']},
+  {name:'Teads',short:'Teads',
+   patterns:['a.teads.tv','cdn.teads.tv']},
+  {name:'SpotX / Magnite',short:'SpotX',
+   patterns:['search.spotxchange.com','spotxchange.com']},
+  {name:'Smart AdServer',short:'Smart',
+   patterns:['diff.smartadserver.com']},
+  {name:'Innovid',short:'Innovid',
+   patterns:['innovid.com','cdn.innovid.com']},
+  {name:'Adform',short:'Adform',
+   patterns:['track.adform.net','adform.net']},
+  {name:'Flashtalking',short:'FT',
+   patterns:['flashtalking.com']},
+];
+
+// Known parameter descriptions
+const PARAM_DOCS={
+  // CM360 / VAST common
+  sz:{label:'Tamanho (size)',desc:'Dimensões do criativo: largura×altura'},
+  ord:{label:'Cachebuster / ordnum',desc:'Número aleatório para evitar cache. Geralmente substituído por [timestamp] ou %%CACHEBUSTER%%.'},
+  click:{label:'URL de clique (clickthrough)',desc:'URL de destino do clique, geralmente URL-encoded.'},
+  dcmt:{label:'MIME type de resposta',desc:'Tipo de conteúdo retornado. "text/xml" = resposta VAST.'},
+  dc_rdid:{label:'ID do dispositivo (RDID)',desc:'Advertising ID do dispositivo (IDFA iOS / GAID Android). Deve vir vazio em ambientes web.'},
+  dc_lat:{label:'Limit Ad Tracking',desc:'"1" = usuário optou por não ser rastreado. Deve ser respeitado.'},
+  tag_for_child_directed_treatment:{label:'COPPA flag',desc:'"1" = conteúdo direcionado a crianças. Aplica restrições de tracking.'},
+  tfua:{label:'TFUA (underage)',desc:'"1" = usuário é menor de idade (GDPR artigo 8).'},
+  npa:{label:'Non-Personalized Ads',desc:'"1" = entrega sem personalização de dados.'},
+  gdpr:{label:'GDPR aplicável',desc:'"1" = usuário está na jurisdição GDPR. Obriga consentimento.'},
+  gdpr_consent:{label:'IAB TCF Consent String',desc:'String de consentimento TCF. Contém propósitos e vendors autorizados.'},
+  us_privacy:{label:'CCPA Privacy String',desc:'String de privacidade CCPA (California). Formato: 1YNN / 1YYY.'},
+  gpp:{label:'IAB GPP String',desc:'Global Privacy Platform string — framework unificado de privacidade.'},
+  gpp_sid:{label:'GPP Section ID',desc:'ID da seção do GPP aplicável (ex: 2 = TCF v2, 6 = US-NATIONAL).'},
+  // Floodlight
+  src:{label:'Floodlight Config ID (src)',desc:'ID numérico do anunciante no CM360. Identifica a conta Floodlight.'},
+  type:{label:'Floodlight Activity Group (type)',desc:'Tag de grupo de atividade. Máximo 10 caracteres alfanuméricos.'},
+  cat:{label:'Floodlight Activity Tag (cat)',desc:'Tag da atividade específica. Máximo 10 caracteres alfanuméricos.'},
+  u1:{label:'Custom Variable u1',desc:'Variável customizável enviada junto com a conversão.'},
+  u2:{label:'Custom Variable u2',desc:'Variável customizável enviada junto com a conversão.'},
+  u3:{label:'Custom Variable u3',desc:'Variável customizável enviada junto com a conversão.'},
+  qty:{label:'Quantidade (qty)',desc:'Quantidade de itens na conversão — usado em tags de Sales.'},
+  cost:{label:'Valor da conversão (cost)',desc:'Valor monetário da transação. Usado para cálculo de ROAS.'},
+  // Xandr
+  id:{label:'Ad/Creative ID',desc:'ID do banner, creative ou placement no ad server.'},
+  size:{label:'Tamanho do criativo',desc:'Dimensões em formato WxH.'},
+  promo_sizes:{label:'Tamanhos alternativos',desc:'Tamanhos adicionais que o ad server pode servir.'},
+  // Generic
+  timestamp:{label:'Timestamp',desc:'Timestamp Unix da requisição — usado como cachebuster.'},
+  cb:{label:'Cachebuster',desc:'Valor aleatório para evitar cache.'},
+  random:{label:'Random / Cachebuster',desc:'Número aleatório para bustar cache.'},
+  env:{label:'Ambiente (environment)',desc:'"instream_video" = VAST in-stream; "banner" = display.'},
+  correlator:{label:'Correlator',desc:'Valor único por sessão de página — agrupa requests da mesma pageview.'},
+  output:{label:'Formato de output',desc:'"vast" / "xml_vast4" / "xml_vmap1" etc.'},
+  unviewed_position_start:{label:'Start não-viewable',desc:'"1" = iniciar mesmo que o player não esteja em viewability.'},
+  cust_params:{label:'Custom Parameters',desc:'Parâmetros customizados URL-encoded — targeting, segmentação, key-values.'},
+  iu:{label:'Ad Unit',desc:'Path da unidade de anúncio no GAM: /networkId/adUnit/subUnit.'},
+  description_url:{label:'Description URL',desc:'URL da página onde o anúncio está sendo exibido.'},
+  url:{label:'URL de referência',desc:'URL da página de contexto.'},
+  vpos:{label:'Posição do vídeo',desc:'"preroll" / "midroll" / "postroll".'},
+  vad_type:{label:'Tipo de VAST',desc:'"linear" / "nonlinear" / "companion".'},
+};
+
+// Known macros by ad server
+const MACROS={
+  '%%CACHEBUSTER%%':{source:'CM360/DFA',desc:'Número aleatório para bustar cache'},
+  '%%CLICK_URL_ESC%%':{source:'CM360/DFA',desc:'URL de clique URL-encoded (simples)'},
+  '%%CLICK_URL_UNESC%%':{source:'CM360/DFA',desc:'URL de clique sem encoding'},
+  '%%CLICK_URL_ESC_ESC%%':{source:'CM360/DFA',desc:'URL de clique duplamente encoded'},
+  '%%ADID%%':{source:'CM360',desc:'ID do criativo'},
+  '%%SITE%%':{source:'CM360',desc:'ID do site/placement'},
+  '[timestamp]':{source:'CM360',desc:'Timestamp Unix (substitui cachebuster)'},
+  '${CACHEBUSTER}':{source:'VAST genérico',desc:'Macro VAST de cachebuster'},
+  '${CLICK_URL}':{source:'VAST genérico',desc:'URL de clique'},
+  '${GDPR}':{source:'IAB TCF',desc:'"1" se GDPR se aplica ao usuário'},
+  '${GDPR_CONSENT_755}':{source:'IAB TCF',desc:'TCF consent string (vendor 755 = Google)'},
+  '${US_PRIVACY}':{source:'IAB CCPA',desc:'CCPA privacy string'},
+  '__random__':{source:'Teads/outros',desc:'Número aleatório'},
+  '[RANDOM]':{source:'Genérico',desc:'Número aleatório para cachebuster'},
+  'RANDOM':{source:'Genérico (sem delimitador)',desc:'Alerta: macro sem delimitador pode não ser substituída'},
+};
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';try{localStorage.setItem('dvurl_theme',dark?'light':'dark');}catch(e){}}
+function loadTheme(){try{if(localStorage.getItem('dvurl_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('theme-btn').textContent='☀️';}}catch(e){}}
+
+function detectAdServer(url){return AD_SERVERS.find(as=>as.patterns.some(p=>url.toLowerCase().includes(p.toLowerCase())))||null;}
+
+function detectMacros(str){
+  const found=[];
+  Object.keys(MACROS).forEach(m=>{if(str.includes(m))found.push({macro:m,...MACROS[m]});});
+  // Also detect generic macro patterns
+  const patterns=[/\$\{[A-Z_0-9]+\}/g,/%%[A-Z_]+%%/g,/\[[A-Z_]+\]/g,/__[a-z_]+__/g];
+  patterns.forEach(p=>{
+    const matches=[...str.matchAll(p)];
+    matches.forEach(m=>{
+      if(!found.find(f=>f.macro===m[0]))found.push({macro:m[0],source:'Desconhecido',desc:'Macro detectada automaticamente'});
+    });
+  });
+  return found;
+}
+
+function tryDecode(s){
+  try{const d=decodeURIComponent(s);return d!==s?d:null;}catch(e){return null;}
+}
+
+function highlightMacros(str){
+  let out=esc(str);
+  // Replace macros with highlighted spans
+  const macroPattern=/(\$\{[A-Z_0-9]+\}|%%[A-Z_]+%%|\[[A-Z_a-z]+\]|__[a-z_]+__)/g;
+  out=out.replace(macroPattern,'<span class="url-macro">$1</span>');
+  return out;
+}
+
+function parseUrlParams(url){
+  // Handle both ? and ; separators (CM360 uses ;)
+  const params=[];
+  let base=url;
+  let queryStr='';
+
+  // Extract after first ? or ;
+  const qIdx=url.indexOf('?');
+  const sIdx=url.indexOf(';');
+
+  if(qIdx>-1&&(sIdx===-1||qIdx<sIdx)){
+    base=url.substring(0,qIdx);
+    queryStr=url.substring(qIdx+1);
+  } else if(sIdx>-1){
+    base=url.substring(0,sIdx);
+    queryStr=url.substring(sIdx+1);
+  }
+
+  // Split by & or ;
+  if(queryStr){
+    queryStr.split(/[&;]/).forEach(pair=>{
+      const eqIdx=pair.indexOf('=');
+      if(eqIdx>-1){
+        const k=pair.substring(0,eqIdx);
+        const v=pair.substring(eqIdx+1);
+        params.push({k,v,decoded:tryDecode(v)});
+      } else if(pair.trim()){
+        params.push({k:pair,v:null,decoded:null});
+      }
+    });
+  }
+  return {base,params};
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAIN DECODE
+// ═══════════════════════════════════════════════════════════
+function decode(){
+  const raw=document.getElementById('url-input').value.trim();
+  if(!raw){document.getElementById('results').innerHTML=`<div class="card"><div class="empty-state"><div class="empty-icon">🔗</div><div style="font-size:14px;font-weight:600;color:var(--body)">Cole uma URL acima</div></div></div>`;return;}
+
+  const adServer=detectAdServer(raw);
+  const macros=detectMacros(raw);
+  const {base,params}=parseUrlParams(raw);
+
+  // Floodlight-specific params
+  const flSrc=params.find(p=>p.k==='src')?.v||'';
+  const flType=params.find(p=>p.k==='type')?.v||'';
+  const flCat=params.find(p=>p.k==='cat')?.v||'';
+  const isFL=raw.includes('ddm/activity')||raw.includes('fls.doubleclick.net');
+
+  // Privacy params
+  const hasGdpr=params.some(p=>p.k==='gdpr'||p.k==='gdpr_consent');
+  const hasUSPrivacy=params.some(p=>p.k==='us_privacy'||p.k==='gpp');
+  const privacyCount=[hasGdpr,hasUSPrivacy].filter(Boolean).length;
+
+  // Badges
+  const badges=[];
+  if(adServer)badges.push(`<span class="badge badge-blue">📡 ${esc(adServer.name)}</span>`);
+  else badges.push(`<span class="badge badge-muted">📡 Ad server desconhecido</span>`);
+  badges.push(`<span class="badge badge-muted">${params.length} parâmetro(s)</span>`);
+  if(macros.length)badges.push(`<span class="badge badge-warn">⚠️ ${macros.length} macro(s)</span>`);
+  if(privacyCount)badges.push(`<span class="badge badge-ok">🔒 ${privacyCount} sinal(is) de privacidade</span>`);
+  if(isFL&&flSrc)badges.push(`<span class="badge badge-blue">FL src=${esc(flSrc)}</span>`);
+
+  // Highlighted URL
+  const urlParts=[`<span class="url-base">${esc(base)}</span>`];
+  params.forEach((p,i)=>{
+    urlParts.push(`<span class="url-sep">${i===0?(raw.includes(';')?';':'?'):'&'}</span><span class="url-param-k">${esc(p.k)}</span><span class="url-sep">=</span><span class="url-param-v">${highlightMacros(p.v||'')}</span>`);
+  });
+
+  // Param table
+  const rows=params.map(p=>{
+    const doc=PARAM_DOCS[p.k]||null;
+    const isMacroVal=p.v&&detectMacros(p.v).length>0;
+    const isEmpty=p.v===''||p.v===null;
+    const decoded=p.decoded&&p.decoded!==p.v?p.decoded:null;
+    return `<tr class="${doc&&['src','type','cat','gdpr','gdpr_consent'].includes(p.k)?'p-highlight':''}">
+      <td class="p-key">${esc(p.k)}</td>
+      <td class="p-val">${p.v!==null?highlightMacros(p.v):'<em style="color:var(--muted)">flag sem valor</em>'}
+        ${isEmpty?'<span class="p-empty"> (vazio)</span>':''}
+        ${decoded?`<div class="p-decoded">↳ ${esc(decoded.substring(0,120))}${decoded.length>120?'…':''}</div>`:''}
+      </td>
+      <td class="p-desc">${doc?`<strong style="font-size:11px">${esc(doc.label)}</strong><br>${esc(doc.desc)}`:'<span style="color:var(--muted)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  // Macro legend
+  const macroHtml=macros.length?`
+    <div style="margin-top:12px">
+      <div class="section-title">Macros detectadas (${macros.length})</div>
+      <div class="macro-grid">
+        ${macros.map(m=>`
+          <div class="macro-item">
+            <div class="macro-name">${esc(m.macro)}</div>
+            <div class="macro-desc">${esc(m.source)} — ${esc(m.desc)}</div>
+          </div>`).join('')}
+      </div>
+    </div>`:'';
+
+  // FL section
+  const flHtml=isFL&&flSrc?`
+    <div class="card" style="margin-top:0">
+      <div class="section-title">Parâmetros Floodlight</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px">
+        <div style="font-weight:700;color:var(--muted)">src=</div><div style="font-family:var(--mono);color:var(--body)">${esc(flSrc)} <span style="color:var(--muted);font-size:10px">(Floodlight Config ID)</span></div>
+        <div style="font-weight:700;color:var(--muted)">type=</div><div style="font-family:var(--mono);color:var(--body)">${esc(flType)||'<em style="color:var(--muted)">não encontrado</em>'}</div>
+        <div style="font-weight:700;color:var(--muted)">cat=</div><div style="font-family:var(--mono);color:var(--body)">${esc(flCat)||'<em style="color:var(--muted)">não encontrado</em>'}</div>
+      </div>
+    </div>`:'';
+
+  document.getElementById('results').innerHTML=`
+    <div class="card">
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">${badges.join('')}</div>
+      <div class="section-title">URL decodificada</div>
+      <div class="url-display">${urlParts.join('')}</div>
+      ${macroHtml}
+    </div>
+    ${flHtml}
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="section-title" style="margin:0">Parâmetros (${params.length})</div>
+        <button class="btn-sm" onclick="copyParams()">📋 Copiar CSV</button>
+      </div>
+      <div style="overflow-x:auto">
+      <table class="param-table">
+        <thead><tr><th>Parâmetro</th><th>Valor</th><th>Descrição</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Nenhum parâmetro detectado</td></tr>'}</tbody>
+      </table>
+      </div>
+    </div>
+  `;
+  window._lastParams=params;
+  window._lastUrl=raw;
+}
+
+function copyParams(){
+  if(!window._lastParams)return;
+  const lines=['Parâmetro,Valor,Valor decodificado',...window._lastParams.map(p=>`"${p.k}","${p.v||''}","${p.decoded||''}"`)];
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>toast('CSV copiado!'));
+}
+
+async function pasteAndDecode(){
+  try{const t=await navigator.clipboard.readText();document.getElementById('url-input').value=t;decode();}
+  catch(e){toast('Permissão negada — cole manualmente.');}
+}
+
+function clearAll(){document.getElementById('url-input').value='';document.getElementById('results').innerHTML=`<div class="card"><div class="empty-state"><div class="empty-icon">🔗</div><div style="font-size:14px;font-weight:600;color:var(--body)">Cole uma URL acima</div><div style="font-size:12px;margin-top:4px">Suporta VAST, Floodlight, pixels e qualquer URL com parâmetros</div></div></div>`;}
+
+function loadSample(type){
+  const samples={
+    cm360:'https://ad.doubleclick.net/ddm/pfadx/N123456.1234TEST/B987654321.001;sz=640x360;ord=[timestamp];click=%%CLICK_URL_ESC%%;dcmt=text/xml?gdpr=${GDPR}&gdpr_consent=${GDPR_CONSENT_755}&tfua=&npa=',
+    xandr:'https://ib.adnxs.com/ptv?id=12345678&size=640x360&promo_sizes=1280x720&cb=[CACHEBUSTER]&vpos=preroll&gdpr=1&gdpr_consent=CQP7bMAQP7bMAA...',
+    fl:'https://ad.doubleclick.net/ddm/activity/src=1234567;type=brand0;cat=video0;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=${GDPR};gdpr_consent=${GDPR_CONSENT_755};ord=1?',
+  };
+  document.getElementById('url-input').value=samples[type]||'';
+  decode();
+}
+
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();decode();}});
+loadTheme();
+</script>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de Floodlight Plan | NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --mono:'JetBrains Mono',monospace;
+  --err:#c62828;--err-bg:#fff5f5;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;
+  --warn:#e65100;--warn-bg:#fff3e0;
+  --info:#0277bd;--info-bg:#e1f5fe;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+  --err:#ef9a9a;--err-bg:#2a1010;
+  --ok:#a5d6a7;--ok-bg:#0a2010;
+  --warn:#ffcc80;--warn-bg:#2a1800;
+  --info:#81d4fa;--info-bg:#0a1e2a;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:3px}
+input,select,textarea{width:100%;font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--azul)}
+.hint{font-size:11px;color:var(--muted);margin-top:2px}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.btn-primary{padding:8px 20px;font-size:13px;background:var(--azul);color:#fff;border:none}
+.btn-primary:hover{opacity:.85}
+.btn-xs{padding:3px 7px;font-size:10px;font-weight:600;background:var(--light);color:var(--azul);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-xs:hover{background:var(--border)}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:3px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+[data-theme="dark"] .toast{background:var(--azul)}
+
+/* EVENT BUILDER */
+.ev-builder{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ev-row{display:grid;grid-template-columns:1fr 1fr 110px 32px;gap:6px;align-items:center}
+.ev-row input,.ev-row select{font-size:12px}
+.ev-del{width:28px;height:28px;border-radius:6px;background:var(--err-bg);color:var(--err);border:1px solid var(--err);font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ev-del:hover{background:var(--err);color:#fff}
+
+/* PRESET CHIPS */
+.preset-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--light);color:var(--azul);border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.chip:hover{background:var(--azul);color:#fff;border-color:var(--azul)}
+
+/* OUTPUT TABLE */
+.plan-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+.plan-table th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:2px solid var(--border);text-align:left;background:var(--bg)}
+.plan-table td{padding:5px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.plan-table tr:last-child td{border-bottom:none}
+.plan-table tr:hover td{background:var(--light)}
+.type-counter{background:var(--info-bg);color:var(--info);padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap}
+.type-sales{background:var(--ok-bg);color:var(--ok);padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap}
+.code-cell{font-family:var(--mono);font-size:10px;color:var(--body)}
+.copy-cell{cursor:pointer;color:var(--azul);opacity:.5;font-size:12px}
+.copy-cell:hover{opacity:1}
+.plan-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.empty-state{text-align:center;padding:32px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn" title="Tema">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Gerador de Floodlight Plan</h1>
+  <p class="subtitle">Preencha os dados da campanha e defina os eventos — o plano de Floodlight completo é gerado com naming, src/type/cat e tipo (Counter/Sales).</p>
+</div>
+<div class="main">
+
+  <!-- CAMPANHA -->
+  <div class="card">
+    <div class="section-title">Dados da campanha</div>
+    <div class="row3" style="margin-bottom:10px">
+      <div class="field"><label>Src (Floodlight Config ID)</label><input id="f-src" type="text" placeholder="1234567" oninput="gen()"></div>
+      <div class="field"><label>Anunciante / Marca</label><input id="f-brand" type="text" placeholder="MarcaX" oninput="gen()"></div>
+      <div class="field"><label>Campanha (abreviação)</label><input id="f-camp" type="text" placeholder="camp26" oninput="gen()"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Prefixo de type (máx. 10 chars)</label><input id="f-type" type="text" placeholder="brand0" maxlength="10" oninput="gen()">
+        <div class="hint">Será usado como base para o "type=" de todas as atividades.</div></div>
+      <div class="field"><label>Formato de cat</label>
+        <select id="f-catfmt" onchange="gen()">
+          <option value="{type}_{event}">type_evento (ex: brand0_start)</option>
+          <option value="{event}">evento (ex: start)</option>
+          <option value="{camp}_{event}">campanha_evento (ex: camp26_start)</option>
+          <option value="{brand}_{event}">marca_evento (ex: marcax_start)</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENTOS -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="section-title" style="margin:0">Eventos / Atividades</div>
+      <button class="btn-xs" onclick="addEvent()">+ Adicionar</button>
+    </div>
+    <div class="hint" style="margin-bottom:8px">Clique nos presets para adicionar rapidamente os eventos mais comuns:</div>
+    <div class="preset-chips">
+      <span class="chip" onclick="addPreset('video')">🎬 Vídeo completo</span>
+      <span class="chip" onclick="addPreset('performance')">📈 Performance</span>
+      <span class="chip" onclick="addPreset('branding')">🏷 Branding</span>
+      <span class="chip" onclick="addPreset('ecommerce')">🛒 E-commerce</span>
+      <span class="chip" onclick="addPreset('lead')">📋 Lead Gen</span>
+      <span class="chip" onclick="addPreset('app')">📱 App</span>
+    </div>
+    <div id="ev-builder" class="ev-builder"></div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="card" id="output-card">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div style="font-size:14px;font-weight:600;color:var(--body)">Preencha os dados acima</div>
+      <div style="font-size:12px;margin-top:4px">O Floodlight Plan será gerado automaticamente</div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let events=[];
+
+const PRESETS={
+  video:[
+    {name:'Impression Vídeo',type:'impression',flType:'Counter'},
+    {name:'Start',type:'start',flType:'Counter'},
+    {name:'1º Quartil',type:'firstquartile',flType:'Counter'},
+    {name:'Midpoint',type:'midpoint',flType:'Counter'},
+    {name:'3º Quartil',type:'thirdquartile',flType:'Counter'},
+    {name:'Complete',type:'complete',flType:'Counter'},
+    {name:'Click',type:'click',flType:'Counter'},
+    {name:'Skip',type:'skip',flType:'Counter'},
+  ],
+  performance:[
+    {name:'Impression',type:'impression',flType:'Counter'},
+    {name:'Click',type:'click',flType:'Counter'},
+    {name:'Landing Page View',type:'lpview',flType:'Counter'},
+    {name:'Formulário submetido',type:'formsubmit',flType:'Counter'},
+    {name:'Conversão',type:'conversion',flType:'Sales'},
+  ],
+  branding:[
+    {name:'Impression',type:'impression',flType:'Counter'},
+    {name:'Viewable Impression',type:'viewimp',flType:'Counter'},
+    {name:'Click',type:'click',flType:'Counter'},
+    {name:'Engajamento',type:'engage',flType:'Counter'},
+    {name:'Hover / Interação',type:'interact',flType:'Counter'},
+  ],
+  ecommerce:[
+    {name:'Impression',type:'impression',flType:'Counter'},
+    {name:'Click',type:'click',flType:'Counter'},
+    {name:'Visualização de Produto',type:'prodview',flType:'Counter'},
+    {name:'Add to Cart',type:'addcart',flType:'Counter'},
+    {name:'Checkout',type:'checkout',flType:'Counter'},
+    {name:'Compra',type:'purchase',flType:'Sales'},
+  ],
+  lead:[
+    {name:'Impression',type:'impression',flType:'Counter'},
+    {name:'Click',type:'click',flType:'Counter'},
+    {name:'Landing Page View',type:'lpview',flType:'Counter'},
+    {name:'Formulário Iniciado',type:'formstart',flType:'Counter'},
+    {name:'Lead Gerado',type:'lead',flType:'Counter'},
+  ],
+  app:[
+    {name:'Impression',type:'impression',flType:'Counter'},
+    {name:'Click',type:'click',flType:'Counter'},
+    {name:'Install Iniciado',type:'installstart',flType:'Counter'},
+    {name:'App Install',type:'install',flType:'Counter'},
+    {name:'Abertura do App',type:'appopen',flType:'Counter'},
+    {name:'In-App Purchase',type:'inapppurchase',flType:'Sales'},
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════
+// EVENT MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+function addEvent(name='',type='',flType='Counter'){
+  events.push({name,type,flType});
+  renderEvBuilder();gen();
+}
+
+function addPreset(key){
+  PRESETS[key].forEach(e=>events.push({...e}));
+  renderEvBuilder();gen();
+  toast(`Preset "${key}" adicionado (${PRESETS[key].length} eventos).`);
+}
+
+function delEvent(i){events.splice(i,1);renderEvBuilder();gen();}
+
+function renderEvBuilder(){
+  const el=document.getElementById('ev-builder');
+  if(!events.length){el.innerHTML='<div class="hint" style="text-align:center;padding:12px">Nenhum evento — adicione acima ou use um preset.</div>';return;}
+  el.innerHTML=`
+    <div class="ev-row" style="margin-bottom:-2px">
+      <div class="hint">Nome da atividade</div>
+      <div class="hint">Tipo de evento (cat)</div>
+      <div class="hint">FL Type</div>
+      <div></div>
+    </div>`+
+  events.map((e,i)=>`
+    <div class="ev-row">
+      <input value="${esc(e.name)}" placeholder="Nome da atividade" oninput="events[${i}].name=this.value;gen()">
+      <input value="${esc(e.type)}" placeholder="impression / click / …" oninput="events[${i}].type=this.value;gen()">
+      <select onchange="events[${i}].flType=this.value;gen()">
+        <option${e.flType==='Counter'?' selected':''}>Counter</option>
+        <option${e.flType==='Sales'?' selected':''}>Sales</option>
+      </select>
+      <button class="ev-del" onclick="delEvent(${i})">✕</button>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function v(id){return (document.getElementById(id)||{}).value||'';}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20);}
+function toast(msg,dur=2500){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);
+}
+function toggleDark(){
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';
+  try{localStorage.setItem('flplan_theme',dark?'light':'dark');}catch(e){}
+}
+function loadTheme(){try{if(localStorage.getItem('flplan_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('theme-btn').textContent='☀️';}}catch(e){}}
+
+function buildCat(fmt,typeSlug,eventSlug,campSlug,brandSlug){
+  switch(fmt){
+    case'{type}_{event}':return`${typeSlug}_${eventSlug}`;
+    case'{event}':return eventSlug;
+    case'{camp}_{event}':return`${campSlug}_${eventSlug}`;
+    case'{brand}_{event}':return`${brandSlug}_${eventSlug}`;
+    default:return eventSlug;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════════════════════════
+function gen(){
+  const src=v('f-src').trim();
+  const brand=slug(v('f-brand'));
+  const camp=slug(v('f-camp'));
+  const typeBase=v('f-type').trim()||brand||'brand0';
+  const catFmt=v('f-catfmt');
+  const out=document.getElementById('output-card');
+
+  if(!src||!events.length){
+    out.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div style="font-size:14px;font-weight:600;color:var(--body)">Preencha src e adicione pelo menos um evento</div></div>`;
+    return;
+  }
+
+  const rows=events.map((e,i)=>{
+    const typeSlug=typeBase;
+    const eventSlug=slug(e.type)||`ev${i+1}`;
+    const actName=e.name||e.type||`Evento ${i+1}`;
+    const cat=buildCat(catFmt,typeSlug,eventSlug,camp,brand);
+    const url=`https://ad.doubleclick.net/ddm/activity/src=${src};type=${typeSlug};cat=${cat};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=\${GDPR};gdpr_consent=\${GDPR_CONSENT_755};ord=1?`;
+    return {actName,type:typeSlug,cat,flType:e.flType,url};
+  });
+
+  out.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="section-title" style="margin:0">Floodlight Plan — ${esc(v('f-brand')||'Campanha')} · src=${esc(src)}</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm" onclick="copyPlan()">📋 Copiar CSV</button>
+        <button class="btn-sm" onclick="copyTable()">📄 Copiar tabela</button>
+        <button class="btn-sm" onclick="window.print()">🖨 Imprimir</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="plan-table" id="plan-tbl">
+      <thead><tr>
+        <th>#</th><th>Atividade</th><th>Tipo FL</th>
+        <th>src=</th><th>type=</th><th>cat=</th>
+        <th>URL Floodlight</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((r,i)=>`
+          <tr>
+            <td style="color:var(--muted)">${i+1}</td>
+            <td style="font-weight:600;min-width:140px">${esc(r.actName)}</td>
+            <td><span class="${r.flType==='Sales'?'type-sales':'type-counter'}">${esc(r.flType)}</span></td>
+            <td class="code-cell">${esc(r.type.split('_')[0]||src)}</td>
+            <td class="code-cell">${esc(r.type)}</td>
+            <td class="code-cell">${esc(r.cat)}</td>
+            <td class="code-cell" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.url)}">${esc(r.url.substring(0,60))}…</td>
+            <td class="copy-cell" onclick="copyUrl(${i})" title="Copiar URL">📋</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="hint" style="margin-top:8px">Clique em 📋 na linha para copiar a URL completa. Lembre de substituir <code>\${GDPR}</code> e <code>\${GDPR_CONSENT_755}</code> pelo macro do ad server.</div>
+  `;
+  // Store rows for copy functions
+  window._planRows=rows;
+}
+
+function copyUrl(i){
+  if(!window._planRows)return;
+  navigator.clipboard.writeText(window._planRows[i].url).then(()=>toast('URL copiada!'));
+}
+
+function copyPlan(){
+  if(!window._planRows)return;
+  const src=v('f-src').trim();
+  const header='#,Atividade,Tipo FL,src,type,cat,URL';
+  const lines=window._planRows.map((r,i)=>
+    `${i+1},"${r.actName}",${r.flType},${src},${r.type},${r.cat},"${r.url}"`);
+  navigator.clipboard.writeText([header,...lines].join('\n')).then(()=>toast('CSV copiado — cole no Sheets/Excel.'));
+}
+
+function copyTable(){
+  if(!window._planRows)return;
+  const src=v('f-src').trim();
+  const header='#\tAtividade\tTipo FL\tsrc\ttype\tcat\tURL';
+  const lines=window._planRows.map((r,i)=>
+    `${i+1}\t${r.actName}\t${r.flType}\t${src}\t${r.type}\t${r.cat}\t${r.url}`);
+  navigator.clipboard.writeText([header,...lines].join('\n')).then(()=>toast('Tabela copiada — cole no Sheets.'));
+}
+
+// INIT
+loadTheme();
+renderEvBuilder();
+// Pre-fill with video preset for quick start
+addPreset('video');
+</script>
+</body>
+</html>
