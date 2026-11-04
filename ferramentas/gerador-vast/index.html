@@ -189,6 +189,41 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-family:'Space Grotesk',sans-serif;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .toast.show{opacity:1}
 [data-theme="dark"] .toast{background:var(--azul)}
+
+/* XML SYNTAX HIGHLIGHT */
+pre .xml-tag{color:#7c8fff}
+pre .xml-attr{color:#ffcc80}
+pre .xml-val{color:#a5d6a7}
+pre .xml-cdata{color:#ef9a9a}
+pre .xml-pi{color:#ce93d8}
+pre .xml-comment{color:#5c6a9e;font-style:italic}
+[data-theme="light"] pre .xml-tag{color:#1F36C7}
+[data-theme="light"] pre .xml-attr{color:#e65100}
+[data-theme="light"] pre .xml-val{color:#2e7d32}
+[data-theme="light"] pre .xml-cdata{color:#c62828}
+[data-theme="light"] pre .xml-pi{color:#7b1fa2}
+[data-theme="light"] pre .xml-comment{color:#9fa8da}
+
+/* INSPECTOR */
+.insp-grid{display:grid;grid-template-columns:140px 1fr;gap:3px 10px;margin-top:8px}
+.insp-k{font-size:11px;font-weight:600;color:var(--muted);padding:4px 0;align-self:start}
+.insp-v{font-size:11px;font-family:var(--mono);color:var(--body);padding:4px 0;word-break:break-all}
+.insp-tag{display:inline-block;background:var(--light);border:1px solid var(--border);border-radius:3px;padding:0 5px;font-size:10px;font-family:var(--mono);color:var(--azul);margin:1px}
+.insp-ev-list{display:flex;flex-wrap:wrap;gap:3px}
+
+/* FL IMPORT */
+.fl-import-row{display:flex;gap:5px;margin-bottom:8px}
+.fl-import-row input{font-size:11px;font-family:var(--mono)}
+
+/* FAVORITES */
+.fav-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;min-height:18px}
+.fav-pill{display:inline-flex;align-items:center;gap:0;background:var(--light);border:1px solid var(--border);border-radius:14px;overflow:hidden;font-size:11px}
+.fav-pill-load{padding:2px 8px;cursor:pointer;color:var(--body);font-weight:600;background:none;border:none;font-family:inherit;transition:color .15s}
+.fav-pill-load:hover{color:var(--azul)}
+.fav-pill-del{padding:2px 6px;cursor:pointer;color:var(--muted);background:none;border:none;font-family:inherit;border-left:1px solid var(--border);font-size:10px;transition:color .15s}
+.fav-pill-del:hover{color:var(--err)}
+.fav-save-row{display:flex;gap:5px;margin-top:6px}
+.fav-save-row input{font-size:12px;max-width:180px}
 </style>
 </head>
 <body>
@@ -237,6 +272,25 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
             <button class="btn-sm" onclick="openShareModal()">🔗 Compartilhar</button>
             <button class="btn-sm" onclick="openJsonModal()">⇅ JSON</button>
             <button class="btn-danger" onclick="resetForm()">↺ Limpar campos</button>
+          </div>
+        </div>
+
+        <!-- FL IMPORT URL -->
+        <div class="fl-import-row">
+          <input id="fl-import-input" type="text" placeholder="Cole uma Floodlight URL para importar src/type/cat automaticamente" style="font-size:11px;font-family:var(--mono)">
+          <button class="btn-xs" onclick="parseFloodlightUrl()">🔍 Importar</button>
+        </div>
+
+        <!-- FL FAVORITES -->
+        <div style="margin-bottom:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:7px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">⭐ Favoritos FL</span>
+            <span style="font-size:10px;color:var(--muted)">src/type/cat salvos</span>
+          </div>
+          <div class="fav-list" id="fav-list"><span style="font-size:11px;color:var(--muted)">Nenhum favorito salvo.</span></div>
+          <div class="fav-save-row">
+            <input id="fav-name-input" type="text" placeholder="Nome do favorito (ex: Branding Q1)" style="font-size:12px">
+            <button class="btn-xs" onclick="saveFLFav()">💾 Salvar atual</button>
           </div>
         </div>
 
@@ -488,13 +542,14 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
   <!-- OUTPUT -->
   <div class="card">
     <div class="output-header">
-      <div class="output-label">VAST XML gerado</div>
+      <div class="output-label">VAST XML gerado <span id="xml-size-badge" style="font-weight:400;font-size:10px;color:var(--muted)"></span></div>
       <div class="output-actions">
         <button class="btn-sm" id="btn-copy" onclick="copyXML()">📋 Copiar XML</button>
         <button class="btn-sm" id="btn-download" onclick="downloadXML()">⬇ Download XML</button>
         <button class="btn-sm" onclick="openValidator()">🔍 Validar (IAB)</button>
         <button class="btn-sm" onclick="openImaTest()">▶ Teste IMA</button>
         <button class="btn-sm" id="btn-save" onclick="saveToHistory()">💾 Salvar</button>
+        <button class="btn-sm" onclick="openInspector()">🔬 Inspetor VAST</button>
       </div>
     </div>
     <div class="output-body">
@@ -577,6 +632,22 @@ pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:h
   </div>
 </div>
 
+<!-- INSPECTOR MODAL -->
+<div class="overlay" id="inspector-overlay" onclick="if(event.target===this)closeInspector()">
+  <div class="modal" style="max-width:680px">
+    <button class="modal-close" onclick="closeInspector()">×</button>
+    <h2>🔬 Inspetor de VAST Tag</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:4px">Cole um XML VAST aqui para extrair todos os parâmetros. Funciona com qualquer tag VAST 2.0 / 3.0 / 4.1.</p>
+    <textarea class="json-ta" id="inspector-ta" placeholder="Cole o XML VAST aqui..." style="height:160px;margin-top:10px"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="doInspect()">🔍 Analisar</button>
+      <button class="btn-sm" onclick="loadInspectedIntoForm()" id="btn-load-inspected" style="display:none">⇅ Carregar no formulário</button>
+      <button class="btn-sm" onclick="document.getElementById(\'inspector-ta\').value=\'\';document.getElementById(\'inspector-result\').innerHTML=\'\';document.getElementById(\'btn-load-inspected\').style.display=\'none\'">🗑 Limpar</button>
+    </div>
+    <div id="inspector-result" style="margin-top:12px"></div>
+  </div>
+</div>
+
 <!-- HELP MODAL -->
 <div class="overlay" id="help-overlay" onclick="if(event.target===this)closeHelp()">
   <div class="modal">
@@ -626,6 +697,8 @@ let mediaFiles=[{url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'p
 let companions=[];
 let extraPixels=[];
 let verifications=[];
+let _rawXml='';
+let _inspectedState=null;
 
 const EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','complete',
               'mute','unmute','pause','resume','skip','fullscreen',
@@ -633,6 +706,7 @@ const EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','c
 const REQUIRED=['v-src','v-type','v-cat'];
 const HIST_KEY='vast_history_v3';
 const HIST_MAX=10;
+const FL_FAVS_KEY='vast_fl_favs';
 const MIME_OPTS=['video/mp4','video/webm','video/ogg','application/x-mpegURL','application/dash+xml'];
 const EP_EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','complete',
                  'mute','unmute','pause','resume','skip','fullscreen','creativeView','clickTracking'];
@@ -1077,7 +1151,11 @@ ${mfLines}
 </VAST>`;
   }
 
-  document.getElementById('vast-out').textContent=xml;
+  _rawXml=xml;
+  document.getElementById('vast-out').innerHTML=highlightXML(xml);
+  const bytes=new TextEncoder().encode(xml).length;
+  const szBadge=document.getElementById('xml-size-badge');
+  if(szBadge)szBadge.textContent=bytes<1024?'('+bytes+' B)':'('+(bytes/1024).toFixed(1)+' KB)';
 
   const firstMF=mediaFiles[0]?.url;
   if(firstMF&&firstMF.trim())document.getElementById('player-url').value=firstMF.trim();
@@ -1088,6 +1166,7 @@ ${mfLines}
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1">URLs de tracking (${all.length})</div>
       <button class="btn-xs" id="btn-copy-all" onclick="copyAllUrls(this)">📋 Copiar todas</button>
+      <button class="btn-xs" onclick="downloadTrackingCSV()">⬇ CSV</button>
     </div>
     ${all.map((e,i)=>{
       const eps=getEPs(e);
@@ -1110,12 +1189,12 @@ ${mfLines}
 
 // ─── CLIPBOARD / DOWNLOAD ───
 function copyXML(){
-  navigator.clipboard.writeText(document.getElementById('vast-out').textContent).then(()=>{
+  navigator.clipboard.writeText(_rawXml).then(()=>{
     const btn=document.getElementById('btn-copy');btn.textContent='✅ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar XML',2000);
   });
 }
 function downloadXML(){
-  const xml=document.getElementById('vast-out').textContent;
+  const xml=_rawXml;
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([xml],{type:'application/xml'}));
   a.download=(v('v-title')||'vast').replace(/\s+/g,'_').toLowerCase()+'_vast.xml';
@@ -1134,14 +1213,14 @@ function copyAllUrls(btn){
   navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅ Copiadas!';setTimeout(()=>btn.textContent='📋 Copiar todas',2000);});
 }
 function openValidator(){
-  const xml=document.getElementById('vast-out').textContent;
+  const xml=_rawXml;
   navigator.clipboard.writeText(xml).then(()=>{
     toast('XML copiado! Cole no validador para verificar.');
     setTimeout(()=>window.open('https://vastcheck.iabtechlab.com/','_blank'),300);
   }).catch(()=>window.open('https://vastcheck.iabtechlab.com/','_blank'));
 }
 function openImaTest(){
-  const xml=document.getElementById('vast-out').textContent;
+  const xml=_rawXml;
   navigator.clipboard.writeText(xml).then(()=>toast('XML copiado! Cole como "VAST XML" no IMA Video Suite Inspector.'));
   window.open('https://googleads.github.io/googleads-ima-html5/vsi/','_blank');
 }
@@ -1279,8 +1358,8 @@ function doImportJson(){
 
 // ─── HISTORY ───
 function saveToHistory(){
-  const xml=document.getElementById('vast-out').textContent;
-  if(!xml||xml.includes('preencha os campos'))return;
+  const xml=_rawXml;
+  if(!xml)return;
   const state=getFormState();
   const entry={id:Date.now(),title:state.title||'Video Ad',mode:state.mode,version:state.version,
     ts:new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),state,xml};
@@ -1362,18 +1441,221 @@ function resetForm(){
   toggleProgress();
   mediaFiles=[{url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'}];
   companions=[];extraPixels=[];verifications=[];
-  renderMFList();renderCompList();renderEPList();renderVerifList();gen();genCM360();
+  renderMFList();renderCompList();renderEPList();renderVerifList();gen();genCM360();renderFLFavs();
   history.replaceState(null,'',location.pathname+location.search);
+}
+
+// ─── XML SYNTAX HIGHLIGHT ───
+function highlightXML(xml){
+  const e=xml.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return e
+    // CDATA sections
+    .replace(/(&lt;!\[CDATA\[)([\s\S]*?)(\]\]&gt;)/g,'<span class="xml-cdata">$1$2$3</span>')
+    // XML comments
+    .replace(/(&lt;!--[\s\S]*?--&gt;)/g,'<span class="xml-comment">$1</span>')
+    // Processing instruction <?xml ...?>
+    .replace(/(&lt;\?xml)((?:\s+[^?]*)?)(\?&gt;)/g,'<span class="xml-pi">$1$2$3</span>')
+    // Tags with attributes
+    .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9_:.-]*)((?:\s+[a-zA-Z][a-zA-Z0-9_:.-]*="[^"]*")*)\s*(\/?&gt;)/g,
+      (_,tag,attrs,close)=>{
+        const ca=attrs.replace(/([a-zA-Z][a-zA-Z0-9_:.-]*)="([^"]*)"/g,
+          '<span class="xml-attr">$1</span>="<span class="xml-val">$2</span>"');
+        return `<span class="xml-tag">${tag}</span>${ca}${close}`;
+      });
+}
+
+// ─── FLOODLIGHT URL IMPORT ───
+function parseFloodlightUrl(){
+  const raw=document.getElementById('fl-import-input').value.trim();
+  if(!raw){toast('Cole uma Floodlight URL no campo acima.');return;}
+  const params={};
+  // Try to parse ;param=value; format (Floodlight activity URL)
+  const semi=raw.match(/[?;]([^?;]+)=[^;?&]*/g)||[];
+  semi.forEach(pair=>{
+    const kv=pair.replace(/^[?;]/,'').split('=');
+    if(kv.length>=2)params[kv[0]]=kv.slice(1).join('=');
+  });
+  // Also try ?param=value& format
+  try{const u=new URL(raw.includes('://')?raw:'https://x.com/'+raw);u.searchParams.forEach((val,key)=>{params[key]=val;});}catch(e){}
+  const src=params.src||params.advertiserId;
+  const type=params.type||params.groupTagString;
+  const cat=params.cat||params.activityTagString;
+  if(!src&&!type&&!cat){toast('Não foi possível extrair src/type/cat dessa URL.');return;}
+  if(src)document.getElementById('v-src').value=src;
+  if(type)document.getElementById('v-type').value=type;
+  if(cat)document.getElementById('v-cat').value=cat;
+  document.getElementById('fl-import-input').value='';
+  gen();
+  toast(`Importado: src=${src||'—'} type=${type||'—'} cat=${cat||'—'}`);
+}
+
+// ─── FLOODLIGHT FAVORITES ───
+function getFLFavs(){try{return JSON.parse(localStorage.getItem(FL_FAVS_KEY)||'{}');}catch(e){return {};}}
+function saveFLFav(){
+  const name=document.getElementById('fav-name-input').value.trim();
+  if(!name){toast('Digite um nome para o favorito.');return;}
+  const src=v('v-src').trim(),type=v('v-type').trim(),cat=v('v-cat').trim();
+  if(!src&&!type&&!cat){toast('Preencha ao menos um parâmetro Floodlight primeiro.');return;}
+  const favs=getFLFavs();
+  favs[name]={src,type,cat};
+  try{localStorage.setItem(FL_FAVS_KEY,JSON.stringify(favs));}catch(e){}
+  document.getElementById('fav-name-input').value='';
+  renderFLFavs();
+  toast(`Favorito "${name}" salvo!`);
+}
+function applyFLFav(name){
+  const fav=getFLFavs()[name];if(!fav)return;
+  if(fav.src)document.getElementById('v-src').value=fav.src;
+  if(fav.type)document.getElementById('v-type').value=fav.type;
+  if(fav.cat)document.getElementById('v-cat').value=fav.cat;
+  gen();toast(`Favorito "${name}" carregado.`);
+}
+function deleteFLFav(name){
+  const favs=getFLFavs();delete favs[name];
+  try{localStorage.setItem(FL_FAVS_KEY,JSON.stringify(favs));}catch(e){}
+  renderFLFavs();
+}
+function renderFLFavs(){
+  const list=document.getElementById('fav-list');if(!list)return;
+  const favs=getFLFavs();const keys=Object.keys(favs);
+  if(!keys.length){list.innerHTML='<span style="font-size:11px;color:var(--muted)">Nenhum favorito salvo.</span>';return;}
+  list.innerHTML=keys.map(name=>`
+    <div class="fav-pill">
+      <button class="fav-pill-load" onclick="applyFLFav(${JSON.stringify(name)})" title="src=${esc(favs[name].src)} type=${esc(favs[name].type)} cat=${esc(favs[name].cat)}">⭐ ${esc(name)}</button>
+      <button class="fav-pill-del" onclick="deleteFLFav(${JSON.stringify(name)})" title="Remover">✕</button>
+    </div>`).join('');
+}
+
+// ─── TAG INSPECTOR ───
+function openInspector(){
+  // Pre-fill with current XML if available
+  if(_rawXml&&!document.getElementById('inspector-ta').value){
+    document.getElementById('inspector-ta').value=_rawXml;
+  }
+  document.getElementById('inspector-overlay').classList.add('open');
+}
+function closeInspector(){document.getElementById('inspector-overlay').classList.remove('open');}
+function doInspect(){
+  const raw=document.getElementById('inspector-ta').value.trim();
+  if(!raw){toast('Cole um VAST XML antes de analisar.');return;}
+  const result=document.getElementById('inspector-result');
+  try{
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(raw,'application/xml');
+    const parseErr=doc.querySelector('parsererror');
+    if(parseErr){result.innerHTML=`<div class="chk-item chk-err"><span class="chk-icon">❌</span><span>XML inválido: ${esc(parseErr.textContent.substring(0,120))}</span></div>`;return;}
+
+    const vast=doc.documentElement;
+    const version=vast.getAttribute('version')||'?';
+    const adEl=doc.querySelector('Ad');
+    const adId=adEl?.getAttribute('id')||'—';
+    const isWrapper=!!doc.querySelector('Wrapper');
+    const isInline=!!doc.querySelector('InLine');
+    const adType=isWrapper?'Wrapper':isInline?'InLine':'?';
+    const adTitle=doc.querySelector('AdTitle')?.textContent?.trim()||'—';
+    const advertiser=doc.querySelector('Advertiser')?.textContent?.trim()||'—';
+    const duration=doc.querySelector('Duration')?.textContent?.trim()||'—';
+    const skipoffset=doc.querySelector('Linear')?.getAttribute('skipoffset')||null;
+    const errorUrl=doc.querySelector('Error')?.textContent?.trim()||'—';
+    const clickThrough=doc.querySelector('ClickThrough')?.textContent?.trim()||'—';
+    const wrapperUrl=doc.querySelector('VASTAdTagURI')?.textContent?.trim()||null;
+
+    const mediaFiles=[...doc.querySelectorAll('MediaFile')].map(mf=>`${mf.getAttribute('type')||'?'} ${mf.getAttribute('width')||'?'}×${mf.getAttribute('height')||'?'} ${mf.getAttribute('bitrate')?mf.getAttribute('bitrate')+'kbps':''}`);
+
+    const trackingEvs=[...doc.querySelectorAll('Tracking')].map(t=>t.getAttribute('event')).filter(Boolean);
+    const evSet=[...new Set(trackingEvs)];
+    const impCount=doc.querySelectorAll('Impression').length;
+
+    const companionCount=doc.querySelectorAll('Companion').length;
+    const verifCount=doc.querySelectorAll('Verification,AdVerification').length;
+    const extEps=[...doc.querySelectorAll('Tracking')].filter(t=>t.textContent.includes('doubleclick')||t.textContent.includes('http')).length;
+
+    // Try to extract Floodlight params from impression URL
+    let flSrc='',flType='',flCat='';
+    const impUrl=doc.querySelector('Impression')?.textContent?.trim()||'';
+    const flMatch=impUrl.match(/src=([^;&]+).*?type=([^;&]+).*?cat=([^;&]+)/);
+    if(flMatch){flSrc=flMatch[1];flType=flMatch[2];flCat=flMatch[3];}
+
+    // Build result state for "load into form"
+    _inspectedState={
+      version,adType,flSrc,flType,flCat,
+      title:adTitle,duration,skipoffset,errorUrl,clickThrough,wrapperUrl,mediaFiles
+    };
+
+    const rows=[
+      ['Versão VAST',version],
+      ['Tipo de Ad',adType],
+      ['Ad ID',adId],
+      ['Título',adTitle],
+      advertiser!=='—'?['Anunciante',advertiser]:null,
+      isInline?['Duração',duration+(skipoffset?` <span class="insp-tag">skip ${skipoffset}</span>`:'')]:null,
+      isWrapper?['Wrapper URL',wrapperUrl||'—']:null,
+      flSrc?['FL src=',flSrc]:null,
+      flType?['FL type=',flType]:null,
+      flCat?['FL cat=',flCat]:null,
+      ['Impressions',impCount+' tag(s)'],
+      isInline&&mediaFiles.length?['MediaFiles',mediaFiles.map(m=>`<span class="insp-tag">${esc(m)}</span>`).join(' ')]:null,
+      isInline?['Eventos rastreados',`<div class="insp-ev-list">${evSet.map(e=>`<span class="insp-tag">${esc(e)}</span>`).join('')}</div>`]:null,
+      isInline&&errorUrl!=='—'?['Error URL',errorUrl]:null,
+      isInline?['Click-Through',clickThrough]:null,
+      companionCount?['Companions',companionCount]:null,
+      verifCount?['Verificação OMID',verifCount+' vendor(s)']:null,
+    ].filter(Boolean);
+
+    result.innerHTML=`
+      <div class="insp-grid">
+        ${rows.map(([k,v2])=>`<div class="insp-k">${k}</div><div class="insp-v">${v2}</div>`).join('')}
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--ok)">✅ XML válido — VAST ${version} ${adType}, ${evSet.length} evento(s) de tracking.</div>`;
+    document.getElementById('btn-load-inspected').style.display=(flSrc||flType||flCat||adTitle)?'':'none';
+  }catch(err){
+    result.innerHTML=`<div class="chk-item chk-err"><span class="chk-icon">❌</span><span>Erro ao analisar: ${esc(String(err))}</span></div>`;
+  }
+}
+function loadInspectedIntoForm(){
+  if(!_inspectedState)return;
+  const s=_inspectedState;
+  if(s.flSrc)document.getElementById('v-src').value=s.flSrc;
+  if(s.flType)document.getElementById('v-type').value=s.flType;
+  if(s.flCat)document.getElementById('v-cat').value=s.flCat;
+  if(s.title&&s.title!=='—')document.getElementById('v-title').value=s.title;
+  if(s.version&&['2.0','3.0','4.1'].includes(s.version))document.getElementById('v-version').value=s.version;
+  if(s.adType==='Wrapper'&&mode!=='wrapper'){const btn=document.querySelector('.tab[onclick*="\'wrapper\'"]');if(btn)switchMode('wrapper',btn);}
+  if(s.adType==='InLine'&&mode!=='inline'){const btn=document.querySelector('.tab[onclick*="\'inline\'"]');if(btn)switchMode('inline',btn);}
+  if(s.duration&&s.duration!=='—')document.getElementById('v-dur').value=s.duration;
+  if(s.wrapperUrl&&s.wrapperUrl!=='—')document.getElementById('v-wrapper-url').value=s.wrapperUrl;
+  if(s.clickThrough&&s.clickThrough!=='—')document.getElementById('v-click').value=s.clickThrough;
+  if(s.skipoffset){document.getElementById('v-skippable').checked=true;document.getElementById('v-skipoffset').value=s.skipoffset;toggleSkippable();}
+  gen();closeInspector();toast('Configuração carregada no formulário!');
+}
+
+// ─── EXPORT TRACKING CSV ───
+function downloadTrackingCSV(){
+  const items=document.querySelectorAll('.tracking-item');if(!items.length){toast('Sem URLs de tracking para exportar.');return;}
+  const lines=['evento,url'];
+  items.forEach(item=>{
+    const evEl=item.querySelector('[style*="font-weight:600"]');
+    const ev=(evEl?.textContent?.trim()||'').split(' ')[0];
+    item.querySelectorAll('.tracking-url-text').forEach(urlEl=>{
+      lines.push(`"${ev}","${urlEl.textContent.trim().replace(/"/g,'""')}"`);
+    });
+  });
+  const csv=lines.join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=(v('v-title')||'vast').replace(/\s+/g,'_').toLowerCase()+'_tracking.csv';
+  a.click();URL.revokeObjectURL(a.href);
+  toast('CSV exportado!');
 }
 
 // ─── HELP ───
 function openHelp(){document.getElementById('help-overlay').classList.add('open');}
 function closeHelp(){document.getElementById('help-overlay').classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeHelp();closeJsonModal();closeShareModal();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeHelp();closeJsonModal();closeShareModal();closeInspector();}});
 
 // ─── INIT ───
 renderMFList();renderCompList();renderEPList();renderVerifList();
-gen();genCM360();renderHistory();loadDarkPref();loadFromHash();
+gen();genCM360();renderHistory();renderFLFavs();loadDarkPref();loadFromHash();
 </script>
 </body>
 </html>
