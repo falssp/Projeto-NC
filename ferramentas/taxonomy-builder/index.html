@@ -453,13 +453,10 @@ body {
   display:flex;align-items:center;gap:6px;
   padding:8px 10px;
   background:var(--bg);border:1px solid var(--card-border);border-radius:6px;
+  transition:opacity .15s,border .1s;
 }
-.seg-order-btns{display:flex;flex-direction:column;gap:1px;}
-.seg-order-btn {
-  background:none;border:none;cursor:pointer;color:var(--faint);
-  font-size:12px;line-height:1;padding:1px 3px;
-}
-.seg-order-btn:hover{color:var(--fg);}
+.seg-order-btns{display:none;}
+.seg-order-btn{display:none;}
 
 .seg-editor-row input {
   flex:1;padding:5px 8px;
@@ -629,6 +626,36 @@ body {
 .batch-row-status{font-size:13px;flex-shrink:0;}
 .batch-summary{font-size:12px;color:var(--faint);margin-top:7px;}
 .batch-summary strong{color:var(--fg);}
+
+/* ==================== DICT SEARCH ==================== */
+.dict-search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.dict-search-input{flex:1;padding:7px 12px;border:1px solid var(--input-border);border-radius:8px;
+  font-size:13px;background:var(--input-bg);color:var(--fg);}
+.dict-search-input:focus{outline:none;border-color:var(--accent);}
+.dict-search-count{font-size:11px;color:var(--faint);white-space:nowrap;}
+.term-row.hidden{display:none;}
+
+/* ==================== DRAG SEGMENTS ==================== */
+.seg-editor-row{display:grid;grid-template-columns:18px 1fr 80px auto auto auto;align-items:center;
+  gap:6px;padding:5px 0;border-bottom:1px solid var(--card-border);cursor:default;}
+.seg-drag-handle{cursor:grab;color:var(--faint);font-size:14px;user-select:none;text-align:center;}
+.seg-drag-handle:active{cursor:grabbing;}
+.seg-editor-row.drag-over{border-top:2px solid var(--accent);}
+.seg-editor-row.dragging{opacity:.4;}
+
+/* ==================== JSON IMPORT MERGE ==================== */
+.import-json-modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;
+  justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);}
+.import-json-modal .modal-box{background:var(--card);border:1px solid var(--card-border);
+  border-radius:14px;padding:24px;max-width:420px;width:90%;display:flex;flex-direction:column;gap:14px;}
+.import-json-modal h3{margin:0;font-size:15px;}
+.import-json-modal p{margin:0;font-size:13px;color:var(--faint);}
+.import-json-opts{display:flex;flex-direction:column;gap:8px;}
+.import-json-opt{padding:10px 14px;border-radius:8px;border:2px solid var(--card-border);
+  cursor:pointer;font-size:13px;transition:border-color .12s,background .12s;}
+.import-json-opt:hover,.import-json-opt.selected{border-color:var(--accent);background:rgba(37,99,235,.06);}
+.import-json-opt strong{display:block;margin-bottom:2px;}
+.import-json-opt span{font-size:11px;color:var(--faint);}
 
 /* ==================== TOAST ==================== */
 #toast {
@@ -873,6 +900,32 @@ body {
   <div class="modal-actions">
     <button class="btn secondary" onclick="closePasteModal()">Cancelar</button>
     <button class="btn primary" id="confirmImportBtn" onclick="confirmImport()" disabled>Importar</button>
+  </div>
+</div>
+
+<!-- JSON Import Merge Modal -->
+<div id="importJsonModal" class="import-json-modal" style="display:none" onclick="if(event.target===this)closeImportJsonModal()">
+  <div class="modal-box">
+    <h3>Importar cliente JSON</h3>
+    <p id="importJsonDesc">Arquivo: <strong id="importJsonFileName"></strong><br>Cliente encontrado: <strong id="importJsonClientName"></strong></p>
+    <div class="import-json-opts">
+      <div class="import-json-opt selected" id="ijOptReplace" onclick="selectIjOpt('replace')">
+        <strong>Substituir</strong>
+        <span>Sobrescreve o cliente existente por completo (segmentos + dicionário + estruturas)</span>
+      </div>
+      <div class="import-json-opt" id="ijOptMerge" onclick="selectIjOpt('merge')">
+        <strong>Mesclar dicionários</strong>
+        <span>Mantém segmentos e estruturas atuais; adiciona termos novos sem remover os existentes</span>
+      </div>
+      <div class="import-json-opt" id="ijOptAdd" onclick="selectIjOpt('add')">
+        <strong>Importar como novo</strong>
+        <span>Salva como cliente separado, sem afetar o existente</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeImportJsonModal()">Cancelar</button>
+      <button class="btn primary" onclick="confirmImportJson()">Importar</button>
+    </div>
   </div>
 </div>
 
@@ -1168,11 +1221,9 @@ function renderModalBody(c) {
   const segsHtml = modalSegs.map((s,i)=>{
     const curSep = s.sep !== undefined ? s.sep : sep;
     return `
-    <div class="seg-editor-row" id="srow-${s.id}">
-      <div class="seg-order-btns">
-        <button class="seg-order-btn" title="Subir" onclick="moveModalSeg(${i},-1)">▲</button>
-        <button class="seg-order-btn" title="Descer" onclick="moveModalSeg(${i},1)">▼</button>
-      </div>
+    <div class="seg-editor-row" id="srow-${s.id}" draggable="true" data-seg-idx="${i}"
+      ondragstart="segDragStart(event,${i})" ondragover="segDragOver(event)" ondragleave="segDragLeave(event)" ondrop="segDrop(event,${i})">
+      <span class="seg-drag-handle" title="Arrastar para reordenar">⠿</span>
       <input type="text" placeholder="Nome do segmento" value="${esc(s.label)}" data-si="${i}"
         oninput="modalSegs[${i}].label=this.value">
       <button class="req-toggle ${s.required?'required':'optional'}" onclick="toggleReq(${i})">
@@ -1184,6 +1235,7 @@ function renderModalBody(c) {
           ${SEP_OPTS.map(o=>`<option value="${o}"${curSep===o?' selected':''}>${o===''?'∅':o}</option>`).join('')}
         </select>
       </div>
+      <button class="seg-order-btns" style="display:none"></button>
       <button class="seg-del" title="Remover" onclick="removeModalSeg(${i})">×</button>
     </div>`;
   }).join('');
@@ -1237,6 +1289,30 @@ function moveModalSeg(i, dir) {
 function toggleReq(i) {
   readModalInputs();
   modalSegs[i].required = !modalSegs[i].required;
+  renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
+}
+
+/* Drag-and-drop for segment reorder */
+let _dragSegIdx = null;
+function segDragStart(e, i) {
+  _dragSegIdx = i;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function segDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function segDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function segDrop(e, toIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(_dragSegIdx === null || _dragSegIdx === toIdx) { _dragSegIdx=null; return; }
+  readModalInputs();
+  const moved = modalSegs.splice(_dragSegIdx, 1)[0];
+  modalSegs.splice(toIdx, 0, moved);
+  _dragSegIdx = null;
   renderModalBody({name:document.getElementById('mName')?.value||'', separator:document.getElementById('mSep')?.value||'_'});
 }
 
@@ -1321,7 +1397,11 @@ function renderTermArea(c) {
   if(!terms.length) {
     listHtml='<div class="empty-state" style="padding:16px 0"><p>Nenhum termo em <strong>'+esc(seg.label)+'</strong>. Adicione abaixo.</p></div>';
   } else {
-    listHtml=`<div class="term-list">`+terms.map((t,i)=>`
+    listHtml=`<div class="dict-search-row">
+      <input class="dict-search-input" id="dictSearch" type="search" placeholder="Buscar em ${esc(seg.label)}…" oninput="filterDict(this.value)" autocomplete="off">
+      <span class="dict-search-count" id="dictSearchCount">${terms.length} termos</span>
+    </div>
+    <div class="term-list">` + terms.map((t,i)=>`
       <div class="term-row" id="tr-${i}">
         <span class="term-row-num">${i+1}</span>
         <span class="term-row-value">${esc(t.value)}</span>
@@ -1352,6 +1432,21 @@ function renderTermArea(c) {
     document.getElementById(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') addTerm(); });
   });
   setTimeout(()=>document.getElementById('tv')?.focus(),50);
+}
+
+/* Dict search filter */
+function filterDict(q) {
+  q = q.trim().toLowerCase();
+  const rows = document.querySelectorAll('.term-list .term-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const show = !q || text.includes(q);
+    row.classList.toggle('hidden', !show);
+    if(show) visible++;
+  });
+  const countEl = document.getElementById('dictSearchCount');
+  if(countEl) countEl.textContent = q ? `${visible} de ${rows.length}` : `${rows.length} termos`;
 }
 
 function autoSlug() {
@@ -1433,34 +1528,94 @@ function exportCSV(id) {
 
 function triggerImport() { document.getElementById('importInput').click(); }
 
+/* JSON import with merge dialog */
+let _pendingImportClients = [];
+let _pendingImportFileName = '';
+let _ijMode = 'replace'; // 'replace' | 'merge' | 'add'
+
 function handleImport(e) {
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=ev=>{
     try {
       const data=JSON.parse(ev.target.result);
-      const list=Array.isArray(data)?data:[data];
-      let imported=0;
-      list.forEach(c=>{
-        if(!c.id||!c.name||!c.segments) return;
-        if(!c.dictionary) c.dictionary={};
-        c.segments.forEach(s=>{ if(!c.dictionary[s.id]) c.dictionary[s.id]=[]; });
-        const idx=clients.findIndex(x=>x.id===c.id);
-        if(idx>=0) clients[idx]=c; else clients.push(c);
-        imported++;
-      });
-      if(imported) {
-        activeId=list[0]?.id||activeId;
-        activeSeg=null; builderVals={};
-        saveData(); renderClientSelect(); renderClientes();
-        showToast(`${imported} cliente(s) importado(s)`);
+      const list=(Array.isArray(data)?data:[data]).filter(c=>c.id&&c.name&&c.segments);
+      if(!list.length) { showToast('Nenhum cliente válido no arquivo'); return; }
+      list.forEach(c=>{ if(!c.dictionary) c.dictionary={}; c.segments.forEach(s=>{ if(!c.dictionary[s.id]) c.dictionary[s.id]=[]; }); });
+
+      // Check if any client already exists → show merge dialog
+      const conflicts = list.filter(c=>clients.find(x=>x.id===c.id));
+      if(conflicts.length > 0) {
+        _pendingImportClients = list;
+        _pendingImportFileName = f.name;
+        _ijMode = 'replace';
+        document.getElementById('importJsonFileName').textContent = f.name;
+        document.getElementById('importJsonClientName').textContent = conflicts.map(c=>c.name).join(', ');
+        document.getElementById('ijOptReplace').classList.add('selected');
+        document.getElementById('ijOptMerge').classList.remove('selected');
+        document.getElementById('ijOptAdd').classList.remove('selected');
+        document.getElementById('importJsonModal').style.display = 'flex';
       } else {
-        showToast('Nenhum cliente válido no arquivo');
+        applyImportClients(list, 'replace');
       }
     } catch { showToast('Erro ao ler o arquivo JSON'); }
   };
   r.readAsText(f);
   e.target.value='';
+}
+
+function selectIjOpt(mode) {
+  _ijMode = mode;
+  ['replace','merge','add'].forEach(m => {
+    document.getElementById('ijOpt'+m.charAt(0).toUpperCase()+m.slice(1))
+      .classList.toggle('selected', m===mode);
+  });
+}
+
+function closeImportJsonModal() {
+  document.getElementById('importJsonModal').style.display='none';
+  _pendingImportClients=[];
+}
+
+function confirmImportJson() {
+  applyImportClients(_pendingImportClients, _ijMode);
+  closeImportJsonModal();
+}
+
+function applyImportClients(list, mode) {
+  let imported=0;
+  list.forEach(incoming=>{
+    const idx=clients.findIndex(x=>x.id===incoming.id);
+    if(mode==='add') {
+      // Always create as new with fresh id
+      const copy=deepCopy(incoming);
+      copy.id = incoming.id+'-'+genId();
+      copy.name = incoming.name+' (importado)';
+      clients.push(copy);
+    } else if(mode==='merge' && idx>=0) {
+      // Merge dictionaries: add terms not already present (by value)
+      const existing=clients[idx];
+      incoming.segments.forEach(seg=>{
+        const newTerms=(incoming.dictionary[seg.id]||[]);
+        if(!existing.dictionary[seg.id]) existing.dictionary[seg.id]=[];
+        const existVals=new Set(existing.dictionary[seg.id].map(t=>t.value));
+        newTerms.forEach(t=>{ if(!existVals.has(t.value)) existing.dictionary[seg.id].push(t); });
+      });
+    } else {
+      // replace
+      if(idx>=0) clients[idx]=incoming; else clients.push(incoming);
+    }
+    imported++;
+  });
+  if(imported) {
+    activeId=list[0]?.id||activeId;
+    activeSeg=null; builderVals={};
+    saveData(); renderClientSelect(); renderClientes();
+    if(currentTab==='dicionario') renderDicionario();
+    showToast(`${imported} cliente(s) importado(s)`);
+  } else {
+    showToast('Nenhum cliente válido');
+  }
 }
 
 /* =============================================
