@@ -315,6 +315,11 @@ tr:hover td{background:#191d2e;}
     <button class="btn-ghost" id="btnExpandir" onclick="toggleTudo()" style="padding:4px 10px;font-size:11px;">⊞ Expandir tudo</button>
     <button class="btn-ghost" onclick="abrirExportador()" style="padding:4px 10px;font-size:11px;">⬇️ Exportar</button>
     <button class="btn-ghost" onclick="copiarLinkFiltrado()" style="padding:4px 10px;font-size:11px;" title="Copiar link com filtros ativos">🔗 Copiar link</button>
+    <div style="position:relative;display:inline-block;">
+      <button class="btn-ghost" onclick="togglePresetMenu()" style="padding:4px 10px;font-size:11px;" title="Presets de filtros">🔖 Presets</button>
+      <div id="presetMenu" class="filt-hist" style="right:0;left:auto;min-width:180px;"></div>
+    </div>
+    <button class="btn-ghost" onclick="salvarPreset()" style="padding:4px 10px;font-size:11px;" title="Salvar filtros atuais como preset">💾</button>
     <button class="btn-ghost" onclick="abrirFAQ()" style="padding:4px 10px;font-size:11px;">📖 Guia</button>
     <div class="topbar-sep"></div>
     <div class="nav-tabs">
@@ -914,7 +919,17 @@ function atualizarBtnLimpar() {
   var filho = (document.getElementById('filtFilhoVal')||{}).value;
   var inc = document.getElementById('filtIncompletos') && document.getElementById('filtIncompletos').checked;
   var busca = (document.getElementById('filtBusca')||{}).value;
-  btn.style.display = (ativos || datas || camp || filho || inc || kpiFiltroAtivo || busca) ? '' : 'none';
+  var total = ['filtBU','filtAgencia','filtVeiculo','filtStatusAdp','filtPlataforma','filtStatus','filtMarca']
+    .filter(function(id){ var el=document.getElementById(id); return el && el.value; }).length
+    + (document.getElementById('dateDe')&&document.getElementById('dateDe').value?1:0)
+    + (document.getElementById('dateAte')&&document.getElementById('dateAte').value?1:0)
+    + (camp?1:0) + (filho?1:0) + (inc?1:0) + (kpiFiltroAtivo?1:0) + (busca?1:0);
+  if (total > 0) {
+    btn.style.display = '';
+    btn.textContent = '✕ ' + total + ' filtro' + (total===1?'':'s') + ' ativo' + (total===1?'':'s');
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 function filtrado() {
@@ -1088,7 +1103,12 @@ function renderizar() {
     secInc.style.display = temFiltroEspecifico ? 'none' : 'block';
   }
   if (!rows.length) {
-    document.getElementById('mainContent').innerHTML='<div class="state-msg"><div class="icon">🔍</div><h3>Sem resultados</h3><p>Tente outros filtros.</p></div>';
+    var totalGeral = (dados.rows||[]).length;
+    document.getElementById('mainContent').innerHTML='<div class="state-msg"><div class="icon">🔍</div><h3>Sem resultados</h3>'
+      +'<p style="color:var(--mut);font-size:12px;">Nenhum ticket encontrado com os filtros ativos.<br>'
+      +(totalGeral?'<span style="color:var(--txt2);">'+totalGeral+' tickets no total.</span> ':'')+'</p>'
+      +'<button class="btn-ghost" onclick="limparFiltros()" style="margin-top:12px;font-size:12px;">✕ Limpar todos os filtros</button>'
+      +'</div>';
     return;
   }
   var arvore={};
@@ -1118,8 +1138,14 @@ function renderizar() {
         var mkId=esc(bu+'_'+ag+'_'+mk);
         html+='<div class="mk-block"><div class="mk-header" onclick="toggleSec(\'mk_'+mkId+'\',\'mkA_'+mkId+'\')"><div class="mk-dot" style="background:'+cor+'"></div><span class="mk-name">'+mk+'</span><span class="mk-count">'+tickets(totMk)+'</span><span id="mkA_'+mkId+'" style="color:var(--mut);font-size:11px;transition:transform .2s;margin-left:6px;transform:rotate(-90deg)">▼</span></div><div id="mk_'+mkId+'" style="display:none">';
         html+='<div style="overflow-x:auto;"><table><thead><tr>'
-          +'<th>Ticket filho</th><th>Veículo</th><th>Qtd Tax</th>'
-          +'<th>Status ADP</th><th>Plataforma</th><th>Status</th><th>Responsável</th><th>Última atu.</th>'
+          +_thSort('SUMMARY (FILHO)','Ticket filho')
+          +_thSort('VEÍCULO','Veículo')
+          +_thSort('QTD TAX.','Qtd Tax')
+          +_thSort('STATUS ADP (PAI)','Status ADP')
+          +_thSort('PLATAFORMA','Plataforma')
+          +_thSort('STATUS','Status')
+          +_thSort('RESPONSÁVEL','Responsável')
+          +_thSort('ÚLT. ATU.','Última atu.')
           +'</tr></thead><tbody>';
         Object.keys(arvore[bu][ag][mk]).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); }).forEach(function(camp){
           var campRows=arvore[bu][ag][mk][camp];
@@ -1171,7 +1197,7 @@ function renderizar() {
             +(statusAdp&&statusAdp!=='Não Identificado'?'<span class="camp-tag" style="margin-left:4px;font-size:10px;padding:1px 6px;border-radius:3px;background:var(--surf2);color:var(--txt2);border:1px solid var(--brd);">'+statusAdp+'</span>':'')
             +'<span style="float:right;color:var(--mut);font-size:10px;">'+tickets(totCamp)+'</span>'
             +'</td></tr>';
-          campRows.forEach(function(r){
+          _sortRows(campRows).forEach(function(r){
             var fsum=gS(r,'SUMMARY (FILHO)'), vei=gS(r,'VEÍCULO')||'—';
             var sts=gS(r,'STATUS')||'—';
             var ass=gS(r,'RESPONSÁVEL')||'—';
@@ -1634,6 +1660,106 @@ function _mostrarNotifToken(av) {
       : 'Token do Jira vence em ' + av.dias + ' dia' + (av.dias===1?'':'s') + ' (' + av.expira + ')';
     new Notification('[UL] Dashboard_Taxonomias', { body: msg });
   } catch(e){}
+}
+
+// ── Ordenação por coluna ───────────────────────────────────────
+var _sortCol = null, _sortDir = 1;
+function _thSort(col, label) {
+  var arrow = _sortCol===col ? (_sortDir===1?' ↑':' ↓') : '';
+  var style = 'cursor:pointer;user-select:none;' + (_sortCol===col?'color:var(--acc);':'');
+  return '<th style="'+style+'" onclick="setSortCol(\''+col+'\')">'+label+arrow+'</th>';
+}
+function setSortCol(col) {
+  if (_sortCol === col) _sortDir *= -1; else { _sortCol = col; _sortDir = 1; }
+  renderizar();
+}
+function _sortRows(rows) {
+  if (!_sortCol) return rows;
+  return rows.slice().sort(function(a, b){
+    var av = String(gS(a,_sortCol)||'').toLowerCase();
+    var bv = String(gS(b,_sortCol)||'').toLowerCase();
+    return av < bv ? -_sortDir : av > bv ? _sortDir : 0;
+  });
+}
+
+// ── Presets de filtros ─────────────────────────────────────────
+function _coletarFiltrosAtivos() {
+  var ids = ['filtBU','filtAgencia','filtMarca','filtVeiculo','filtStatusAdp','filtPlataforma','filtStatus'];
+  var obj = {};
+  ids.forEach(function(id){ var el=document.getElementById(id); if(el&&el.value) obj[id]=el.value; });
+  var de=document.getElementById('dateDe'), ate=document.getElementById('dateAte');
+  if(de&&de.value) obj.dateDe=de.value;
+  if(ate&&ate.value) obj.dateAte=ate.value;
+  var busca=(document.getElementById('filtBusca')||{}).value;
+  if(busca) obj.filtBusca=busca;
+  var inc=document.getElementById('filtIncompletos');
+  if(inc&&inc.checked) obj.filtIncompletos=true;
+  return obj;
+}
+function salvarPreset() {
+  var nome = prompt('Nome para este preset de filtros:');
+  if (!nome || !nome.trim()) return;
+  try {
+    var presets = JSON.parse(localStorage.getItem('djira-presets')||'[]');
+    presets = presets.filter(function(p){ return p.nome !== nome.trim(); });
+    presets.unshift({ nome: nome.trim(), filtros: _coletarFiltrosAtivos() });
+    if (presets.length > 8) presets = presets.slice(0,8);
+    localStorage.setItem('djira-presets', JSON.stringify(presets));
+    showToast('💾 Preset "'+nome.trim()+'" salvo!');
+    renderMenuPresets();
+  } catch(e){}
+}
+function carregarPreset(nome) {
+  try {
+    var presets = JSON.parse(localStorage.getItem('djira-presets')||'[]');
+    var p = presets.find(function(x){ return x.nome===nome; });
+    if (!p) return;
+    limparFiltros();
+    var f = p.filtros;
+    ['filtBU','filtAgencia','filtMarca','filtVeiculo','filtStatusAdp','filtPlataforma','filtStatus'].forEach(function(id){
+      if(f[id]) { var el=document.getElementById(id); if(el) el.value=f[id]; }
+    });
+    if(f.dateDe){ var el=document.getElementById('dateDe'); if(el) el.value=f.dateDe; }
+    if(f.dateAte){ var el=document.getElementById('dateAte'); if(el) el.value=f.dateAte; }
+    if(f.filtBusca){ var el=document.getElementById('filtBusca'); if(el) el.value=f.filtBusca; }
+    if(f.filtIncompletos){ var el=document.getElementById('filtIncompletos'); if(el) el.checked=true; }
+    renderizar();
+    showToast('📂 Preset "'+nome+'" carregado');
+    document.getElementById('presetMenu').classList.remove('show');
+  } catch(e){}
+}
+function excluirPreset(nome, evt) {
+  evt.stopPropagation();
+  try {
+    var presets = JSON.parse(localStorage.getItem('djira-presets')||'[]');
+    presets = presets.filter(function(p){ return p.nome!==nome; });
+    localStorage.setItem('djira-presets', JSON.stringify(presets));
+    showToast('🗑️ Preset removido');
+    renderMenuPresets();
+  } catch(e){}
+}
+function renderMenuPresets() {
+  var menu = document.getElementById('presetMenu');
+  if (!menu) return;
+  try {
+    var presets = JSON.parse(localStorage.getItem('djira-presets')||'[]');
+    if (!presets.length) { menu.innerHTML='<div style="padding:10px 12px;font-size:11px;color:var(--mut);">Nenhum preset salvo.</div>'; return; }
+    menu.innerHTML = presets.map(function(p){
+      return '<div class="filt-hist-item" onclick="carregarPreset(\''+p.nome.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;justify-content:space-between;">'
+        +'<span>'+p.nome+'</span>'
+        +'<span onclick="excluirPreset(\''+p.nome.replace(/'/g,"\\'")+'\',event)" style="color:var(--mut);font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);">✕</span>'
+        +'</div>';
+    }).join('');
+  } catch(e){}
+}
+function togglePresetMenu() {
+  var menu = document.getElementById('presetMenu');
+  if (!menu) return;
+  renderMenuPresets();
+  menu.classList.toggle('show');
+  if (menu.classList.contains('show')) {
+    setTimeout(function(){ document.addEventListener('click', function fn(e){ if(!menu.contains(e.target)){menu.classList.remove('show');} document.removeEventListener('click',fn); },{once:true}); }, 10);
+  }
 }
 
 // ── Toast ──────────────────────────────────────────────────────
