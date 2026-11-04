@@ -211,6 +211,8 @@ tr:hover td{background:#191d2e;}
 .nav-tab{padding:4px 12px;border:none;background:none;font-family:'DM Sans',system-ui,sans-serif;font-size:12px;font-weight:500;color:var(--mut);cursor:pointer;white-space:nowrap;border-radius:6px;transition:all .15s}
 .nav-tab.on{color:#fff;background:var(--acc);font-weight:600}
 .nav-tab:hover:not(.on){color:var(--txt2);background:var(--surf2)}
+.nav-tab-badge{display:inline-block;background:rgba(255,255,255,.18);color:inherit;font-size:10px;font-weight:700;padding:0 5px;border-radius:10px;margin-left:4px;line-height:16px;vertical-align:middle;}
+.nav-tab.on .nav-tab-badge{background:rgba(255,255,255,.25);}
 .topbar-sep{width:1px;height:20px;background:var(--brd);margin:0 8px;align-self:center;}
 .nav-pane{display:none}.nav-pane.on{display:block}
 #djira-pane-faq,#djira-pane-ia{padding:20px;}
@@ -289,7 +291,7 @@ tr:hover td{background:#191d2e;}
     <div class="topbar-sep"></div>
     <div class="nav-tabs">
       <button class="nav-tab on" onclick="djiraTabSwitch('main')">📋 Dashboard</button>
-      <button class="nav-tab" onclick="djiraTabSwitch('faq')">❓ Dúvidas</button>
+      <button class="nav-tab" onclick="djiraTabSwitch('faq')">❓ Dúvidas <span class="nav-tab-badge" id="faqBadge" style="display:none"></span></button>
       <button class="nav-tab" onclick="djiraTabSwitch('ia')">🤖 Análise IA</button>
     </div>
   </div>
@@ -338,6 +340,7 @@ tr:hover td{background:#191d2e;}
     </div>
     <div class="filter-group" style="align-self:flex-end;">
       <button class="btn-limpar" onclick="limparFiltros()">Limpar filtros</button>
+      <button id="btnLimparAtivo" class="btn-limpar" onclick="limparFiltros()" style="display:none;margin-top:4px;background:var(--acc);color:#fff;border-color:var(--acc);">✕ Limpar ativos</button>
     </div>
   </div>
   <div class="filters-grid" style="margin-top:6px;">
@@ -437,11 +440,16 @@ function toggleKpi(tipo) {
   kpiFiltroAtivo = (kpiFiltroAtivo === tipo) ? null : tipo;
   atualizarBannerKpi();
   renderizar();
+  if (kpiFiltroAtivo) {
+    var el = document.getElementById('mainContent');
+    if (el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth', block:'start'}); }, 80);
+  }
 }
 function limparKpi() {
   kpiFiltroAtivo = null;
   atualizarBannerKpi();
   renderizar();
+  atualizarBtnLimpar();
 }
 function atualizarBannerKpi() {
   var banner = document.getElementById('kpiBanner');
@@ -859,6 +867,19 @@ function limparFiltros() {
   limparFilho();
   popularMarcas();
   limparKpi();
+  atualizarBtnLimpar();
+}
+
+function atualizarBtnLimpar() {
+  var btn = document.getElementById('btnLimparAtivo');
+  if (!btn) return;
+  var ativos = ['filtBU','filtAgencia','filtVeiculo','filtStatusAdp','filtPlataforma','filtStatus','filtMarca']
+    .some(function(id){ var el=document.getElementById(id); return el && el.value; });
+  var datas = ['dateDe','dateAte'].some(function(id){ var el=document.getElementById(id); return el && el.value; });
+  var camp = (document.getElementById('filtCampanhaVal')||{}).value;
+  var filho = (document.getElementById('filtFilhoVal')||{}).value;
+  var inc = document.getElementById('filtIncompletos') && document.getElementById('filtIncompletos').checked;
+  btn.style.display = (ativos || datas || camp || filho || inc || kpiFiltroAtivo) ? '' : 'none';
 }
 
 function filtrado() {
@@ -985,9 +1006,16 @@ function renderKPIs(rows) {
   atualizarBannerKpi();
 }
 
+var KPI_TOOLTIPS = {
+  'todos':    'Tickets processados pelo dashboard:\nSubtarefas + Solos (sem filhos)',
+  'concluido':'% de tickets com status Concluído\nClique para filtrar',
+  'qa':       'Tickets em status QA / Revisão\nClique para filtrar',
+  'pendente': 'Tickets ainda pendentes\nClique para filtrar'
+};
 function kpiBtn(tipo, v, l, c) {
   var activeClass = kpiFiltroAtivo===tipo ? ' active' : '';
-  return '<div class="kpi'+activeClass+'" id="kpi-'+tipo+'" onclick="toggleKpi(\''+tipo+'\')">'
+  var tip = KPI_TOOLTIPS[tipo] ? ' title="'+KPI_TOOLTIPS[tipo]+'"' : '';
+  return '<div class="kpi'+activeClass+'" id="kpi-'+tipo+'" onclick="toggleKpi(\''+tipo+'\')"'+tip+'>'
     +'<div class="kpi-value '+c+'">'+v+'</div>'
     +'<div class="kpi-label">'+l+'</div>'
     +'</div>';
@@ -1009,6 +1037,7 @@ function stsClass(s){
 function renderizar() {
   var rows=filtrado();
   renderKPIs(rows);
+  atualizarBtnLimpar();
   var secInc = document.getElementById('incSection');
   if (secInc && incorretos && incorretos.length) {
     var temFiltroEspecifico = document.getElementById('filtCampanhaVal').value
@@ -1457,6 +1486,23 @@ function abrirFAQ() { document.getElementById('faqOverlay').style.display='flex'
 function fecharFAQ() { document.getElementById('faqOverlay').style.display='none'; }
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('faqOverlay').addEventListener('click', function(e){ if(e.target===this) fecharFAQ(); });
+
+  // Badge da aba Dúvidas
+  var badge = document.getElementById('faqBadge');
+  if (badge) { badge.textContent = DJIRA_FAQ.length; badge.style.display=''; }
+
+  // Atalhos de teclado: G = Guia, Esc = fechar modais
+  document.addEventListener('keydown', function(e){
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    if (e.key === 'g' || e.key === 'G') { abrirFAQ(); }
+    if (e.key === 'Escape') {
+      fecharFAQ();
+      var exp = document.getElementById('modalExportador');
+      if (exp) exp.style.display = 'none';
+      var cfg = document.getElementById('cfgOverlay');
+      if (cfg) cfg.classList.remove('show');
+    }
+  });
 });
 
 
