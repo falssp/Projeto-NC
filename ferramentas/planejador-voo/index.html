@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planejador de Voo (Flight) — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--border:#d0d5f0;--text:#1a1a2e;--muted:#5a5f8a;--green:#1b8c3e;--red:#c0392b;--warn:#e67e22;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--border:#2a2d4a;--text:#e8ecff;--muted:#8890c0;--light:#1e2140;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;}
+header a:hover{color:#fff;}
+h1{color:#fff;font-size:1.4rem;font-weight:700;}
+.sub{color:rgba(255,255,255,.75);font-size:.85rem;margin-top:.2rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem;}
+.wrap{max-width:980px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+@media(max-width:650px){.grid2,.grid3{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:1.2rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em;}
+input,select{width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--bg);color:var(--text);transition:.2s;}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.field{margin-bottom:.9rem;}
+.btn{padding:.5rem 1rem;border:none;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer;font-size:.88rem;transition:.15s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-sm{padding:.35rem .7rem;font-size:.78rem;}
+.sep{border:none;border-top:1px solid var(--border);margin:1rem 0;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.8rem;margin-bottom:1rem;}
+.kpi{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.8rem;text-align:center;}
+.kpi-val{font-size:1.3rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.kpi-lbl{font-size:.72rem;color:var(--muted);margin-top:.2rem;}
+.ok-box{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:#1b5e20;margin-bottom:.5rem;}
+.warn-box{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:#7d5a00;margin-bottom:.5rem;}
+.bad-box{background:#fce4e4;border:1px solid #ef9a9a;border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:var(--red);margin-bottom:.5rem;}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+th{text-align:left;padding:.4rem .6rem;color:var(--muted);font-weight:600;border-bottom:2px solid var(--border);}
+td{padding:.4rem .6rem;border-bottom:1px solid var(--border);}
+.bar-wrap{background:var(--border);border-radius:4px;height:8px;overflow:hidden;margin-top:.3rem;}
+.bar-fill{height:100%;border-radius:4px;transition:.3s;}
+.pacing-chip{display:inline-block;padding:.15rem .4rem;border-radius:4px;font-size:.72rem;font-weight:700;}
+.gantt-row{display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem;font-size:.78rem;}
+.gantt-label{width:90px;flex-shrink:0;color:var(--muted);}
+.gantt-track{flex:1;background:var(--border);border-radius:4px;height:18px;position:relative;overflow:hidden;}
+.gantt-fill{position:absolute;top:0;height:100%;border-radius:4px;transition:.3s;}
+.gantt-today{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--red);z-index:2;}
+.gantt-label-inside{position:absolute;right:4px;top:0;bottom:0;display:flex;align-items:center;font-size:.7rem;color:#fff;font-weight:600;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div style="font-size:.8rem;margin-bottom:.3rem;"><a href="../">← Ferramentas AdOps</a></div>
+    <h1>✈ Planejador de Voo (Flight)</h1>
+    <div class="sub">Distribua entrega por semana/mês, monitore pacing e projete underspend/overspend</div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+
+<div class="wrap">
+  <div class="grid2">
+    <!-- INPUTS -->
+    <div class="card">
+      <h2>Parâmetros do flight</h2>
+      <div class="field"><label>Nome da campanha</label><input type="text" id="camp-name" placeholder="ex: Brand Verão — Display"></div>
+      <div class="grid2">
+        <div class="field"><label>Data de início</label><input type="date" id="start-date" oninput="calc()"></div>
+        <div class="field"><label>Data de fim</label><input type="date" id="end-date" oninput="calc()"></div>
+      </div>
+      <div class="field"><label>Budget total (R$)</label><input type="number" id="total-budget" placeholder="50000" oninput="calc()"></div>
+      <div class="field"><label>Já entregue / gasto até hoje (R$)</label><input type="number" id="spent" placeholder="0" value="0" oninput="calc()"></div>
+      <div class="field">
+        <label>Estratégia de pacing</label>
+        <select id="pacing" onchange="calc()">
+          <option value="even">Even (distribuição uniforme)</option>
+          <option value="frontload">Front-load (pesado no início)</option>
+          <option value="backload">Back-load (pesado no fim)</option>
+          <option value="custom">Personalizado por semana</option>
+        </select>
+      </div>
+      <div class="field" id="frontload-factor-wrap" style="display:none;">
+        <label>Fator de concentração (%)</label>
+        <input type="number" id="frontload-factor" placeholder="60" value="60" oninput="calc()">
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem;">% do budget na primeira metade do período</div>
+      </div>
+      <div class="sep"></div>
+      <div class="grid2">
+        <div class="field"><label>CPM/CPC médio (R$)</label><input type="number" id="avg-cpm" placeholder="12.00" step="0.01" oninput="calc()"></div>
+        <div class="field"><label>Metric unit</label><select id="metric-unit" onchange="calc()"><option value="cpm">CPM → impressões</option><option value="cpc">CPC → cliques</option></select></div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="calc()">Calcular</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadSample()">Exemplo</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAll()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY KPIs -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="card">
+        <h2>Resumo do flight</h2>
+        <div class="kpi-grid" id="kpis">
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Dias totais</div></div>
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Dias restantes</div></div>
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Budget/dia ideal</div></div>
+          <div class="kpi"><div class="kpi-val">—</div><div class="kpi-lbl">Budget restante</div></div>
+        </div>
+        <div id="pacing-verdict"></div>
+      </div>
+
+      <div class="card">
+        <h2>Progresso e pacing atual</h2>
+        <div id="progress-section"><p style="color:var(--muted);font-size:.85rem;">Preencha as datas e valores para ver o pacing.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEKLY TABLE -->
+  <div class="card">
+    <h2>Distribuição semanal</h2>
+    <div id="weekly-section"><p style="color:var(--muted);font-size:.85rem;">Preencha as datas e o budget para ver a distribuição semanal.</p></div>
+  </div>
+
+  <!-- GANTT-LIKE TIMELINE -->
+  <div class="card">
+    <h2>Timeline do flight</h2>
+    <div id="timeline-section"><p style="color:var(--muted);font-size:.85rem;">Preencha as datas para ver a timeline.</p></div>
+  </div>
+</div>
+
+<script>
+const MS_DAY=86400000;
+
+function parseDate(str){return str?new Date(str+'T00:00:00'):null;}
+function fmtDate(d){return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});}
+function fmtCur(n){return'R$ '+(+n).toFixed(2).replace('.',',');}
+function fmt(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'k';return Math.round(n).toLocaleString('pt-BR');}
+function daysBetween(a,b){return Math.round((b-a)/MS_DAY);}
+
+function getPacingWeights(strategy,weeks,factor){
+  const w=Array(weeks).fill(1/weeks);
+  if(strategy==='even') return w;
+  const f=(factor||60)/100;
+  if(strategy==='frontload'){
+    const half=Math.ceil(weeks/2);
+    const perFront=f/half;
+    const perBack=(1-f)/(weeks-half);
+    return w.map((_,i)=>i<half?perFront:perBack);
+  }
+  if(strategy==='backload'){
+    const half=Math.ceil(weeks/2);
+    const perFront=(1-f)/half;
+    const perBack=f/(weeks-half);
+    return w.map((_,i)=>i<half?perFront:perBack);
+  }
+  return w;
+}
+
+function calc(){
+  const start=parseDate(document.getElementById('start-date').value);
+  const end=parseDate(document.getElementById('end-date').value);
+  const budget=parseFloat(document.getElementById('total-budget').value)||0;
+  const spent=parseFloat(document.getElementById('spent').value)||0;
+  const pacing=document.getElementById('pacing').value;
+  const factor=parseFloat(document.getElementById('frontload-factor').value)||60;
+  const cpm=parseFloat(document.getElementById('avg-cpm').value)||0;
+  const unit=document.getElementById('metric-unit').value;
+
+  const ffw=document.getElementById('frontload-factor-wrap');
+  ffw.style.display=(pacing==='frontload'||pacing==='backload')?'block':'none';
+
+  if(!start||!end||!budget||end<=start){
+    ['kpis','progress-section','weekly-section','timeline-section'].forEach(id=>{
+      document.getElementById(id).innerHTML='<p style="color:var(--muted);font-size:.85rem;">Preencha todos os campos para calcular.</p>';
+    });
+    return;
+  }
+
+  const today=new Date();today.setHours(0,0,0,0);
+  const totalDays=daysBetween(start,end)+1;
+  const elapsed=Math.max(0,Math.min(daysBetween(start,today),totalDays));
+  const remaining=Math.max(0,totalDays-elapsed);
+  const budgetRemaining=Math.max(0,budget-spent);
+  const pctElapsed=elapsed/totalDays;
+  const pctSpent=spent/budget;
+  const idealSpentByNow=budget*(elapsed/totalDays);
+  const pacingRatio=elapsed>0?(pctSpent/pctElapsed):null;
+  const dailyIdeal=budget/totalDays;
+  const dailyNeeded=remaining>0?budgetRemaining/remaining:0;
+
+  // KPIs
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${totalDays}</div><div class="kpi-lbl">Dias totais</div></div>
+    <div class="kpi"><div class="kpi-val">${remaining}</div><div class="kpi-lbl">Dias restantes</div></div>
+    <div class="kpi"><div class="kpi-val">${fmtCur(dailyIdeal)}</div><div class="kpi-lbl">Budget/dia ideal</div></div>
+    <div class="kpi"><div class="kpi-val">${fmtCur(budgetRemaining)}</div><div class="kpi-lbl">Budget restante</div></div>
+  `;
+
+  // Pacing verdict
+  let verdict='';
+  if(today<start) verdict='<div class="ok-box">🗓 Flight ainda não iniciou.</div>';
+  else if(today>end) verdict='<div class="ok-box">🏁 Flight encerrado.</div>';
+  else if(pacingRatio===null) verdict='<div class="warn-box">⚠️ Sem dados de spend para calcular pacing.</div>';
+  else if(pacingRatio<0.75) verdict=`<div class="bad-box">❌ UNDERPACING grave: apenas ${(pctSpent*100).toFixed(1)}% gasto vs ${(pctElapsed*100).toFixed(1)}% do período. Ajuste bid/targeting.</div>`;
+  else if(pacingRatio<0.9) verdict=`<div class="warn-box">⚠️ Leve underpacing (${(pctSpent*100).toFixed(1)}% gasto). Budget diário necessário: ${fmtCur(dailyNeeded)} vs ideal ${fmtCur(dailyIdeal)}.</div>`;
+  else if(pacingRatio>1.15) verdict=`<div class="bad-box">🔴 OVERSPEND: ${(pctSpent*100).toFixed(1)}% gasto com apenas ${(pctElapsed*100).toFixed(1)}% do período. Reduza bid ou pause.</div>`;
+  else if(pacingRatio>1.05) verdict=`<div class="warn-box">⚠️ Leve overpacing. Monitore para não exceder o budget total.</div>`;
+  else verdict=`<div class="ok-box">✅ Pacing saudável (${(pacingRatio*100).toFixed(0)}% — dentro do esperado).</div>`;
+  document.getElementById('pacing-verdict').innerHTML=verdict;
+
+  // Progress section
+  const spentPct=Math.min(pctSpent,1);
+  const idealPct=Math.min(pctElapsed,1);
+  document.getElementById('progress-section').innerHTML=`
+    <div style="margin-bottom:.8rem;">
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem;"><span>Budget gasto</span><span>${fmtCur(spent)} / ${fmtCur(budget)} (${(pctSpent*100).toFixed(1)}%)</span></div>
+      <div class="bar-wrap" style="height:14px;"><div class="bar-fill" style="width:${spentPct*100}%;background:${spentPct>1?'var(--red)':spentPct>idealPct+0.1?'var(--warn)':'var(--azul)'}"></div></div>
+    </div>
+    <div style="margin-bottom:.8rem;">
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem;"><span>Período decorrido</span><span>${elapsed} / ${totalDays} dias (${(pctElapsed*100).toFixed(1)}%)</span></div>
+      <div class="bar-wrap" style="height:14px;"><div class="bar-fill" style="width:${idealPct*100}%;background:var(--muted)"></div></div>
+    </div>
+    ${cpm&&remaining>0?`<div style="font-size:.8rem;color:var(--muted);">Projeção de entrega com budget restante (${unit.toUpperCase()}): <strong>${unit==='cpm'?fmt(budgetRemaining/cpm*1000)+' impressões':fmt(budgetRemaining/cpm)+' cliques'}</strong> nos próximos ${remaining} dias</div>`:''}
+  `;
+
+  // Weekly breakdown
+  const weeks=[];
+  let cur=new Date(start);
+  while(cur<=end){
+    const ws=new Date(cur);
+    const we=new Date(Math.min(cur.getTime()+6*MS_DAY,end.getTime()));
+    weeks.push({start:new Date(ws),end:new Date(we),days:daysBetween(ws,we)+1});
+    cur.setDate(cur.getDate()+7);
+  }
+  const weights=getPacingWeights(pacing,weeks.length,factor);
+  const weekBudgets=weeks.map((w,i)=>budget*weights[i]);
+
+  let weeklyHtml=`<table><thead><tr><th>Semana</th><th>Período</th><th>Dias</th><th>Budget planejado</th><th>${unit==='cpm'?'Impr. projetadas':'Cliques projetados'}</th><th>Pacing</th></tr></thead><tbody>`;
+  weeks.forEach((w,i)=>{
+    const isNow=today>=w.start&&today<=w.end;
+    const isPast=w.end<today;
+    const isFuture=w.start>today;
+    const wb=weekBudgets[i];
+    const proj=cpm?(unit==='cpm'?wb/cpm*1000:wb/cpm):null;
+    const dailyBudgetWeek=wb/w.days;
+    const pace=isPast?null:isNow?'current':'future';
+    weeklyHtml+=`<tr style="${isNow?'background:var(--light);font-weight:600;':''}">
+      <td>S${i+1}${isNow?' ◀':''}</td>
+      <td>${fmtDate(w.start)} – ${fmtDate(w.end)}</td>
+      <td>${w.days}</td>
+      <td>${fmtCur(wb)}<br><span style="font-size:.7rem;color:var(--muted);">${fmtCur(dailyBudgetWeek)}/dia</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;">${proj?fmt(proj):'—'}</td>
+      <td><span class="pacing-chip" style="background:${isNow?'var(--azul)20':isPast?'var(--border)':'var(--bg)'};color:${isNow?'var(--azul)':isPast?'var(--muted)':'var(--muted)'};">${isPast?'✓ Passado':isNow?'▶ Atual':'Futuro'}</span></td>
+    </tr>`;
+  });
+  weeklyHtml+='</tbody></table>';
+  document.getElementById('weekly-section').innerHTML=weeklyHtml;
+
+  // Timeline gantt
+  const totalW=100;
+  const todayPct=Math.min(1,elapsed/totalDays)*100;
+  let ganttHtml='<div style="position:relative;">';
+  ganttHtml+=`<div class="gantt-row"><div class="gantt-label" style="font-size:.7rem;color:var(--muted);">${fmtDate(start)}</div><div class="gantt-track"><div class="gantt-fill" style="left:0;width:${todayPct}%;background:var(--azul);opacity:.35;"></div><div class="gantt-today" style="left:${todayPct}%;"></div>${budget>0&&spent>0?`<div class="gantt-fill" style="left:0;width:${Math.min(spentPct*100,100)}%;background:var(--azul);opacity:.8;"><div class="gantt-label-inside">${(spentPct*100).toFixed(0)}%</div></div>`:''}
+    </div><div class="gantt-label" style="width:auto;text-align:right;font-size:.7rem;">${fmtDate(end)}</div></div>`;
+
+  // Quarter marks
+  const qLabels=['0%','25%','50%','75%','100%'];
+  ganttHtml+=`<div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);padding:0 90px 0 90px;">${qLabels.map(l=>`<span>${l}</span>`).join('')}</div>`;
+
+  // Week rows
+  weeks.forEach((w,i)=>{
+    const lPct=daysBetween(start,w.start)/totalDays*100;
+    const wPct=(w.days/totalDays)*100;
+    const isNow=today>=w.start&&today<=w.end;
+    ganttHtml+=`<div class="gantt-row" style="margin-top:.3rem;">
+      <div class="gantt-label">S${i+1}</div>
+      <div class="gantt-track">
+        <div class="gantt-fill" style="left:${lPct}%;width:${wPct}%;background:${isNow?'var(--azul)':'var(--muted)'};opacity:${isNow?'.5':'.25'};"></div>
+        ${todayPct>=lPct&&todayPct<=lPct+wPct?`<div class="gantt-today" style="left:${todayPct}%;"></div>`:''}
+        <div class="gantt-label-inside" style="right:${100-(lPct+wPct)}%;left:${lPct}%;color:${isNow?'var(--azul)':'var(--muted)'};">${fmtCur(weekBudgets[i])}</div>
+      </div>
+    </div>`;
+  });
+  ganttHtml+=`<div style="font-size:.72rem;color:var(--red);margin-top:.4rem;">▌ = Hoje (${fmtDate(today)})</div>`;
+  ganttHtml+='</div>';
+  document.getElementById('timeline-section').innerHTML=ganttHtml;
+}
+
+function loadSample(){
+  const today=new Date();
+  const start=new Date(today);start.setDate(start.getDate()-10);
+  const end=new Date(today);end.setDate(end.getDate()+20);
+  document.getElementById('start-date').value=start.toISOString().split('T')[0];
+  document.getElementById('end-date').value=end.toISOString().split('T')[0];
+  document.getElementById('total-budget').value=50000;
+  document.getElementById('spent').value=14800;
+  document.getElementById('pacing').value='even';
+  document.getElementById('avg-cpm').value=12;
+  document.getElementById('metric-unit').value='cpm';
+  document.getElementById('camp-name').value='Brand Verão — Display';
+  calc();
+}
+
+function clearAll(){
+  ['start-date','end-date','total-budget','spent','avg-cpm','camp-name'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('spent').value=0;
+  document.getElementById('pacing').value='even';
+  document.getElementById('metric-unit').value='cpm';
+  calc();
+}
+
+function toggleTheme(){
+  const html=document.documentElement;
+  html.setAttribute('data-theme',html.getAttribute('data-theme')==='dark'?'light':'dark');
+}
+</script>
+</body>
+</html>
