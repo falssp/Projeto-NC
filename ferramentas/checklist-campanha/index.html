@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checklist de Campanha — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;
+  --muted:#8892b0;--light:#1e2548;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+header a:hover{color:#fff}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:620px){.form-row{grid-template-columns:1fr}}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-danger:hover{background:#fee2e2}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* Progress */
+.progress-wrap{background:var(--border);border-radius:6px;height:10px;margin-bottom:6px;overflow:hidden}
+.progress-bar{height:100%;border-radius:6px;transition:width .4s ease}
+.prog-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab{padding:9px 18px;font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* Section */
+.section-block{margin-bottom:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--light);border-radius:8px;cursor:pointer;user-select:none}
+.section-header:hover{background:var(--border)}
+.section-name{font-weight:700;font-size:.9rem}
+.section-badge{font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:12px}
+.section-items{padding:0 2px;margin-top:2px}
+/* Item */
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border)}
+.check-item:last-child{border-bottom:none}
+.check-item:hover{background:var(--light)}
+.check-item.done .item-text{text-decoration:line-through;color:var(--muted)}
+.check-item.na .item-text{color:var(--muted);font-style:italic}
+.check-item.blocked .item-text{color:var(--red)}
+.chk{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:all .15s}
+.chk.done{background:var(--green);border-color:var(--green);color:#fff}
+.chk.na{background:var(--muted);border-color:var(--muted);color:#fff;font-size:.6rem}
+.chk.blocked{background:var(--red);border-color:var(--red);color:#fff}
+.item-text{flex:1;font-size:.87rem;line-height:1.45}
+.item-tag{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--border);color:var(--muted);white-space:nowrap;margin-top:1px}
+.item-col{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+/* Summary banner */
+.summary-banner{border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+.summary-banner.ok{background:#dcfce7;border:1.5px solid var(--green)}
+.summary-banner.warn{background:#fef9c3;border:1.5px solid var(--yellow)}
+.summary-banner.danger{background:#fee2e2;border:1.5px solid var(--red)}
+.summary-title{font-weight:700;font-size:.95rem}
+.summary-pct{font-family:var(--mono);font-size:1.6rem;font-weight:700}
+/* Platform pills */
+.plat-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.plat-pill{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s}
+.plat-pill.active{color:#fff;border-color:transparent}
+/* Sign-off */
+.signoff-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.signoff-grid{grid-template-columns:1fr}}
+.signoff-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--light);border-radius:8px}
+.signoff-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--azul);flex-shrink:0;cursor:pointer}
+.signoff-label{font-size:.85rem;flex:1}
+.signoff-who{font-size:.78rem;color:var(--muted)}
+/* Notes */
+.notes-box{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:.87rem;min-height:80px;resize:vertical;background:var(--card);color:var(--text)}
+.notes-box:focus{outline:none;border-color:var(--azul)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">✅ Checklist de Campanha</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<!-- Info da campanha -->
+<div class="card">
+  <div class="card-title">Dados da Campanha</div>
+  <div class="form-row">
+    <div>
+      <label>Nome da campanha</label>
+      <input id="campaignName" placeholder="Black Friday 2024 — Brand" oninput="saveMeta()">
+    </div>
+    <div>
+      <label>Plataformas ativas</label>
+      <div class="plat-pills" id="platPills" style="margin-top:4px;margin-bottom:0"></div>
+    </div>
+    <div>
+      <label>Responsável</label>
+      <input id="responsible" placeholder="Seu nome" oninput="saveMeta()">
+    </div>
+  </div>
+  <div class="form-row" style="margin-bottom:0">
+    <div>
+      <label>Data de início</label>
+      <input id="startDate" type="date" oninput="saveMeta()">
+    </div>
+    <div>
+      <label>Data de fim</label>
+      <input id="endDate" type="date" oninput="saveMeta()">
+    </div>
+    <div>
+      <label>Budget total (R$)</label>
+      <input id="budget" type="number" placeholder="50000" oninput="saveMeta()">
+    </div>
+  </div>
+</div>
+
+<!-- Banner de progresso -->
+<div id="summaryBanner" class="summary-banner warn" style="display:none">
+  <div>
+    <div class="summary-title" id="bannerTitle">0 de 0 itens concluídos</div>
+    <div class="prog-label" style="margin-top:6px"><span>Progresso geral</span><span id="bannerPct">0%</span></div>
+    <div class="progress-wrap" style="width:220px"><div class="progress-bar" id="bannerBar" style="width:0%;background:var(--azul)"></div></div>
+  </div>
+  <div class="summary-pct" id="bannerBig">0%</div>
+</div>
+
+<!-- Tabs -->
+<div class="card">
+  <div class="tabs" id="tabs"></div>
+  <div id="tabPanels"></div>
+</div>
+
+<!-- Sign-off -->
+<div class="card">
+  <div class="card-title">Sign-off de Aprovação</div>
+  <div class="signoff-grid" id="signoffGrid"></div>
+  <div style="margin-top:14px">
+    <label>Observações gerais</label>
+    <textarea class="notes-box" id="generalNotes" placeholder="Instruções especiais, pendências, links importantes…" oninput="saveNotes()"></textarea>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary btn-sm" onclick="exportChecklist()">📋 Exportar Checklist</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetAll()">🔄 Novo checklist</button>
+  </div>
+</div>
+
+</main>
+<script>
+const PLATFORMS=['CM360','DV360','Google Ads','Meta','TikTok','LinkedIn','GA4','GTM'];
+const PLAT_COLORS={
+  'CM360':'#1F36C7','DV360':'#5c35cc','Google Ads':'#4285f4',
+  'Meta':'#0866ff','TikTok':'#ff0050','LinkedIn':'#0a66c2',
+  'GA4':'#f57c00','GTM':'#4e9a06'
+};
+
+const CHECKLIST=[
+  {
+    id:'briefing',tab:'Pré-Launch',name:'Briefing & Estratégia',items:[
+      {id:'b1',text:'Briefing criativo aprovado pelo cliente',tag:'Cliente'},
+      {id:'b2',text:'KPIs e metas definidas (CPA alvo, ROAS, viewability)',tag:'Estratégia'},
+      {id:'b3',text:'Público-alvo e segmentações documentadas',tag:'Estratégia'},
+      {id:'b4',text:'Budget por plataforma aprovado',tag:'Finance'},
+      {id:'b5',text:'Datas de flight confirmadas (start/end)',tag:'Planning'},
+      {id:'b6',text:'Brand safety / blocklist definida',tag:'Brand'},
+    ]
+  },
+  {
+    id:'creatives',tab:'Pré-Launch',name:'Criativos & Formatos',items:[
+      {id:'c1',text:'Especificações de formatos levantadas por plataforma',tag:'Creative'},
+      {id:'c2',text:'Criativos entregues em todos os formatos necessários',tag:'Creative'},
+      {id:'c3',text:'Revisão de texto (spelling, CTA, URL de destino)',tag:'Creative'},
+      {id:'c4',text:'Click-through URLs testadas (redirect correto, landing OK)',tag:'QA'},
+      {id:'c5',text:'UTM params configurados em todos os criativos',tag:'Tracking'},
+      {id:'c6',text:'Criativos aprovados internamente e pelo cliente',tag:'Cliente'},
+    ]
+  },
+  {
+    id:'tracking',tab:'Pré-Launch',name:'Tracking & Pixels',items:[
+      {id:'t1',text:'Pixel de conversão instalado e validado no GTM',tag:'Tech'},
+      {id:'t2',text:'Floodlight Activity configurada no CM360',tag:'CM360'},
+      {id:'t3',text:'Eventos de conversão testados via Tag Assistant / Pixel Helper',tag:'QA'},
+      {id:'t4',text:'GA4 recebendo eventos de conversão corretamente',tag:'GA4'},
+      {id:'t5',text:'Remarketing lists criadas e populadas',tag:'Audience'},
+      {id:'t6',text:'Consent (LGPD/GDPR) verificado — CMP ativo na landing',tag:'Compliance'},
+      {id:'t7',text:'URL de destino sem parâmetros duplicados',tag:'Tech'},
+    ]
+  },
+  {
+    id:'setup',tab:'Setup',name:'Configuração de Conta',items:[
+      {id:'s1',text:'Campanha criada com naming convention correta',tag:'Naming'},
+      {id:'s2',text:'Budget e datas de flight configurados',tag:'Config'},
+      {id:'s3',text:'Frequency cap configurado por plataforma',tag:'Config'},
+      {id:'s4',text:'Pacing strategy definida (even / frontload)',tag:'Config'},
+      {id:'s5',text:'Bid strategy definida e documentada',tag:'Config'},
+      {id:'s6',text:'Segmentações de público configuradas',tag:'Audience'},
+      {id:'s7',text:'Exclusões de audience configuradas (clientes, converters)',tag:'Audience'},
+      {id:'s8',text:'Brand safety / contextual exclusions ativas',tag:'Brand'},
+    ]
+  },
+  {
+    id:'qa',tab:'QA & Launch',name:'QA Final',items:[
+      {id:'q1',text:'Preview de anúncios aprovado em todas as plataformas',tag:'QA'},
+      {id:'q2',text:'Teste de entrega (small budget activation) realizado',tag:'QA'},
+      {id:'q3',text:'Relatório de baseline (D-1 impressões zero)',tag:'QA'},
+      {id:'q4',text:'Alertas de orçamento configurados no CM360/plataforma',tag:'Config'},
+      {id:'q5',text:'Dashboard de monitoramento criado',tag:'Reporting'},
+      {id:'q6',text:'Acesso de cliente ao dashboard compartilhado',tag:'Cliente'},
+    ]
+  },
+  {
+    id:'launch',tab:'QA & Launch',name:'Launch',items:[
+      {id:'l1',text:'Campaign status: ACTIVE em todas as plataformas',tag:'Launch'},
+      {id:'l2',text:'Primeiras impressões confirmadas no painel',tag:'Launch'},
+      {id:'l3',text:'Conversões pingando no CM360 e GA4',tag:'Tracking'},
+      {id:'l4',text:'Capturas de tela de lançamento tiradas e arquivadas',tag:'Docs'},
+      {id:'l5',text:'Equipe interna e cliente notificados do go-live',tag:'Comunicação'},
+    ]
+  },
+  {
+    id:'monitor',tab:'Monitoramento',name:'Primeiras 48h',items:[
+      {id:'m1',text:'CTR e taxas de engajamento dentro do esperado',tag:'Performance'},
+      {id:'m2',text:'Pacing de budget saudável (não over/under)',tag:'Pacing'},
+      {id:'m3',text:'Viewability verificada (benchmark por canal)',tag:'Viewability'},
+      {id:'m4',text:'Conversões contando corretamente nos relatórios',tag:'Tracking'},
+      {id:'m5',text:'Criativos sem rejeições / disapprovals',tag:'QA'},
+    ]
+  },
+  {
+    id:'optimize',tab:'Monitoramento',name:'Otimização Contínua',items:[
+      {id:'o1',text:'Análise de placement / publisher report feita',tag:'Otimização'},
+      {id:'o2',text:'Segmentos de audience com pior performance pausados',tag:'Audience'},
+      {id:'o3',text:'Criativos com baixo CTR rotacionados',tag:'Creative'},
+      {id:'o4',text:'Bid adjustments por device/horário revisados',tag:'Bid'},
+      {id:'o5',text:'Relatório semanal enviado ao cliente',tag:'Reporting'},
+    ]
+  },
+];
+
+const SIGNOFFS=[
+  {id:'so_adops',label:'AdOps / Trafficking',who:'Responsável técnico'},
+  {id:'so_planning',label:'Planning / Estratégia',who:'Mídia planner'},
+  {id:'so_creative',label:'Criativo',who:'Equipe criativa'},
+  {id:'so_client',label:'Aprovação do Cliente',who:'Cliente / contato'},
+  {id:'so_legal',label:'Compliance / Jurídico',who:'Se aplicável'},
+  {id:'so_tech',label:'Tech / Desenvolvimento',who:'Se pixel customizado'},
+];
+
+let state={};
+let meta={};
+let signoffs={};
+let notes='';
+let activePlatforms=new Set(['CM360','Google Ads','Meta','GA4','GTM']);
+let activeTab=0;
+
+const TABS=[...new Set(CHECKLIST.map(s=>s.tab))];
+
+function init(){
+  const saved=localStorage.getItem('checklist_state');
+  if(saved)try{state=JSON.parse(saved)}catch(e){}
+  const savedMeta=localStorage.getItem('checklist_meta');
+  if(savedMeta)try{meta=JSON.parse(savedMeta)}catch(e){}
+  const savedPlat=localStorage.getItem('checklist_platforms');
+  if(savedPlat)try{activePlatforms=new Set(JSON.parse(savedPlat))}catch(e){}
+  const savedSO=localStorage.getItem('checklist_signoffs');
+  if(savedSO)try{signoffs=JSON.parse(savedSO)}catch(e){}
+  const savedNotes=localStorage.getItem('checklist_notes');
+  if(savedNotes)notes=savedNotes;
+
+  document.documentElement.setAttribute('data-theme',
+    localStorage.getItem('checklist_theme')||'light');
+
+  // Preencher meta
+  if(meta.name)document.getElementById('campaignName').value=meta.name;
+  if(meta.responsible)document.getElementById('responsible').value=meta.responsible;
+  if(meta.startDate)document.getElementById('startDate').value=meta.startDate;
+  if(meta.endDate)document.getElementById('endDate').value=meta.endDate;
+  if(meta.budget)document.getElementById('budget').value=meta.budget;
+  if(notes)document.getElementById('generalNotes').value=notes;
+
+  renderPlatPills();
+  renderTabs();
+  renderSignoffs();
+  updateProgress();
+}
+
+function saveMeta(){
+  meta={
+    name:document.getElementById('campaignName').value,
+    responsible:document.getElementById('responsible').value,
+    startDate:document.getElementById('startDate').value,
+    endDate:document.getElementById('endDate').value,
+    budget:document.getElementById('budget').value,
+  };
+  localStorage.setItem('checklist_meta',JSON.stringify(meta));
+}
+
+function saveNotes(){
+  notes=document.getElementById('generalNotes').value;
+  localStorage.setItem('checklist_notes',notes);
+}
+
+function renderPlatPills(){
+  document.getElementById('platPills').innerHTML=PLATFORMS.map(p=>{
+    const col=PLAT_COLORS[p]||'var(--azul)';
+    const on=activePlatforms.has(p);
+    return `<div class="plat-pill${on?' active':''}" style="${on?`background:${col};border-color:${col};color:#fff`:''}" onclick="togglePlat('${p}')" data-plat="${p}">${p}</div>`;
+  }).join('');
+}
+
+function togglePlat(p){
+  if(activePlatforms.has(p))activePlatforms.delete(p);
+  else activePlatforms.add(p);
+  localStorage.setItem('checklist_platforms',JSON.stringify([...activePlatforms]));
+  renderPlatPills();
+}
+
+function getItemStatus(id){return state[id]||'pending'}
+
+function cycleStatus(id){
+  const cur=getItemStatus(id);
+  const next={pending:'done',done:'na',na:'blocked',blocked:'pending'};
+  state[id]=next[cur]||'done';
+  localStorage.setItem('checklist_state',JSON.stringify(state));
+  renderTabs();
+  updateProgress();
+}
+
+function chkDisplay(status){
+  if(status==='done')return{text:'✓',cls:'done'};
+  if(status==='na')return{text:'N/A',cls:'na'};
+  if(status==='blocked')return{text:'✕',cls:'blocked'};
+  return{text:'',cls:''};
+}
+
+function renderSection(sec){
+  const done=sec.items.filter(it=>getItemStatus(it.id)==='done').length;
+  const na=sec.items.filter(it=>getItemStatus(it.id)==='na').length;
+  const blocked=sec.items.filter(it=>getItemStatus(it.id)==='blocked').length;
+  const total=sec.items.length;
+  const pct=total?Math.round((done+na)/total*100):0;
+  let badgeCls='badge-blue';
+  if(blocked>0)badgeCls='badge-red';
+  else if(pct===100)badgeCls='badge-green';
+  else if(pct>50)badgeCls='badge-yellow';
+
+  const itemsHtml=sec.items.map(it=>{
+    const st=getItemStatus(it.id);
+    const {text,cls}=chkDisplay(st);
+    return `<div class="check-item ${st}" onclick="cycleStatus('${it.id}')">
+      <div class="chk ${cls}">${text}</div>
+      <div class="item-col">
+        <div class="item-text">${it.text}</div>
+        <span class="item-tag">${it.tag}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="section-block">
+    <div class="section-header">
+      <span class="section-name">${sec.name}</span>
+      <span class="section-badge ${badgeCls}">${done+na}/${total} ${blocked?'🔴 '+blocked+' bloqueado':pct===100?'✓':''}</span>
+    </div>
+    <div class="section-items">${itemsHtml}</div>
+  </div>`;
+}
+
+function renderTabs(){
+  // Build tabs
+  document.getElementById('tabs').innerHTML=TABS.map((t,i)=>
+    `<div class="tab${i===activeTab?' active':''}" onclick="switchTab(${i})">${t}</div>`
+  ).join('');
+
+  // Build panels
+  document.getElementById('tabPanels').innerHTML=TABS.map((t,ti)=>{
+    const sections=CHECKLIST.filter(s=>s.tab===t);
+    const html=sections.map(renderSection).join('');
+    return `<div class="tab-panel${ti===activeTab?' active':''}" id="tp-${ti}">${html}</div>`;
+  }).join('');
+}
+
+function switchTab(i){
+  activeTab=i;
+  renderTabs();
+}
+
+function updateProgress(){
+  const all=CHECKLIST.flatMap(s=>s.items);
+  const done=all.filter(it=>getItemStatus(it.id)==='done').length;
+  const na=all.filter(it=>getItemStatus(it.id)==='na').length;
+  const blocked=all.filter(it=>getItemStatus(it.id)==='blocked').length;
+  const total=all.length;
+  const pct=total?Math.round((done+na)/total*100):0;
+
+  const banner=document.getElementById('summaryBanner');
+  banner.style.display='block';
+  document.getElementById('bannerTitle').textContent=`${done} de ${total} concluídos · ${na} N/A · ${blocked} bloqueado(s)`;
+  document.getElementById('bannerPct').textContent=pct+'%';
+  document.getElementById('bannerBig').textContent=pct+'%';
+  document.getElementById('bannerBar').style.width=pct+'%';
+
+  banner.className='summary-banner';
+  if(blocked>0)banner.classList.add('danger');
+  else if(pct<50)banner.classList.add('danger');
+  else if(pct<100)banner.classList.add('warn');
+  else banner.classList.add('ok');
+}
+
+function renderSignoffs(){
+  document.getElementById('signoffGrid').innerHTML=SIGNOFFS.map(s=>`
+    <div class="signoff-row">
+      <input type="checkbox" id="${s.id}" ${signoffs[s.id]?'checked':''} onchange="toggleSignoff('${s.id}')">
+      <div>
+        <div class="signoff-label">${s.label}</div>
+        <div class="signoff-who">${s.who}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleSignoff(id){
+  signoffs[id]=document.getElementById(id).checked;
+  localStorage.setItem('checklist_signoffs',JSON.stringify(signoffs));
+}
+
+function exportChecklist(){
+  const lines=[];
+  const camp=document.getElementById('campaignName').value||'Sem nome';
+  const resp=document.getElementById('responsible').value||'—';
+  const dt=new Date().toLocaleDateString('pt-BR');
+  lines.push(`CHECKLIST DE CAMPANHA — ${camp}`);
+  lines.push(`Responsável: ${resp} | Data: ${dt}`);
+  lines.push(`Plataformas: ${[...activePlatforms].join(', ')}`);
+  lines.push('');
+
+  CHECKLIST.forEach(sec=>{
+    lines.push(`## ${sec.name}`);
+    sec.items.forEach(it=>{
+      const st=getItemStatus(it.id);
+      const icon=st==='done'?'[✓]':st==='na'?'[N/A]':st==='blocked'?'[✕]':'[ ]';
+      lines.push(`  ${icon} ${it.text} [${it.tag}]`);
+    });
+    lines.push('');
+  });
+
+  lines.push('## Sign-off');
+  SIGNOFFS.forEach(s=>{
+    lines.push(`  ${signoffs[s.id]?'[✓]':'[ ]'} ${s.label}`);
+  });
+
+  const obs=document.getElementById('generalNotes').value;
+  if(obs){lines.push('');lines.push('## Observações');lines.push(obs);}
+
+  const all=CHECKLIST.flatMap(s=>s.items);
+  const done=all.filter(it=>getItemStatus(it.id)==='done').length;
+  const pct=Math.round(done/all.length*100);
+  lines.push('');lines.push(`Progresso: ${done}/${all.length} (${pct}%)`);
+
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`checklist-${camp.replace(/\s+/g,'-').toLowerCase()}.txt`;
+  a.click();
+}
+
+function resetAll(){
+  if(!confirm('Resetar todo o checklist? O progresso será perdido.'))return;
+  state={};signoffs={};notes='';
+  localStorage.removeItem('checklist_state');
+  localStorage.removeItem('checklist_signoffs');
+  localStorage.removeItem('checklist_notes');
+  localStorage.removeItem('checklist_meta');
+  localStorage.removeItem('checklist_platforms');
+  activePlatforms=new Set(['CM360','Google Ads','Meta','GA4','GTM']);
+  meta={};
+  document.getElementById('campaignName').value='';
+  document.getElementById('responsible').value='';
+  document.getElementById('startDate').value='';
+  document.getElementById('endDate').value='';
+  document.getElementById('budget').value='';
+  document.getElementById('generalNotes').value='';
+  renderPlatPills();
+  renderTabs();
+  renderSignoffs();
+  updateProgress();
+}
+
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('checklist_theme',nxt);
+}
+
+init();
+</script>
+</body>
+</html>
