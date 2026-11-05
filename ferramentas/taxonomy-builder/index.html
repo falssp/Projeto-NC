@@ -668,6 +668,35 @@ body {
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+/* ==================== BATCH TERM IMPORT ==================== */
+.batch-import-modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;
+  justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);}
+.batch-import-modal .modal-box{background:var(--card);border:1px solid var(--card-border);
+  border-radius:14px;padding:24px;max-width:460px;width:92%;display:flex;flex-direction:column;gap:14px;}
+.batch-import-modal h3{margin:0;font-size:15px;}
+.batch-import-modal p{margin:0;font-size:12px;color:var(--faint);}
+.batch-import-textarea{width:100%;min-height:140px;padding:10px 12px;border:1px solid var(--input-border);
+  border-radius:8px;font-size:12px;font-family:monospace;background:var(--input-bg);color:var(--fg);resize:vertical;}
+.batch-import-textarea:focus{outline:none;border-color:var(--accent);}
+.batch-import-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+/* ==================== BUILDER HISTORY ==================== */
+.builder-hist-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;min-height:24px;}
+.builder-hist-label{font-size:11px;color:var(--faint);white-space:nowrap;}
+.builder-hist-chip{font-size:11px;background:var(--pill);border:1px solid var(--card-border);
+  border-radius:12px;padding:2px 10px;cursor:pointer;white-space:nowrap;max-width:220px;
+  overflow:hidden;text-overflow:ellipsis;transition:background .12s;}
+.builder-hist-chip:hover{background:var(--accent);color:var(--accent-fg);}
+.builder-hist-clear{font-size:11px;color:var(--faint);background:none;border:none;cursor:pointer;padding:2px 6px;}
+.builder-hist-clear:hover{color:var(--erro);}
+
+/* ==================== CLIENT RENAME INLINE ==================== */
+.client-card-name-wrap{display:flex;align-items:center;gap:6px;}
+.client-card-name-wrap input{font-size:15px;font-weight:700;border:none;border-bottom:2px solid var(--accent);
+  background:transparent;color:var(--fg);outline:none;width:100%;padding:1px 0;}
+.rename-icon{font-size:12px;color:var(--faint);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity .15s;}
+.client-card:hover .rename-icon{opacity:1;}
+
 /* ── Como usar modal ─────────────────────────────── */
 .qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
 .qa-overlay.open{display:flex}
@@ -795,6 +824,7 @@ body {
         <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
       </div>
       <div id="previewBox" class="preview-box"><span style="color:var(--faint)">—</span></div>
+      <div class="builder-hist-row" id="builderHistRow"></div>
     </div>
   </div>
 </div>
@@ -951,6 +981,19 @@ body {
   </div>
 </div>
 
+<!-- Batch Term Import Modal -->
+<div id="batchImportModal" class="batch-import-modal" style="display:none" onclick="if(event.target===this)closeBatchImportModal()">
+  <div class="modal-box">
+    <h3>Importar termos em lote</h3>
+    <p>Um termo por linha. Formato aceito: <code>value</code> ou <code>value | label</code> ou <code>value | label | descrição</code>. Valores já existentes serão ignorados.</p>
+    <textarea id="batchImportText" class="batch-import-textarea" placeholder="BR&#10;US&#10;AR&#10;— ou —&#10;BR | Brasil&#10;US | Estados Unidos | EN&#10;AR | Argentina"></textarea>
+    <div class="batch-import-actions">
+      <button class="btn secondary" onclick="closeBatchImportModal()">Cancelar</button>
+      <button class="btn primary" onclick="confirmBatchImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -962,7 +1005,9 @@ body {
 const STORE_KEY  = 'taxo_clients_v1';
 const ACTIVE_KEY = 'taxo_active_v1';
 const THEME_KEY  = 'taxo_theme_v1';
-const VAL_HIST_KEY = 'taxo_val_hist_v1';
+const VAL_HIST_KEY     = 'taxo_val_hist_v1';
+const BUILDER_HIST_KEY = 'taxo_builder_hist_v1';
+const BUILDER_HIST_MAX = 10;
 
 const DEFAULT_CLIENTS = [
   {
@@ -1184,7 +1229,10 @@ function renderClientes() {
         <button title="Excluir" onclick="event.stopPropagation();deleteClient('${c.id}')">🗑️</button>
       </div>
       ${isAct ? '<div class="active-badge">✓ Ativo</div>' : ''}
-      <div class="client-card-name">${esc(c.name)}</div>
+      <div class="client-card-name-wrap">
+        <span class="client-card-name" id="cname-${c.id}" ondblclick="startRenameClient('${c.id}')">${esc(c.name)}</span>
+        <span class="rename-icon" title="Renomear" onclick="event.stopPropagation();startRenameClient('${c.id}')">✏</span>
+      </div>
       <div class="client-card-meta">
         <span>Sep: ${[...new Set([c.separator,...c.segments.filter(s=>s.sep!==undefined&&s.sep!=='').map(s=>s.sep)])].filter(Boolean).map(sp=>`<span class="sep-chip">${esc(sp)}</span>`).join(' + ')}</span>
         <span>${c.segments.length} segmentos</span>
@@ -1214,6 +1262,30 @@ function duplicateClient(id) {
   activeId = copy.id;
   saveData(); renderClientSelect(); renderClientes();
   showToast('Cliente duplicado');
+}
+
+/* Renomear cliente inline */
+function startRenameClient(id) {
+  const c = getClient(id); if(!c) return;
+  const span = document.getElementById(`cname-${id}`); if(!span) return;
+  const wrap = span.parentElement;
+  const inp = document.createElement('input');
+  inp.className = 'client-card-name';
+  inp.value = c.name;
+  inp.style.cssText = 'border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--fg);outline:none;font-size:15px;font-weight:700;width:100%;';
+  wrap.replaceChild(inp, span);
+  inp.focus(); inp.select();
+  const commit = () => {
+    const val = inp.value.trim(); if(!val) { renderClientes(); return; }
+    c.name = val; saveData(); renderClientSelect(); renderClientes();
+    showToast('Nome atualizado');
+  };
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if(e.key==='Enter') { e.preventDefault(); inp.blur(); }
+    if(e.key==='Escape') { renderClientes(); }
+    e.stopPropagation();
+  });
 }
 
 /* =============================================
@@ -1417,11 +1489,13 @@ function renderTermArea(c) {
 
   let listHtml='';
   if(!terms.length) {
-    listHtml='<div class="empty-state" style="padding:16px 0"><p>Nenhum termo em <strong>'+esc(seg.label)+'</strong>. Adicione abaixo.</p></div>';
+    listHtml=`<div class="empty-state" style="padding:16px 0"><p>Nenhum termo em <strong>${esc(seg.label)}</strong>. Adicione abaixo ou <button class="btn secondary btn-sm" onclick="openBatchImportModal()" style="font-size:11px;padding:3px 8px">importar em lote</button>.</p></div>`;
   } else {
     listHtml=`<div class="dict-search-row">
       <input class="dict-search-input" id="dictSearch" type="search" placeholder="Buscar em ${esc(seg.label)}…" oninput="filterDict(this.value)" autocomplete="off">
       <span class="dict-search-count" id="dictSearchCount">${terms.length} termos</span>
+      <button class="btn secondary btn-sm" title="Ordenar A–Z" onclick="sortTermsAZ()" style="font-size:11px;padding:4px 8px">↕ A–Z</button>
+      <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
     </div>
     <div class="term-list">` + terms.map((t,i)=>`
       <div class="term-row" id="tr-${i}">
@@ -1469,6 +1543,42 @@ function filterDict(q) {
   });
   const countEl = document.getElementById('dictSearchCount');
   if(countEl) countEl.textContent = q ? `${visible} de ${rows.length}` : `${rows.length} termos`;
+}
+
+/* Sort terms A-Z */
+function sortTermsAZ() {
+  const c=active(); if(!c||!activeSeg) return;
+  c.dictionary[activeSeg].sort((a,b)=>a.value.localeCompare(b.value));
+  saveData(); renderDicionario(); showToast('Termos ordenados A–Z');
+}
+
+/* Batch import modal */
+function openBatchImportModal() {
+  if(!active()||!activeSeg) { showToast('Selecione um segmento primeiro'); return; }
+  const modal = document.getElementById('batchImportModal');
+  document.getElementById('batchImportText').value = '';
+  modal.style.display='flex';
+  setTimeout(()=>document.getElementById('batchImportText')?.focus(), 80);
+}
+function closeBatchImportModal() {
+  document.getElementById('batchImportModal').style.display='none';
+}
+function confirmBatchImport() {
+  const c=active(); if(!c||!activeSeg) return;
+  const raw = document.getElementById('batchImportText').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  let added=0, skipped=0;
+  lines.forEach(line=>{
+    const parts = line.split('|').map(p=>p.trim());
+    const value = parts[0]; if(!value) return;
+    const label = parts[1]||value;
+    const desc  = parts[2]||'';
+    if(c.dictionary[activeSeg].find(t=>t.value===value)) { skipped++; return; }
+    c.dictionary[activeSeg].push({value, label, ...(desc?{desc}:{})});
+    added++;
+  });
+  saveData(); renderDicionario(); closeBatchImportModal();
+  showToast(`${added} termo(s) adicionado(s)${skipped?` · ${skipped} ignorado(s) (duplicado)`:''}`, false);
 }
 
 function autoSlug() {
@@ -1881,6 +1991,7 @@ function renderBuilder() {
     segsEl.appendChild(div);
   });
   updatePreview();
+  renderBuilderHistory();
 }
 
 function updatePreview() {
@@ -1925,14 +2036,42 @@ function copyBuilder() {
     }
   }
   if(!result) return;
+  addToBuilderHistory(result);
   navigator.clipboard.writeText(result).then(()=>showToast('Copiado!')).catch(()=>{
-    // Fallback: select text in preview box
     const range=document.createRange();
     range.selectNode(document.getElementById('previewBox'));
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
     showToast('Selecione e copie (Ctrl+C)');
   });
+}
+
+/* Builder history */
+function addToBuilderHistory(name) {
+  try {
+    let hist = JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]');
+    hist = hist.filter(h=>h!==name);
+    hist.unshift(name);
+    if(hist.length > BUILDER_HIST_MAX) hist = hist.slice(0, BUILDER_HIST_MAX);
+    localStorage.setItem(BUILDER_HIST_KEY, JSON.stringify(hist));
+    renderBuilderHistory();
+  } catch(e) {}
+}
+function clearBuilderHistory() {
+  try { localStorage.removeItem(BUILDER_HIST_KEY); } catch(e) {}
+  renderBuilderHistory();
+}
+function renderBuilderHistory() {
+  const row = document.getElementById('builderHistRow'); if(!row) return;
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]'); } catch(e) {}
+  if(!hist.length) { row.innerHTML=''; return; }
+  row.innerHTML = `<span class="builder-hist-label">Recentes:</span>` +
+    hist.map(h=>`<span class="builder-hist-chip" title="${esc(h)}" onclick="useBuilderHistItem('${esc(h)}')">${esc(h)}</span>`).join('') +
+    `<button class="builder-hist-clear" onclick="clearBuilderHistory()" title="Limpar histórico">✕</button>`;
+}
+function useBuilderHistItem(name) {
+  navigator.clipboard.writeText(name).then(()=>showToast(`Copiado: ${name}`)).catch(()=>showToast(name));
 }
 
 /* =============================================
@@ -2344,6 +2483,32 @@ renderClientes();
 
 function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
 function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+/* =============================================
+   KEYBOARD SHORTCUTS
+   ============================================= */
+const TAB_ORDER = ['clientes','dicionario','estruturas','builder','validador'];
+document.addEventListener('keydown', e => {
+  // Ctrl/Cmd + 1-5 → switch tabs
+  if((e.ctrlKey||e.metaKey) && e.key>='1' && e.key<='5') {
+    const idx = +e.key - 1;
+    if(idx < TAB_ORDER.length) { e.preventDefault(); switchTab(TAB_ORDER[idx]); }
+    return;
+  }
+  // Escape → close modals (priority order)
+  if(e.key==='Escape') {
+    const bi = document.getElementById('batchImportModal');
+    const ij = document.getElementById('importJsonModal');
+    const pm = document.getElementById('pasteModal');
+    const mo = document.getElementById('modal');
+    const qa = document.getElementById('qa-overlay');
+    if(bi && bi.style.display!=='none') { closeBatchImportModal(); return; }
+    if(ij && ij.style.display!=='none') { closeImportJsonModal(); return; }
+    if(pm && pm.classList.contains('show')) { closePasteModal(); return; }
+    if(mo && mo.classList.contains('show')) { closeModal(); return; }
+    if(qa && qa.classList.contains('open')) { fecharAjuda(); return; }
+  }
+});
 
 </script>
 
