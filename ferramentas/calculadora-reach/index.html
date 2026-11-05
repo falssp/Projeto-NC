@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de Reach & Frequency — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.info-box{background:var(--light);border-radius:10px;padding:14px}
+.info-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.info-val{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.info-val.ok{color:var(--green)}
+.info-val.warn{color:var(--yellow)}
+.info-val.err{color:var(--red)}
+/* GRP curve */
+.curve-wrap{position:relative;height:220px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--light);margin-top:12px}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.tab-btn{padding:8px 18px;border:none;background:transparent;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th{text-align:left;padding:7px 10px;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.82rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📺 Calculadora R&F / GRP</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('rf')">R&F — Alcance e Frequência</button>
+  <button class="tab-btn" onclick="switchTab('grp')">GRP / TRP</button>
+  <button class="tab-btn" onclick="switchTab('budget')">Budget por R&F</button>
+  <button class="tab-btn" onclick="switchTab('ref')">Referência</button>
+</div>
+
+<!-- Tab 1: R&F -->
+<div class="tab-panel active" id="tab-rf">
+<div class="card">
+  <div class="card-title">Calculadora de Alcance e Frequência</div>
+  <div class="grid3" style="margin-bottom:12px">
+    <div>
+      <label>Universo (população-alvo)</label>
+      <input type="number" id="rfUniverse" value="10000000" min="1000">
+    </div>
+    <div>
+      <label>Impressões totais</label>
+      <input type="number" id="rfImps" value="30000000" min="0">
+    </div>
+    <div>
+      <label>Período (semanas)</label>
+      <input type="number" id="rfWeeks" value="4" min="1">
+    </div>
+  </div>
+  <div class="grid3">
+    <div>
+      <label>Modelo de R&F</label>
+      <select id="rfModel">
+        <option value="agostini">Agostini (clássico)</option>
+        <option value="sainsbury">Sainsbury (conservador)</option>
+        <option value="hofmans">Hofmans</option>
+      </select>
+    </div>
+    <div>
+      <label>CPM médio (R$)</label>
+      <input type="number" id="rfCpm" value="15.00" step="0.01">
+    </div>
+    <div>
+      <label>Objetivo de Reach (%)</label>
+      <input type="number" id="rfTargetReach" value="70" min="1" max="99">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="calcRF()">📊 Calcular</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadRFExample()">Exemplo</button>
+  </div>
+</div>
+
+<div id="rfResults" style="display:none">
+<div class="card">
+  <div class="card-title">Resultado</div>
+  <div class="info-grid" id="rfGrid"></div>
+  <canvas id="rfCanvas" width="860" height="220" style="width:100%;border:1px solid var(--border);border-radius:10px;background:var(--light);margin-top:4px"></canvas>
+  <p class="hint" style="text-align:center;margin-top:6px">Curva de acumulação de alcance vs. impressões</p>
+</div>
+</div>
+</div>
+
+<!-- Tab 2: GRP -->
+<div class="tab-panel" id="tab-grp">
+<div class="card">
+  <div class="card-title">GRP / TRP Calculator</div>
+  <p class="hint" style="margin-bottom:14px">GRP = Reach% × Frequency. Para TV e mídia offline. TRP usa apenas o target, não o universo total.</p>
+  <div class="grid2" style="margin-bottom:12px">
+    <div>
+      <label>Modo de cálculo</label>
+      <select id="grpMode">
+        <option value="from_rf">A partir de R&F → GRP</option>
+        <option value="from_grp">A partir de GRP → R&F</option>
+      </select>
+    </div>
+    <div id="grpInputExtra"></div>
+  </div>
+  <div class="grid3" id="grpInputs">
+    <div>
+      <label>Reach (%)</label>
+      <input type="number" id="grpReach" value="65" min="0" max="100" step=".1">
+    </div>
+    <div>
+      <label>Frequency</label>
+      <input type="number" id="grpFreq" value="4.5" min="0" step=".1">
+    </div>
+    <div>
+      <label>Universe (pessoas)</label>
+      <input type="number" id="grpUniverse" value="10000000">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="calcGRP()">Calcular GRP</button>
+  </div>
+</div>
+
+<div id="grpResults" style="display:none">
+<div class="card">
+  <div class="info-grid" id="grpGrid"></div>
+  <table>
+    <thead><tr><th>GRP</th><th>Reach estimado (%)</th><th>Frequency</th><th>Impressões</th></tr></thead>
+    <tbody id="grpTable"></tbody>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- Tab 3: Budget -->
+<div class="tab-panel" id="tab-budget">
+<div class="card">
+  <div class="card-title">Budget necessário para atingir R&F alvo</div>
+  <div class="grid3" style="margin-bottom:12px">
+    <div>
+      <label>Universo</label>
+      <input type="number" id="budUniverse" value="5000000">
+    </div>
+    <div>
+      <label>Reach alvo (%)</label>
+      <input type="number" id="budReach" value="60" min="1" max="99">
+    </div>
+    <div>
+      <label>Frequency alvo</label>
+      <input type="number" id="budFreq" value="5" min="1">
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <label>CPM (R$)</label>
+      <input type="number" id="budCpm" value="12.00" step="0.01">
+    </div>
+    <div>
+      <label>Período (semanas)</label>
+      <input type="number" id="budWeeks" value="4" min="1">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="calcBudget()">💰 Calcular Budget</button>
+  </div>
+</div>
+
+<div id="budResults" style="display:none">
+<div class="card">
+  <div class="info-grid" id="budGrid"></div>
+  <table>
+    <thead><tr><th>Reach (%)</th><th>Freq</th><th>Imps</th><th>Budget</th><th>CPM efetivo</th></tr></thead>
+    <tbody id="budTable"></tbody>
+  </table>
+</div>
+</div>
+</div>
+
+<!-- Tab 4: Reference -->
+<div class="tab-panel" id="tab-ref">
+<div class="card">
+  <div class="card-title">Referência de R&F / GRP</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:.85rem;line-height:1.9">
+    <div>
+      <b>Fórmulas</b><br>
+      GRP = Reach% × Frequency<br>
+      Impressões = Universo × GRP/100<br>
+      Frequency = GRP / Reach%<br>
+      Reach = GRP / Frequency<br><br>
+      <b>Modelos de acumulação de R</b><br>
+      Agostini: R = k×(I/(I+k-1)) × U<br>
+      Sainsbury: R = 1−(1−p)^f × U<br>
+      Hofmans: baseado em distribuição Beta<br><br>
+      <b>Referências de GRP por canal</b><br>
+      TV Aberta: 500–1000 GRP/mês<br>
+      Streaming/OTT: 150–300 GRP/mês<br>
+      Digital (All): 200–400 GRP/mês
+    </div>
+    <div>
+      <b>Metas típicas de R&F</b><br>
+      Branding: Reach 60–70% × Freq 7–9<br>
+      Lançamento: Reach 50–70% × Freq 5–7<br>
+      Conversão: Reach 30–50% × Freq 3–5<br>
+      Manutenção: Reach 40% × Freq 3–4<br><br>
+      <b>Eficiência</b><br>
+      CPRP = Budget / GRP<br>
+      CPP = Budget / pontos de rating<br>
+      Para comparar eficiência entre canais: normalize por universo<br><br>
+      <b>Legenda</b><br>
+      GRP = Gross Rating Points<br>
+      TRP = Target Rating Points<br>
+      OTS = Opportunity To See<br>
+      R&F = Reach & Frequency
+    </div>
+  </div>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('rf_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('rf_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.toggle('active',b.onclick.toString().includes("'"+id+"'"));});
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
+}
+
+// --- R&F Models ---
+function reachAgostini(imps,universe,k=0.9){
+  if(!universe)return 0;
+  const freq=imps/universe;
+  return Math.min(1,(freq/(freq+k-1)))*universe;
+}
+function reachSainsbury(imps,universe){
+  if(!universe)return 0;
+  // effective reach via 1-(1-p)^n approximation
+  const p=1/universe;
+  const n=imps;
+  return Math.min(1,1-Math.exp(-n/universe))*universe;
+}
+function reachHofmans(imps,universe,k=0.7){
+  // Simplified Hofmans — Beta distribution approximation
+  const lambda=imps/universe;
+  const r=1-Math.exp(-k*lambda);
+  return Math.min(universe,r*universe);
+}
+
+function getReach(model,imps,universe){
+  if(model==='agostini')return reachAgostini(imps,universe);
+  if(model==='sainsbury')return reachSainsbury(imps,universe);
+  return reachHofmans(imps,universe);
+}
+
+function calcRF(){
+  const universe=parseFloat(document.getElementById('rfUniverse').value)||10e6;
+  const imps=parseFloat(document.getElementById('rfImps').value)||30e6;
+  const weeks=parseInt(document.getElementById('rfWeeks').value)||4;
+  const model=document.getElementById('rfModel').value;
+  const cpm=parseFloat(document.getElementById('rfCpm').value)||15;
+  const targetReach=parseFloat(document.getElementById('rfTargetReach').value)/100;
+
+  const reach=getReach(model,imps,universe);
+  const reachPct=reach/universe*100;
+  const freq=imps/Math.max(reach,1);
+  const grp=reachPct*freq;
+  const budget=imps/1000*cpm;
+  // Impressions needed for target reach
+  const findImpsForReach=(target)=>{
+    let lo=0,hi=universe*50,mid;
+    for(let i=0;i<60;i++){mid=(lo+hi)/2;getReach(model,mid,universe)>=target?hi=mid:lo=mid;}
+    return mid;
+  };
+  const impsForTarget=findImpsForReach(universe*targetReach);
+  const budgetForTarget=impsForTarget/1000*cpm;
+  const impsPerWeek=imps/weeks;
+  const reachPerWeek=getReach(model,impsPerWeek,universe)/universe*100;
+
+  document.getElementById('rfGrid').innerHTML=[
+    {l:'Alcance ('+model+')',v:fmt(reach)+' ('+reachPct.toFixed(1)+'%)',cls:'ok'},
+    {l:'Frequência média',v:freq.toFixed(2)+'×'},
+    {l:'GRP',v:grp.toFixed(0)},
+    {l:'Budget estimado',v:'R$'+fmtR(budget)},
+    {l:'Alcance semanal',v:reachPerWeek.toFixed(1)+'%'},
+    {l:'Budget p/ '+document.getElementById('rfTargetReach').value+'% reach',v:'R$'+fmtR(budgetForTarget)},
+  ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.cls||''}">${r.v}</div></div>`).join('');
+
+  // Draw curve
+  const canvas=document.getElementById('rfCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const steps=60;
+  const maxImps=imps*2;
+  const pts=[];
+  for(let i=0;i<=steps;i++){
+    const x=i/steps*maxImps;
+    pts.push({x,y:getReach(model,x,universe)/universe*100});
+  }
+  const pad={l:50,r:20,t:16,b:36};
+  const scX=x=>(x/maxImps)*(W-pad.l-pad.r)+pad.l;
+  const scY=y=>H-pad.b-(y/100)*(H-pad.t-pad.b);
+  // Grid
+  ctx.strokeStyle='rgba(130,130,180,0.2)';ctx.lineWidth=1;
+  for(let v=0;v<=100;v+=20){
+    ctx.beginPath();ctx.moveTo(pad.l,scY(v));ctx.lineTo(W-pad.r,scY(v));ctx.stroke();
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted');
+    ctx.font='11px JetBrains Mono';ctx.textAlign='right';ctx.fillText(v+'%',pad.l-6,scY(v)+4);
+  }
+  // Curve
+  ctx.beginPath();ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;
+  pts.forEach((p,i)=>i===0?ctx.moveTo(scX(p.x),scY(p.y)):ctx.lineTo(scX(p.x),scY(p.y)));
+  ctx.stroke();
+  // Current imps line
+  ctx.beginPath();ctx.strokeStyle='rgba(31,54,199,0.4)';ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+  ctx.moveTo(scX(imps),scY(0));ctx.lineTo(scX(imps),scY(reachPct));
+  ctx.moveTo(scX(0),scY(reachPct));ctx.lineTo(scX(imps),scY(reachPct));
+  ctx.stroke();ctx.setLineDash([]);
+  // Dot
+  ctx.beginPath();ctx.arc(scX(imps),scY(reachPct),5,0,Math.PI*2);ctx.fillStyle='#1F36C7';ctx.fill();
+
+  document.getElementById('rfResults').style.display='block';
+}
+
+function calcGRP(){
+  const mode=document.getElementById('grpMode').value;
+  const universe=parseFloat(document.getElementById('grpUniverse').value)||10e6;
+  if(mode==='from_rf'){
+    const reach=parseFloat(document.getElementById('grpReach').value)||65;
+    const freq=parseFloat(document.getElementById('grpFreq').value)||4.5;
+    const grp=reach*freq;
+    const imps=universe*grp/100;
+    document.getElementById('grpGrid').innerHTML=[
+      {l:'GRP',v:grp.toFixed(1)},
+      {l:'Reach',v:reach.toFixed(1)+'%'},
+      {l:'Frequency',v:freq.toFixed(2)+'×'},
+      {l:'Impressões',v:fmt(imps)},
+    ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val">${r.v}</div></div>`).join('');
+    // Table across GRP levels
+    const rows=[100,200,300,400,500,750,1000].map(g=>{
+      const r=Math.min(99,g/freq);const f=g/r;const i=universe*g/100;
+      return `<tr><td>${g}</td><td>${r.toFixed(1)}%</td><td>${f.toFixed(2)}×</td><td>${fmt(i)}</td></tr>`;
+    }).join('');
+    document.getElementById('grpTable').innerHTML=rows;
+  }
+  document.getElementById('grpResults').style.display='block';
+}
+
+function calcBudget(){
+  const universe=parseFloat(document.getElementById('budUniverse').value)||5e6;
+  const reachPct=parseFloat(document.getElementById('budReach').value)/100||.6;
+  const freq=parseFloat(document.getElementById('budFreq').value)||5;
+  const cpm=parseFloat(document.getElementById('budCpm').value)||12;
+  const weeks=parseInt(document.getElementById('budWeeks').value)||4;
+  const reach=universe*reachPct;
+  const imps=reach*freq;
+  const budget=imps/1000*cpm;
+  const grp=reachPct*100*freq;
+  const cprp=budget/Math.max(grp,1);
+  document.getElementById('budGrid').innerHTML=[
+    {l:'Impressões necessárias',v:fmt(imps)},
+    {l:'Budget total',v:'R$'+fmtR(budget),cls:'ok'},
+    {l:'Budget/semana',v:'R$'+fmtR(budget/weeks)},
+    {l:'GRP projetado',v:grp.toFixed(0)},
+    {l:'CPRP',v:'R$'+fmtR(cprp)},
+    {l:'Alcance absoluto',v:fmt(reach)},
+  ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.cls||''}">${r.v}</div></div>`).join('');
+  const scenarios=[
+    {r:30,f:3},{r:40,f:4},{r:50,f:5},{r:60,f:5},{r:70,f:7},{r:80,f:9},
+  ];
+  document.getElementById('budTable').innerHTML=scenarios.map(s=>{
+    const rk=universe*s.r/100,im=rk*s.f,bud=im/1000*cpm,eff=cpm*(s.f);
+    return `<tr><td>${s.r}%</td><td>${s.f}×</td><td>${fmt(im)}</td><td style="font-weight:700">R$${fmtR(bud)}</td><td>R$${eff.toFixed(2)}</td></tr>`;
+  }).join('');
+  document.getElementById('budResults').style.display='block';
+}
+
+function fmt(n){
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return (n/1e3).toFixed(1)+'k';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+function fmtR(n){
+  return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1000?(n/1000).toFixed(1)+'k':n.toFixed(2);
+}
+
+function loadRFExample(){
+  document.getElementById('rfUniverse').value='8000000';
+  document.getElementById('rfImps').value='25000000';
+  document.getElementById('rfWeeks').value='6';
+  document.getElementById('rfModel').value='agostini';
+  document.getElementById('rfCpm').value='14.00';
+  document.getElementById('rfTargetReach').value='65';
+  calcRF();
+}
+</script>
+</body>
+</html>

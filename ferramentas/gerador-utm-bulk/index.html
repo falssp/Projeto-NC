@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador UTM em Massa — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:960px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+/* UTM result list */
+.utm-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.utm-label{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+.utm-url{font-family:var(--mono);font-size:.78rem;word-break:break-all;background:var(--light);padding:8px;border-radius:6px;cursor:pointer;position:relative}
+.utm-url:hover::after{content:'📋 Copiar';position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--azul);color:#fff;font-family:inherit;font-size:.7rem;padding:3px 8px;border-radius:4px}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:700}
+.badge-blue{background:var(--light);color:var(--azul)}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.tab-btn{padding:8px 18px;border:none;background:transparent;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* Matrix */
+.matrix-row{display:grid;gap:8px;align-items:end;margin-bottom:8px}
+input.small{padding:7px 10px;font-size:.82rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🔗 Gerador UTM em Massa</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('single')">URL Única</button>
+  <button class="tab-btn" onclick="switchTab('matrix')">Matriz (Multi-URL)</button>
+  <button class="tab-btn" onclick="switchTab('ref')">Referência UTM</button>
+</div>
+
+<!-- Tab 1: Single -->
+<div class="tab-panel active" id="tab-single">
+<div class="card">
+  <div class="card-title">URL Base + Parâmetros UTM</div>
+  <div style="margin-bottom:14px">
+    <label>URL de destino</label>
+    <input id="baseUrl" type="url" placeholder="https://www.exemplo.com.br/landing" oninput="buildSingle()">
+  </div>
+  <div class="grid2" style="margin-bottom:12px">
+    <div>
+      <label>utm_source <span style="font-weight:400;color:var(--muted)">(origem)</span></label>
+      <input id="src" placeholder="google" oninput="buildSingle()">
+    </div>
+    <div>
+      <label>utm_medium <span style="font-weight:400;color:var(--muted)">(canal)</span></label>
+      <input id="med" placeholder="cpc" oninput="buildSingle()">
+    </div>
+  </div>
+  <div class="grid2" style="margin-bottom:12px">
+    <div>
+      <label>utm_campaign <span style="font-weight:400;color:var(--muted)">(campanha)</span></label>
+      <input id="camp" placeholder="brand_awareness_q1" oninput="buildSingle()">
+    </div>
+    <div>
+      <label>utm_content <span style="font-weight:400;color:var(--muted)">(criativo)</span></label>
+      <input id="cont" placeholder="banner_300x250_v1" oninput="buildSingle()">
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <label>utm_term <span style="font-weight:400;color:var(--muted)">(palavra-chave)</span></label>
+      <input id="term" placeholder="comprar seguro auto" oninput="buildSingle()">
+    </div>
+    <div>
+      <label>Formato de case</label>
+      <select id="caseFormat" onchange="buildSingle()">
+        <option value="lower">Minúsculas (lowercase)</option>
+        <option value="snake">snake_case (substituir espaços por _)</option>
+        <option value="keep">Manter original</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card" id="singleResult" style="display:none">
+  <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>URL Gerada</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="copySingle()">📋 Copiar</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearSingle()">Limpar</button>
+    </div>
+  </div>
+  <div class="utm-url" id="singleUrl" onclick="copySingle()"></div>
+  <div id="singleParams" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px"></div>
+</div>
+</div>
+
+<!-- Tab 2: Matrix -->
+<div class="tab-panel" id="tab-matrix">
+<div class="card">
+  <div class="card-title">Configuração da Matriz</div>
+  <p class="hint" style="margin-bottom:14px">Configure combinações de source/medium/campaign/content. O gerador cria uma URL para cada combinação — útil para gerar URLs de tracking em massa para várias plataformas.</p>
+  <div style="margin-bottom:12px">
+    <label>URL base</label>
+    <input id="matrixUrl" placeholder="https://www.exemplo.com.br/produto">
+  </div>
+  <div class="grid2" style="margin-bottom:12px">
+    <div>
+      <label>utm_sources (um por linha)</label>
+      <textarea id="matrixSrc" rows="4" placeholder="google&#10;facebook&#10;youtube&#10;linkedin"></textarea>
+    </div>
+    <div>
+      <label>utm_mediums (um por linha)</label>
+      <textarea id="matrixMed" rows="4" placeholder="cpc&#10;display&#10;social&#10;email"></textarea>
+    </div>
+  </div>
+  <div class="grid2" style="margin-bottom:12px">
+    <div>
+      <label>utm_campaigns (um por linha)</label>
+      <textarea id="matrixCamp" rows="4" placeholder="brand_q1&#10;promo_verao&#10;retargeting"></textarea>
+    </div>
+    <div>
+      <label>utm_contents (um por linha, opcional)</label>
+      <textarea id="matrixCont" rows="4" placeholder="banner_300x250&#10;video_15s&#10;stories"></textarea>
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <label>Modo de combinação</label>
+      <select id="matrixMode">
+        <option value="zip">Zip — linha a linha (mesma posição)</option>
+        <option value="product">Produto cartesiano (todas as combinações)</option>
+      </select>
+    </div>
+    <div>
+      <label>Formato de case</label>
+      <select id="matrixCase">
+        <option value="lower">Minúsculas</option>
+        <option value="snake">snake_case</option>
+        <option value="keep">Manter original</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="buildMatrix()">🔗 Gerar URLs</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadMatrixExample()">Exemplo</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearMatrix()">Limpar</button>
+  </div>
+</div>
+
+<div id="matrixResult" style="display:none">
+<div class="card">
+  <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>URLs Geradas (<span id="urlCount">0</span>)</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="copyAll()">📋 Copiar todas</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportCsv()">⬇ CSV</button>
+    </div>
+  </div>
+  <div id="matrixUrls"></div>
+</div>
+</div>
+</div>
+
+<!-- Tab 3: Reference -->
+<div class="tab-panel" id="tab-ref">
+<div class="card">
+  <div class="card-title">Referência de Parâmetros UTM</div>
+  <div style="font-size:.85rem;line-height:1.9">
+    <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 20px;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px">
+      <span style="font-family:var(--mono);font-weight:700">utm_source</span><span>Origem do tráfego. Ex: google, facebook, newsletter, parceiro-xpto</span>
+      <span style="font-family:var(--mono);font-weight:700">utm_medium</span><span>Canal de mídia. Ex: cpc, display, email, social, organic, referral, video</span>
+      <span style="font-family:var(--mono);font-weight:700">utm_campaign</span><span>Nome da campanha. Ex: brand_awareness_q1_2025, promo_natal, retargeting_cart</span>
+      <span style="font-family:var(--mono);font-weight:700">utm_content</span><span>Identifica o criativo/anúncio. Ex: banner_300x250_azul, video_15s_v2</span>
+      <span style="font-family:var(--mono);font-weight:700">utm_term</span><span>Palavra-chave (Search). Ex: comprar+seguro+auto, plano+saude+empresarial</span>
+    </div>
+    <b>Boas práticas:</b>
+    <ul style="margin-left:18px;line-height:2">
+      <li>Use sempre lowercase para evitar duplicatas no GA4</li>
+      <li>Substitua espaços por _ (nunca use %20 em nomes de campanha)</li>
+      <li>Seja consistente — defina uma taxonomia e documente</li>
+      <li>Não use UTM em links internos do site</li>
+      <li>utm_term é obrigatório no Google Ads manual tagging apenas se não usar auto-tagging (gclid)</li>
+    </ul>
+    <br>
+    <b>Mediums padronizados (Google / GA4):</b><br>
+    <span style="font-family:var(--mono);font-size:.8rem">cpc · display · video · social · email · organic · referral · affiliate · push · sms · tv · ooh · ctv</span>
+  </div>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('utm_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('utm_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.toggle('active',b.onclick.toString().includes("'"+id+"'"));});
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
+}
+
+function formatCase(str,mode){
+  if(!str)return '';
+  str=str.trim();
+  if(mode==='lower')return str.toLowerCase();
+  if(mode==='snake')return str.toLowerCase().replace(/\s+/g,'_');
+  return str;
+}
+
+function buildUtm(base,src,med,camp,cont,term,fmt){
+  if(!base)return '';
+  try{
+    const url=new URL(base);
+    const params=[];
+    if(src)params.push(['utm_source',formatCase(src,fmt)]);
+    if(med)params.push(['utm_medium',formatCase(med,fmt)]);
+    if(camp)params.push(['utm_campaign',formatCase(camp,fmt)]);
+    if(cont)params.push(['utm_content',formatCase(cont,fmt)]);
+    if(term)params.push(['utm_term',formatCase(term,fmt)]);
+    params.forEach(([k,v])=>url.searchParams.set(k,v));
+    return url.toString();
+  }catch{return '';}
+}
+
+function buildSingle(){
+  const base=document.getElementById('baseUrl').value;
+  const src=document.getElementById('src').value;
+  const med=document.getElementById('med').value;
+  const camp=document.getElementById('camp').value;
+  const cont=document.getElementById('cont').value;
+  const term=document.getElementById('term').value;
+  const fmt=document.getElementById('caseFormat').value;
+  if(!base){document.getElementById('singleResult').style.display='none';return;}
+  const url=buildUtm(base,src,med,camp,cont,term,fmt);
+  if(!url)return;
+  document.getElementById('singleUrl').textContent=url;
+  const badges=[];
+  if(src)badges.push(['utm_source',formatCase(src,fmt)]);
+  if(med)badges.push(['utm_medium',formatCase(med,fmt)]);
+  if(camp)badges.push(['utm_campaign',formatCase(camp,fmt)]);
+  if(cont)badges.push(['utm_content',formatCase(cont,fmt)]);
+  if(term)badges.push(['utm_term',formatCase(term,fmt)]);
+  document.getElementById('singleParams').innerHTML=badges.map(([k,v])=>`<span class="badge badge-blue">${k}=${v}</span>`).join('');
+  document.getElementById('singleResult').style.display='block';
+  window._singleUrl=url;
+}
+
+function copySingle(){
+  if(window._singleUrl){navigator.clipboard.writeText(window._singleUrl).catch(()=>{});showToast('Copiado!');}
+}
+function clearSingle(){
+  ['baseUrl','src','med','camp','cont','term'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('singleResult').style.display='none';
+}
+
+let _matrixUrls=[];
+function buildMatrix(){
+  const base=document.getElementById('matrixUrl').value;
+  if(!base){alert('Informe a URL base.');return;}
+  const mode=document.getElementById('matrixMode').value;
+  const fmt=document.getElementById('matrixCase').value;
+  const srcs=document.getElementById('matrixSrc').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const meds=document.getElementById('matrixMed').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const camps=document.getElementById('matrixCamp').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const conts=document.getElementById('matrixCont').value.split('\n').map(s=>s.trim());
+  const urls=[];
+  if(mode==='zip'){
+    const len=Math.max(srcs.length,meds.length,camps.length);
+    for(let i=0;i<len;i++){
+      const url=buildUtm(base,srcs[i]||'',meds[i]||'',camps[i]||'',conts[i]||'','',fmt);
+      if(url)urls.push({src:srcs[i]||'',med:meds[i]||'',camp:camps[i]||'',cont:conts[i]||'',url});
+    }
+  }else{
+    const srcL=srcs.length||1,medL=meds.length||1,campL=camps.length||1;
+    for(let si=0;si<srcL;si++)for(let mi=0;mi<medL;mi++)for(let ci=0;ci<campL;ci++){
+      const contVal=conts[ci]||'';
+      const url=buildUtm(base,srcs[si]||'',meds[mi]||'',camps[ci]||'',contVal,'',fmt);
+      if(url)urls.push({src:srcs[si]||'',med:meds[mi]||'',camp:camps[ci]||'',cont:contVal,url});
+    }
+  }
+  _matrixUrls=urls;
+  document.getElementById('urlCount').textContent=urls.length;
+  document.getElementById('matrixUrls').innerHTML=urls.map((u,i)=>`
+    <div class="utm-item">
+      <div class="utm-label">#${i+1} ${[u.src,u.med,u.camp].filter(Boolean).join(' / ')}</div>
+      <div class="utm-url" onclick="navigator.clipboard.writeText('${u.url.replace(/'/g,"\\'")}').catch(()=>{});showToast('Copiado!')">${u.url}</div>
+    </div>`).join('');
+  document.getElementById('matrixResult').style.display='block';
+}
+
+function copyAll(){
+  const text=_matrixUrls.map(u=>u.url).join('\n');
+  navigator.clipboard.writeText(text).catch(()=>{});
+  showToast('Todas copiadas!');
+}
+
+function exportCsv(){
+  const header='utm_source,utm_medium,utm_campaign,utm_content,url';
+  const rows=_matrixUrls.map(u=>[u.src,u.med,u.camp,u.cont,u.url].map(v=>'"'+v+'"').join(','));
+  const csv=[header,...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='utm-urls.csv';
+  a.click();
+}
+
+function clearMatrix(){
+  ['matrixUrl','matrixSrc','matrixMed','matrixCamp','matrixCont'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('matrixResult').style.display='none';
+  _matrixUrls=[];
+}
+
+function loadMatrixExample(){
+  document.getElementById('matrixUrl').value='https://www.marca.com.br/produto';
+  document.getElementById('matrixSrc').value='google\nfacebook\nyoutube';
+  document.getElementById('matrixMed').value='cpc\nsocial\nvideo';
+  document.getElementById('matrixCamp').value='brand_q2_2025\nretargeting_q2\nprospecting';
+  document.getElementById('matrixCont').value='banner_300x250\ncarousel_feed\nvideo_15s';
+  document.getElementById('matrixMode').value='zip';
+  buildMatrix();
+}
+
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--azul);color:#fff;padding:8px 18px;border-radius:8px;font-size:.88rem;font-weight:700;z-index:999;pointer-events:none';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2000);
+}
+</script>
+</body>
+</html>
