@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de Budget Mix — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#d97706;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red);padding:4px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+/* Channel row */
+.ch-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.2fr 36px;gap:8px;align-items:end;margin-bottom:10px}
+.ch-row-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.2fr 36px;gap:8px;margin-bottom:4px}
+.ch-row-header span{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.del-btn{background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:1rem;height:38px;width:36px;display:flex;align-items:center;justify-content:center}
+.del-btn:hover{border-color:var(--red);color:var(--red)}
+/* Summary */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:8px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.pct-bar{height:8px;background:var(--light);border-radius:4px;margin-top:4px;overflow:hidden}
+.pct-fill{height:100%;border-radius:4px}
+/* Donut */
+#donutWrap{display:flex;justify-content:center;margin:12px 0}
+canvas{border-radius:8px}
+.budget-total{text-align:center;font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--azul);margin:8px 0}
+@media(max-width:600px){.ch-row,.ch-row-header{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📊 Calculadora de Budget Mix</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="card-title">Canais de Mídia</div>
+  <div class="ch-row-header">
+    <span>Canal / Plataforma</span>
+    <span>Budget (R$)</span>
+    <span>CPM (R$)</span>
+    <span>Viewab. (%)</span>
+    <span>Objetivo</span>
+    <span></span>
+  </div>
+  <div id="channels"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="addChannel()">+ Adicionar Canal</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Exemplo</button>
+    <button class="btn btn-primary" onclick="calc()">Calcular Mix</button>
+  </div>
+</div>
+
+<div id="resultsArea" style="display:none">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Budget Total</div><div class="kpi-val" id="k-total">—</div></div>
+    <div class="kpi"><div class="kpi-label">Total Impressões</div><div class="kpi-val" id="k-imps">—</div><div class="kpi-sub">brutas</div></div>
+    <div class="kpi"><div class="kpi-label">CPM Médio</div><div class="kpi-val" id="k-cpm">—</div></div>
+    <div class="kpi"><div class="kpi-label">Imps Viewable</div><div class="kpi-val" id="k-view">—</div><div class="kpi-sub">ponderado</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Distribuição do Budget</div>
+    <div id="donutWrap"><canvas id="donut" width="560" height="220"></canvas></div>
+    <table id="mixTable"></table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Análise de Eficiência</div>
+    <table id="effTable"></table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Recomendações</div>
+    <div id="recArea"></div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('mix_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('mix_theme')||'light');
+
+const COLORS=['#1F36C7','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d','#ea580c','#6366f1'];
+const GOALS=['Awareness','Branding','Consideração','Conversão','Retenção','Tráfego'];
+
+let channels=[];
+let cid=0;
+
+function addChannel(name='',budget=0,cpm=0,view=70,goal='Awareness'){
+  const id=cid++;
+  channels.push({id,name,budget,cpm,view,goal});
+  renderChannels();
+}
+
+function removeChannel(id){
+  channels=channels.filter(c=>c.id!==id);
+  renderChannels();
+}
+
+function renderChannels(){
+  document.getElementById('channels').innerHTML=channels.map((c,i)=>`
+    <div class="ch-row" id="crow-${c.id}">
+      <input placeholder="ex: DV360 Display" value="${c.name}" oninput="channels[${i}].name=this.value">
+      <input type="number" value="${c.budget||''}" placeholder="50000" min="0" oninput="channels[${i}].budget=parseFloat(this.value)||0">
+      <input type="number" value="${c.cpm||''}" placeholder="12.00" min="0" step="0.01" oninput="channels[${i}].cpm=parseFloat(this.value)||0">
+      <input type="number" value="${c.view||''}" placeholder="70" min="0" max="100" oninput="channels[${i}].view=parseFloat(this.value)||0">
+      <select onchange="channels[${i}].goal=this.value">${GOALS.map(g=>`<option${g===c.goal?' selected':''}>${g}</option>`).join('')}</select>
+      <button class="del-btn" onclick="removeChannel(${c.id})">×</button>
+    </div>`).join('');
+}
+
+function fmt(n){if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'k';return n.toFixed(0);}
+function fmtR(n){return 'R$'+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function calc(){
+  if(!channels.length){alert('Adicione ao menos um canal.');return;}
+  const total=channels.reduce((s,c)=>s+c.budget,0);
+  if(!total){alert('Defina budgets nos canais.');return;}
+  document.getElementById('resultsArea').style.display='block';
+
+  const totalImps=channels.reduce((s,c)=>s+(c.cpm>0?c.budget/c.cpm*1000:0),0);
+  const avgCpm=totalImps>0?total/(totalImps/1000):0;
+  const viewImps=channels.reduce((s,c)=>s+(c.cpm>0?c.budget/c.cpm*1000*(c.view/100):0),0);
+
+  document.getElementById('k-total').textContent=fmtR(total);
+  document.getElementById('k-imps').textContent=fmt(totalImps);
+  document.getElementById('k-cpm').textContent=fmtR(avgCpm);
+  document.getElementById('k-view').textContent=fmt(viewImps);
+
+  // Mix table
+  document.getElementById('mixTable').innerHTML=`
+    <thead><tr><th>Canal</th><th>Budget</th><th>% do Mix</th><th>Impressões</th><th>Objetivo</th></tr></thead>
+    <tbody>${channels.map((c,i)=>{
+      const pct=c.budget/total*100;
+      const imps=c.cpm>0?c.budget/c.cpm*1000:0;
+      return `<tr>
+        <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};margin-right:6px"></span>${c.name||`Canal ${i+1}`}</td>
+        <td style="font-family:var(--mono)">${fmtR(c.budget)}</td>
+        <td><div style="font-family:var(--mono)">${pct.toFixed(1)}%</div><div class="pct-bar"><div class="pct-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div></div></td>
+        <td style="font-family:var(--mono)">${imps>0?fmt(imps):'—'}</td>
+        <td>${c.goal}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+
+  // Efficiency table
+  document.getElementById('effTable').innerHTML=`
+    <thead><tr><th>Canal</th><th>CPM</th><th>Viewab.</th><th>eCPM Viewable</th><th>Imps Viewable</th><th>Eficiência</th></tr></thead>
+    <tbody>${channels.map((c,i)=>{
+      const imps=c.cpm>0?c.budget/c.cpm*1000:0;
+      const eCpm=c.view>0&&c.cpm>0?c.cpm/(c.view/100):null;
+      const vImps=imps*(c.view/100);
+      const eff=eCpm?Math.max(0,Math.min(100,100-(eCpm-avgCpm)/avgCpm*50)):null;
+      const effCl=eff===null?'':eff>=70?'color:var(--green)':eff>=40?'color:var(--orange)':'color:var(--red)';
+      return `<tr>
+        <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};margin-right:6px"></span>${c.name||`Canal ${i+1}`}</td>
+        <td style="font-family:var(--mono)">${c.cpm?fmtR(c.cpm):'—'}</td>
+        <td style="font-family:var(--mono)">${c.view?c.view+'%':'—'}</td>
+        <td style="font-family:var(--mono)">${eCpm?fmtR(eCpm):'—'}</td>
+        <td style="font-family:var(--mono)">${vImps>0?fmt(vImps):'—'}</td>
+        <td style="${effCl};font-weight:700">${eff!==null?eff.toFixed(0)+'%':'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+
+  // Recommendations
+  const recs=[];
+  const sortedEff=channels.filter(c=>c.cpm>0&&c.view>0).sort((a,b)=>a.cpm/a.view-b.cpm/b.view);
+  if(sortedEff.length>=2){
+    const best=sortedEff[0],worst=sortedEff[sortedEff.length-1];
+    recs.push(`💡 <b>${best.name||'Canal mais eficiente'}</b> tem o melhor eCPM viewable. Considere aumentar sua participação no mix.`);
+    if(worst.budget/total>0.3)recs.push(`⚠️ <b>${worst.name||'Canal menos eficiente'}</b> representa ${(worst.budget/total*100).toFixed(0)}% do budget com eCPM viewable alto. Revise alocação.`);
+  }
+  const lowView=channels.filter(c=>c.view>0&&c.view<60);
+  if(lowView.length)recs.push(`👁️ ${lowView.map(c=>c.name||'Canal').join(', ')} com viewability abaixo de 60% — ative viewability floor no DSP ou renegocie placement.`);
+  const goalMix={};channels.forEach(c=>{goalMix[c.goal]=(goalMix[c.goal]||0)+c.budget;});
+  const goals=Object.keys(goalMix);
+  if(goals.length===1)recs.push(`📌 Todo o budget está concentrado em <b>${goals[0]}</b>. Considere diversificar por funil (Awareness + Conversão).`);
+  if(!recs.length)recs.push('✅ Mix balanceado. Continue monitorando viewability e eCPM por canal.');
+  document.getElementById('recArea').innerHTML=recs.map(r=>`<p style="margin-bottom:8px;font-size:.88rem;line-height:1.6">${r}</p>`).join('');
+
+  // Donut chart
+  drawDonut(channels,total);
+}
+
+function drawDonut(chs,total){
+  const c=document.getElementById('donut');
+  const W=Math.min(560,document.querySelector('main').offsetWidth-40);
+  c.width=W*2;c.height=200;
+  const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+  const cx=c.height*0.5,cy=c.height*0.5,r=78,ri=44;
+  let angle=-Math.PI/2;
+  chs.forEach((ch,i)=>{
+    const sweep=ch.budget/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+sweep);ctx.closePath();
+    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fill();
+    angle+=sweep;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,ri,0,Math.PI*2);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--card').trim()||'#fff';
+  ctx.fill();
+  // Legend right side
+  const lx=c.height*1.1;
+  chs.slice(0,8).forEach((ch,i)=>{
+    const pct=(ch.budget/total*100).toFixed(1)+'%';
+    const name=(ch.name||`Canal ${i+1}`).substring(0,22);
+    const y=24+i*26;
+    ctx.fillStyle=COLORS[i%COLORS.length];ctx.fillRect(lx,y,16,16);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#111';
+    ctx.font=`${22}px 'Space Grotesk',sans-serif`;ctx.fillText(name,lx+22,y+13);
+    ctx.font=`bold ${20}px 'JetBrains Mono',monospace`;ctx.fillStyle='#1F36C7';
+    ctx.fillText(pct,c.width-80,y+13);
+  });
+}
+
+function loadExample(){
+  channels=[];cid=0;
+  [
+    {name:'DV360 Display',budget:40000,cpm:12.5,view:65,goal:'Awareness'},
+    {name:'YouTube Pre-roll',budget:35000,cpm:22,view:78,goal:'Branding'},
+    {name:'Meta Feed',budget:30000,cpm:9.8,view:70,goal:'Consideração'},
+    {name:'Google Search',budget:25000,cpm:0,view:0,goal:'Conversão'},
+    {name:'Native (Taboola)',budget:15000,cpm:7.5,view:60,goal:'Tráfego'},
+  ].forEach(d=>addChannel(d.name,d.budget,d.cpm,d.view,d.goal));
+  calc();
+}
+
+addChannel();addChannel();
+renderChannels();
+</script>
+</body>
+</html>
