@@ -697,6 +697,46 @@ body {
 .rename-icon{font-size:12px;color:var(--faint);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity .15s;}
 .client-card:hover .rename-icon{opacity:1;}
 
+/* ==================== TERM DRAG & DROP ==================== */
+.term-row{transition:opacity .15s,background .1s;}
+.term-row[draggable="true"]{cursor:grab;}
+.term-row[draggable="true"]:active{cursor:grabbing;}
+.term-row.drag-over{border-top:2px solid var(--accent);background:rgba(37,99,235,.06);}
+.term-row.dragging{opacity:.4;}
+.term-drag-handle{color:var(--faint);font-size:13px;cursor:grab;padding:0 4px;user-select:none;flex-shrink:0;}
+.term-drag-handle:hover{color:var(--fg);}
+
+/* ==================== GLOBAL SEARCH ==================== */
+.global-search-wrap{position:relative;display:flex;align-items:center;}
+.global-search-input{width:200px;padding:5px 30px 5px 10px;border:1px solid var(--input-border);border-radius:20px;
+  background:var(--input-bg);color:var(--fg);font-size:12px;transition:width .2s,border-color .15s;}
+.global-search-input:focus{outline:none;width:260px;border-color:var(--accent);}
+.global-search-input:placeholder-shown{width:160px;}
+.global-search-clear{position:absolute;right:8px;cursor:pointer;color:var(--faint);font-size:14px;display:none;}
+.global-search-clear.visible{display:block;}
+/* Global search results overlay */
+.gsearch-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:flex-start;justify-content:center;
+  padding-top:60px;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);}
+.gsearch-overlay.open{display:flex;}
+.gsearch-box{background:var(--card);border:1px solid var(--card-border);border-radius:14px;
+  width:min(560px,92vw);max-height:70vh;overflow-y:auto;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;}
+.gsearch-header{padding:14px 18px 10px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:10px;}
+.gsearch-header input{flex:1;border:none;background:transparent;color:var(--fg);font-size:14px;outline:none;}
+.gsearch-header .btn-sm{flex-shrink:0;}
+.gsearch-results{padding:8px 0;overflow-y:auto;}
+.gsearch-section{padding:6px 18px 4px;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);}
+.gsearch-row{padding:8px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .1s;}
+.gsearch-row:hover{background:rgba(37,99,235,.07);}
+.gsearch-row-val{font-family:monospace;font-size:12px;color:var(--accent);flex-shrink:0;min-width:90px;}
+.gsearch-row-label{font-size:12px;flex:1;}
+.gsearch-row-meta{font-size:10px;color:var(--faint);text-align:right;flex-shrink:0;}
+.gsearch-empty{padding:30px;text-align:center;color:var(--faint);font-size:13px;}
+
+/* ==================== SEGMENT TERM COUNTER IN CARD ==================== */
+.seg-fill-bar{display:flex;gap:2px;margin-top:4px;flex-wrap:wrap;}
+.seg-fill-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);opacity:.85;}
+.seg-fill-dot.empty{background:var(--card-border);opacity:1;}
+
 /* ── Como usar modal ─────────────────────────────── */
 .qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
 .qa-overlay.open{display:flex}
@@ -732,6 +772,14 @@ body {
     </div>
     <div class="header-right">
   <button class="btn-qa" onclick="abrirAjuda()" style="margin-left:auto">❓ Como usar</button>
+      <div class="global-search-wrap">
+        <input class="global-search-input" id="globalSearchInput" type="search"
+          placeholder="🔍 Busca global…" autocomplete="off"
+          oninput="onGlobalSearchInput(this.value)"
+          onkeydown="if(event.key==='Escape'){closeGlobalSearch();this.blur();}"
+          onfocus="if(this.value.trim())openGlobalSearch()">
+        <span class="global-search-clear" id="globalSearchClear" onclick="clearGlobalSearch()">✕</span>
+      </div>
       <select id="clientSelect" onchange="switchClient(this.value)" title="Cliente ativo"></select>
       <button class="btn-icon" id="themeBtn" onclick="cycleTheme()" title="Alternar tema">🌓</button>
     </div>
@@ -779,6 +827,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openPasteModal()">⬆ Importar</button>
           <button class="btn secondary btn-sm" onclick="exportJSON()">⬇ JSON</button>
           <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
+          <button class="btn secondary btn-sm" onclick="exportAllJSON()" title="Exportar TODOS os clientes num único arquivo">⬇ Backup</button>
         </div>
       </div>
       <div id="dictSegPills" class="pills"></div>
@@ -977,6 +1026,22 @@ body {
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeImportJsonModal()">Cancelar</button>
       <button class="btn primary" onclick="confirmImportJson()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Global Search Overlay -->
+<div id="globalSearchOverlay" class="gsearch-overlay" onclick="if(event.target===this)closeGlobalSearch()">
+  <div class="gsearch-box">
+    <div class="gsearch-header">
+      <span style="font-size:16px">🔍</span>
+      <input id="gsearchInner" type="search" placeholder="Buscar em todos os clientes e segmentos…" autocomplete="off"
+        oninput="runGlobalSearch(this.value)"
+        onkeydown="if(event.key==='Escape')closeGlobalSearch()">
+      <button class="btn secondary btn-sm" onclick="closeGlobalSearch()">✕</button>
+    </div>
+    <div class="gsearch-results" id="gsearchResults">
+      <div class="gsearch-empty">Digite para buscar termos em todos os clientes</div>
     </div>
   </div>
 </div>
@@ -1214,9 +1279,13 @@ function renderClientes() {
   clients.forEach(c => {
     const isAct = c.id===activeId;
     const termCount = Object.values(c.dictionary||{}).reduce((a,b)=>a+b.length, 0);
+    const segsWithTerms = c.segments.filter(s=>(c.dictionary[s.id]||[]).length>0).length;
     const segsHtml = c.segments.map(s=>
       `<span class="seg-tag ${s.required?'required':'optional'}">${esc(s.label)}</span>`
     ).join('');
+    const fillDotsHtml = c.segments.length ? `<div class="seg-fill-bar">` +
+      c.segments.map(s=>`<span class="seg-fill-dot ${(c.dictionary[s.id]||[]).length?'':'empty'}" title="${esc(s.label)}: ${(c.dictionary[s.id]||[]).length} termos"></span>`).join('') +
+      `</div>` : '';
 
     const div = document.createElement('div');
     div.className = 'client-card'+(isAct?' active':'');
@@ -1235,9 +1304,10 @@ function renderClientes() {
       </div>
       <div class="client-card-meta">
         <span>Sep: ${[...new Set([c.separator,...c.segments.filter(s=>s.sep!==undefined&&s.sep!=='').map(s=>s.sep)])].filter(Boolean).map(sp=>`<span class="sep-chip">${esc(sp)}</span>`).join(' + ')}</span>
-        <span>${c.segments.length} segmentos</span>
+        <span>${c.segments.length} segs · ${segsWithTerms} c/ termos</span>
         <span>${termCount} termos</span>
       </div>
+      ${fillDotsHtml}
       <div class="segments-strip">${segsHtml}</div>
     `;
     grid.appendChild(div);
@@ -1497,13 +1567,15 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Ordenar A–Z" onclick="sortTermsAZ()" style="font-size:11px;padding:4px 8px">↕ A–Z</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
     </div>
-    <div class="term-list">` + terms.map((t,i)=>`
-      <div class="term-row" id="tr-${i}">
+    <div class="term-list" id="termList">` + terms.map((t,i)=>`
+      <div class="term-row" id="tr-${i}" draggable="true" data-idx="${i}">
+        <span class="term-drag-handle" title="Arrastar para reordenar">⠿</span>
         <span class="term-row-num">${i+1}</span>
         <span class="term-row-value">${esc(t.value)}</span>
         <span class="term-row-label">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
         <div class="term-actions">
+          <button title="Duplicar" onclick="duplicateTerm(${i})">📋</button>
           <button onclick="editTerm(${i})">✏️</button>
           <button class="del" onclick="deleteTerm(${i})">✕</button>
         </div>
@@ -1528,6 +1600,42 @@ function renderTermArea(c) {
     document.getElementById(id)?.addEventListener('keydown',e=>{ if(e.key==='Enter') addTerm(); });
   });
   setTimeout(()=>document.getElementById('tv')?.focus(),50);
+  // Wire drag-and-drop for term reorder
+  initTermDragDrop();
+}
+
+function initTermDragDrop() {
+  const list = document.getElementById('termList'); if(!list) return;
+  let dragSrc = null;
+  list.querySelectorAll('.term-row').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', row.dataset.idx);
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      list.querySelectorAll('.term-row').forEach(r => r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.querySelectorAll('.term-row').forEach(r => r.classList.remove('drag-over'));
+      if(row !== dragSrc) row.classList.add('drag-over');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if(row === dragSrc) return;
+      const c = active(); if(!c||!activeSeg) return;
+      const fromIdx = parseInt(dragSrc.dataset.idx);
+      const toIdx   = parseInt(row.dataset.idx);
+      const arr = c.dictionary[activeSeg];
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
+      saveData(); renderDicionario();
+    });
+  });
 }
 
 /* Dict search filter */
@@ -1607,6 +1715,15 @@ function deleteTerm(i) {
   saveData(); renderDicionario();
 }
 
+function duplicateTerm(i) {
+  const c=active(); if(!c||!activeSeg) return;
+  const t = c.dictionary[activeSeg][i]; if(!t) return;
+  const copy = {value: t.value+'-copy', label: t.label+' (cópia)', ...(t.desc?{desc:t.desc}:{})};
+  c.dictionary[activeSeg].splice(i+1, 0, copy);
+  saveData(); renderDicionario();
+  showToast('Termo duplicado — edite o valor');
+}
+
 function editTerm(i) {
   const c=active(); if(!c||!activeSeg) return;
   const t=c.dictionary[activeSeg][i]; if(!t) return;
@@ -1643,6 +1760,13 @@ function exportJSON(id) {
   const c=getClient(id||activeId); if(!c) { showToast('Nenhum cliente selecionado'); return; }
   dlBlob(JSON.stringify(c,null,2), `taxo-${c.id}.json`, 'application/json');
   showToast('JSON exportado');
+}
+
+function exportAllJSON() {
+  if(!clients.length) { showToast('Nenhum cliente para exportar'); return; }
+  const ts = new Date().toISOString().slice(0,10);
+  dlBlob(JSON.stringify(clients,null,2), `taxo-backup-${ts}.json`, 'application/json');
+  showToast(`Backup de ${clients.length} cliente(s) exportado`);
 }
 
 function exportCSV(id) {
@@ -1965,7 +2089,17 @@ function renderBuilder() {
   }
 
   segsEl.innerHTML='';
-  c.segments.forEach(s=>{
+  // Respect structure order if set
+  let segsToRender = c.segments;
+  if(window._builderStructOrder) {
+    const ordered = window._builderStructOrder
+      .map(id=>c.segments.find(s=>s.id===id))
+      .filter(Boolean);
+    const rest = c.segments.filter(s=>!window._builderStructOrder.includes(s.id));
+    segsToRender = [...ordered, ...rest];
+    window._builderStructOrder = null;
+  }
+  segsToRender.forEach(s=>{
     const terms=c.dictionary[s.id]||[];
     const curVal=builderVals[s.id]||'';
     const div=document.createElement('div');
@@ -2320,6 +2454,7 @@ function renderEstruturas() {
     div.className='structure-item';
     div.innerHTML=`
       <div class="structure-actions">
+        <button title="Usar no Builder" onclick="useStructureInBuilder('${st.id}')">🏗️</button>
         <button onclick="openEditStructure('${st.id}')">✏️</button>
         <button onclick="deleteStructure('${st.id}')">🗑️</button>
       </div>
@@ -2404,6 +2539,22 @@ function previewStructPattern() {
   prevEl.innerHTML=pattern?renderPatternHtml(pattern,c.segments):'<span style="color:var(--faint)">—</span>';
 }
 
+/* Estrutura → preenche builder com os segmentos da estrutura */
+function useStructureInBuilder(structId) {
+  const c=active(); if(!c) return;
+  const st=(c.structures||[]).find(s=>s.id===structId); if(!st) return;
+  // Parse pattern to get segment order
+  const parsed = parsePattern(st.pattern);
+  if(!parsed.length) { showToast('Padrão sem segmentos definidos'); return; }
+  // Reset builder vals and switch tab
+  builderVals = {};
+  // Reorder c.segments to match the pattern order (store temporarily in renderBuilder override)
+  // We store the preferred order to apply in the builder
+  window._builderStructOrder = parsed.map(p=>p.segId);
+  switchTab('builder');
+  showToast(`Builder: estrutura "${st.label}"`);
+}
+
 function saveStructure() {
   const c=active(); if(!c) return;
   const label=document.getElementById('sLabel')?.value.trim();
@@ -2485,6 +2636,73 @@ function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open'
 function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
 
 /* =============================================
+   GLOBAL SEARCH
+   ============================================= */
+let _gsearchTimer = null;
+function onGlobalSearchInput(q) {
+  const clear = document.getElementById('globalSearchClear');
+  if(clear) clear.classList.toggle('visible', q.length>0);
+  clearTimeout(_gsearchTimer);
+  if(!q.trim()) { closeGlobalSearch(); return; }
+  _gsearchTimer = setTimeout(()=>{ openGlobalSearch(); runGlobalSearch(q); }, 180);
+}
+function openGlobalSearch() {
+  const ov = document.getElementById('globalSearchOverlay');
+  if(ov) ov.classList.add('open');
+  const inner = document.getElementById('gsearchInner');
+  const inp = document.getElementById('globalSearchInput');
+  if(inner && inp) inner.value = inp.value;
+}
+function closeGlobalSearch() {
+  const ov = document.getElementById('globalSearchOverlay');
+  if(ov) ov.classList.remove('open');
+}
+function clearGlobalSearch() {
+  const inp = document.getElementById('globalSearchInput');
+  if(inp) { inp.value=''; inp.focus(); }
+  const clear = document.getElementById('globalSearchClear');
+  if(clear) clear.classList.remove('visible');
+  closeGlobalSearch();
+}
+function runGlobalSearch(q) {
+  q = q.trim().toLowerCase();
+  const resEl = document.getElementById('gsearchResults'); if(!resEl) return;
+  if(!q) { resEl.innerHTML='<div class="gsearch-empty">Digite para buscar</div>'; return; }
+  const hits = [];
+  clients.forEach(c=>{
+    c.segments.forEach(seg=>{
+      (c.dictionary[seg.id]||[]).forEach((t,i)=>{
+        const text = (t.value+' '+t.label+' '+(t.desc||'')).toLowerCase();
+        if(text.includes(q)) hits.push({client:c, seg, term:t, termIdx:i});
+      });
+    });
+  });
+  if(!hits.length) { resEl.innerHTML='<div class="gsearch-empty">Nenhum resultado para "<strong>'+esc(q)+'</strong>"</div>'; return; }
+  // Group by client
+  const byClient = {};
+  hits.forEach(h=>{ if(!byClient[h.client.id]) byClient[h.client.id]={c:h.client,items:[]}; byClient[h.client.id].items.push(h); });
+  resEl.innerHTML = Object.values(byClient).map(g=>`
+    <div class="gsearch-section">${esc(g.c.name)}</div>
+    ${g.items.slice(0,30).map(h=>`
+      <div class="gsearch-row" onclick="goToTerm('${h.client.id}','${h.seg.id}')">
+        <span class="gsearch-row-val">${esc(h.term.value)}</span>
+        <span class="gsearch-row-label">${esc(h.term.label)}${h.term.desc?` <span style="color:var(--faint)">· ${esc(h.term.desc)}</span>`:''}</span>
+        <span class="gsearch-row-meta">${esc(h.seg.label)}</span>
+      </div>
+    `).join('')}
+  `).join('');
+  resEl.innerHTML += `<div style="padding:8px 18px;font-size:11px;color:var(--faint)">${hits.length} resultado(s)</div>`;
+}
+function goToTerm(clientId, segId) {
+  closeGlobalSearch();
+  clearGlobalSearch();
+  if(activeId !== clientId) { activeId=clientId; activeSeg=null; builderVals={}; saveData(); renderClientSelect(); renderClientes(); }
+  activeSeg = segId;
+  switchTab('dicionario');
+  setTimeout(renderDicionario, 80);
+}
+
+/* =============================================
    KEYBOARD SHORTCUTS
    ============================================= */
 const TAB_ORDER = ['clientes','dicionario','estruturas','builder','validador'];
@@ -2497,11 +2715,13 @@ document.addEventListener('keydown', e => {
   }
   // Escape → close modals (priority order)
   if(e.key==='Escape') {
+    const gs = document.getElementById('globalSearchOverlay');
     const bi = document.getElementById('batchImportModal');
     const ij = document.getElementById('importJsonModal');
     const pm = document.getElementById('pasteModal');
     const mo = document.getElementById('modal');
     const qa = document.getElementById('qa-overlay');
+    if(gs && gs.classList.contains('open')) { closeGlobalSearch(); return; }
     if(bi && bi.style.display!=='none') { closeBatchImportModal(); return; }
     if(ij && ij.style.display!=='none') { closeImportJsonModal(); return; }
     if(pm && pm.classList.contains('show')) { closePasteModal(); return; }
