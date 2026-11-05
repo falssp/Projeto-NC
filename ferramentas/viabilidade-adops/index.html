@@ -612,13 +612,47 @@ function calc(){
     <div class="kpi"><div class="kpi-label">Total operacional</div><div class="kpi-value" style="color:${opsPct>15?'var(--err)':opsPct>10?'var(--warn)':'var(--ok)'}">${fmtR(totalOps)}</div><div class="kpi-sub">${mediaBudget>0?fmtP(opsPct)+' do budget':'—'}</div></div>
   `
 
+  // helper: gera parágrafo de justificativa tom e-mail ao cliente
+  const buildParagraph = (type, verdict, sigs, defs, best, bestCost, bestPct, allTools) => {
+    const nome = best ? (best.name||'a ferramenta') : (type==='as'?'o ad server':'a ad verification')
+    const outro = allTools.filter(t=>t.id!==best?.id)
+    const outroPart = outro.length ? ` Em comparação, ${outro.map(t=>`${t.name||'outra opção'} custaria ${fmtR(toolCost(t))}${mediaBudget>0?' ('+fmtP((toolCost(t)/mediaBudget)*100)+' do budget)':''}`).join(' e ')}.` : ''
+
+    // motivos positivos e negativos separados
+    const positivos = sigs.filter(s=>s.c==='green').map(s=>s.msg)
+    const alertas   = sigs.filter(s=>s.c==='red'||s.c==='yellow').map(s=>s.msg)
+
+    let para = ''
+
+    if(type==='as'){
+      if(verdict.includes('✅')){
+        para = `Recomendamos o uso de ${nome} nesta campanha. O custo de serving é de ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}, dentro do limite aceitável de mercado.${outroPart} ${positivos.slice(0,2).join(' ')}`.trim()
+      } else if(verdict.includes('⚠️')){
+        para = `O uso de ad server deve ser avaliado com cautela. A opção mais econômica é ${nome}, com custo de ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}.${outroPart} ${positivos.length?positivos[0]+' ':''} ${alertas.length?'Por outro lado: '+alertas[0]:''}`.trim()
+      } else {
+        para = `Não recomendamos ad server para esta campanha. O custo mínimo seria ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''} com ${nome}, o que não se justifica dado o perfil desta ação.${outroPart} ${alertas.slice(0,2).join(' ')}`.trim()
+      }
+    } else {
+      if(verdict.includes('✅')){
+        para = `Recomendamos a contratação de ad verification para esta campanha. A opção mais indicada é ${nome}, com custo de ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}.${outroPart} ${positivos.slice(0,2).join(' ')}`.trim()
+      } else if(verdict.includes('⚠️')){
+        para = `A necessidade de ad verification deve ser avaliada. A opção mais econômica é ${nome}, a ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}.${outroPart} ${positivos.length?positivos[0]+' ':''} ${alertas.length?alertas[0]:''}`.trim()
+      } else {
+        para = `Não identificamos necessidade de ad verification para esta campanha. O perfil de inventário e o histórico de brand safety indicam baixo risco, e o custo de ${fmtR(bestCost)} com ${nome} não se justificaria.${outroPart}`.trim()
+      }
+    }
+
+    if(defs.length) para += ` <em>${defs[0]}</em>`
+    return `<p style="font-size:13px;line-height:1.65;color:#333;margin:0">${para}</p>`
+  }
+
   // helper: cards de ferramentas de uma categoria
   const toolCards = (list) => list.map((t,i)=>{
     const cost = toolCost(t)
     const pct  = mediaBudget>0?(cost/mediaBudget)*100:0
     const cls  = list.length===1?'only':i===0?'best':'worst'
     const badge = cls==='best'&&list.length>1?'<div class="best-badge">MENOR CUSTO</div>':''
-    return `<div class="tool-compare-card ${cls}" style="flex:0 0 180px">${badge}
+    return `<div class="tool-compare-card ${cls}">${badge}
       <div class="tool-name">${t.name||'(sem nome)'}</div>
       <div class="tool-cost-val">${fmtR(cost)}</div>
       <div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'CPM: R$'+fmt(t.cpm)+' · fee R$'+fmt(t.fixed)}</div>
@@ -626,25 +660,24 @@ function calc(){
     </div>`
   }).join('')
 
-  // helper: card de recomendação — sinais em coluna (chip depois texto)
-  const recCard = (label, icon, verdict, cls, sigs, defs) => {
-    const items = sigs.map(j=>`<div style="margin-bottom:6px"><span class="chip ${j.c}">${j.t}</span><div style="font-size:11.5px;color:#555;line-height:1.4;margin-top:3px">${j.msg}</div></div>`).join('')
-    const def = defs.length ? `<div class="rec-defense">💡 ${defs[0]}</div>` : ''
-    return `<div class="rec-card ${cls}" style="flex:1;min-width:220px">
+  // helper: card de recomendação com parágrafo de e-mail
+  const recCard = (type, label, icon, verdict, cls, sigs, defs, best, bestCost, bestPct, allTools) => {
+    const para = allTools.length ? buildParagraph(type, verdict, sigs, defs, best, bestCost, bestPct, allTools)
+      : '<span style="font-size:12px;color:var(--muted)">Nenhuma ferramenta cadastrada.</span>'
+    return `<div class="rec-card ${cls}" style="flex:1;min-width:260px">
       <div class="rec-header"><div class="rec-icon">${icon}</div><div><div class="rec-label">${label}</div><div class="rec-verdict">${verdict}</div></div></div>
-      <div style="margin-top:8px">${items||'<span style="font-size:12px;color:var(--muted)">Sem sinais determinantes.</span>'}</div>
-      ${def}
+      <div style="margin-top:10px">${para}</div>
     </div>`
   }
 
-  // LINHA AS: ferramentas + recomendação lado a lado, mesma altura
-  const buildRow = (tools, sorted, label, icon, verdict, cls, sigs, defs) => {
+  // LINHA: ferramentas + recomendação lado a lado, mesma altura via align-items:stretch
+  const buildRow = (tools, sorted, type, label, icon, verdict, cls, sigs, defs, best, bestCost, bestPct) => {
     if(!tools.length) return ''
     return `<div class="compare-section">
       <div class="compare-title">${icon} ${label}</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch">
         ${toolCards(sorted)}
-        ${recCard(label, icon, verdict, cls, sigs, defs)}
+        ${recCard(type, label, icon, verdict, cls, sigs, defs, best, bestCost, bestPct, tools)}
       </div>
     </div>`
   }
@@ -652,8 +685,8 @@ function calc(){
   const asSorted = [...asTools].sort((a,b)=>toolCost(a)-toolCost(b))
   const avSorted = [...avTools].sort((a,b)=>toolCost(a)-toolCost(b))
 
-  let compareHTML = buildRow(asTools, asSorted, 'Ad Servers',      '🖥️', asVerdict, asClass, asSignals, asDefenses)
-                  + buildRow(avTools, avSorted, 'Ad Verifications', '🛡️', avVerdict, avClass, avSignals, avDefenses)
+  let compareHTML = buildRow(asTools, asSorted, 'as', 'Ad Servers',      '🖥️', asVerdict, asClass, asSignals, asDefenses, bestAS, bestASCost, bestASPct)
+                  + buildRow(avTools, avSorted, 'av', 'Ad Verifications', '🛡️', avVerdict, avClass, avSignals, avDefenses, bestAV, bestAVCost, bestAVPct)
 
   if(!compareHTML) compareHTML = '<p style="font-size:13px;color:var(--muted)">Nenhuma ferramenta cadastrada ainda.</p>'
   document.getElementById('compare-content').innerHTML = compareHTML
