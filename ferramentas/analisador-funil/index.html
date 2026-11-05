@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador de Funil — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;gap:16px;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}
+.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}
+.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:980px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}
+.tab-content.active{display:block}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--bg);color:var(--text);transition:border-color .2s;outline:none}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;font-weight:600;font-size:.88rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm{padding:5px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.section-title{font-size:1rem;font-weight:700;margin-bottom:12px}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+/* Funil visual */
+.funnel-container{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start}
+.funnel-steps{display:flex;flex-direction:column;gap:0}
+.step-row{display:flex;align-items:stretch;gap:12px;position:relative}
+.step-row::after{content:'';position:absolute;left:20px;top:100%;width:2px;height:12px;background:var(--border);display:block}
+.step-row:last-child::after{display:none}
+.step-num{width:40px;min-width:40px;height:40px;border-radius:50%;background:var(--azul);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;align-self:center;margin-top:12px}
+.step-card{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.step-name{font-weight:600;font-size:.9rem;flex:1}
+.step-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.step-inputs input{font-size:.88rem}
+.step-inputs .input-group{display:flex;flex-direction:column;gap:4px}
+.step-inputs .input-group label{font-size:.72rem;text-transform:uppercase}
+.remove-step{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:2px;line-height:1}
+.remove-step:hover{color:var(--red)}
+.add-step-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:2px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--muted);font-size:.9rem;background:none;font-family:inherit;font-weight:500;transition:all .2s;width:100%}
+.add-step-btn:hover{border-color:var(--azul);color:var(--azul)}
+/* Results panel */
+.results-panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:sticky;top:16px}
+.panel-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:16px}
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-name{font-size:.85rem;color:var(--muted)}
+.metric-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.95rem;color:var(--text)}
+.badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:.75rem;font-weight:600}
+.badge-ok{background:#dcfce7;color:var(--green)}
+.badge-warn{background:#fef9c3;color:var(--yellow)}
+.badge-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .badge-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .badge-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .badge-bad{background:#450a0a;color:#fca5a5}
+/* funnel chart */
+canvas{max-width:100%}
+.funnel-chart-wrap{margin-bottom:16px}
+.breakdown-table{width:100%;font-size:.82rem;border-collapse:collapse}
+.breakdown-table th{background:var(--light);padding:7px 10px;text-align:left;font-weight:600;color:var(--azul);border-bottom:2px solid var(--border)}
+.breakdown-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.breakdown-table tr:last-child td{border-bottom:none}
+.drop-high{color:var(--red);font-weight:600}
+.drop-mid{color:var(--yellow);font-weight:600}
+.drop-ok{color:var(--green);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:20px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.code{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--light);padding:2px 7px;border-radius:4px;color:var(--azul)}
+.bottleneck{background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:12px 16px;font-size:.88rem;color:var(--red);margin-top:12px}
+[data-theme="dark"] .bottleneck{background:#450a0a;color:#fca5a5;border-color:#7f1d1d}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>📊 Analisador de Funil</h1>
+      <div class="subtitle">Visualize taxas de conversão por etapa, gargalos e CVR acumulada</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('funil')">Funil</button>
+      <button class="tab" onclick="switchTab('comparar')">Comparar Períodos</button>
+      <button class="tab" onclick="switchTab('ref')">Benchmarks</button>
+    </div>
+
+    <!-- Funil -->
+    <div class="tab-content active" id="tab-funil">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label>Canal/Campanha</label>
+          <input type="text" id="canalNome" placeholder="Google Search — Brand" style="width:220px" oninput="analyze()">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label>Período</label>
+          <input type="text" id="periodo" placeholder="Out/2026" style="width:140px" oninput="analyze()">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label>Investimento total (R$)</label>
+          <input type="number" id="invest" placeholder="25000" oninput="analyze()" style="width:160px">
+        </div>
+      </div>
+
+      <div class="funnel-container">
+        <div>
+          <div id="stepList" class="funnel-steps"></div>
+          <button class="add-step-btn" onclick="addStep()">+ Adicionar etapa</button>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="analyze()">Analisar funil</button>
+            <button class="btn btn-secondary" onclick="loadExample()">Exemplo</button>
+            <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+          </div>
+        </div>
+
+        <div class="results-panel" id="resultsPanel" style="display:none">
+          <div class="panel-title">Resumo do funil</div>
+          <div class="funnel-chart-wrap">
+            <canvas id="funnelCanvas" height="180"></canvas>
+          </div>
+          <div id="summaryMetrics"></div>
+          <div id="bottleneckBox" class="bottleneck" style="display:none"></div>
+          <div style="margin-top:16px">
+            <div class="panel-title">Por etapa</div>
+            <table class="breakdown-table" id="breakdownTable"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparar -->
+    <div class="tab-content" id="tab-comparar">
+      <div class="section-title">Comparação de períodos</div>
+      <div class="info-box">Cole as métricas de dois períodos para identificar mudanças em cada etapa do funil.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div>
+          <div class="section-title">Período A</div>
+          <div id="perA"></div>
+        </div>
+        <div>
+          <div class="section-title">Período B</div>
+          <div id="perB"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="comparePerf()">Comparar</button>
+      <div id="compareResult" style="margin-top:20px"></div>
+    </div>
+
+    <!-- Benchmarks -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Benchmarks de CVR por etapa e canal</div>
+      <table>
+        <thead><tr><th>Etapa</th><th>Métrica</th><th>E-commerce</th><th>Lead Gen</th><th>SaaS</th></tr></thead>
+        <tbody>
+          <tr><td>Impressão → Clique</td><td>CTR</td><td>0.3–1.5%</td><td>1–3%</td><td>2–5%</td></tr>
+          <tr><td>Clique → Sessão (LP)</td><td>Taxa de chegada</td><td>85–95%</td><td>85–95%</td><td>85–95%</td></tr>
+          <tr><td>Sessão → Lead / Add-to-cart</td><td>Micro-CVR</td><td>3–8%</td><td>5–15%</td><td>2–7%</td></tr>
+          <tr><td>Lead → Oportunidade</td><td>Lead Quality Rate</td><td>—</td><td>20–50%</td><td>15–40%</td></tr>
+          <tr><td>Sessão → Compra</td><td>CVR e-commerce</td><td>1–4%</td><td>—</td><td>—</td></tr>
+          <tr><td>Oportunidade → Venda</td><td>Close Rate</td><td>—</td><td>10–30%</td><td>15–35%</td></tr>
+          <tr><td>Impressão → Conversão</td><td>CVR acumulada</td><td>0.01–0.1%</td><td>0.1–1%</td><td>0.05–0.5%</td></tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">Benchmarks CTR por canal (display/paid)</div>
+      <table>
+        <thead><tr><th>Canal</th><th>CTR médio</th><th>CTR bom</th><th>CTR excelente</th></tr></thead>
+        <tbody>
+          <tr><td>Google Search (marca)</td><td>5–10%</td><td>>10%</td><td>>20%</td></tr>
+          <tr><td>Google Search (genérico)</td><td>2–5%</td><td>>5%</td><td>>8%</td></tr>
+          <tr><td>Google Display</td><td>0.1–0.3%</td><td>>0.3%</td><td>>0.5%</td></tr>
+          <tr><td>Meta Ads (feed)</td><td>0.5–1.5%</td><td>>1.5%</td><td>>3%</td></tr>
+          <tr><td>Meta Ads (stories)</td><td>0.3–0.8%</td><td>>1%</td><td>>2%</td></tr>
+          <tr><td>LinkedIn Ads</td><td>0.3–0.6%</td><td>>0.6%</td><td>>1%</td></tr>
+          <tr><td>TikTok Ads</td><td>0.5–1.5%</td><td>>2%</td><td>>4%</td></tr>
+          <tr><td>YouTube (video)</td><td>0.1–0.5%</td><td>>0.5%</td><td>>1%</td></tr>
+        </tbody>
+      </table>
+
+      <div class="section-title">Métricas de funil e fórmulas</div>
+      <table>
+        <thead><tr><th>Métrica</th><th>Fórmula</th></tr></thead>
+        <tbody>
+          <tr><td>CTR</td><td><span class="code">Cliques / Impressões × 100</span></td></tr>
+          <tr><td>Taxa de conversão por etapa</td><td><span class="code">Saídas / Entradas × 100</span></td></tr>
+          <tr><td>CVR acumulada</td><td><span class="code">Conversões finais / Impressões × 100</span></td></tr>
+          <tr><td>Drop-off</td><td><span class="code">1 − (Saídas / Entradas)</span></td></tr>
+          <tr><td>CPA</td><td><span class="code">Investimento / Conversões</span></td></tr>
+          <tr><td>CPL (custo por lead)</td><td><span class="code">Investimento / Leads</span></td></tr>
+          <tr><td>CPC</td><td><span class="code">Investimento / Cliques</span></td></tr>
+          <tr><td>CPM</td><td><span class="code">Investimento / Impressões × 1000</span></td></tr>
+          <tr><td>ROAS</td><td><span class="code">Receita / Investimento</span></td></tr>
+          <tr><td>AOV (ticket médio)</td><td><span class="code">Receita / Pedidos</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script>
+let stepId=0;
+const steps=[];
+
+const DEFAULT_STEPS=[
+  {name:'Impressões',icon:'👁️'},
+  {name:'Cliques',icon:'🖱️'},
+  {name:'Sessões (LP)',icon:'🌐'},
+  {name:'Leads / Add-to-cart',icon:'📋'},
+  {name:'Conversões',icon:'✅'},
+];
+
+function addStep(name='',icon='📌',value=''){
+  const id=++stepId;
+  steps.push(id);
+  const div=document.createElement('div');
+  div.className='step-row';div.id=`step-${id}`;
+  div.innerHTML=`
+    <div class="step-num">${steps.length}</div>
+    <div class="step-card">
+      <div class="step-header">
+        <input type="text" value="${icon}" style="width:40px;text-align:center;padding:6px;font-size:1.1rem" id="icon-${id}" oninput="analyze()">
+        <input type="text" value="${name}" placeholder="Nome da etapa" style="flex:1" id="name-${id}" oninput="analyze()">
+        <button class="remove-step" onclick="removeStep(${id})" title="Remover">×</button>
+      </div>
+      <div class="step-inputs">
+        <div class="input-group">
+          <label>Valor</label>
+          <input type="number" id="val-${id}" value="${value}" placeholder="0" oninput="analyze()">
+        </div>
+        <div class="input-group">
+          <label>Custo (R$) opcional</label>
+          <input type="number" id="cost-${id}" placeholder="0" oninput="analyze()">
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('stepList').appendChild(div);
+  renumberSteps();
+  analyze();
+}
+
+function removeStep(id){
+  const idx=steps.indexOf(id);
+  if(idx>-1) steps.splice(idx,1);
+  document.getElementById(`step-${id}`).remove();
+  renumberSteps();
+  analyze();
+}
+
+function renumberSteps(){
+  document.querySelectorAll('.step-num').forEach((el,i)=>el.textContent=i+1);
+}
+
+function getStepData(){
+  return steps.map(id=>({
+    id,
+    name:document.getElementById(`name-${id}`)?.value||'',
+    icon:document.getElementById(`icon-${id}`)?.value||'📌',
+    value:parseFloat(document.getElementById(`val-${id}`)?.value)||0,
+    cost:parseFloat(document.getElementById(`cost-${id}`)?.value)||0,
+  }));
+}
+
+function analyze(){
+  const data=getStepData().filter(s=>s.value>0||s.name);
+  if(data.length<2){document.getElementById('resultsPanel').style.display='none';return;}
+  document.getElementById('resultsPanel').style.display='block';
+
+  const invest=parseFloat(document.getElementById('invest').value)||0;
+  const top=data[0].value||1;
+  const bottom=data[data.length-1].value||0;
+  const cvrAcum=bottom/top*100;
+  const cpa=invest&&bottom?invest/bottom:0;
+  const cpc=invest&&data[1]?invest/data[1].value:0;
+  const cpm=invest&&top?invest/top*1000:0;
+
+  // find bottleneck: step with highest drop-off %
+  let bottleneckIdx=-1,maxDrop=0;
+  const rows=[];
+  for(let i=1;i<data.length;i++){
+    const prev=data[i-1].value||1;
+    const cur=data[i].value||0;
+    const cvr=cur/prev*100;
+    const drop=100-cvr;
+    rows.push({from:data[i-1].name,to:data[i].name,prev,cur,cvr,drop});
+    if(drop>maxDrop){maxDrop=drop;bottleneckIdx=i;}
+  }
+
+  // summary
+  document.getElementById('summaryMetrics').innerHTML=[
+    {name:'CVR acumulada',val:cvrAcum.toFixed(3)+'%'},
+    {name:'CPA',val:cpa?'R$'+cpa.toFixed(2):'—'},
+    {name:'CPC',val:cpc?'R$'+cpc.toFixed(2):'—'},
+    {name:'CPM',val:cpm?'R$'+cpm.toFixed(2):'—'},
+  ].map(m=>`<div class="metric-row"><span class="metric-name">${m.name}</span><span class="metric-val">${m.val}</span></div>`).join('');
+
+  // bottleneck
+  if(bottleneckIdx>0&&maxDrop>60){
+    const bn=rows[bottleneckIdx-1];
+    document.getElementById('bottleneckBox').style.display='block';
+    document.getElementById('bottleneckBox').textContent=`🚨 Maior gargalo: ${bn.from} → ${bn.to} (${bn.drop.toFixed(1)}% drop-off). Investigue esta etapa prioritariamente.`;
+  } else document.getElementById('bottleneckBox').style.display='none';
+
+  // breakdown table
+  document.getElementById('breakdownTable').innerHTML=`
+    <thead><tr><th>Etapa</th><th>Valor</th><th>CVR etapa</th><th>Drop-off</th></tr></thead>
+    <tbody>
+      <tr><td>${data[0].icon} ${data[0].name}</td><td>${fmt(data[0].value)}</td><td>—</td><td>—</td></tr>
+      ${rows.map(r=>{
+        const cls=r.drop>70?'drop-high':r.drop>40?'drop-mid':'drop-ok';
+        return `<tr><td>${data[rows.indexOf(r)+1]?.icon||'📌'} ${r.to}</td><td>${fmt(r.cur)}</td><td>${r.cvr.toFixed(2)}%</td><td class="${cls}">${r.drop.toFixed(1)}%</td></tr>`;
+      }).join('')}
+    </tbody>`;
+
+  drawFunnelChart(data);
+}
+
+function drawFunnelChart(data){
+  const canvas=document.getElementById('funnelCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||280;
+  canvas.width=W;canvas.height=180;
+  ctx.clearRect(0,0,W,180);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const textColor=dark?'#9ca3af':'#6b7280';
+  const n=Math.min(data.length,7);
+  const maxVal=data[0].value||1;
+  const sliceH=180/n;
+  const COLORS=['#1F36C7','#2d47d4','#3d59e0','#4f6ced','#6880f0','#8296f4','#9dacf7'];
+  data.slice(0,n).forEach((s,i)=>{
+    const pct=s.value/maxVal;
+    const w=Math.max(pct*W,30);
+    const x=(W-w)/2;
+    const y=i*sliceH;
+    ctx.fillStyle=COLORS[i]||COLORS[COLORS.length-1];
+    ctx.beginPath();
+    ctx.roundRect?ctx.roundRect(x,y+2,w,sliceH-4,4):ctx.rect(x,y+2,w,sliceH-4);
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.font=`bold 11px Space Grotesk,sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText(`${s.icon} ${s.name}: ${fmt(s.value)}`,W/2,y+sliceH/2+4);
+  });
+  ctx.textAlign='left';
+}
+
+function loadExample(){
+  clearAll(false);
+  const ex=[
+    {name:'Impressões',icon:'👁️',value:5000000,cost:0},
+    {name:'Cliques',icon:'🖱️',value:25000,cost:0},
+    {name:'Sessões (LP)',icon:'🌐',value:21500,cost:0},
+    {name:'Add-to-cart',icon:'🛒',value:3225,cost:0},
+    {name:'Checkout',icon:'💳',value:1290,cost:0},
+    {name:'Compras',icon:'✅',value:645,cost:0},
+  ];
+  document.getElementById('invest').value=18000;
+  document.getElementById('canalNome').value='Google Shopping';
+  document.getElementById('periodo').value='Out/2026';
+  ex.forEach(s=>addStep(s.name,s.icon,s.value));
+}
+
+function clearAll(addDefaults=true){
+  steps.length=0;stepId=0;
+  document.getElementById('stepList').innerHTML='';
+  document.getElementById('resultsPanel').style.display='none';
+  document.getElementById('invest').value='';
+  document.getElementById('canalNome').value='';
+  document.getElementById('periodo').value='';
+  if(addDefaults) DEFAULT_STEPS.forEach(s=>addStep(s.name,s.icon,''));
+}
+
+function comparePerf(){
+  ['A','B'].forEach(p=>{
+    const el=document.getElementById('per'+p);
+    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">
+      ${['Impressões','Cliques','Leads','Conversões'].map(m=>`
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="min-width:100px;text-transform:none;font-size:.85rem">${m}</label>
+          <input type="number" id="${p}-${m}" placeholder="0" style="flex:1">
+        </div>`).join('')}
+    </div>`;
+  });
+}
+
+function fmt(n){if(!n) return '0';return Number(n).toLocaleString('pt-BR');}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='comparar') comparePerf();
+}
+
+function toggleTheme(){
+  const d=document.documentElement;
+  d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');
+  try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}
+  analyze();
+}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+
+// init with default steps
+DEFAULT_STEPS.forEach(s=>addStep(s.name,s.icon,''));
+</script>
+</body>
+</html>
