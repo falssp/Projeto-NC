@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisador de Criativos — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:980px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:620px){.form-grid{grid-template-columns:1fr}}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.hint{font-size:.75rem;color:var(--muted);margin-top:3px}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* Score badge */
+.score-big{text-align:center;padding:20px 0 12px}
+.score-num{font-family:var(--mono);font-size:3rem;font-weight:700;line-height:1}
+.score-label{font-size:.8rem;font-weight:600;color:var(--muted);margin-top:6px}
+.score-grade{font-size:1.1rem;font-weight:700;margin-top:4px;padding:4px 16px;border-radius:20px;display:inline-block}
+/* Metric rows */
+.metric-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-name{flex:1;font-size:.87rem}
+.metric-val{font-family:var(--mono);font-size:.88rem;min-width:80px;text-align:right;color:var(--text)}
+.metric-score{min-width:36px;text-align:right;font-family:var(--mono);font-size:.82rem;font-weight:700}
+.mini-bar{flex:0 0 100px;background:var(--border);border-radius:4px;height:7px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:4px}
+/* Creatives table */
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th{text-align:left;padding:8px 10px;background:var(--light);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--light)}
+.num{font-family:var(--mono);font-size:.82rem}
+.score-pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.74rem;font-weight:700;font-family:var(--mono)}
+.score-a{background:#dcfce7;color:var(--green)}
+.score-b{background:#d1fae5;color:#065f46}
+.score-c{background:#fef9c3;color:var(--yellow)}
+.score-d{background:#ffedd5;color:var(--orange)}
+.score-f{background:#fee2e2;color:var(--red)}
+/* Alert */
+.insight{padding:11px 14px;border-radius:8px;font-size:.84rem;margin-top:8px;display:flex;gap:10px;align-items:flex-start}
+.insight-warn{background:#fef9c3;border:1.5px solid var(--yellow)}
+.insight-ok{background:#dcfce7;border:1.5px solid var(--green)}
+.insight-info{background:var(--light);border:1.5px solid var(--border)}
+/* Benchmarks */
+.bench-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+@media(max-width:600px){.bench-grid{grid-template-columns:1fr 1fr}}
+.bench-box{background:var(--light);border-radius:8px;padding:12px}
+.bench-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.bench-row{display:flex;justify-content:space-between;font-size:.8rem;padding:3px 0}
+.bench-metric{color:var(--muted)}
+.bench-val{font-family:var(--mono);color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🎨 Analisador de Criativos</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<!-- Adicionar criativo -->
+<div class="card">
+  <div class="card-title">Adicionar Criativo</div>
+  <div class="form-grid">
+    <div>
+      <label>Nome do criativo *</label>
+      <input id="cName" placeholder="Banner_300x250_V1_Produto">
+    </div>
+    <div>
+      <label>Formato / Tamanho</label>
+      <select id="cFormat">
+        <option>300×250</option><option>728×90</option><option>160×600</option>
+        <option>320×50</option><option>300×600</option><option>970×250</option>
+        <option>1200×628</option><option>1080×1080</option><option>9:16 Vídeo</option>
+        <option>16:9 Vídeo</option><option>Personalizado</option>
+      </select>
+    </div>
+    <div>
+      <label>Canal</label>
+      <select id="cChannel">
+        <option>Display</option><option>Social</option><option>Search</option>
+        <option>Video</option><option>Native</option><option>CTV</option>
+      </select>
+    </div>
+    <div>
+      <label>Impressões</label>
+      <input id="cImps" type="number" placeholder="850000">
+    </div>
+    <div>
+      <label>Cliques</label>
+      <input id="cClicks" type="number" placeholder="2400">
+    </div>
+    <div>
+      <label>Conversões</label>
+      <input id="cConvs" type="number" placeholder="68">
+    </div>
+    <div>
+      <label>Viewability %</label>
+      <input id="cView" type="number" placeholder="72" min="0" max="100">
+    </div>
+    <div>
+      <label>Investimento (R$)</label>
+      <input id="cBudget" type="number" placeholder="12000">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="addCreative()">+ Adicionar</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadSample()">Exemplo</button>
+  </div>
+</div>
+
+<!-- Tabela de criativos -->
+<div id="tableSection" class="card" style="display:none">
+  <div class="card-title">Criativos — Comparativo</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Criativo</th><th>Formato</th><th>Canal</th>
+          <th>CTR</th><th>CVR</th><th>CPA</th><th>Viewability</th>
+          <th>Score</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="creativeTable"></tbody>
+    </table>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-sm" onclick="exportTable()">Exportar CSV</button>
+    <button class="btn btn-danger btn-sm" onclick="clearCreatives()">Limpar</button>
+  </div>
+</div>
+
+<!-- Insights -->
+<div id="insightSection" class="card" style="display:none">
+  <div class="card-title">Insights Automáticos</div>
+  <div id="insightList"></div>
+</div>
+
+<!-- Benchmarks por canal -->
+<div class="card">
+  <div class="card-title">Benchmarks por Canal</div>
+  <div class="bench-grid">
+    <div class="bench-box">
+      <div class="bench-title">Display</div>
+      <div class="bench-row"><span class="bench-metric">CTR</span><span class="bench-val">0.05–0.1%</span></div>
+      <div class="bench-row"><span class="bench-metric">Viewability</span><span class="bench-val">50–70%</span></div>
+      <div class="bench-row"><span class="bench-metric">CVR</span><span class="bench-val">0.5–2%</span></div>
+    </div>
+    <div class="bench-box">
+      <div class="bench-title">Social</div>
+      <div class="bench-row"><span class="bench-metric">CTR</span><span class="bench-val">0.5–2%</span></div>
+      <div class="bench-row"><span class="bench-metric">Viewability</span><span class="bench-val">60–80%</span></div>
+      <div class="bench-row"><span class="bench-metric">CVR</span><span class="bench-val">1–4%</span></div>
+    </div>
+    <div class="bench-box">
+      <div class="bench-title">Video</div>
+      <div class="bench-row"><span class="bench-metric">VCR (100%)</span><span class="bench-val">25–60%</span></div>
+      <div class="bench-row"><span class="bench-metric">Viewability</span><span class="bench-val">60–80%</span></div>
+      <div class="bench-row"><span class="bench-metric">CTR</span><span class="bench-val">0.1–0.3%</span></div>
+    </div>
+    <div class="bench-box">
+      <div class="bench-title">Native</div>
+      <div class="bench-row"><span class="bench-metric">CTR</span><span class="bench-val">0.2–0.6%</span></div>
+      <div class="bench-row"><span class="bench-metric">Viewability</span><span class="bench-val">65–85%</span></div>
+      <div class="bench-row"><span class="bench-metric">CVR</span><span class="bench-val">1–3%</span></div>
+    </div>
+    <div class="bench-box">
+      <div class="bench-title">Search</div>
+      <div class="bench-row"><span class="bench-metric">CTR</span><span class="bench-val">2–8%</span></div>
+      <div class="bench-row"><span class="bench-metric">CVR</span><span class="bench-val">2–8%</span></div>
+      <div class="bench-row"><span class="bench-metric">QS</span><span class="bench-val">6–10</span></div>
+    </div>
+    <div class="bench-box">
+      <div class="bench-title">CTV</div>
+      <div class="bench-row"><span class="bench-metric">Viewability</span><span class="bench-val">90–98%</span></div>
+      <div class="bench-row"><span class="bench-metric">VCR</span><span class="bench-val">80–95%</span></div>
+      <div class="bench-row"><span class="bench-metric">CTR</span><span class="bench-val">0.03–0.1%</span></div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+let creatives=JSON.parse(localStorage.getItem('creative_data')||'[]');
+
+// Benchmarks por canal para scoring
+const BENCH_SCORE={
+  Display:{ctr:{min:0.0005,good:0.001,great:0.002},view:{min:50,good:60,great:70},cvr:{min:0.005,good:0.01,great:0.02}},
+  Social:{ctr:{min:0.005,good:0.01,great:0.02},view:{min:60,good:70,great:80},cvr:{min:0.01,good:0.02,great:0.04}},
+  Video:{ctr:{min:0.001,good:0.002,great:0.003},view:{min:60,good:70,great:80},cvr:{min:0.005,good:0.01,great:0.02}},
+  Native:{ctr:{min:0.002,good:0.004,great:0.006},view:{min:65,good:75,great:85},cvr:{min:0.01,good:0.02,great:0.03}},
+  Search:{ctr:{min:0.02,good:0.04,great:0.06},view:{min:0,good:0,great:0},cvr:{min:0.02,good:0.04,great:0.06}},
+  CTV:{ctr:{min:0.0003,good:0.0005,great:0.001},view:{min:90,good:94,great:97},cvr:{min:0,good:0,great:0}},
+};
+
+function scoreMetric(val,bench){
+  if(!val||!bench.great)return null;
+  if(val>=bench.great)return 100;
+  if(val>=bench.good)return 70+Math.round((val-bench.good)/(bench.great-bench.good)*30);
+  if(val>=bench.min)return 40+Math.round((val-bench.min)/(bench.good-bench.min)*30);
+  return Math.max(0,Math.round(val/bench.min*40));
+}
+
+function computeScore(c){
+  const ctr=c.clicks&&c.impressions?c.clicks/c.impressions:null;
+  const cvr=c.conversions&&c.clicks?c.conversions/c.clicks:null;
+  const view=c.viewability||null;
+  const b=BENCH_SCORE[c.channel]||BENCH_SCORE.Display;
+  const scores=[];
+  const s1=scoreMetric(ctr,b.ctr);if(s1!==null)scores.push(s1);
+  const s2=scoreMetric(cvr,b.cvr);if(s2!==null)scores.push(s2);
+  const s3=view!==null?scoreMetric(view,b.view):null;if(s3!==null)scores.push(s3);
+  if(!scores.length)return{score:null,ctr,cvr};
+  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+  return{score:avg,ctr,cvr,s_ctr:s1,s_cvr:s2,s_view:s3};
+}
+
+function gradeFromScore(s){
+  if(s>=85)return{g:'A',cls:'score-a'};
+  if(s>=70)return{g:'B',cls:'score-b'};
+  if(s>=55)return{g:'C',cls:'score-c'};
+  if(s>=40)return{g:'D',cls:'score-d'};
+  return{g:'F',cls:'score-f'};
+}
+
+function fmtR(n){return'R$'+n.toFixed(2).replace('.',',')}
+function fmtPct(n,d=2){return n.toFixed(d)+'%'}
+function fmtM(n){if(!n)return'0';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';return n.toString()}
+
+function addCreative(){
+  const name=document.getElementById('cName').value.trim();
+  if(!name)return alert('Nome é obrigatório.');
+  creatives.push({
+    id:Date.now(),
+    name,
+    format:document.getElementById('cFormat').value,
+    channel:document.getElementById('cChannel').value,
+    impressions:parseFloat(document.getElementById('cImps').value)||0,
+    clicks:parseFloat(document.getElementById('cClicks').value)||0,
+    conversions:parseFloat(document.getElementById('cConvs').value)||0,
+    viewability:parseFloat(document.getElementById('cView').value)||null,
+    budget:parseFloat(document.getElementById('cBudget').value)||0,
+  });
+  save();render();
+  ['cName','cImps','cClicks','cConvs','cView','cBudget'].forEach(id=>{document.getElementById(id).value='';});
+}
+
+function removeCreative(id){
+  creatives=creatives.filter(c=>c.id!==id);save();render();
+}
+
+function save(){localStorage.setItem('creative_data',JSON.stringify(creatives));}
+
+function render(){
+  if(!creatives.length){
+    document.getElementById('tableSection').style.display='none';
+    document.getElementById('insightSection').style.display='none';
+    return;
+  }
+
+  const data=creatives.map(c=>({...c,...computeScore(c)}));
+
+  document.getElementById('creativeTable').innerHTML=data.map(c=>{
+    const cpa=c.budget&&c.conversions?c.budget/c.conversions:null;
+    const {g,cls}=c.score!==null?gradeFromScore(c.score):{g:'—',cls:''};
+    return`<tr>
+      <td><b>${c.name}</b></td>
+      <td style="color:var(--muted);font-size:.8rem">${c.format}</td>
+      <td style="color:var(--muted);font-size:.8rem">${c.channel}</td>
+      <td class="num">${c.ctr!==null?fmtPct(c.ctr*100):'—'}</td>
+      <td class="num">${c.cvr!==null?fmtPct(c.cvr*100):'—'}</td>
+      <td class="num">${cpa?fmtR(cpa):'—'}</td>
+      <td class="num">${c.viewability!==null?c.viewability+'%':'—'}</td>
+      <td><span class="score-pill ${cls}">${c.score!==null?c.score+' '+g:g}</span></td>
+      <td><button style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.88rem" onclick="removeCreative(${c.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tableSection').style.display='block';
+
+  // Insights
+  const insights=[];
+  const scores=data.filter(c=>c.score!==null).map(c=>c.score);
+  if(scores.length>=2){
+    const best=data.reduce((a,b)=>(a.score||0)>(b.score||0)?a:b);
+    const worst=data.reduce((a,b)=>(a.score||100)<(b.score||100)?a:b);
+    if(best.id!==worst.id){
+      insights.push({type:'ok',text:`<b>${best.name}</b> é o criativo de melhor performance (score ${best.score}). Considere alocar mais budget para ele.`});
+      if(worst.score<50)insights.push({type:'warn',text:`<b>${worst.name}</b> está abaixo da média (score ${worst.score}). Considere pausar ou substituir.`});
+    }
+  }
+  const lowView=data.filter(c=>c.viewability!==null&&c.viewability<50);
+  if(lowView.length)insights.push({type:'warn',text:`${lowView.length} criativo(s) com viewability abaixo de 50%: ${lowView.map(c=>c.name).join(', ')}. Revisar placement ou tamanho.`});
+  const highCpa=data.filter(c=>c.budget&&c.conversions&&c.budget/c.conversions>200);
+  if(highCpa.length)insights.push({type:'warn',text:`CPA alto (>R$200) em: ${highCpa.map(c=>c.name).join(', ')}. Revisar criativo ou segmentação.`});
+  if(!insights.length)insights.push({type:'info',text:'Adicione mais criativos para gerar insights comparativos automáticos.'});
+
+  document.getElementById('insightList').innerHTML=insights.map(ins=>
+    `<div class="insight insight-${ins.type}"><span>${ins.type==='ok'?'✅':ins.type==='warn'?'⚠️':'ℹ️'}</span><div>${ins.text}</div></div>`
+  ).join('');
+  document.getElementById('insightSection').style.display='block';
+}
+
+function loadSample(){
+  creatives=[
+    {id:1,name:'Banner_300x250_Produto_V1',format:'300×250',channel:'Display',impressions:1200000,clicks:960,conversions:24,viewability:68,budget:4800},
+    {id:2,name:'Banner_300x250_Produto_V2',format:'300×250',channel:'Display',impressions:980000,clicks:1176,conversions:41,viewability:72,budget:4200},
+    {id:3,name:'Story_1080x1920_Black',format:'1080×1080',channel:'Social',impressions:850000,clicks:5100,conversions:102,viewability:81,budget:6500},
+    {id:4,name:'Feed_1200x628_Oferta',format:'1200×628',channel:'Social',impressions:1400000,clicks:7000,conversions:140,viewability:77,budget:9800},
+    {id:5,name:'PreRoll_15s_Brand',format:'16:9 Vídeo',channel:'Video',impressions:620000,clicks:310,conversions:9,viewability:74,budget:7200},
+  ];
+  save();render();
+}
+
+function clearCreatives(){
+  creatives=[];save();render();
+}
+
+function exportTable(){
+  if(!creatives.length)return;
+  const rows=[['Nome','Formato','Canal','Impressões','Cliques','Conversões','Viewability%','Budget','CTR%','CVR%','CPA','Score']];
+  creatives.forEach(c=>{
+    const m=computeScore(c);
+    const cpa=c.budget&&c.conversions?c.budget/c.conversions:null;
+    rows.push([c.name,c.format,c.channel,c.impressions,c.clicks,c.conversions,c.viewability||'',c.budget,
+      m.ctr?(m.ctr*100).toFixed(3):'',m.cvr?(m.cvr*100).toFixed(2):'',
+      cpa?cpa.toFixed(2):'',m.score||'']);
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='analise-criativos.csv';a.click();
+}
+
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('crtv_theme',nxt);
+}
+
+document.documentElement.setAttribute('data-theme',localStorage.getItem('crtv_theme')||'light');
+render();
+</script>
+</body>
+</html>
