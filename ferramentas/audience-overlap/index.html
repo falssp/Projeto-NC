@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de Audience Overlap — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+/* Segments */
+.seg-row{display:grid;grid-template-columns:1fr 160px 120px 100px 36px;gap:8px;align-items:end;margin-bottom:8px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.info-box{background:var(--light);border-radius:10px;padding:14px}
+.info-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.info-val{font-size:1.2rem;font-weight:800;font-family:var(--mono)}
+.info-val.ok{color:var(--green)}
+.info-val.warn{color:var(--yellow)}
+/* Venn */
+#vennCanvas{display:block;margin:0 auto}
+.venn-legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.82rem}
+.leg-dot{width:12px;height:12px;border-radius:50%}
+/* Results table */
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:8px 10px;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.82rem}
+.seg-color{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🔵 Calculadora de Audience Overlap</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="card-title">Segmentos de Audiência</div>
+  <p class="hint" style="margin-bottom:14px">Adicione audiências com seus tamanhos estimados e o percentual de overlap com cada uma das outras. O cálculo usa o princípio da inclusão-exclusão para estimar o alcance deduplicado.</p>
+  <div style="display:grid;grid-template-columns:1fr 160px 1fr 36px;gap:8px;margin-bottom:4px">
+    <label>Nome do Segmento</label>
+    <label>Tamanho (usuários)</label>
+    <label>Cor</label>
+    <span></span>
+  </div>
+  <div id="segList"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-sm" onclick="addSeg()">+ Adicionar Segmento</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadExample()">Exemplo</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Configuração de Overlap</div>
+  <p class="hint" style="margin-bottom:12px">Defina o percentual de overlap entre cada par de audiências. Exemplo: se A tem 100k e B tem 80k e 30% se sobrepõem, o overlap é de 30% do menor segmento.</p>
+  <div id="overlapMatrix"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="calculate()">📊 Calcular Deduplicação</button>
+  </div>
+</div>
+
+<div id="resultsSection" style="display:none">
+<div class="card">
+  <div class="card-title">Resultado — Alcance Deduplicado</div>
+  <div class="info-grid" id="resultGrid"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Visualização — Diagrama de Venn</div>
+  <canvas id="vennCanvas" width="560" height="320"></canvas>
+  <div class="venn-legend" id="vennLegend"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Detalhamento por Segmento</div>
+  <table>
+    <thead><tr><th>Segmento</th><th>Tamanho Bruto</th><th>Contribuição Única</th><th>% Único</th><th>Overlap Estimado</th></tr></thead>
+    <tbody id="detailTable"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">Eficiência de CPM após Deduplicação</div>
+  <div class="grid2" style="margin-bottom:16px">
+    <div>
+      <label>CPM médio (R$)</label>
+      <input type="number" id="cpmInput" placeholder="10.00" step="0.01" min="0" oninput="calcCpm()">
+    </div>
+    <div>
+      <label>Budget total (R$)</label>
+      <input type="number" id="budgetInput" placeholder="50000" min="0" oninput="calcCpm()">
+    </div>
+  </div>
+  <div class="info-grid" id="cpmGrid"></div>
+</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Como Funciona</div>
+  <div style="font-size:.84rem;line-height:1.7;color:var(--muted)">
+    <b style="color:var(--text)">Inclusão-Exclusão:</b> |A ∪ B| = |A| + |B| − |A ∩ B|<br>
+    Para 3: |A ∪ B ∪ C| = |A| + |B| + |C| − |A∩B| − |A∩C| − |B∩C| + |A∩B∩C|<br><br>
+    <b style="color:var(--text)">Overlap estimado (par):</b> o % de overlap é aplicado sobre o menor dos dois segmentos.
+    Para 3+ segmentos, a tripla interseção é estimada como o mínimo dos overlaps de pares dividido por 2.<br><br>
+    <b style="color:var(--text)">Limitação:</b> Overlaps reais entre audiências de diferentes plataformas (Meta, Google, DV360) não são diretamente mensuráveis sem um Data Clean Room. Este modelo é uma estimativa para planejamento.
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('overlap_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('overlap_theme')||'light');
+
+const COLORS=['#1F36C7','#e53e3e','#38a169','#d69e2e','#805ad5','#ed8936'];
+let segs=[];
+let overlaps={};
+
+function addSeg(name='',size=''){
+  const id='s'+Date.now();
+  segs.push({id,name,size,color:COLORS[segs.length%COLORS.length]});
+  renderSegs();
+  updateMatrix();
+}
+
+function removeSeg(id){
+  segs=segs.filter(s=>s.id!==id);
+  // clean overlaps
+  Object.keys(overlaps).forEach(k=>{if(k.includes(id))delete overlaps[k];});
+  renderSegs();
+  updateMatrix();
+}
+
+function segKey(a,b){return [a,b].sort().join('|');}
+
+function renderSegs(){
+  document.getElementById('segList').innerHTML=segs.map((s,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 160px 60px 36px;gap:8px;align-items:end;margin-bottom:8px">
+      <div>
+        ${i===0?'<label>Nome</label>':''}
+        <input value="${s.name}" placeholder="Segmento ${i+1}" oninput="segs[${i}].name=this.value;updateMatrix()">
+      </div>
+      <div>
+        ${i===0?'<label>Tamanho</label>':''}
+        <input type="number" value="${s.size}" placeholder="ex: 500000" min="0" oninput="segs[${i}].size=parseFloat(this.value)||0;updateMatrix()">
+      </div>
+      <div>
+        ${i===0?'<label>Cor</label>':''}
+        <input type="color" value="${s.color}" style="padding:4px;height:38px" onchange="segs[${i}].color=this.value;updateMatrix()">
+      </div>
+      <div style="padding-top:${i===0?'18':'0'}px">
+        <button class="btn btn-danger btn-sm" onclick="removeSeg('${s.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function updateMatrix(){
+  if(segs.length<2){
+    document.getElementById('overlapMatrix').innerHTML='<p class="hint">Adicione pelo menos 2 segmentos para configurar overlaps.</p>';
+    return;
+  }
+  const pairs=[];
+  for(let i=0;i<segs.length;i++){
+    for(let j=i+1;j<segs.length;j++){
+      pairs.push([segs[i],segs[j]]);
+    }
+  }
+  document.getElementById('overlapMatrix').innerHTML=pairs.map(([a,b])=>{
+    const k=segKey(a.id,b.id);
+    const val=overlaps[k]||0;
+    return `<div style="display:grid;grid-template-columns:1fr 180px;gap:12px;align-items:center;margin-bottom:10px">
+      <label><span class="seg-color" style="background:${a.color}"></span>${a.name||'Seg A'} ↔ <span class="seg-color" style="background:${b.color}"></span>${b.name||'Seg B'}</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" min="0" max="100" step="1" value="${val}" style="flex:1" oninput="overlaps['${k}']=parseFloat(this.value);this.nextElementSibling.textContent=this.value+'%'">
+        <span style="font-family:var(--mono);font-size:.88rem;min-width:40px">${val}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calculate(){
+  if(segs.length<2){alert('Adicione pelo menos 2 segmentos.');return;}
+  if(segs.some(s=>!s.size)){alert('Preencha o tamanho de todos os segmentos.');return;}
+
+  const sizes=segs.map(s=>parseFloat(s.size)||0);
+  const n=segs.length;
+
+  // Build intersection matrix
+  const inter=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>{
+    if(i===j)return sizes[i];
+    const k=segKey(segs[i].id,segs[j].id);
+    const pct=(overlaps[k]||0)/100;
+    return pct*Math.min(sizes[i],sizes[j]);
+  }));
+
+  // Inclusion-exclusion up to N segments (handle up to 6)
+  let total=0;
+  for(let mask=1;mask<(1<<n);mask++){
+    let bits=[];
+    for(let b=0;b<n;b++)if(mask>>b&1)bits.push(b);
+    const sign=bits.length%2===1?1:-1;
+    let val=0;
+    if(bits.length===1){
+      val=sizes[bits[0]];
+    }else if(bits.length===2){
+      val=inter[bits[0]][bits[1]];
+    }else{
+      // higher-order: estimate as min of pairwise intersections / (bits.length-1)
+      let minInter=Infinity;
+      for(let i=0;i<bits.length;i++)for(let j=i+1;j<bits.length;j++){
+        minInter=Math.min(minInter,inter[bits[i]][bits[j]]);
+      }
+      val=minInter/(bits.length-1);
+    }
+    total+=sign*val;
+  }
+  total=Math.max(0,Math.round(total));
+  const totalRaw=sizes.reduce((a,b)=>a+b,0);
+  const overlap=totalRaw-total;
+  const effPct=(total/totalRaw*100);
+
+  // Unique contribution per segment (simple estimate)
+  const uniqueConts=segs.map((s,i)=>{
+    let overlapSum=0;
+    for(let j=0;j<n;j++){
+      if(j!==i)overlapSum+=inter[i][j];
+    }
+    return Math.max(0,sizes[i]-overlapSum*(sizes[i]/totalRaw));
+  });
+
+  // Results grid
+  document.getElementById('resultGrid').innerHTML=[
+    {l:'Alcance Total (bruto)',v:fmt(totalRaw)},
+    {l:'Alcance Deduplicado',v:fmt(total),cls:'ok'},
+    {l:'Overlap estimado',v:fmt(overlap),cls:'warn'},
+    {l:'Eficiência de alcance',v:effPct.toFixed(1)+'%',cls:effPct>80?'ok':effPct>60?'':' warn'},
+    {l:'Desperdício',v:(100-effPct).toFixed(1)+'%'},
+    {l:'Nº de Segmentos',v:n+''},
+  ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.cls||''}">${r.v}</div></div>`).join('');
+
+  // Detail table
+  document.getElementById('detailTable').innerHTML=segs.map((s,i)=>{
+    const uc=Math.round(uniqueConts[i]);
+    const ov=sizes[i]-uc;
+    return `<tr>
+      <td><span class="seg-color" style="background:${s.color}"></span>${s.name||'Segmento '+(i+1)}</td>
+      <td>${fmt(sizes[i])}</td>
+      <td>${fmt(uc)}</td>
+      <td>${(uc/sizes[i]*100).toFixed(1)}%</td>
+      <td>${fmt(Math.max(0,ov))}</td>
+    </tr>`;
+  }).join('');
+
+  drawVenn(segs,sizes,inter,total);
+  document.getElementById('resultsSection').style.display='block';
+  calcCpm();
+
+  // Store for CPM calc
+  window._deduped={total,totalRaw,effPct};
+}
+
+function fmt(n){
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return (n/1e3).toFixed(1)+'k';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+
+function drawVenn(segs,sizes,inter,deduped){
+  const canvas=document.getElementById('vennCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const n=Math.min(segs.length,3); // max 3 circles in Venn
+  const maxR=100,minR=40;
+  const maxS=Math.max(...sizes.slice(0,n));
+  const radii=sizes.slice(0,n).map(s=>minR+(maxR-minR)*(Math.sqrt(s/maxS)));
+
+  let centers;
+  if(n===1){
+    centers=[[W/2,H/2]];
+  }else if(n===2){
+    centers=[[W/2-radii[0]*0.5,H/2],[W/2+radii[1]*0.5,H/2]];
+  }else{
+    centers=[[W/2,H/2-80],[W/2-90,H/2+50],[W/2+90,H/2+50]];
+  }
+
+  segs.slice(0,n).forEach((s,i)=>{
+    ctx.beginPath();
+    ctx.arc(centers[i][0],centers[i][1],radii[i],0,Math.PI*2);
+    ctx.fillStyle=hexToRgba(s.color,0.25);
+    ctx.fill();
+    ctx.strokeStyle=s.color;
+    ctx.lineWidth=2.5;
+    ctx.stroke();
+
+    // Label
+    const lx=centers[i][0]+(i===0?0:i===1?-10:10);
+    const ly=centers[i][1]+(i===0?-radii[i]-10:radii[i]+18);
+    ctx.fillStyle=s.color;
+    ctx.font='bold 13px Space Grotesk, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText((s.name||'Seg '+(i+1)).slice(0,16),lx,ly);
+    ctx.font='12px JetBrains Mono, monospace';
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted');
+    ctx.fillText(fmt(sizes[i]),lx,ly+15);
+  });
+
+  // Dedup total
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text');
+  ctx.font='bold 14px Space Grotesk, sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Alcance único: '+fmt(deduped),W/2,H-16);
+
+  // Legend for >3 segs
+  const legend=document.getElementById('vennLegend');
+  if(segs.length>3){
+    legend.innerHTML='<p class="hint">Visualização limitada a 3 círculos. Cálculo inclui todos os '+segs.length+' segmentos.</p>';
+  }else{
+    legend.innerHTML=segs.slice(0,n).map((s,i)=>`<div class="leg-item"><div class="leg-dot" style="background:${s.color}"></div>${s.name||'Segmento '+(i+1)}: ${fmt(sizes[i])}</div>`).join('');
+  }
+}
+
+function hexToRgba(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function calcCpm(){
+  const d=window._deduped;
+  if(!d)return;
+  const cpm=parseFloat(document.getElementById('cpmInput').value)||0;
+  const budget=parseFloat(document.getElementById('budgetInput').value)||0;
+  if(!cpm&&!budget){document.getElementById('cpmGrid').innerHTML='';return;}
+  const imps=budget?budget/cpm*1000:0;
+  const effCpm=cpm>0?cpm/(d.effPct/100):0; // effective CPM after dedup waste
+  const reach=budget&&cpm?Math.min(d.total,imps):0;
+  document.getElementById('cpmGrid').innerHTML=[
+    cpm?{l:'CPM nominal',v:'R$'+cpm.toFixed(2)}:null,
+    effCpm?{l:'CPM efetivo (pós-dedup)',v:'R$'+effCpm.toFixed(2)}:null,
+    imps?{l:'Impressões estimadas',v:fmt(imps)}:null,
+    reach?{l:'Alcance projetado',v:fmt(reach)}:null,
+    reach&&d.total?{l:'Cobertura do universo',v:(reach/d.total*100).toFixed(1)+'%'}:null,
+  ].filter(Boolean).map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val">${r.v}</div></div>`).join('');
+}
+
+function loadExample(){
+  segs=[];
+  overlaps={};
+  addSeg('Remarketing Site','320000');
+  addSeg('Lookalike 1%','1500000');
+  addSeg('Interest: Finanças','2800000');
+  segs[0].name='Remarketing Site';segs[0].size=320000;
+  segs[1].name='Lookalike 1%';segs[1].size=1500000;
+  segs[2].name='Interest: Finanças';segs[2].size=2800000;
+  overlaps[segKey(segs[0].id,segs[1].id)]=45;
+  overlaps[segKey(segs[0].id,segs[2].id)]=20;
+  overlaps[segKey(segs[1].id,segs[2].id)]=35;
+  renderSegs();
+  updateMatrix();
+}
+
+renderSegs();
+updateMatrix();
+</script>
+</body>
+</html>

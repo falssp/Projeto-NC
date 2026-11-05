@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório de Brand Safety — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+/* Metric rows */
+.metric-row{display:grid;grid-template-columns:180px 100px 100px 100px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:.85rem;font-weight:600}
+/* Status */
+.badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:.75rem;font-weight:700}
+.badge-ok{background:#dcfce7;color:var(--green)}
+.badge-warn{background:#fef9c3;color:#854d0e}
+.badge-err{background:#fee2e2;color:var(--red)}
+.badge-na{background:var(--light);color:var(--muted)}
+/* Report */
+#report{font-size:.88rem;line-height:1.7;font-family:var(--mono)}
+.report-section{border-left:3px solid var(--azul);padding-left:14px;margin-bottom:20px}
+.report-section h3{font-size:.88rem;font-weight:700;margin-bottom:8px;color:var(--azul)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.info-box{background:var(--light);border-radius:10px;padding:14px}
+.info-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.info-val{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.info-val.ok{color:var(--green)}
+.info-val.warn{color:var(--yellow)}
+.info-val.err{color:var(--red)}
+/* Channel section */
+.ch-row{display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🛡️ Relatório de Brand Safety</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="card-title">Dados da Campanha</div>
+  <div class="grid2" style="margin-bottom:12px">
+    <div>
+      <label>Nome da Campanha</label>
+      <input id="campName" placeholder="Brand Awareness Q1 2025">
+    </div>
+    <div>
+      <label>Anunciante / Cliente</label>
+      <input id="campClient" placeholder="Nome do cliente">
+    </div>
+  </div>
+  <div class="grid3">
+    <div>
+      <label>Período de Referência</label>
+      <input id="campPeriod" placeholder="Jan–Mar 2025">
+    </div>
+    <div>
+      <label>Ferramenta de Verificação</label>
+      <select id="campVendor">
+        <option value="IAS">Integral Ad Science (IAS)</option>
+        <option value="DV360">DoubleVerify (DV)</option>
+        <option value="MOAT">Oracle MOAT</option>
+        <option value="Nielsen">Nielsen DAR</option>
+        <option value="Sem verificação">Sem verificação terceira</option>
+      </select>
+    </div>
+    <div>
+      <label>Impressões Totais</label>
+      <input type="number" id="campImps" placeholder="10000000" min="0">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Métricas de Brand Safety</div>
+  <div style="display:grid;grid-template-columns:180px 100px 100px 100px 1fr;gap:8px;margin-bottom:4px">
+    <label>Dimensão</label>
+    <label>Meta (%)</label>
+    <label>Realizado (%)</label>
+    <label>Status</label>
+    <label>Observação</label>
+  </div>
+  <div id="metricRows"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-sm" onclick="addMetric()">+ Dimensão personalizada</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Channels / Canais</div>
+  <p class="hint" style="margin-bottom:12px">Adicione os canais da campanha e suas métricas de viewability.</p>
+  <div id="channelRows"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost btn-sm" onclick="addChannel()">+ Canal</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Contexto e Observações</div>
+  <label>Notas gerais / Incidentes / Ações corretivas</label>
+  <textarea id="notes" rows="4" placeholder="Ex.: No dia 15/02, 2.3% das impressões foram veiculadas em conteúdo adulto por falha de blocklist. Corretivo: blocklist atualizada em 16/02 com 350 domínios adicionais…"></textarea>
+</div>
+
+<div class="btn-row" style="margin-bottom:16px">
+  <button class="btn btn-primary" onclick="buildReport()">📋 Gerar Relatório</button>
+  <button class="btn btn-ghost btn-sm" onclick="loadExample()">Exemplo</button>
+  <button class="btn btn-ghost btn-sm" onclick="clearAll()">Limpar</button>
+</div>
+
+<div id="reportCard" style="display:none">
+<div class="card">
+  <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Relatório Gerado</span>
+    <button class="btn btn-ghost btn-sm" onclick="exportTxt()">⬇ Exportar .txt</button>
+  </div>
+  <div class="info-grid" id="summaryGrid" style="margin-bottom:16px"></div>
+  <div id="report"></div>
+</div>
+</div>
+
+<!-- Reference -->
+<div class="card">
+  <div class="card-title">Benchmarks de Brand Safety (Brasil / Global)</div>
+  <div style="font-size:.84rem;line-height:1.9;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <b>Viewability (MRC)</b><br>
+      Display: ≥50% pixels × 1s → meta mín. 70%<br>
+      Video: ≥50% pixels × 2s → meta mín. 70%<br>
+      In-stream: ≥50% pixels × 2s → meta mín. 70%<br>
+      <br>
+      <b>IVT (Tráfego Inválido)</b><br>
+      GIVT: botões de IA, scrapers → meta ≤10%<br>
+      SIVT (sofisticado): ad fraud → meta ≤3%
+    </div>
+    <div>
+      <b>Brand Safety (bloqueio)</b><br>
+      GARM Floor: conteúdo excluído por padrão<br>
+      Meta típica de block rate: 5–15%<br>
+      Block rate >25% indica problemas de targeting<br>
+      <br>
+      <b>Score IAS / DV</b><br>
+      IAS Viewability Score: alvo ≥70%<br>
+      DV Authentic™ Rate: alvo ≥60%<br>
+      Fraud Rate: alvo ≤2%
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('bs_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('bs_theme')||'light');
+
+const DEFAULT_METRICS=[
+  {name:'Viewability',target:70,achieved:'',note:'',higherIsBetter:true,unit:'%'},
+  {name:'IVT Total',target:10,achieved:'',note:'',higherIsBetter:false,unit:'%'},
+  {name:'Brand Safety Block Rate',target:15,achieved:'',note:'',higherIsBetter:false,unit:'%'},
+  {name:'Viewable Completion Rate',target:60,achieved:'',note:'',higherIsBetter:true,unit:'%'},
+  {name:'Fraud Rate (SIVT)',target:3,achieved:'',note:'',higherIsBetter:false,unit:'%'},
+];
+let metrics=[...DEFAULT_METRICS.map(m=>({...m}))];
+let channels=[];
+
+function getStatus(m){
+  if(m.achieved==='')return{badge:'badge-na',label:'N/A'};
+  const v=parseFloat(m.achieved);
+  const t=parseFloat(m.target);
+  if(m.higherIsBetter){
+    if(v>=t)return{badge:'badge-ok',label:'✓ OK'};
+    if(v>=t*0.85)return{badge:'badge-warn',label:'⚠ Atenção'};
+    return{badge:'badge-err',label:'✗ Fora'};
+  }else{
+    if(v<=t)return{badge:'badge-ok',label:'✓ OK'};
+    if(v<=t*1.15)return{badge:'badge-warn',label:'⚠ Atenção'};
+    return{badge:'badge-err',label:'✗ Fora'};
+  }
+}
+
+function renderMetrics(){
+  document.getElementById('metricRows').innerHTML=metrics.map((m,i)=>{
+    const st=getStatus(m);
+    return `<div class="metric-row">
+      <div class="metric-label">${m.name}</div>
+      <div><input type="number" value="${m.target}" min="0" max="100" step=".1" placeholder="meta" oninput="metrics[${i}].target=parseFloat(this.value)||0;renderMetrics()"></div>
+      <div><input type="number" value="${m.achieved}" min="0" max="100" step=".1" placeholder="realizado" oninput="metrics[${i}].achieved=this.value;renderMetrics()"></div>
+      <div><span class="badge ${st.badge}">${st.label}</span></div>
+      <div><input value="${m.note||''}" placeholder="observação" oninput="metrics[${i}].note=this.value"></div>
+    </div>`;
+  }).join('');
+}
+
+function addMetric(){
+  metrics.push({name:'Nova dimensão',target:80,achieved:'',note:'',higherIsBetter:true,unit:'%'});
+  renderMetrics();
+}
+
+function renderChannels(){
+  if(!channels.length){
+    document.getElementById('channelRows').innerHTML='<p class="hint">Clique em "+ Canal" para adicionar.</p>';
+    return;
+  }
+  document.getElementById('channelRows').innerHTML=channels.map((c,i)=>`
+    <div style="display:grid;grid-template-columns:140px 110px 110px 110px 1fr 36px;gap:8px;align-items:end;margin-bottom:10px">
+      <div>
+        ${i===0?'<label>Canal</label>':''}
+        <input value="${c.name}" placeholder="YouTube" oninput="channels[${i}].name=this.value">
+      </div>
+      <div>
+        ${i===0?'<label>Impressões</label>':''}
+        <input type="number" value="${c.imps}" placeholder="1000000" oninput="channels[${i}].imps=parseFloat(this.value)||0">
+      </div>
+      <div>
+        ${i===0?'<label>Viewability %</label>':''}
+        <input type="number" value="${c.view}" placeholder="72" min="0" max="100" oninput="channels[${i}].view=parseFloat(this.value)||0">
+      </div>
+      <div>
+        ${i===0?'<label>IVT %</label>':''}
+        <input type="number" value="${c.ivt}" placeholder="4.2" min="0" max="100" step=".1" oninput="channels[${i}].ivt=parseFloat(this.value)||0">
+      </div>
+      <div>
+        ${i===0?'<label>Notas</label>':''}
+        <input value="${c.note}" placeholder="ex: exclusão de parcerias" oninput="channels[${i}].note=this.value">
+      </div>
+      <div style="padding-top:${i===0?'18':'0'}px">
+        <button class="btn btn-sm" style="background:var(--red);color:#fff;border:none" onclick="channels.splice(${i},1);renderChannels()">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function addChannel(){
+  channels.push({name:'',imps:0,view:0,ivt:0,note:''});
+  renderChannels();
+}
+
+function buildReport(){
+  const name=document.getElementById('campName').value||'Campanha';
+  const client=document.getElementById('campClient').value||'Cliente';
+  const period=document.getElementById('campPeriod').value||'—';
+  const vendor=document.getElementById('campVendor').value;
+  const impsRaw=parseFloat(document.getElementById('campImps').value)||0;
+  const notes=document.getElementById('notes').value;
+
+  const ok=metrics.filter(m=>m.achieved!==''&&getStatus(m).badge==='badge-ok').length;
+  const warn=metrics.filter(m=>m.achieved!==''&&getStatus(m).badge==='badge-warn').length;
+  const err=metrics.filter(m=>m.achieved!==''&&getStatus(m).badge==='badge-err').length;
+  const filled=metrics.filter(m=>m.achieved!=='').length;
+  const overall=err>0?'Requer Ação':warn>0?'Com Ressalvas':'Dentro dos Padrões';
+  const overallCls=err>0?'err':warn>0?'warn':'ok';
+
+  document.getElementById('summaryGrid').innerHTML=[
+    {l:'Status Geral',v:overall,cls:overallCls},
+    {l:'Dimensões OK',v:ok+'/'+filled},
+    {l:'Alertas',v:warn+'',cls:warn?'warn':''},
+    {l:'Fora do Padrão',v:err+'',cls:err?'err':''},
+    {l:'Ferramenta',v:vendor},
+    impsRaw?{l:'Impressões',v:fmt(impsRaw)}:null,
+  ].filter(Boolean).map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.cls||''}">${r.v}</div></div>`).join('');
+
+  const metricRows=metrics.map(m=>{
+    const st=getStatus(m);
+    return `  ${m.name.padEnd(28)}: ${m.achieved!==''?m.achieved+'%':'N/A'.padEnd(6)} (meta: ${m.target}%) → ${st.label}${m.note?' | '+m.note:''}`;
+  }).join('\n');
+
+  const channelRows=channels.length?channels.map(c=>`  ${(c.name||'Canal').padEnd(20)}: ${fmt(c.imps)} imps | Viewability: ${c.view}% | IVT: ${c.ivt}%${c.note?' | '+c.note:''}`).join('\n'):'  Nenhum canal informado';
+
+  const reportHTML=`
+<div class="report-section"><h3>1. INFORMAÇÕES GERAIS</h3>
+<b>Campanha:</b> ${name}<br>
+<b>Cliente:</b> ${client}<br>
+<b>Período:</b> ${period}<br>
+<b>Verificador:</b> ${vendor}<br>
+${impsRaw?'<b>Impressões totais:</b> '+fmt(impsRaw)+'<br>':''}
+<b>Status geral:</b> <span class="badge badge-${overallCls==='ok'?'ok':overallCls==='warn'?'warn':'err'}">${overall}</span>
+</div>
+
+<div class="report-section"><h3>2. MÉTRICAS DE BRAND SAFETY</h3>
+${metrics.map(m=>{
+  const st=getStatus(m);
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+    <span class="badge ${st.badge}" style="min-width:80px;text-align:center">${st.label}</span>
+    <b>${m.name}:</b> ${m.achieved!==''?m.achieved+'%':'N/A'} (meta: ${m.target}%)${m.note?' — '+m.note:''}
+  </div>`;
+}).join('')}
+</div>
+
+${channels.length?`<div class="report-section"><h3>3. DETALHAMENTO POR CANAL</h3>
+${channels.map(c=>`<div style="margin-bottom:8px"><b>${c.name||'Canal'}:</b> ${fmt(c.imps)} imps · Viewability ${c.view}% · IVT ${c.ivt}%${c.note?' · '+c.note:''}</div>`).join('')}
+</div>`:''}
+
+${notes?`<div class="report-section"><h3>4. INCIDENTES E AÇÕES CORRETIVAS</h3><p style="white-space:pre-wrap">${notes}</p></div>`:''}
+
+<div class="report-section"><h3>5. CONCLUSÃO</h3>
+${err>0?`<b style="color:var(--red)">Campanha fora dos padrões em ${err} dimensão(ões).</b> Revisão urgente do targeting, blocklist e configurações de verificação recomendada.`:''}
+${warn>0&&!err?`<b style="color:var(--yellow)">Campanha com ${warn} dimensão(ões) em atenção.</b> Monitoramento intensificado recomendado.`:''}
+${!err&&!warn?`<b style="color:var(--green)">Campanha dentro dos padrões de Brand Safety definidos.</b>`:''}
+<br><br>Relatório gerado em: ${new Date().toLocaleString('pt-BR')} · Ferramenta: AdOps Tools — Brand Safety Report
+</div>`;
+
+  document.getElementById('report').innerHTML=reportHTML;
+  document.getElementById('reportCard').style.display='block';
+  document.getElementById('reportCard').scrollIntoView({behavior:'smooth'});
+
+  // Store for export
+  window._reportTxt=`RELATÓRIO DE BRAND SAFETY
+${'='.repeat(60)}
+Campanha: ${name}
+Cliente: ${client}
+Período: ${period}
+Ferramenta de verificação: ${vendor}
+${impsRaw?'Impressões totais: '+fmt(impsRaw)+'\n':''}Status geral: ${overall}
+Gerado em: ${new Date().toLocaleString('pt-BR')}
+
+MÉTRICAS
+${'─'.repeat(60)}
+${metricRows}
+
+CANAIS
+${'─'.repeat(60)}
+${channelRows}
+
+${notes?'INCIDENTES / AÇÕES CORRETIVAS\n'+('─'.repeat(60))+'\n'+notes+'\n\n':''}CONCLUSÃO
+${'─'.repeat(60)}
+${err>0?'FORA DOS PADRÕES em '+err+' dimensão(ões). Revisão urgente recomendada.':''}
+${warn>0&&!err?'EM ATENÇÃO em '+warn+' dimensão(ões). Monitoramento intensificado.':''}
+${!err&&!warn?'DENTRO DOS PADRÕES de Brand Safety definidos.':''}
+`;
+}
+
+function exportTxt(){
+  if(!window._reportTxt){buildReport();return;}
+  const name=document.getElementById('campName').value.replace(/\s+/g,'_')||'campanha';
+  const blob=new Blob([window._reportTxt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`brand-safety-${name}.txt`;
+  a.click();
+}
+
+function fmt(n){
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return (n/1e3).toFixed(1)+'k';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+
+function loadExample(){
+  document.getElementById('campName').value='Lançamento Produto X — Brand Awareness';
+  document.getElementById('campClient').value='Empresa ABC';
+  document.getElementById('campPeriod').value='Janeiro–Março 2025';
+  document.getElementById('campVendor').value='IAS';
+  document.getElementById('campImps').value='12500000';
+  metrics=[
+    {name:'Viewability',target:70,achieved:'74.2',note:'Acima da meta',higherIsBetter:true,unit:'%'},
+    {name:'IVT Total',target:10,achieved:'6.1',note:'',higherIsBetter:false,unit:'%'},
+    {name:'Brand Safety Block Rate',target:15,achieved:'8.3',note:'Blocklist padrão GARM',higherIsBetter:false,unit:'%'},
+    {name:'Viewable Completion Rate',target:60,achieved:'58.4',note:'Leve abaixo — otimizar duração',higherIsBetter:true,unit:'%'},
+    {name:'Fraud Rate (SIVT)',target:3,achieved:'1.8',note:'',higherIsBetter:false,unit:'%'},
+  ];
+  channels=[
+    {name:'YouTube',imps:5000000,view:78,ivt:4.2,note:'Pre-roll 15s e 30s'},
+    {name:'DV360 — Display',imps:4000000,view:68,ivt:7.1,note:'Programático aberto'},
+    {name:'Meta (Facebook/IG)',imps:3500000,view:71,ivt:5.8,note:'Feed + Stories'},
+  ];
+  document.getElementById('notes').value='16/02: identificadas 320k impressões em sites de notícias falsas via DV360. Blocklist atualizada imediatamente com +180 domínios. CTV adicionada como canal a partir de março para reduzir exposição em display aberto.';
+  renderMetrics();
+  renderChannels();
+}
+
+function clearAll(){
+  document.getElementById('campName').value='';
+  document.getElementById('campClient').value='';
+  document.getElementById('campPeriod').value='';
+  document.getElementById('campImps').value='';
+  document.getElementById('notes').value='';
+  metrics=[...DEFAULT_METRICS.map(m=>({...m}))];
+  channels=[];
+  renderMetrics();
+  renderChannels();
+  document.getElementById('reportCard').style.display='none';
+}
+
+renderMetrics();
+renderChannels();
+</script>
+</body>
+</html>
