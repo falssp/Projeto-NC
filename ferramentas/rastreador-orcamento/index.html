@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rastreador de Orçamento — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:960px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-danger:hover{background:#fee2e2}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:640px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--light);border-radius:10px;padding:14px}
+.kpi-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--azul)}
+.kpi-val.ok{color:var(--green)}
+.kpi-val.warn{color:var(--yellow)}
+.kpi-val.err{color:var(--red)}
+.kpi-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+/* Parcela table */
+.parc-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.parc-table th{text-align:left;padding:7px 10px;background:var(--light);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.parc-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.parc-table tr:last-child td{border-bottom:none}
+.parc-table tr.past td{opacity:.7}
+.parc-table tr.current td{background:rgba(31,54,199,.06)}
+.num{font-family:var(--mono);font-size:.83rem}
+/* Progress bar */
+.prog-wrap{background:var(--light);border-radius:4px;height:8px;overflow:hidden}
+.prog-bar{height:100%;border-radius:4px;transition:width .4s}
+.prog-ok{background:var(--green)}
+.prog-warn{background:var(--yellow)}
+.prog-err{background:var(--red)}
+.prog-blue{background:var(--azul)}
+/* Status badges */
+.badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:.7rem;font-weight:700}
+.badge-ok{background:#dcfce7;color:var(--green)}
+.badge-over{background:#fee2e2;color:var(--red)}
+.badge-under{background:#fef9c3;color:var(--yellow)}
+.badge-future{background:var(--light);color:var(--muted)}
+.badge-current{background:#dbeafe;color:#1d4ed8}
+/* Alert banner */
+.alert{padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.alert-err{background:#fee2e2;color:var(--red);border-left:3px solid var(--red)}
+.alert-warn{background:#fef9c3;color:var(--yellow);border-left:3px solid var(--yellow)}
+.alert-ok{background:#dcfce7;color:var(--green);border-left:3px solid var(--green)}
+/* SVG chart */
+#chartWrap{overflow-x:auto}
+svg.budget-chart{font-family:var(--mono);font-size:11px}
+/* Add form */
+.add-form{background:var(--light);border-radius:10px;padding:16px;margin-bottom:16px}
+.add-form-title{font-size:.82rem;font-weight:700;color:var(--azul);margin-bottom:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.sep{border:none;border-top:1px solid var(--border);margin:16px 0}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">💰 Rastreador de Orçamento</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<!-- Campaign config -->
+<div class="card">
+  <div class="card-title">Configuração da Campanha</div>
+  <div class="grid-3" style="margin-bottom:12px">
+    <div>
+      <label>Nome</label>
+      <input id="campName" type="text" placeholder="Ex: Campanha Verão 2025" oninput="saveMeta()">
+    </div>
+    <div>
+      <label>Orçamento total (R$)</label>
+      <input id="totalBudget" type="number" min="0" step="100" placeholder="500000" oninput="refresh()">
+    </div>
+    <div>
+      <label>Alerta de desvio (%)</label>
+      <input id="alertPct" type="number" min="1" max="50" value="10" oninput="refresh()">
+    </div>
+  </div>
+  <div class="grid-3">
+    <div>
+      <label>Data de início</label>
+      <input id="campStart" type="date" oninput="refresh()">
+    </div>
+    <div>
+      <label>Data de fim</label>
+      <input id="campEnd" type="date" oninput="refresh()">
+    </div>
+    <div>
+      <label>Moeda</label>
+      <select id="currency" onchange="refresh()">
+        <option value="BRL">R$ — Real</option>
+        <option value="USD">$ — Dólar</option>
+        <option value="EUR">€ — Euro</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Add parcela -->
+<div class="card">
+  <div class="card-title">Parcelas / Períodos</div>
+  <div class="add-form">
+    <div class="add-form-title">+ Adicionar parcela</div>
+    <div class="grid-4">
+      <div>
+        <label>Período</label>
+        <input id="new_label" type="text" placeholder="Jan 2025 / Sem 1">
+      </div>
+      <div>
+        <label>Data início</label>
+        <input id="new_start" type="date">
+      </div>
+      <div>
+        <label>Orçamento planejado (R$)</label>
+        <input id="new_plan" type="number" min="0" step="100" placeholder="100000">
+      </div>
+      <div>
+        <label>Gasto real (R$)</label>
+        <input id="new_actual" type="number" min="0" step="100" placeholder="0">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="addParcela()">Adicionar</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadExample()">Exemplo</button>
+    </div>
+  </div>
+  <div id="alertBox"></div>
+  <div id="kpiRow" class="kpi-grid"></div>
+  <div id="tableWrap"></div>
+  <div id="chartWrap" style="margin-top:16px"></div>
+  <div class="btn-row" style="margin-top:12px">
+    <button class="btn btn-ghost btn-sm" onclick="exportCsv()">⬇ Exportar CSV</button>
+    <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 Limpar tudo</button>
+  </div>
+</div>
+
+</main>
+<script>
+const LS_KEY='orcamento_data';
+let parcelas=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('orc_theme',nxt);
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('orc_theme')||'light');
+
+// Persist meta
+function saveMeta(){localStorage.setItem('orc_meta',JSON.stringify({name:document.getElementById('campName').value,total:document.getElementById('totalBudget').value,start:document.getElementById('campStart').value,end:document.getElementById('campEnd').value,alert:document.getElementById('alertPct').value,currency:document.getElementById('currency').value}));}
+(function loadMeta(){const m=JSON.parse(localStorage.getItem('orc_meta')||'{}');if(m.name)document.getElementById('campName').value=m.name;if(m.total)document.getElementById('totalBudget').value=m.total;if(m.start)document.getElementById('campStart').value=m.start;if(m.end)document.getElementById('campEnd').value=m.end;if(m.alert)document.getElementById('alertPct').value=m.alert;if(m.currency)document.getElementById('currency').value=m.currency;})();
+
+function currSymbol(){const c=document.getElementById('currency').value;return c==='BRL'?'R$':c==='USD'?'$':'€';}
+function fmtMoney(v){if(v===null||v===undefined||isNaN(v))return'—';const sym=currSymbol();return sym+Math.round(v).toLocaleString('pt-BR');}
+function fmtPct(v){return(v>=0?'+':'')+v.toFixed(1)+'%';}
+
+function addParcela(){
+  const label=document.getElementById('new_label').value.trim();
+  const start=document.getElementById('new_start').value;
+  const plan=parseFloat(document.getElementById('new_plan').value);
+  const actual=parseFloat(document.getElementById('new_actual').value)||0;
+  if(!label||isNaN(plan)){alert('Preencha período e orçamento planejado.');return;}
+  parcelas.push({id:Date.now(),label,start,plan,actual});
+  parcelas.sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  saveParcelas();
+  document.getElementById('new_label').value='';
+  document.getElementById('new_start').value='';
+  document.getElementById('new_plan').value='';
+  document.getElementById('new_actual').value='';
+  refresh();
+}
+
+function updateActual(id,val){
+  const p=parcelas.find(p=>p.id===id);
+  if(p){p.actual=parseFloat(val)||0;saveParcelas();refresh();}
+}
+
+function removeParcela(id){
+  parcelas=parcelas.filter(p=>p.id!==id);
+  saveParcelas();refresh();
+}
+
+function saveParcelas(){localStorage.setItem(LS_KEY,JSON.stringify(parcelas));saveMeta();}
+
+function getStatus(p){
+  const today=new Date().toISOString().slice(0,10);
+  if(!p.start||p.start>today)return'future';
+  if(p.start===today)return'current';
+  return'past';
+}
+
+function refresh(){
+  saveMeta();
+  if(!parcelas.length){
+    document.getElementById('kpiRow').innerHTML='';
+    document.getElementById('tableWrap').innerHTML='<p class="hint">Nenhuma parcela cadastrada ainda.</p>';
+    document.getElementById('chartWrap').innerHTML='';
+    document.getElementById('alertBox').innerHTML='';
+    return;
+  }
+  const totalBudget=parseFloat(document.getElementById('totalBudget').value)||null;
+  const alertPct=parseFloat(document.getElementById('alertPct').value)||10;
+
+  const totalPlan=parcelas.reduce((s,p)=>s+p.plan,0);
+  const totalActual=parcelas.reduce((s,p)=>s+p.actual,0);
+  const totalDiff=totalActual-totalPlan;
+  const totalDiffPct=totalPlan>0?(totalDiff/totalPlan)*100:0;
+  const remaining=totalBudget?totalBudget-totalActual:null;
+  const pacing=totalPlan>0?(totalActual/totalPlan)*100:0;
+
+  // Status for each parcela
+  const rows=parcelas.map(p=>{
+    const diff=p.actual-p.plan;
+    const diffPct=p.plan>0?(diff/p.plan)*100:0;
+    const st=getStatus(p);
+    let statusBadge,barCls;
+    if(st==='future'){statusBadge='<span class="badge badge-future">Futuro</span>';barCls='prog-blue';}
+    else if(st==='current'){statusBadge='<span class="badge badge-current">Atual</span>';barCls='prog-blue';}
+    else if(Math.abs(diffPct)<=alertPct){statusBadge='<span class="badge badge-ok">OK</span>';barCls='prog-ok';}
+    else if(diffPct>alertPct){statusBadge='<span class="badge badge-over">Acima</span>';barCls='prog-err';}
+    else{statusBadge='<span class="badge badge-under">Abaixo</span>';barCls='prog-warn';}
+    const progPct=p.plan>0?Math.min(100,(p.actual/p.plan)*100):0;
+    const rowCls=st==='past'?'past':st==='current'?'current':'';
+    return`<tr class="${rowCls}">
+      <td><b>${p.label}</b>${p.start?`<div class="hint">${p.start}</div>`:''}</td>
+      <td class="num">${fmtMoney(p.plan)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" value="${p.actual||''}" placeholder="0" style="width:110px;padding:5px 8px;font-size:.82rem" oninput="updateActual(${p.id},this.value)">
+        </div>
+      </td>
+      <td class="num" style="color:${diff>=0?'var(--red)':'var(--green)'}">
+        ${fmtMoney(Math.abs(diff))} ${diff>=0?'▲':'▼'}<div class="hint">${fmtPct(diffPct)}</div>
+      </td>
+      <td style="min-width:90px">
+        <div class="prog-wrap"><div class="prog-bar ${barCls}" style="width:${progPct}%"></div></div>
+        <div class="hint" style="margin-top:2px">${progPct.toFixed(0)}% entregue</div>
+      </td>
+      <td>${statusBadge}</td>
+      <td><button class="btn btn-sm" style="padding:4px 8px;color:var(--red);background:none;border:none;cursor:pointer" onclick="removeParcela(${p.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableWrap').innerHTML=`<table class="parc-table">
+    <thead><tr><th>Período</th><th>Planejado</th><th>Gasto Real</th><th>Desvio</th><th>Progresso</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  // KPIs
+  const pacingCls=Math.abs(totalDiffPct)<=alertPct?'ok':totalDiffPct>alertPct?'err':'warn';
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total Planejado</div><div class="kpi-val">${fmtMoney(totalPlan)}</div><div class="kpi-sub">soma das parcelas</div></div>
+    <div class="kpi"><div class="kpi-label">Total Realizado</div><div class="kpi-val">${fmtMoney(totalActual)}</div><div class="kpi-sub">soma dos gastos reais</div></div>
+    <div class="kpi"><div class="kpi-label">Desvio Total</div><div class="kpi-val ${pacingCls}">${fmtMoney(Math.abs(totalDiff))} ${totalDiff>=0?'▲':'▼'}</div><div class="kpi-sub">${fmtPct(totalDiffPct)} do planejado</div></div>
+    ${totalBudget?`<div class="kpi"><div class="kpi-label">Saldo Disponível</div><div class="kpi-val ${remaining>=0?'ok':'err'}">${fmtMoney(remaining)}</div><div class="kpi-sub">de ${fmtMoney(totalBudget)}</div></div>`:''}
+    <div class="kpi"><div class="kpi-label">Pacing</div><div class="kpi-val ${pacingCls}">${pacing.toFixed(1)}%</div><div class="kpi-sub">realizado/planejado</div></div>
+  `;
+
+  // Alerts
+  const alerts=[];
+  if(Math.abs(totalDiffPct)>alertPct*2)alerts.push({cls:'alert-err',msg:`⚠️ Desvio crítico de ${fmtPct(totalDiffPct)} no total da campanha!`});
+  else if(Math.abs(totalDiffPct)>alertPct)alerts.push({cls:'alert-warn',msg:`⚡ Desvio de ${fmtPct(totalDiffPct)} acima do limite configurado (${alertPct}%).`});
+  else if(totalDiffPct===0&&totalActual===0)alerts.push({cls:'alert-ok',msg:'✅ Campanha sem gastos registrados ainda.'});
+  else alerts.push({cls:'alert-ok',msg:`✅ Pacing dentro do limite (desvio: ${fmtPct(totalDiffPct)}).`});
+  parcelas.forEach(p=>{
+    const diff=p.actual-p.plan;
+    const diffPct=p.plan>0?(diff/p.plan)*100:0;
+    if(getStatus(p)!=='future'&&Math.abs(diffPct)>alertPct*2)
+      alerts.push({cls:'alert-err',msg:`⚠️ ${p.label}: desvio de ${fmtPct(diffPct)} (limite: ${alertPct}%)`});
+  });
+  document.getElementById('alertBox').innerHTML=alerts.map(a=>`<div class="alert ${a.cls}">${a.msg}</div>`).join('');
+
+  // Chart
+  drawChart();
+}
+
+function drawChart(){
+  if(!parcelas.length)return;
+  const W=Math.max(500,parcelas.length*90+120);
+  const H=200;
+  const pad={l:70,r:20,t:20,b:50};
+  const cw=W-pad.l-pad.r;
+  const ch=H-pad.t-pad.b;
+  const maxVal=Math.max(...parcelas.map(p=>Math.max(p.plan,p.actual)));
+  const ys=v=>pad.t+ch*(1-v/maxVal);
+  const barW=Math.min(50,(cw/parcelas.length)-8);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const textColor=dark?'#8892b0':'#6b7280';
+  const lineColor=dark?'#2a3060':'#d0d6f7';
+
+  let bars='',labels='',axes='';
+  // Grid lines
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const y=ys(maxVal*f);
+    axes+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="${lineColor}" stroke-dasharray="3,3"/>`;
+    axes+=`<text x="${pad.l-6}" y="${y+4}" text-anchor="end" fill="${textColor}">${currSymbol()}${Math.round(maxVal*f/1000)}k</text>`;
+  });
+
+  parcelas.forEach((p,i)=>{
+    const x=pad.l+i*(cw/parcelas.length)+((cw/parcelas.length)-barW*2-4)/2;
+    const yPlan=ys(p.plan);
+    const yAct=ys(p.actual||0);
+    // Planned bar
+    bars+=`<rect x="${x}" y="${yPlan}" width="${barW}" height="${ch+pad.t-yPlan}" rx="3" fill="var(--azul)" opacity=".3"/>`;
+    // Actual bar
+    const actH=ch+pad.t-yAct;
+    const actFill=p.actual>p.plan*1.1?'var(--red)':p.actual<p.plan*0.9?'var(--yellow)':'var(--green)';
+    if(p.actual>0)bars+=`<rect x="${x+barW+4}" y="${yAct}" width="${barW}" height="${actH}" rx="3" fill="${actFill}" opacity=".85"/>`;
+    // Label
+    const lx=x+barW;
+    labels+=`<text x="${lx}" y="${H-pad.b+16}" text-anchor="middle" fill="${textColor}" font-size="10">${p.label.length>8?p.label.slice(0,8)+'…':p.label}</text>`;
+  });
+
+  // Legend
+  const ly=H-8;
+  const legend=`<rect x="${pad.l}" y="${ly-8}" width="12" height="8" rx="2" fill="var(--azul)" opacity=".3"/>
+    <text x="${pad.l+16}" y="${ly}" fill="${textColor}">Planejado</text>
+    <rect x="${pad.l+100}" y="${ly-8}" width="12" height="8" rx="2" fill="var(--green)" opacity=".85"/>
+    <text x="${pad.l+116}" y="${ly}" fill="${textColor}">Realizado</text>`;
+
+  document.getElementById('chartWrap').innerHTML=`
+    <div class="card-title" style="margin-bottom:8px">Visão Geral de Budget</div>
+    <svg class="budget-chart" width="100%" viewBox="0 0 ${W} ${H+20}" style="max-width:${W}px">
+      ${axes}${bars}${labels}${legend}
+    </svg>`;
+}
+
+function exportCsv(){
+  const lines=['Período,Início,Planejado,Realizado,Desvio,Desvio%'];
+  parcelas.forEach(p=>{
+    const diff=p.actual-p.plan;
+    const pct=p.plan>0?((diff/p.plan)*100).toFixed(1):'-';
+    lines.push([p.label,p.start||'-',p.plan,p.actual||0,diff,pct].join(','));
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'orcamento.csv'});
+  a.click();
+}
+
+function clearAll(){
+  if(!confirm('Limpar todas as parcelas?'))return;
+  parcelas=[];
+  saveParcelas();
+  refresh();
+}
+
+function loadExample(){
+  document.getElementById('campName').value='Campanha Verão 2025';
+  document.getElementById('totalBudget').value='500000';
+  document.getElementById('alertPct').value='10';
+  document.getElementById('campStart').value='2025-01-01';
+  document.getElementById('campEnd').value='2025-03-31';
+  parcelas=[
+    {id:1,label:'Janeiro',start:'2025-01-01',plan:160000,actual:155200},
+    {id:2,label:'Fevereiro',start:'2025-02-01',plan:170000,actual:188400},
+    {id:3,label:'Março',start:'2025-03-01',plan:170000,actual:0},
+  ];
+  saveParcelas();
+  refresh();
+}
+
+refresh();
+</script>
+</body>
+</html>
