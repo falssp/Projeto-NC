@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de Leilão Programático — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#d97706;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+/* Bidder rows */
+.bidder-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 36px;gap:8px;align-items:end;margin-bottom:8px}
+.bidder-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 36px;gap:8px;margin-bottom:4px}
+.bidder-header span{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.del-btn{background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:1rem;height:38px;width:36px;display:flex;align-items:center;justify-content:center}
+.del-btn:hover{border-color:var(--red);color:var(--red)}
+/* Result */
+.winner-card{border:2px solid var(--green);border-radius:10px;padding:16px;text-align:center;margin-bottom:16px}
+.winner-name{font-size:1.2rem;font-weight:700;color:var(--green)}
+.winner-pays{font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--azul);margin:4px 0}
+.auction-step{padding:10px 0;border-bottom:1px solid var(--border);font-size:.88rem}
+.auction-step:last-child{border-bottom:none}
+.rank-1{color:var(--green);font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:7px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.shade-row{background:var(--light)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">⚡ Simulador de Leilão Programático</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('auction')">Simulador</div>
+  <div class="tab" onclick="switchTab('shade')">Bid Shading</div>
+  <div class="tab" onclick="switchTab('ref')">Referência RTB</div>
+</div>
+
+<!-- TAB Simulador -->
+<div id="tab-auction" class="tab-panel active">
+<div class="card">
+  <div class="card-title">Configuração do Leilão</div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>Tipo de Leilão</label>
+      <select id="auctionType" onchange="simAuction()">
+        <option value="1st">1º Preço (First Price)</option>
+        <option value="2nd">2º Preço (Second Price)</option>
+        <option value="unified">Unified Auction (Google)</option>
+      </select>
+    </div>
+    <div>
+      <label>Floor Price (R$)</label>
+      <input id="floor" type="number" value="5.00" min="0" step="0.01" oninput="simAuction()">
+    </div>
+    <div>
+      <label>Tipo de Floor</label>
+      <select id="floorType" onchange="simAuction()">
+        <option value="hard">Hard Floor (rígido)</option>
+        <option value="soft">Soft Floor (influencia leilão)</option>
+      </select>
+    </div>
+  </div>
+  <div class="card-title">Ofertantes (DSPs)</div>
+  <div class="bidder-header">
+    <span>DSP / Comprador</span><span>Lance (R$)</span><span>Bid Shade (%)</span><span>Deal ID</span><span></span>
+  </div>
+  <div id="bidders"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="addBidder()">+ DSP</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Exemplo</button>
+    <button class="btn btn-primary" onclick="simAuction()">Simular Leilão</button>
+  </div>
+</div>
+
+<div id="auctionResult" style="display:none">
+  <div class="winner-card" id="winnerCard"></div>
+  <div class="card">
+    <div class="card-title">Resultado por Ofertante</div>
+    <table id="auctionTable"></table>
+  </div>
+  <div class="card">
+    <div class="card-title">Passo a Passo do Leilão</div>
+    <div id="stepsArea"></div>
+  </div>
+</div>
+</div>
+
+<!-- TAB Bid Shading -->
+<div id="tab-shade" class="tab-panel">
+<div class="card">
+  <div class="card-title">Calculadora de Bid Shading</div>
+  <p style="font-size:.88rem;color:var(--muted);margin-bottom:16px">Em leilões de 1º preço, DSPs usam bid shading para reduzir o lance e economizar budget sem perder impressões.</p>
+  <div class="grid2" style="margin-bottom:14px">
+    <div>
+      <label>Lance Original (valor real percebido)</label>
+      <input id="shBidOrig" type="number" value="15.00" step="0.01" oninput="calcShade()">
+    </div>
+    <div>
+      <label>Floor Price do Publisher</label>
+      <input id="shFloor" type="number" value="6.00" step="0.01" oninput="calcShade()">
+    </div>
+    <div>
+      <label>Fator de Shade (%)</label>
+      <input id="shFactor" type="number" value="25" min="0" max="80" oninput="calcShade()">
+      <div class="hint">DSPs tipicamente shade 10–40% em leilões 1st price</div>
+    </div>
+    <div>
+      <label>Lances históricos de vitória estimados (R$)</label>
+      <input id="shHistorical" type="number" value="9.50" step="0.01" oninput="calcShade()">
+      <div class="hint">Mediana dos clearing prices passados nesta placement</div>
+    </div>
+  </div>
+</div>
+<div class="card" id="shadeResult"></div>
+<div class="card">
+  <div class="card-title">Tabela de Shade × Economia × Risco de Perda</div>
+  <table id="shadeTable"></table>
+</div>
+</div>
+
+<!-- TAB Referência -->
+<div id="tab-ref" class="tab-panel">
+<div class="card">
+  <div style="margin-bottom:20px">
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--azul);margin-bottom:10px">Como Funciona um Leilão RTB</h3>
+    <ol style="font-size:.85rem;line-height:2;padding-left:20px;color:var(--muted)">
+      <li>Usuário carrega a página — publisher envia <b>bid request</b> para SSP (AdX, Magnite…)</li>
+      <li>SSP distribui a oportunidade para N DSPs em paralelo (latência máx. ~100ms)</li>
+      <li>Cada DSP avalia o usuário e envia <b>bid response</b> com seu lance</li>
+      <li>SSP ranqueia os lances válidos (acima do floor)</li>
+      <li>Vencedor é escolhido e paga conforme o tipo de leilão (1st ou 2nd price)</li>
+      <li>Ad server do publisher serve o criativo do vencedor</li>
+    </ol>
+  </div>
+  <div style="margin-bottom:20px">
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--azul);margin-bottom:10px">1º Preço vs 2º Preço</h3>
+    <table>
+      <thead><tr><th>Aspecto</th><th>1º Preço</th><th>2º Preço</th></tr></thead>
+      <tbody>
+        <tr><td>Vencedor paga</td><td>Seu próprio lance</td><td>Lance do 2º colocado + R$0,01</td></tr>
+        <tr><td>Estratégia ótima</td><td>Shade o lance (submete menos)</td><td>Lançar o valor real (dominant strategy)</td></tr>
+        <tr><td>Transparência</td><td>Maior — sabe o que vai pagar</td><td>Menor — preço final imprevisível</td></tr>
+        <tr><td>Mercado atual</td><td>Padrão desde 2019 (Google)</td><td>Legado / minoritário</td></tr>
+        <tr><td>Revenue publisher</td><td>Geralmente maior</td><td>Menor (preço cai ao 2º lance)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--azul);margin-bottom:10px">Deal Types</h3>
+    <table>
+      <thead><tr><th>Tipo</th><th>Descrição</th><th>Prioridade</th></tr></thead>
+      <tbody>
+        <tr><td>Programmatic Guaranteed (PG)</td><td>Volume e preço fixos, sem leilão</td><td>Mais alta</td></tr>
+        <tr><td>Preferred Deal</td><td>Preço fixo, volume não garantido</td><td>Alta</td></tr>
+        <tr><td>Private Marketplace (PMP)</td><td>Leilão privado com Deal ID, floor acordado</td><td>Média-alta</td></tr>
+        <tr><td>Open Auction</td><td>Leilão aberto para todos os compradores</td><td>Mais baixa</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('rtb_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('rtb_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='shade')calcShade();
+}
+
+let bidders=[];let bid=0;
+
+function addBidder(name='',bid_=0,shade=0,deal=''){
+  const id=bid++;
+  bidders.push({id,name,bid:bid_,shade,deal});
+  renderBidders();
+}
+function removeBidder(id){bidders=bidders.filter(b=>b.id!==id);renderBidders();}
+function renderBidders(){
+  document.getElementById('bidders').innerHTML=bidders.map((b,i)=>`
+    <div class="bidder-row">
+      <input value="${b.name}" placeholder="ex: DV360" oninput="bidders[${i}].name=this.value">
+      <input type="number" value="${b.bid||''}" placeholder="12.00" step="0.01" oninput="bidders[${i}].bid=parseFloat(this.value)||0">
+      <input type="number" value="${b.shade||''}" placeholder="0" min="0" max="80" oninput="bidders[${i}].shade=parseFloat(this.value)||0">
+      <input value="${b.deal}" placeholder="PMP Deal ID" oninput="bidders[${i}].deal=this.value">
+      <button class="del-btn" onclick="removeBidder(${b.id})">×</button>
+    </div>`).join('');
+}
+
+function fmtR(n){return 'R$'+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function simAuction(){
+  if(!bidders.length)return;
+  const type=document.getElementById('auctionType').value;
+  const floor=parseFloat(document.getElementById('floor').value)||0;
+  const floorType=document.getElementById('floorType').value;
+  document.getElementById('auctionResult').style.display='block';
+
+  // Compute shaded bids
+  const submissions=bidders.map(b=>({
+    ...b,
+    submittedBid:Math.max(0,b.bid*(1-b.shade/100))
+  }));
+
+  // Apply floor
+  const eligible=submissions.filter(b=>b.submittedBid>=(floorType==='hard'?floor:floor*0.95));
+  const sorted=[...eligible].sort((a,b_)=>b_.submittedBid-a.submittedBid);
+
+  // Determine winner and clearing price
+  let winner=null,clearingPrice=0;
+  const steps=[];
+
+  if(sorted.length===0){
+    document.getElementById('winnerCard').innerHTML=`<div style="color:var(--red);font-weight:700;font-size:1.1rem">❌ Nenhum lance elegível acima do floor de ${fmtR(floor)}</div>`;
+    document.getElementById('auctionTable').innerHTML='';
+    document.getElementById('stepsArea').innerHTML=`<div class="auction-step">Todos os lances foram rejeitados pelo floor price de ${fmtR(floor)} (${floorType==='hard'?'hard':'soft'} floor).</div>`;
+    return;
+  }
+
+  winner=sorted[0];
+  if(type==='1st'){
+    clearingPrice=winner.submittedBid;
+    steps.push(`1º Preço: vencedor paga seu próprio lance submetido de ${fmtR(clearingPrice)}.`);
+  } else if(type==='2nd'){
+    const second=sorted[1];
+    clearingPrice=second?second.submittedBid+0.01:floor+0.01;
+    steps.push(`2º Preço: vencedor paga lance do 2º colocado (${second?fmtR(second.submittedBid):'floor'}) + R$0,01 = ${fmtR(clearingPrice)}.`);
+  } else {
+    // Unified: similar to 2nd price but respects floor as minimum
+    const second=sorted[1];
+    clearingPrice=Math.max(floor, second?second.submittedBid+0.01:floor+0.01);
+    steps.push(`Unified Auction: clearing price = max(floor, 2º lance + R$0,01) = ${fmtR(clearingPrice)}.`);
+  }
+
+  if(clearingPrice<floor){clearingPrice=floor;steps.push(`Clearing price ajustado para o floor de ${fmtR(floor)}.`);}
+
+  const savings=winner.bid>clearingPrice?winner.bid-clearingPrice:0;
+
+  document.getElementById('winnerCard').innerHTML=`
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:4px">🏆 VENCEDOR DO LEILÃO</div>
+    <div class="winner-name">${winner.name||'DSP sem nome'} ${winner.deal?'<span style="font-size:.8rem;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:6px">'+winner.deal+'</span>':''}</div>
+    <div class="winner-pays">${fmtR(clearingPrice)}</div>
+    <div style="font-size:.82rem;color:var(--muted)">Lance original: ${fmtR(winner.bid)} · Submetido (shaded): ${fmtR(winner.submittedBid)} · Economia: ${fmtR(savings)}</div>`;
+
+  // Table
+  document.getElementById('auctionTable').innerHTML=`
+    <thead><tr><th>DSP</th><th>Lance Real</th><th>Shade</th><th>Lance Submetido</th><th>Status</th><th>Pagamento</th></tr></thead>
+    <tbody>${submissions.sort((a,b_)=>b_.submittedBid-a.submittedBid).map((b,i)=>{
+      const elig=b.submittedBid>=(floorType==='hard'?floor:floor*0.95);
+      const isWinner=elig&&i===0||b.id===winner?.id;
+      return `<tr${isWinner?' style="font-weight:700"':''}>
+        <td>${b.name||'—'}${b.deal?` <span style="font-size:.72rem;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:4px">${b.deal}</span>`:''}</td>
+        <td style="font-family:var(--mono)">${fmtR(b.bid)}</td>
+        <td style="font-family:var(--mono)">${b.shade?b.shade+'%':'—'}</td>
+        <td style="font-family:var(--mono)">${fmtR(b.submittedBid)}</td>
+        <td>${elig?(isWinner?'<span style="color:var(--green)">🏆 Vencedor</span>':'<span style="color:var(--muted)">Perdedor</span>'):'<span style="color:var(--red)">Rejeitado (floor)</span>'}</td>
+        <td style="font-family:var(--mono)">${isWinner?fmtR(clearingPrice):'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+
+  steps.unshift(`Floor price: ${fmtR(floor)} (${floorType==='hard'?'hard floor — rejeita lances abaixo':'soft floor — influencia o leilão'}).`);
+  steps.unshift(`${submissions.length} DSPs participaram. ${eligible.length} lance(s) elegível(eis).`);
+  document.getElementById('stepsArea').innerHTML=steps.map((s,i)=>`<div class="auction-step">${i+1}. ${s}</div>`).join('');
+}
+
+// Bid shading
+function calcShade(){
+  const orig=parseFloat(document.getElementById('shBidOrig').value)||15;
+  const floor=parseFloat(document.getElementById('shFloor').value)||6;
+  const shade=parseFloat(document.getElementById('shFactor').value)||25;
+  const hist=parseFloat(document.getElementById('shHistorical').value)||9.5;
+  const shaded=orig*(1-shade/100);
+  const wins=shaded>=floor;
+  const savings=(orig-shaded).toFixed(2);
+  const savingsPct=((orig-shaded)/orig*100).toFixed(1);
+  document.getElementById('shadeResult').innerHTML=`
+    <div class="card-title">Resultado</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="background:var(--light);border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:.75rem;color:var(--muted);font-weight:700">Lance Original</div>
+        <div style="font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--azul)">${fmtR(orig)}</div>
+      </div>
+      <div style="background:var(--light);border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:.75rem;color:var(--muted);font-weight:700">Lance Shaded (${shade}%)</div>
+        <div style="font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--green)">${fmtR(shaded)}</div>
+      </div>
+      <div style="background:var(--light);border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:.75rem;color:var(--muted);font-weight:700">Economia</div>
+        <div style="font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--orange)">-${fmtR(parseFloat(savings))} (${savingsPct}%)</div>
+      </div>
+    </div>
+    <p style="margin-top:14px;font-size:.88rem">${wins?'✅ Lance shaded <b>acima do floor</b> — impressão provavelmente ganha.':'⚠️ Lance shaded <b>abaixo do floor</b> — impressão seria perdida. Reduza o shade factor.'}</p>
+    <p style="font-size:.82rem;color:var(--muted);margin-top:6px">Mediana histórica de clearing price: ${fmtR(hist)} · Lance shaded vs histórico: ${shaded>=hist?'✅ Acima — chance alta de ganhar':'❌ Abaixo — risco de perder para concorrentes'}</p>`;
+
+  // Table of shade factors
+  const factors=[0,10,15,20,25,30,35,40];
+  document.getElementById('shadeTable').innerHTML=`
+    <thead><tr><th>Shade</th><th>Lance Submetido</th><th>Economia</th><th>Acima Floor?</th><th>Acima Histórico?</th></tr></thead>
+    <tbody>${factors.map(f=>{
+      const sub=orig*(1-f/100);
+      const isChosen=f===shade;
+      return `<tr${isChosen?' class="shade-row"':''}>
+        <td style="font-family:var(--mono)">${f}%${isChosen?' ◀':''}</td>
+        <td style="font-family:var(--mono)">${fmtR(sub)}</td>
+        <td style="font-family:var(--mono)">${fmtR(orig-sub)} (${((orig-sub)/orig*100).toFixed(1)}%)</td>
+        <td>${sub>=floor?'✅':'❌'}</td>
+        <td>${sub>=hist?'✅':'⚠️'}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+}
+
+function loadExample(){
+  bidders=[];bid=0;
+  [
+    {name:'DV360',bid:14.5,shade:20,deal:''},
+    {name:'The Trade Desk',bid:12.8,shade:15,deal:'PMP-7812'},
+    {name:'Xandr',bid:11.2,shade:0,deal:''},
+    {name:'Amazon DSP',bid:16.0,shade:25,deal:'PMP-7812'},
+    {name:'MediaMath',bid:9.5,shade:10,deal:''},
+  ].forEach(d=>addBidder(d.name,d.bid,d.shade,d.deal));
+  simAuction();
+}
+
+addBidder('DV360',14.5,20,'');
+addBidder('Trade Desk',11.0,15,'');
+addBidder('Xandr',9.8,0,'');
+renderBidders();
+calcShade();
+</script>
+</body>
+</html>

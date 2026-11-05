@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de Tag Script — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+main{max-width:900px;margin:0 auto;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.code-out{background:var(--light);border-radius:8px;padding:14px;font-family:var(--mono);font-size:.8rem;overflow-x:auto;white-space:pre;line-height:1.6;min-height:60px;cursor:pointer}
+.code-out:hover{background:var(--border)}
+.code-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.copy-btn{background:var(--azul);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:.72rem;cursor:pointer;font-family:inherit}
+.preview-frame{width:100%;border:1px dashed var(--border);border-radius:8px;background:var(--light);min-height:80px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);padding:16px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:7px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.macro-badge{display:inline-block;background:var(--light);color:var(--azul);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.78rem;cursor:pointer}
+.macro-badge:hover{background:var(--azul);color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🔧 Gerador de Tag Script</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('gen')">Gerador</div>
+  <div class="tab" onclick="switchTab('macros')">Macros & Referência</div>
+</div>
+
+<!-- Gerador -->
+<div id="tab-gen" class="tab-panel active">
+<div class="card">
+  <div class="card-title">Configuração da Tag</div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>Tipo de Tag</label>
+      <select id="tagType" onchange="generate()">
+        <option value="floodlight_iframe">Floodlight — iframe</option>
+        <option value="floodlight_js">Floodlight — JavaScript</option>
+        <option value="pixel">Pixel de Impressão (img 1×1)</option>
+        <option value="click">Tag de Clique</option>
+        <option value="gtag">Google Tag (gtag.js)</option>
+        <option value="ga4_event">GA4 — evento</option>
+        <option value="meta_pixel">Meta Pixel</option>
+        <option value="gtm_datalayer">GTM dataLayer.push</option>
+      </select>
+    </div>
+    <div>
+      <label>ID / Advertiser</label>
+      <input id="tagId" placeholder="ex: 1234567" oninput="generate()">
+    </div>
+    <div>
+      <label>Tipo / Evento</label>
+      <input id="tagEvent" placeholder="ex: purchase" oninput="generate()">
+    </div>
+  </div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div>
+      <label>Cat / Label</label>
+      <input id="tagCat" placeholder="ex: thank000 (Floodlight cat)" oninput="generate()">
+    </div>
+    <div>
+      <label>Valor / Receita</label>
+      <input id="tagValue" placeholder="ex: [revenue] ou 99.90" oninput="generate()">
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <label>Custom Params (u-vars / event params)</label>
+      <input id="tagCustom" placeholder="u1=[orderid];u2=[email] ou item_id,value" oninput="generate()">
+    </div>
+    <div>
+      <label>Opções</label>
+      <select id="tagOpts" onchange="generate()">
+        <option value="none">Nenhuma</option>
+        <option value="noscript">Incluir &lt;noscript&gt; fallback</option>
+        <option value="async">Carregamento async</option>
+        <option value="defer">Carregamento defer</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="code-label">
+    <span>Tag Gerada — clique para copiar</span>
+    <button class="copy-btn" onclick="copyTag('tagOut')">Copiar</button>
+  </div>
+  <div class="code-out" id="tagOut" onclick="copyTag('tagOut')"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="copyTag('tagOut')">📋 Copiar Tag</button>
+    <button class="btn btn-ghost" onclick="downloadTag()">⬇ Baixar .txt</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Macros Disponíveis — clique para inserir</div>
+  <div id="macroList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+</div>
+</div>
+
+<!-- Macros reference -->
+<div id="tab-macros" class="tab-panel">
+<div class="card">
+  <div class="card-title">Macros do CM360 / DV360</div>
+  <table>
+    <thead><tr><th>Macro</th><th>Descrição</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td style="font-family:var(--mono)">${CLICK_ID}</td><td>ID único do clique (atribuição)</td><td>Floodlight, pixel</td></tr>
+      <tr><td style="font-family:var(--mono)">${DC_DBM_CREATIVE_ID}</td><td>ID do criativo</td><td>Tracking</td></tr>
+      <tr><td style="font-family:var(--mono)">${DC_DBM_CAMPAIGN_ID}</td><td>ID da campanha DV360</td><td>Relatórios</td></tr>
+      <tr><td style="font-family:var(--mono)">${CACHEBUSTER}</td><td>Cache buster aleatório</td><td>Impressão única</td></tr>
+      <tr><td style="font-family:var(--mono)">${DC_DBM_USER_ID}</td><td>ID anonimizado do usuário</td><td>Frequência</td></tr>
+      <tr><td style="font-family:var(--mono)">${DC_DBM_DEVICE_TYPE}</td><td>Tipo de dispositivo</td><td>Segmentação</td></tr>
+      <tr><td style="font-family:var(--mono)">${DC_DBM_EXCHANGE_ID}</td><td>ID da exchange/SSP</td><td>Brand safety</td></tr>
+      <tr><td style="font-family:var(--mono)">${DC_DBM_SITE_ID}</td><td>ID do site publisher</td><td>Block list</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <div class="card-title">Macros do Google Ad Manager (GAM)</div>
+  <table>
+    <thead><tr><th>Macro</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td style="font-family:var(--mono)">%%CLICK_URL_ESC%%</td><td>URL de clique escapada para redirect</td></tr>
+      <tr><td style="font-family:var(--mono)">%%CACHEBUSTER%%</td><td>Número aleatório para cache bust</td></tr>
+      <tr><td style="font-family:var(--mono)">%%WIDTH%%</td><td>Largura do espaço em pixels</td></tr>
+      <tr><td style="font-family:var(--mono)">%%HEIGHT%%</td><td>Altura do espaço em pixels</td></tr>
+      <tr><td style="font-family:var(--mono)">%%SITE%%</td><td>Nome do site publisher</td></tr>
+      <tr><td style="font-family:var(--mono)">%%ADUNIT%%</td><td>Nome do ad unit</td></tr>
+      <tr><td style="font-family:var(--mono)">%%PATTERN:key%%</td><td>Key-value targeting da campanha</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <div class="card-title">Referência de Eventos GA4</div>
+  <table>
+    <thead><tr><th>Evento</th><th>Parâmetros Chave</th><th>Quando Disparar</th></tr></thead>
+    <tbody>
+      <tr><td>purchase</td><td>transaction_id, value, currency, items</td><td>Confirmação de compra</td></tr>
+      <tr><td>add_to_cart</td><td>currency, value, items</td><td>Clique em "Adicionar ao carrinho"</td></tr>
+      <tr><td>begin_checkout</td><td>currency, value, items</td><td>Início do checkout</td></tr>
+      <tr><td>generate_lead</td><td>currency, value</td><td>Envio de formulário</td></tr>
+      <tr><td>view_item</td><td>currency, value, items</td><td>Visualização de produto</td></tr>
+      <tr><td>sign_up</td><td>method</td><td>Cadastro de usuário</td></tr>
+      <tr><td>login</td><td>method</td><td>Login bem-sucedido</td></tr>
+      <tr><td>search</td><td>search_term</td><td>Busca interna</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('tag_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('tag_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+const MACROS_BY_TYPE={
+  floodlight_iframe:['[ordernumber]','[revenue]','[quantity]','[sessionid]'],
+  floodlight_js:['[ordernumber]','[revenue]','[quantity]','[sessionid]'],
+  pixel:['${CACHEBUSTER}','${CLICK_ID}','${DC_DBM_CREATIVE_ID}'],
+  click:['%%CLICK_URL_ESC%%','%%CACHEBUSTER%%'],
+  gtag:['transactionId','value','currency'],
+  ga4_event:['transaction_id','value','currency','items'],
+  meta_pixel:['value','currency','content_ids'],
+  gtm_datalayer:['transactionId','transactionTotal','transactionProducts'],
+};
+
+function generate(){
+  const type=document.getElementById('tagType').value;
+  const id=document.getElementById('tagId').value||'ADVERTISER_ID';
+  const event=document.getElementById('tagEvent').value||'purchase';
+  const cat=document.getElementById('tagCat').value||'thank000';
+  const value=document.getElementById('tagValue').value||'[revenue]';
+  const custom=document.getElementById('tagCustom').value||'';
+  const opts=document.getElementById('tagOpts').value;
+  let tag='';
+
+  const customParams=custom?custom.split(';').filter(Boolean):[];
+  const uvarStr=customParams.map(p=>{
+    const [k,v]=p.split('=');return k&&v?`;${k.trim()}=${v.trim()}`:p.trim()?`;${p.trim()}`:''
+  }).join('');
+
+  const cachebust=`Math.random() * 10000000000000`;
+
+  if(type==='floodlight_iframe'){
+    tag=`<!-- Floodlight Activity — Counter Tag -->
+<iframe src="https://fls.doubleclick.net/activityi;src=${id};type=${event};cat=${cat}${uvarStr};dc_lat=;tag_for_child_directed_treatment=0;tfua=;npa=;gdpr=${'{'}GDPR{'}'};gdpr_consent=${'{'}GDPR_CONSENT_755{'}'};ord=[timestamp]?" width="1" height="1" frameborder="0" style="display:none" title="Floodlight Tag"></iframe>`;
+    if(opts==='noscript')tag+=`\n<noscript>\n<img src="https://fls.doubleclick.net/activityi;src=${id};type=${event};cat=${cat}${uvarStr};ord=1?" width="1" height="1" alt=""/>\n</noscript>`;
+  } else if(type==='floodlight_js'){
+    tag=`<!-- Floodlight Activity — JavaScript Tag -->
+<script type="text/javascript">
+var axel = Math.random() + "";
+var a = axel * 10000000000000;
+document.write('<img src="https://fls.doubleclick.net/activityi;src=${id};type=${event};cat=${cat}${uvarStr};dc_lat=;tag_for_child_directed_treatment=0;ord=' + a + '?" width="1" height="1" alt=""/>');
+<\/script>
+<noscript>
+<img src="https://fls.doubleclick.net/activityi;src=${id};type=${event};cat=${cat}${uvarStr};ord=1?" width="1" height="1" alt=""/>
+</noscript>`;
+  } else if(type==='pixel'){
+    tag=`<!-- Pixel de Impressão 1×1 -->
+<img src="https://ad.example.com/pixel?src=${id}&event=${event}&val=${value}&cb=\${CACHEBUSTER}&cid=\${CLICK_ID}" width="1" height="1" style="display:none" alt="">`;
+  } else if(type==='click'){
+    tag=`<!-- Tag de Clique com Redirect -->
+<a href="%%CLICK_URL_ESC%%https://www.seusite.com.br/landing-page?src=${id}&camp=${event}&cb=%%CACHEBUSTER%%" target="_blank">
+  <!-- Conteúdo do anúncio aqui -->
+</a>`;
+  } else if(type==='gtag'){
+    tag=`<!-- Google Tag (gtag.js) — Evento ${event} -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-${id}"><\/script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-${id}');
+  gtag('event', '${event}', {
+    'send_to': 'G-${id}',
+    'value': ${value},
+    'currency': 'BRL'${customParams.length?',\n    '+customParams.map(p=>`'${p.split('=')[0]}': '${p.split('=')[1]||''}'`).join(',\n    '):''}
+  });
+<\/script>`;
+  } else if(type==='ga4_event'){
+    tag=`<!-- GA4 — Evento ${event} via gtag -->
+<script>
+  gtag('event', '${event}', {
+    transaction_id: '[TRANSACTION_ID]',
+    value: ${value},
+    currency: 'BRL',
+    items: [{
+      item_id: '[PRODUCT_ID]',
+      item_name: '[PRODUCT_NAME]',
+      quantity: 1,
+      price: ${value}
+    }]${customParams.length?',\n    '+customParams.map(p=>`${p.split('=')[0]}: '${p.split('=')[1]||''}'`).join(',\n    '):''}
+  });
+<\/script>`;
+  } else if(type==='meta_pixel'){
+    tag=`<!-- Meta Pixel — Evento ${event} -->
+<script>
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '${id}');
+  fbq('track', '${event}', {
+    value: ${value},
+    currency: 'BRL'${customParams.length?',\n    '+customParams.map(p=>`${p.split('=')[0]}: '${p.split('=')[1]||''}'`).join(',\n    '):''}
+  });
+<\/script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${id}&ev=${event}&noscript=1"/></noscript>`;
+  } else if(type==='gtm_datalayer'){
+    tag=`<!-- GTM dataLayer Push — ${event} -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  dataLayer.push({
+    'event': '${event}',
+    'ecommerce': {
+      'purchase': {
+        'actionField': {
+          'id': '[TRANSACTION_ID]',
+          'revenue': '${value}',
+          'currency': 'BRL'
+        },
+        'products': [{
+          'id': '[PRODUCT_ID]',
+          'name': '[PRODUCT_NAME]',
+          'quantity': 1,
+          'price': '${value}'
+        }]
+      }
+    }${customParams.length?',\n    '+customParams.map(p=>`'${p.split('=')[0]}': '${p.split('=')[1]||''}'`).join(',\n    '):''}
+  });
+<\/script>`;
+  }
+
+  document.getElementById('tagOut').textContent=tag;
+  renderMacros(MACROS_BY_TYPE[type]||[]);
+}
+
+function renderMacros(list){
+  document.getElementById('macroList').innerHTML=list.map(m=>
+    `<span class="macro-badge" onclick="insertMacro('${m}')" title="Clique para inserir">${m}</span>`
+  ).join('');
+}
+
+function insertMacro(m){
+  const f=document.getElementById('tagCustom');
+  f.value=(f.value?f.value+';':'')+m;
+  generate();
+}
+
+function copyTag(id){
+  const txt=document.getElementById(id).textContent;
+  navigator.clipboard.writeText(txt).then(()=>showToast('Tag copiada!'));
+}
+
+function downloadTag(){
+  const txt=document.getElementById('tagOut').textContent;
+  const type=document.getElementById('tagType').value;
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`tag-${type}.txt`;a.click();
+}
+
+function showToast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1F36C7;color:#fff;padding:10px 20px;border-radius:8px;font-weight:600;z-index:9999;transition:opacity .3s';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2000);
+}
+
+generate();
+</script>
+</body>
+</html>
