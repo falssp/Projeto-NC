@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atribuição Multi-Touch — AdOps Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--ok-bg:#dcfce7;--warn-bg:#fef3c7;--bad-bg:#fee2e2;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#1a1d2e;--text:#e8ecff;--muted:#9ca3af;--border:#374151;--light:#1e2a5a;--ok-bg:#14532d;--warn-bg:#78350f;--bad-bg:#7f1d1d;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--azul);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.2rem;font-weight:700;}
+header a{color:#fff;opacity:.8;text-decoration:none;font-size:.875rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;padding:0 2rem;}
+.tab{padding:.75rem 1.25rem;cursor:pointer;font-size:.875rem;font-weight:500;border-bottom:3px solid transparent;color:var(--muted);transition:.2s;white-space:nowrap;}
+.tab.active{color:var(--azul);border-color:var(--azul);}
+main{padding:2rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;gap:.75rem;margin-top:1rem;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.kpi .val{font-size:1.6rem;font-weight:700;color:var(--azul);}
+.kpi .lbl{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+canvas{display:block;width:100%;border-radius:8px;background:var(--bg);}
+.pane{display:none;} .pane.active{display:block;}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+th{text-align:left;padding:.6rem .75rem;background:var(--light);color:var(--azul);font-weight:600;font-size:.8rem;}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+.touchrow{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:.5rem;align-items:end;margin-bottom:.5rem;}
+.touchrow label{margin-top:0;}
+.btn-del{background:var(--bad-bg);color:var(--bad);border:none;border-radius:6px;padding:.4rem .7rem;cursor:pointer;font-size:.8rem;font-family:inherit;}
+.bar-wrap{width:100%;background:var(--border);border-radius:4px;height:8px;overflow:hidden;margin-top:.3rem;}
+.bar-fill{height:8px;border-radius:4px;}
+.model-card{background:var(--light);border-radius:10px;padding:1rem;margin-bottom:.75rem;}
+.model-card h4{font-size:.9rem;font-weight:600;color:var(--azul);margin-bottom:.4rem;}
+.model-card p{font-size:.82rem;color:var(--muted);line-height:1.5;}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;margin:.3rem 0;}
+.diff-pos{color:var(--ok);font-weight:600;}
+.diff-neg{color:var(--bad);font-weight:600;}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr;}.touchrow{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:.2rem;">🔀 Atribuição Multi-Touch</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<nav>
+  <div class="tab active" onclick="switchTab('modelos')">Comparar Modelos</div>
+  <div class="tab" onclick="switchTab('jornada')">Jornada do Usuário</div>
+  <div class="tab" onclick="switchTab('ref')">Referência</div>
+</nav>
+<main>
+
+<!-- TAB MODELOS -->
+<div id="tab-modelos" class="pane active">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Pontos de Contato (Touchpoints)</h3>
+      <div id="touch-rows"></div>
+      <button class="btn btn-secondary" style="margin-top:.5rem;width:100%;" onclick="addTouch()">+ Adicionar Touchpoint</button>
+      <label style="margin-top:1rem;">Receita Total da Conversão (R$)</label>
+      <input id="receita-total" type="number" placeholder="Ex: 1200">
+      <label>Modelo de Atribuição Principal</label>
+      <select id="modelo-principal">
+        <option value="last">Last Click</option>
+        <option value="first">First Click</option>
+        <option value="linear" selected>Linear</option>
+        <option value="td">Time Decay</option>
+        <option value="pos">Position-Based (U-Shape)</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcAtrib()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExAtrib()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-atrib" class="kpi-grid" style="display:none;"></div>
+      <div class="card">
+        <h3>Crédito por Canal — Comparação de Modelos</h3>
+        <canvas id="chart-atrib" height="280"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="table-atrib-wrap" style="display:none;margin-top:1.5rem;">
+    <div class="card">
+      <h3>Crédito por Modelo (R$)</h3>
+      <table id="table-atrib"></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB JORNADA -->
+<div id="tab-jornada" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Jornada Multi-Session</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;">Insira os canais em ordem cronológica de interação até a conversão.</p>
+      <div id="journey-rows"></div>
+      <button class="btn btn-secondary" style="margin-top:.5rem;width:100%;" onclick="addJourney()">+ Adicionar Interação</button>
+      <label style="margin-top:1rem;">Ticket Médio (R$)</label>
+      <input id="ticket-journey" type="number" placeholder="Ex: 850">
+      <label>Tempo médio até conversão (dias)</label>
+      <input id="dias-journey" type="number" placeholder="Ex: 14">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcJourney()">Analisar Jornada</button>
+        <button class="btn btn-secondary" onclick="loadExJourney()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="journey-result" style="display:none;">
+        <div id="kpi-journey" class="kpi-grid"></div>
+        <div class="card">
+          <h3>Fluxo da Jornada</h3>
+          <canvas id="chart-journey" height="160"></canvas>
+          <div id="journey-insights" style="margin-top:1rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB REF -->
+<div id="tab-ref" class="pane">
+  <div class="grid-2">
+    <div class="model-card">
+      <h4>Last Click</h4>
+      <p>100% do crédito vai para o último canal antes da conversão. Simples mas ignora toda a jornada anterior. Favorece canais de fundo de funil (Search, Remarketing).</p>
+      <div class="mono">Crédito = 100% para último touch</div>
+    </div>
+    <div class="model-card">
+      <h4>First Click</h4>
+      <p>100% do crédito para o primeiro canal de contato. Valoriza canais de descoberta/awareness. Ignora o papel dos canais de conversão.</p>
+      <div class="mono">Crédito = 100% para primeiro touch</div>
+    </div>
+    <div class="model-card">
+      <h4>Linear</h4>
+      <p>Distribui o crédito igualmente entre todos os touchpoints. Mais democrático, mas não diferencia a importância relativa de cada canal.</p>
+      <div class="mono">Crédito = 100% / N para cada touch</div>
+    </div>
+    <div class="model-card">
+      <h4>Time Decay</h4>
+      <p>Canais mais próximos da conversão recebem mais crédito. Usa função exponencial com meia-vida de 7 dias por padrão.</p>
+      <div class="mono">Crédito ∝ e^(−λ × dias_antes)</div>
+    </div>
+    <div class="model-card">
+      <h4>Position-Based (U-Shape)</h4>
+      <p>40% para o primeiro, 40% para o último, 20% dividido entre os do meio. Equilibra descoberta e conversão.</p>
+      <div class="mono">First=40% | Last=40% | Middle=20%/N</div>
+    </div>
+    <div class="model-card">
+      <h4>Quando usar cada modelo</h4>
+      <ul style="font-size:.82rem;color:var(--muted);padding-left:1.2rem;line-height:1.8;">
+        <li><strong>Last Click:</strong> campanhas de DR com objetivo de venda imediata</li>
+        <li><strong>First Click:</strong> campanhas de awareness / branding</li>
+        <li><strong>Linear:</strong> análise base, sem hipóteses fortes</li>
+        <li><strong>Time Decay:</strong> ciclos de venda curtos (&lt; 7 dias)</li>
+        <li><strong>Position-Based:</strong> ciclos longos com múltiplos touchpoints</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+let touches=[], journeys=[];
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',h.dataset.theme);}catch(e){}}
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function switchTab(id){document.querySelectorAll('.tab').forEach((t,i)=>{const ids=['modelos','jornada','ref'];t.classList.toggle('active',ids[i]===id);});document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');}
+
+function addTouch(canal='',posicao=0,inv=0){touches.push({canal,posicao,inv});renderTouches();}
+function removeTouch(i){touches.splice(i,1);renderTouches();}
+function renderTouches(){
+  const c=document.getElementById('touch-rows');c.innerHTML='';
+  const canais=['Organic Search','Paid Search','Display','Social Pago','Email','Afiliados','Direct','Video'];
+  touches.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='touchrow';
+    const opts=canais.map(c=>`<option${t.canal===c?' selected':''}>${c}</option>`).join('');
+    d.innerHTML=`<div><label>Canal</label><select onchange="touches[${i}].canal=this.value"><option value="">Selecione</option>${opts}</select></div>
+    <div><label>Dias antes</label><input type="number" value="${t.posicao||''}" onchange="touches[${i}].posicao=+this.value" placeholder="0" min="0"></div>
+    <div><label>Invest. R$</label><input type="number" value="${t.inv||''}" onchange="touches[${i}].inv=+this.value" placeholder="0"></div>
+    <div><button class="btn-del" onclick="removeTouch(${i})">✕</button></div>`;
+    c.appendChild(d);
+  });
+}
+
+function calcAtrib(){
+  if(touches.length<2){alert('Adicione ao menos 2 touchpoints.');return;}
+  const rec=+document.getElementById('receita-total').value||0;
+  if(!rec){alert('Informe a receita total.');return;}
+  const n=touches.length;
+  const maxDias=Math.max(...touches.map(t=>t.posicao));
+  // Compute credits for all models
+  const models={
+    last:touches.map((_,i)=>i===n-1?1:0),
+    first:touches.map((_,i)=>i===0?1:0),
+    linear:touches.map(()=>1/n),
+    td:tdCredits(touches),
+    pos:posCredits(n)
+  };
+  // Normalize
+  Object.keys(models).forEach(m=>{const s=models[m].reduce((a,b)=>a+b,0);models[m]=models[m].map(v=>v/s);});
+  const totalInv=touches.reduce((s,t)=>s+(+t.inv||0),0);
+  document.getElementById('kpi-atrib').style.display='grid';
+  document.getElementById('kpi-atrib').innerHTML=`
+    <div class="kpi"><div class="val">${n}</div><div class="lbl">Touchpoints</div></div>
+    <div class="kpi"><div class="val">R$ ${fmtN(rec)}</div><div class="lbl">Receita</div></div>
+    <div class="kpi"><div class="val">R$ ${fmtN(totalInv)}</div><div class="lbl">Invest. Total</div></div>
+    <div class="kpi"><div class="val">${fmtN(rec/totalInv,2)}×</div><div class="lbl">ROAS Blended</div></div>`;
+  drawAtribChart(models,rec);
+  buildAtribTable(models,rec);
+  document.getElementById('table-atrib-wrap').style.display='block';
+}
+
+function tdCredits(ts){
+  return ts.map(t=>Math.pow(2,-(t.posicao/7)));
+}
+function posCredits(n){
+  if(n===1)return[1];
+  if(n===2)return[0.5,0.5];
+  const mid=n-2;
+  return[0.4,...Array(mid).fill(0.2/mid),0.4];
+}
+
+function drawAtribChart(models,rec){
+  const cv=document.getElementById('chart-atrib');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=280*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=280,padL=90,padB=40,padT=30,padR=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const modelNames={last:'Last Click',first:'First Click',linear:'Linear',td:'Time Decay',pos:'Position'};
+  const mKeys=Object.keys(models);
+  const colors=['#1F36C7','#f97316','#16a34a','#9333ea','#dc2626'];
+  const n=touches.length;
+  const barH=(H-padT-padB)/n-4;
+  const chartW=W-padL-padR;
+  const maxVal=Math.max(...mKeys.flatMap(m=>models[m]))*rec;
+  touches.forEach((t,i)=>{
+    const y=padT+i*(barH+4);
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='11px Space Grotesk';ctx.textAlign='right';
+    ctx.fillText((t.canal||`Touch ${i+1}`).substring(0,12),padL-6,y+barH/2+4);
+    const segW=chartW/mKeys.length;
+    mKeys.forEach((m,mi)=>{
+      const val=models[m][i]*rec;
+      const bw=Math.max((val/maxVal)*segW*0.8,0);
+      ctx.fillStyle=colors[mi];ctx.globalAlpha=.8;
+      ctx.beginPath();ctx.roundRect(padL+mi*segW,y,bw,barH,3);ctx.fill();ctx.globalAlpha=1;
+      if(bw>30){ctx.fillStyle='#fff';ctx.font='bold 10px Space Grotesk';ctx.textAlign='left';
+        ctx.fillText('R$'+fmtN(val,0),padL+mi*segW+4,y+barH/2+4);}
+    });
+  });
+  // legend
+  mKeys.forEach((m,mi)=>{
+    ctx.fillStyle=colors[mi];ctx.fillRect(padL+mi*(chartW/mKeys.length),H-padB+8,12,8);
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='left';
+    ctx.fillText(modelNames[m],padL+mi*(chartW/mKeys.length)+15,H-padB+16);
+  });
+}
+
+function buildAtribTable(models,rec){
+  const tb=document.getElementById('table-atrib');
+  const modelNames={last:'Last Click',first:'First Click',linear:'Linear',td:'Time Decay',pos:'Position'};
+  const mKeys=Object.keys(models);
+  tb.innerHTML=`<tr><th>Canal</th>${mKeys.map(m=>`<th>${modelNames[m]}</th>`).join('')}<th>Invest.</th><th>ROAS (Linear)</th></tr>`;
+  touches.forEach((t,i)=>{
+    tb.innerHTML+=`<tr><td><strong>${t.canal||`Touch ${i+1}`}</strong></td>
+      ${mKeys.map(m=>`<td>R$ ${fmtN(models[m][i]*rec,0)}</td>`).join('')}
+      <td>R$ ${fmtN(t.inv,0)}</td>
+      <td>${t.inv>0?fmtN(models.linear[i]*rec/t.inv,2)+'×':'—'}</td></tr>`;
+  });
+}
+
+function loadExAtrib(){
+  touches=[
+    {canal:'Display',posicao:21,inv:8000},
+    {canal:'Social Pago',posicao:14,inv:5000},
+    {canal:'Email',posicao:7,inv:1200},
+    {canal:'Paid Search',posicao:2,inv:3500},
+    {canal:'Direct',posicao:0,inv:0},
+  ];
+  document.getElementById('receita-total').value=12000;
+  document.getElementById('modelo-principal').value='linear';
+  renderTouches();
+  calcAtrib();
+}
+
+// JORNADA
+function addJourney(canal='',tipo='paid'){journeys.push({canal,tipo});renderJourneys();}
+function removeJourney(i){journeys.splice(i,1);renderJourneys();}
+function renderJourneys(){
+  const c=document.getElementById('journey-rows');c.innerHTML='';
+  const canais=['Organic Search','Paid Search','Display','Social Pago','Email','Afiliados','Direct','Video','Push','SMS'];
+  journeys.forEach((j,i)=>{
+    const d=document.createElement('div');d.className='touchrow';
+    const opts=canais.map(c=>`<option${j.canal===c?' selected':''}>${c}</option>`).join('');
+    d.innerHTML=`<div><label>${i===0?'1º Contato':i===journeys.length-1?'Conversão':'Interação '+(i+1)}</label>
+      <select onchange="journeys[${i}].canal=this.value"><option value="">Selecione</option>${opts}</select></div>
+    <div><label>Tipo</label><select onchange="journeys[${i}].tipo=this.value">
+      <option value="paid"${j.tipo==='paid'?' selected':''}>Pago</option>
+      <option value="organic"${j.tipo==='organic'?' selected':''}>Orgânico</option>
+      <option value="direct"${j.tipo==='direct'?' selected':''}>Direto</option>
+    </select></div>
+    <div></div>
+    <div><button class="btn-del" onclick="removeJourney(${i})">✕</button></div>`;
+    c.appendChild(d);
+  });
+}
+
+function calcJourney(){
+  if(journeys.length<2){alert('Adicione ao menos 2 interações.');return;}
+  const ticket=+document.getElementById('ticket-journey').value||0;
+  const dias=+document.getElementById('dias-journey').value||0;
+  const paidCount=journeys.filter(j=>j.tipo==='paid').length;
+  const orgCount=journeys.filter(j=>j.tipo==='organic').length;
+  document.getElementById('journey-result').style.display='block';
+  document.getElementById('kpi-journey').innerHTML=`
+    <div class="kpi"><div class="val">${journeys.length}</div><div class="lbl">Touchpoints</div></div>
+    <div class="kpi"><div class="val">${paidCount}</div><div class="lbl">Pagos</div></div>
+    <div class="kpi"><div class="val">${orgCount}</div><div class="lbl">Orgânicos</div></div>
+    <div class="kpi"><div class="val">${dias}d</div><div class="lbl">Ciclo</div></div>
+    ${ticket?`<div class="kpi"><div class="val">R$ ${fmtN(ticket)}</div><div class="lbl">Ticket</div></div>`:''}`;
+  drawJourneyChart();
+  const first=journeys[0].canal||'?';
+  const last=journeys[journeys.length-1].canal||'?';
+  document.getElementById('journey-insights').innerHTML=`
+    <div style="font-size:.82rem;color:var(--muted);line-height:1.8;">
+      <strong style="color:var(--text);">Insights:</strong><br>
+      • Canal de entrada: <strong>${first}</strong> → Canal de conversão: <strong>${last}</strong><br>
+      • Jornada com ${journeys.length} touchpoints em ${dias||'?'} dias<br>
+      • ${paidCount}/${journeys.length} interações pagas (${fmtN(paidCount/journeys.length*100,0)}%)<br>
+      ${dias>0&&dias>7?'• Ciclo longo: considere modelo Position-Based ou Time Decay':''}
+      ${dias>0&&dias<=3?'• Ciclo curto: modelo Last Click pode ser suficiente':''}
+    </div>`;
+}
+
+function drawJourneyChart(){
+  const cv=document.getElementById('chart-journey');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=160*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=160,pad=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const n=journeys.length;
+  const stepW=(W-pad*2)/(n-1);
+  const cy=H/2;
+  const colors={paid:'#1F36C7',organic:'#16a34a',direct:'#d97706'};
+  // draw connecting line
+  ctx.strokeStyle=isDark?'#374151':'#d1d5db';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(pad,cy);ctx.lineTo(W-pad,cy);ctx.stroke();ctx.setLineDash([]);
+  journeys.forEach((j,i)=>{
+    const x=pad+i*stepW;
+    const color=colors[j.tipo]||'#6b7280';
+    // circle
+    ctx.fillStyle=i===n-1?'#f59e0b':color;
+    ctx.beginPath();ctx.arc(x,cy,16,0,Math.PI*2);ctx.fill();
+    // number
+    ctx.fillStyle='#fff';ctx.font='bold 11px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(i+1,x,cy+4);
+    // label
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='10px Space Grotesk';
+    const label=(j.canal||'?').substring(0,10);
+    ctx.fillText(label,x,cy+(i%2===0?-26:30));
+  });
+}
+
+function loadExJourney(){
+  journeys=[
+    {canal:'Display',tipo:'paid'},
+    {canal:'Social Pago',tipo:'paid'},
+    {canal:'Organic Search',tipo:'organic'},
+    {canal:'Email',tipo:'paid'},
+    {canal:'Direct',tipo:'direct'},
+    {canal:'Paid Search',tipo:'paid'},
+  ];
+  document.getElementById('ticket-journey').value=850;
+  document.getElementById('dias-journey').value=18;
+  renderJourneys();
+  calcJourney();
+}
+
+function fmtN(n,d=0){return(+n).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+
+// init
+addTouch();addTouch();
+addJourney();addJourney();
+</script>
+</body>
+</html>
