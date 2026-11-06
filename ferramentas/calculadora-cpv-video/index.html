@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora CPV / VCR — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.verdict{padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600;margin:16px 0}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:1rem;font-weight:700;margin:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.bar-wrap{background:var(--border);border-radius:8px;height:28px;overflow:hidden;position:relative;margin:4px 0}
+.bar{height:100%;border-radius:8px;transition:width .6s}
+.bar-label{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.82rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff}
+.plat-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.plat-name{width:120px;font-size:.85rem;font-weight:600;flex-shrink:0;text-align:right;color:var(--text)}
+.plat-bar-wrap{flex:1;background:var(--border);border-radius:8px;height:28px;overflow:hidden;position:relative}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>🎬 CPV / VCR</h1>
+      <div class="subtitle">Custo por visualização, taxa de conclusão e comparativo entre plataformas de vídeo</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('cpv')">CPV</button>
+      <button class="tab" onclick="switchTab('vcr')">VCR por plataforma</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- CPV -->
+    <div class="tab-content active" id="tab-cpv">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Investimento (R$)</label>
+          <input type="number" id="inv" placeholder="15000" oninput="calcCPV()">
+        </div>
+        <div class="form-group">
+          <label>Impressões / Iniciadas</label>
+          <input type="number" id="impressoes" placeholder="800000" oninput="calcCPV()">
+        </div>
+        <div class="form-group">
+          <label>Visualizações completas</label>
+          <input type="number" id="completas" placeholder="480000" oninput="calcCPV()">
+        </div>
+        <div class="form-group">
+          <label>Duração do vídeo (s)</label>
+          <input type="number" id="duracao" placeholder="30" oninput="calcCPV()">
+        </div>
+        <div class="form-group">
+          <label>Plataforma</label>
+          <select id="plataforma" onchange="calcCPV()">
+            <option value="youtube">YouTube</option>
+            <option value="meta">Meta (FB/IG)</option>
+            <option value="tiktok">TikTok</option>
+            <option value="programatico">Programático (Display)</option>
+            <option value="ctv">CTV / OTT</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cliques no vídeo</label>
+          <input type="number" id="cliques" placeholder="2400" oninput="calcCPV()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExCPV()">Exemplo</button>
+      </div>
+      <div id="cpvOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="cpvKpis"></div>
+        <div id="cpvVerdict" class="verdict"></div>
+        <div id="cpvFunil" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- VCR por plataforma -->
+    <div class="tab-content" id="tab-vcr">
+      <div class="info-box">Compare o desempenho de vídeo entre plataformas. Preencha as métricas de cada canal ativo.</div>
+      <div id="platRows"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExVCR()">Exemplo</button>
+        <button class="btn btn-primary" onclick="analyzeVCR()">Comparar</button>
+      </div>
+      <div id="vcrOutput" style="display:none;margin-top:20px"></div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Benchmarks VCR por plataforma e formato</div>
+      <table>
+        <thead><tr><th>Plataforma / Formato</th><th>VCR médio</th><th>VCR bom</th><th>CPV médio</th></tr></thead>
+        <tbody>
+          <tr><td>YouTube TrueView (pulável)</td><td>30–50%</td><td>&gt;60%</td><td>R$ 0,05–0,25</td></tr>
+          <tr><td>YouTube Non-skip 15s</td><td>85–95%</td><td>&gt;90%</td><td>R$ 0,10–0,40</td></tr>
+          <tr><td>YouTube Shorts</td><td>60–75%</td><td>&gt;75%</td><td>R$ 0,03–0,15</td></tr>
+          <tr><td>Meta Feed (auto-play)</td><td>15–35%</td><td>&gt;40%</td><td>R$ 0,05–0,30</td></tr>
+          <tr><td>Meta Reels / Stories</td><td>25–50%</td><td>&gt;55%</td><td>R$ 0,04–0,25</td></tr>
+          <tr><td>TikTok In-Feed</td><td>40–65%</td><td>&gt;65%</td><td>R$ 0,03–0,20</td></tr>
+          <tr><td>Programático (pre-roll)</td><td>60–80%</td><td>&gt;75%</td><td>R$ 0,08–0,35</td></tr>
+          <tr><td>CTV / OTT</td><td>80–95%</td><td>&gt;90%</td><td>R$ 0,20–0,80</td></tr>
+          <tr><td>LinkedIn (vídeo)</td><td>10–25%</td><td>&gt;30%</td><td>R$ 0,30–1,20</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Métricas de qualidade de vídeo</div>
+      <div class="info-box" style="line-height:2;font-family:'JetBrains Mono',monospace;font-size:.82rem">
+        CPV = Investimento / Visualizações completas<br>
+        VCR = Completas / Iniciadas × 100%<br>
+        CPM vídeo = Investimento / Iniciadas × 1000<br>
+        Custo por segundo = CPV / Duração<br>
+        CTR de vídeo = Cliques / Iniciadas × 100%<br>
+        Avg view duration = Σ(quartil × duração) / Iniciadas
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const VCR_BENCH={youtube:{good:60,ok:40},meta:{good:40,ok:20},tiktok:{good:65,ok:40},programatico:{good:75,ok:60},ctv:{good:90,ok:80},linkedin:{good:30,ok:15}};
+const CPV_BENCH={youtube:{good:0.12,ok:0.25},meta:{good:0.15,ok:0.30},tiktok:{good:0.08,ok:0.20},programatico:{good:0.15,ok:0.35},ctv:{good:0.40,ok:0.80},linkedin:{good:0.60,ok:1.20}};
+
+function calcCPV(){
+  const inv=parseFloat(document.getElementById('inv').value)||0;
+  const imp=parseFloat(document.getElementById('impressoes').value)||0;
+  const com=parseFloat(document.getElementById('completas').value)||0;
+  const dur=parseFloat(document.getElementById('duracao').value)||30;
+  const plat=document.getElementById('plataforma').value;
+  const clq=parseFloat(document.getElementById('cliques').value)||0;
+  if(!inv||!imp||!com){document.getElementById('cpvOutput').style.display='none';return;}
+  document.getElementById('cpvOutput').style.display='block';
+  const cpv=inv/com;
+  const vcr=com/imp*100;
+  const cpm=inv/imp*1000;
+  const cpSeg=cpv/dur;
+  const ctrV=clq?clq/imp*100:0;
+  const bench=VCR_BENCH[plat]||{good:60,ok:40};
+  const cpvB=CPV_BENCH[plat]||{good:0.20,ok:0.40};
+  document.getElementById('cpvKpis').innerHTML=[
+    {l:'CPV',v:'R$ '+cpv.toFixed(3),s:cpv<=cpvB.good?'✅ abaixo do benchmark':cpv<=cpvB.ok?'⚠️ razoável':'🔴 acima do benchmark',hl:true},
+    {l:'VCR',v:vcr.toFixed(1)+'%',s:vcr>=bench.good?'✅ bom para '+plat:vcr>=bench.ok?'⚠️ ok':'🔴 abaixo para '+plat},
+    {l:'CPM vídeo',v:'R$ '+cpm.toFixed(2),s:'por 1K iniciadas'},
+    {l:'Custo/segundo',v:'R$ '+cpSeg.toFixed(4),s:'do vídeo assistido'},
+    {l:'Visualizações',v:fmt(com),s:`de ${fmt(imp)} iniciadas`},
+    {l:'CTR vídeo',v:ctrV?ctrV.toFixed(2)+'%':'—',s:clq?fmt(clq)+' cliques':'não informado'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const vEl=document.getElementById('cpvVerdict');
+  if(vcr>=bench.good&&cpv<=cpvB.good){vEl.className='verdict v-ok';vEl.textContent=`✅ Excelente performance de vídeo: VCR ${vcr.toFixed(1)}% e CPV R$ ${cpv.toFixed(3)} — ambos dentro do benchmark top para ${plat}.`;}
+  else if(vcr<bench.ok||cpv>cpvB.ok){vEl.className='verdict v-bad';vEl.textContent=`🔴 Performance abaixo do benchmark para ${plat}. VCR de ${vcr.toFixed(1)}% (meta: >${bench.ok}%) e CPV R$ ${cpv.toFixed(3)} (meta: &lt;R$ ${cpvB.ok}). Avalie criativo, público-alvo e posicionamento.`;}
+  else{vEl.className='verdict v-warn';vEl.textContent=`⚠️ Performance razoável para ${plat}. VCR ${vcr.toFixed(1)}% (meta: >${bench.good}%) — há espaço para melhoria de criativo ou segmentação.`;}
+  document.getElementById('cpvFunil').innerHTML=`<div class="section-title" style="margin-top:0">Retenção do vídeo</div>`+
+    [['Iniciadas',imp,1,'#1F36C7'],['Completadas',com,com/imp,'#16a34a'],['Cliques',clq||0,(clq||0)/imp,'#7c3aed']].filter((_,i)=>i<2||(clq>0&&i===2)).map(([l,v,r,c])=>`
+    <div class="plat-row"><div class="plat-name">${l}</div><div class="plat-bar-wrap"><div class="bar" style="width:${r*100}%;background:${c};height:100%;border-radius:8px"></div><span class="bar-label">${fmt(v)} (${(r*100).toFixed(1)}%)</span></div></div>`).join('');
+}
+
+const PLATFORMS=['YouTube','Meta','TikTok','Programático','CTV'];
+const PLAT_KEYS=['youtube','meta','tiktok','programatico','ctv'];
+function initVCR(){
+  document.getElementById('platRows').innerHTML=PLATFORMS.map((p,i)=>`
+    <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:10px;margin-bottom:10px;align-items:center">
+      <div style="font-weight:600;font-size:.88rem">${p}</div>
+      <input type="number" id="vInv${i}" placeholder="Investimento R$">
+      <input type="number" id="vImp${i}" placeholder="Iniciadas">
+      <input type="number" id="vCom${i}" placeholder="Completadas">
+    </div>`).join('');
+  document.getElementById('platRows').innerHTML=`<div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:10px;margin-bottom:6px"><span></span><span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Investimento</span><span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Iniciadas</span><span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Completadas</span></div>`+document.getElementById('platRows').innerHTML;
+}
+
+function analyzeVCR(){
+  const rows=PLATFORMS.map((p,i)=>({
+    name:p,key:PLAT_KEYS[i],
+    inv:parseFloat(document.getElementById('vInv'+i)?.value)||0,
+    imp:parseFloat(document.getElementById('vImp'+i)?.value)||0,
+    com:parseFloat(document.getElementById('vCom'+i)?.value)||0,
+  })).filter(r=>r.inv>0&&r.imp>0&&r.com>0);
+  if(!rows.length){return;}
+  document.getElementById('vcrOutput').style.display='block';
+  const maxVCR=Math.max(...rows.map(r=>r.com/r.imp*100));
+  const maxCPV=Math.max(...rows.map(r=>r.inv/r.com));
+  document.getElementById('vcrOutput').innerHTML=`<table><thead><tr><th>Plataforma</th><th>VCR</th><th>CPV</th><th>CPM</th><th>Visualizações</th><th>Eficiência</th></tr></thead><tbody>${rows.map(r=>{
+    const vcr=r.com/r.imp*100;const cpv=r.inv/r.com;const cpm=r.inv/r.imp*1000;
+    const bench=VCR_BENCH[r.key]||{good:60,ok:40};
+    const status=vcr>=bench.good?'✅':vcr>=bench.ok?'⚠️':'🔴';
+    return `<tr><td><strong>${r.name}</strong></td><td>${status} ${vcr.toFixed(1)}%</td><td>R$ ${cpv.toFixed(3)}</td><td>R$ ${cpm.toFixed(2)}</td><td>${fmt(r.com)}</td><td>${((vcr/maxVCR)*100).toFixed(0)}%</td></tr>`;
+  }).join('')}</tbody></table>
+  <div class="section-title">VCR comparativo</div>${rows.map(r=>{const vcr=r.com/r.imp*100;const col=vcr>=(VCR_BENCH[r.key]?.good||60)?'#16a34a':vcr>=(VCR_BENCH[r.key]?.ok||40)?'#ca8a04':'#dc2626';return`<div class="plat-row"><div class="plat-name">${r.name}</div><div class="plat-bar-wrap"><div class="bar" style="width:${vcr/maxVCR*100}%;background:${col};height:100%;border-radius:8px"></div><span class="bar-label">${vcr.toFixed(1)}%</span></div></div>`}).join('')}`;
+}
+
+function loadExCPV(){
+  document.getElementById('inv').value=12000;
+  document.getElementById('impressoes').value=750000;
+  document.getElementById('completas').value=412000;
+  document.getElementById('duracao').value=30;
+  document.getElementById('plataforma').value='youtube';
+  document.getElementById('cliques').value=1850;
+  calcCPV();
+}
+function loadExVCR(){
+  [[8000,420000,315000],[12000,1800000,450000],[6000,950000,608000],[5000,280000,224000]].forEach(([inv,imp,com],i)=>{
+    if(document.getElementById('vInv'+i)){document.getElementById('vInv'+i).value=inv;document.getElementById('vImp'+i).value=imp;document.getElementById('vCom'+i).value=com;}
+  });
+}
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}initVCR();})();
+</script>
+</body>
+</html>

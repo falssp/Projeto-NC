@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Funil de Conversão — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:960px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px;align-items:center}
+.form-row-header{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:6px}
+.form-row-header span{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:0 14px}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.step-name{padding:10px 14px;border-radius:8px;background:var(--light);font-weight:600;font-size:.9rem;color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.section-title{font-size:1rem;font-weight:700;margin:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.funnel-step{display:flex;flex-direction:column;margin-bottom:8px}
+.funnel-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.funnel-label{width:140px;font-size:.85rem;font-weight:600;text-align:right;flex-shrink:0;color:var(--text)}
+.funnel-bar-wrap{flex:1;background:var(--border);border-radius:8px;height:36px;overflow:hidden;position:relative}
+.funnel-bar{height:100%;border-radius:8px;transition:width .6s}
+.funnel-bar-label{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.82rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff}
+.funnel-drop{font-size:.75rem;color:var(--red);text-align:right;width:140px;flex-shrink:0}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>📊 Funil de Conversão</h1>
+      <div class="subtitle">Simule etapas do funil, CVR por estágio e encontre o gargalo</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('funil')">Funil</button>
+      <button class="tab" onclick="switchTab('whatif')">What-if</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- Funil -->
+    <div class="tab-content active" id="tab-funil">
+      <div class="form-row-header">
+        <span>Etapa</span>
+        <span>Volume (ou CVR%)</span>
+        <span>Ticket médio / CPA</span>
+      </div>
+      <div id="stepsContainer"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-sm" onclick="addStep()">+ Etapa</button>
+        <button class="btn btn-secondary" onclick="loadExample()">Exemplo</button>
+        <button class="btn btn-primary" onclick="analyze()">Analisar</button>
+      </div>
+      <div id="funilOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="funilKpis"></div>
+        <div class="section-title">Visualização do funil</div>
+        <div id="funilViz"></div>
+        <div id="funilTable" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- What-if -->
+    <div class="tab-content" id="tab-whatif">
+      <div class="info-box">Simule como melhorias em cada etapa afetam o resultado final. Preencha o funil na aba Funil primeiro.</div>
+      <div id="whatifContainer" style="display:none">
+        <div id="whatifRows"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="runWhatif()">Simular melhorias</button>
+        </div>
+        <div id="whatifOutput" style="margin-top:20px"></div>
+      </div>
+      <div id="whatifEmpty" style="color:var(--muted);font-size:.9rem">Preencha e analise o funil primeiro.</div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">CVR por etapa e canal</div>
+      <table>
+        <thead><tr><th>Etapa</th><th>E-commerce</th><th>Lead gen B2B</th><th>App install</th><th>SaaS trial</th></tr></thead>
+        <tbody>
+          <tr><td>Impressão → Clique (CTR)</td><td>0.3–1.5%</td><td>0.1–0.6%</td><td>0.5–2%</td><td>0.2–0.8%</td></tr>
+          <tr><td>Clique → Visita LP</td><td>70–90%</td><td>60–80%</td><td>80–95%</td><td>65–85%</td></tr>
+          <tr><td>Visita → Lead/Cadastro</td><td>1–5%</td><td>2–10%</td><td>15–40%</td><td>5–15%</td></tr>
+          <tr><td>Lead → SQL/Oportunidade</td><td>—</td><td>10–30%</td><td>—</td><td>20–40%</td></tr>
+          <tr><td>Visita → Compra</td><td>1–4%</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Trial → Pago</td><td>—</td><td>—</td><td>—</td><td>15–40%</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Regras práticas de funil</div>
+      <div class="info-box" style="line-height:2">
+        📌 CVR &lt;50% da média de benchmark = oportunidade de otimização<br>
+        📌 Maior ganho geralmente está na etapa com maior volume × maior drop-off<br>
+        📌 Melhorar 10% na etapa com maior drop-off &gt; melhorar 30% numa etapa menor<br>
+        📌 Reter 10% a mais é geralmente mais barato que adquirir 10% mais volume no topo
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+let steps=[];let stepId=0;
+
+function addStep(name='',vol='',cvr='',ticket=''){
+  const id=stepId++;
+  steps.push({id});
+  const isFirst=steps.length===1;
+  const row=document.createElement('div');
+  row.className='form-row';row.id='step-'+id;
+  row.innerHTML=`
+    <input type="text" placeholder="${isFirst?'Impressões':'Etapa '+steps.length}" value="${name}" id="sn${id}" oninput="syncStep(${id})">
+    <input type="number" placeholder="${isFirst?'volume':'CVR% ou volume'}" value="${vol}" id="sv${id}" oninput="syncStep(${id})">
+    <div style="display:flex;gap:6px">
+      <input type="number" placeholder="Ticket R$" value="${ticket}" id="st${id}" oninput="syncStep(${id})" style="flex:1">
+      ${steps.length>1?`<button class="btn btn-secondary btn-sm" onclick="removeStep(${id})" style="padding:6px 10px">✕</button>`:''}
+    </div>`;
+  document.getElementById('stepsContainer').appendChild(row);
+  if(steps.length>1){
+    const prev=steps[steps.length-2];
+    if(prev&&!document.getElementById('sv'+prev.id).placeholder.startsWith('volume')){}
+    // Add CVR label to non-first
+    document.getElementById('sv'+id).placeholder='CVR% ou volume';
+  }
+}
+
+function removeStep(id){
+  steps=steps.filter(s=>s.id!==id);
+  document.getElementById('step-'+id).remove();
+}
+
+function syncStep(){}
+
+function analyze(){
+  const vals=steps.map(s=>({
+    name:document.getElementById('sn'+s.id).value||'Etapa',
+    val:parseFloat(document.getElementById('sv'+s.id).value)||0,
+    ticket:parseFloat(document.getElementById('st'+s.id).value)||0,
+  }));
+  if(!vals.length||!vals[0].val){return;}
+  const volumes=[vals[0].val];
+  for(let i=1;i<vals.length;i++){
+    const v=vals[i].val;
+    const prev=volumes[i-1];
+    volumes.push(v>1&&v<=100&&v<prev?prev*v/100:v);
+  }
+  const topVol=volumes[0];
+  const bottomVol=volumes[volumes.length-1];
+  const totalCvr=bottomVol/topVol*100;
+  const drops=volumes.map((v,i)=>i===0?0:(volumes[i-1]-v)/volumes[i-1]*100);
+  const worstIdx=drops.indexOf(Math.max(...drops.slice(1)))||1;
+  const revenue=vals.map((v,i)=>v.ticket?volumes[i]*v.ticket:0);
+  document.getElementById('funilOutput').style.display='block';
+  document.getElementById('funilKpis').innerHTML=[
+    {l:'Volume topo',v:fmtK(topVol),s:vals[0].name,hl:true},
+    {l:'Volume fundo',v:fmtK(bottomVol),s:vals[vals.length-1].name},
+    {l:'CVR total',v:totalCvr.toFixed(2)+'%',s:'topo → fundo'},
+    {l:'Gargalo',v:vals[worstIdx]?.name||'—',s:drops[worstIdx]?.toFixed(1)+'% drop-off'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const COLORS=['#1F36C7','#2d47d0','#3d58d9','#5a72e0','#7c8ee7','#a0aaef'];
+  document.getElementById('funilViz').innerHTML=volumes.map((v,i)=>`
+    <div class="funnel-step">
+      <div class="funnel-bar-row">
+        <div class="funnel-label">${vals[i].name}</div>
+        <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${(v/topVol*100)}%;background:${COLORS[Math.min(i,COLORS.length-1)]}"></div><span class="funnel-bar-label">${fmtK(v)}</span></div>
+        ${i>0?`<div class="funnel-drop">↓ ${drops[i].toFixed(1)}%</div>`:'<div style="width:60px"></div>'}
+      </div>
+    </div>`).join('');
+  document.getElementById('funilTable').innerHTML=`<div class="section-title">Métricas por etapa</div><table><thead><tr><th>Etapa</th><th>Volume</th><th>CVR da etapa</th><th>Drop-off</th><th>Receita est.</th></tr></thead><tbody>${volumes.map((v,i)=>`<tr ${i===worstIdx?'style="background:var(--light)"':''}><td>${vals[i].name}${i===worstIdx?' ⚠️ gargalo':''}</td><td>${fmtK(v)}</td><td>${i===0?'—':(v/volumes[i-1]*100).toFixed(2)+'%'}</td><td>${i===0?'—':drops[i].toFixed(1)+'%'}</td><td>${vals[i].ticket?'R$ '+fmt(revenue[i]):'—'}</td></tr>`).join('')}</tbody></table>`;
+  // Setup what-if
+  document.getElementById('whatifEmpty').style.display='none';
+  document.getElementById('whatifContainer').style.display='block';
+  document.getElementById('whatifRows').innerHTML=`<p style="font-size:.88rem;color:var(--muted);margin-bottom:12px">Informe a melhoria de CVR (%) em cada etapa para simular o impacto no volume final:</p>`+
+    vals.slice(1).map((v,i)=>`<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:10px"><div class="step-name">${v.name}</div><input type="number" id="wi${i+1}" placeholder="+% CVR" min="0" max="100" style="border:1px solid var(--border);border-radius:8px;padding:10px 14px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.9rem"></div>`).join('');
+  document.getElementById('whatifRows').dataset.volumes=JSON.stringify(volumes);
+  document.getElementById('whatifRows').dataset.vals=JSON.stringify(vals);
+}
+
+function runWhatif(){
+  const volumes=JSON.parse(document.getElementById('whatifRows').dataset.volumes||'[]');
+  const vals=JSON.parse(document.getElementById('whatifRows').dataset.vals||'[]');
+  if(!volumes.length)return;
+  const newVols=[volumes[0]];
+  for(let i=1;i<volumes.length;i++){
+    const delta=parseFloat(document.getElementById('wi'+i)?.value)||0;
+    const origCvr=volumes[i]/volumes[i-1];
+    const newCvr=Math.min(origCvr*(1+delta/100),1);
+    newVols.push(newVols[i-1]*newCvr);
+  }
+  const gain=newVols[newVols.length-1]-volumes[volumes.length-1];
+  const pct=volumes[volumes.length-1]>0?gain/volumes[volumes.length-1]*100:0;
+  document.getElementById('whatifOutput').innerHTML=`<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi"><div class="kpi-label">Resultado original</div><div class="kpi-value">${fmtK(volumes[volumes.length-1])}</div><div class="kpi-sub">${vals[vals.length-1].name}</div></div>
+    <div class="kpi highlight"><div class="kpi-label">Resultado simulado</div><div class="kpi-value">${fmtK(Math.round(newVols[newVols.length-1]))}</div><div class="kpi-sub">${vals[vals.length-1].name}</div></div>
+    <div class="kpi"><div class="kpi-label">Ganho</div><div class="kpi-value" style="color:${gain>=0?'var(--green)':'var(--red)'}">+${fmtK(Math.round(gain))}</div><div class="kpi-sub">${pct>=0?'+':''}${pct.toFixed(1)}%</div></div>
+  </div>`;
+}
+
+function loadExample(){
+  document.getElementById('stepsContainer').innerHTML='';steps=[];stepId=0;
+  addStep('Impressões',2000000,'','');
+  addStep('Cliques','','1.2','');
+  addStep('Visitas LP','','85','');
+  addStep('Leads','','3.5','');
+  addStep('Oportunidades','','25','');
+  addStep('Vendas','','18','350');
+  analyze();
+}
+
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function fmtK(v){return v>=1000000?(v/1000000).toFixed(2)+'M':v>=1000?(v/1000).toFixed(1)+'K':v.toFixed(0);}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}
+addStep('Impressões','','','');addStep('Cliques','','','');addStep('Conversões','','','');})();
+</script>
+</body>
+</html>

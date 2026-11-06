@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Frequency Cap — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+.verdict{padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600;margin:16px 0}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:1rem;font-weight:700;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+canvas{width:100%;border-radius:8px;display:block;margin-top:12px}
+.cap-bar-wrap{background:var(--border);border-radius:8px;height:28px;overflow:hidden;position:relative;margin:6px 0}
+.cap-bar{height:100%;border-radius:8px;transition:width .6s}
+.cap-bar-label{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.82rem;font-weight:700;font-family:'JetBrains Mono',monospace}
+.row-label{font-size:.82rem;color:var(--muted);margin-bottom:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>⏱️ Frequency Cap</h1>
+      <div class="subtitle">Calcule o impacto do cap na entrega, alcance e distribuição de frequência</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('cap')">Cap por Usuário</button>
+      <button class="tab" onclick="switchTab('periodo')">Cap por Período</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- Cap por usuário -->
+    <div class="tab-content active" id="tab-cap">
+      <div class="info-box">
+        O <strong>frequency cap</strong> limita quantas vezes um mesmo usuário vê o anúncio. Um cap muito baixo desperdiça alcance; muito alto satura e aumenta custo por conversão incremental.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Impressões totais planejadas</label>
+          <input type="number" id="impTot" placeholder="2000000" oninput="calcCap()">
+        </div>
+        <div class="form-group">
+          <label>Alcance único estimado</label>
+          <input type="number" id="alcUniq" placeholder="400000" oninput="calcCap()">
+        </div>
+        <div class="form-group">
+          <label>Frequency cap (máx por usuário)</label>
+          <input type="number" id="capMax" placeholder="5" oninput="calcCap()">
+        </div>
+        <div class="form-group">
+          <label>Período do cap</label>
+          <select id="capPeriodo" onchange="calcCap()">
+            <option value="lifetime">Por campanha (lifetime)</option>
+            <option value="dia">Por dia</option>
+            <option value="semana">Por semana</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Duração da campanha (dias)</label>
+          <input type="number" id="duracao" placeholder="30" oninput="calcCap()">
+        </div>
+        <div class="form-group">
+          <label>Investimento (R$)</label>
+          <input type="number" id="invCap" placeholder="20000" oninput="calcCap()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExCap()">Exemplo</button>
+      </div>
+      <div id="capOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="capKpis"></div>
+        <div id="capVerdict" class="verdict"></div>
+        <div id="capCenarios" style="margin-top:16px"></div>
+        <canvas id="capChart" height="220" style="margin-top:16px"></canvas>
+      </div>
+    </div>
+
+    <!-- Cap por período -->
+    <div class="tab-content" id="tab-periodo">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Freq cap diário</label>
+          <input type="number" id="pCapDia" placeholder="2" oninput="calcPeriodo()">
+        </div>
+        <div class="form-group">
+          <label>Freq cap semanal</label>
+          <input type="number" id="pCapSem" placeholder="8" oninput="calcPeriodo()">
+        </div>
+        <div class="form-group">
+          <label>Freq cap mensal / lifetime</label>
+          <input type="number" id="pCapMes" placeholder="20" oninput="calcPeriodo()">
+        </div>
+        <div class="form-group">
+          <label>Alcance diário estimado</label>
+          <input type="number" id="pAlcDia" placeholder="30000" oninput="calcPeriodo()">
+        </div>
+        <div class="form-group">
+          <label>Dias de campanha</label>
+          <input type="number" id="pDias" placeholder="21" oninput="calcPeriodo()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExPeriodo()">Exemplo</button>
+      </div>
+      <div id="periodoOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="periodoKpis"></div>
+        <div id="periodoTable" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Benchmarks de Frequency Cap por Objetivo</div>
+      <table>
+        <thead><tr><th>Objetivo</th><th>Cap diário</th><th>Cap semanal</th><th>Cap lifetime</th><th>Risco de saturação</th></tr></thead>
+        <tbody>
+          <tr><td>Awareness / branding</td><td>1–2</td><td>5–7</td><td>15–25</td><td>Baixo com cap ≤7/sem</td></tr>
+          <tr><td>Consideração / middle funnel</td><td>2–3</td><td>8–12</td><td>20–35</td><td>Moderado acima de 10/sem</td></tr>
+          <tr><td>Retargeting / conversão</td><td>3–5</td><td>10–15</td><td>25–50</td><td>Alto se >15/sem sem pause</td></tr>
+          <tr><td>Prospecting performance</td><td>2–3</td><td>7–10</td><td>20–30</td><td>Monitorar CTR após 5/sem</td></tr>
+          <tr><td>Vídeo não-pulável</td><td>1–2</td><td>3–5</td><td>10–15</td><td>Alto — experiência invasiva</td></tr>
+          <tr><td>Display rich media</td><td>2–3</td><td>8–10</td><td>20–30</td><td>Moderado</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Sinais de saturação</div>
+      <div class="info-box" style="line-height:2">
+        📉 CTR caindo ao longo dos dias com mesma audiência<br>
+        📉 CPC ou CPM efetivo aumentando (leilão perdendo efficiency)<br>
+        📉 Frequência média subindo sem crescimento de alcance<br>
+        📉 Taxa de skip em vídeo aumentando nas primeiras exposições<br>
+        ✅ Ação: pausar por 3–7 dias, expandir audiência ou rodar criativos novos
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+function calcCap(){
+  const imp=parseFloat(document.getElementById('impTot').value)||0;
+  const alc=parseFloat(document.getElementById('alcUniq').value)||0;
+  const cap=parseFloat(document.getElementById('capMax').value)||0;
+  const per=document.getElementById('capPeriodo').value;
+  const dur=parseFloat(document.getElementById('duracao').value)||1;
+  const inv=parseFloat(document.getElementById('invCap').value)||0;
+  if(!imp||!alc||!cap){document.getElementById('capOutput').style.display='none';return;}
+  document.getElementById('capOutput').style.display='block';
+  const freqMedia=imp/alc;
+  // Com o cap, impressões efetivas = alcance * min(freqMedia, cap) por período
+  let multiplier=1;
+  if(per==='dia') multiplier=dur;
+  else if(per==='semana') multiplier=Math.ceil(dur/7);
+  const impCap=Math.min(alc*cap*multiplier, imp);
+  const impPerdidas=imp-impCap;
+  const pctPerdida=imp>0?impPerdidas/imp*100:0;
+  const alcEfetivo=alc*(impCap/imp);
+  const freqComCap=impCap/alc;
+  const cpmEfetivo=inv&&imp?inv/imp*1000:0;
+  document.getElementById('capKpis').innerHTML=[
+    {l:'Freq. sem cap',v:freqMedia.toFixed(2)+'×',s:'impressões/alcance'},
+    {l:'Freq. com cap',v:freqComCap.toFixed(2)+'×',s:`cap ${cap}× por ${per}`,hl:true},
+    {l:'Impressões entregues',v:fmt(Math.round(impCap)),s:`${(100-pctPerdida).toFixed(1)}% do plano`},
+    {l:'Impressões bloqueadas',v:fmt(Math.round(impPerdidas)),s:`${pctPerdida.toFixed(1)}% não entregues`},
+    {l:'Alcance efetivo',v:fmt(Math.round(alcEfetivo)),s:'com o cap aplicado'},
+    {l:'CPM efetivo',v:inv?'R$ '+cpmEfetivo.toFixed(2):'—',s:'sobre imp. entregues'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const vEl=document.getElementById('capVerdict');
+  if(freqMedia<=cap){vEl.className='verdict v-ok';vEl.textContent=`✅ Frequência natural (${freqMedia.toFixed(1)}×) está abaixo do cap (${cap}×). O cap não está restringindo a entrega.`;}
+  else if(pctPerdida<20){vEl.className='verdict v-ok';vEl.textContent=`✅ Cap está bloqueando apenas ${pctPerdida.toFixed(1)}% das impressões. Equilíbrio saudável.`;}
+  else if(pctPerdida<40){vEl.className='verdict v-warn';vEl.textContent=`⚠️ Cap bloqueando ${pctPerdida.toFixed(1)}% das impressões. Considere elevar o cap ou expandir a audiência.`;}
+  else{vEl.className='verdict v-bad';vEl.textContent=`🚫 Cap muito restritivo — ${pctPerdida.toFixed(1)}% das impressões bloqueadas. O budget não será entregue conforme planejado.`;}
+  // Cenários
+  const caps=[1,2,3,5,7,10,15];
+  document.getElementById('capCenarios').innerHTML=`<div class="section-title" style="margin-top:0;margin-bottom:8px">Impressões entregues por cap</div>`+
+    caps.map(c=>{
+      const ic=Math.min(alc*c*(per==='dia'?dur:per==='semana'?Math.ceil(dur/7):1),imp);
+      const pct=imp>0?ic/imp*100:0;
+      const col=c===cap?'var(--azul)':pct>80?'#16a34a':'#ca8a04';
+      return `<div style="margin-bottom:8px"><div class="row-label">${c}× por ${per}${c===cap?' ← atual':''}</div><div class="cap-bar-wrap"><div class="cap-bar" style="width:${Math.min(pct,100)}%;background:${col}"></div><span class="cap-bar-label" style="color:${pct>60?'#fff':col}">${pct.toFixed(0)}% (${fmtK(ic)} impr.)</span></div></div>`;
+    }).join('');
+  drawCapChart(imp,alc,cap,per,dur);
+}
+
+function drawCapChart(imp,alc,cap,per,dur){
+  const canvas=document.getElementById('capChart');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;canvas.height=440;ctx.scale(2,2);
+  const W=canvas.offsetWidth/2,H=220;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  ctx.fillRect(0,0,W,H);
+  const pad={l:50,r:20,t:20,b:40};
+  const mult=per==='dia'?dur:per==='semana'?Math.ceil(dur/7):1;
+  const caps=[1,2,3,4,5,6,7,8,10,12,15,20];
+  const vals=caps.map(c=>Math.min(alc*c*mult,imp));
+  const maxV=Math.max(...vals);
+  function ry(v){return pad.t+(H-pad.t-pad.b)*(1-v/maxV);}
+  // grid
+  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+  ctx.lineWidth=0.5;ctx.setLineDash([4,3]);
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(H-pad.t-pad.b)*(i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+    ctx.font='10px Space Grotesk';ctx.textAlign='right';
+    ctx.fillText(fmtK(maxV*(1-i/4)),pad.l-4,y+4);
+  }
+  ctx.setLineDash([]);
+  // current cap line
+  if(cap<=20){
+    const idx=caps.findIndex(c=>c>=cap);
+    const x=pad.l+(W-pad.l-pad.r)*(idx/( caps.length-1));
+    ctx.strokeStyle='#1F36C7';ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle='#1F36C7';ctx.font='bold 10px Space Grotesk';ctx.textAlign='left';
+    ctx.fillText('cap atual',x+4,pad.t+12);
+  }
+  // plano line
+  ctx.strokeStyle='#dc2626';ctx.setLineDash([6,4]);ctx.lineWidth=1;
+  const planY=ry(imp);
+  ctx.beginPath();ctx.moveTo(pad.l,planY);ctx.lineTo(W-pad.r,planY);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle='#dc2626';ctx.font='10px Space Grotesk';ctx.textAlign='left';
+  ctx.fillText('plano',W-pad.r-30,planY-4);
+  // curve
+  ctx.strokeStyle='#1F36C7';ctx.lineWidth=2;
+  ctx.beginPath();
+  caps.forEach((c,i)=>{
+    const x=pad.l+(W-pad.l-pad.r)*(i/(caps.length-1));
+    const y=ry(vals[i]);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // x labels
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+  ctx.font='10px Space Grotesk';ctx.textAlign='center';
+  [1,5,10,15,20].forEach(c=>{
+    const idx=caps.indexOf(c);if(idx<0)return;
+    const x=pad.l+(W-pad.l-pad.r)*(idx/(caps.length-1));
+    ctx.fillText(c+'×',x,H-pad.b+16);
+  });
+  ctx.fillText('Frequency cap →',W/2,H-4);
+}
+
+function calcPeriodo(){
+  const capD=parseFloat(document.getElementById('pCapDia').value)||0;
+  const capS=parseFloat(document.getElementById('pCapSem').value)||0;
+  const capM=parseFloat(document.getElementById('pCapMes').value)||0;
+  const alcD=parseFloat(document.getElementById('pAlcDia').value)||0;
+  const dias=parseFloat(document.getElementById('pDias').value)||0;
+  if(!alcD||!dias){document.getElementById('periodoOutput').style.display='none';return;}
+  document.getElementById('periodoOutput').style.display='block';
+  const semanas=Math.ceil(dias/7);
+  const impDia=capD?alcD*capD:0;
+  const impSem=capS?alcD*7*capS/7:0;
+  const impTotD=impDia*dias;
+  const impTotS=impSem*semanas;
+  const impTotM=capM?alcD*dias*capM/dias:0;
+  const efetivo=Math.min(...[impTotD,impTotS,impTotM].filter(v=>v>0));
+  document.getElementById('periodoKpis').innerHTML=[
+    {l:'Restrição diária',v:capD?fmt(impTotD)+' impr.':'—',s:capD?`cap ${capD}×/dia × ${dias} dias`:'não definido'},
+    {l:'Restrição semanal',v:capS?fmt(impTotS)+' impr.':'—',s:capS?`cap ${capS}×/sem × ${semanas} semanas`:'não definido'},
+    {l:'Restrição mensal',v:capM?fmt(alcD*dias*capM/Math.max(dias,1))+' impr.':'—',s:capM?`cap ${capM}× lifetime`:'não definido'},
+    {l:'Fator limitante',v:efetivo?fmt(efetivo):'—',s:'menor restrição ativa',hl:true},
+    {l:'Freq/usuário/dia',v:capD?capD+'×':'N/A',s:'exposições por dia'},
+    {l:'Freq total estimada',v:efetivo&&alcD&&dias?((efetivo/alcD/dias)).toFixed(2)+'×/dia':'—',s:'com todos os caps'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  document.getElementById('periodoTable').innerHTML=`<div class="section-title">Resumo de caps</div><table><thead><tr><th>Cap</th><th>Período</th><th>Impressões limitadas</th><th>Status</th></tr></thead><tbody>
+    ${capD?`<tr><td>${capD}×</td><td>Diário</td><td>${fmt(impTotD)}</td><td>${impTotD===efetivo?'<strong style="color:var(--red)">Fator limitante</strong>':'OK'}</td></tr>`:''}
+    ${capS?`<tr><td>${capS}×</td><td>Semanal</td><td>${fmt(impTotS)}</td><td>${impTotS===efetivo?'<strong style="color:var(--red)">Fator limitante</strong>':'OK'}</td></tr>`:''}
+    ${capM?`<tr><td>${capM}×</td><td>Lifetime</td><td>${fmt(alcD*dias*capM/Math.max(dias,1))}</td><td>${(alcD*dias*capM/Math.max(dias,1))===efetivo?'<strong style="color:var(--red)">Fator limitante</strong>':'OK'}</td></tr>`:''}
+  </tbody></table>`;
+}
+
+function loadExCap(){
+  document.getElementById('impTot').value=3000000;
+  document.getElementById('alcUniq').value=350000;
+  document.getElementById('capMax').value=5;
+  document.getElementById('capPeriodo').value='lifetime';
+  document.getElementById('duracao').value=21;
+  document.getElementById('invCap').value=18000;
+  calcCap();
+}
+function loadExPeriodo(){
+  document.getElementById('pCapDia').value=2;
+  document.getElementById('pCapSem').value=8;
+  document.getElementById('pCapMes').value=25;
+  document.getElementById('pAlcDia').value=25000;
+  document.getElementById('pDias').value=28;
+  calcPeriodo();
+}
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function fmtK(v){return v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v.toFixed(0);}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+window.addEventListener('resize',()=>{if(document.getElementById('capOutput').style.display!=='none')calcCap();});
+</script>
+</body>
+</html>
