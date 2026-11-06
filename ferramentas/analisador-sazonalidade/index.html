@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sazonalidade — AdOps Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--ok-bg:#dcfce7;--warn-bg:#fef3c7;--bad-bg:#fee2e2;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#1a1d2e;--text:#e8ecff;--muted:#9ca3af;--border:#374151;--light:#1e2a5a;--ok-bg:#14532d;--warn-bg:#78350f;--bad-bg:#7f1d1d;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--azul);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.2rem;font-weight:700;}
+header a{color:#fff;opacity:.8;text-decoration:none;font-size:.875rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;padding:0 2rem;}
+.tab{padding:.75rem 1.25rem;cursor:pointer;font-size:.875rem;font-weight:500;border-bottom:3px solid transparent;color:var(--muted);transition:.2s;white-space:nowrap;}
+.tab.active{color:var(--azul);border-color:var(--azul);}
+main{padding:2rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;gap:.75rem;margin-top:1rem;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.kpi .val{font-size:1.6rem;font-weight:700;color:var(--azul);}
+.kpi .lbl{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+canvas{display:block;width:100%;border-radius:8px;background:var(--bg);}
+.pane{display:none;} .pane.active{display:block;}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+th{text-align:left;padding:.6rem .75rem;background:var(--light);color:var(--azul);font-weight:600;font-size:.8rem;}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+.month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;}
+.month-input{text-align:center;}
+.month-input label{font-size:.7rem;text-align:center;}
+.month-input input{text-align:center;padding:.4rem .3rem;font-size:.85rem;}
+.heat-cell{border-radius:4px;padding:.4rem;text-align:center;font-size:.75rem;font-weight:600;color:#fff;}
+.ref-block{background:var(--light);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;}
+.ref-block h4{font-size:.9rem;font-weight:600;color:var(--azul);margin-bottom:.5rem;}
+.ref-block p,.ref-block li{font-size:.82rem;color:var(--muted);line-height:1.6;}
+.ref-block ul{padding-left:1.2rem;}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr;}.month-grid{grid-template-columns:repeat(3,1fr);}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:.2rem;">📅 Sazonalidade</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<nav>
+  <div class="tab active" onclick="switchTab('indice')">Índices Sazonais</div>
+  <div class="tab" onclick="switchTab('plano')">Plano Anual</div>
+  <div class="tab" onclick="switchTab('ref')">Referência</div>
+</nav>
+<main>
+
+<!-- TAB ÍNDICES -->
+<div id="tab-indice" class="pane active">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Performance Mensal (Ano Anterior)</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;">Insira a métrica de referência (receita, conversões, cliques) por mês.</p>
+      <div class="month-grid" id="month-inputs"></div>
+      <label style="margin-top:1rem;">Métrica</label>
+      <select id="metrica-saz">
+        <option value="receita">Receita</option>
+        <option value="conv">Conversões</option>
+        <option value="cliques">Cliques</option>
+        <option value="imp">Impressões</option>
+      </select>
+      <label>Setor / Segmento</label>
+      <select id="setor-saz">
+        <option value="ecom">E-commerce Geral</option>
+        <option value="fashion">Moda e Vestuário</option>
+        <option value="eletro">Eletro/Tech</option>
+        <option value="auto">Seguros/Auto</option>
+        <option value="travel">Turismo/Viagem</option>
+        <option value="edu">Educação</option>
+        <option value="b2b">B2B/SaaS</option>
+        <option value="custom">Personalizado (usar dados acima)</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcIndice()">Calcular Índices</button>
+        <button class="btn btn-secondary" onclick="loadExIndice()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-saz" class="kpi-grid" style="display:none;"></div>
+      <div class="card">
+        <h3>Índices Sazonais por Mês</h3>
+        <canvas id="chart-saz" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="heat-wrap" style="display:none;margin-top:1.5rem;">
+    <div class="card">
+      <h3>Heatmap de Sazonalidade</h3>
+      <div id="heat-grid" style="display:grid;grid-template-columns:repeat(12,1fr);gap:.4rem;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB PLANO -->
+<div id="tab-plano" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Distribuição de Budget por Sazonalidade</h3>
+      <label>Budget Anual Total (R$)</label>
+      <input id="budget-anual" type="number" placeholder="Ex: 600000">
+      <label>Setor de Referência</label>
+      <select id="setor-plano">
+        <option value="ecom">E-commerce Geral</option>
+        <option value="fashion">Moda e Vestuário</option>
+        <option value="eletro">Eletro/Tech</option>
+        <option value="auto">Seguros/Auto</option>
+        <option value="travel">Turismo/Viagem</option>
+        <option value="edu">Educação</option>
+        <option value="b2b">B2B/SaaS</option>
+      </select>
+      <label>Ajuste Manual (%)</label>
+      <input id="ajuste-plano" type="number" value="0" placeholder="Ex: 10 (sobe 10% em todos)">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcPlano()">Gerar Plano</button>
+        <button class="btn btn-secondary" onclick="loadExPlano()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="plano-result" style="display:none;">
+        <div id="kpi-plano" class="kpi-grid"></div>
+        <div class="card">
+          <h3>Budget Mensal Sugerido</h3>
+          <canvas id="chart-plano" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="table-plano-wrap" style="display:none;margin-top:1.5rem;">
+    <div class="card">
+      <h3>Tabela de Budget Anual</h3>
+      <table id="table-plano"></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB REF -->
+<div id="tab-ref" class="pane">
+  <div class="grid-2">
+    <div class="ref-block">
+      <h4>Datas Comerciais Chave — Brasil</h4>
+      <table style="font-size:.82rem;">
+        <tr><th>Mês</th><th>Data / Evento</th></tr>
+        <tr><td>Jan</td><td>Liquidações, Volta às aulas</td></tr>
+        <tr><td>Feb</td><td>Carnaval, Dia dos Namorados (prep)</td></tr>
+        <tr><td>Mar</td><td>Dia Internacional da Mulher (8/3)</td></tr>
+        <tr><td>Apr</td><td>Páscoa</td></tr>
+        <tr><td>May</td><td>Dia das Mães (2º dom)</td></tr>
+        <tr><td>Jun</td><td>Dia dos Namorados (12/6), Copa (anos pares)</td></tr>
+        <tr><td>Jul</td><td>Férias escolares, Mid-year sales</td></tr>
+        <tr><td>Aug</td><td>Dia dos Pais (2º dom)</td></tr>
+        <tr><td>Sep</td><td>Semana do Brasil (similar Black Friday)</td></tr>
+        <tr><td>Oct</td><td>Dia das Crianças (12/10), Outubro Rosa</td></tr>
+        <tr><td>Nov</td><td>Black Friday (última 6ª), Cyber Monday</td></tr>
+        <tr><td>Dec</td><td>Natal, Fim de ano</td></tr>
+      </table>
+    </div>
+    <div class="ref-block">
+      <h4>Como Usar Índices Sazonais</h4>
+      <p>O índice sazonal compara o mês ao volume médio do ano. Índice 1.0 = média. Acima de 1.0 = acima da média.</p>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;margin:.4rem 0;">
+        Índice = Valor_Mês / Média_Anual<br>
+        Budget_Mês = Budget_Anual × Índice_Mês / Soma_Índices
+      </div>
+      <p>Ajuste o budget proporcionalmente: invista mais quando a demanda é naturalmente maior e menos nos meses fracos.</p>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// Índices de referência por setor (relativos, 1.0 = média)
+const SETORES={
+  ecom:[0.70,0.65,0.80,0.90,1.10,0.95,0.85,1.00,1.05,1.20,1.80,1.60],
+  fashion:[0.65,0.60,0.90,0.85,1.20,0.95,0.70,1.10,1.00,1.15,1.70,1.60],
+  eletro:[0.70,0.65,0.75,0.80,1.00,0.90,0.90,1.00,1.05,1.20,1.90,1.65],
+  auto:[0.90,0.85,1.00,1.05,1.10,1.00,0.80,0.95,1.10,1.00,1.00,0.95],
+  travel:[0.90,0.95,0.80,0.90,0.90,1.10,1.40,1.20,0.85,0.90,0.90,1.30],
+  edu:[1.30,0.80,1.20,0.90,0.90,1.10,0.70,0.80,1.40,1.10,0.90,0.70],
+  b2b:[1.10,1.00,1.15,1.00,1.05,1.00,0.70,0.80,1.15,1.10,1.10,0.75],
+};
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',h.dataset.theme);}catch(e){}}
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function switchTab(id){document.querySelectorAll('.tab').forEach((t,i)=>{const ids=['indice','plano','ref'];t.classList.toggle('active',ids[i]===id);});document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');}
+
+function buildMonthInputs(){
+  const c=document.getElementById('month-inputs');c.innerHTML='';
+  MESES.forEach((m,i)=>{
+    const d=document.createElement('div');d.className='month-input';
+    d.innerHTML=`<label>${m}</label><input id="m${i}" type="number" placeholder="0">`;
+    c.appendChild(d);
+  });
+}
+
+function getMonthVals(){return MESES.map((_,i)=>+document.getElementById('m'+i).value||0);}
+
+function calcIndice(){
+  const setor=document.getElementById('setor-saz').value;
+  let vals;
+  if(setor==='custom'){
+    vals=getMonthVals();
+    if(vals.every(v=>v===0)){alert('Informe os valores mensais.');return;}
+  } else {
+    vals=SETORES[setor];
+  }
+  const avg=vals.reduce((a,b)=>a+b,0)/12;
+  const indices=vals.map(v=>v/avg);
+  const maxIdx=indices.indexOf(Math.max(...indices));
+  const minIdx=indices.indexOf(Math.min(...indices));
+  document.getElementById('kpi-saz').style.display='grid';
+  document.getElementById('kpi-saz').innerHTML=`
+    <div class="kpi"><div class="val">${MESES[maxIdx]}</div><div class="lbl">Mês Pico (${fmt1(indices[maxIdx])}×)</div></div>
+    <div class="kpi"><div class="val">${MESES[minIdx]}</div><div class="lbl">Mês Vale (${fmt1(indices[minIdx])}×)</div></div>
+    <div class="kpi"><div class="val">${fmt1(indices[maxIdx]/indices[minIdx])}×</div><div class="lbl">Amplitude</div></div>`;
+  drawSazChart(indices);
+  drawHeatmap(indices);
+  document.getElementById('heat-wrap').style.display='block';
+}
+
+function drawSazChart(indices){
+  const cv=document.getElementById('chart-saz');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=240*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=240,padL=40,padB=30,padT=20,padR=10;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const chartW=W-padL-padR,chartH=H-padT-padB;
+  const maxV=Math.max(...indices,1.5);
+  const minV=Math.min(0,Math.min(...indices)-0.1);
+  const scaleY=v=>(padT+chartH*(1-(v-minV)/(maxV-minV)));
+  // baseline at 1.0
+  const y1=scaleY(1);
+  ctx.strokeStyle=isDark?'#374151':'#d1d5db';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(padL,y1);ctx.lineTo(W-padR,y1);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='right';
+  ctx.fillText('1.0×',padL-4,y1+4);
+  // area fill
+  const stepW=chartW/11;
+  ctx.beginPath();ctx.moveTo(padL,y1);
+  indices.forEach((v,i)=>{ctx.lineTo(padL+i*stepW,scaleY(v));});
+  ctx.lineTo(padL+11*stepW,y1);ctx.closePath();
+  ctx.fillStyle='rgba(31,54,199,0.12)';ctx.fill();
+  // line
+  ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;ctx.setLineDash([]);
+  ctx.beginPath();indices.forEach((v,i)=>{const x=padL+i*stepW;const y=scaleY(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
+  // dots + labels
+  indices.forEach((v,i)=>{
+    const x=padL+i*stepW;const y=scaleY(v);
+    const color=v>=1.3?'#16a34a':v<=0.8?'#dc2626':'#1F36C7';
+    ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(MESES[i],x,H-padB+14);
+    if(v>=1.2||v<=0.85){
+      ctx.fillStyle=color;ctx.font='bold 9px Space Grotesk';
+      ctx.fillText(fmt1(v)+'×',x,y-9);
+    }
+  });
+}
+
+function drawHeatmap(indices){
+  const c=document.getElementById('heat-grid');c.innerHTML='';
+  const max=Math.max(...indices),min=Math.min(...indices);
+  indices.forEach((v,i)=>{
+    const pct=(v-min)/(max-min);
+    const r=Math.round(220-pct*184);const g=Math.round(38+pct*126);const b=Math.round(38+pct*38);
+    const div=document.createElement('div');div.className='heat-cell';
+    div.style.background=`rgb(${r},${g},${b})`;
+    div.innerHTML=`${MESES[i]}<br>${fmt1(v)}×`;
+    c.appendChild(div);
+  });
+}
+
+function loadExIndice(){
+  buildMonthInputs();
+  document.getElementById('setor-saz').value='custom';
+  const ex=[42000,38000,51000,58000,72000,65000,55000,68000,70000,80000,125000,112000];
+  ex.forEach((v,i)=>{document.getElementById('m'+i).value=v;});
+  calcIndice();
+}
+
+function calcPlano(){
+  const budget=+document.getElementById('budget-anual').value;
+  if(!budget){alert('Informe o budget anual.');return;}
+  const setor=document.getElementById('setor-plano').value;
+  const ajuste=+document.getElementById('ajuste-plano').value||0;
+  const indices=SETORES[setor];
+  const soma=indices.reduce((a,b)=>a+b,0);
+  const budgets=indices.map(v=>budget*(v/soma)*(1+ajuste/100));
+  const max=Math.max(...budgets),min=Math.min(...budgets);
+  const maxM=budgets.indexOf(max),minM=budgets.indexOf(min);
+  document.getElementById('plano-result').style.display='block';
+  document.getElementById('kpi-plano').innerHTML=`
+    <div class="kpi"><div class="val">R$ ${fmtNK(max)}</div><div class="lbl">Maior Mês (${MESES[maxM]})</div></div>
+    <div class="kpi"><div class="val">R$ ${fmtNK(min)}</div><div class="lbl">Menor Mês (${MESES[minM]})</div></div>
+    <div class="kpi"><div class="val">R$ ${fmtNK(budget/12)}</div><div class="lbl">Média Mensal</div></div>`;
+  drawPlanoChart(budgets);
+  buildPlanoTable(budgets,indices);
+  document.getElementById('table-plano-wrap').style.display='block';
+}
+
+function drawPlanoChart(budgets){
+  const cv=document.getElementById('chart-plano');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=220*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=220,padL=50,padB=30,padT=20,padR=10;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const maxV=Math.max(...budgets)*1.1||1;
+  const bw=(W-padL-padR)/12-4;
+  const avg=budgets.reduce((a,b)=>a+b,0)/12;
+  const yAvg=padT+(H-padT-padB)*(1-avg/maxV);
+  ctx.strokeStyle=isDark?'#374151':'#d1d5db';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(padL,yAvg);ctx.lineTo(W-padR,yAvg);ctx.stroke();ctx.setLineDash([]);
+  budgets.forEach((v,i)=>{
+    const bh=(H-padT-padB)*(v/maxV);
+    const x=padL+i*(bw+4);const y=H-padB-bh;
+    const color=v>=avg*1.2?'#16a34a':v<=avg*0.85?'#dc2626':'#1F36C7';
+    ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,bw,bh,3);ctx.fill();
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(MESES[i],x+bw/2,H-padB+14);
+  });
+  ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='right';
+  ctx.fillText('Média',padL-4,yAvg+4);
+}
+
+function buildPlanoTable(budgets,indices){
+  const tb=document.getElementById('table-plano');
+  const total=budgets.reduce((a,b)=>a+b,0);
+  tb.innerHTML=`<tr><th>Mês</th><th>Índice</th><th>Budget (R$)</th><th>% do Anual</th><th>Budget Diário</th></tr>`;
+  const diasMes=[31,28,31,30,31,30,31,31,30,31,30,31];
+  budgets.forEach((v,i)=>{
+    const pct=v/total*100;
+    const diario=v/diasMes[i];
+    tb.innerHTML+=`<tr>
+      <td><strong>${MESES[i]}</strong></td>
+      <td>${fmt1(indices[i])}×</td>
+      <td>R$ ${fmtN(Math.round(v))}</td>
+      <td>${fmt1(pct)}%</td>
+      <td>R$ ${fmtN(Math.round(diario))}</td>
+    </tr>`;
+  });
+  tb.innerHTML+=`<tr style="font-weight:700;"><td>Total</td><td>—</td><td>R$ ${fmtN(Math.round(total))}</td><td>100%</td><td>—</td></tr>`;
+}
+
+function loadExPlano(){
+  document.getElementById('budget-anual').value=600000;
+  document.getElementById('setor-plano').value='ecom';
+  document.getElementById('ajuste-plano').value=0;
+  calcPlano();
+}
+
+function fmt1(n){return(+n).toFixed(1);}
+function fmtN(n){return(+n).toLocaleString('pt-BR');}
+function fmtNK(n){if(n>=1e6)return'R$ '+fmt1(n/1e6)+'M';if(n>=1e3)return'R$ '+fmt1(n/1e3)+'K';return'R$ '+fmtN(Math.round(n));}
+
+buildMonthInputs();
+</script>
+</body>
+</html>
