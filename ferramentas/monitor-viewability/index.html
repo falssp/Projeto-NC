@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Viewability — AdOps Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--ok-bg:#dcfce7;--warn-bg:#fef3c7;--bad-bg:#fee2e2;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#1a1d2e;--text:#e8ecff;--muted:#9ca3af;--border:#374151;--light:#1e2a5a;--ok-bg:#14532d;--warn-bg:#78350f;--bad-bg:#7f1d1d;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--azul);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.2rem;font-weight:700;}
+header a{color:#fff;opacity:.8;text-decoration:none;font-size:.875rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;padding:0 2rem;}
+.tab{padding:.75rem 1.25rem;cursor:pointer;font-size:.875rem;font-weight:500;border-bottom:3px solid transparent;color:var(--muted);transition:.2s;white-space:nowrap;}
+.tab.active{color:var(--azul);border-color:var(--azul);}
+main{padding:2rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;gap:.75rem;margin-top:1rem;flex-wrap:wrap;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.kpi .val{font-size:1.5rem;font-weight:700;color:var(--azul);}
+.kpi .lbl{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+canvas{display:block;width:100%;border-radius:8px;background:var(--bg);}
+.pane{display:none;} .pane.active{display:block;}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+th{text-align:left;padding:.6rem .75rem;background:var(--light);color:var(--azul);font-weight:600;font-size:.8rem;}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.75rem;font-weight:600;}
+.badge-ok{background:var(--ok-bg);color:var(--ok);}
+.badge-warn{background:var(--warn-bg);color:var(--warn);}
+.badge-bad{background:var(--bad-bg);color:var(--bad);}
+.gauge-wrap{display:flex;justify-content:center;margin:1rem 0;}
+.info-box{background:var(--light);border-radius:8px;padding:.85rem 1rem;margin-bottom:.75rem;font-size:.82rem;color:var(--muted);line-height:1.6;}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:.2rem;">👁️ Viewability</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<nav>
+  <div class="tab active" onclick="switchTab('view')">Calculadora</div>
+  <div class="tab" onclick="switchTab('impacto')">Impacto em Performance</div>
+  <div class="tab" onclick="switchTab('ref')">Benchmarks</div>
+</nav>
+<main>
+
+<!-- TAB CALCULADORA -->
+<div id="tab-view" class="pane active">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Métricas de Viewability</h3>
+      <label>Impressões Totais Servidas</label>
+      <input id="imp-tot" type="number" placeholder="Ex: 1000000">
+      <label>Impressões Mensuráveis (%)</label>
+      <input id="pct-mens" type="number" value="82" min="0" max="100">
+      <label>Impressões Viewable (%)</label>
+      <input id="pct-view" type="number" value="58" min="0" max="100">
+      <label>Formato / Padrão MRC</label>
+      <select id="formato-mrc">
+        <option value="display">Display (≥50% px por ≥1s)</option>
+        <option value="video">Vídeo (≥50% px por ≥2s)</option>
+        <option value="large">Large Format (≥30% px por ≥1s)</option>
+      </select>
+      <label>CPM Bruto Contratado (R$)</label>
+      <input id="cpm-bruto" type="number" value="8.00" step="0.01">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcView()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExView()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-view" class="kpi-grid" style="display:none;"></div>
+      <div class="card" id="card-gauge" style="display:none;">
+        <h3>Score de Viewability</h3>
+        <div class="gauge-wrap"><canvas id="chart-gauge" width="260" height="150"></canvas></div>
+        <canvas id="chart-view" height="200" style="margin-top:1rem;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB IMPACTO -->
+<div id="tab-impacto" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Impacto da Viewability em CTR e Conversão</h3>
+      <div class="info-box">Estudos do Google e IAB mostram que viewability alta correlaciona diretamente com CTR e CVR. Simule o ganho potencial.</div>
+      <label>Viewability Atual (%)</label>
+      <input id="view-atual" type="number" value="52" min="0" max="100">
+      <label>Viewability Meta (%)</label>
+      <input id="view-meta" type="number" value="70" min="0" max="100">
+      <label>CTR Atual (%)</label>
+      <input id="ctr-atual" type="number" value="0.08" step="0.01">
+      <label>CVR Atual (%)</label>
+      <input id="cvr-atual" type="number" value="2.4" step="0.1">
+      <label>Impressões Mensais</label>
+      <input id="imp-mens" type="number" value="2000000">
+      <label>Ticket Médio (R$)</label>
+      <input id="ticket-imp" type="number" value="250">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcImpacto()">Simular Ganho</button>
+        <button class="btn btn-secondary" onclick="loadExImpacto()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-imp" class="kpi-grid" style="display:none;"></div>
+      <div class="card" style="display:none;" id="chart-imp-wrap">
+        <h3>Comparativo: Atual vs Meta</h3>
+        <canvas id="chart-impacto" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB BENCHMARKS -->
+<div id="tab-ref" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Benchmarks de Viewability — Mercado BR</h3>
+      <table>
+        <tr><th>Canal</th><th>Mediana</th><th>Bom</th><th>Ruim</th></tr>
+        <tr><td>Display Desktop</td><td>55–65%</td><td>≥70%</td><td>&lt;40%</td></tr>
+        <tr><td>Display Mobile</td><td>50–60%</td><td>≥65%</td><td>&lt;35%</td></tr>
+        <tr><td>Vídeo Outstream</td><td>45–55%</td><td>≥60%</td><td>&lt;30%</td></tr>
+        <tr><td>Vídeo Instream</td><td>70–80%</td><td>≥85%</td><td>&lt;60%</td></tr>
+        <tr><td>Native</td><td>60–70%</td><td>≥75%</td><td>&lt;50%</td></tr>
+        <tr><td>DOOH</td><td>n/a</td><td>n/a</td><td>n/a</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Padrões MRC de Viewability</h3>
+      <table>
+        <tr><th>Formato</th><th>Requisito</th></tr>
+        <tr><td>Display (Small)</td><td>≥50% dos pixels visíveis por ≥1 segundo</td></tr>
+        <tr><td>Display (Large 242.5K+)</td><td>≥30% dos pixels visíveis por ≥1 segundo</td></tr>
+        <tr><td>Vídeo</td><td>≥50% dos pixels visíveis por ≥2 segundos contínuos</td></tr>
+        <tr><td>CTV / OTT</td><td>≥50% da tela por ≥2 segundos (IAB)</td></tr>
+        <tr><td>DOOH</td><td>Padrão próprio (OOH sem medição pixel)</td></tr>
+      </table>
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <p style="font-size:.82rem;color:var(--muted);"><strong>vCPM</strong> = CPM ÷ (Viewability% / 100)<br>Exemplo: CPM R$8 com 60% viewability → vCPM R$13,33</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',h.dataset.theme);}catch(e){}}
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function switchTab(id){document.querySelectorAll('.tab').forEach((t,i)=>{const ids=['view','impacto','ref'];t.classList.toggle('active',ids[i]===id);});document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');}
+
+function calcView(){
+  const impTot=+document.getElementById('imp-tot').value||0;
+  const pctMens=+document.getElementById('pct-mens').value||0;
+  const pctView=+document.getElementById('pct-view').value||0;
+  const cpmBruto=+document.getElementById('cpm-bruto').value||0;
+  if(!impTot){alert('Informe as impressões totais.');return;}
+  const impMens=impTot*(pctMens/100);
+  const impView=impMens*(pctView/100);
+  const vcpm=cpmBruto/(pctView/100)||0;
+  const waste=impTot-impView;
+  const pctWaste=(waste/impTot)*100;
+  const formato=document.getElementById('formato-mrc').value;
+  const benchOk=formato==='video'?60:formato==='large'?55:65;
+  const benchMin=formato==='video'?30:formato==='large'?45:40;
+  const status=pctView>=benchOk?'ok':pctView>=benchMin?'warn':'bad';
+  const statusLabel=pctView>=benchOk?'Acima do Benchmark':'Abaixo do Benchmark';
+  document.getElementById('kpi-view').style.display='grid';
+  document.getElementById('kpi-view').innerHTML=`
+    <div class="kpi"><div class="val">${fmt1(pctView)}%</div><div class="lbl">Viewability Rate</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt2(vcpm)}</div><div class="lbl">vCPM</div></div>
+    <div class="kpi"><div class="val">${fmtNK(impView)}</div><div class="lbl">Imp Viewable</div></div>
+    <div class="kpi"><div class="val">${fmt1(pctWaste)}%</div><div class="lbl">Waste Rate</div></div>`;
+  document.getElementById('card-gauge').style.display='block';
+  drawGauge(pctView,status);
+  drawViewChart(impTot,impMens,impView);
+}
+
+function drawGauge(pct,status){
+  const cv=document.getElementById('chart-gauge');
+  cv.width=260;cv.height=150;
+  const ctx=cv.getContext('2d');
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.clearRect(0,0,260,150);
+  const cx=130,cy=130,r=100;
+  const startA=Math.PI,endA=2*Math.PI;
+  // background arc
+  ctx.beginPath();ctx.arc(cx,cy,r,startA,endA);
+  ctx.lineWidth=18;ctx.strokeStyle=isDark?'#374151':'#e5e7eb';ctx.lineCap='round';ctx.stroke();
+  // colored arc
+  const fillA=startA+(endA-startA)*(pct/100);
+  const color=status==='ok'?'#16a34a':status==='warn'?'#d97706':'#dc2626';
+  ctx.beginPath();ctx.arc(cx,cy,r,startA,fillA);
+  ctx.lineWidth=18;ctx.strokeStyle=color;ctx.lineCap='round';ctx.stroke();
+  // label
+  ctx.fillStyle=color;ctx.font='bold 28px Space Grotesk';ctx.textAlign='center';
+  ctx.fillText(fmt1(pct)+'%',cx,cy-20);
+  ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='11px Space Grotesk';
+  ctx.fillText('Viewability Rate',cx,cy-4);
+  ctx.fillStyle=color;ctx.font='bold 11px Space Grotesk';
+  ctx.fillText(status==='ok'?'✓ Bom':status==='warn'?'⚠ Aceitável':'✗ Baixo',cx,cy+10);
+}
+
+function drawViewChart(tot,mens,view){
+  const cv=document.getElementById('chart-view');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=200*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=200,padL=20,padB=30,padT=20,padR=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const data=[{l:'Servidas',v:tot,c:'#9db3f8'},{l:'Mensuráveis',v:mens,c:'#1F36C7'},{l:'Viewable',v:view,c:'#16a34a'}];
+  const maxV=Math.max(...data.map(d=>d.v))*1.1||1;
+  const bw=(W-padL-padR)/3-20;
+  data.forEach((d,i)=>{
+    const bh=(H-padT-padB)*(d.v/maxV);
+    const x=padL+i*(bw+20);const y=H-padB-bh;
+    ctx.fillStyle=d.c;ctx.beginPath();ctx.roundRect(x,y,bw,bh,4);ctx.fill();
+    ctx.fillStyle=isDark?'#e8ecff':'#0d0f1a';ctx.font='bold 9px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(fmtNK(d.v),x+bw/2,y-5);
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';
+    ctx.fillText(d.l,x+bw/2,H-padB+14);
+    if(i>0){const pct=(d.v/data[i-1].v*100);ctx.fillStyle=d.c;ctx.font='8px Space Grotesk';ctx.fillText(fmt1(pct)+'%',x+bw/2,y-15);}
+  });
+}
+
+function loadExView(){
+  document.getElementById('imp-tot').value=1500000;
+  document.getElementById('pct-mens').value=84;
+  document.getElementById('pct-view').value=58;
+  document.getElementById('formato-mrc').value='display';
+  document.getElementById('cpm-bruto').value=8.50;
+  calcView();
+}
+
+function calcImpacto(){
+  const vA=+document.getElementById('view-atual').value||50;
+  const vM=+document.getElementById('view-meta').value||70;
+  const ctrA=+document.getElementById('ctr-atual').value||0.08;
+  const cvrA=+document.getElementById('cvr-atual').value||2;
+  const imp=+document.getElementById('imp-mens').value||1000000;
+  const ticket=+document.getElementById('ticket-imp').value||200;
+  // view to CTR uplift: each 10pp viewability = ~12% CTR uplift (industry estimate)
+  const uplift=(vM-vA)/10*0.12;
+  const ctrM=ctrA*(1+uplift);
+  const cvrM=cvrA*(1+uplift*0.5);
+  const cliquesA=imp*(ctrA/100);const cliquesM=imp*(ctrM/100);
+  const convA=cliquesA*(cvrA/100);const convM=cliquesM*(cvrM/100);
+  const recA=convA*ticket;const recM=convM*ticket;
+  document.getElementById('kpi-imp').style.display='grid';
+  document.getElementById('kpi-imp').innerHTML=`
+    <div class="kpi"><div class="val">+${fmt1((ctrM-ctrA)/ctrA*100)}%</div><div class="lbl">Uplift CTR</div></div>
+    <div class="kpi"><div class="val">+${fmt1((convM-convA))} conv</div><div class="lbl">Conv Adicionais/mês</div></div>
+    <div class="kpi"><div class="val">R$ ${fmtNK(recM-recA)}</div><div class="lbl">Receita Incremental/mês</div></div>
+    <div class="kpi"><div class="val">R$ ${fmtNK((recM-recA)*12)}</div><div class="lbl">Impacto Anual</div></div>`;
+  document.getElementById('chart-imp-wrap').style.display='block';
+  drawImpactoChart(vA,vM,ctrA,ctrM,convA,convM);
+}
+
+function drawImpactoChart(vA,vM,ctrA,ctrM,convA,convM){
+  const cv=document.getElementById('chart-impacto');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=240*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=240,padL=20,padB=30,padT=20,padR=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const groups=[
+    {label:'Viewability %',a:vA,m:vM,maxV:100},
+    {label:'CTR %',a:ctrA,m:ctrM,maxV:Math.max(ctrM,ctrA)*1.3},
+    {label:'Conversões',a:convA,m:convM,maxV:Math.max(convM,convA)*1.3},
+  ];
+  const gw=(W-padL-padR)/groups.length;
+  const bw=gw/3;
+  groups.forEach((g,gi)=>{
+    const baseX=padL+gi*gw;
+    [{v:g.a,color:'#9db3f8',label:'Atual'},{v:g.m,color:'#1F36C7',label:'Meta'}].forEach((b,bi)=>{
+      const bh=(H-padT-padB)*(b.v/g.maxV);
+      const x=baseX+bi*(bw+2)+gw/8;const y=H-padB-bh;
+      ctx.fillStyle=b.color;ctx.beginPath();ctx.roundRect(x,y,bw,bh,3);ctx.fill();
+      ctx.fillStyle=isDark?'#e8ecff':'#0d0f1a';ctx.font='8px Space Grotesk';ctx.textAlign='center';
+      const lbl=b.v>1000?fmtNK(b.v):fmt1(b.v);
+      ctx.fillText(lbl,x+bw/2,y-5);
+    });
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(g.label,baseX+gw/2,H-padB+14);
+  });
+  // legend
+  [{c:'#9db3f8',l:'Atual'},{c:'#1F36C7',l:'Meta'}].forEach((it,i)=>{
+    ctx.fillStyle=it.c;ctx.fillRect(padL+i*60,padT,10,10);
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='left';
+    ctx.fillText(it.l,padL+i*60+13,padT+8);
+  });
+}
+
+function loadExImpacto(){
+  document.getElementById('view-atual').value=52;
+  document.getElementById('view-meta').value=70;
+  document.getElementById('ctr-atual').value=0.08;
+  document.getElementById('cvr-atual').value=2.4;
+  document.getElementById('imp-mens').value=2000000;
+  document.getElementById('ticket-imp').value=250;
+  calcImpacto();
+}
+
+function fmt1(n){return(+n).toFixed(1);}
+function fmt2(n){return(+n).toFixed(2);}
+function fmtNK(n){if(n>=1e6)return'R$ '+(n/1e6).toFixed(1)+'M';if(n>=1e3)return'R$ '+(n/1e3).toFixed(1)+'K';return'R$ '+Math.round(n);}
+</script>
+</body>
+</html>
