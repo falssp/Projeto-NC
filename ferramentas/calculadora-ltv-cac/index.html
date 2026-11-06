@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora LTV / CAC — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}
+.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}
+.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}
+.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm{padding:6px 14px;font-size:.82rem}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:16px;text-align:center}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+.kpi.highlight .kpi-value{font-size:1.8rem}
+.verdict{margin-top:16px;padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.section-title{font-size:1rem;font-weight:700;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:20px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.code{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--light);padding:2px 7px;border-radius:4px;color:var(--azul)}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.chart-wrap{margin-top:24px}
+.chart-label{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+canvas{border-radius:8px;max-width:100%}
+.ratio-meter{margin-top:20px;background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:16px}
+.ratio-bar-wrap{height:16px;border-radius:8px;background:linear-gradient(to right,var(--red) 0%,var(--red) 25%,var(--yellow) 25%,var(--yellow) 40%,var(--green) 40%,var(--green) 100%);position:relative;margin:12px 0}
+.ratio-marker{position:absolute;top:-4px;width:4px;height:24px;background:var(--text);border-radius:2px;transform:translateX(-50%)}
+.ratio-labels{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>💰 Calculadora LTV / CAC</h1>
+      <div class="subtitle">Lifetime Value, Custo de Aquisição e payback period</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('calc')">Calculadora</button>
+      <button class="tab" onclick="switchTab('cac')">CAC por Canal</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- Calculadora -->
+    <div class="tab-content active" id="tab-calc">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Ticket médio (R$)</label>
+          <input type="number" id="ticketMedio" placeholder="150" step="0.01" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>Frequência de compra / ano</label>
+          <input type="number" id="freqCompra" placeholder="4" step="0.1" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>Tempo de vida do cliente (anos)</label>
+          <input type="number" id="vidaCliente" placeholder="3" step="0.5" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>Margem bruta (%)</label>
+          <input type="number" id="margem" placeholder="40" step="0.1" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>Taxa de churn anual (%)</label>
+          <input type="number" id="churn" placeholder="20" step="0.1" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>Taxa de desconto (% a.a.)</label>
+          <input type="number" id="desconto" placeholder="15" step="0.1" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>CAC médio (R$)</label>
+          <input type="number" id="cac" placeholder="200" step="0.01" oninput="calc()">
+        </div>
+        <div class="form-group">
+          <label>Investimento total em marketing (R$)</label>
+          <input type="number" id="investMkt" placeholder="50000" oninput="calc()">
+        </div>
+        <div class="form-group full">
+          <label>Novos clientes adquiridos no período</label>
+          <input type="number" id="novosClientes" placeholder="250" oninput="calc()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calc()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExample()">Exemplo</button>
+      </div>
+
+      <div id="results" style="display:none">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div id="verdict" class="verdict" style="margin-top:16px"></div>
+
+        <div class="ratio-meter">
+          <div class="section-title" style="font-size:.9rem">Razão LTV:CAC</div>
+          <div class="ratio-bar-wrap" id="ratioBar">
+            <div class="ratio-marker" id="ratioMarker" style="left:0"></div>
+          </div>
+          <div class="ratio-labels">
+            <span>0×</span><span>1× (break-even)</span><span>3× (saudável)</span><span>5×+</span>
+          </div>
+          <div id="ratioText" style="margin-top:8px;font-size:.9rem;font-weight:600;color:var(--azul)"></div>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="chart-label">Acúmulo de valor do cliente ao longo do tempo</div>
+          <canvas id="ltvChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAC por Canal -->
+    <div class="tab-content" id="tab-cac">
+      <div class="section-title">Compare CAC por canal</div>
+      <div class="info-box">Insira o investimento e os clientes adquiridos por canal para comparar eficiência de aquisição.</div>
+      <div id="canalRows"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="addCanalRow()">+ Canal</button>
+      <button class="btn btn-primary btn-sm" style="margin-top:12px;margin-left:8px" onclick="calcCanais()">Calcular</button>
+      <div id="canalResult" style="margin-top:20px"></div>
+    </div>
+
+    <!-- Referência -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Definições</div>
+      <div class="info-box">
+        <strong>LTV (Lifetime Value)</strong> = valor total que um cliente gera durante o relacionamento com a empresa.<br>
+        <strong>CAC (Customer Acquisition Cost)</strong> = custo médio para adquirir um cliente.<br>
+        <strong>Payback period</strong> = tempo necessário para o cliente pagar seu próprio custo de aquisição.
+      </div>
+      <div class="section-title">Fórmulas</div>
+      <table>
+        <thead><tr><th>Métrica</th><th>Fórmula</th></tr></thead>
+        <tbody>
+          <tr><td>LTV simples</td><td><span class="code">Ticket × Freq × Vida × Margem%</span></td></tr>
+          <tr><td>LTV com churn</td><td><span class="code">Ticket × Freq × Margem% / Churn%</span></td></tr>
+          <tr><td>LTV descontado (DCF)</td><td><span class="code">Σ [Receita_anual × Margem% / (1 + r)^t]</span></td></tr>
+          <tr><td>CAC calculado</td><td><span class="code">Investimento_mkt / Novos_clientes</span></td></tr>
+          <tr><td>Razão LTV:CAC</td><td><span class="code">LTV / CAC</span></td></tr>
+          <tr><td>Payback period</td><td><span class="code">CAC / (Ticket × Freq × Margem%)</span></td></tr>
+          <tr><td>Margem por cliente/ano</td><td><span class="code">Ticket × Freq × Margem%</span></td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Benchmarks LTV:CAC</div>
+      <table>
+        <thead><tr><th>Razão LTV:CAC</th><th>Interpretação</th><th>Ação recomendada</th></tr></thead>
+        <tbody>
+          <tr><td>< 1×</td><td>🚨 Prejuízo — cada cliente custa mais do que gera</td><td>Revisão urgente de CAC ou modelo de negócio</td></tr>
+          <tr><td>1× – 2×</td><td>⚠️ Margem muito estreita — risco alto</td><td>Otimizar canais de aquisição, aumentar LTV</td></tr>
+          <tr><td>3× – 5×</td><td>✅ Saudável — padrão SaaS/e-commerce</td><td>Escalar investimento com cautela</td></tr>
+          <tr><td>> 5×</td><td>🚀 Excelente — potencial de crescimento acelerado</td><td>Aumentar budget — retorno garantido</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Payback period benchmarks</div>
+      <table>
+        <thead><tr><th>Segmento</th><th>Payback saudável</th></tr></thead>
+        <tbody>
+          <tr><td>E-commerce</td><td>3–6 meses</td></tr>
+          <tr><td>SaaS B2C</td><td>6–12 meses</td></tr>
+          <tr><td>SaaS B2B</td><td>12–18 meses</td></tr>
+          <tr><td>Serviços financeiros</td><td>12–24 meses</td></tr>
+          <tr><td>Seguros / telecomunicações</td><td>18–36 meses</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script>
+let canalRowId=0;
+
+function calc(){
+  const ticket=parseFloat(document.getElementById('ticketMedio').value)||0;
+  const freq=parseFloat(document.getElementById('freqCompra').value)||0;
+  const vida=parseFloat(document.getElementById('vidaCliente').value)||0;
+  const margem=parseFloat(document.getElementById('margem').value)||0;
+  const churn=parseFloat(document.getElementById('churn').value)||0;
+  const disc=parseFloat(document.getElementById('desconto').value)||0;
+  const cacInput=parseFloat(document.getElementById('cac').value)||0;
+  const investMkt=parseFloat(document.getElementById('investMkt').value)||0;
+  const novos=parseFloat(document.getElementById('novosClientes').value)||0;
+
+  if(!ticket||!freq||!margem){document.getElementById('results').style.display='none';return;}
+  document.getElementById('results').style.display='block';
+
+  const margemFrac=margem/100;
+  const anuidade=ticket*freq*margemFrac;
+  const ltvSimples=anuidade*(vida||1/((churn||100)/100));
+  const ltvChurn=churn?anuidade/(churn/100):ltvSimples;
+  // DCF LTV
+  let ltvDcf=0;
+  const years=Math.ceil(vida||5);
+  for(let t=1;t<=years;t++){
+    const surv=churn?Math.pow(1-(churn/100),t-1):1;
+    ltvDcf+=anuidade*surv/Math.pow(1+(disc/100||0.15),t);
+  }
+  const cacCalculado=novos&&investMkt?investMkt/novos:0;
+  const cacFinal=cacInput||cacCalculado||0;
+  const ratio=cacFinal?ltvDcf/cacFinal:0;
+  const payback=anuidade?cacFinal/anuidade*12:0; // months
+
+  document.getElementById('kpiGrid').innerHTML=[
+    {l:'LTV simples',v:'R$'+fmt2(ltvSimples),s:'ticket × freq × vida × margem',highlight:false},
+    {l:'LTV (com churn)',v:'R$'+fmt2(ltvChurn),s:'÷ taxa de churn anual',highlight:false},
+    {l:'LTV descontado',v:'R$'+fmt2(ltvDcf),s:'DCF — mais conservador',highlight:true},
+    {l:'Margem/cliente/ano',v:'R$'+fmt2(anuidade),s:`R$${fmt2(ticket)} × ${freq}× × ${margem}%`,highlight:false},
+    {l:'CAC calculado',v:cacCalculado?'R$'+fmt2(cacCalculado):'—',s:novos&&investMkt?`${fmt(novos)} clientes`:'insira invest. e novos clientes',highlight:false},
+    {l:'Payback period',v:payback?payback.toFixed(1)+' m':'—',s:cacFinal?'meses para recuperar CAC':'insira CAC',highlight:false},
+  ].map(k=>`<div class="kpi${k.highlight?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+
+  // verdict
+  const vEl=document.getElementById('verdict');
+  if(!cacFinal){vEl.className='verdict v-warn';vEl.textContent='⚠️ Insira o CAC para ver a razão LTV:CAC e o payback.';}
+  else if(ratio<1){vEl.className='verdict v-bad';vEl.textContent=`🚨 LTV:CAC = ${ratio.toFixed(2)}× — cada cliente custa mais do que gera. Revisão urgente necessária.`;}
+  else if(ratio<2){vEl.className='verdict v-warn';vEl.textContent=`⚠️ LTV:CAC = ${ratio.toFixed(2)}× — margem estreita. Otimize CAC ou aumente ticket/retenção.`;}
+  else if(ratio<5){vEl.className='verdict v-ok';vEl.textContent=`✅ LTV:CAC = ${ratio.toFixed(2)}× — saudável. Payback em ${payback.toFixed(1)} meses.`;}
+  else{vEl.className='verdict v-ok';vEl.textContent=`🚀 LTV:CAC = ${ratio.toFixed(2)}× — excelente! Oportunidade de escalar budget com segurança.`;}
+
+  // ratio bar
+  if(cacFinal){
+    const pct=Math.min(ratio/5,1)*100;
+    document.getElementById('ratioMarker').style.left=pct+'%';
+    document.getElementById('ratioText').textContent=`LTV:CAC = ${ratio.toFixed(2)}×  |  Payback: ${payback.toFixed(1)} meses`;
+  }
+
+  drawLtvChart(ticket,freq,margemFrac,churn/100,disc/100,cacFinal,Math.ceil(vida||5));
+}
+
+function drawLtvChart(ticket,freq,marg,churn,disc,cac,years){
+  const canvas=document.getElementById('ltvChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||700;
+  canvas.width=W;canvas.height=220;
+  ctx.clearRect(0,0,W,220);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const textColor=dark?'#9ca3af':'#6b7280';
+  const gridColor=dark?'#2a2d4a':'#e5e7eb';
+  const anuidade=ticket*freq*marg;
+  const pts=Array.from({length:years+1},(_,t)=>{
+    if(t===0) return -cac;
+    const surv=churn?Math.pow(1-churn,t-1):1;
+    return anuidade*surv/Math.pow(1+(disc||0.15),t);
+  });
+  const cumPts=pts.reduce((acc,v)=>{acc.push((acc[acc.length-1]||0)+v);return acc;},[]);
+  const pad={l:70,r:16,t:16,b:30};
+  const W2=W-pad.l-pad.r,H=220-pad.t-pad.b;
+  const minY=Math.min(0,...cumPts);const maxY=Math.max(0,...cumPts);
+  const range=maxY-minY||1;
+  const toY=v=>pad.t+H-((v-minY)/range)*H;
+  // zero line
+  ctx.strokeStyle=gridColor;ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(pad.l,toY(0));ctx.lineTo(pad.l+W2,toY(0));ctx.stroke();ctx.setLineDash([]);
+  // grid
+  [minY,0,(maxY+minY)/2,maxY].forEach(v=>{
+    ctx.fillStyle=textColor;ctx.font='11px JetBrains Mono,monospace';
+    ctx.fillText('R$'+fmtK(v),2,toY(v)+4);
+  });
+  // area
+  const gradient=ctx.createLinearGradient(0,pad.t,0,pad.t+H);
+  gradient.addColorStop(0,'rgba(31,54,199,0.2)');gradient.addColorStop(1,'rgba(31,54,199,0.01)');
+  ctx.beginPath();ctx.moveTo(pad.l,toY(cumPts[0]));
+  cumPts.forEach((v,i)=>{ctx.lineTo(pad.l+(i/years)*W2,toY(v));});
+  ctx.lineTo(pad.l+W2,toY(0));ctx.lineTo(pad.l,toY(0));ctx.closePath();
+  ctx.fillStyle=gradient;ctx.fill();
+  // line
+  ctx.beginPath();ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;
+  cumPts.forEach((v,i)=>{const x=pad.l+(i/years)*W2;const y=toY(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // CAC line
+  if(cac){
+    ctx.beginPath();ctx.strokeStyle='#dc2626';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+    ctx.moveTo(pad.l,toY(-cac));ctx.lineTo(pad.l+W2,toY(-cac));ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#dc2626';ctx.font='11px Space Grotesk,sans-serif';ctx.fillText('CAC',pad.l+4,toY(-cac)-4);
+  }
+  // x labels
+  Array.from({length:years+1},(_,i)=>i).forEach(i=>{
+    const x=pad.l+(i/years)*W2;
+    ctx.fillStyle=textColor;ctx.font='11px JetBrains Mono,monospace';ctx.fillText('Y'+i,x-8,pad.t+H+18);
+  });
+}
+
+function addCanalRow(name='',invest='',clientes=''){
+  const id=++canalRowId;
+  const div=document.createElement('div');
+  div.id=`canal-${id}`;
+  div.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:8px';
+  div.innerHTML=`
+    <input type="text" placeholder="Canal (ex: Google)" value="${name}" id="cn-${id}" style="flex:1.5">
+    <input type="number" placeholder="Invest. R$" value="${invest}" id="ci-${id}" style="flex:1">
+    <input type="number" placeholder="Clientes" value="${clientes}" id="cc-${id}" style="flex:1">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.2rem">×</button>`;
+  document.getElementById('canalRows').appendChild(div);
+}
+
+function calcCanais(){
+  const rows=[...document.querySelectorAll('[id^="canal-"]')].map(r=>{
+    const id=r.id.replace('canal-','');
+    return{name:document.getElementById(`cn-${id}`).value||'—',invest:parseFloat(document.getElementById(`ci-${id}`).value)||0,clientes:parseFloat(document.getElementById(`cc-${id}`).value)||0};
+  }).filter(r=>r.invest||r.clientes);
+  if(!rows.length){document.getElementById('canalResult').innerHTML='';return;}
+  const minCac=Math.min(...rows.filter(r=>r.clientes).map(r=>r.invest/r.clientes));
+  document.getElementById('canalResult').innerHTML=`
+    <table>
+      <thead><tr><th>Canal</th><th>Investimento</th><th>Clientes</th><th>CAC</th><th>Eficiência</th></tr></thead>
+      <tbody>${rows.map(r=>{
+        const cac=r.clientes?r.invest/r.clientes:null;
+        const eff=cac&&minCac?minCac/cac:null;
+        return `<tr>
+          <td>${r.name}</td>
+          <td>R$${fmt2(r.invest)}</td>
+          <td>${fmt(r.clientes)}</td>
+          <td>${cac?'R$'+fmt2(cac):'—'}</td>
+          <td>${eff?(eff>=0.9?'✅ ':eff>=0.6?'⚠️ ':'🔴 ')+(eff*100).toFixed(0)+'%':'—'}</td>
+        </tr>`;}).join('')}
+      </tbody>
+    </table>`;
+}
+
+function loadExample(){
+  document.getElementById('ticketMedio').value=250;
+  document.getElementById('freqCompra').value=5;
+  document.getElementById('vidaCliente').value=4;
+  document.getElementById('margem').value=45;
+  document.getElementById('churn').value=18;
+  document.getElementById('desconto').value=15;
+  document.getElementById('cac').value=320;
+  document.getElementById('investMkt').value=80000;
+  document.getElementById('novosClientes').value=250;
+  calc();
+}
+
+function fmt2(n){if(!n&&n!==0)return'0,00';return Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt(n){return Number(n).toLocaleString('pt-BR');}
+function fmtK(n){if(Math.abs(n)>=1000)return(n/1000).toFixed(0)+'K';return n.toFixed(0);}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+function toggleTheme(){
+  const d=document.documentElement;
+  d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');
+  try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}
+  calc();
+}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+
+// init canal tab
+addCanalRow('Google Search',15000,45);
+addCanalRow('Meta Ads',20000,52);
+addCanalRow('LinkedIn',8000,12);
+window.addEventListener('resize',calc);
+</script>
+</body>
+</html>
