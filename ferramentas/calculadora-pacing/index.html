@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Pacing — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.verdict{padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600;margin:16px 0}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:1rem;font-weight:700;margin:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+canvas{width:100%;border-radius:8px;display:block;margin-top:12px}
+.pacing-bar{margin:16px 0}
+.pb-labels{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:6px}
+.pb-track{height:20px;background:var(--border);border-radius:10px;overflow:hidden;position:relative}
+.pb-fill{height:100%;border-radius:10px;transition:width .4s}
+.pb-marker{position:absolute;top:0;height:100%;width:3px;background:#1F36C7;border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>⏳ Calculadora de Pacing</h1>
+      <div class="subtitle">Velocidade de entrega, projeção de gasto e ajuste de budget/bid</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('pacing')">Pacing de Campanha</button>
+      <button class="tab" onclick="switchTab('multi')">Multi-line</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- Pacing -->
+    <div class="tab-content active" id="tab-pacing">
+      <div class="info-box">
+        Informe o status atual da campanha para calcular o <strong>pace rate</strong>, a projeção de gasto ao fim do voo e quanto ajustar o bid/budget para normalizar a entrega.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Budget total (R$)</label>
+          <input type="number" id="budget" placeholder="50000" oninput="calcPacing()">
+        </div>
+        <div class="form-group">
+          <label>Gasto até agora (R$)</label>
+          <input type="number" id="gasto" placeholder="18000" oninput="calcPacing()">
+        </div>
+        <div class="form-group">
+          <label>Dias totais do voo</label>
+          <input type="number" id="diasTotal" placeholder="30" oninput="calcPacing()">
+        </div>
+        <div class="form-group">
+          <label>Dias decorridos</label>
+          <input type="number" id="diasPassados" placeholder="12" oninput="calcPacing()">
+        </div>
+        <div class="form-group">
+          <label>Impressões entregues</label>
+          <input type="number" id="impEnt" placeholder="420000" oninput="calcPacing()">
+        </div>
+        <div class="form-group">
+          <label>Impressões contratadas</label>
+          <input type="number" id="impTotal" placeholder="1000000" oninput="calcPacing()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExPacing()">Exemplo</button>
+      </div>
+      <div id="pacingOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="pacingKpis"></div>
+        <div class="pacing-bar">
+          <div class="pb-labels"><span id="pb-budget-label">Orçamento</span><span id="pb-budget-pct"></span></div>
+          <div class="pb-track"><div class="pb-fill" id="pb-budget-fill"></div><div class="pb-marker" id="pb-budget-marker"></div></div>
+        </div>
+        <div class="pacing-bar">
+          <div class="pb-labels"><span>Impressões</span><span id="pb-imp-pct"></span></div>
+          <div class="pb-track"><div class="pb-fill" id="pb-imp-fill"></div><div class="pb-marker" id="pb-imp-marker"></div></div>
+        </div>
+        <div id="pacingVerdict" class="verdict"></div>
+        <div id="pacingRec" style="font-size:.88rem;line-height:1.8;color:var(--muted)"></div>
+        <canvas id="pacingChart" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- Multi-line -->
+    <div class="tab-content" id="tab-multi">
+      <div class="info-box">
+        Compare o pacing de múltiplas line items. Identifique quais estão <strong>underpacing</strong> ou <strong>overpacing</strong> para redistribuir budget.
+      </div>
+      <div id="multiRows">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:6px">
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Line Item</span>
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Budget (R$)</span>
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Gasto (R$)</span>
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Dias total</span>
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Dias passados</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExMulti()">Exemplo</button>
+        <button class="btn btn-primary" onclick="calcMulti()">Analisar</button>
+      </div>
+      <div id="multiOutput" style="display:none;margin-top:20px"></div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Faixas de pacing rate</div>
+      <table>
+        <thead><tr><th>Pace rate</th><th>Status</th><th>Ação recomendada</th></tr></thead>
+        <tbody>
+          <tr><td>&lt; 70%</td><td>🔴 Underpacing severo</td><td>+30–50% bid; revisar segmentação; verificar bloqueios</td></tr>
+          <tr><td>70–85%</td><td>⚠️ Underpacing</td><td>+10–20% bid ou ampliar targeting</td></tr>
+          <tr><td>85–115%</td><td>✅ On pace</td><td>Manter; monitorar diariamente</td></tr>
+          <tr><td>115–130%</td><td>⚠️ Overpacing</td><td>−10–20% bid ou adicionar frequency cap</td></tr>
+          <tr><td>&gt; 130%</td><td>🔴 Overpacing severo</td><td>Pausar temporariamente ou cortar bid drasticamente</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Fórmulas</div>
+      <div class="info-box" style="line-height:2.2;font-family:'JetBrains Mono',monospace;font-size:.82rem">
+        pace_esperado = dias_passados / dias_total × 100%<br>
+        pace_real = gasto / budget × 100%<br>
+        pace_rate = pace_real / pace_esperado × 100%<br>
+        projeção = gasto / dias_passados × dias_total<br>
+        budget_diário_necessário = saldo / dias_restantes<br>
+        ajuste_bid = (100 - pace_rate) / 100 × fator
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+// Build multi rows
+(()=>{
+  const container=document.getElementById('multiRows');
+  for(let i=0;i<5;i++){
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px';
+    row.innerHTML=`<input type="text" id="ml_nome${i}" value="Line item ${i+1}">
+      <input type="number" id="ml_budget${i}" placeholder="R$">
+      <input type="number" id="ml_gasto${i}" placeholder="R$">
+      <input type="number" id="ml_dias${i}" placeholder="dias">
+      <input type="number" id="ml_pass${i}" placeholder="dias">`;
+    container.appendChild(row);
+  }
+})();
+
+function calcPacing(){
+  const budget=parseFloat(document.getElementById('budget').value)||0;
+  const gasto=parseFloat(document.getElementById('gasto').value)||0;
+  const diasTotal=parseFloat(document.getElementById('diasTotal').value)||0;
+  const diasPass=parseFloat(document.getElementById('diasPassados').value)||0;
+  const impEnt=parseFloat(document.getElementById('impEnt').value)||0;
+  const impTotal=parseFloat(document.getElementById('impTotal').value)||0;
+  if(!budget||!gasto||!diasTotal||!diasPass){document.getElementById('pacingOutput').style.display='none';return;}
+  document.getElementById('pacingOutput').style.display='block';
+  const paceEsp=diasPass/diasTotal*100;
+  const paceReal=gasto/budget*100;
+  const paceRate=paceReal/paceEsp*100;
+  const diasRestantes=diasTotal-diasPass;
+  const saldo=budget-gasto;
+  const projecao=gasto/diasPass*diasTotal;
+  const budgetDiario=saldo/diasRestantes;
+  const gastoAtual=gasto/diasPass;
+  const ajustePct=((budgetDiario-gastoAtual)/gastoAtual*100);
+  document.getElementById('pacingKpis').innerHTML=[
+    {l:'Pace rate',v:paceRate.toFixed(1)+'%',s:paceReal.toFixed(1)+'% gasto vs '+paceEsp.toFixed(1)+'% tempo',hl:true},
+    {l:'Projeção de gasto',v:'R$ '+fmt(Math.round(projecao)),s:projecao>budget?'🔴 acima do budget':projecao<budget*0.85?'⚠️ abaixo do budget':'✅ dentro do budget'},
+    {l:'Saldo disponível',v:'R$ '+fmt(Math.round(saldo)),s:diasRestantes+' dias restantes'},
+    {l:'Gasto/dia atual',v:'R$ '+fmt(Math.round(gastoAtual)),s:'média até hoje'},
+    {l:'Gasto/dia necessário',v:'R$ '+fmt(Math.round(budgetDiario)),s:'para usar o saldo'},
+    {l:'Ajuste bid/budget',v:(ajustePct>=0?'+':'')+ajustePct.toFixed(0)+'%',s:'para normalizar entrega'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  // Budget bar
+  const bFill=document.getElementById('pb-budget-fill');
+  const bMarker=document.getElementById('pb-budget-marker');
+  const bPct=Math.min(paceReal,100);
+  bFill.style.width=bPct+'%';
+  bFill.style.background=paceRate<85?'#dc2626':paceRate>115?'#ca8a04':'#16a34a';
+  bMarker.style.left=Math.min(paceEsp,100)+'%';
+  document.getElementById('pb-budget-pct').textContent=paceReal.toFixed(1)+'% gasto (linha azul = esperado '+paceEsp.toFixed(0)+'%)';
+  // Imp bar
+  if(impTotal&&impEnt){
+    const impPct=impEnt/impTotal*100;
+    document.getElementById('pb-imp-fill').style.width=Math.min(impPct,100)+'%';
+    document.getElementById('pb-imp-fill').style.background=impPct/paceEsp*100<85?'#dc2626':impPct/paceEsp*100>115?'#ca8a04':'#16a34a';
+    document.getElementById('pb-imp-marker').style.left=Math.min(paceEsp,100)+'%';
+    document.getElementById('pb-imp-pct').textContent=impPct.toFixed(1)+'% entregue (esperado '+paceEsp.toFixed(0)+'%)';
+  }
+  const vEl=document.getElementById('pacingVerdict');
+  if(paceRate<70){vEl.className='verdict v-bad';vEl.textContent=`🔴 Underpacing severo: ${paceRate.toFixed(0)}% do ritmo esperado. Projeção R$ ${fmt(Math.round(projecao))} (${((projecao/budget-1)*100).toFixed(0)}% do budget).`;}
+  else if(paceRate<85){vEl.className='verdict v-warn';vEl.textContent=`⚠️ Underpacing: ${paceRate.toFixed(0)}%. Projeção R$ ${fmt(Math.round(projecao))} — ${fmt(Math.round(budget-projecao))} subentregues.`;}
+  else if(paceRate<=115){vEl.className='verdict v-ok';vEl.textContent=`✅ On pace: ${paceRate.toFixed(0)}%. Projeção R$ ${fmt(Math.round(projecao))} — campanha saudável.`;}
+  else if(paceRate<=130){vEl.className='verdict v-warn';vEl.textContent=`⚠️ Overpacing: ${paceRate.toFixed(0)}%. Projeção R$ ${fmt(Math.round(projecao))} pode ultrapassar o budget em R$ ${fmt(Math.round(projecao-budget))}.`;}
+  else{vEl.className='verdict v-bad';vEl.textContent=`🔴 Overpacing severo: ${paceRate.toFixed(0)}%. Projeção R$ ${fmt(Math.round(projecao))} — risco de estourar budget em ${((projecao/budget-1)*100).toFixed(0)}%.`;}
+  document.getElementById('pacingRec').innerHTML=`<strong>Recomendação:</strong> ${ajustePct>=0?'Aumentar':'Reduzir'} bid/CPM em ~<strong>${Math.abs(ajustePct).toFixed(0)}%</strong> para gastar R$ ${fmt(Math.round(budgetDiario))}/dia e usar todo o saldo nos ${diasRestantes} dias restantes.`;
+  drawPacingChart(diasTotal,diasPass,gasto,budget);
+}
+function drawPacingChart(diasTotal,diasPass,gasto,budget){
+  const canvas=document.getElementById('pacingChart');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;canvas.height=440;ctx.scale(2,2);
+  const W=canvas.offsetWidth/2,H=220;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  ctx.fillRect(0,0,W,H);
+  const pad={l:70,r:20,t:20,b:40};
+  function rx(d){return pad.l+(W-pad.l-pad.r)*(d/diasTotal);}
+  function ry(v){return pad.t+(H-pad.t-pad.b)*(1-v/budget);}
+  // grid
+  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+  ctx.lineWidth=0.5;ctx.setLineDash([4,3]);
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(H-pad.t-pad.b)*(i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+    ctx.font='10px Space Grotesk';ctx.textAlign='right';
+    ctx.fillText('R$'+fmt(Math.round(budget*(1-i/4))),pad.l-4,y+4);
+  }
+  ctx.setLineDash([]);
+  // Planned line (diagonal)
+  ctx.strokeStyle='#9ca3af';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(rx(0),ry(0));ctx.lineTo(rx(diasTotal),ry(budget));ctx.stroke();
+  ctx.setLineDash([]);
+  // Actual line + projection
+  const ratePerDay=gasto/diasPass;
+  ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(rx(0),ry(0));ctx.lineTo(rx(diasPass),ry(gasto));ctx.stroke();
+  // Projection dashed
+  const projFinal=ratePerDay*diasTotal;
+  ctx.strokeStyle='#1F36C7';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(rx(diasPass),ry(gasto));ctx.lineTo(rx(diasTotal),ry(Math.min(projFinal,budget*1.1)));ctx.stroke();
+  ctx.setLineDash([]);
+  // Current day marker
+  ctx.strokeStyle='#dc2626';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  const cx=rx(diasPass);ctx.beginPath();ctx.moveTo(cx,pad.t);ctx.lineTo(cx,H-pad.b);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle='#dc2626';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+  ctx.fillText('hoje',cx,pad.t+10);
+  // Legend
+  ctx.font='10px Space Grotesk';ctx.fillStyle='#9ca3af';ctx.textAlign='left';
+  ctx.fillText('--- planejado',pad.l+4,H-pad.b+16);
+  ctx.fillStyle='#1F36C7';ctx.fillText('— real + projeção',pad.l+90,H-pad.b+16);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+  ctx.textAlign='center';ctx.fillText('Dias do voo →',W/2,H-4);
+}
+
+function calcMulti(){
+  const rows=[];
+  for(let i=0;i<5;i++){
+    const nome=document.getElementById('ml_nome'+i)?.value;
+    const budget=parseFloat(document.getElementById('ml_budget'+i)?.value)||0;
+    const gasto=parseFloat(document.getElementById('ml_gasto'+i)?.value)||0;
+    const dias=parseFloat(document.getElementById('ml_dias'+i)?.value)||0;
+    const pass=parseFloat(document.getElementById('ml_pass'+i)?.value)||0;
+    if(budget&&gasto&&dias&&pass)rows.push({nome,budget,gasto,dias,pass});
+  }
+  if(!rows.length)return;
+  const analyzed=rows.map(r=>{
+    const paceEsp=r.pass/r.dias*100;
+    const paceReal=r.gasto/r.budget*100;
+    const paceRate=paceReal/paceEsp*100;
+    const projecao=r.gasto/r.pass*r.dias;
+    return{...r,paceEsp,paceReal,paceRate,projecao};
+  });
+  document.getElementById('multiOutput').style.display='block';
+  document.getElementById('multiOutput').innerHTML=`<table><thead><tr><th>Line Item</th><th>Budget</th><th>Gasto</th><th>% Esperado</th><th>% Real</th><th>Pace Rate</th><th>Projeção</th><th>Status</th></tr></thead><tbody>
+  ${analyzed.map(r=>{
+    const icon=r.paceRate<70?'🔴':r.paceRate<85?'⚠️':r.paceRate<=115?'✅':r.paceRate<=130?'⚠️':'🔴';
+    const st=r.paceRate<70?'Underpacing ⬇⬇':r.paceRate<85?'Underpacing ⬇':r.paceRate<=115?'On pace':r.paceRate<=130?'Overpacing ⬆':'Overpacing ⬆⬆';
+    return`<tr><td><strong>${r.nome}</strong></td><td>R$ ${fmt(r.budget)}</td><td>R$ ${fmt(Math.round(r.gasto))}</td><td>${r.paceEsp.toFixed(0)}%</td><td>${r.paceReal.toFixed(0)}%</td><td><strong>${r.paceRate.toFixed(0)}%</strong></td><td>R$ ${fmt(Math.round(r.projecao))}</td><td>${icon} ${st}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function loadExPacing(){
+  document.getElementById('budget').value=85000;
+  document.getElementById('gasto').value=28000;
+  document.getElementById('diasTotal').value=30;
+  document.getElementById('diasPassados').value=14;
+  document.getElementById('impEnt').value=1200000;
+  document.getElementById('impTotal').value=3500000;
+  calcPacing();
+}
+function loadExMulti(){
+  const ex=[
+    {n:'Awareness - Display',b:20000,g:9800,d:30,p:14},
+    {n:'Consideração - Video',b:35000,g:21000,d:30,p:14},
+    {n:'Retargeting - Search',b:15000,g:5200,d:30,p:14},
+    {n:'Conversão - Social',b:25000,g:16500,d:30,p:14},
+    {n:'Branding - Native',b:10000,g:2800,d:30,p:14},
+  ];
+  ex.forEach((e,i)=>{
+    document.getElementById('ml_nome'+i).value=e.n;
+    document.getElementById('ml_budget'+i).value=e.b;
+    document.getElementById('ml_gasto'+i).value=e.g;
+    document.getElementById('ml_dias'+i).value=e.d;
+    document.getElementById('ml_pass'+i).value=e.p;
+  });
+}
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+window.addEventListener('resize',()=>{if(document.getElementById('pacingOutput').style.display!=='none')calcPacing();});
+</script>
+</body>
+</html>

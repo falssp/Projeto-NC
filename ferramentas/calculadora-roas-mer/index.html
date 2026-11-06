@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de ROAS e MER — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.verdict{padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600;margin:16px 0}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:1rem;font-weight:700;margin:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+canvas{width:100%;border-radius:8px;display:block;margin-top:12px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-label{font-size:.82rem;width:160px;flex-shrink:0;color:var(--text)}
+.bar-bg{flex:1;background:var(--border);border-radius:4px;height:12px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.bar-val{font-size:.82rem;font-family:'JetBrains Mono',monospace;width:60px;text-align:right;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>📊 ROAS &amp; MER</h1>
+      <div class="subtitle">ROAS por canal, MER blended e break-even por margem</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('roas')">ROAS por canal</button>
+      <button class="tab" onclick="switchTab('mer')">MER blended</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- ROAS -->
+    <div class="tab-content active" id="tab-roas">
+      <div class="info-box">
+        O <strong>ROAS</strong> (Return on Ad Spend) mede o retorno bruto. Para saber se a campanha é lucrativa, use o <strong>ROAS de break-even</strong> baseado na margem do produto.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Receita atribuída (R$)</label>
+          <input type="number" id="receita" placeholder="120000" oninput="calcROAS()">
+        </div>
+        <div class="form-group">
+          <label>Investimento em mídia (R$)</label>
+          <input type="number" id="investROAS" placeholder="28000" oninput="calcROAS()">
+        </div>
+        <div class="form-group">
+          <label>Margem bruta do produto (%)</label>
+          <input type="number" id="margem" placeholder="45" step="1" oninput="calcROAS()">
+        </div>
+        <div class="form-group">
+          <label>Ticket médio (R$)</label>
+          <input type="number" id="ticketROAS" placeholder="350" oninput="calcROAS()">
+        </div>
+        <div class="form-group">
+          <label>Conversões</label>
+          <input type="number" id="convsROAS" placeholder="343" oninput="calcROAS()">
+        </div>
+        <div class="form-group">
+          <label>Canal</label>
+          <select id="canalROAS" onchange="calcROAS()">
+            <option value="search">Search</option>
+            <option value="social">Social Ads</option>
+            <option value="programatico">Programático</option>
+            <option value="email">E-mail</option>
+            <option value="afiliados">Afiliados</option>
+            <option value="marketplace">Marketplace</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExROAS()">Exemplo</button>
+      </div>
+      <div id="roasOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="roasKpis"></div>
+        <div id="roasVerdict" class="verdict"></div>
+        <canvas id="roasChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- MER -->
+    <div class="tab-content" id="tab-mer">
+      <div class="info-box">
+        O <strong>MER</strong> (Marketing Efficiency Ratio) é o ROAS total — receita total / investimento total em marketing, sem atribuição por canal. É a métrica mais honesta da eficiência de marketing.
+      </div>
+      <div id="merRows">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:6px">
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Canal</span>
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Investimento (R$)</span>
+          <span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Receita atribuída (R$)</span>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:16px">
+        <div class="form-group">
+          <label>Receita total da empresa (R$)</label>
+          <input type="number" id="receitaTotal" placeholder="500000" oninput="calcMER()">
+        </div>
+        <div class="form-group">
+          <label>Margem bruta (%)</label>
+          <input type="number" id="margemMER" placeholder="40" oninput="calcMER()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExMER()">Exemplo</button>
+        <button class="btn btn-primary" onclick="calcMER()">Calcular MER</button>
+      </div>
+      <div id="merOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="merKpis"></div>
+        <div id="merVerdict" class="verdict"></div>
+        <div class="section-title">ROAS por canal</div>
+        <div id="merBars"></div>
+      </div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">ROAS de break-even por margem</div>
+      <table>
+        <thead><tr><th>Margem bruta</th><th>ROAS break-even</th><th>ROAS mínimo (lucro)</th></tr></thead>
+        <tbody>
+          <tr><td>20%</td><td>5,0×</td><td>6,0×</td></tr>
+          <tr><td>30%</td><td>3,3×</td><td>4,0×</td></tr>
+          <tr><td>40%</td><td>2,5×</td><td>3,0×</td></tr>
+          <tr><td>50%</td><td>2,0×</td><td>2,5×</td></tr>
+          <tr><td>60%</td><td>1,7×</td><td>2,0×</td></tr>
+          <tr><td>70%</td><td>1,4×</td><td>1,7×</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Benchmarks de MER por setor</div>
+      <table>
+        <thead><tr><th>Setor</th><th>MER bom</th><th>MER ótimo</th><th>Observação</th></tr></thead>
+        <tbody>
+          <tr><td>E-commerce fashion</td><td>3–5×</td><td>&gt; 6×</td><td>Alta competição; sazonalidade forte</td></tr>
+          <tr><td>E-commerce eletrônicos</td><td>4–7×</td><td>&gt; 8×</td><td>Margens menores; alto ticket</td></tr>
+          <tr><td>DTC (direct to consumer)</td><td>3–4×</td><td>&gt; 5×</td><td>LTV é a métrica principal</td></tr>
+          <tr><td>B2B SaaS</td><td>2–4×</td><td>&gt; 5×</td><td>CAC recovery em 12–24 meses</td></tr>
+          <tr><td>Marketplace</td><td>5–9×</td><td>&gt; 10×</td><td>GMV ≠ receita; margens muito baixas</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">ROAS vs MER — diferença</div>
+      <div class="info-box" style="line-height:2">
+        <strong>ROAS:</strong> receita atribuída / gasto com mídia (por canal, sujeito a problemas de atribuição).<br>
+        <strong>MER:</strong> receita total / gasto total em marketing — não depende de atribuição, reflete o real.<br>
+        <strong>Regra prática:</strong> ROAS de campanha ≥ MER × 1.5 indica que o canal contribui acima da média.
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const ROAS_BENCH={
+  search:{good:4,ok:2.5,label:'Search'},
+  social:{good:3,ok:1.8,label:'Social Ads'},
+  programatico:{good:3,ok:1.5,label:'Programático'},
+  email:{good:8,ok:4,label:'E-mail'},
+  afiliados:{good:5,ok:3,label:'Afiliados'},
+  marketplace:{good:6,ok:4,label:'Marketplace'},
+};
+
+// Build MER rows
+(()=>{
+  const container=document.getElementById('merRows');
+  const defaults=['Search','Social Ads','Programático','E-mail','Afiliados','Outros'];
+  defaults.forEach((n,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:10px';
+    row.innerHTML=`<input type="text" id="mer_nome${i}" value="${n}">
+      <input type="number" id="mer_inv${i}" placeholder="R$">
+      <input type="number" id="mer_rec${i}" placeholder="R$">`;
+    container.appendChild(row);
+  });
+})();
+
+function calcROAS(){
+  const rec=parseFloat(document.getElementById('receita').value)||0;
+  const inv=parseFloat(document.getElementById('investROAS').value)||0;
+  const mg=parseFloat(document.getElementById('margem').value)||0;
+  const ticket=parseFloat(document.getElementById('ticketROAS').value)||0;
+  const convs=parseFloat(document.getElementById('convsROAS').value)||0;
+  const canal=document.getElementById('canalROAS').value;
+  if(!rec||!inv){document.getElementById('roasOutput').style.display='none';return;}
+  document.getElementById('roasOutput').style.display='block';
+  const bench=ROAS_BENCH[canal];
+  const roas=rec/inv;
+  const roasBE=mg?100/mg:0;
+  const cpa=convs?inv/convs:0;
+  const lucroMidia=mg?rec*(mg/100)-inv:0;
+  const margemLucro=mg?(rec*(mg/100)-inv)/rec*100:0;
+  document.getElementById('roasKpis').innerHTML=[
+    {l:'ROAS',v:roas.toFixed(2)+'×',s:roas>=bench.good?'✅ acima do bom':roas>=bench.ok?'⚠️ aceitável':'🔴 abaixo do mínimo',hl:true},
+    {l:'ROAS break-even',v:roasBE?roasBE.toFixed(2)+'×':'—',s:mg?'mínimo para cobrir margem':'informe margem'},
+    {l:'Excesso de break-even',v:roasBE?((roas/roasBE-1)*100).toFixed(0)+'%':'—',s:roas>roasBE?'✅ positivo':'🔴 negativo'},
+    {l:'Lucro da campanha',v:lucroMidia?'R$ '+fmt(Math.round(lucroMidia)):'—',s:mg?'receita × margem − investimento':'informe margem'},
+    {l:'Margem após mídia',v:margemLucro?margemLucro.toFixed(1)+'%':'—',s:'sobre a receita'},
+    {l:'CPA',v:cpa?'R$ '+cpa.toFixed(2):'—',s:convs?fmt(convs)+' conversões':'informe conversões'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const vEl=document.getElementById('roasVerdict');
+  if(!roasBE){
+    vEl.className='verdict v-ok';
+    vEl.textContent=`ROAS ${roas.toFixed(2)}× no canal ${bench.label}. Informe a margem bruta para calcular se a campanha é lucrativa.`;
+  } else if(roas>=roasBE&&roas>=bench.good){
+    vEl.className='verdict v-ok';
+    vEl.textContent=`✅ ROAS ${roas.toFixed(2)}× — acima do break-even (${roasBE.toFixed(1)}×) e do benchmark bom (${bench.good}×). Campanha lucrativa com margem de ${margemLucro.toFixed(0)}%.`;
+  } else if(roas>=roasBE){
+    vEl.className='verdict v-warn';
+    vEl.textContent=`⚠️ ROAS ${roas.toFixed(2)}× — acima do break-even (${roasBE.toFixed(1)}×) mas abaixo do ideal (${bench.good}×) para ${bench.label}. Campanha lucrativa mas com potencial de otimização.`;
+  } else {
+    vEl.className='verdict v-bad';
+    vEl.textContent=`🔴 ROAS ${roas.toFixed(2)}× — abaixo do break-even (${roasBE.toFixed(1)}×). Campanha não cobre o custo do produto. Urgência de otimização.`;
+  }
+  drawROASChart(roas,roasBE,bench.ok,bench.good);
+}
+function drawROASChart(roas,be,ok,good){
+  const canvas=document.getElementById('roasChart');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;canvas.height=400;ctx.scale(2,2);
+  const W=canvas.offsetWidth/2,H=200;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  ctx.fillRect(0,0,W,H);
+  const maxX=Math.max(roas,good)*1.3;
+  const pad={l:20,r:20,t:30,b:20};
+  function rx(v){return pad.l+(W-pad.l-pad.r)*(v/maxX);}
+  const zones=[
+    {from:0,to:be||ok,c:'#fee2e2'},
+    {from:be||ok,to:ok,c:'#fef9c3'},
+    {from:ok,to:good,c:'#dcfce7'},
+    {from:good,to:maxX,c:'#d1fae5'},
+  ];
+  zones.forEach(z=>{
+    if(z.from>=maxX||z.to<=0)return;
+    ctx.fillStyle=z.c;
+    ctx.fillRect(rx(Math.max(z.from,0)),pad.t,rx(Math.min(z.to,maxX))-rx(Math.max(z.from,0)),H-pad.t-pad.b);
+  });
+  // Markers
+  [[be,'BE','#dc2626'],[ok,'ok','#ca8a04'],[good,'bom','#16a34a']].forEach(([v,lbl,c])=>{
+    if(!v||v>maxX)return;
+    ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(rx(v),pad.t);ctx.lineTo(rx(v),H-pad.b);ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle=c;ctx.font='bold 10px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(lbl+' '+v.toFixed(1)+'×',rx(v),pad.t+10);
+  });
+  // ROAS atual
+  const color=roas>=(good||ok)?'#16a34a':roas>=(be||ok)?'#ca8a04':'#dc2626';
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(rx(roas),H/2,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';
+  ctx.fillText(roas.toFixed(1),rx(roas),H/2+4);
+  ctx.fillStyle=color;ctx.font='bold 11px Space Grotesk';ctx.textAlign='center';
+  ctx.fillText('ROAS atual: '+roas.toFixed(2)+'×',rx(roas),H-pad.b-6);
+}
+
+function calcMER(){
+  const rows=[];
+  for(let i=0;i<6;i++){
+    const nome=document.getElementById('mer_nome'+i)?.value;
+    const inv=parseFloat(document.getElementById('mer_inv'+i)?.value)||0;
+    const rec=parseFloat(document.getElementById('mer_rec'+i)?.value)||0;
+    if(inv)rows.push({nome,inv,rec});
+  }
+  const recTotal=parseFloat(document.getElementById('receitaTotal').value)||0;
+  const mg=parseFloat(document.getElementById('margemMER').value)||0;
+  if(!rows.length){document.getElementById('merOutput').style.display='none';return;}
+  document.getElementById('merOutput').style.display='block';
+  const totalInv=rows.reduce((s,r)=>s+r.inv,0);
+  const totalRec=rows.reduce((s,r)=>s+r.rec,0);
+  const mer=recTotal?recTotal/totalInv:totalRec/totalInv;
+  const lucro=mg?(recTotal||totalRec)*(mg/100)-totalInv:0;
+  const merBE=mg?100/mg:0;
+  document.getElementById('merKpis').innerHTML=[
+    {l:'MER blended',v:mer.toFixed(2)+'×',s:'receita total / invest. total',hl:true},
+    {l:'Invest. total',v:'R$ '+fmt(Math.round(totalInv)),s:'soma de todos os canais'},
+    {l:'Receita total',v:'R$ '+fmt(Math.round(recTotal||totalRec)),s:recTotal?'declarada':'soma atribuída'},
+    {l:'MER break-even',v:merBE?merBE.toFixed(2)+'×':'—',s:mg?'pela margem bruta':'informe margem'},
+    {l:'Lucro estimado',v:lucro?'R$ '+fmt(Math.round(lucro)):'—',s:mg?'após custo de mídia':'informe margem'},
+    {l:'% invest. / receita',v:(totalInv/(recTotal||totalRec)*100).toFixed(1)+'%',s:'quanto da receita vai para mídia'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const vEl=document.getElementById('merVerdict');
+  if(merBE&&mer>=merBE*1.5){vEl.className='verdict v-ok';vEl.textContent=`✅ MER ${mer.toFixed(2)}× — excelente. ${((mer/merBE-1)*100).toFixed(0)}% acima do break-even. Marketing cobre ${((totalInv/(recTotal||totalRec))*100).toFixed(0)}% da receita.`;}
+  else if(merBE&&mer>=merBE){vEl.className='verdict v-warn';vEl.textContent=`⚠️ MER ${mer.toFixed(2)}× — acima do break-even (${merBE.toFixed(1)}×) mas com margem estreita. Foco em otimizar canais de menor ROAS.`;}
+  else if(merBE){vEl.className='verdict v-bad';vEl.textContent=`🔴 MER ${mer.toFixed(2)}× — abaixo do break-even (${merBE.toFixed(1)}×). Marketing consumindo mais que a margem bruta. Reduzir investimento ou melhorar conversão.`;}
+  else{vEl.className='verdict v-ok';vEl.textContent=`MER blended: ${mer.toFixed(2)}×. Informe a margem bruta para verificar se o marketing é lucrativo.`;}
+  const maxRec=Math.max(...rows.map(r=>r.rec||0),1);
+  document.getElementById('merBars').innerHTML=rows.filter(r=>r.rec>0).map(r=>{
+    const roas=r.rec/r.inv;
+    const col=roas>=4?'#16a34a':roas>=2?'#ca8a04':'#dc2626';
+    return`<div class="bar-row">
+      <div class="bar-label">${r.nome} <span style="font-family:JetBrains Mono;font-size:.75rem;color:${col}">${roas.toFixed(1)}×</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${r.rec/maxRec*100}%;background:${col}"></div></div>
+      <div class="bar-val">R$ ${fmt(Math.round(r.rec))}</div>
+    </div>`;
+  }).join('');
+}
+
+function loadExROAS(){
+  document.getElementById('receita').value=185000;
+  document.getElementById('investROAS').value=38000;
+  document.getElementById('margem').value=42;
+  document.getElementById('ticketROAS').value=420;
+  document.getElementById('convsROAS').value=440;
+  document.getElementById('canalROAS').value='search';
+  calcROAS();
+}
+function loadExMER(){
+  const ex=[
+    {n:'Search',i:28000,r:120000},
+    {n:'Social Ads',i:35000,r:95000},
+    {n:'Programático',i:12000,r:28000},
+    {n:'E-mail',i:3000,r:42000},
+    {n:'Afiliados',i:8000,r:52000},
+    {n:'Outros',i:5000,r:0},
+  ];
+  ex.forEach((e,i)=>{
+    document.getElementById('mer_nome'+i).value=e.n;
+    document.getElementById('mer_inv'+i).value=e.i;
+    document.getElementById('mer_rec'+i).value=e.r;
+  });
+  document.getElementById('receitaTotal').value=420000;
+  document.getElementById('margemMER').value=38;
+  calcMER();
+}
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+window.addEventListener('resize',()=>{if(document.getElementById('roasOutput').style.display!=='none')calcROAS();});
+</script>
+</body>
+</html>
