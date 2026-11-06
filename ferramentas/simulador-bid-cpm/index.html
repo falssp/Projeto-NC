@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Bid / CPM — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:900px;margin:0 auto;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.verdict{padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600;margin:16px 0}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:1rem;font-weight:700;margin:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+canvas{width:100%;border-radius:8px;display:block;margin-top:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>💹 Bid / CPM Simulator</h1>
+      <div class="subtitle">Estratégias de lance, leilão de 2º preço e ponto ótimo de bid</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bid')">Estratégia de Bid</button>
+      <button class="tab" onclick="switchTab('leilao')">Leilão RTB</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <!-- Bid -->
+    <div class="tab-content active" id="tab-bid">
+      <div class="info-box">
+        Calcule o <strong>lance máximo justificável</strong> dado seu CPA meta, CVR e valor por conversão. Veja como diferentes estratégias de bidding afetam o CPM efetivo.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>CPA meta (R$)</label>
+          <input type="number" id="cpaMeta" placeholder="85" oninput="calcBid()">
+        </div>
+        <div class="form-group">
+          <label>CVR esperado (%)</label>
+          <input type="number" id="cvrBid" placeholder="2.5" step="0.1" oninput="calcBid()">
+        </div>
+        <div class="form-group">
+          <label>CTR esperado (%)</label>
+          <input type="number" id="ctrBid" placeholder="0.3" step="0.01" oninput="calcBid()">
+        </div>
+        <div class="form-group">
+          <label>Valor da conversão (R$)</label>
+          <input type="number" id="valConv" placeholder="300" oninput="calcBid()">
+        </div>
+        <div class="form-group">
+          <label>Estratégia atual</label>
+          <select id="estrategia" onchange="calcBid()">
+            <option value="manual">Manual CPC / CPM</option>
+            <option value="tcpa">tCPA (meta CPA)</option>
+            <option value="troas">tROAS (meta ROAS)</option>
+            <option value="maxconv">Maximizar conversões</option>
+            <option value="maxcliques">Maximizar cliques</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>CPM atual pago (R$)</label>
+          <input type="number" id="cpmAtual" placeholder="18" oninput="calcBid()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExBid()">Exemplo</button>
+      </div>
+      <div id="bidOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="bidKpis"></div>
+        <div id="bidVerdict" class="verdict"></div>
+        <canvas id="bidChart" height="220" style="margin-top:16px"></canvas>
+      </div>
+    </div>
+
+    <!-- Leilão RTB -->
+    <div class="tab-content" id="tab-leilao">
+      <div class="info-box">
+        Simule um leilão de <strong>2º preço</strong> (Vickrey) com até 5 lances concorrentes. O vencedor paga o lance do 2º colocado + R$ 0,01.
+      </div>
+      <div id="leilaoRows">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:6px"><span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">DSP / Anunciante</span><span style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Lance CPM (R$)</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExLeilao()">Exemplo</button>
+        <button class="btn btn-primary" onclick="simLeilao()">Simular leilão</button>
+      </div>
+      <div id="leilaoOutput" style="display:none;margin-top:20px"></div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Estratégias de bidding — resumo</div>
+      <table>
+        <thead><tr><th>Estratégia</th><th>Quando usar</th><th>Risco</th></tr></thead>
+        <tbody>
+          <tr><td>Manual CPC</td><td>Controle total; campanhas pequenas</td><td>Subutilização de sinais do algoritmo</td></tr>
+          <tr><td>tCPA</td><td>Volume histórico &gt;30 conv/mês; CPA estável</td><td>Pode subir CPA em aprendizado</td></tr>
+          <tr><td>tROAS</td><td>E-commerce com ticket variado; &gt;50 conv/mês</td><td>Pode reduzir volume se ROAS meta alto</td></tr>
+          <tr><td>Maximizar conversões</td><td>Fase de aprendizado; sem meta específica</td><td>Pode ultrapassar CPA desejado</td></tr>
+          <tr><td>Maximizar cliques</td><td>Awareness; sem dados de conversão</td><td>Cliques de baixa qualidade</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Leilão de 2º preço vs. 1º preço</div>
+      <div class="info-box" style="line-height:1.9">
+        <strong>2º preço (Vickrey):</strong> vencedor paga lance do 2º + ε. Incentiva dar lances reais (verdadeiros).<br>
+        <strong>1º preço (open auction):</strong> vencedor paga o próprio lance. Exige bid shading para não overpagar.<br>
+        <strong>Bid shading:</strong> algoritmo reduz lance em ~10–30% para equilibrar entre 1º e 2º preço em open auctions.<br>
+        <strong>Floor price:</strong> CPM mínimo abaixo do qual o publisher não vende o inventário.
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+// Initialize leilao rows
+(function(){
+  const names=['Google DV360','Meta Ads','Trade Desk','Xandr','Amazon DSP'];
+  const container=document.getElementById('leilaoRows');
+  names.forEach((n,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:10px';
+    row.innerHTML=`<input type="text" id="dsp${i}" value="${n}"><input type="number" id="bid${i}" placeholder="CPM em R$" step="0.01">`;
+    container.appendChild(row);
+  });
+})();
+
+function calcBid(){
+  const cpa=parseFloat(document.getElementById('cpaMeta').value)||0;
+  const cvr=parseFloat(document.getElementById('cvrBid').value)||0;
+  const ctr=parseFloat(document.getElementById('ctrBid').value)||0;
+  const val=parseFloat(document.getElementById('valConv').value)||0;
+  const est=document.getElementById('estrategia').value;
+  const cpmAtual=parseFloat(document.getElementById('cpmAtual').value)||0;
+  if(!cpa||!cvr||!ctr){document.getElementById('bidOutput').style.display='none';return;}
+  document.getElementById('bidOutput').style.display='block';
+  // Max CPC = CPA meta × CVR
+  const maxCPC=cpa*cvr/100;
+  // Max CPM = maxCPC × CTR × 10
+  const maxCPM=maxCPC*ctr/100*1000;
+  // Expected impressions per conversion
+  const impPerConv=1/(cvr/100*ctr/100);
+  // ROAS implied
+  const roas=val&&cpa?val/cpa:0;
+  document.getElementById('bidKpis').innerHTML=[
+    {l:'Lance máximo CPC',v:'R$ '+maxCPC.toFixed(2),s:'CPA meta × CVR',hl:true},
+    {l:'Lance máximo CPM',v:'R$ '+maxCPM.toFixed(2),s:'CPC max × CTR × 1000'},
+    {l:'CPM atual',v:cpmAtual?'R$ '+cpmAtual.toFixed(2):'—',s:cpmAtual?cpmAtual<=maxCPM?'✅ dentro do limite':'🔴 acima do máximo':'não informado'},
+    {l:'Impr. por conversão',v:fmt(Math.round(impPerConv)),s:'ao CVR e CTR esperados'},
+    {l:'ROAS implícito',v:roas?roas.toFixed(2)+'×':'—',s:val?'valor/CPA meta':'informe valor'},
+    {l:'Eficiência do bid',v:cpmAtual&&maxCPM?(cpmAtual/maxCPM*100).toFixed(0)+'%':'—',s:'CPM atual / CPM máximo'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const vEl=document.getElementById('bidVerdict');
+  if(cpmAtual&&cpmAtual>maxCPM*1.2){vEl.className='verdict v-bad';vEl.textContent=`🔴 CPM atual (R$ ${cpmAtual}) ${((cpmAtual/maxCPM-1)*100).toFixed(0)}% acima do lance máximo justificável (R$ ${maxCPM.toFixed(2)}). Reduza o bid ou revise o CPA meta.`;}
+  else if(cpmAtual&&cpmAtual>maxCPM){vEl.className='verdict v-warn';vEl.textContent=`⚠️ CPM atual (R$ ${cpmAtual}) ligeiramente acima do lance máximo (R$ ${maxCPM.toFixed(2)}). Monitore o CPA real.`;}
+  else if(cpmAtual){vEl.className='verdict v-ok';vEl.textContent=`✅ CPM atual (R$ ${cpmAtual}) dentro do limite (R$ ${maxCPM.toFixed(2)}). Estratégia ${est} compatível com o CPA meta de R$ ${cpa}.`;}
+  else{vEl.className='verdict v-ok';vEl.textContent=`Lance máximo calculado: CPC R$ ${maxCPC.toFixed(2)} / CPM R$ ${maxCPM.toFixed(2)} para CPA meta de R$ ${cpa} com ${est}.`;}
+  drawBidChart(maxCPM,cpmAtual,cpa,cvr,ctr);
+}
+
+function drawBidChart(maxCPM,cpmAtual,cpa,cvr,ctr){
+  const canvas=document.getElementById('bidChart');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;canvas.height=440;ctx.scale(2,2);
+  const W=canvas.offsetWidth/2,H=220;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  ctx.fillRect(0,0,W,H);
+  const pad={l:60,r:20,t:20,b:40};
+  // CPA curve: at different CPMs, what CPA do we get?
+  const maxX=maxCPM*2.5;
+  const pts=[];
+  for(let cpm=maxCPM*0.1;cpm<=maxX;cpm+=maxX/50){
+    const cpc=cpm/(ctr/100*1000);
+    const cpaCalc=cpc/(cvr/100);
+    pts.push({x:cpm,y:cpaCalc});
+  }
+  const maxY=cpa*3;
+  function rx(v){return pad.l+(W-pad.l-pad.r)*(v/maxX);}
+  function ry(v){return pad.t+(H-pad.t-pad.b)*(1-Math.min(v,maxY)/maxY);}
+  // grid
+  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+  ctx.lineWidth=0.5;ctx.setLineDash([4,3]);
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(H-pad.t-pad.b)*(i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+    ctx.font='10px Space Grotesk';ctx.textAlign='right';
+    ctx.fillText('R$'+(maxY*(1-i/4)).toFixed(0),pad.l-4,y+4);
+  }
+  ctx.setLineDash([]);
+  // CPA meta line
+  const metaY=ry(cpa);
+  ctx.strokeStyle='#16a34a';ctx.setLineDash([6,4]);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad.l,metaY);ctx.lineTo(W-pad.r,metaY);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle='#16a34a';ctx.font='bold 10px Space Grotesk';ctx.textAlign='left';
+  ctx.fillText('CPA meta R$'+cpa,pad.l+4,metaY-4);
+  // Max CPM line
+  const maxX2=rx(maxCPM);
+  ctx.strokeStyle='#1F36C7';ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(maxX2,pad.t);ctx.lineTo(maxX2,H-pad.b);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle='#1F36C7';ctx.font='10px Space Grotesk';ctx.textAlign='center';
+  ctx.fillText('bid max',maxX2,pad.t+12);
+  // Current CPM dot
+  if(cpmAtual){
+    const cx=rx(cpmAtual);const cy=ry(cpmAtual/(ctr/100*1000)/(cvr/100));
+    ctx.fillStyle='#dc2626';ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#dc2626';ctx.font='bold 10px Space Grotesk';ctx.textAlign='left';
+    ctx.fillText('atual',cx+8,cy+4);
+  }
+  // Curve
+  ctx.strokeStyle='#1F36C7';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.beginPath();pts.forEach((p,i)=>{const x=rx(p.x);const y=ry(p.y);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+  ctx.font='10px Space Grotesk';ctx.textAlign='center';
+  ctx.fillText('CPM bid (R$) →',W/2,H-4);
+  ctx.fillText('R$ 0',(pad.l),H-pad.b+16);
+  ctx.fillText('R$ '+maxX.toFixed(0),(W-pad.r),H-pad.b+16);
+}
+
+function simLeilao(){
+  const bids=Array.from({length:5},(_,i)=>({
+    name:document.getElementById('dsp'+i)?.value||'DSP '+(i+1),
+    bid:parseFloat(document.getElementById('bid'+i)?.value)||0,
+  })).filter(b=>b.bid>0).sort((a,b)=>b.bid-a.bid);
+  if(bids.length<2){return;}
+  document.getElementById('leilaoOutput').style.display='block';
+  const winner=bids[0];const second=bids[1];
+  const clearingPrice=second.bid+0.01;
+  const economy=winner.bid-clearingPrice;
+  document.getElementById('leilaoOutput').innerHTML=`
+    <div style="background:var(--light);border-radius:8px;padding:16px;margin-bottom:16px">
+      <div style="font-size:.88rem;font-weight:600;color:var(--azul);margin-bottom:8px">🏆 Resultado do leilão (2º preço)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div class="kpi"><div class="kpi-label">Vencedor</div><div class="kpi-value" style="font-size:1rem">${winner.name}</div><div class="kpi-sub">lance R$ ${winner.bid.toFixed(2)}</div></div>
+        <div class="kpi highlight"><div class="kpi-label">Preço pago (CPM)</div><div class="kpi-value">R$ ${clearingPrice.toFixed(2)}</div><div class="kpi-sub">lance do 2º + R$ 0,01</div></div>
+        <div class="kpi"><div class="kpi-label">Economia do vencedor</div><div class="kpi-value" style="color:var(--green)">R$ ${economy.toFixed(2)}</div><div class="kpi-sub">por 1K impressões</div></div>
+      </div>
+    </div>
+    <table><thead><tr><th>Posição</th><th>DSP</th><th>Lance CPM</th><th>Status</th></tr></thead><tbody>
+    ${bids.map((b,i)=>`<tr ${i===0?'style="background:var(--light)"':''}><td><strong>#${i+1}</strong></td><td>${b.name}</td><td>R$ ${b.bid.toFixed(2)}</td><td>${i===0?'✅ Vencedor — paga R$ '+clearingPrice.toFixed(2):i===1?'2º — define preço':'❌ Perdeu'}</td></tr>`).join('')}
+    </tbody></table>`;
+}
+
+function loadExBid(){
+  document.getElementById('cpaMeta').value=65;
+  document.getElementById('cvrBid').value=3.2;
+  document.getElementById('ctrBid').value=0.35;
+  document.getElementById('valConv').value=280;
+  document.getElementById('estrategia').value='tcpa';
+  document.getElementById('cpmAtual').value=22;
+  calcBid();
+}
+function loadExLeilao(){
+  [[28.50],[22.00],[19.80],[17.50],[12.00]].forEach(([v],i)=>{
+    if(document.getElementById('bid'+i))document.getElementById('bid'+i).value=v;
+  });
+}
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+window.addEventListener('resize',()=>{if(document.getElementById('bidOutput').style.display!=='none')calcBid();});
+</script>
+</body>
+</html>
