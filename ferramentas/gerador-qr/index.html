@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Gerador de QR Code | NC Tool</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSXX5kgkDJjpeZZSi/oLa9Dw4TSAI7PdU3hg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul:   #1F36C7;
+      --escuro: #1a237e;
+      --light:  #e8ecff;
+      --bg:     #f0f2ff;
+      --surface:#ffffff;
+      --border: #d6dbf2;
+      --muted:  #9fa8da;
+      --text:   #1a237e;
+      --body:   #3d4a8a;
+      --ok:     #059669;
+      --danger: #dc2626;
+    }
+    [data-theme="dark"] {
+      --bg:#0f1225; --surface:#1a1f3a; --border:#2a3060;
+      --muted:#4a5494; --text:#c5ccf5; --body:#8891c8; --light:#1f2650;
+    }
+
+    body { font-family:'Space Grotesk',system-ui,sans-serif; background:var(--bg); color:var(--text); padding:2rem; }
+
+    .nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:36px; }
+    .nav-left { display:flex; align-items:center; gap:8px; }
+    .back { font-size:.78rem; font-weight:600; color:var(--muted); text-decoration:none; }
+    .back:hover { color:var(--azul); }
+    .sep { color:var(--border); }
+    .crumb { font-size:.78rem; color:var(--body); }
+    .theme-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 10px; font-size:.72rem; cursor:pointer; font-family:inherit; }
+    .theme-btn:hover { border-color:var(--azul); color:var(--azul); }
+
+    header { margin-bottom:32px; }
+    .kicker { font-size:.72rem; font-weight:600; letter-spacing:.1em; color:var(--muted); margin-bottom:8px; text-transform:uppercase; }
+    h1 { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; color:var(--escuro); margin-bottom:8px; }
+    .subtitle { font-size:.85rem; color:var(--body); line-height:1.6; }
+
+    .layout { display:grid; grid-template-columns:400px 1fr; gap:24px; align-items:start; }
+    @media (max-width:860px) { .layout { grid-template-columns:1fr; } }
+
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; }
+    .panel-title { font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:.72rem; font-weight:600; color:var(--body); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+    .field textarea, .field input[type=text], .field input[type=url] {
+      width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:9px;
+      background:var(--bg); color:var(--text); font-family:'Space Grotesk',sans-serif;
+      font-size:.85rem; outline:none; transition:border-color .15s; resize:vertical;
+    }
+    .field textarea { min-height:80px; }
+    .field textarea:focus, .field input:focus { border-color:var(--azul); }
+    .field input::placeholder, .field textarea::placeholder { color:var(--muted); }
+
+    .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    .seg-group { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+    .seg-btn { padding:5px 11px; border:1px solid var(--border); border-radius:7px; font-size:.72rem; font-weight:600; cursor:pointer; background:none; color:var(--body); font-family:inherit; transition:all .15s; }
+    .seg-btn.active { background:var(--azul); border-color:var(--azul); color:#fff; }
+
+    .color-row { display:flex; align-items:center; gap:10px; }
+    .color-row input[type=color] { width:36px; height:36px; border:1px solid var(--border); border-radius:8px; padding:2px; cursor:pointer; background:var(--surface); }
+    .color-presets { display:flex; gap:6px; flex-wrap:wrap; }
+    .color-dot { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:border-color .15s; }
+    .color-dot:hover, .color-dot.active { border-color:var(--azul); }
+
+    .btn-gen { width:100%; padding:11px; background:var(--azul); color:#fff; border:none; border-radius:10px; font-family:inherit; font-size:.85rem; font-weight:700; cursor:pointer; transition:opacity .15s; }
+    .btn-gen:hover { opacity:.88; }
+    .btn-clear { width:100%; padding:8px; background:none; color:var(--muted); border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:.78rem; cursor:pointer; margin-top:8px; transition:all .15s; }
+    .btn-clear:hover { border-color:var(--danger); color:var(--danger); }
+
+    /* Preview */
+    .preview-wrap { text-align:center; padding:32px 24px; }
+    #qr-container { display:inline-block; padding:16px; background:#fff; border-radius:12px; border:1px solid var(--border); margin-bottom:20px; min-height:120px; }
+    #qr-container canvas, #qr-container img { display:block; }
+
+    .empty-state { color:var(--muted); font-size:.82rem; padding:40px 0; }
+
+    .btn-dl { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; background:var(--azul); color:#fff; border:none; border-radius:10px; font-family:inherit; font-size:.82rem; font-weight:700; cursor:pointer; text-decoration:none; transition:opacity .15s; margin-right:8px; }
+    .btn-dl:hover { opacity:.88; }
+    .btn-copy { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; background:none; color:var(--azul); border:1.5px solid var(--azul); border-radius:10px; font-family:inherit; font-size:.82rem; font-weight:700; cursor:pointer; transition:all .15s; }
+    .btn-copy:hover { background:var(--light); }
+
+    .meta-row { font-size:.72rem; color:var(--muted); margin-top:12px; }
+    .meta-row span { margin:0 8px 0 0; }
+
+    /* sizes */
+    .size-label { font-size:.72rem; color:var(--body); margin-bottom:4px; display:flex; justify-content:space-between; }
+    .size-label span { font-weight:600; color:var(--azul); }
+
+    footer { margin-top:48px; font-size:.72rem; color:var(--muted); text-align:center; }
+
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--escuro); color:#fff; padding:8px 18px; border-radius:20px; font-size:.75rem; font-weight:600; opacity:0; transition:opacity .2s; pointer-events:none; z-index:999; }
+    .toast.show { opacity:1; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="nav">
+    <div class="nav-left">
+      <a class="back" href="/Projeto-NC/ferramentas/">&#8592; Ferramentas</a>
+      <span class="sep">/</span>
+      <span class="crumb">Gerador de QR Code</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+  </nav>
+
+  <header>
+    <p class="kicker">NC Tool &nbsp;·&nbsp; AdOps</p>
+    <h1>Gerador de QR Code</h1>
+    <p class="subtitle">Gera QR Code de qualquer URL ou texto — 100% offline, download PNG. Nenhum dado sai do browser.</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- INPUTS -->
+    <div>
+      <div class="panel">
+        <p class="panel-title">Configuração</p>
+
+        <div class="field">
+          <label>URL ou Texto</label>
+          <textarea id="qr-text" placeholder="https://exemplo.com/campanha?utm_source=ooh" oninput="autoGen()"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Tamanho (px)</label>
+          <div class="size-label"><span id="size-val">300</span></div>
+          <input type="range" id="qr-size" min="128" max="600" step="8" value="300" oninput="document.getElementById('size-val').textContent=this.value; autoGen()" style="width:100%;accent-color:var(--azul);">
+        </div>
+
+        <div class="field">
+          <label>Nível de Correção de Erro</label>
+          <div class="seg-group">
+            <button class="seg-btn active" data-ec="L" onclick="setEC(this,'L')">L — 7%</button>
+            <button class="seg-btn" data-ec="M" onclick="setEC(this,'M')">M — 15%</button>
+            <button class="seg-btn" data-ec="Q" onclick="setEC(this,'Q')">Q — 25%</button>
+            <button class="seg-btn" data-ec="H" onclick="setEC(this,'H')">H — 30%</button>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Cor do QR</label>
+            <div class="color-row">
+              <input type="color" id="col-dark" value="#1a237e" oninput="autoGen()">
+              <div class="color-presets" id="presets-dark">
+                <div class="color-dot active" style="background:#1a237e" data-col="#1a237e" onclick="setDark(this,'#1a237e')" title="Azul NC"></div>
+                <div class="color-dot" style="background:#000000" data-col="#000000" onclick="setDark(this,'#000000')" title="Preto"></div>
+                <div class="color-dot" style="background:#1F36C7" data-col="#1F36C7" onclick="setDark(this,'#1F36C7')" title="Azul vivo"></div>
+                <div class="color-dot" style="background:#059669" data-col="#059669" onclick="setDark(this,'#059669')" title="Verde"></div>
+                <div class="color-dot" style="background:#7c3aed" data-col="#7c3aed" onclick="setDark(this,'#7c3aed')" title="Roxo"></div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Cor do Fundo</label>
+            <div class="color-row">
+              <input type="color" id="col-light" value="#ffffff" oninput="autoGen()">
+              <div class="color-presets" id="presets-light">
+                <div class="color-dot active" style="background:#ffffff;border:1px solid #d6dbf2" data-col="#ffffff" onclick="setLight(this,'#ffffff')" title="Branco"></div>
+                <div class="color-dot" style="background:#f0f2ff" data-col="#f0f2ff" onclick="setLight(this,'#f0f2ff')" title="Azul claro"></div>
+                <div class="color-dot" style="background:#e8ecff" data-col="#e8ecff" onclick="setLight(this,'#e8ecff')" title="Light"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-clear" onclick="clearAll()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="panel preview-wrap">
+      <p class="panel-title">Preview</p>
+      <div id="qr-container">
+        <p class="empty-state">Digite uma URL para gerar o QR Code</p>
+      </div>
+      <div id="qr-actions" style="display:none;">
+        <button class="btn-dl" onclick="downloadPNG()">⬇ Download PNG</button>
+        <button class="btn-copy" onclick="copyPNG()">📋 Copiar imagem</button>
+        <div class="meta-row" id="qr-meta"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>NC Tool &nbsp;·&nbsp; Unilever BR × Grasp &nbsp;·&nbsp; Gerador de QR Code · Offline</footer>
+</div>
+
+<div class="toast" id="toast">Copiado!</div>
+
+<script>
+  let currentEC = 'L';
+  let qrInstance = null;
+  let genTimeout = null;
+
+  function sanitizeText(val) {
+    // Permite apenas texto e URLs — bloqueia injeção HTML
+    return String(val).slice(0, 2048);
+  }
+
+  function validateURL(val) {
+    const v = val.trim();
+    if (!v) return false;
+    // bloqueia javascript: e data: (exceto imagens)
+    if (/^javascript:/i.test(v) || /^vbscript:/i.test(v)) return false;
+    return true;
+  }
+
+  function autoGen() {
+    clearTimeout(genTimeout);
+    genTimeout = setTimeout(generate, 200);
+  }
+
+  function generate() {
+    const raw = document.getElementById('qr-text').value;
+    const text = sanitizeText(raw);
+    if (!text.trim() || !validateURL(text)) {
+      document.getElementById('qr-container').innerHTML = '<p class="empty-state">Digite uma URL válida para gerar o QR Code</p>';
+      document.getElementById('qr-actions').style.display = 'none';
+      return;
+    }
+
+    const size    = parseInt(document.getElementById('qr-size').value, 10);
+    const colDark = document.getElementById('col-dark').value;
+    const colLight= document.getElementById('col-light').value;
+
+    const container = document.getElementById('qr-container');
+    container.innerHTML = '';
+
+    try {
+      qrInstance = new QRCode(container, {
+        text:            text,
+        width:           size,
+        height:          size,
+        colorDark:       colDark,
+        colorLight:      colLight,
+        correctLevel:    QRCode.CorrectLevel[currentEC],
+      });
+
+      document.getElementById('qr-actions').style.display = 'block';
+      const chars = text.length;
+      document.getElementById('qr-meta').innerHTML =
+        `<span>${size}×${size}px</span><span>EC: ${currentEC}</span><span>${chars} caracteres</span>`;
+    } catch(e) {
+      container.innerHTML = `<p class="empty-state" style="color:var(--danger)">Erro ao gerar QR. Reduza o texto ou aumente o nível de correção.</p>`;
+      document.getElementById('qr-actions').style.display = 'none';
+    }
+  }
+
+  function getCanvas() {
+    return document.querySelector('#qr-container canvas');
+  }
+
+  function downloadPNG() {
+    const canvas = getCanvas();
+    if (!canvas) return;
+    const size = document.getElementById('qr-size').value;
+    const a = document.createElement('a');
+    a.download = `qrcode_${size}px.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }
+
+  async function copyPNG() {
+    const canvas = getCanvas();
+    if (!canvas) return;
+    try {
+      canvas.toBlob(async blob => {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        showToast('Imagem copiada!');
+      });
+    } catch(e) {
+      showToast('Use Download PNG — seu browser não suporta copiar imagem.');
+    }
+  }
+
+  function setEC(btn, ec) {
+    currentEC = ec;
+    document.querySelectorAll('[data-ec]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    autoGen();
+  }
+
+  function setDark(el, col) {
+    document.getElementById('col-dark').value = col;
+    document.querySelectorAll('#presets-dark .color-dot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    autoGen();
+  }
+
+  function setLight(el, col) {
+    document.getElementById('col-light').value = col;
+    document.querySelectorAll('#presets-light .color-dot').forEach(d => d.classList.remove('active'));
+    el.classList.add('active');
+    autoGen();
+  }
+
+  function clearAll() {
+    document.getElementById('qr-text').value = '';
+    document.getElementById('qr-container').innerHTML = '<p class="empty-state">Digite uma URL para gerar o QR Code</p>';
+    document.getElementById('qr-actions').style.display = 'none';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const dark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', dark ? '' : 'dark');
+    document.querySelector('.theme-btn').textContent = dark ? '🌙 Dark' : '☀️ Light';
+    try { localStorage.setItem('nc-theme', dark ? '' : 'dark'); } catch(e){}
+  }
+
+  try {
+    if (localStorage.getItem('nc-theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme','dark');
+      document.querySelector('.theme-btn').textContent = '☀️ Light';
+    }
+  } catch(e){}
+</script>
+</body>
+</html>
