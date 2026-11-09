@@ -230,6 +230,45 @@
     .card-item .card-body { display:flex; flex-direction:column; gap:4px; flex:1; }
     .card-item h2 { font-size:.88rem; margin:0; font-weight:700; color:var(--escuro); line-height:1.3; }
 
+    /* ── Busca ── */
+    .search-wrap {
+      margin-bottom: 32px;
+      position: relative;
+    }
+    .search-wrap::before {
+      content: '🔍';
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: .85rem;
+      pointer-events: none;
+    }
+    #search {
+      width: 100%;
+      padding: 11px 14px 11px 40px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: .88rem;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    #search:focus {
+      border-color: var(--azul);
+      box-shadow: 0 0 0 3px rgba(31,54,199,.1);
+    }
+    #search::placeholder { color: var(--muted); }
+    .search-count {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 7px;
+      min-height: 1em;
+    }
+    .section-block.hidden { display: none; }
+
     @media (min-width: 1800px) {
       body { padding: 40px 48px 80px; }
     }
@@ -254,7 +293,13 @@
     <p class="subtitle">Ferramentas standalone de apoio a operações de mídia — naming, validação, IDs, planilhas e referências. Rodam direto no browser, sem instalação.</p>
   </header>
 
+  <div class="search-wrap">
+    <input type="search" id="search" placeholder="Buscar ferramenta…" autocomplete="off" oninput="filterCards(this.value)">
+    <p class="search-count" id="search-count"></p>
+  </div>
+
   <!-- NAMING & TAXONOMIA -->
+  <div class="section-block">
   <p class="section-title">Naming &amp; Taxonomia</p>
   <div class="grid">
 
@@ -319,8 +364,10 @@
     </div>
 
   </div>
+  </div><!-- /section-block -->
 
   <!-- IDs & CRUZAMENTO -->
+  <div class="section-block">
   <p class="section-title">IDs &amp; Cruzamento</p>
   <div class="grid">
 
@@ -361,8 +408,10 @@
     </div>
 
   </div>
+  </div><!-- /section-block -->
 
   <!-- ADP & PLANILHAS -->
+  <div class="section-block">
   <p class="section-title">ADP &amp; Planilhas</p>
   <div class="grid">
 
@@ -451,8 +500,10 @@
     </div>
 
   </div>
+  </div><!-- /section-block -->
 
   <!-- INFLUENCERS -->
+  <div class="section-block">
   <p class="section-title">Influencers</p>
   <div class="grid">
 
@@ -517,8 +568,10 @@
     </div>
 
   </div>
+  </div><!-- /section-block -->
 
   <!-- REFERÊNCIA & OUTROS -->
+  <div class="section-block">
   <p class="section-title">Referência &amp; Outros</p>
   <div class="grid">
 
@@ -595,7 +648,9 @@
     </div>
 
   </div>
+  </div><!-- /section-block -->
 
+  <div class="section-block">
   <p class="section-title">AdOps Guide</p>
   <div class="grid">
 
@@ -1949,10 +2004,70 @@
       <a class="btn" href="calculadora-cross-device/" target="_blank">Abrir</a>
     </div>
 
+    <div class="card cat-adops">
+      <div class="card-head">
+        <div class="icon">🧮</div>
+        <div>
+          <div class="card-title">Calculadora de Métricas</div>
+          <div class="card-type">Offline</div>
+        </div>
+      </div>
+      <p class="card-desc">CPM, CPC, CPA, CTR, VTR e CPV — cálculo direto e reverso. Clique nos resultados para copiar. Suporte R$, US$ e €.</p>
+      <a class="btn" href="calculadora-metricas/" target="_blank">Abrir</a>
+    </div>
+
   </div>
+  </div><!-- /section-block -->
 
   <footer>NC Tool &copy; 2026</footer>
 
 </div>
+
+<script>
+function filterCards(q) {
+  const term = q.trim().toLowerCase();
+  const sections = document.querySelectorAll('.section-block');
+  let total = 0, visible = 0;
+
+  sections.forEach(sec => {
+    const cards = sec.querySelectorAll('.card');
+    let secVisible = 0;
+    cards.forEach(card => {
+      total++;
+      const title = (card.querySelector('.card-title')?.textContent || '').toLowerCase();
+      const desc  = (card.querySelector('.card-desc')?.textContent  || '').toLowerCase();
+      const type  = (card.querySelector('.card-type')?.textContent  || '').toLowerCase();
+      const match = !term || title.includes(term) || desc.includes(term) || type.includes(term);
+      card.style.display = match ? '' : 'none';
+      if (match) secVisible++;
+    });
+    sec.classList.toggle('hidden', secVisible === 0);
+    visible += secVisible;
+  });
+
+  const countEl = document.getElementById('search-count');
+  if (term) {
+    countEl.textContent = visible === 0
+      ? 'Nenhuma ferramenta encontrada.'
+      : `${visible} de ${total} ferramenta${total !== 1 ? 's' : ''} encontrada${visible !== 1 ? 's' : ''}.`;
+  } else {
+    countEl.textContent = '';
+    sections.forEach(sec => {
+      sec.querySelectorAll('.card').forEach(c => c.style.display = '');
+      sec.classList.remove('hidden');
+    });
+  }
+}
+
+// foco automático: tecla / abre a busca, Escape limpa
+document.addEventListener('keydown', e => {
+  const s = document.getElementById('search');
+  if (e.key === '/' && document.activeElement !== s) {
+    e.preventDefault();
+    s.focus();
+  }
+  if (e.key === 'Escape') { s.value = ''; filterCards(''); s.blur(); }
+});
+</script>
 </body>
 </html>
