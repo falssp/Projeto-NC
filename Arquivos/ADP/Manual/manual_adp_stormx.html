@@ -42,56 +42,68 @@
     min-height: 100vh;
   }
 
-  .wrapper {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    min-height: 100vh;
+  /* TOPBAR */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    height: 52px; display: flex; align-items: center; padding: 0 24px; gap: 16px;
   }
+  .topbar-toggle {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    padding: 6px; border-radius: var(--radius-sm); display: flex; align-items: center;
+    transition: background .15s, color .15s;
+  }
+  .topbar-toggle:hover { background: var(--surface2); color: var(--text); }
+  .topbar-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .topbar-ver { font-size: 12px; color: var(--muted); margin-left: 4px; }
 
-  /* SIDEBAR */
-  .sidebar {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 40px 0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
+  /* SIDEBAR OVERLAY */
+  .sidebar-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 199;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
   }
+  .sidebar-overlay.open { opacity: 1; pointer-events: all; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 280px;
+    background: var(--surface); border-right: 1px solid var(--border);
+    padding: 24px 0; overflow-y: auto; z-index: 200;
+    transform: translateX(-100%); transition: transform .22s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.open { transform: translateX(0); }
+
   .sidebar-logo {
-    padding: 0 28px 28px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
+    padding: 0 24px 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+    display: flex; align-items: flex-start; justify-content: space-between;
   }
   .sidebar-logo .tag {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    color: var(--accent2);
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 4px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    color: var(--accent2); text-transform: uppercase; display: block; margin-bottom: 4px;
   }
-  .sidebar-logo h2 { font-size: 17px; font-weight: 700; color: var(--text); }
+  .sidebar-logo h2 { font-size: 16px; font-weight: 700; color: var(--text); }
   .sidebar-logo .ver { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .sidebar-close {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    padding: 4px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+  }
+  .sidebar-close:hover { color: var(--text); }
 
-  .nav-group { padding: 0 16px 20px; }
+  .nav-group { padding: 0 12px 16px; }
   .nav-group-label {
     font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--muted);
-    padding: 0 12px; margin-bottom: 6px;
+    padding: 0 8px; margin-bottom: 4px;
   }
   .nav-link {
-    display: block; padding: 7px 12px; border-radius: var(--radius-sm);
+    display: block; padding: 7px 8px; border-radius: var(--radius-sm);
     color: var(--muted); text-decoration: none; font-size: 14px;
     transition: background .15s, color .15s;
   }
-  .nav-link:hover, .nav-link.active {
-    background: var(--surface2); color: var(--text);
-  }
+  .nav-link:hover, .nav-link.active { background: var(--surface2); color: var(--text); }
 
-  /* MAIN */
-  .main { padding: 60px 72px; max-width: 920px; }
+  /* MAIN — tela cheia */
+  .wrapper { display: block; padding-top: 52px; }
+  .main { padding: 52px 10vw; max-width: 1100px; margin: 0 auto; }
 
   .hero {
     background: var(--surface);
@@ -214,37 +226,57 @@
 </head>
 <body>
 
-<div class="wrapper">
+<!-- TOPBAR -->
+<header class="topbar">
+  <button class="topbar-toggle" id="sidebar-btn" aria-label="Abrir menu">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+      <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+    </svg>
+  </button>
+  <span class="topbar-title">ADP StormX</span>
+  <span class="topbar-ver" id="adp-ver-topbar">—</span>
+</header>
 
-  <!-- SIDEBAR -->
-  <nav class="sidebar">
-    <div class="sidebar-logo">
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div>
       <span class="tag">Manual do Usuário</span>
       <h2>ADP StormX</h2>
       <div class="ver" id="adp-ver-sidebar">—</div>
     </div>
+    <button class="sidebar-close" id="sidebar-close" aria-label="Fechar menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+        <line x1="4" y1="4" x2="14" y2="14"/><line x1="14" y1="4" x2="4" y2="14"/>
+      </svg>
+    </button>
+  </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Visão Geral</div>
-      <a href="#intro" class="nav-link">Introdução</a>
-      <a href="#legenda" class="nav-link">Legenda de Cores</a>
-      <a href="#fluxo" class="nav-link">Fluxo de Preenchimento</a>
-    </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Visão Geral</div>
+    <a href="#intro" class="nav-link">Introdução</a>
+    <a href="#legenda" class="nav-link">Legenda de Cores</a>
+    <a href="#fluxo" class="nav-link">Fluxo de Preenchimento</a>
+  </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Campos</div>
-      <a href="#galileo" class="nav-link">Campos Galileo (Azul)</a>
-      <a href="#freetext" class="nav-link">Campos Freetext (Roxo)</a>
-      <a href="#rm-plat" class="nav-link">RM / Plataforma (Verde)</a>
-      <a href="#adserver" class="nav-link">AdServer (Demais)</a>
-    </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Campos</div>
+    <a href="#galileo" class="nav-link">Campos Galileo (Azul)</a>
+    <a href="#freetext" class="nav-link">Campos Freetext (Roxo)</a>
+    <a href="#rm-plat" class="nav-link">RM / Plataforma (Verde)</a>
+    <a href="#adserver" class="nav-link">AdServer (Demais)</a>
+  </div>
 
-    <div class="nav-group">
-      <div class="nav-group-label">Referência</div>
-      <a href="#regras" class="nav-link">O que Fazer / Não Fazer</a>
-    </div>
-  </nav>
+  <div class="nav-group">
+    <div class="nav-group-label">Referência</div>
+    <a href="#regras" class="nav-link">O que Fazer / Não Fazer</a>
+  </div>
+</nav>
 
+<div class="wrapper">
   <!-- MAIN CONTENT -->
   <main class="main">
 
@@ -478,9 +510,36 @@
     </div>
 
   </main>
-</div>
+</div><!-- .wrapper -->
 
 <script>
+  // Sidebar toggle
+  (function() {
+    const btn      = document.getElementById('sidebar-btn');
+    const closeBtn = document.getElementById('sidebar-close');
+    const overlay  = document.getElementById('sidebar-overlay');
+    const sidebar  = document.getElementById('sidebar');
+    const topVer   = document.getElementById('adp-ver-topbar');
+
+    function open()  { sidebar.classList.add('open'); overlay.classList.add('open'); }
+    function close() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+
+    btn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', close);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+    // Fecha sidebar ao clicar num link de âncora
+    sidebar.querySelectorAll('.nav-link').forEach(l => l.addEventListener('click', close));
+
+    // Espelha versão na topbar
+    const sideVer = document.getElementById('adp-ver-sidebar');
+    if (sideVer && topVer) {
+      new MutationObserver(() => { topVer.textContent = sideVer.textContent; })
+        .observe(sideVer, { childList: true, characterData: true, subtree: true });
+    }
+  })();
+
   // Carrega latest.json da pasta pai (ADP/) e ativa o botão de download
   (function () {
     const btn     = document.getElementById('adp-download-btn');
