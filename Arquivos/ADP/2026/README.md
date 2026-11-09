@@ -1,8 +1,9 @@
-# Arquivos ADP 2026 · Unilever BR
+# ADP 2026
 
-Arquivos ADP (Ad Platform) do ano de 2026.
-Versões do String Tool Merge geradas ao longo do ano.
+Versões do String Tool Merge geradas em 2026.
 
-## Arquivos
+| Intervalo | Versões |
+|-----------|---------|
+| v1.0 – v5.5 | 44 versões |
 
-Versões `UNCC_Digital_Platform_String_Tool_Merge_<versão>.xlsx` — numeradas sequencialmente.
+Última versão do ano: `UNCC_Digital_Platform_String_Tool_Merge_5_5.xlsx`

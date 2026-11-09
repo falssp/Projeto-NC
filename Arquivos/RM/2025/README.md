@@ -1,8 +1,5 @@
-# Arquivos RM 2025 · Unilever BR
+# RM 2025
 
-Arquivos RM (Rate Media) do ano de 2025.
-Planilhas de planejamento de mídia StormX.
+Histórico de versões da planilha RM referente ao ano de 2025.
 
-## Arquivos
-
-Versões `UNCC_Digital_Platform_String_Tool_Merge_<versão>.xlsx` — numeradas sequencialmente.
+> Arquivos desta pasta não foram versionados no repositório — mantidos como referência de período.

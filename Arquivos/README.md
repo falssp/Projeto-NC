@@ -1,23 +1,24 @@
-# Arquivos | Unilever BR
+# Arquivos · Unilever BR
 
-Arquivos de midia organizados por ano e tipo.
+Repositório de arquivos de mídia e referência para operações StormX × Unilever BR.
 
 ## Estrutura
 
 ```
 Arquivos/
-  2025/
-    ADP/  <- ADPs v13.7 a v15.8
-  2026/
-    ADP/  <- ADPs v1.0 a v4.6
-    RM/   <- RMs v1 a v5.8 + Manual
-  Guia_de_Preenchimento_e_Padronizacao_Base_de_Midia_2026.xlsx
-  manual_rm_stormx_2026.html
-  Unilever_Stormx_Documentacao.msg
-  Re_Unilever_Stormx_Documentacao.msg
+  ADP/        → Ferramenta ADP (String Tool Merge) — download sempre atualizado
+  RM/         → Planilha RM StormX + Manual de uso
+  Geral/      → Referências transversais, cronogramas e documentação de plataforma
 ```
+
+## Links rápidos
+
+| Recurso | URL |
+|---------|-----|
+| Download ADP | https://falssp.github.io/Projeto-NC/Arquivos/ADP/ |
+| Download RM | https://falssp.github.io/Projeto-NC/Arquivos/RM/ |
+| Manual RM | https://falssp.github.io/Projeto-NC/Arquivos/RM/Manual/ |
 
 ## Nota
 
-Arquivo RM_STORMX_2026_v5.2.xlsx (79MB) excede o limite do GitHub.
-Mantido apenas no OneDrive como backup.
+`RM_STORMX_2026_v5.2.xlsx` (79 MB) excede o limite do GitHub — mantido apenas no OneDrive.

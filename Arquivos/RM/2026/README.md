@@ -1,14 +1,11 @@
-# Arquivos RM 2026 · Unilever BR
+# RM 2026
 
-Arquivos RM (Rate Media) do ano de 2026.
-Planilhas de planejamento de mídia StormX.
+Versões da planilha RM StormX geradas em 2026.
 
-## Arquivos
+| Intervalo | Versões |
+|-----------|---------|
+| v1 – v6.1 | 19 versões |
 
-| Arquivo | Descrição |
-|---------|-----------|
-| `RM_STORMX_2026_v*.xlsx` | Versões do RM 2026 — de v1 a v6.0 |
-| `RM - Plano - Camphouse.xlsx` | Plano de mídia integrado com Camphouse |
-| `stormx-- rm (3).xlsx` | Versão auxiliar |
-| `UNCC_Digital_Platform_String_Tool_Merge_*.xlsx` | Versões do String Tool Merge 2026 |
-| `Manual/` | Manual do RM 2026 |
+Última versão do ano: `RM_STORMX_2026_v6.1.xlsx`
+
+> `RM_STORMX_2026_v5.2.xlsx` (79 MB) excede o limite do GitHub — mantido apenas no OneDrive.
