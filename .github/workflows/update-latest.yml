@@ -1,0 +1,91 @@
+name: Atualiza latest.json (RM e ADP)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Arquivos/**/RM/*.xlsx'
+      - 'Arquivos/**/ADP/*.xlsx'
+
+permissions:
+  contents: write
+
+jobs:
+  update-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Atualiza latest.json para cada pasta RM e ADP
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, re
+          from pathlib import Path
+
+          today = __import__('datetime').date.today().isoformat()
+          changed = False
+
+          def version_key_rm(name):
+              # RM_STORMX_2026_v6.1.xlsx  →  (6, 1)
+              m = re.search(r'_v(\d+)[._](\d+)', name)
+              return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+          def version_key_adp(name):
+              # UNCC_Digital_Platform_String_Tool_Merge_5_5.xlsx  →  (5, 5)
+              m = re.search(r'_(\d+)_(\d+)\.xlsx$', name)
+              return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+          for xlsx_dir in Path('Arquivos').rglob('*.xlsx'):
+              pass  # só para garantir que o glob funciona
+
+          # Processa todas as pastas que contêm xlsx
+          dirs_seen = set()
+          for xlsx_file in Path('Arquivos').rglob('*.xlsx'):
+              parent = xlsx_file.parent
+              if parent in dirs_seen:
+                  continue
+              dirs_seen.add(parent)
+
+              folder_name = parent.name  # 'RM' ou 'ADP'
+              is_rm  = folder_name == 'RM'
+              is_adp = folder_name == 'ADP'
+              if not (is_rm or is_adp):
+                  continue
+
+              files = sorted(
+                  [f.name for f in parent.glob('*.xlsx')],
+                  key=version_key_rm if is_rm else version_key_adp
+              )
+              if not files:
+                  continue
+
+              latest = files[-1]
+              m = version_key_rm(latest) if is_rm else version_key_adp(latest)
+              version_str = f"{m[0]}.{m[1]}"
+
+              out_path = parent / 'latest.json'
+              new_data = {"filename": latest, "version": version_str, "updated": today}
+
+              # Só escreve se mudou
+              if out_path.exists():
+                  old = json.loads(out_path.read_text())
+                  if old.get('filename') == latest:
+                      print(f"[skip] {out_path} — sem mudança ({latest})")
+                      continue
+
+              out_path.write_text(json.dumps(new_data, indent=2, ensure_ascii=False) + "\n")
+              print(f"[ok] {out_path} → {latest}")
+              changed = True
+
+          if not changed:
+              print("Nenhum latest.json precisou de atualização.")
+          PYEOF
+
+      - name: Commit se houve mudança
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Arquivos/**/latest.json Arquivos/*/*/latest.json 2>/dev/null || true
+          git diff --cached --quiet && echo "nada a commitar" && exit 0
+          git commit -m "chore: atualiza latest.json automaticamente [skip ci]"
+          git push
