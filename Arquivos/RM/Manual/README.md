@@ -6,7 +6,7 @@ Manual do RM (Rate Media) StormX 2026.
 
 | Recurso | URL |
 |---------|-----|
-| **GitHub Pages** | https://falssp.github.io/Projeto-NC/Arquivos/2026/RM/Manual/ |
+| **GitHub Pages** | https://falssp.github.io/Projeto-NC/Arquivos/RM/Manual/ |
 
 ## Arquivos
 
