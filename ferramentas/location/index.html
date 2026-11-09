@@ -198,7 +198,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
     <div class="hd-title">Taxonomia · Location</div>
     <div class="hd-sub">Unilever BR · NC Tool</div>
   </div>
-  <button class="hd-reset" onclick="resetTudo()">↺ Limpar</button>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;"><a style="font-size:.78rem;font-weight:600;color:rgba(255,255,255,.7);text-decoration:none;padding:5px 10px;border:1px solid rgba(255,255,255,.3);border-radius:20px;" href="/Projeto-NC/ferramentas/">← Ferramentas</a><button class="hd-reset" onclick="resetTudo()">↺ Limpar</button></div>
 </div>
 
 <div class="wrap">
@@ -277,7 +277,11 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(-
 
   <!-- RESULTADO (coluna direita) -->
   <div class="wrap-right">
-  <div class="result-card">
+  <div id="recentes-wrap" style="display:none;margin-bottom:10px;">
+  <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#9BA3B5;margin-bottom:8px;">Recentes</div>
+  <div id="recentes-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+</div>
+<div class="result-card">
     <div class="result-lbl">Resultado</div>
     <div class="result-empty" id="res-empty">Selecione um nível acima</div>
     <div class="result-show" id="res-show">
@@ -913,6 +917,66 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 document.addEventListener('click',e=>{
   if(!e.target.closest('.search-wrap')) document.querySelectorAll('.sdrop').forEach(d=>d.classList.remove('open'));
 });
+
+// RECENTES via localStorage
+const RECENTES_KEY='ul-loc-rec-v1';
+function salvarRecente(val){
+  try{
+    let r=JSON.parse(localStorage.getItem(RECENTES_KEY)||'[]');
+    r=r.filter(x=>x!==val);
+    r.unshift(val);
+    r=r.slice(0,5);
+    localStorage.setItem(RECENTES_KEY,JSON.stringify(r));
+    renderRecentes();
+  }catch(e){}
+}
+function renderRecentes(){
+  try{
+    const r=JSON.parse(localStorage.getItem(RECENTES_KEY)||'[]');
+    const wrap=document.getElementById('recentes-wrap');
+    const chips=document.getElementById('recentes-chips');
+    if(!r.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    chips.innerHTML=r.map(v=>`<button onclick="aplicarRecente(this,'${v}')" style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px;border:1.5px solid var(--border);border-radius:5px;background:#fff;cursor:pointer;color:var(--blue);">${v}</button>`).join('');
+  }catch(e){}
+}
+function aplicarRecente(btn,val){
+  document.getElementById('res-val').textContent=val;
+  document.getElementById('res-empty').style.display='none';
+  document.getElementById('res-show').style.display='block';
+  document.getElementById('res-bc').innerHTML='';
+  const b=document.getElementById('copy-btn');
+  b.textContent='Copiar'; b.classList.remove('ok');
+  copiarValor(val);
+}
+function copiarValor(v){
+  navigator.clipboard.writeText(v).then(()=>{
+    const b=document.getElementById('copy-btn');
+    b.textContent='Copiado ✓'; b.classList.add('ok');
+    setTimeout(()=>{b.textContent='Copiar';b.classList.remove('ok');},2000);
+    toast('\"'+v+'\" copiado');
+  });
+}
+
+// Sobrescrever copiar() para também salvar recente
+function copiar(){
+  const v=document.getElementById('res-val').textContent;
+  if(!v) return;
+  salvarRecente(v);
+  copiarValor(v);
+}
+
+// Atalho Ctrl/Cmd+Enter para copiar resultado
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+    e.preventDefault();
+    const v=document.getElementById('res-val').textContent;
+    if(v&&document.getElementById('res-show').style.display!=='none') copiar();
+  }
+});
+
+// Render recentes ao carregar
+renderRecentes();
 </script>
 
 <button id="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙 Dark</button>
