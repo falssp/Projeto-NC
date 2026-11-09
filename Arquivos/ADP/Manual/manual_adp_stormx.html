@@ -42,7 +42,53 @@
     min-height: 100vh;
   }
 
-  .main { padding: 56px 8vw; max-width: 1100px; margin: 0 auto; }
+  /* ── LAYOUT ── */
+  .wrapper {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 100vh;
+  }
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo .tag {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent2); display: block; margin-bottom: 4px;
+  }
+  .sidebar-logo h2 { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.4; }
+  .sidebar-logo .ver { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .nav-group { padding: 0 10px 12px; }
+  .nav-group-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); padding: 6px 8px;
+  }
+  .nav-link {
+    display: block; padding: 6px 8px; border-radius: var(--radius-sm);
+    color: var(--muted); text-decoration: none; font-size: 13px; transition: all 0.15s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nav-link:hover { background: var(--surface2); color: var(--text); }
+  .nav-link.active { background: rgba(79,110,247,0.15); color: var(--accent2); }
+
+  .main { padding: 56px 60px; max-width: 900px; }
+
+  @media (max-width: 900px) {
+    .wrapper { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 32px 5vw; }
+  }
 
   /* ── HERO ── */
   .hero {
@@ -162,7 +208,34 @@
 </head>
 <body>
 
-<main class="main">
+<div class="wrapper">
+
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <span class="tag">Manual</span>
+      <h2>ADP StormX</h2>
+      <div class="ver" id="adp-ver-sidebar">—</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Visão Geral</div>
+      <a href="#intro" class="nav-link">Introdução</a>
+      <a href="#legenda" class="nav-link">Legenda de Cores</a>
+      <a href="#fluxo" class="nav-link">Fluxo de Preenchimento</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Campos</div>
+      <a href="#galileo" class="nav-link">Galileo (Azul)</a>
+      <a href="#freetext" class="nav-link">Freetext (Roxo)</a>
+      <a href="#rm-plat" class="nav-link">RM / Plataforma</a>
+      <a href="#adserver" class="nav-link">AdServer</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Referência</div>
+      <a href="#regras" class="nav-link">Fazer / Não Fazer</a>
+    </div>
+  </nav>
+
+  <main class="main">
 
     <!-- HERO -->
     <div class="hero" id="intro">
@@ -395,7 +468,21 @@
 
   </main>
 
+</div><!-- .wrapper -->
+
 <script>
+  // Highlight nav ativo
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        const a = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  document.querySelectorAll('[id]').forEach(s => observer.observe(s));
+
   // Carrega latest.json da pasta pai (ADP/) e ativa o botão de download
   (function () {
     const btn   = document.getElementById('adp-download-btn');
@@ -414,6 +501,8 @@
         const v = d.version || '—';
         if (verEl) verEl.textContent = v;
         if (updEl) updEl.textContent = d.updated || '—';
+        const sv = document.getElementById('adp-ver-sidebar');
+        if (sv) sv.textContent = 'v' + v;
       })
       .catch(() => {});
   })();
