@@ -1,10 +1,11 @@
 // ============================================================
 // NC Tool | Unilever BR x Grasp — Script F4
-// F4 - Acessórios · Apps Script Web App — BACKUP
-//
-// ESTRUTURA DO PROJETO:
-//   Code.gs    ← este arquivo
-//   index.html ← interface HTML (sem DOCTYPE)
+// F4 - Acessórios · Apps Script Web App — PESSOAL
+// v3 — Semáforo REAL cross-script via célula CampaignID!Z1
+//      (substitui ScriptProperties — agora compartilhado de fato
+//      com SISTEMA_ABAS_ANO.gs que é o script bound da planilha CL)
+//      saveCampaignLocal preenche H (CN CODE) via lookup
+//      checkDuplicatas: RESPONSAVEL_ALVO em constante única
 //
 // Deploy:
 //   Extensões → Apps Script → Implantar → Gerenciar implantações
@@ -20,18 +21,73 @@ var CHEFE_SHEET_ID = '17reFaVIatWRvNa-KpnLPsFUEV8WnxrNC2fsEHO5lU6s';
 var CL_SHEET_ID    = '1dZ-TiUcFgjdc45Fpc9frztG1Bqsi9e0F0aAHQzXoHjw';
 var DIC_SHEET_ID   = '1HlWrUbQGstYtb6NZUHpDNmVYmXJFUOyJ';
 
+/* ── Configurações Campaign Local ── */
+var CL_PRIMEIRA_LINHA_DADOS = 2;    // linha onde os dados começam
+var CL_RESPONSAVEL_ALVO     = 'felipe'; // minúsculo — comparação case-insensitive
+
+/* ── Semáforo cross-script via célula CampaignID!Z1 ──
+   Usa a célula Z1 da aba CampaignID na planilha CL como mutex compartilhado.
+   Ambos os scripts (este F4 e o SISTEMA_ABAS_ANO.gs bound) acessam a mesma
+   célula via openById() / getActiveSpreadsheet(). Padrão CAS: escreve
+   timestamp → flush → lê de volta → confirma posse. Zombie: > 30s.
+   A célula Z1 está segura: dados ficam nas colunas A-B da CampaignID. */
+var _F4_LOCK_SHEET   = 'CampaignID';
+var _F4_LOCK_CELL    = 'Z1';
+var _F4_SEM_TIMEOUT  = 20000; // 20s — maior que o tryLock de 12s do bound script
+var _F4_SEM_POLL     = 300;
+
+function _f4CelSemAcquire(ss) {
+  var sheet = ss.getSheetByName(_F4_LOCK_SHEET);
+  if (!sheet) return true; // aba não existe: deixa passar sem travar
+
+  var cell   = sheet.getRange(_F4_LOCK_CELL);
+  var inicio = Date.now();
+
+  while (Date.now() - inicio < _F4_SEM_TIMEOUT) {
+    SpreadsheetApp.flush();
+    var atual = String(cell.getValue() || '').trim();
+
+    // Zombie: lock > 30s sem liberação → força limpeza
+    if (atual && !isNaN(atual) && Date.now() - parseInt(atual) > 30000) {
+      cell.clearContent();
+      SpreadsheetApp.flush();
+      Utilities.sleep(150);
+      continue;
+    }
+
+    if (!atual) {
+      var myTs = String(Date.now());
+      cell.setValue(myTs);
+      SpreadsheetApp.flush();
+      Utilities.sleep(100); // janela para detectar conflito com outro script
+      var confirmado = String(cell.getValue() || '').trim();
+      if (confirmado === myTs) return true; // posse confirmada
+      // Outro script escreveu antes: continua esperando
+    }
+    Utilities.sleep(_F4_SEM_POLL);
+  }
+  return false;
+}
+
+function _f4CelSemRelease(ss) {
+  try {
+    var sheet = ss.getSheetByName(_F4_LOCK_SHEET);
+    if (sheet) {
+      sheet.getRange(_F4_LOCK_CELL).clearContent();
+      SpreadsheetApp.flush();
+    }
+  } catch(e) {}
+}
+
 /* ── Aba corrente do Dicionário ── */
 function _dicAba() {
-  return new Date().getFullYear().toString(); // '2026', '2027', ...
+  return new Date().getFullYear().toString();
 }
 
 /* ── doGet ── */
 var ACCESS_TOKEN = '3ac945c58610c4889b8e8c6c73af89adbb15af2738dbbae5';
 
 function _checkToken(e) {
-  // Sem token: aceita (chamada interna do GAS)
-  // Token presente e correto: aceita (Pages)
-  // Token presente e errado: rejeita
   var token = (e && e.parameter && e.parameter.token) || '';
   if (!token) return true;
   return token === ACCESS_TOKEN;
@@ -46,7 +102,6 @@ function _corsOut(obj) {
 function doGet(e) {
   var action = e && e.parameter && e.parameter.action ? e.parameter.action : '';
 
-  // Ping e ações autenticadas via token
   if (action === 'ping')       return _corsOut(_getPing());
   if (action === 'stats')      return _corsOut(_getStats());
   if (action === 'contadores' || action === 'list') {
@@ -68,8 +123,6 @@ function doPost(e) {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action || '';
 
-    // Verificar token: se token vier no payload, deve ser válido
-    // Se não vier token, é chamada interna do GAS (sem restrição)
     if (payload.token && payload.token !== ACCESS_TOKEN)
       return _corsOut({ ok: false, error: 'Unauthorized' });
 
@@ -81,7 +134,6 @@ function doPost(e) {
     if (action === 'saveCampaignLocal')  return saveCampaignLocal(payload);
     if (action === 'saveDicionario')     return saveDicionario(payload);
 
-    // default sem action = gerarIDs
     return gerarIDs(payload);
 
   } catch (err) {
@@ -116,8 +168,6 @@ function _getContadores() {
 
 /* ════════════════════════════════════════════════════════════
    GERAR IDs
-   Otimização: escrita em batch por tipo (SX/AMZ) em vez de
-   uma chamada setValue por ID gerado.
 ════════════════════════════════════════════════════════════ */
 function gerarIDs(payload) {
   var itens = payload.itens || [];
@@ -133,7 +183,6 @@ function gerarIDs(payload) {
     var cfg     = ssChefe.getSheetByName('Config');
     var dados   = cfg.getDataRange().getValues();
 
-    // Mapa de contadores indexado por prefix
     var contMap = {};
     for (var i = 1; i < dados.length; i++) {
       var prefix = String(dados[i][0] || '').trim();
@@ -151,10 +200,7 @@ function gerarIDs(payload) {
     var linhaMinha    = _lastDataRow(abaMinha);
     var primeiraLinha = linhaMinha + 1;
     var resultado     = [];
-
-    // Acumula valores pra escrever em batch (só na planilha minha)
-    // O chefe lê via IMPORTRANGE — não gravar mais diretamente
-    var batchMinha    = []; // [[linha, data, plat]]
+    var batchMinha    = [];
 
     itens.forEach(function(item) {
       var plat = item.plataforma;
@@ -172,10 +218,8 @@ function gerarIDs(payload) {
         batchMinha.push([linhaMinha, today, plat]);
       }
       resultado.push({ plataforma: plat, tipo: tipo, ids: ids });
-      // NÃO atualiza contador aqui — só após gravação
     });
 
-    // Escreve data e plataforma na planilha minha em batch
     if (batchMinha.length) {
       var startMinha = batchMinha[0][0];
       var datas = batchMinha.map(function(r) { return [r[1]]; });
@@ -185,7 +229,6 @@ function gerarIDs(payload) {
     }
 
     SpreadsheetApp.flush();
-    // Atualiza contadores SÓ APÓS gravação confirmada
     resultado.forEach(function(r) {
       var cont = contMap[r.tipo];
       if (cont) cfg.getRange(cont.row, 4).setValue(cont.last);
@@ -206,9 +249,7 @@ function gerarIDs(payload) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   FILL AD NAMES (Passo 4 do Gerador de IDs)
-   Otimização: lê abaMinha inteira em batch uma vez só,
-   acumula todas as escritas e aplica em setValues único.
+   FILL AD NAMES
 ════════════════════════════════════════════════════════════ */
 function fillAdNames(payload) {
   var itens = payload.itens || [];
@@ -222,7 +263,6 @@ function fillAdNames(payload) {
     var abaMinha = _getOrCreateAba(ssMinha, anoAtual);
     var lastRow  = abaChefe.getLastRow();
 
-    // Monta mapa ID → número de linha a partir das cols B e C da aba do chefe
     var mapaID = {};
     if (lastRow >= 2) {
       abaChefe.getRange(2, 2, lastRow - 1, 2).getValues().forEach(function(row, ri) {
@@ -233,7 +273,6 @@ function fillAdNames(payload) {
       });
     }
 
-    // Lê abaMinha inteira em batch (cols B, C, D) — UMA chamada só
     var lastMinha = abaMinha.getLastRow();
     var minhaData = {};
     if (lastMinha >= 2) {
@@ -246,11 +285,10 @@ function fillAdNames(payload) {
       });
     }
 
-    // Processa itens e acumula escritas
     var conflitos   = [];
     var salvos      = 0;
-    var writeAdName = []; // [[linha, adName]]
-    var writeID     = []; // [[linha, coluna, id]]
+    var writeAdName = [];
+    var writeID     = [];
 
     itens.forEach(function(item) {
       var adName = item.adName;
@@ -275,14 +313,11 @@ function fillAdNames(payload) {
       salvos++;
     });
 
-    // Agrupa escritas de Ad Name por coluna contígua onde possível
-    // Para linhas dispersas, usa setValue individual (inevitável)
     writeAdName.forEach(function(w) { abaMinha.getRange(w[0], 4).setValue(w[1]); });
     writeID.forEach(function(w)     { abaMinha.getRange(w[0], w[1]).setValue(w[2]); });
 
     SpreadsheetApp.flush();
 
-    // Identificar órfãos: IDs gerados sem Ad Name
     var orfaos = [];
     itens.forEach(function(item) {
       var id = String(item.id || '').trim().toUpperCase();
@@ -290,9 +325,7 @@ function fillAdNames(payload) {
         var m = minhaData[w[0]];
         return m && (m.b === id || m.c === id);
       });
-      if (!encontrado && mapaID[id]) {
-        orfaos.push({ id: item.id, linha: mapaID[id] });
-      }
+      if (!encontrado && mapaID[id]) orfaos.push({ id: item.id, linha: mapaID[id] });
     });
 
     var resp = { ok: true, salvos: salvos, orfaos: orfaos };
@@ -332,7 +365,8 @@ function checkDuplicatas(payload) {
     if (!sheet) return _jsonOut({ ok: false, error: 'Aba não encontrada.' });
 
     var lastRow = sheet.getLastRow();
-    if (lastRow < 3) return _jsonOut({ ok: true, duplicatas: [] });
+    if (lastRow < CL_PRIMEIRA_LINHA_DADOS)
+      return _jsonOut({ ok: true, duplicatas: [] });
 
     var allD = sheet.getRange(1, 4, lastRow, 1).getValues();
     var allI = sheet.getRange(1, 9, lastRow, 1).getValues();
@@ -340,7 +374,7 @@ function checkDuplicatas(payload) {
     for (var ri = 0; ri < allD.length; ri++) {
       var d    = String(allD[ri][0] || '').trim();
       var iVal = String(allI[ri][0] || '').trim().toLowerCase();
-      if (!d || iVal !== 'felipe') continue;
+      if (!d || iVal !== CL_RESPONSAVEL_ALVO) continue;
       var dk = d.toLowerCase();
       if (!existentes[dk]) existentes[dk] = [];
       existentes[dk].push(ri + 1);
@@ -362,20 +396,54 @@ function checkDuplicatas(payload) {
   }
 }
 
+/* ── Lookup de CN CODE (espelha _lookupCnCode do SISTEMA_ABAS_ANO.gs) ── */
+function _clLookupCnCode(ss, valorG) {
+  var chave = valorG ? String(valorG).trim() : '';
+  if (!chave) return '';
+  try {
+    var campSheet = ss.getSheetByName('CampaignID');
+    if (!campSheet) return 'Verificar Campanha';
+    var lastRow = Math.max(campSheet.getLastRow() - 1, 0);
+    if (lastRow === 0) return 'Verificar Campanha';
+    var dados = campSheet.getRange(2, 1, lastRow, 2).getValues();
+    for (var i = 0; i < dados.length; i++) {
+      var k = dados[i][0] ? String(dados[i][0]).trim() : '';
+      if (k === chave) return dados[i][1] ? String(dados[i][1]).trim() : 'Verificar Campanha';
+    }
+    return 'Verificar Campanha';
+  } catch(e) {
+    return 'Verificar Campanha';
+  }
+}
+
 function saveCampaignLocal(payload) {
   var linhas = payload.linhas || [];
   var aba    = payload.aba   || null;
   if (!linhas.length) return _jsonOut({ ok: false, error: 'Nenhuma linha.' });
 
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(20000))
+  // Abre a planilha CL ANTES de adquirir o semáforo
+  // (o semáforo usa uma célula desta mesma planilha)
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(CL_SHEET_ID);
+  } catch(e) {
+    return _jsonOut({ ok: false, error: 'Sem acesso à planilha CL: ' + e.message });
+  }
+
+  // 1. Semáforo cross-script via célula CampaignID!Z1
+  if (!_f4CelSemAcquire(ss))
     return _jsonOut({ ok: false, error: 'Planilha em uso. Tente em alguns segundos.' });
 
+  // 2. Lock nativo do script F4
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) {
+    _f4CelSemRelease(ss);
+    return _jsonOut({ ok: false, error: 'Sistema ocupado. Tente novamente.' });
+  }
+
   try {
-    var ss    = SpreadsheetApp.openById(CL_SHEET_ID);
     var sheet = aba ? ss.getSheetByName(aba) : _findAba(ss, 'Inclusão Campaign Local');
     if (!sheet) {
-      lock.releaseLock();
       return _jsonOut({ ok: false, error: 'Aba "' + (aba || 'Inclusão Campaign Local') + '" não encontrada.' });
     }
 
@@ -386,12 +454,12 @@ function saveCampaignLocal(payload) {
 
     var curLastRow  = sheet.getLastRow();
     var existentesD = {};
-    if (curLastRow >= 3) {
-      var bloco = sheet.getRange(3, 4, curLastRow - 2, 6).getValues();
+    if (curLastRow >= CL_PRIMEIRA_LINHA_DADOS) {
+      var bloco = sheet.getRange(CL_PRIMEIRA_LINHA_DADOS, 4, curLastRow - CL_PRIMEIRA_LINHA_DADOS + 1, 6).getValues();
       for (var ri = 0; ri < bloco.length; ri++) {
         var dv = String(bloco[ri][0] || '').trim().toLowerCase();
         var iv = String(bloco[ri][5] || '').trim().toLowerCase();
-        if (dv && iv === 'felipe') existentesD[dv] = true;
+        if (dv && iv === CL_RESPONSAVEL_ALVO) existentesD[dv] = true;
       }
     }
 
@@ -404,12 +472,12 @@ function saveCampaignLocal(payload) {
     var puladas = nLinhas - nNovas;
 
     if (!nNovas) {
-      lock.releaseLock();
       return _jsonOut({ ok: true, inseridas: 0, puladas: puladas,
         msg: 'Todas as ' + puladas + ' linha(s) já existiam.' });
     }
 
-    var topRow = 3;
+    // Remove linhas completamente vazias no topo dos dados
+    var topRow = CL_PRIMEIRA_LINHA_DADOS;
     while (topRow <= sheet.getLastRow()) {
       var topVals = sheet.getRange(topRow, 1, 1, 7).getValues()[0];
       if (topVals.every(function(v) { return String(v).trim() === ''; }))
@@ -417,27 +485,38 @@ function saveCampaignLocal(payload) {
       else break;
     }
 
-    sheet.insertRowsBefore(3, nNovas);
-    var insertAt = 3;
+    sheet.insertRowsBefore(CL_PRIMEIRA_LINHA_DADOS, nNovas);
+    var insertAt = CL_PRIMEIRA_LINHA_DADOS;
 
-    var refRow = 3 + nNovas;
-    if (refRow > sheet.getLastRow()) refRow = 2;
-    [6, 7, 9].forEach(function(col) {
-      sheet.getRange(refRow, col, 1, 1).copyTo(
-        sheet.getRange(insertAt, col, nNovas, 1),
-        SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false
-      );
-    });
+    // Copia validações de drops da linha de referência
+    var refRow = CL_PRIMEIRA_LINHA_DADOS + nNovas;
+    if (refRow > sheet.getLastRow()) refRow = CL_PRIMEIRA_LINHA_DADOS - 1;
+    if (refRow >= 1) {
+      [6, 7, 9].forEach(function(col) {
+        sheet.getRange(refRow, col, 1, 1).copyTo(
+          sheet.getRange(insertAt, col, nNovas, 1),
+          SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false
+        );
+      });
+    }
 
+    // Escreve colunas A-G em batch
     var blockAG = novas.map(function(r) {
       return [r[1]||'', r[2]||'', r[3]||'', r[4]||'', r[5]||'', r[6]||'', r[7]||''];
     });
     sheet.getRange(insertAt, 1, nNovas, 7).setValues(blockAG).setBackground('#ffffff');
 
+    // Preenche H (CN CODE) via lookup
+    var colH = novas.map(function(r) {
+      return [_clLookupCnCode(ss, r[7] || '')]; // r[7] = Campaign Name (col G)
+    });
+    sheet.getRange(insertAt, 8, nNovas, 1).setValues(colH).setBackground('#ffffff');
+
+    // Escreve colunas I-J
     var blockIJ = novas.map(function(r) { return [r[9]||'', r[10]||'']; });
     sheet.getRange(insertAt, 9, nNovas, 2).setValues(blockIJ).setBackground('#ffffff');
 
-    sheet.getRange(insertAt, 8, nNovas, 1).clearContent();
+    // Drops col J (Agência)
     var agRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['Cadastra', 'Initiative'], true)
       .setAllowInvalid(true).build();
@@ -445,12 +524,13 @@ function saveCampaignLocal(payload) {
     sheet.getRange(insertAt, 11, nNovas, 1).clearDataValidations();
 
     SpreadsheetApp.flush();
-    lock.releaseLock();
     return _jsonOut({ ok: true, inseridas: nNovas, puladas: puladas, linha: insertAt });
 
   } catch (e) {
-    try { lock.releaseLock(); } catch(e2) {}
     return _jsonOut({ ok: false, error: e.message });
+  } finally {
+    try { lock.releaseLock(); } catch(e2) {}
+    _f4CelSemRelease(ss);
   }
 }
 
@@ -473,7 +553,6 @@ function _listLinks() {
 }
 
 function checkDicDuplicatas(payload) {
-  // Aceita tanto {links:[...]} (legado) quanto {itens:[{h,f,d},...]}
   var itens = payload.itens || (payload.links || []).map(function(l) { return { h: l, f: '', d: '' }; });
   if (!itens.length) return _jsonOut({ ok: true, duplicatas: [] });
 
@@ -481,15 +560,14 @@ function checkDicDuplicatas(payload) {
     var ss    = SpreadsheetApp.openById(DIC_SHEET_ID);
     var sheet = ss.getSheetByName(_dicAba());
 
-    // Ler existentes: colunas D(4), F(6), H(8)
-    var existentes = {}; // chave: canonUrl(H) ou handle+plataforma
+    var existentes = {};
     if (sheet && sheet.getLastRow() >= 4) {
       var numRows = sheet.getLastRow() - 3;
-      var data = sheet.getRange(4, 4, numRows, 5).getValues(); // D,E,F,G,H
+      var data = sheet.getRange(4, 4, numRows, 5).getValues();
       data.forEach(function(row) {
-        var d = String(row[0]||'').trim();  // Plataforma (col D)
-        var f = String(row[2]||'').trim();  // Handle (col F)
-        var h = _canonUrl(String(row[4]||'')); // Link (col H)
+        var d = String(row[0]||'').trim();
+        var f = String(row[2]||'').trim();
+        var h = _canonUrl(String(row[4]||''));
         if (h) existentes['h:'+h] = true;
         if (f && d) existentes['fd:'+f.toLowerCase()+'|'+d.toLowerCase()] = true;
       });
@@ -502,15 +580,11 @@ function checkDicDuplicatas(payload) {
       var d   = String(item.d || '').trim().toLowerCase();
       var keyH  = h  ? 'h:'+h : null;
       var keyFD = (f && d) ? 'fd:'+f+'|'+d : null;
-
-      // Evitar duplicatas dentro do próprio lote
       var seenKey = keyH || keyFD;
       if (!seenKey || seen[seenKey]) return;
       seen[seenKey] = true;
-
-      if ((keyH && existentes[keyH]) || (keyFD && existentes[keyFD])) {
+      if ((keyH && existentes[keyH]) || (keyFD && existentes[keyFD]))
         duplicatas.push(item.h || item.f);
-      }
     });
 
     return _jsonOut({ ok: true, duplicatas: duplicatas });
@@ -548,7 +622,6 @@ function saveDicionario(payload) {
     if (!novas.length)
       return _jsonOut({ ok: true, inseridas: 0, msg: 'Todos os links já existem.' });
 
-    // Escreve em batch: Nome em A, Link em H
     var insertAt = Math.max(startData, lastRow + 1);
     var nomes = novas.map(function(r) { return [r[0]||'']; });
     var links = novas.map(function(r) { return [r[1]||'']; });
@@ -609,15 +682,14 @@ function readRmSheet(payload) {
 /* ════════════════════════════════════════════════════════════
    UTILS
 ════════════════════════════════════════════════════════════ */
-// Retorna a última linha com valor real na col A (ignora linhas formatadas mas vazias)
 function _lastDataRow(sheet) {
   var maxRow = sheet.getLastRow();
-  if (maxRow <= 1) return maxRow; // 0 ou só cabeçalho
+  if (maxRow <= 1) return maxRow;
   var colA = sheet.getRange(1, 1, maxRow, 1).getValues();
   for (var i = maxRow - 1; i >= 0; i--) {
     if (String(colA[i][0] || '').trim() !== '') return i + 1;
   }
-  return 1; // só cabeçalho sobrou
+  return 1;
 }
 
 function _hoje() {
@@ -655,20 +727,15 @@ function _jsonOut(obj) {
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
 /* ════════════════════════════════════════════════════════════
-   KEEP ALIVE — trigger a cada 30 min para manter o script quente
+   KEEP ALIVE
 ════════════════════════════════════════════════════════════ */
 function keepAlive() {
-  // Chamada mínima para manter o script ativo — não grava nada
   SpreadsheetApp.openById(CHEFE_SHEET_ID).getName();
 }
 
-/* ════════════════════════════════════════════════════════════
-   SETUP TRIGGER — rodar uma vez para instalar o trigger keepAlive
-   Menu: Apps Script → Executar → setupKeepAliveTrigger
-════════════════════════════════════════════════════════════ */
 function setupKeepAliveTrigger() {
-  // Remove triggers antigos de keepAlive para evitar duplicatas
   ScriptApp.getProjectTriggers().forEach(function(t) {
     if (t.getHandlerFunction() === 'keepAlive') ScriptApp.deleteTrigger(t);
   });
@@ -679,39 +746,34 @@ function setupKeepAliveTrigger() {
   Logger.log('Trigger keepAlive instalado: a cada 30 minutos.');
 }
 
-
 /* ════ PING ════ */
 function _getPing() {
-  return {
-    ok:   true,
-    fase: 'F4',
-    env:  'pes',
-    ts:   new Date().toISOString()
-  };
+  return { ok: true, fase: 'F4', env: 'pessoal', ts: new Date().toISOString() };
 }
 
 /* ════ STATS ════ */
 function _getStats() {
   try {
-    var ss = SpreadsheetApp.openById('16OdPmc-SeqXn1VefT0xRsIQJ-LdICRfUZnahsARuw4w');
+    var ss = SpreadsheetApp.openById('1K3wO3b8BOOQldtHv7pBtOubmhoidoZBI0Y8yk4_UnmI');
+    var sheets = ss.getSheets().map(function(s){ return s.getName(); });
     var sh = ss.getSheetByName('📋 Histórico');
-    if (!sh) return { ok: false, error: 'Aba Histórico nao encontrada' };
+    if (!sh) return { ok: false, error: 'Aba nao encontrada. Abas: ' + JSON.stringify(sheets) };
     var dados = sh.getDataRange().getValues();
     var agora = new Date(), mes = agora.getMonth(), ano = agora.getFullYear();
     var total = 0, ultima = null;
     for (var i = 1; i < dados.length; i++) {
-      if (!dados[i][0]) continue;
-      var d = new Date(dados[i][0]);
-      if (d.getMonth() === mes && d.getFullYear() === ano) total++;
-      ultima = dados[i];
+      var d = dados[i][0];
+      if (!d) continue;
+      var dt = new Date(d);
+      if (dt.getMonth() === mes && dt.getFullYear() === ano) total++;
+      if (!ultima || dt > ultima) ultima = dt;
     }
-    var out = { ok: true, totalMes: total, totalOperacoes: total };
-    if (ultima) out.ultimaOperacao = {
-      data:    Utilities.formatDate(new Date(ultima[0]), 'America/Sao_Paulo', 'dd/MM/yyyy'),
-      hora:    String(ultima[1]||'').trim(),
-      usuario: String(ultima[2]||'').trim(),
-      modulo:  String(ultima[3]||'').trim()
+    return {
+      ok: true,
+      totalMes: total,
+      ultimaAtividade: ultima ? Utilities.formatDate(ultima, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') : null
     };
-    return out;
-  } catch(e) { return { ok: false, error: e.message }; }
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
 }

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --ul-navy:  #003087;
+    --ul-blue:  #0070CD;
+    --ul-light: #EEF4FF;
+    --ul-border:#BDD0F0;
+    --ul-text:  #1A1A2E;
+    --ul-muted: #5A6A8A;
+    --ul-err:   #C0392B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    padding: 14px 16px 10px;
+    background: #fff;
+    color: var(--ul-text);
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--ul-navy);
+    flex-shrink: 0;
+  }
+  .header-dot { width: 12px; height: 12px; background: var(--ul-blue); border-radius: 50%; flex-shrink: 0; }
+  h3 { font-size: 14px; color: var(--ul-navy); font-weight: bold; }
+  .aba-badge {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ul-muted);
+    white-space: nowrap;
+    display: none; /* mostrado via JS quando abaAtiva chegar */
+  }
+  .aba-badge strong { color: var(--ul-navy); }
+
+  #formBody { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+  /* Seção fixa (campanha) */
+  .section-fixed { flex-shrink: 0; }
+
+  /* Seção D — scrollável */
+  .section-d {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--ul-border);
+  }
+  .section-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--ul-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 8px;
+  }
+  .d-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .d-num {
+    font-size: 12px;
+    color: var(--ul-muted);
+    min-width: 56px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .d-input { flex: 1; }
+
+  /* Campos genéricos */
+  .row { margin-bottom: 10px; }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--ul-muted);
+    margin-bottom: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  input[type=text], input[type=number], select {
+    width: 100%;
+    padding: 6px 9px;
+    border: 1px solid var(--ul-border);
+    border-radius: 4px;
+    font-size: 15px;
+    color: var(--ul-text);
+    background: #fff;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--ul-blue);
+    box-shadow: 0 0 0 2px rgba(0,112,205,.15);
+  }
+  /* Campo B obrigatório: destaca borda quando vazio */
+  #colB.vazio { border-color: #C0392B; }
+  input[type=number] { width: 90px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cols4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+  .qty-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .hint { font-size: 12px; color: var(--ul-muted); }
+
+  /* Rodapé */
+  .footer { flex-shrink: 0; }
+  #status { font-size: 13px; color: var(--ul-muted); min-height: 16px; margin-bottom: 6px; }
+  #status.error { color: var(--ul-err); font-weight: bold; }
+  #status.ok    { color: #1A7A3A; }
+  .btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--ul-border);
+  }
+  button {
+    padding: 7px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+  }
+  button:hover { opacity: .88; }
+  .btn-cancel { background: var(--ul-light); color: var(--ul-navy); border: 1px solid var(--ul-border); }
+  .btn-ok     { background: var(--ul-navy); color: #fff; }
+  .btn-ok:disabled { background: #9AB2D4; cursor: default; opacity: 1; }
+  .offline-msg {
+    padding: 12px; background: var(--ul-light); border: 1px solid var(--ul-border);
+    border-radius: 4px; color: var(--ul-muted); font-size: 12px; display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-dot"></div>
+  <h3>Nova(s) Linha(s) — Campaign Local</h3>
+  <span class="aba-badge" id="abaBadge">inserindo em <strong id="abaAtivaNome"></strong></span>
+</div>
+
+<div class="offline-msg" id="offlineMsg">
+  ⚠️ Este arquivo deve ser servido pelo Google Apps Script.<br>
+  Abra via menu 📋 AdOps → Nova Linha na planilha.
+</div>
+
+<div id="formBody">
+
+  <!-- ── Seção fixa: dados da campanha ── -->
+  <div class="section-fixed">
+
+    <div class="qty-row">
+      <div>
+        <label style="margin-bottom:4px">QTD DE LINHAS</label>
+        <input type="number" id="qty" min="1" max="20" value="1" oninput="atualizarD()">
+      </div>
+      <span class="hint" style="margin-top:20px">máx 20</span>
+    </div>
+
+    <div class="cols2">
+      <div class="row">
+        <label>B — Novo Campaign Local <span style="color:var(--ul-err)">*</span></label>
+        <input type="text" id="colB" placeholder="ex: NCL_2026_Q1">
+      </div>
+      <div class="row">
+        <label>C — DE/PARA Camp. Local <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+        <input type="text" id="colC" placeholder="opcional">
+      </div>
+    </div>
+
+    <div class="cols2">
+      <div class="row">
+        <label>E — DE/PARA EXTRA <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+        <input type="text" id="colE" placeholder="opcional">
+      </div>
+      <div class="row">
+        <label>K — Obs <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+        <input type="text" id="colK" placeholder="opcional">
+      </div>
+    </div>
+
+    <div class="cols4">
+      <div class="row">
+        <label>F — Brand</label>
+        <select id="colF"><option value="">—</option></select>
+      </div>
+      <div class="row">
+        <label>G — Campaign</label>
+        <select id="colG"><option value="">—</option></select>
+      </div>
+      <div class="row">
+        <label>I — Responsável</label>
+        <select id="colI"><option value="">—</option></select>
+      </div>
+      <div class="row">
+        <label>J — Agência</label>
+        <select id="colJ"><option value="">—</option></select>
+      </div>
+    </div>
+
+  </div><!-- /section-fixed -->
+
+  <!-- ── Seção D: um campo por linha ── -->
+  <div class="section-d">
+    <div class="section-label">D — EXTRA <span style="font-weight:normal;text-transform:none;color:var(--ul-muted)">(uma por linha)</span></div>
+    <div id="dFields"></div>
+  </div>
+
+  <!-- ── Rodapé ── -->
+  <div class="footer">
+    <div id="status"></div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="cancelar()">Cancelar</button>
+      <button class="btn-ok" id="btnOk" onclick="enviar()" disabled>Inserir</button>
+    </div>
+  </div>
+
+</div><!-- /formBody -->
+
+<script>
+  // Guard: fora do GAS
+  if (typeof google === 'undefined' || !google.script) {
+    document.getElementById('offlineMsg').style.display = 'block';
+    document.getElementById('formBody').style.display   = 'none';
+  } else {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        _preencher('colF', data.brands);
+        _preencher('colG', data.camps);
+        _preencher('colI', data.resps);
+        _preencher('colJ', data.agencias);
+
+        // Auto-seleciona responsável pelo e-mail de login
+        if (data.currentResp) {
+          var selI = document.getElementById('colI');
+          for (var i = 0; i < selI.options.length; i++) {
+            if (selI.options[i].value === data.currentResp) {
+              selI.selectedIndex = i; break;
+            }
+          }
+        }
+
+        // Exibe aba destino no cabeçalho
+        if (data.abaAtiva) {
+          document.getElementById('abaAtivaNome').textContent = data.abaAtiva;
+          document.getElementById('abaBadge').style.display = 'inline';
+        }
+      })
+      .withFailureHandler(function(e) {
+        _status('Erro ao carregar opções: ' + e.message, 'error');
+      })
+      .getDropdownData();
+  }
+
+  // ── Validação B obrigatório ──
+  // Botão começa disabled (ver HTML) e só habilita quando B não estiver vazio.
+  document.getElementById('colB').addEventListener('input', function() {
+    var vazio = this.value.trim() === '';
+    document.getElementById('btnOk').disabled = vazio;
+    this.classList.toggle('vazio', vazio);
+  });
+
+  // Gera os campos D dinamicamente
+  function atualizarD() {
+    var qty = parseInt(document.getElementById('qty').value, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    if (qty > 20) qty = 20;
+    var container = document.getElementById('dFields');
+    var existentes = [];
+    container.querySelectorAll('input').forEach(function(inp) {
+      existentes.push(inp.value);
+    });
+    container.innerHTML = '';
+    for (var i = 0; i < qty; i++) {
+      var row = document.createElement('div');
+      row.className = 'd-row';
+      var num = document.createElement('span');
+      num.className = 'd-num';
+      num.textContent = qty === 1 ? 'D — EXTRA' : 'Linha ' + (i + 1) + ':';
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'd-input';
+      inp.id = 'd_' + i;
+      inp.placeholder = qty === 1 ? 'ex: live-0510' : 'ex: live-0' + (i + 1) + '10';
+      inp.value = existentes[i] || '';
+      row.appendChild(num);
+      row.appendChild(inp);
+      container.appendChild(row);
+    }
+  }
+
+  // Inicializa com 1 campo D
+  atualizarD();
+
+  function _preencher(id, lista) {
+    var sel = document.getElementById(id);
+    (lista || []).forEach(function(v) {
+      if (!v) return;
+      var opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+
+  function cancelar() {
+    if (typeof google !== 'undefined' && google.script) google.script.host.close();
+  }
+
+  function enviar() {
+    var qty = parseInt(document.getElementById('qty').value, 10);
+    if (isNaN(qty) || qty < 1 || qty > 20) {
+      _status('Qtd inválida (1–20).', 'error'); return;
+    }
+    var colB = document.getElementById('colB').value.trim();
+    if (!colB) {
+      _status('Campo B é obrigatório.', 'error');
+      document.getElementById('colB').focus();
+      return;
+    }
+    var dExtras = [];
+    for (var i = 0; i < qty; i++) {
+      var inp = document.getElementById('d_' + i);
+      dExtras.push(inp ? inp.value.trim() : '');
+    }
+    var dados = {
+      qty:     qty,
+      colB:    colB,
+      colC:    document.getElementById('colC').value.trim(),
+      dExtras: dExtras,
+      colE:    document.getElementById('colE').value.trim(),
+      colF:    document.getElementById('colF').value,
+      colG:    document.getElementById('colG').value,
+      colI:    document.getElementById('colI').value,
+      colJ:    document.getElementById('colJ').value,
+      colK:    document.getElementById('colK').value.trim()
+    };
+    document.getElementById('btnOk').disabled = true;
+    _status('Inserindo…');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _status(res && res.msg ? res.msg : 'Linhas inseridas com sucesso!', 'ok');
+        setTimeout(function(){ google.script.host.close(); }, 1400);
+      })
+      .withFailureHandler(function(e) {
+        _status('Erro: ' + e.message, 'error');
+        // Reabilita só se B ainda tiver conteúdo
+        if (document.getElementById('colB').value.trim()) {
+          document.getElementById('btnOk').disabled = false;
+        }
+      })
+      .processarNovasLinhas(dados);
+  }
+
+  function _status(msg, tipo) {
+    var el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = tipo || '';
+  }
+</script>
+</body>
+</html>
