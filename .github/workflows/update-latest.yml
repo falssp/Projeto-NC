@@ -1,4 +1,4 @@
-name: Atualiza latest.json (RM e ADP)
+name: Atualiza latest.json e index das pastas de ano (RM e ADP)
 
 on:
   push:
@@ -16,41 +16,136 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Atualiza latest.json para RM e ADP
+      - name: Atualiza latest.json e index.html das pastas de ano
         run: |
           python3 - <<'PYEOF'
           import os, json, re
           from pathlib import Path
 
           today = __import__('datetime').date.today().isoformat()
-          changed = False
+
+          STYLE = """
+              :root {
+                --bg: #f5f7fa; --surface: #ffffff; --brand: #1A4775;
+                --brand-light: #e8f0f9; --text: #1a1d23; --muted: #6b7280;
+                --border: #e5e7eb; --radius: 12px;
+              }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 24px;
+              }
+              .container { max-width: 760px; margin: 0 auto; }
+              .breadcrumb {
+                font-size: 13px; color: var(--muted); margin-bottom: 24px;
+                display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+              }
+              .breadcrumb a { color: var(--brand); text-decoration: none; }
+              .breadcrumb a:hover { text-decoration: underline; }
+              h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+              .sub { font-size: 15px; color: var(--muted); margin-bottom: 28px; }
+              .sub a { color: var(--brand); text-decoration: none; }
+              .card {
+                background: var(--surface); border: 1px solid var(--border);
+                border-radius: var(--radius); overflow: hidden;
+              }
+              .card-header {
+                padding: 14px 20px; background: var(--brand-light);
+                border-bottom: 1px solid var(--border);
+                font-size: 12px; font-weight: 600; text-transform: uppercase;
+                letter-spacing: .08em; color: var(--brand);
+              }
+              .file-list { list-style: none; }
+              .file-list li { border-bottom: 1px solid var(--border); }
+              .file-list li:last-child { border-bottom: none; }
+              .file-list a {
+                display: flex; align-items: center; gap: 10px; width: 100%;
+                padding: 12px 20px; color: var(--text); text-decoration: none;
+                font-size: 14px; transition: background .12s;
+              }
+              .file-list a:hover { background: var(--brand-light); }
+              .file-list .ico { font-size: 16px; flex-shrink: 0; }
+              .file-list .name { flex: 1; word-break: break-word; }
+              .file-list .badge {
+                font-size: 11px; font-weight: 600; padding: 2px 7px;
+                border-radius: 4px; background: #e8f0f9; color: var(--brand); flex-shrink: 0;
+              }
+              .empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 15px; }
+          """
+
+          def make_year_index(tipo, year, files):
+              icon = '📊' if tipo == 'ADP' else '📋'
+              label = 'ADP String Tool Merge' if tipo == 'ADP' else 'Relationship Matrix'
+              items = ''
+              for name in sorted(files, reverse=True):
+                  items += f'''<li><a href="{name}" download>
+                    <span class="ico">{icon}</span>
+                    <span class="name">{name}</span>
+                    <span class="badge">xlsx</span>
+                  </a></li>'''
+              file_block = (
+                  f'<div class="card">'
+                  f'<div class="card-header">{len(files)} versões {year}</div>'
+                  f'<ul class="file-list">{items}</ul></div>'
+              ) if files else '<div class="card"><div class="empty">Nenhum arquivo disponível.</div></div>'
+
+              return f"""<!DOCTYPE html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{tipo} {year} · Arquivos</title>
+            <style>{STYLE}</style>
+          </head>
+          <body>
+            <div class="container">
+              <nav class="breadcrumb">
+                <a href="../../">Arquivos</a> <span>›</span>
+                <a href="../">{tipo}</a> <span>›</span>
+                <strong>{year}</strong>
+              </nav>
+              <h1>{icon} {tipo} · {year}</h1>
+              <p class="sub">{label} — {len(files)} versões · <a href="../">← Baixar versão mais recente</a></p>
+              {file_block}
+            </div>
+          </body>
+          </html>
+          """
 
           def version_key_rm(name):
-              # RM_STORMX_2026_v6.1.xlsx  →  (2026, 6, 1)
               m = re.search(r'_(\d{4})_v(\d+)[._](\d+)', name)
               return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
 
           def version_key_adp(name):
-              # UNCC_Digital_Platform_String_Tool_Merge_5_5.xlsx  →  (5, 5)
               m = re.search(r'_(\d+)_(\d+)\.xlsx$', name)
               return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+
+          changed = False
 
           for tipo, key_fn in [('RM', version_key_rm), ('ADP', version_key_adp)]:
               base = Path(f'Arquivos/{tipo}')
               if not base.exists():
                   continue
 
-              # Varre todos os subdiretórios de ano
               all_files = []
               for year_dir in sorted(base.iterdir()):
-                  if year_dir.is_dir() and year_dir.name.isdigit():
-                      for f in year_dir.glob('*.xlsx'):
-                          all_files.append((year_dir.name, f.name))
+                  if not (year_dir.is_dir() and year_dir.name.isdigit()):
+                      continue
+                  year_files = [f.name for f in year_dir.glob('*.xlsx')]
+
+                  # Regera index.html da pasta de ano
+                  idx = make_year_index(tipo, year_dir.name, year_files)
+                  (year_dir / 'index.html').write_text(idx)
+                  print(f"[idx] {year_dir}/index.html ({len(year_files)} arquivos)")
+                  changed = True
+
+                  for fname in year_files:
+                      all_files.append((year_dir.name, fname))
 
               if not all_files:
                   continue
 
-              # Ordena por (ano, versão) — ano tem prioridade sobre número de versão
+              # Atualiza latest.json
               all_files.sort(key=lambda x: (int(x[0]), key_fn(x[1])))
               year, filename = all_files[-1]
               k = key_fn(filename)
@@ -58,32 +153,33 @@ jobs:
               rel_path = f"{year}/{filename}"
 
               out_path = base / 'latest.json'
-              new_data = {
-                  "filename": filename,
-                  "path": rel_path,
-                  "version": version_str,
-                  "updated": today
-              }
+              new_data = {"filename": filename, "path": rel_path, "version": version_str, "updated": today}
 
               if out_path.exists():
                   old = json.loads(out_path.read_text())
                   if old.get('path') == rel_path:
-                      print(f"[skip] {out_path} — sem mudança ({rel_path})")
-                      continue
+                      print(f"[skip latest] {out_path} — sem mudança")
+                  else:
+                      out_path.write_text(json.dumps(new_data, indent=2, ensure_ascii=False) + "\n")
+                      print(f"[ok latest] {out_path} → {rel_path} (v{version_str})")
+              else:
+                  out_path.write_text(json.dumps(new_data, indent=2, ensure_ascii=False) + "\n")
+                  print(f"[ok latest] {out_path} criado → {rel_path}")
 
-              out_path.write_text(json.dumps(new_data, indent=2, ensure_ascii=False) + "\n")
-              print(f"[ok] {out_path} → {rel_path} (v{version_str})")
-              changed = True
-
-          if not changed:
-              print("Nenhum latest.json precisou de atualização.")
           PYEOF
 
-      - name: Commit se houve mudança
+      - name: Commit mudanças
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Arquivos/RM/latest.json Arquivos/ADP/latest.json 2>/dev/null || true
+          git add \
+            Arquivos/RM/latest.json \
+            Arquivos/ADP/latest.json \
+            Arquivos/RM/2025/index.html \
+            Arquivos/RM/2026/index.html \
+            Arquivos/ADP/2025/index.html \
+            Arquivos/ADP/2026/index.html \
+            2>/dev/null || true
           git diff --cached --quiet && echo "nada a commitar" && exit 0
-          git commit -m "chore: atualiza latest.json automaticamente [skip ci]"
+          git commit -m "chore: atualiza latest.json e index de pastas de ano [skip ci]"
           git push
