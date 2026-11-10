@@ -1603,6 +1603,21 @@ function switchClient(id) {
 }
 
 /* =============================================
+   BATCH 18: HELPERS
+   ============================================= */
+function jumpToSeg(clientId, segId) {
+  // Switch to this client, open dicionário tab at the target segment
+  activeId = clientId; activeSeg = segId; _dictFilter=null; _dictTagFilter=null;
+  saveData(); renderClientSelect();
+  switchTab('dicionario');
+  showToast('📚 Abrindo segmento…');
+}
+function openRelatorio(clientId) {
+  // Open relatório-nc tool for this client
+  window.open('../relatorio-nc/?client='+encodeURIComponent(clientId), '_blank');
+}
+
+/* =============================================
    TAB: CLIENTES
    ============================================= */
 function renderClientes() {
@@ -1625,7 +1640,7 @@ function renderClientes() {
     const segsWithTermsFill = c.segments.filter(s=>(c.dictionary[s.id]||[]).length>0).length;
     const completePct = c.segments.length ? Math.round(100*segsWithTermsFill/c.segments.length) : 0;
     const fillDotsHtml = c.segments.length ? `<div class="seg-fill-bar" title="${segsWithTermsFill}/${c.segments.length} segmentos com termos">` +
-      c.segments.map(s=>`<span class="seg-fill-dot ${(c.dictionary[s.id]||[]).length?'':'empty'}" title="${esc(s.label)}: ${(c.dictionary[s.id]||[]).length} termos"></span>`).join('') +
+      c.segments.map(s=>`<span class="seg-fill-dot ${(c.dictionary[s.id]||[]).length?'':'empty'}" title="${esc(s.label)}: ${(c.dictionary[s.id]||[]).length} termos · Clique para abrir" onclick="event.stopPropagation();jumpToSeg('${c.id}','${s.id}')"></span>`).join('') +
       `<span class="fill-pct ${completePct===100?'complete':completePct>50?'partial':''}">${completePct}%</span>` +
       `</div>` : '';
 
@@ -1644,6 +1659,7 @@ function renderClientes() {
         <button title="Editar" onclick="event.stopPropagation();openEditClient('${c.id}')">✏️</button>
         <button title="Duplicar" onclick="event.stopPropagation();duplicateClient('${c.id}')">📋</button>
         <button title="Exportar JSON" onclick="event.stopPropagation();exportJSON('${c.id}')">⬇️</button>
+        <button title="Relatório NC" onclick="event.stopPropagation();openRelatorio('${c.id}')">📄</button>
         <button title="Excluir" onclick="event.stopPropagation();deleteClient('${c.id}')">🗑️</button>
       </div>
       ${isAct ? '<div class="active-badge">✓ Ativo</div>' : ''}
