@@ -65,6 +65,13 @@ input[type=number]{font-family:var(--mono);font-size:13px}
 .tool-table th:first-child{padding-left:12px}
 .tool-table th:last-child{width:32px}
 .tool-table td{padding:6px 8px;background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+/* toggle owned */
+.owned-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:12px;color:var(--body);white-space:nowrap}
+.owned-toggle input[type=checkbox]{display:none}
+.owned-track{width:32px;height:18px;border-radius:9px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0}
+.owned-track::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.owned-toggle input:checked ~ .owned-track{background:var(--azul)}
+.owned-toggle input:checked ~ .owned-track::after{transform:translateX(14px)}
 .tool-table td:first-child{border-left:1px solid var(--border);border-radius:9px 0 0 9px;padding-left:12px}
 .tool-table td:last-child{border-right:1px solid var(--border);border-radius:0 9px 9px 0;padding-right:8px;width:32px}
 /* legado (não usado mais) */
@@ -424,8 +431,8 @@ input[type=number]{font-family:var(--mono);font-size:13px}
 /* ──────────────────────────────────────────
    ESTADO
 ────────────────────────────────────────── */
-let asTools = []  // [{id, name, cpm, fixed}]
-let avTools = []  // [{id, name, cpm, fixed}]
+let asTools = []  // [{id, name, cpm, fixed, owned}]
+let avTools = []  // [{id, name, cpm, fixed, owned}]
 let nextId = 1
 
 /* ──────────────────────────────────────────
@@ -457,7 +464,7 @@ function onModelChange(){
 ────────────────────────────────────────── */
 function addTool(type, defaults={}){
   const id = nextId++
-  const obj = { id, name: defaults.name||'', cpm: defaults.cpm||0, fixed: defaults.fixed||0 }
+  const obj = { id, name: defaults.name||'', cpm: defaults.cpm||0, fixed: defaults.fixed||0, owned: defaults.owned||false }
   if(type==='as') asTools.push(obj)
   else            avTools.push(obj)
   renderToolList(type)
@@ -474,7 +481,10 @@ function removeTool(type, id){
 function updateTool(type, id, field, value){
   const list = type==='as' ? asTools : avTools
   const t = list.find(t=>t.id===id)
-  if(t) t[field] = field==='name' ? value : parseFloat(value)||0
+  if(!t) return
+  if(field==='owned') t.owned = value
+  else if(field==='name') t.name = value
+  else t[field] = parseFloat(value)||0
   calc()
 }
 
@@ -500,6 +510,7 @@ function renderToolList(type){
         <th>Plataforma</th>
         <th>${cpmLbl}</th>
         <th>Fee fixo / setup (R$)</th>
+        <th style="text-align:center">Já possui</th>
         <th></th>
       </tr></thead>
       <tbody>
@@ -508,6 +519,12 @@ function renderToolList(type){
           <td><select onchange="updateTool('${type}',${t.id},'name',this.value)">${optHtml(t.name||opts[0])}</select></td>
           <td><div class="prefix-wrap"><span>R$</span><input type="number" value="${t.cpm}" min="0" step="0.01" style="padding-left:28px" oninput="updateTool('${type}',${t.id},'cpm',this.value)"></div></td>
           <td><div class="prefix-wrap"><span>R$</span><input type="number" value="${t.fixed}" min="0" step="0.01" style="padding-left:28px" oninput="updateTool('${type}',${t.id},'fixed',this.value)"></div></td>
+          <td style="text-align:center">
+            <label class="owned-toggle" title="Empresa já possui contrato ativo">
+              <input type="checkbox" ${t.owned?'checked':''} onchange="updateTool('${type}',${t.id},'owned',this.checked)">
+              <span class="owned-track"></span>
+            </label>
+          </td>
           <td><button class="rm-btn" onclick="removeTool('${type}',${t.id})" title="Remover">×</button></td>
         </tr>`).join('')}
       </tbody>
@@ -536,8 +553,13 @@ function calc(){
   const adopsEl = document.getElementById('adops-total-display')
   if(adopsEl) adopsEl.value = adopsCost.toFixed(2)
 
-  // Custo por ferramenta
+  // Custo por ferramenta (owned = custo incremental zero)
   const toolCost = (t) => {
+    if(t.owned) return 0
+    if(model==='flat'||model==='cpc') return t.fixed
+    return impsMil * t.cpm + t.fixed
+  }
+  const toolCostFull = (t) => {
     if(model==='flat'||model==='cpc') return t.fixed
     return impsMil * t.cpm + t.fixed
   }
@@ -631,31 +653,61 @@ function calc(){
 
   // helper: gera parágrafo de justificativa tom e-mail ao cliente
   const buildParagraph = (type, verdict, sigs, defs, best, bestCost, bestPct, allTools) => {
-    const nome = best ? (best.name||'a ferramenta') : (type==='as'?'o ad server':'a ad verification')
-    const outro = allTools.filter(t=>t.id!==best?.id)
-    const outroPart = outro.length ? ` Em comparação, ${outro.map(t=>`${t.name||'outra opção'} custaria ${fmtR(toolCost(t))}${mediaBudget>0?' ('+fmtP((toolCost(t)/mediaBudget)*100)+' do budget)':''}`).join(' e ')}.` : ''
-
-    // motivos positivos e negativos separados
+    const nome     = best ? (best.name||'a ferramenta') : (type==='as'?'o ad server':'a ad verification')
+    const owned    = best?.owned === true
     const positivos = sigs.filter(s=>s.c==='green').map(s=>s.msg)
     const alertas   = sigs.filter(s=>s.c==='red'||s.c==='yellow').map(s=>s.msg)
+    const recomendado = verdict.includes('✅')
+    const avaliar     = verdict.includes('⚠️')
+
+    // comparativo com outras ferramentas (exceto a melhor)
+    const outro = allTools.filter(t=>t.id!==best?.id)
+    const outroPart = outro.length
+      ? ` As demais opções analisadas — ${outro.map(t=>`${t.name||'outra opção'}${mediaBudget>0?' ('+fmtP((toolCost(t)/mediaBudget)*100)+' do budget)':' ('+fmtR(toolCost(t))+')'}`).join(', ')} — resultariam em custo maior.`
+      : ''
 
     let para = ''
 
     if(type==='as'){
-      if(verdict.includes('✅')){
-        para = `Recomendamos o uso de ${nome} nesta campanha. O custo de serving é de ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}, dentro do limite aceitável de mercado.${outroPart} ${positivos.slice(0,2).join(' ')}`.trim()
-      } else if(verdict.includes('⚠️')){
-        para = `O uso de ad server deve ser avaliado com cautela. A opção mais econômica é ${nome}, com custo de ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}.${outroPart} ${positivos.length?positivos[0]+' ':''} ${alertas.length?'Por outro lado: '+alertas[0]:''}`.trim()
+      if(owned){
+        // empresa JÁ TEM o ad server
+        if(recomendado){
+          para = `A empresa já possui contrato ativo com ${nome}, o que elimina qualquer custo incremental de serving nesta campanha. Considerando o perfil da ação — ${positivos.slice(0,2).join('; ')} — o uso do ad server se justifica plenamente: aproveitar a ferramenta já contratada garante rastreamento unificado e controle de frequência sem impacto no budget de mídia.`
+        } else if(avaliar){
+          para = `A empresa já possui ${nome}, portanto não haverá custo adicional de serving. Ainda assim, vale avaliar se o uso do ad server agrega valor real a esta campanha: ${positivos.length?positivos[0]+'.':''} ${alertas.length?alertas[0]+'.':''} Tendo a ferramenta disponível, o critério de decisão passa a ser operacional — se a complexidade de tráfico e o volume justificarem o setup, recomendamos ativar.`
+        } else {
+          para = `Embora a empresa já possua ${nome} em contrato, o perfil desta campanha não justifica o uso do ad server. ${alertas.slice(0,2).join(' ')} Ativar o serving aqui geraria overhead operacional sem benefício proporcional — o investimento de tempo de setup supera o ganho de dados para uma ação com este escopo.`
+        }
       } else {
-        para = `Não recomendamos ad server para esta campanha. O custo mínimo seria ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''} com ${nome}, o que não se justifica dado o perfil desta ação.${outroPart} ${alertas.slice(0,2).join(' ')}`.trim()
+        // precisa contratar
+        const custoStr = `${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}`
+        if(recomendado){
+          para = `Recomendamos a contratação de ${nome} como ad server para esta campanha. O custo de serving estimado é de ${custoStr}, o que se enquadra dentro do limite aceitável de mercado (até 5% do budget). ${positivos.slice(0,2).join(' ')}${outroPart}`
+        } else if(avaliar){
+          para = `A contratação de ad server merece avaliação. A opção mais econômica identificada é ${nome}, com custo de ${custoStr}.${outroPart} ${positivos.length?positivos[0]+' ':''} ${alertas.length?alertas[0]:''}  Recomendamos confirmar com o cliente se há necessidade real de rastreamento centralizado antes de incluir este custo no investimento.`
+        } else {
+          para = `Não recomendamos a contratação de ad server para esta campanha. O custo mínimo estimado seria ${custoStr} com ${nome}, valor que não se justifica dado o perfil desta ação.${outroPart} ${alertas.slice(0,2).join(' ')} O budget de mídia seria melhor aproveitado sem este custo de serving.`
+        }
       }
     } else {
-      if(verdict.includes('✅')){
-        para = `Recomendamos a contratação de ad verification para esta campanha. A opção mais indicada é ${nome}, com custo de ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}.${outroPart} ${positivos.slice(0,2).join(' ')}`.trim()
-      } else if(verdict.includes('⚠️')){
-        para = `A necessidade de ad verification deve ser avaliada. A opção mais econômica é ${nome}, a ${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}.${outroPart} ${positivos.length?positivos[0]+' ':''} ${alertas.length?alertas[0]:''}`.trim()
+      // AD VERIFICATION
+      if(owned){
+        if(recomendado){
+          para = `A empresa já possui contrato ativo com ${nome}, portanto o custo de ad verification é absorvido — sem impacto no budget desta campanha. Dado o perfil da ação — ${positivos.slice(0,2).join('; ')} — recomendamos ativar a verificação: com a ferramenta disponível, não há razão para deixar o inventário sem monitoramento de viewability, brand safety e IVT.`
+        } else if(avaliar){
+          para = `A empresa já possui ${nome} contratado. Ainda que o perfil desta campanha não apresente risco elevado, tendo a ferramenta disponível o custo de ativação é praticamente zero. ${positivos.length?positivos[0]+' ':''} Vale ativar ao menos o monitoramento básico de viewability e brand safety para consistência de dados — o esforço de setup é baixo e os dados gerados agregam ao histórico da conta.`
+        } else {
+          para = `A empresa possui ${nome} em contrato, mas o perfil desta campanha não demanda ad verification ativa. ${alertas.slice(0,2).join(' ')} Mesmo com a ferramenta disponível, ativar a verificação aqui adicionaria complexidade operacional sem retorno proporcional — recomendamos não incluir nesta entrega.`
+        }
       } else {
-        para = `Não identificamos necessidade de ad verification para esta campanha. O perfil de inventário e o histórico de brand safety indicam baixo risco, e o custo de ${fmtR(bestCost)} com ${nome} não se justificaria.${outroPart}`.trim()
+        const custoStr = `${fmtR(bestCost)}${mediaBudget>0?' ('+fmtP(bestPct)+' do budget)':''}`
+        if(recomendado){
+          para = `Recomendamos a contratação de ad verification para esta campanha, sendo ${nome} a opção mais indicada pelo custo-benefício (${custoStr}). ${positivos.slice(0,2).join(' ')}${outroPart}`
+        } else if(avaliar){
+          para = `A contratação de ad verification deve ser avaliada em função do perfil da campanha. A opção mais econômica é ${nome}, a ${custoStr}.${outroPart} ${positivos.length?positivos[0]+' ':''} ${alertas.length?alertas[0]:''} Sugerimos levantar com o cliente se há exigência contratual ou sensibilidade de marca que justifique o investimento.`
+        } else {
+          para = `Não identificamos necessidade de contratar ad verification para esta campanha. ${alertas.slice(0,2).join(' ')} O custo de ${custoStr} com ${nome} não se justificaria dado o perfil de inventário e o escopo da ação.${outroPart}`
+        }
       }
     }
 
@@ -665,15 +717,19 @@ function calc(){
 
   // helper: cards de ferramentas de uma categoria
   const toolCards = (list) => list.map((t,i)=>{
-    const cost = toolCost(t)
-    const pct  = mediaBudget>0?(cost/mediaBudget)*100:0
-    const cls  = list.length===1?'only':i===0?'best':'worst'
-    const badge = cls==='best'&&list.length>1?'<div class="best-badge">MENOR CUSTO</div>':''
-    return `<div class="tool-compare-card ${cls}">${badge}
+    const cost     = toolCost(t)
+    const costFull = toolCostFull(t)
+    const pct      = mediaBudget>0?(cost/mediaBudget)*100:0
+    const cls      = list.length===1?'only':i===0?'best':'worst'
+    const ownedBadge = t.owned ? '<div class="best-badge" style="background:var(--azul)">JÁ POSSUI</div>' : ''
+    const costBestBadge = !t.owned && cls==='best' && list.length>1 ? '<div class="best-badge">MENOR CUSTO</div>' : ''
+    const costVal  = t.owned
+      ? `<div class="tool-cost-val" style="color:var(--azul)">R$ 0,00</div><div class="tool-cost-pct" style="text-decoration:line-through;color:var(--muted)">${fmtR(costFull)} (referência)</div>`
+      : `<div class="tool-cost-val">${fmtR(cost)}</div><div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'CPM: R$'+fmt(t.cpm)+' · fee R$'+fmt(t.fixed)}</div>`
+    return `<div class="tool-compare-card ${cls}">${ownedBadge}${costBestBadge}
       <div class="tool-name">${t.name||'(sem nome)'}</div>
-      <div class="tool-cost-val">${fmtR(cost)}</div>
-      <div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'CPM: R$'+fmt(t.cpm)+' · fee R$'+fmt(t.fixed)}</div>
-      ${t.cpm>0&&mediaBudget>0?`<div class="hint" style="margin-top:4px">CPM R$${fmt(t.cpm)} · fee R$${fmt(t.fixed)}</div>`:''}
+      ${costVal}
+      ${!t.owned&&t.cpm>0&&mediaBudget>0?`<div class="hint" style="margin-top:4px">CPM R$${fmt(t.cpm)} · fee R$${fmt(t.fixed)}</div>`:''}
     </div>`
   }).join('')
 
