@@ -1290,7 +1290,7 @@ const ACTIVE_KEY = 'taxo_active_v1';
 const THEME_KEY  = 'taxo_theme_v1';
 const VAL_HIST_KEY     = 'taxo_val_hist_v1';
 const BUILDER_HIST_KEY = 'taxo_builder_hist_v1';
-const BUILDER_HIST_MAX = 10;
+const BUILDER_HIST_MAX = 30;
 
 const DEFAULT_CLIENTS = [
   {
@@ -2764,13 +2764,17 @@ function clearBuilderHistory() {
   try { localStorage.removeItem(BUILDER_HIST_KEY); } catch(e) {}
   renderBuilderHistory();
 }
+let _builderHistFilter = '';
 function renderBuilderHistory() {
   const row = document.getElementById('builderHistRow'); if(!row) return;
   let hist = [];
   try { hist = JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]'); } catch(e) {}
-  if(!hist.length) { row.innerHTML=''; return; }
+  if(!hist.length) { row.innerHTML=''; _builderHistFilter=''; return; }
+  const filtered = _builderHistFilter ? hist.filter(h=>h.toLowerCase().includes(_builderHistFilter.toLowerCase())) : hist;
   row.innerHTML = `<span class="builder-hist-label">Recentes:</span>` +
-    hist.map(h=>`<span class="builder-hist-chip" title="${esc(h)}" onclick="useBuilderHistItem('${esc(h)}')">${esc(h)}</span>`).join('') +
+    `<input class="builder-hist-search" type="search" placeholder="filtrar…" value="${esc(_builderHistFilter)}" oninput="_builderHistFilter=this.value;renderBuilderHistory()" style="font-size:11px;padding:2px 6px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);width:80px;flex-shrink:0">` +
+    filtered.slice(0,15).map(h=>`<span class="builder-hist-chip" title="${esc(h)}" onclick="useBuilderHistItem(${JSON.stringify(h).replace(/"/g,'&quot;')})">${esc(h.length>28?h.slice(0,26)+'…':h)}</span>`).join('') +
+    (filtered.length>15?`<span style="font-size:10px;color:var(--faint)">${filtered.length-15} mais…</span>`:'') +
     `<button class="builder-hist-clear" onclick="clearBuilderHistory()" title="Limpar histórico">✕</button>`;
 }
 function useBuilderHistItem(name) {
@@ -4034,6 +4038,14 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key==='Delete' && currentTab==='builder') {
     e.preventDefault(); clearBuilderVals(); return;
   }
+  // Ctrl+R → fill builder random
+  if((e.ctrlKey||e.metaKey) && e.key==='r' && currentTab==='builder') {
+    e.preventDefault(); fillBuilderRandom(); return;
+  }
+  // Ctrl+I → stats
+  if((e.ctrlKey||e.metaKey) && e.key==='i') {
+    e.preventDefault(); openStats(); return;
+  }
   // ? key (not in input) → open shortcuts
   if(e.key==='?' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
     openShortcuts(); return;
@@ -4071,6 +4083,24 @@ function openStats() {
   topTerms.sort((a,b)=>b.uses-a.uses);
   topTerms = topTerms.slice(0,10);
 
+  // Platform breakdown
+  const platMap = {};
+  clients.forEach(c => {
+    (c.structures||[]).forEach(s => {
+      const p = s.platform||'—';
+      platMap[p] = (platMap[p]||0)+1;
+    });
+  });
+  const platEntries = Object.entries(platMap).sort((a,b)=>b[1]-a[1]);
+  const platHtml = platEntries.length ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px">📱 Estruturas por plataforma</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${platEntries.map(([p,n])=>`<span style="background:var(--surface2);border:1px solid var(--brd);border-radius:8px;padding:3px 8px;font-size:11px"><b>${esc(p)}</b> <span style="color:var(--accent)">${n}</span></span>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
   const topHtml = topTerms.length ? `
     <div style="margin-top:12px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px">🔥 Termos mais usados no builder</div>
@@ -4091,6 +4121,7 @@ function openStats() {
       <div class="stat-tile"><span class="stat-num">${totalSegs}</span><span class="stat-lbl">Segmentos</span></div>
       <div class="stat-tile"><span class="stat-num">${totalStructures}</span><span class="stat-lbl">Estruturas</span></div>
     </div>
+    ${platHtml}
     ${topHtml}
   `;
   overlay.classList.add('open');
@@ -4211,6 +4242,8 @@ function handleACKey(e, segId) {
     <div class="shortcut-row"><span>Aba Builder</span><span class="kbd">Ctrl + 4</span></div>
     <div class="shortcut-row"><span>Aba Validador</span><span class="kbd">Ctrl + 5</span></div>
     <div class="shortcut-row"><span>Limpar campos do builder</span><span class="kbd">Ctrl + Delete</span></div>
+    <div class="shortcut-row"><span>Preencher builder aleatório</span><span class="kbd">Ctrl + R</span></div>
+    <div class="shortcut-row"><span>Estatísticas do sistema</span><span class="kbd">Ctrl + I</span></div>
     <div class="shortcut-row"><span>Esta tela de atalhos</span><span class="kbd">?</span></div>
   </div>
 </div>
