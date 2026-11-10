@@ -923,6 +923,13 @@ body {
 .builder-ac-item:hover,.builder-ac-item.selected{background:var(--accent);color:#fff}
 .builder-ac-item .ac-val{font-weight:600}
 .builder-ac-item .ac-lbl{font-size:11px;opacity:.75}
+.builder-ac-item .ac-desc{font-size:10px;opacity:.6;margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dict-seg-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px;}
+.char-limit-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;}
+.char-limit-input{width:60px;padding:2px 6px;border:1px solid var(--input-border);border-radius:5px;background:var(--input-bg);color:var(--fg);font-size:12px;text-align:center;}
+.char-limit-badge{font-size:10px;padding:1px 5px;border-radius:5px;font-weight:600;}
+.char-limit-ok{background:rgba(34,197,94,.12);color:#15803d;}
+.char-limit-over{background:rgba(239,68,68,.12);color:#b91c1c;}
 
 /* ── Como usar modal ─────────────────────────────── */
 .qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
@@ -1816,6 +1823,13 @@ function renderModalBody(c) {
       <label>Notas internas (opcional)</label>
       <textarea id="mNotes" rows="2" placeholder="Ex: cliente legado, separador antigo era |" style="width:100%;resize:vertical;font-size:12px;padding:6px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg)">${esc(c.notes||'')}</textarea>
     </div>
+    <div class="field-group">
+      <label>Limite de caracteres (opcional)</label>
+      <div class="char-limit-row">
+        <input type="number" id="mCharLimit" class="char-limit-input" min="1" max="999" value="${c.charLimit||''}" placeholder="ex: 100">
+        <span style="color:var(--faint);font-size:11px">Alerta no builder quando nome ultrapassar este limite</span>
+      </div>
+    </div>
   `;
 }
 
@@ -1886,12 +1900,14 @@ function saveClient() {
   if(!validSegs.length) { showToast('Adicione pelo menos um segmento.'); return; }
 
   const notes = document.getElementById('mNotes')?.value.trim()||'';
+  const charLimitRaw = parseInt(document.getElementById('mCharLimit')?.value||'',10);
+  const charLimit = isNaN(charLimitRaw)||charLimitRaw<=0 ? null : charLimitRaw;
   if(modalMode==='add') {
     const id = slug(name);
     if(clients.find(c=>c.id===id)) { showToast('Já existe cliente com esse nome.'); return; }
     const dict = {};
     validSegs.forEach(s=>{ dict[s.id]=[]; });
-    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})})), dictionary:dict, structures:[], ...(notes?{notes}:{})});
+    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})})), dictionary:dict, structures:[], ...(notes?{notes}:{}),...(charLimit?{charLimit}:{})});
     activeId = id;
   } else {
     const c = getClient(editingId); if(!c) return;
@@ -1901,6 +1917,7 @@ function saveClient() {
     c.segments=validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})}));
     c.dictionary=newDict;
     if(notes) c.notes=notes; else delete c.notes;
+    if(charLimit) c.charLimit=charLimit; else delete c.charLimit;
   }
 
   saveData(); closeModal(); activeSeg=null; builderVals={};
@@ -2125,7 +2142,8 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Ordenar por uso" onclick="sortTermsByUse()" style="font-size:11px;padding:4px 8px">↕ Uso</button>
       <button class="btn secondary btn-sm" title="Mostrar só favoritos" onclick="filterTermsBy('fav')" id="dictFilterFav" style="font-size:11px;padding:4px 8px">⭐</button>
       <button class="btn secondary btn-sm" title="Ordenar por mais usados" onclick="filterTermsBy('uses')" id="dictFilterUses" style="font-size:11px;padding:4px 8px">🔥 Uso</button>
-      <button class="btn secondary btn-sm" title="Copiar todos os termos deste segmento" onclick="copySegmentTerms()" style="font-size:11px;padding:4px 8px">📋 Copiar tudo</button>
+      <button class="btn secondary btn-sm" title="Copiar todos os termos deste segmento (um por linha)" onclick="copySegmentTerms()" style="font-size:11px;padding:4px 8px">📋 Copiar tudo</button>
+      <button class="btn secondary btn-sm" title="Copiar termos como array JSON" onclick="copySegmentJSON()" style="font-size:11px;padding:4px 8px">{ } JSON</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
     </div>
@@ -2246,6 +2264,15 @@ function copySegmentTerms() {
   if(!terms.length) { showToast('Nenhum termo neste segmento'); return; }
   const csv = terms.map(t=>t.value).join('\n');
   navigator.clipboard.writeText(csv).then(()=>showToast(`📋 ${terms.length} termos copiados`)).catch(()=>showToast(csv));
+}
+
+function copySegmentJSON() {
+  const c=active(); if(!c||!activeSeg) return;
+  const terms = c.dictionary[activeSeg]||[];
+  if(!terms.length) { showToast('Nenhum termo neste segmento'); return; }
+  const arr = terms.map(t=>({value:t.value,label:t.label,...(t.desc?{desc:t.desc}:{})}));
+  const json = JSON.stringify(arr, null, 2);
+  navigator.clipboard.writeText(json).then(()=>showToast(`{ } JSON de ${terms.length} termos copiado!`)).catch(()=>showToast(json));
 }
 
 let _dictFilter = null; // 'fav' | 'uses' | null
@@ -2832,8 +2859,13 @@ function updatePreview() {
       if(i<parts.length-1) result+=parts[i].sep!==undefined?parts[i].sep:'';
     }
     const len=result.length;
-    charCount.textContent=len>0?`${len} caracteres`:'';
-    charCount.className='builder-char-count'+(len>100?' warn':len>150?' error':'');
+    const lim = c.charLimit||null;
+    charCount.textContent=len>0?`${len} caracteres${lim?` / ${lim}`:''}${lim&&len>lim?' ⚠️':''}`:'';
+    if(lim) {
+      charCount.className='builder-char-count'+(len>lim?' error':len>lim*0.9?' warn':'');
+    } else {
+      charCount.className='builder-char-count'+(len>100?' warn':len>150?' error':'');
+    }
   }
 }
 
@@ -3001,6 +3033,15 @@ function parseNameBySegments(name, segDefs, defaultSep) {
 }
 
 /* Validate one value against dictionary: ok / similar / warn / err */
+function levenshtein(a, b) {
+  const m=a.length, n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=1;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
 function validateValue(part, terms) {
   if(!terms.length) return {status:'warn',msg:'Sem dicionário'};
   const exact=terms.find(t=>t.value===part);
@@ -3009,7 +3050,15 @@ function validateValue(part, terms) {
   if(ci) return {status:'similar',match:ci,msg:`Capitalização: use "${ci.value}"`};
   const lbl=terms.find(t=>t.label.toLowerCase()===part.toLowerCase());
   if(lbl) return {status:'similar',match:lbl,msg:`Valor correto: "${lbl.value}"`};
-  return {status:'err',msg:'Não está no dicionário'};
+  // Closest match via Levenshtein
+  const pl=part.toLowerCase();
+  let best=null, bestDist=Infinity;
+  terms.forEach(t=>{
+    const d=Math.min(levenshtein(pl,t.value.toLowerCase()), levenshtein(pl,(t.label||'').toLowerCase()));
+    if(d<bestDist){ bestDist=d; best=t; }
+  });
+  const suggest = best && bestDist<=3 ? ` Quis dizer "${best.value}"?` : '';
+  return {status:'err',msg:`Não está no dicionário.${suggest}`};
 }
 
 function validateName() {
@@ -4416,6 +4465,7 @@ function showAC(segId, q) {
       onmouseover="this.parentNode.querySelectorAll('.builder-ac-item').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')">
       <span class="ac-val">${esc(t.value)}</span>
       ${t.label&&t.label!==t.value?`<span class="ac-lbl">${esc(t.label)}</span>`:''}
+      ${t.desc?`<span class="ac-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
     </div>`
   ).join('');
   list.style.display='block';
