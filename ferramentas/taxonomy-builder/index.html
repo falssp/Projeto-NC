@@ -1034,6 +1034,7 @@ body {
           <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
           <button class="btn secondary btn-sm" onclick="exportTSV()" title="Exportar dicionário como TSV (Excel-friendly)">⬇ TSV</button>
           <button class="btn secondary btn-sm" onclick="exportAllJSON()" title="Exportar TODOS os clientes num único arquivo">⬇ Backup</button>
+          <button class="btn secondary btn-sm" onclick="exportDictAllSegCSV()" title="Exportar todos os segmentos do cliente ativo em um único CSV">⬇ CSV Completo</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1090,6 +1091,7 @@ body {
           <p id="builderMeta">Selecione um cliente para começar</p>
         </div>
         <div class="action-bar">
+          <select id="builderStructSel" onchange="applyBuilderStructure(this.value)" title="Aplicar estrutura ao builder" style="font-size:11px;padding:3px 8px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);cursor:pointer;max-width:160px"><option value="">— estrutura —</option></select>
           <button class="btn secondary btn-sm" onclick="saveBuilderFavorite()" title="Salvar seleção atual como favorito">⭐ Salvar</button>
           <button class="btn secondary btn-sm" onclick="openBuilderTemplates()" title="Templates de preenchimento">📋 Templates</button>
           <button class="btn secondary btn-sm" onclick="fillBuilderRandom()" title="Preencher com termos aleatórios">🎲 Aleatório</button>
@@ -1102,6 +1104,7 @@ body {
       <div class="card-h">
         <div><h2>Nome gerado</h2><p>Clique em qualquer segmento para copiar aquele valor</p></div>
         <div style="display:flex;gap:6px">
+          <button class="btn secondary btn-sm" onclick="downloadBuilderName()" title="Baixar nome gerado como .txt">⬇ .txt</button>
           <button class="btn secondary btn-sm" id="copyJsonBtn" onclick="copyBuilderJSON()" title="Copiar como JSON {segmento: valor}">{ } JSON</button>
           <button class="btn secondary btn-sm" onclick="sendBuilderToValidator()" title="Enviar nome gerado para o Validador">✔ Validar</button>
           <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
@@ -2803,6 +2806,7 @@ function renderBuilder() {
   renderBuilderFavs();
   renderBuilderTemplRow();
   renderSepPreview();
+  updateBuilderStructSel();
   // Wire Tab key: Tab from last segment → copy button; Shift+Tab from first → nothing special
   const allSegIds = segsToRender.map(s=>`bv-${s.id}`);
   allSegIds.forEach((elId, idx)=>{
@@ -3163,6 +3167,7 @@ function validateName() {
     <span style="font-size:11px;color:var(--faint)">${okCount}/${total} segmentos válidos</span>
     <button class="val-copy-name-btn" title="Copiar nome completo" onclick="navigator.clipboard.writeText('${escapedRaw}').then(()=>showToast('📋 Nome copiado!')).catch(()=>showToast('${escapedRaw}'))">📋 Copiar nome</button>
     <button class="val-copy-name-btn" title="Adicionar ao batch" onclick="sendToValBatch('${escapedRaw}')">→ Batch</button>
+    ${!errCount?`<button class="val-copy-name-btn" title="Preencher o Builder com este nome" style="background:rgba(37,99,235,.1);color:var(--accent)" onclick="sendValidatorToBuilder('${escapedRaw}')">→ Builder</button>`:''}
   </div>` : '';
   resultsEl.innerHTML=scoreHtml+html;
   if(raw) addToValHistory(raw);
@@ -4560,6 +4565,103 @@ function handleACKey(e, segId) {
   }
 }
 
+/* =============================================
+   BUILDER: STRUCTURE SELECT
+   ============================================= */
+function updateBuilderStructSel() {
+  const sel = document.getElementById('builderStructSel'); if(!sel) return;
+  const c = active();
+  const structs = c ? (c.structures||[]) : [];
+  sel.innerHTML = '<option value="">— estrutura —</option>' +
+    structs.map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join('');
+}
+
+function applyBuilderStructure(structId) {
+  if(!structId) return;
+  const c = active(); if(!c) return;
+  const struct = (c.structures||[]).find(s=>s.id===structId); if(!struct||!struct.pattern) return;
+  // Extract seg order from pattern
+  const regex=/\{(.+?)\}/g; const order=[]; let m;
+  while((m=regex.exec(struct.pattern))!==null) order.push(m[1]);
+  if(!order.length) return;
+  window._builderStructOrder = order;
+  renderBuilder();
+  showToast(`Estrutura "${struct.label}" aplicada`);
+}
+
+/* =============================================
+   BUILDER: DOWNLOAD .TXT
+   ============================================= */
+function downloadBuilderName() {
+  const c = active(); if(!c) return;
+  const segs = c.segments;
+  const vals = segs.map(s=>builderVals[s.id]||'');
+  const trimmed = [...vals];
+  while(trimmed.length && !trimmed[trimmed.length-1]) trimmed.pop();
+  if(!trimmed.length) { showToast('Preencha o builder primeiro'); return; }
+  let result = '';
+  for(let i=0;i<trimmed.length;i++) {
+    result += trimmed[i];
+    if(i<trimmed.length-1) result += (segs[i].sep!==undefined?segs[i].sep:c.separator);
+  }
+  const now = new Date();
+  const dateStr = now.toLocaleString('pt-BR');
+  const lines = [
+    `Nome gerado: ${result}`,
+    `Cliente: ${c.name}`,
+    `Data: ${dateStr}`,
+    '',
+    'Segmentos:',
+    ...segs.filter((_,i)=>trimmed[i]).map(s=>`  ${s.label}: ${builderVals[s.id]||'—'}`)
+  ];
+  dlBlob(lines.join('\n'), `nome-${c.name}-${now.toISOString().slice(0,10)}.txt`, 'text/plain');
+  showToast('⬇ Download iniciado');
+}
+
+/* =============================================
+   VALIDADOR: → BUILDER
+   ============================================= */
+function sendValidatorToBuilder(name) {
+  const c = active(); if(!c) return;
+  const structId = document.getElementById('valStructSel')?.value||'';
+  const struct = structId ? (c.structures||[]).find(s=>s.id===structId) : null;
+  let segDefs;
+  if(struct&&struct.pattern){
+    const regex=/\{([^}]+)\}([^{]*)/g; const r=[]; let m;
+    while((m=regex.exec(struct.pattern))!==null) r.push({id:m[1],sep:m[2]||''});
+    segDefs = r.map(p=>{ const seg=c.segments.find(s=>s.id===p.id); return {id:p.id,sep:p.sep,label:seg?seg.label:p.id}; });
+  } else {
+    segDefs = c.segments.map(s=>({id:s.id,sep:s.sep!==undefined?s.sep:c.separator,label:s.label}));
+  }
+  const {parts} = parseNameBySegments(name, segDefs, c.separator);
+  const prev = {...builderVals};
+  segDefs.forEach((seg,i)=>{ if(parts[i]!==undefined&&parts[i]!=='') builderVals[seg.id]=parts[i]; });
+  switchTab('builder');
+  setTimeout(()=>{
+    renderBuilder();
+    showToastWithUndo(`Builder preenchido do validador`, {type:'clearBuilder', prev});
+  },80);
+}
+
+/* =============================================
+   DICIONÁRIO: EXPORTAR CSV COMPLETO (todos segs)
+   ============================================= */
+function exportDictAllSegCSV() {
+  const c = active(); if(!c) { showToast('Selecione um cliente'); return; }
+  const rows = [['segmento','valor','label','descricao','favorito','usos']];
+  c.segments.forEach(seg => {
+    const terms = c.dictionary[seg.id]||[];
+    terms.forEach(t => rows.push([
+      seg.label, t.value, t.label||'', t.desc||'',
+      t.fav?'sim':'', t.uses||0
+    ]));
+  });
+  if(rows.length===1) { showToast('Nenhum termo para exportar'); return; }
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  dlBlob('﻿'+csv, `taxo-dict-${c.name}-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+  showToast(`Exportando ${rows.length-1} termos de ${c.segments.length} segmentos`);
+}
+
 </script>
 
 <!-- ── Share URL modal ───────────────────────────── -->
@@ -4593,6 +4695,7 @@ function handleACKey(e, segId) {
     </div>
     <div style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Builder</div>
     <div class="shortcut-row"><span>Copiar nome gerado</span><span class="kbd">Ctrl + C</span></div>
+    <div class="shortcut-row"><span>Copiar / enviar (qualquer foco)</span><span class="kbd">Ctrl + Enter</span></div>
     <div class="shortcut-row"><span>Copiar como JSON</span><span class="kbd">Ctrl + J</span></div>
     <div class="shortcut-row"><span>Preencher aleatório</span><span class="kbd">Ctrl + R</span></div>
     <div class="shortcut-row"><span>Limpar campos</span><span class="kbd">Ctrl + Delete</span></div>
