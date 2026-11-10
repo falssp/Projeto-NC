@@ -1093,6 +1093,7 @@ body {
           <button class="btn secondary btn-sm" onclick="exportTSV()" title="Exportar dicionário como TSV (Excel-friendly)">⬇ TSV</button>
           <button class="btn secondary btn-sm" onclick="exportAllJSON()" title="Exportar TODOS os clientes num único arquivo">⬇ Backup</button>
           <button class="btn secondary btn-sm" onclick="exportDictAllSegCSV()" title="Exportar todos os segmentos do cliente ativo em um único CSV">⬇ CSV Completo</button>
+          <button class="btn secondary btn-sm" onclick="openFindReplaceModal()" title="Localizar e substituir valor/label em todos os segmentos">🔎 Localizar…</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1371,6 +1372,42 @@ body {
     <div class="batch-import-actions">
       <button class="btn secondary" onclick="closeBatchImportModal()">Cancelar</button>
       <button class="btn primary" onclick="confirmBatchImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- BATCH 22: Find & Replace Modal -->
+<div id="findReplaceModal" class="batch-import-modal" style="display:none" onclick="if(event.target===this)closeFindReplaceModal()">
+  <div class="modal-box" style="max-width:420px">
+    <h3>🔎 Localizar e substituir</h3>
+    <p style="font-size:12px;color:var(--faint);margin-top:2px">Busca em todos os segmentos do cliente ativo. Afeta apenas o campo selecionado.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Campo</label>
+        <select id="frField" class="form-input" style="margin-top:4px;width:100%">
+          <option value="value">Valor (slug)</option>
+          <option value="label">Label</option>
+          <option value="desc">Descrição</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Localizar</label>
+        <input id="frFind" class="form-input" style="margin-top:4px;width:100%" placeholder="texto a localizar…" autocomplete="off">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Substituir por</label>
+        <input id="frReplace" class="form-input" style="margin-top:4px;width:100%" placeholder="novo texto (vazio = remover)…" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="checkbox" id="frExact" style="margin:0"> <label for="frExact" style="font-size:12px">Correspondência exata</label>
+        <input type="checkbox" id="frCase" style="margin:0 0 0 12px"> <label for="frCase" style="font-size:12px">Maiúsculas/minúsculas</label>
+      </div>
+      <div id="frPreview" style="font-size:12px;color:var(--faint);min-height:20px"></div>
+    </div>
+    <div class="batch-import-actions" style="margin-top:4px">
+      <button class="btn secondary" onclick="previewFindReplace()">Prévia</button>
+      <button class="btn secondary" onclick="closeFindReplaceModal()">Cancelar</button>
+      <button class="btn primary" onclick="confirmFindReplace()">Substituir tudo</button>
     </div>
   </div>
 </div>
@@ -2664,6 +2701,76 @@ function autoLabelFromVal() {
 }
 
 /* BATCH 20: Merge duplicate terms (same value) in current segment */
+/* BATCH 22: Find & Replace across all segments */
+function openFindReplaceModal() {
+  const c=active(); if(!c){ showToast('Selecione um cliente primeiro'); return; }
+  document.getElementById('frFind').value='';
+  document.getElementById('frReplace').value='';
+  document.getElementById('frPreview').textContent='';
+  document.getElementById('frExact').checked=false;
+  document.getElementById('frCase').checked=false;
+  document.getElementById('findReplaceModal').style.display='flex';
+  setTimeout(()=>document.getElementById('frFind').focus(),50);
+}
+function closeFindReplaceModal() { document.getElementById('findReplaceModal').style.display='none'; }
+
+function _frMatches(c) {
+  const field  = document.getElementById('frField').value;
+  const find   = document.getElementById('frFind').value;
+  const exact  = document.getElementById('frExact').checked;
+  const caseSens = document.getElementById('frCase').checked;
+  if(!find) return [];
+  const hits=[];
+  c.segments.forEach(s=>{
+    (c.dictionary[s.id]||[]).forEach((t,i)=>{
+      const val = t[field]||'';
+      const v   = caseSens?val:val.toLowerCase();
+      const f   = caseSens?find:find.toLowerCase();
+      const match = exact ? (v===f) : v.includes(f);
+      if(match) hits.push({segId:s.id, segLabel:s.label, idx:i, term:t, field});
+    });
+  });
+  return hits;
+}
+
+function previewFindReplace() {
+  const c=active(); if(!c) return;
+  const hits=_frMatches(c);
+  const prev=document.getElementById('frPreview');
+  if(!hits.length){ prev.textContent='Nenhuma ocorrência encontrada.'; return; }
+  const replaceVal=document.getElementById('frReplace').value;
+  prev.innerHTML=`<strong>${hits.length} ocorrência(s)</strong>: ${hits.slice(0,5).map(h=>`<em>${esc(h.segLabel)}</em> → "${esc(h.term[h.field])}"${replaceVal?` ➜ "${esc(replaceVal)}"`:''}` ).join('; ')}${hits.length>5?` e mais ${hits.length-5}…`:''}`;
+}
+
+function confirmFindReplace() {
+  const c=active(); if(!c) return;
+  const hits=_frMatches(c);
+  if(!hits.length){ showToast('Nenhuma ocorrência encontrada'); return; }
+  const replaceVal=document.getElementById('frReplace').value;
+  const field=document.getElementById('frField').value;
+  const find=document.getElementById('frFind').value;
+  const exact=document.getElementById('frExact').checked;
+  const caseSens=document.getElementById('frCase').checked;
+  hits.forEach(h=>{
+    const t=c.dictionary[h.segId][h.idx];
+    const v=t[field]||'';
+    if(exact) {
+      t[field]=replaceVal;
+    } else {
+      const flags=caseSens?'g':'gi';
+      t[field]=v.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),flags), replaceVal);
+    }
+    if(field==='value' && !t.value) delete c.dictionary[h.segId][h.idx]; // remove if value cleared
+  });
+  // Clean empty value terms
+  c.segments.forEach(s=>{
+    c.dictionary[s.id]=(c.dictionary[s.id]||[]).filter(t=>t.value);
+  });
+  saveData(); closeFindReplaceModal();
+  if(currentTab==='dicionario') renderDicionario();
+  showToast(`✅ ${hits.length} substituição(ões) feita(s)`);
+}
+
 function mergeDuplicateTerms() {
   const c=active(); if(!c||!activeSeg) return;
   const terms = c.dictionary[activeSeg]||[];
@@ -3473,15 +3580,13 @@ function validateValue(part, terms) {
   if(ci) return {status:'similar',match:ci,msg:`Capitalização: use "${ci.value}"`};
   const lbl=terms.find(t=>t.label.toLowerCase()===part.toLowerCase());
   if(lbl) return {status:'similar',match:lbl,msg:`Valor correto: "${lbl.value}"`};
-  // Closest match via Levenshtein
+  // Closest matches via Levenshtein (batch 22: return top 3)
   const pl=part.toLowerCase();
-  let best=null, bestDist=Infinity;
-  terms.forEach(t=>{
-    const d=Math.min(levenshtein(pl,t.value.toLowerCase()), levenshtein(pl,(t.label||'').toLowerCase()));
-    if(d<bestDist){ bestDist=d; best=t; }
-  });
-  const suggest = best && bestDist<=3 ? ` Quis dizer "${best.value}"?` : '';
-  return {status:'err',msg:`Não está no dicionário.${suggest}`};
+  const dists=terms.map(t=>({t,d:Math.min(levenshtein(pl,t.value.toLowerCase()),levenshtein(pl,(t.label||'').toLowerCase()))}));
+  dists.sort((a,b)=>a.d-b.d);
+  const top3=dists.filter(x=>x.d<=4).slice(0,3).map(x=>x.t);
+  const suggest = top3.length ? ` Quis dizer "${top3[0].value}"?` : '';
+  return {status:'err',msg:`Não está no dicionário.${suggest}`,suggestions:top3};
 }
 
 function validateName() {
@@ -3525,7 +3630,10 @@ function validateName() {
     const fixable = result.status==='similar' && result.match;
     if(fixable) autoFixes.push({segIdx:i, oldVal:part, newVal:result.match.value});
     const fixBtn = fixable ? `<button class="val-fix-btn" title="Corrigir para: ${esc(result.match.value)}" onclick="applyValFix('${esc(result.match.value.replace(/'/g,"\\'"))}','${esc(part.replace(/'/g,"\\'"))}')">✓ ${esc(result.match.value)}</button>` : '';
-    html+=`<div class="val-seg ${result.status}"><span class="val-seg-icon">${icons[result.status]}</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(result.msg)}</span>${fixBtn}</div>`;
+    // Batch 22: show suggestion chips for err status
+    const suggsHtml = (result.status==='err' && result.suggestions?.length)
+      ? `<span style="display:inline-flex;gap:4px;margin-left:6px">${result.suggestions.map(s=>`<button class="val-fix-btn" style="opacity:.75" title="Usar: ${esc(s.value)}" onclick="applyValFix('${esc(s.value.replace(/'/g,"\\'"))}','${esc(part.replace(/'/g,"\\'"))}')">? ${esc(s.value)}</button>`).join('')}</span>` : '';
+    html+=`<div class="val-seg ${result.status}"><span class="val-seg-icon">${icons[result.status]}</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(result.msg)}</span>${fixBtn}${suggsHtml}</div>`;
   });
 
   if(extra){ html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`; errCount++; }
