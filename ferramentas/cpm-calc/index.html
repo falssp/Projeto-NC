@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora CPM Equivalente · NC Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--bg:#f0f2ff;--surface:#fff;
+  --border:#d6dbf2;--muted:#9fa8da;--body:#3d4a8a;
+  --ok:#166534;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
+  --warn:#92400e;--warn-bg:#fffbeb;--warn-bd:#fde68a;
+  --err:#9f1239;--err-bg:#fff1f2;--err-bd:#fecdd3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--escuro);min-height:100vh;padding:0}
+
+/* nav */
+.topbar{background:var(--escuro);padding:12px 24px;display:flex;align-items:center;gap:12px}
+.topbar a{color:#fff;opacity:.7;text-decoration:none;font-size:13px}
+.topbar a:hover{opacity:1}
+.topbar .sep{color:#fff;opacity:.3}
+.topbar .cur{color:#fff;opacity:1;font-weight:600}
+
+.page{max-width:800px;margin:0 auto;padding:32px 24px}
+h1{font-size:24px;font-weight:800;color:var(--escuro);margin-bottom:4px}
+.subtitle{font-size:14px;color:var(--muted);margin-bottom:28px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:16px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}}
+
+label{display:block;font-size:12px;font-weight:600;color:var(--body);margin-bottom:5px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--escuro);background:#fff;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--azul)}
+.hint{font-size:11px;color:var(--muted);margin-top:4px}
+
+.prefix-wrap{position:relative}
+.prefix-wrap span{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);pointer-events:none}
+.prefix-wrap input{padding-left:28px}
+
+/* resultados */
+.result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:0}
+.kpi{border:1.5px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi.highlight{border-color:var(--azul);background:#f0f2ff}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--escuro)}
+.kpi-sub{font-size:11px;color:var(--body);margin-top:2px}
+
+.table-wrap{margin-top:20px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:10px 14px;background:#fafbff;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--escuro)}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:'JetBrains Mono',monospace;font-weight:600}
+tr.active-row{background:#f0f2ff}
+tr.active-row td{font-weight:700;color:var(--azul)}
+
+.divider{height:1px;background:var(--border);margin:20px 0}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#e8eafd;color:var(--azul);margin:3px 2px}
+
+/* tabs de modelo */
+.model-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.model-tab{padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:var(--body);transition:all .15s}
+.model-tab.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+.model-tab:hover:not(.active){border-color:var(--azul);color:var(--azul)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="../../index.html">NC Tool</a>
+  <span class="sep">›</span>
+  <a href="../index.html">Ferramentas</a>
+  <span class="sep">›</span>
+  <span class="cur">Calculadora CPM Equivalente</span>
+</div>
+
+<div class="page">
+  <h1>Calculadora CPM Equivalente</h1>
+  <p class="subtitle">Converta qualquer modelo de compra para CPM e compare o custo real entre formatos.</p>
+
+  <!-- Entrada principal -->
+  <div class="card">
+    <div class="card-title">Dados da campanha</div>
+    <div class="grid2" style="margin-bottom:16px">
+      <div>
+        <label>Budget de mídia (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input type="number" id="budget" placeholder="50000" min="0" step="100" oninput="calc()"></div>
+      </div>
+      <div>
+        <label>Volume entregue</label>
+        <input type="number" id="volume" placeholder="" min="0" oninput="calc()">
+        <div class="hint" id="volume-hint">Impressões, cliques, conversões…</div>
+      </div>
+    </div>
+
+    <label style="margin-bottom:10px">Modelo de compra</label>
+    <div class="model-tabs" id="model-tabs">
+      <div class="model-tab active" data-model="cpm" onclick="setModel('cpm',this)">CPM</div>
+      <div class="model-tab" data-model="cpc" onclick="setModel('cpc',this)">CPC</div>
+      <div class="model-tab" data-model="cpa" onclick="setModel('cpa',this)">CPA</div>
+      <div class="model-tab" data-model="cpcv" onclick="setModel('cpcv',this)">CPCV</div>
+      <div class="model-tab" data-model="cpv" onclick="setModel('cpv',this)">CPV</div>
+      <div class="model-tab" data-model="flat" onclick="setModel('flat',this)">Flat / Patrocínio</div>
+      <div class="model-tab" data-model="cpd" onclick="setModel('cpd',this)">CPD</div>
+      <div class="model-tab" data-model="cpl" onclick="setModel('cpl',this)">CPL</div>
+    </div>
+
+    <!-- campo de taxa do modelo -->
+    <div id="rate-wrap" style="display:none;margin-bottom:16px">
+      <div class="grid2">
+        <div>
+          <label id="rate-label">Taxa do modelo</label>
+          <div class="prefix-wrap"><span id="rate-prefix">R$</span><input type="number" id="rate" placeholder="" min="0" step="0.01" oninput="calc()"></div>
+          <div class="hint" id="rate-hint"></div>
+        </div>
+        <div id="imps-wrap" style="display:none">
+          <label>Impressões estimadas</label>
+          <input type="number" id="imps-est" placeholder="para CPM equiv." min="0" oninput="calc()">
+          <div class="hint">Necessário para calcular o CPM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- campo impressões quando modelo não é CPM -->
+    <div id="imps-wrap-main" style="display:none;margin-bottom:16px">
+      <label>Impressões estimadas <span style="font-weight:400;color:var(--muted)">(para converter em CPM)</span></label>
+      <input type="number" id="imps-main" placeholder="ex: 2000000" min="0" oninput="calc()">
+      <div class="hint">Informe as impressões previstas para calcular o CPM equivalente</div>
+    </div>
+  </div>
+
+  <!-- Resultado principal -->
+  <div class="card" id="result-card" style="display:none">
+    <div class="card-title">Resultado</div>
+    <div class="result-grid" id="result-kpis"></div>
+
+    <div id="cpm-context" style="margin-top:16px;display:none">
+      <div class="divider"></div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Referências de mercado — CPM</div>
+      <div id="cpm-benchmarks"></div>
+    </div>
+  </div>
+
+  <!-- Comparativo entre modelos -->
+  <div class="card" id="compare-card" style="display:none">
+    <div class="card-title">Comparativo de modelos — mesmo budget</div>
+    <div id="compare-assumption" style="font-size:12px;color:var(--body);margin-bottom:14px"></div>
+    <div class="table-wrap">
+      <table id="compare-table">
+        <thead><tr>
+          <th>Modelo</th>
+          <th>Taxa</th>
+          <th>Volume entregue</th>
+          <th>CPM equivalente</th>
+          <th>% eficiência vs atual</th>
+        </tr></thead>
+        <tbody id="compare-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Conversor rápido -->
+  <div class="card">
+    <div class="card-title">Conversor rápido — CPM ↔ outros modelos</div>
+    <div class="grid3" style="margin-bottom:16px">
+      <div>
+        <label>CPM (R$)</label>
+        <div class="prefix-wrap"><span>R$</span><input type="number" id="conv-cpm" placeholder="5.00" min="0" step="0.01" oninput="conv()"></div>
+      </div>
+      <div>
+        <label>CTR (%)</label>
+        <div class="prefix-wrap"><span>%</span><input type="number" id="conv-ctr" placeholder="0.1" min="0" step="0.01" style="padding-left:28px" oninput="conv()"></div>
+      </div>
+      <div>
+        <label>Taxa de conversão (%)</label>
+        <div class="prefix-wrap"><span>%</span><input type="number" id="conv-cvr" placeholder="2" min="0" step="0.1" style="padding-left:28px" oninput="conv()"></div>
+      </div>
+    </div>
+    <div id="conv-result" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+
+</div>
+
+<script>
+const MODEL_META = {
+  cpm:  { label:'CPM',  unit:'mil impressões', rateLabel:'CPM (R$ por mil imps)', ratePrefix:'R$', hint:'Custo por mil impressões', needsImps:false },
+  cpc:  { label:'CPC',  unit:'cliques',        rateLabel:'CPC (R$ por clique)',   ratePrefix:'R$', hint:'Custo por clique',         needsImps:true  },
+  cpa:  { label:'CPA',  unit:'conversões',     rateLabel:'CPA (R$ por conversão)',ratePrefix:'R$', hint:'Custo por aquisição',      needsImps:true  },
+  cpcv: { label:'CPCV', unit:'visualizações completas', rateLabel:'CPCV (R$ por view completo)', ratePrefix:'R$', hint:'Custo por visualização completa', needsImps:true },
+  cpv:  { label:'CPV',  unit:'visualizações',  rateLabel:'CPV (R$ por view)',     ratePrefix:'R$', hint:'Custo por visualização',   needsImps:true  },
+  flat: { label:'Flat', unit:'—',              rateLabel:'Valor fixo (opcional)', ratePrefix:'R$', hint:'Patrocínio ou cost fixo', needsImps:true  },
+  cpd:  { label:'CPD',  unit:'dias',           rateLabel:'CPD (R$ por dia)',      ratePrefix:'R$', hint:'Custo por dia',            needsImps:true  },
+  cpl:  { label:'CPL',  unit:'leads',          rateLabel:'CPL (R$ por lead)',     ratePrefix:'R$', hint:'Custo por lead',           needsImps:true  },
+}
+
+// benchmarks CPM por vertical/formato (referência de mercado BR)
+const BENCH = [
+  { label:'Display Open Web',      min:2,  max:8   },
+  { label:'Display Premium/PMP',   min:8,  max:25  },
+  { label:'Vídeo Pre-roll (OLV)',  min:12, max:35  },
+  { label:'CTV / OTT',             min:20, max:60  },
+  { label:'Social (Meta/TikTok)',  min:4,  max:15  },
+  { label:'Native',                min:3,  max:10  },
+  { label:'Áudio Digital',         min:5,  max:18  },
+  { label:'DOOH programático',     min:10, max:30  },
+]
+
+// comparativo: taxas típicas de mercado por modelo
+const COMPARE_REF = [
+  { model:'CPM',  rate:5,    impsK:1000,  unit:'mil imps'   },
+  { model:'CPC',  rate:0.80, impsK:800,   unit:'cliques'    },
+  { model:'CPA',  rate:35,   impsK:600,   unit:'conversões' },
+  { model:'CPCV', rate:0.25, impsK:700,   unit:'views comp.'  },
+  { model:'CPV',  rate:0.08, impsK:1200,  unit:'views'      },
+]
+
+let currentModel = 'cpm'
+
+function setModel(m, el){
+  currentModel = m
+  document.querySelectorAll('.model-tab').forEach(t=>t.classList.remove('active'))
+  el.classList.add('active')
+  const meta = MODEL_META[m]
+  const rateWrap = document.getElementById('rate-wrap')
+  const rateLabel = document.getElementById('rate-label')
+  const ratePrefix = document.getElementById('rate-prefix')
+  const rateHint = document.getElementById('rate-hint')
+  const impsMain = document.getElementById('imps-wrap-main')
+  if(m==='cpm'){
+    rateWrap.style.display='none'
+    impsMain.style.display='none'
+  } else {
+    rateWrap.style.display='block'
+    rateLabel.textContent = meta.rateLabel
+    ratePrefix.textContent = meta.ratePrefix
+    rateHint.textContent = meta.hint
+    impsMain.style.display = meta.needsImps ? 'block' : 'none'
+  }
+  const vh = document.getElementById('volume-hint')
+  vh.textContent = meta.unit ? `Volume em: ${meta.unit}` : 'Informe o budget para calcular'
+  calc()
+}
+
+function gn(id){ return parseFloat(document.getElementById(id)?.value)||0 }
+
+function fmt(n){ return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function fmtR(n){ return 'R$ '+fmt(n) }
+function fmtI(n){ return Math.round(n).toLocaleString('pt-BR') }
+
+function calc(){
+  const budget = gn('budget')
+  const volume = gn('volume')
+  const rate   = gn('rate')
+  const imps   = gn('imps-main') || gn('imps-est')
+  const m      = currentModel
+  const meta   = MODEL_META[m]
+
+  if(!budget){ hide(); return }
+
+  let cpmEq = null, volumeCalc = volume, costCalc = budget
+
+  if(m==='cpm'){
+    // CPM direto: volume = imps/1000, cpm = budget / (volume)
+    if(volume>0){ cpmEq = budget / volume; volumeCalc = volume * 1000 }
+    else if(rate>0){ cpmEq = rate; volumeCalc = (budget/rate)*1000 }
+    else { cpmEq = null }
+  } else {
+    // para outros modelos, CPM equivalente precisa de impressões
+    if(imps>0 && budget>0){ cpmEq = budget / (imps/1000) }
+  }
+
+  // KPIs
+  const kpis = []
+  if(m==='cpm' && volume>0){
+    kpis.push({ label:'Volume (impressões)', value:fmtI(volumeCalc), sub:'', highlight:false })
+    kpis.push({ label:'CPM', value:fmtR(cpmEq||0), sub:'custo por mil imps', highlight:true })
+    kpis.push({ label:'Budget total', value:fmtR(budget), sub:'', highlight:false })
+  } else if(m==='cpm' && rate>0){
+    kpis.push({ label:'CPM', value:fmtR(rate), sub:'custo por mil imps', highlight:true })
+    kpis.push({ label:'Impressões estimadas', value:fmtI(volumeCalc), sub:'com este budget', highlight:false })
+    kpis.push({ label:'Budget total', value:fmtR(budget), sub:'', highlight:false })
+  } else {
+    if(volume>0){ kpis.push({ label:`Volume (${meta.unit})`, value:fmtI(volume), sub:'', highlight:false }) }
+    if(rate>0){
+      const realCost = rate * volume
+      kpis.push({ label:`${meta.label} (taxa)`, value:fmtR(rate), sub:meta.hint, highlight:false })
+      if(volume>0) kpis.push({ label:'Custo calculado', value:fmtR(realCost), sub:'taxa × volume', highlight:false })
+    }
+    kpis.push({ label:'Budget total', value:fmtR(budget), sub:'', highlight:false })
+    if(cpmEq!=null) kpis.push({ label:'CPM equivalente', value:fmtR(cpmEq), sub:'custo normalizado/mil imps', highlight:true })
+  }
+
+  const rc = document.getElementById('result-card')
+  const kg = document.getElementById('result-kpis')
+  rc.style.display = 'block'
+  kg.innerHTML = kpis.map(k=>`
+    <div class="kpi${k.highlight?' highlight':''}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      ${k.sub?`<div class="kpi-sub">${k.sub}</div>`:''}
+    </div>`).join('')
+
+  // benchmarks
+  const ctx = document.getElementById('cpm-context')
+  const bm  = document.getElementById('cpm-benchmarks')
+  if(cpmEq!=null){
+    ctx.style.display='block'
+    bm.innerHTML = BENCH.map(b=>{
+      const ok  = cpmEq >= b.min && cpmEq <= b.max
+      const low = cpmEq < b.min
+      const color = ok ? 'var(--ok)' : low ? 'var(--warn)' : 'var(--err)'
+      const icon  = ok ? '✅' : low ? '⬇️' : '⬆️'
+      const bg    = ok ? 'var(--ok-bg)' : low ? 'var(--warn-bg)' : 'var(--err-bg)'
+      const bd    = ok ? 'var(--ok-bd)' : low ? 'var(--warn-bd)' : 'var(--err-bd)'
+      return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;border:1px solid ${bd};background:${bg};font-size:11px;font-weight:600;color:${color};margin:3px 2px">
+        ${icon} ${b.label} · ${fmtR(b.min)}–${fmtR(b.max)}</span>`
+    }).join('')
+  } else {
+    ctx.style.display='none'
+  }
+
+  // comparativo
+  buildCompare(budget, cpmEq)
+}
+
+function buildCompare(budget, cpmEqAtual){
+  const cc = document.getElementById('compare-card')
+  const tb = document.getElementById('compare-tbody')
+  const ass = document.getElementById('compare-assumption')
+  if(!budget){ cc.style.display='none'; return }
+  cc.style.display='block'
+  ass.textContent = `Budget fixo: ${fmtR(budget)}. Taxas de referência de mercado BR.`
+
+  tb.innerHTML = COMPARE_REF.map(r=>{
+    const vol = r.model==='CPM' ? (budget/(r.rate)) * 1000 : budget / r.rate
+    const cpmEq = r.impsK>0 ? budget/(r.impsK) : null
+    // eficiência em impressões relativa ao atual (se tivermos CPM equiv atual)
+    const eff = (cpmEqAtual!=null && cpmEq!=null && cpmEqAtual>0) ? (cpmEqAtual/cpmEq - 1)*100 : null
+    const isActive = r.model.toLowerCase() === currentModel.toUpperCase() || r.model === MODEL_META[currentModel]?.label
+    return `<tr class="${isActive?'active-row':''}">
+      <td>${r.model}${isActive?' ◀ atual':''}</td>
+      <td class="mono">${r.model==='CPM'?fmtR(r.rate)+'/mil':fmtR(r.rate)}</td>
+      <td class="mono">${fmtI(Math.round(r.model==='CPM'?(budget/r.rate)*1000:budget/r.rate))} ${r.unit}</td>
+      <td class="mono">${cpmEq!=null?fmtR(cpmEq):'—'}</td>
+      <td style="color:${eff==null?'var(--muted)':eff>0?'var(--ok)':eff<0?'var(--err)':'var(--body)'};font-weight:600">${eff==null?'—':(eff>0?'+':'')+fmt(eff)+'%'}</td>
+    </tr>`
+  }).join('')
+}
+
+function hide(){
+  document.getElementById('result-card').style.display='none'
+  document.getElementById('compare-card').style.display='none'
+}
+
+function conv(){
+  const cpm = gn('conv-cpm')
+  const ctr = gn('conv-ctr') / 100
+  const cvr = gn('conv-cvr') / 100
+  const el  = document.getElementById('conv-result')
+  if(!cpm){ el.innerHTML=''; return }
+
+  const cpc  = ctr>0 ? cpm / (ctr * 1000) : null
+  const cpa  = (ctr>0 && cvr>0) ? cpm / (ctr * cvr * 1000) : null
+  const cpcv = cpm * 0.4  // benchmark CPCV ~ 40% do CPM como referência
+  const cpv  = cpm * 0.015 // benchmark CPV display
+
+  const chips = [
+    cpc  != null ? `<span class="chip">CPC equiv.: ${fmtR(cpc)}</span>` : '',
+    cpa  != null ? `<span class="chip">CPA equiv.: ${fmtR(cpa)}</span>` : '',
+    `<span class="chip">CPCV ref.: ${fmtR(cpcv)}</span>`,
+    `<span class="chip">CPV ref.: ${fmtR(cpv)}</span>`,
+  ]
+  el.innerHTML = chips.join('')
+}
+</script>
+</body>
+</html>
