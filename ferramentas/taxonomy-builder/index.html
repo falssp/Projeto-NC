@@ -389,6 +389,16 @@ body {
 .cross-result-use-btn{font-size:10px;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:1px 6px;cursor:pointer;flex-shrink:0;margin-left:auto;}
 .cross-result-use-btn:hover{opacity:.85;}
 .client-card-notes-edit{width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--accent);border-radius:5px;background:var(--input-bg);color:var(--fg);resize:none;outline:none;margin-top:3px;}
+.builder-seg-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--faint);font-size:14px;padding:0 2px;line-height:1;display:none;}
+.builder-seg-clear:hover{color:var(--err);}
+.builder-ac-wrap{position:relative;}
+.builder-ac-wrap:has(input:not(:placeholder-shown)) .builder-seg-clear{display:block;}
+.val-copy-name-btn{font-size:11px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--fg);transition:background .1s;}
+.val-copy-name-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.struct-dup-warn{font-size:11px;color:#b45309;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:5px 8px;margin-top:6px;display:none;}
+.stat-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px;}
+.stat-bar-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.stat-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .3s;}
 
 /* ==================== VALIDADOR ==================== */
 .val-textarea {
@@ -1161,6 +1171,7 @@ body {
     <button class="modal-close" onclick="closeStructModal()">×</button>
   </div>
   <div id="structModalBody"></div>
+  <div id="structDupWarn" class="struct-dup-warn"></div>
   <div class="modal-actions">
     <button class="btn secondary" onclick="closeStructModal()">Cancelar</button>
     <button class="btn primary" onclick="saveStructure()">Salvar</button>
@@ -2730,22 +2741,28 @@ function renderBuilder() {
     if(terms.length>0) {
       div.innerHTML=`
         <div class="builder-seg-label">${esc(s.label)} ${badge}</div>
-        <div class="builder-ac-wrap" id="acwrap-${s.id}">
+        <div class="builder-ac-wrap" id="acwrap-${s.id}" style="position:relative">
           <input id="bv-${s.id}" class="builder-ac-input" type="text"
             placeholder="${s.required?'selecione ou digite…':'vazio (opcional) ou digite…'}"
             value="${esc(curVal)}" autocomplete="off"
+            style="padding-right:24px"
             oninput="builderVals['${s.id}']=this.value;updatePreview();showAC('${s.id}',this.value)"
             onfocus="showAC('${s.id}',this.value)"
             onblur="setTimeout(()=>hideAC('${s.id}'),150)"
             onkeydown="handleACKey(event,'${s.id}')">
+          <button class="builder-seg-clear" title="Limpar campo" onclick="clearSegField('${s.id}')">×</button>
           <div class="builder-ac-list" id="aclist-${s.id}"></div>
         </div>
       `;
     } else {
       div.innerHTML=`
         <div class="builder-seg-label">${esc(s.label)} ${badge} <span style="color:var(--warn);font-size:10px">(sem termos)</span></div>
-        <input id="bv-${s.id}" type="text" placeholder="valor livre" value="${esc(curVal)}"
-          oninput="builderVals['${s.id}']=this.value;updatePreview()">
+        <div style="position:relative">
+          <input id="bv-${s.id}" type="text" placeholder="valor livre" value="${esc(curVal)}"
+            style="padding-right:24px;width:100%;box-sizing:border-box"
+            oninput="builderVals['${s.id}']=this.value;updatePreview()">
+          <button class="builder-seg-clear" style="display:${curVal?'block':'none'}" title="Limpar campo" onclick="clearSegField('${s.id}')">×</button>
+        </div>
       `;
     }
     if(terms.length>0) {
@@ -2885,6 +2902,15 @@ function copyBuilderJSON() {
   if(!Object.keys(obj).length) { showToast('Preencha pelo menos um campo'); return; }
   const json = JSON.stringify(obj, null, 2);
   navigator.clipboard.writeText(json).then(()=>showToast('{ } JSON copiado!')).catch(()=>showToast(json));
+}
+
+function clearSegField(segId) {
+  builderVals[segId] = '';
+  const inp = document.getElementById(`bv-${segId}`);
+  if(inp) { inp.value = ''; inp.focus(); }
+  const btn = inp?.parentElement?.querySelector('.builder-seg-clear');
+  if(btn) btn.style.display = 'none';
+  updatePreview();
 }
 
 /* Builder history */
@@ -3028,10 +3054,12 @@ function validateName() {
   if(extra){ html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`; errCount++; }
 
   const total = okCount+errCount+warnCount;
+  const escapedRaw = esc(raw.replace(/'/g,"\\'"));
   const scoreHtml = total ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
     <span class="val-score-badge ${errCount?'val-score-err':'val-score-ok'}">${errCount?`❌ ${errCount} erro(s)`:`✅ Tudo ok`}</span>
     ${warnCount?`<span class="val-score-badge" style="background:rgba(245,158,11,.12);color:#92400e">⚠️ ${warnCount} aviso(s)</span>`:''}
     <span style="font-size:11px;color:var(--faint)">${okCount}/${total} segmentos válidos</span>
+    <button class="val-copy-name-btn" title="Copiar nome completo" onclick="navigator.clipboard.writeText('${escapedRaw}').then(()=>showToast('📋 Nome copiado!')).catch(()=>showToast('${escapedRaw}'))">📋 Copiar nome</button>
   </div>` : '';
   resultsEl.innerHTML=scoreHtml+html;
   if(raw) addToValHistory(raw);
@@ -3384,6 +3412,13 @@ function saveStructure() {
   if(!label){showToast('Digite o label da estrutura.');return;}
   if(!pattern){showToast('Digite o padrão da estrutura.');return;}
   if(!c.structures) c.structures=[];
+  // Duplicate pattern detection
+  const normalPat = pattern.trim().toLowerCase();
+  const dupStruct = (c.structures||[]).find(s=>s.pattern&&s.pattern.trim().toLowerCase()===normalPat&&s.id!==editingStructId);
+  if(dupStruct){
+    const warn=document.getElementById('structDupWarn');
+    if(warn){warn.textContent=`⚠️ Padrão idêntico a "${dupStruct.label}". Salvo mesmo assim.`;warn.style.display='block';setTimeout(()=>{warn.style.display='none';},5000);}
+  }
   if(structModalMode==='add'){
     c.structures.push({id:genId(),label,platform,level,pattern,notes,...(tags.length?{tags}:{})});
   } else {
@@ -4277,6 +4312,30 @@ function openStats() {
   topTerms.sort((a,b)=>b.uses-a.uses);
   topTerms = topTerms.slice(0,10);
 
+  // Segment term count chart
+  const segMap = {};
+  clients.forEach(c => {
+    Object.entries(c.dictionary||{}).forEach(([segId, terms]) => {
+      const seg = (c.segments||[]).find(s=>s.id===segId);
+      const label = seg ? `${c.name} · ${seg.label}` : segId;
+      segMap[label] = (segMap[label]||0) + terms.length;
+    });
+  });
+  const segEntries = Object.entries(segMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const segMax = segEntries.length ? segEntries[0][1] : 1;
+  const segChartHtml = segEntries.length > 1 ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px">📊 Segmentos com mais termos</div>
+      ${segEntries.map(([label, count])=>`
+        <div class="stat-bar-row">
+          <span style="min-width:120px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)">${esc(label)}</span>
+          <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(count/segMax*100)}%"></div></div>
+          <span style="color:var(--accent);font-weight:600;min-width:24px;text-align:right">${count}</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
   // Platform breakdown
   const platMap = {};
   clients.forEach(c => {
@@ -4315,6 +4374,7 @@ function openStats() {
       <div class="stat-tile"><span class="stat-num">${totalSegs}</span><span class="stat-lbl">Segmentos</span></div>
       <div class="stat-tile"><span class="stat-num">${totalStructures}</span><span class="stat-lbl">Estruturas</span></div>
     </div>
+    ${segChartHtml}
     ${platHtml}
     ${topHtml}
   `;
