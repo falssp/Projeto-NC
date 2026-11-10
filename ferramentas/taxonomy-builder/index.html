@@ -381,6 +381,14 @@ body {
 }
 .preview-sep{color:var(--faint);margin:0 1px;}
 .preview-seg.missing{color:var(--erro);font-style:italic;}
+.preview-seg:not(.missing){cursor:pointer;border-radius:3px;transition:background .1s;}
+.preview-seg:not(.missing):hover{background:rgba(37,99,235,.12);}
+.val-score-badge{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600;margin-left:6px;}
+.val-score-ok{background:rgba(34,197,94,.12);color:#15803d;}
+.val-score-err{background:rgba(239,68,68,.12);color:#b91c1c;}
+.cross-result-use-btn{font-size:10px;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:1px 6px;cursor:pointer;flex-shrink:0;margin-left:auto;}
+.cross-result-use-btn:hover{opacity:.85;}
+.client-card-notes-edit{width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--accent);border-radius:5px;background:var(--input-bg);color:var(--fg);resize:none;outline:none;margin-top:3px;}
 
 /* ==================== VALIDADOR ==================== */
 .val-textarea {
@@ -1583,7 +1591,7 @@ function renderClientes() {
         }).join('')}
       </div>
       ${c.lastModified?(()=>{const d=new Date(c.lastModified);const daysAgo=Math.floor((Date.now()-c.lastModified)/86400000);const dStr=daysAgo===0?'hoje':daysAgo===1?'ontem':`${daysAgo}d atrás`;return `<div class="client-card-modified" title="${d.toLocaleString('pt-BR')}">✏ ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} · ${dStr}</div>`})():''}
-      ${c.notes?`<div class="client-card-notes" title="${esc(c.notes)}">📝 ${esc(c.notes.length>60?c.notes.slice(0,57)+'…':c.notes)}</div>`:''}
+      ${c.notes?`<div class="client-card-notes" title="${esc(c.notes)} · Duplo clique para editar" ondblclick="event.stopPropagation();editNotesInline('${c.id}',this)">📝 ${esc(c.notes.length>60?c.notes.slice(0,57)+'…':c.notes)}</div>`:`<div class="client-card-notes" style="opacity:.4" title="Duplo clique para adicionar notas" ondblclick="event.stopPropagation();editNotesInline('${c.id}',this)">📝 Adicionar nota…</div>`}
     `;
     grid.appendChild(div);
   });
@@ -1627,6 +1635,26 @@ function setClientColor(id, color) {
   const c = getClient(id); if(!c) return;
   if(color) c.color = color; else delete c.color;
   saveData(); renderClientes();
+}
+
+function editNotesInline(id, el) {
+  const c = getClient(id); if(!c) return;
+  const wrap = el.closest('.client-card-notes') || el.parentElement;
+  const cur = c.notes || '';
+  const ta = document.createElement('textarea');
+  ta.className = 'client-card-notes-edit';
+  ta.value = cur;
+  ta.rows = 2;
+  ta.placeholder = 'Notas internas…';
+  ta.onclick = e => e.stopPropagation();
+  ta.onblur = () => {
+    const v = ta.value.trim();
+    if(v) c.notes = v; else delete c.notes;
+    saveData(); renderClientes();
+  };
+  ta.onkeydown = e => { if(e.key==='Escape'){ ta.blur(); } if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); ta.blur(); } };
+  wrap.replaceWith(ta);
+  ta.focus(); ta.select();
 }
 
 function initClientDragDrop() {
@@ -1920,9 +1948,17 @@ function crossSearchDict(q) {
       <span class="cross-term-val">${esc(r.term.value)}</span>
       ${r.term.label&&r.term.label!==r.term.value?`<span class="cross-term-label">${esc(r.term.label)}</span>`:''}
       ${r.term.desc?`<span class="cross-term-desc">${esc(r.term.desc)}</span>`:''}
+      <button class="cross-result-use-btn" title="Preencher este segmento no Builder" onclick="crossUseInBuilder('${esc(r.seg.id)}','${esc(r.term.value.replace(/'/g,"\\'"))}')">→ Builder</button>
     </div>
   `).join('');
   resDiv.style.display = 'block';
+}
+
+function crossUseInBuilder(segId, val) {
+  builderVals[segId] = val;
+  switchTab('builder');
+  renderBuilder();
+  showToast(`→ Builder: ${val}`);
 }
 
 /* =============================================
@@ -2762,7 +2798,7 @@ function updatePreview() {
   }
 
   box.innerHTML=parts.map((p,i)=>{
-    const seg=p.val?`<span class="preview-seg">${esc(p.val)}</span>`:`<span class="preview-seg missing">[${esc(p.label)}]</span>`;
+    const seg=p.val?`<span class="preview-seg" title="Clique para copiar "${esc(p.val)}"" onclick="navigator.clipboard.writeText('${esc(p.val.replace(/'/g,"\\'"))}').then(()=>showToast('📋 ${esc(p.label)}: ${esc(p.val.replace(/'/g,"\\'"))}')).catch(()=>showToast('${esc(p.val.replace(/'/g,"\\'")}'))">${esc(p.val)}</span>`:`<span class="preview-seg missing">[${esc(p.label)}]</span>`;
     const dot=(i<parts.length-1&&p.sep!==undefined)?`<span class="preview-sep">${esc(p.sep)}</span>`:'';
     return seg+dot;
   }).join('');
@@ -2963,21 +2999,29 @@ function validateName() {
   const {parts,extra}=parseNameBySegments(raw,segDefs,c.separator);
   const icons={ok:'✅',similar:'⚠️',warn:'⚠️',err:'❌'};
   let html='';
+  let okCount=0, errCount=0, warnCount=0;
 
   segDefs.forEach((seg,i)=>{
     const part=parts[i];
     if(part===undefined||part===''){
-      if(seg.required) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">—</span><span class="val-seg-msg">Obrigatório, não encontrado</span></div>`;
+      if(seg.required){ html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">—</span><span class="val-seg-msg">Obrigatório, não encontrado</span></div>`; errCount++; }
       return;
     }
     const terms=c.dictionary[seg.id]||[];
     const result=validateValue(part,terms);
+    if(result.status==='ok') okCount++; else if(result.status==='err') errCount++; else warnCount++;
     html+=`<div class="val-seg ${result.status}"><span class="val-seg-icon">${icons[result.status]}</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(result.msg)}</span></div>`;
   });
 
-  if(extra) html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`;
+  if(extra){ html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`; errCount++; }
 
-  resultsEl.innerHTML=html;
+  const total = okCount+errCount+warnCount;
+  const scoreHtml = total ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <span class="val-score-badge ${errCount?'val-score-err':'val-score-ok'}">${errCount?`❌ ${errCount} erro(s)`:`✅ Tudo ok`}</span>
+    ${warnCount?`<span class="val-score-badge" style="background:rgba(245,158,11,.12);color:#92400e">⚠️ ${warnCount} aviso(s)</span>`:''}
+    <span style="font-size:11px;color:var(--faint)">${okCount}/${total} segmentos válidos</span>
+  </div>` : '';
+  resultsEl.innerHTML=scoreHtml+html;
   if(raw) addToValHistory(raw);
   if(_compareMode) runCompare();
 }
