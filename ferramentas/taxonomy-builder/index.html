@@ -1103,6 +1103,7 @@ body {
         <div><h2>Nome gerado</h2><p>Clique em qualquer segmento para copiar aquele valor</p></div>
         <div style="display:flex;gap:6px">
           <button class="btn secondary btn-sm" id="copyJsonBtn" onclick="copyBuilderJSON()" title="Copiar como JSON {segmento: valor}">{ } JSON</button>
+          <button class="btn secondary btn-sm" onclick="sendBuilderToValidator()" title="Enviar nome gerado para o Validador">✔ Validar</button>
           <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
         </div>
       </div>
@@ -2869,6 +2870,36 @@ function updatePreview() {
   }
 }
 
+function sendBuilderToValidator() {
+  const c=active(); if(!c) return;
+  let parts=c.segments.map(s=>({val:builderVals[s.id]||'',sep:s.sep!==undefined?s.sep:c.separator}));
+  while(parts.length>0&&!parts[parts.length-1].val) parts.pop();
+  if(parts.every(p=>!p.val)){showToast('Preencha o builder primeiro');return;}
+  let result='';
+  for(let i=0;i<parts.length;i++){result+=parts[i].val;if(i<parts.length-1)result+=parts[i].sep!==undefined?parts[i].sep:c.separator;}
+  switchTab('validador');
+  setTimeout(()=>{
+    const inp=document.getElementById('valInput'); if(!inp) return;
+    inp.value=result; validateName();
+    showToast('→ Validador');
+  },80);
+}
+
+function sendToValBatch(name) {
+  if(!name) return;
+  switchTab('validador');
+  setTimeout(()=>{
+    // Ensure batch mode is on
+    const batchBtn = document.getElementById('valBatchToggle');
+    const batchArea = document.getElementById('valBatchInput');
+    if(!batchArea) return;
+    // Activate batch tab if needed
+    if(batchArea.closest('.val-panel')?.style.display==='none') batchBtn?.click();
+    batchArea.value = (batchArea.value.trim() ? batchArea.value.trim()+'\n' : '') + name;
+    showToast('→ Batch');
+  },80);
+}
+
 function clearBuilder() {
   const prev = {...builderVals};
   builderVals={};
@@ -2974,6 +3005,28 @@ function renderBuilderHistory() {
     `<button class="builder-hist-clear" onclick="clearBuilderHistory()" title="Limpar histórico">✕</button>`;
 }
 function useBuilderHistItem(name) {
+  // Try to fill builder segments by splitting the name with the client separator
+  const c = active();
+  if(c && c.segments.length) {
+    // Try splitting with each known separator (client + per-seg)
+    const seps = [...new Set([c.separator, ...c.segments.filter(s=>s.sep!==undefined).map(s=>s.sep)])].filter(s=>s!==undefined&&s!=='');
+    // Build a regex that splits on the client separator respecting position
+    let parts = null;
+    // Try with the main separator first
+    const mainSep = c.separator;
+    const tryParts = mainSep ? name.split(mainSep) : null;
+    if(tryParts && tryParts.length >= c.segments.filter(s=>s.required).length) {
+      parts = tryParts;
+    }
+    if(parts) {
+      const prev = {...builderVals};
+      c.segments.forEach((s,i) => { if(parts[i]!==undefined) builderVals[s.id]=parts[i]; });
+      renderBuilder();
+      showToastWithUndo(`Builder preenchido com histórico`, {type:'clearBuilder', prev});
+      return;
+    }
+  }
+  // Fallback: just copy
   navigator.clipboard.writeText(name).then(()=>showToast(`Copiado: ${name}`)).catch(()=>showToast(name));
 }
 
@@ -3109,6 +3162,7 @@ function validateName() {
     ${warnCount?`<span class="val-score-badge" style="background:rgba(245,158,11,.12);color:#92400e">⚠️ ${warnCount} aviso(s)</span>`:''}
     <span style="font-size:11px;color:var(--faint)">${okCount}/${total} segmentos válidos</span>
     <button class="val-copy-name-btn" title="Copiar nome completo" onclick="navigator.clipboard.writeText('${escapedRaw}').then(()=>showToast('📋 Nome copiado!')).catch(()=>showToast('${escapedRaw}'))">📋 Copiar nome</button>
+    <button class="val-copy-name-btn" title="Adicionar ao batch" onclick="sendToValBatch('${escapedRaw}')">→ Batch</button>
   </div>` : '';
   resultsEl.innerHTML=scoreHtml+html;
   if(raw) addToValHistory(raw);
