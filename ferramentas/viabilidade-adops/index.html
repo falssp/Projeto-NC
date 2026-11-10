@@ -452,7 +452,7 @@ input[type=number]{font-family:var(--mono);font-size:13px}
         <h3>Passo a passo</h3>
         <div class="help-step"><div class="help-num">1</div><div class="help-txt"><b>Identificação</b> — preencha cliente, campanha e período. Aparecerá no PDF exportado.</div></div>
         <div class="help-step"><div class="help-num">2</div><div class="help-txt"><b>Dados da campanha</b> — escolha o modelo de compra (todos os tipos disponíveis), informe volume e custo unitário. A duração é preenchida automaticamente se você informar as datas.</div></div>
-        <div class="help-step"><div class="help-num">3</div><div class="help-txt"><b>Ferramentas</b> — adicione ad servers, ad verifications e DSPs para comparar. Marque "Já possui" quando a empresa já tem contrato ativo — o custo incremental vai a R$ 0,00 e a justificativa muda.</div></div>
+        <div class="help-step"><div class="help-num">3</div><div class="help-txt"><b>Ferramentas</b> — adicione ad servers, ad verifications e DSPs. Para cada uma informe: (a) custo de plataforma (CPM ou valor fixo), (b) tech fee (% do budget ou valor fixo) e (c) hora/homem para gestão. Marque "Já possui" quando a empresa tem contrato ativo — o custo de licença é zerado, mas tech fee e H/H continuam. Use o campo de observação para contexto que aparecerá no PDF.</div></div>
         <div class="help-step"><div class="help-num">4</div><div class="help-txt"><b>Fatores de risco</b> — ajuste os sinais de contexto. Influenciam diretamente o score e a recomendação.</div></div>
         <div class="help-step"><div class="help-num">5</div><div class="help-txt"><b>Calcular</b> — clique em "Calcular viabilidade" e role para o resultado.</div></div>
         <div class="help-step"><div class="help-num">6</div><div class="help-txt"><b>Exportar PDF</b> — gera uma página executiva para Ctrl+P → "Salvar como PDF" — pronta para enviar ao cliente.</div></div>
@@ -481,7 +481,16 @@ input[type=number]{font-family:var(--mono);font-size:13px}
       </div>
       <div class="help-section">
         <h3>DSP / Programática</h3>
-        <p>Plataforma de compra programática (DV360, TTD, Amazon DSP etc.). Custo de plataforma separado do serving — normalmente incluso no deal com o veículo, mas pode haver fee de gestão adicional.</p>
+        <p>Plataforma de compra programática (DV360, TTD, Amazon DSP etc.). <b>DSP e ad server são complementares</b>: o DSP opera no leilão e otimiza lances; o ad server gerencia trafficking, frequência e tracking independente. Não há sobreposição — uma campanha pode (e frequentemente deve) usar os dois.</p>
+      </div>
+      <div class="help-section">
+        <h3>Estrutura de custo por ferramenta</h3>
+        <ul>
+          <li><b>Custo de plataforma</b> — licença / CPM de serving ou verificação cobrado pelo fornecedor</li>
+          <li><b>Tech fee</b> — % do budget de mídia ou valor fixo cobrado pelo parceiro de operação (agência, trading desk)</li>
+          <li><b>Hora/homem</b> — custo interno ou terceirizado de setup, trafficking, QA e monitoramento</li>
+          <li><b>Já possui</b> — zera o custo de plataforma (licença absorvida), mas tech fee e H/H continuam aplicáveis</li>
+        </ul>
       </div>
       <div class="help-section">
         <h3>Critérios de mercado</h3>
@@ -541,9 +550,10 @@ input[type=number]{font-family:var(--mono);font-size:13px}
 /* ══════════════════════════════════════════
    ESTADO
 ══════════════════════════════════════════ */
-let asTools  = []  // [{id, name, cpm, fixed, owned}]
-let avTools  = []  // [{id, name, cpm, fixed, owned}]
-let dspTools = []  // [{id, name, cpm, fixed, owned}]
+// cada tool: {id, name, platformCost, techFeeType, techFeePct, techFeeFixed, hhHours, hhRate, obs, owned}
+let asTools  = []
+let avTools  = []
+let dspTools = []
 let nextId   = 1
 
 /* ══════════════════════════════════════════
@@ -630,7 +640,18 @@ function setToolList(type, list){ if(type==='as') asTools=list; else if(type==='
 
 function addTool(type, defaults={}){
   const id  = nextId++
-  const obj = { id, name:defaults.name||'', cpm:defaults.cpm||0, fixed:defaults.fixed||0, owned:defaults.owned||false }
+  const obj = {
+    id,
+    name:          defaults.name||'',
+    platformCost:  defaults.platformCost||defaults.cpm||0,   // CPM ou valor base da plataforma
+    techFeeType:   defaults.techFeeType||'pct',               // 'pct' | 'fixed'
+    techFeePct:    defaults.techFeePct||0,
+    techFeeFixed:  defaults.techFeeFixed||defaults.fixed||0,
+    hhHours:       defaults.hhHours||0,
+    hhRate:        defaults.hhRate||0,
+    obs:           defaults.obs||'',
+    owned:         defaults.owned||false
+  }
   getToolList(type).push(obj)
   renderToolList(type)
   calc()
@@ -647,8 +668,25 @@ function updateTool(type, id, field, value){
   if(!t) return
   if(field==='owned') t.owned = value
   else if(field==='name') t.name = value
+  else if(field==='techFeeType') t.techFeeType = value
+  else if(field==='obs') t.obs = value
   else t[field] = parseFloat(value)||0
   calc()
+}
+
+function toolTotalCost(t, model, impsMil, mediaBudget){
+  // custo plataforma
+  const cfg = MODEL_CFG[model]||{}
+  let plat = 0
+  if(cfg.fixedCost||cfg.flatMode) plat = t.platformCost
+  else plat = impsMil * t.platformCost
+  // tech fee
+  let tf = 0
+  if(t.techFeeType==='pct') tf = mediaBudget * (t.techFeePct||0)/100
+  else tf = t.techFeeFixed||0
+  // hora/homem
+  const hh = (t.hhHours||0) * (t.hhRate||0)
+  return { plat, tf, hh, total: plat+tf+hh }
 }
 
 function renderToolList(type){
@@ -656,32 +694,52 @@ function renderToolList(type){
   const el   = document.getElementById(type+'-list')
   if(!list.length){ el.innerHTML=''; return }
   const opts   = type==='as' ? AS_OPTIONS : type==='av' ? AV_OPTIONS : DSP_OPTIONS
-  const cpmLbl = type==='dsp' ? 'Fee de plataforma (R$ CPM)' : type==='as' ? 'CPM de serving (R$)' : 'CPM de verificação (R$)'
+  const platLbl = type==='dsp' ? 'Fee plataforma (R$/CPM)' : type==='as' ? 'CPM serving (R$)' : 'CPM verificação (R$)'
   const optHtml = (sel) => opts.map(o=>`<option value="${o}"${o===sel?' selected':''}>${o}</option>`).join('')
+  const ownedLabel = t => t.owned ? '<span style="font-size:9px;background:var(--azul);color:#fff;border-radius:4px;padding:1px 5px;font-weight:700">JÁ POSSUI</span>' : ''
 
   el.innerHTML = list.map(t=>`
-    <div class="tool-row-wrap">
-      <div class="tool-row-grid">
+    <div class="tool-row-wrap" style="${t.owned?'border-color:var(--azul);border-width:1.5px':''}">
+      <div style="display:grid;grid-template-columns:minmax(120px,1.8fr) minmax(90px,1fr) minmax(140px,1.4fr) minmax(110px,1.2fr) 56px 28px;gap:8px;align-items:end">
         <div>
-          <div class="field-label">Plataforma</div>
+          <div class="field-label">Plataforma ${ownedLabel(t)}</div>
           <select onchange="updateTool('${type}',${t.id},'name',this.value)" style="background:#fff">${optHtml(t.name||opts[0])}</select>
         </div>
         <div>
-          <div class="field-label">${cpmLbl}</div>
-          <div class="prefix-wrap"><span>R$</span><input type="number" value="${t.cpm}" min="0" step="0.01" style="padding-left:28px;background:#fff" oninput="updateTool('${type}',${t.id},'cpm',this.value)"></div>
+          <div class="field-label">${platLbl}</div>
+          <div class="prefix-wrap"><span>R$</span><input type="number" value="${t.platformCost}" min="0" step="0.01" style="padding-left:28px;background:#fff" oninput="updateTool('${type}',${t.id},'platformCost',this.value)"></div>
         </div>
         <div>
-          <div class="field-label">Fee fixo / setup (R$)</div>
-          <div class="prefix-wrap"><span>R$</span><input type="number" value="${t.fixed}" min="0" step="0.01" style="padding-left:28px;background:#fff" oninput="updateTool('${type}',${t.id},'fixed',this.value)"></div>
+          <div class="field-label">Tech fee</div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <select style="width:60px;padding:7px 4px;font-size:12px;background:#fff" onchange="updateTool('${type}',${t.id},'techFeeType',this.value)">
+              <option value="pct"${t.techFeeType==='pct'?' selected':''}>%</option>
+              <option value="fixed"${t.techFeeType==='fixed'?' selected':''}>R$</option>
+            </select>
+            ${t.techFeeType==='pct'
+              ? `<div class="prefix-wrap" style="flex:1"><span>%</span><input type="number" value="${t.techFeePct}" min="0" step="0.1" style="padding-left:22px;background:#fff" oninput="updateTool('${type}',${t.id},'techFeePct',this.value)"></div>`
+              : `<div class="prefix-wrap" style="flex:1"><span>R$</span><input type="number" value="${t.techFeeFixed}" min="0" step="0.01" style="padding-left:28px;background:#fff" oninput="updateTool('${type}',${t.id},'techFeeFixed',this.value)"></div>`
+            }
+          </div>
+        </div>
+        <div>
+          <div class="field-label">H/H (horas × R$/h)</div>
+          <div style="display:flex;gap:4px">
+            <input type="number" placeholder="h" value="${t.hhHours||''}" min="0" step="0.5" style="width:50px;background:#fff" oninput="updateTool('${type}',${t.id},'hhHours',this.value)">
+            <div class="prefix-wrap" style="flex:1"><span>R$</span><input type="number" placeholder="taxa" value="${t.hhRate||''}" min="0" step="10" style="padding-left:28px;background:#fff" oninput="updateTool('${type}',${t.id},'hhRate',this.value)"></div>
+          </div>
         </div>
         <div class="owned-col">
           <div class="field-label" style="font-size:9px">Já possui</div>
-          <label class="owned-toggle" title="Empresa já possui contrato ativo">
+          <label class="owned-toggle" title="Empresa já possui contrato ativo — mantém custos operacionais">
             <input type="checkbox" ${t.owned?'checked':''} onchange="updateTool('${type}',${t.id},'owned',this.checked)">
             <span class="owned-track"></span>
           </label>
         </div>
         <button class="rm-btn" onclick="removeTool('${type}',${t.id})" title="Remover">×</button>
+      </div>
+      <div style="margin-top:7px">
+        <input type="text" placeholder="Observação (aparece no PDF)..." value="${t.obs||''}" style="font-size:12px;color:var(--body);background:transparent;border-color:transparent;border-bottom:1px dashed var(--border);border-radius:0;padding:3px 0" oninput="updateTool('${type}',${t.id},'obs',this.value)" onfocus="this.style.borderColor='var(--azul)'" onblur="this.style.borderColor='transparent'">
       </div>
     </div>`).join('')
 }
@@ -723,16 +781,22 @@ function calcBudget(model){
   }
 }
 
+// custo incremental (plataforma) — para comparar opções
 function toolCostCalc(t, model, impsMil){
-  if(t.owned) return 0
   const cfg = MODEL_CFG[model]||{}
-  if(cfg.fixedCost || cfg.flatMode) return t.fixed
-  return impsMil * t.cpm + t.fixed
+  let plat = cfg.fixedCost||cfg.flatMode ? t.platformCost : impsMil * t.platformCost
+  if(t.owned) plat = 0  // plataforma já paga — sem custo incremental de licença
+  return plat
 }
+// custo de referência (sem owned override) — para mostrar valor riscado
 function toolCostFullCalc(t, model, impsMil){
   const cfg = MODEL_CFG[model]||{}
-  if(cfg.fixedCost || cfg.flatMode) return t.fixed
-  return impsMil * t.cpm + t.fixed
+  return cfg.fixedCost||cfg.flatMode ? t.platformCost : impsMil * t.platformCost
+}
+// custo total real (plataforma + techfee + H/H)
+function toolTotalReal(t, model, impsMil, mediaBudget){
+  const { total } = toolTotalCost(t, model, impsMil, mediaBudget)
+  return total
 }
 
 /* ══════════════════════════════════════════
@@ -742,8 +806,9 @@ function calc(){
   const model = gv('buy-model')
   const { budget: mediaBudget, impsMil, volLabel } = calcBudget(model)
 
-  const toolCost     = t => toolCostCalc(t, model, impsMil)
-  const toolCostFull = t => toolCostFullCalc(t, model, impsMil)
+  const toolCost     = t => toolCostCalc(t, model, impsMil)       // plataforma incremental
+  const toolCostFull = t => toolCostFullCalc(t, model, impsMil)   // referência sem owned
+  const toolTotal    = t => toolTotalReal(t, model, impsMil, mediaBudget) // plataforma+tf+hh
 
   // AdOps
   const adopsCost = gn('adops-hrs') * gn('adops-rate')
@@ -770,8 +835,8 @@ function calc(){
   if(inventory==='social'){ asScore-=1; asSignals.push({t:'Walled garden',c:'yellow',msg:'Meta, TikTok etc. limitam tracking externo.'}) }
   if(MODEL_CFG[model]?.flatMode && multiPub==='no' && pixel==='no'){ asScore-=1; asSignals.push({t:'Flat fee sem pixel',c:'yellow',msg:'Serving variável perde relevância em compra de valor fixo sem rastreio.'}) }
 
-  const bestAS     = asTools.length ? asTools.reduce((a,b)=>toolCost(a)<=toolCost(b)?a:b) : null
-  const bestASCost = bestAS ? toolCost(bestAS) : 0
+  const bestAS     = asTools.length ? asTools.reduce((a,b)=>toolTotal(a)<=toolTotal(b)?a:b) : null
+  const bestASCost = bestAS ? toolTotal(bestAS) : 0
   const bestASPct  = mediaBudget>0 ? (bestASCost/mediaBudget)*100 : 0
   if(bestAS && bestASPct<=2.5 && mediaBudget>0){ asScore+=2; asSignals.push({t:'Custo ≤ 2,5% do budget',c:'green',msg:`${bestAS.name||'Ad Server'}: ${fmtP(bestASPct)} — custo muito baixo.`}) }
   else if(bestAS && bestASPct<=5 && mediaBudget>0){ asScore+=1; asSignals.push({t:'Custo ≤ 5% do budget',c:'green',msg:`${bestAS.name||'Ad Server'}: ${fmtP(bestASPct)} — dentro do limite aceitável.`}) }
@@ -799,8 +864,8 @@ function calc(){
   if(inventory==='social'){ avScore-=1; avSignals.push({t:'Walled garden',c:'yellow',msg:'Meta, TikTok e similares limitam mensuração por terceiros.'}) }
   if(inventory==='direct'){ avScore-=1; avSignals.push({t:'Direct deal',c:'green',msg:'Inventário direct tem menor risco de IVT.'}) }
 
-  const bestAV     = avTools.length ? avTools.reduce((a,b)=>toolCost(a)<=toolCost(b)?a:b) : null
-  const bestAVCost = bestAV ? toolCost(bestAV) : 0
+  const bestAV     = avTools.length ? avTools.reduce((a,b)=>toolTotal(a)<=toolTotal(b)?a:b) : null
+  const bestAVCost = bestAV ? toolTotal(bestAV) : 0
   const bestAVPct  = mediaBudget>0 ? (bestAVCost/mediaBudget)*100 : 0
   if(bestAV && bestAVPct>10 && mediaBudget>0){ avScore-=1; avSignals.push({t:`Custo alto (${fmtP(bestAVPct)})`,c:'yellow',msg:'Avaliar se o parceiro tem mínimo mensal elevado.'}) }
 
@@ -814,15 +879,43 @@ function calc(){
   else if(avScore>=2) { avVerdict='⚠️ Avaliar caso a caso';  avClass='warn' }
   else                { avVerdict='❌ Não recomendado';       avClass='no'   }
 
-  // ── DSP SCORE (simples — custo / owned) ──
-  const bestDSP     = dspTools.length ? dspTools.reduce((a,b)=>toolCost(a)<=toolCost(b)?a:b) : null
-  const bestDSPCost = bestDSP ? toolCost(bestDSP) : 0
+  // ── DSP SCORE (critérios programáticos) ──
+  const dspSignals = []; let dspScore = 0
+  if(inventory==='open'||inventory==='pmp'){
+    dspScore+=3; dspSignals.push({t:'Inventário programático',c:'green',msg:'DSP é o meio natural de compra para open web e PMP.'})
+  }
+  if(vertical==='perf'||vertical==='retail'){
+    dspScore+=2; dspSignals.push({t:'Performance / Retail',c:'green',msg:'Otimização algorítmica de lances eleva eficiência de CPA/ROAS.'})
+  }
+  if(pixel==='yes'){
+    dspScore+=2; dspSignals.push({t:'Pixel / Audiência 1P',c:'green',msg:'DSP permite ativação de audiências proprietárias e lookalike.'})
+  }
+  if(hasVideo==='yes'&&(inventory==='ctv'||inventory==='open')){
+    dspScore+=2; dspSignals.push({t:'Vídeo programático',c:'green',msg:'Compra de inventário de vídeo premium via deal PMP ou open auction.'})
+  }
+  if(inventory==='social'){
+    dspScore-=2; dspSignals.push({t:'Walled garden',c:'yellow',msg:'Meta, TikTok e similares têm DSPs próprios — integração externa limitada.'})
+  }
+  if(inventory==='direct'){
+    dspScore-=1; dspSignals.push({t:'Direct deal',c:'yellow',msg:'Inventário direct não requer DSP — contratação direta com o veículo.'})
+  }
+
+  const bestDSP     = dspTools.length ? dspTools.reduce((a,b)=>toolTotal(a)<=toolTotal(b)?a:b) : null
+  const bestDSPCost = bestDSP ? toolTotal(bestDSP) : 0
   const bestDSPPct  = mediaBudget>0 ? (bestDSPCost/mediaBudget)*100 : 0
+
+  let dspVerdictScore, dspClass2
+  if(dspTools.length){
+    if(dspScore>=3)       { dspVerdictScore='✅ Recomendado';          dspClass2='yes'  }
+    else if(dspScore>=1)  { dspVerdictScore='⚠️ Avaliar caso a caso';  dspClass2='warn' }
+    else                  { dspVerdictScore='❌ Não recomendado';       dspClass2='no'   }
+  }
 
   // ── RENDER ──
   document.getElementById('result').style.display = 'block'
 
   const totalOps = bestASCost + bestAVCost + bestDSPCost + adopsCost
+  // bestASCost etc. already use toolTotal (plataforma+tf+hh)
   const opsPct   = mediaBudget>0 ? (totalOps/mediaBudget)*100 : 0
 
   document.getElementById('kpi-row').innerHTML = `
@@ -867,27 +960,42 @@ function calc(){
         else      para = `Não identificamos necessidade de contratar ad verification para esta campanha. ${alertas.slice(0,2).join(' ')} O custo de ${custoStr} com ${nome} não se justificaria dado o perfil de inventário.${outroPart}`
       }
     } else {
-      // DSP
-      if(owned) para = `A empresa já possui acesso ativo ao ${nome}, sem custo de plataforma incremental nesta campanha. O fee de gestão pode ser aplicado normalmente ao custo de AdOps.`
-      else      para = `O uso do ${nome} como plataforma programática implica custo de plataforma de ${custoStr}.${outroPart} Verificar se o deal com o veículo já inclui acesso à plataforma antes de incluir este custo separadamente.`
+      // DSP — justificativa específica AS×DSP + owned awareness
+      const rec2 = verdict.includes('✅'), aval2 = verdict.includes('⚠️')
+      if(owned){
+        if(rec2)   para = `A empresa já possui contrato ativo com ${nome}, o que elimina o custo de licença de plataforma nesta campanha — tech fee e hora/homem continuam aplicáveis. Considerando o perfil programático desta ação — ${positivos.slice(0,2).join('; ')} — o uso do DSP se justifica plenamente. Importante destacar que ${nome} e o ad server são funções complementares: o DSP realiza a compra de mídia no leilão, enquanto o ad server gerencia o trafficking, o tracking e a mensuração independente dos criativos. Não há sobreposição — um não substitui o outro.`
+        else if(aval2) para = `A empresa já possui ${nome} disponível. O custo de plataforma não será incremental, restando apenas tech fee e horas de gestão. Vale avaliar se a campanha tem componente programático relevante — ${positivos.length?positivos[0]+'.':''} ${alertas.length?alertas[0]+'.':''} Tendo a ferramenta disponível, o critério é operacional.`
+        else      para = `Embora a empresa possua ${nome}, o perfil desta campanha não favorece a compra programática via DSP. ${alertas.slice(0,2).join(' ')} O inventário pode ser acessado diretamente, sem a camada adicional de plataforma.`
+      } else {
+        if(rec2)   para = `Recomendamos o uso de ${nome} como plataforma de compra programática (${custoStr}). ${positivos.slice(0,2).join(' ')} Vale destacar que DSP e ad server são complementares: o DSP opera no leilão de mídia e otimiza lances, enquanto o ad server controla trafficking, frequência e tracking — funções distintas que coexistem na mesma campanha.${outroPart}`
+        else if(aval2) para = `O uso de DSP merece avaliação. A opção mais econômica é ${nome} (${custoStr}).${outroPart} ${positivos.length?positivos[0]+'.':''} ${alertas.length?alertas[0]+'.':''} Verificar se o veículo não oferece acesso à plataforma incluso no deal antes de incluir este custo separadamente.`
+        else      para = `Não identificamos necessidade de DSP para esta campanha. ${alertas.slice(0,2).join(' ')} O inventário pode ser acessado por compra direta, sem custo de plataforma programática adicional (mín. ${custoStr} com ${nome}).${outroPart}`
+      }
     }
     if(defs.length) para += ` <em>${defs[0]}</em>`
     return `<p style="font-size:13px;line-height:1.65;color:#333;margin:0">${para}</p>`
   }
 
   const toolCards = (list) => list.map((t,i)=>{
-    const cost     = toolCost(t)
-    const costFull = toolCostFull(t)
-    const pct      = mediaBudget>0?(cost/mediaBudget)*100:0
-    const cls      = list.length===1?'only':i===0?'best':'worst'
+    const breakdown = toolTotalCost(t, model, impsMil, mediaBudget)
+    const platRef   = toolCostFull(t)
+    const platReal  = toolCost(t)
+    const total     = t.owned ? (breakdown.tf + breakdown.hh) : breakdown.total
+    const pct       = mediaBudget>0?(total/mediaBudget)*100:0
+    const cls       = list.length===1?'only':i===0?'best':'worst'
     const ownedBadge    = t.owned ? '<div class="best-badge" style="background:var(--azul)">JÁ POSSUI</div>' : ''
     const bestCostBadge = !t.owned&&cls==='best'&&list.length>1 ? '<div class="best-badge">MENOR CUSTO</div>' : ''
-    const costVal = t.owned
-      ? `<div class="tool-cost-val" style="color:var(--azul)">R$ 0,00</div><div class="tool-cost-pct" style="text-decoration:line-through;color:var(--muted)">${fmtR(costFull)} (ref.)</div>`
-      : `<div class="tool-cost-val">${fmtR(cost)}</div><div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':'CPM '+fmtR(t.cpm)+' · fee '+fmtR(t.fixed)}</div>`
+    const platLine = t.owned
+      ? `<div style="font-size:11px;color:var(--muted)">Plataforma: <span style="text-decoration:line-through">${fmtR(platRef)}</span> → R$ 0,00 <span style="font-size:10px">(já possui)</span></div>`
+      : (breakdown.plat>0 ? `<div style="font-size:11px;color:var(--muted)">Plataforma: ${fmtR(breakdown.plat)}</div>` : '')
+    const tfLine = breakdown.tf>0 ? `<div style="font-size:11px;color:var(--muted)">Tech fee: ${fmtR(breakdown.tf)}${t.techFeeType==='pct'?' ('+fmtP(t.techFeePct)+' budget)':''}</div>` : ''
+    const hhLine = breakdown.hh>0 ? `<div style="font-size:11px;color:var(--muted)">H/H: ${fmtR(breakdown.hh)} (${t.hhHours}h)</div>` : ''
+    const obsLine = t.obs ? `<div style="font-size:10px;color:var(--body);margin-top:4px;font-style:italic">${t.obs}</div>` : ''
     return `<div class="tool-compare-card ${cls}">${ownedBadge}${bestCostBadge}
       <div class="tool-name">${t.name||'(sem nome)'}</div>
-      ${costVal}
+      <div class="tool-cost-val" style="color:${t.owned?'var(--azul)':'var(--azul)'}">${fmtR(total)}</div>
+      <div class="tool-cost-pct">${mediaBudget>0?fmtP(pct)+' do budget':''}</div>
+      <div style="margin-top:5px;border-top:1px solid var(--border);padding-top:4px">${platLine}${tfLine}${hhLine}${obsLine}</div>
     </div>`
   }).join('')
 
@@ -916,22 +1024,32 @@ function calc(){
   const avSorted  = [...avTools].sort((a,b)=>toolCost(a)-toolCost(b))
   const dspSorted = [...dspTools].sort((a,b)=>toolCost(a)-toolCost(b))
 
-  const dspVerdict = dspTools.length ? (bestDSPPct<=5?'✅ Custo baixo':bestDSPPct<=10?'⚠️ Custo moderado':'❌ Custo elevado') : '—'
-  const dspClass   = dspTools.length ? (bestDSPPct<=5?'yes':bestDSPPct<=10?'warn':'no') : 'warn'
+  const dspVerdict = dspTools.length ? (dspVerdictScore||'⚠️ Avaliar caso a caso') : '—'
+  const dspClass   = dspTools.length ? (dspClass2||'warn') : 'warn'
 
   let compareHTML = buildRow(asTools,  asSorted,  'as',  'Ad Servers',      '🖥️', asVerdict,  asClass,  asSignals,  asDefenses,  bestAS,  bestASCost,  bestASPct)
                   + buildRow(avTools,  avSorted,  'av',  'Ad Verifications', '🛡️', avVerdict,  avClass,  avSignals,  avDefenses,  bestAV,  bestAVCost,  bestAVPct)
-                  + buildRow(dspTools, dspSorted, 'dsp', 'DSP / Programática','📊', dspVerdict, dspClass, [],         [],          bestDSP, bestDSPCost, bestDSPPct)
+                  + buildRow(dspTools, dspSorted, 'dsp', 'DSP / Programática','📊', dspVerdict, dspClass, dspSignals, [],          bestDSP, bestDSPCost, bestDSPPct)
 
   if(!compareHTML) compareHTML = '<p style="font-size:13px;color:var(--muted)">Nenhuma ferramenta cadastrada ainda.</p>'
   document.getElementById('compare-content').innerHTML = compareHTML
 
   // BREAKDOWN
+  const mkBreakdownRows = (tool, label, color) => {
+    if(!tool) return []
+    const bd = toolTotalCost(tool, model, impsMil, mediaBudget)
+    const platCost = tool.owned ? 0 : bd.plat
+    const rows2 = []
+    rows2.push([`${label} · plataforma${tool.owned?' (já possui)':''}`, platCost, mediaBudget>0?(platCost/mediaBudget)*100:0, color])
+    if(bd.tf>0) rows2.push([`${label} · tech fee${tool.techFeeType==='pct'?' ('+fmtP(tool.techFeePct)+' budget)':''}`, bd.tf, mediaBudget>0?(bd.tf/mediaBudget)*100:0, color])
+    if(bd.hh>0) rows2.push([`${label} · hora/homem (${tool.hhHours}h)`, bd.hh, mediaBudget>0?(bd.hh/mediaBudget)*100:0, color])
+    return rows2
+  }
   const rows = [
     ['Mídia', mediaBudget, mediaBudget>0?100:0, 'var(--azul)'],
-    ...(asTools.length  ? [[bestAS?`Ad Server (${bestAS.name||'—'})` :'Ad Server',  bestASCost,  bestASPct,  '#4a5fd4']] : []),
-    ...(avTools.length  ? [[bestAV?`Verification (${bestAV.name||'—'})` :'Ad Verif.',bestAVCost,  bestAVPct,  '#7b88e8']] : []),
-    ...(dspTools.length ? [[bestDSP?`DSP (${bestDSP.name||'—'})` :'DSP',           bestDSPCost, bestDSPPct, '#9a6dd4']] : []),
+    ...mkBreakdownRows(bestAS,  bestAS?`Ad Server (${bestAS.name||'—'})`:'Ad Server', '#4a5fd4'),
+    ...mkBreakdownRows(bestAV,  bestAV?`Verification (${bestAV.name||'—'})`:'Ad Verif.', '#7b88e8'),
+    ...mkBreakdownRows(bestDSP, bestDSP?`DSP (${bestDSP.name||'—'})`:'DSP', '#9a6dd4'),
     ['AdOps (horas)', adopsCost, mediaBudget>0?(adopsCost/mediaBudget)*100:0, '#a0aaed'],
     ['Total operacional', totalOps, opsPct, opsPct>15?'var(--err)':opsPct>10?'var(--warn)':'var(--ok)'],
   ]
@@ -1133,9 +1251,10 @@ function captureState(){
     clientReq: gv('client-req'), hasVideo: gv('has-video'),
     multiPub:  gv('multi-pub'), pixel: gv('pixel'),
     adopsHrs:  gn('adops-hrs'), adopsRate: gn('adops-rate'),
-    asTools: JSON.parse(JSON.stringify(asTools)),
-    avTools: JSON.parse(JSON.stringify(avTools)),
+    asTools:  JSON.parse(JSON.stringify(asTools)),
+    avTools:  JSON.parse(JSON.stringify(avTools)),
     dspTools: JSON.parse(JSON.stringify(dspTools)),
+    _v: 2  // schema version
   }
 }
 
@@ -1250,10 +1369,10 @@ function resetForm(){
 /* ══════════════════════════════════════════
    DEFAULTS
 ══════════════════════════════════════════ */
-addTool('as',  {name:'CM360',                     cpm:0.25, fixed:0})
-addTool('as',  {name:'Adform',                    cpm:0.20, fixed:0})
-addTool('av',  {name:'IAS (Integral Ad Science)', cpm:0.15, fixed:0})
-addTool('av',  {name:'DoubleVerify (DV)',          cpm:0.12, fixed:0})
+addTool('as',  {name:'CM360',                     platformCost:0.25, techFeeType:'pct', techFeePct:0, techFeeFixed:0, hhHours:0, hhRate:0})
+addTool('as',  {name:'Adform',                    platformCost:0.20, techFeeType:'pct', techFeePct:0, techFeeFixed:0, hhHours:0, hhRate:0})
+addTool('av',  {name:'IAS (Integral Ad Science)', platformCost:0.15, techFeeType:'pct', techFeePct:0, techFeeFixed:0, hhHours:0, hhRate:0})
+addTool('av',  {name:'DoubleVerify (DV)',          platformCost:0.12, techFeeType:'pct', techFeePct:0, techFeeFixed:0, hhHours:0, hhRate:0})
 
 onModelChange()
 calc()
