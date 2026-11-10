@@ -870,6 +870,14 @@ body {
 .rename-icon{font-size:12px;color:var(--faint);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity .15s;}
 .client-card:hover .rename-icon{opacity:1;}
 
+/* ==================== BATCH 19: ARCHIVE + BULK TAG ==================== */
+.client-card.is-archived{opacity:.55;filter:grayscale(.4);}
+.client-card.is-archived .client-card-name{text-decoration:line-through;text-decoration-color:var(--faint)}
+.archived-badge{display:inline-block;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:8px;background:var(--pill);color:var(--faint);margin-left:5px;vertical-align:middle}
+#archivedToggleBtn.active{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important}
+.bulk-tag-popup{position:absolute;z-index:1200;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:8px 10px;box-shadow:var(--shadow-lg);min-width:160px;display:flex;flex-direction:column;gap:4px;}
+.bulk-tag-opt{font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;border:none;text-align:left;transition:opacity .1s;}
+.bulk-tag-opt:hover{opacity:.75;}
 /* ==================== DICT TAG FILTER CHIPS (BATCH 17) ==================== */
 .dict-tag-filter-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 0 2px;}
 .dict-tag-chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;cursor:pointer;border:1.5px solid transparent;transition:opacity .12s,box-shadow .1s;background:var(--chip-bg,var(--pill));color:var(--chip-fg,var(--faint));user-select:none;}
@@ -1052,6 +1060,7 @@ body {
           <button class="btn secondary btn-sm" onclick="triggerImportClientCSV()" title="Importar cliente a partir de CSV exportado">⬆ CSV</button>
           <button class="btn secondary btn-sm" onclick="openMergeClientsModal()" title="Mesclar dicionários de dois clientes">🔀 Mesclar</button>
           <button class="btn secondary btn-sm" onclick="exportClientAsURL()" title="Exportar cliente como URL compartilhável">🔗 Compartilhar</button>
+          <button class="btn secondary btn-sm" id="archivedToggleBtn" onclick="toggleShowArchived()" title="Mostrar/ocultar clientes arquivados">🗄 Arquivados</button>
           <button class="btn primary btn-sm" onclick="openAddClient()">+ Novo cliente</button>
           <input type="file" id="importClientCSVInput" accept=".csv" style="display:none" onchange="importClientFromCSV(this)">
         </div>
@@ -1603,6 +1612,87 @@ function switchClient(id) {
 }
 
 /* =============================================
+   BATCH 19: ARCHIVE, BULK TAG, COPY SEGS
+   ============================================= */
+let _showArchived = false;
+
+function toggleShowArchived() {
+  _showArchived = !_showArchived;
+  renderClientes();
+}
+
+function toggleArchiveClient(id) {
+  const c = getClient(id); if(!c) return;
+  c.archived = !c.archived;
+  if(c.archived && activeId === id) {
+    activeId = clients.find(cl=>!cl.archived)?.id || null;
+    activeSeg = null; builderVals = {};
+  }
+  saveData(); renderClientSelect(); renderClientes();
+  showToast(c.archived ? '🗄 Cliente arquivado' : '📤 Cliente desarquivado');
+}
+
+function bulkTagAssign() {
+  const idxs = _getCheckedIndices();
+  if(!idxs.length) { showToast('Nenhum termo selecionado'); return; }
+  // Remove any existing popup
+  document.querySelectorAll('.bulk-tag-popup').forEach(e=>e.remove());
+  const btn = document.querySelector('.bulk-bar button:nth-child(4)') ||
+              [...document.querySelectorAll('.bulk-bar button')].find(b=>b.textContent.includes('Tag'));
+  const bar = document.getElementById('bulkBar');
+  const popup = document.createElement('div');
+  popup.className = 'bulk-tag-popup';
+  const tags = Object.keys(typeof TERM_TAGS !== 'undefined' ? TERM_TAGS : {evergreen:'',sazonal:'',teste:'',pausa:'',prioridade:'',novo:''});
+  popup.innerHTML = `<div style="font-size:10px;color:var(--faint);font-weight:700;margin-bottom:2px">Atribuir tag aos selecionados</div>` +
+    tags.map(tagId=>{
+      const col = typeof getTagColors==='function' ? getTagColors(tagId) : {bg:'var(--pill)',fg:'var(--fg)'};
+      return `<button class="bulk-tag-opt" style="background:${col.bg};color:${col.fg}" onclick="_doBulkTag('${tagId}');this.closest('.bulk-tag-popup').remove()">${tagId}</button>`;
+    }).join('') +
+    `<button class="bulk-tag-opt" style="background:var(--pill);color:var(--faint)" onclick="_doBulkTag(null);this.closest('.bulk-tag-popup').remove()">— Remover tag</button>`;
+  if(bar) { bar.style.position='relative'; bar.appendChild(popup); }
+  else document.body.appendChild(popup);
+  setTimeout(()=>document.addEventListener('click', function closer(e){
+    if(!popup.contains(e.target)){popup.remove();document.removeEventListener('click',closer);}
+  },{once:false}),50);
+}
+
+function _doBulkTag(tagId) {
+  const idxs = _getCheckedIndices();
+  const c = active(); if(!c||!activeSeg) return;
+  const terms = c.dictionary[activeSeg]||[];
+  idxs.forEach(i=>{ if(terms[i]) { if(tagId) terms[i].tag=tagId; else delete terms[i].tag; } });
+  saveData(); renderTermArea(c);
+  showToast(tagId ? `🏷 Tag "${tagId}" aplicada a ${idxs.length} termo(s)` : `Tag removida de ${idxs.length} termo(s)`);
+  _bulkMode=false;
+}
+
+function bulkFavToggle() {
+  const idxs = _getCheckedIndices();
+  if(!idxs.length) { showToast('Nenhum termo selecionado'); return; }
+  const c = active(); if(!c||!activeSeg) return;
+  const terms = c.dictionary[activeSeg]||[];
+  const allFav = idxs.every(i=>terms[i]?.fav);
+  idxs.forEach(i=>{ if(terms[i]) { if(allFav) delete terms[i].fav; else terms[i].fav=true; } });
+  saveData(); renderTermArea(c);
+  showToast(allFav ? `Favorito removido de ${idxs.length} termo(s)` : `★ ${idxs.length} termo(s) favoritado(s)`);
+  _bulkMode=false;
+}
+
+function copySegsFromOtherClient() {
+  const otherClients = clients.filter(c=>c.id!==(editingId||activeId)&&!c.archived);
+  if(!otherClients.length) { showToast('Nenhum outro cliente disponível'); return; }
+  const opts = otherClients.map((c,i)=>`${i+1}. ${c.name} (${c.segments.length} segs)`).join('\n');
+  const ans = prompt(`Copiar segmentos de qual cliente? (substitui os segmentos atuais)\n\n${opts}\n\nDigite o número:`);
+  if(!ans) return;
+  const idx = parseInt(ans)-1;
+  if(isNaN(idx)||idx<0||idx>=otherClients.length) { showToast('Opção inválida'); return; }
+  const src = otherClients[idx];
+  modalSegs = src.segments.map(s=>({...s, id:genId()})); // new IDs
+  renderModalBody(editingId ? getClient(editingId)||{} : {name:'',separator:'_'});
+  showToast(`Segmentos copiados de "${src.name}"`);
+}
+
+/* =============================================
    BATCH 18: HELPERS
    ============================================= */
 function jumpToSeg(clientId, segId) {
@@ -1629,7 +1719,28 @@ function renderClientes() {
 
   grid.innerHTML = '';
   // Pinned clients first
-  const sorted = [...clients].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+  const archivedCount = clients.filter(c=>c.archived).length;
+  const btn = document.getElementById('archivedToggleBtn');
+  if(btn) {
+    btn.textContent = `🗄 Arquivados${archivedCount?` (${archivedCount})`:''}`;
+    btn.classList.toggle('active', !!_showArchived);
+    btn.style.display = archivedCount ? '' : 'none';
+  }
+  const sorted = [...clients]
+    .filter(c => _showArchived ? c.archived : !c.archived)
+    .sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+  if(!sorted.length && !_showArchived) {
+    if(clients.length) {
+      grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🗄</div><p>Todos os clientes estão arquivados. Clique em <strong>🗄 Arquivados</strong> para ver.</p></div>`;
+    } else {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><p>Nenhum cliente. Clique em <strong>+ Novo cliente</strong> para começar.</p></div>`;
+    }
+    renderClientSelect(); return;
+  }
+  if(!sorted.length && _showArchived) {
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🗄</div><p>Nenhum cliente arquivado.</p></div>`;
+    renderClientSelect(); return;
+  }
   sorted.forEach(c => {
     const isAct = c.id===activeId;
     const termCount = Object.values(c.dictionary||{}).reduce((a,b)=>a+b.length, 0);
@@ -1645,7 +1756,7 @@ function renderClientes() {
       `</div>` : '';
 
     const div = document.createElement('div');
-    div.className = 'client-card'+(isAct?' active':'');
+    div.className = 'client-card'+(isAct?' active':'')+(c.archived?' is-archived':'');
     div.draggable = true;
     div.dataset.clientId = c.id;
     div.dataset.clientName = c.name.toLowerCase();
@@ -1660,6 +1771,7 @@ function renderClientes() {
         <button title="Duplicar" onclick="event.stopPropagation();duplicateClient('${c.id}')">📋</button>
         <button title="Exportar JSON" onclick="event.stopPropagation();exportJSON('${c.id}')">⬇️</button>
         <button title="Relatório NC" onclick="event.stopPropagation();openRelatorio('${c.id}')">📄</button>
+        <button title="${c.archived?'Desarquivar':'Arquivar'}" onclick="event.stopPropagation();toggleArchiveClient('${c.id}')">${c.archived?'📤':'🗄'}</button>
         <button title="Excluir" onclick="event.stopPropagation();deleteClient('${c.id}')">🗑️</button>
       </div>
       ${isAct ? '<div class="active-badge">✓ Ativo</div>' : ''}
@@ -1887,6 +1999,7 @@ function renderModalBody(c) {
       <label>Segmentos (em ordem)</label>
       <div class="seg-editor-list" id="segList">${segsHtml}</div>
       <button class="btn secondary btn-sm" onclick="addModalSeg()">+ Segmento</button>
+      <button class="btn secondary btn-sm" onclick="copySegsFromOtherClient()" title="Substituir segmentos pelos de outro cliente" style="margin-left:4px">📋 Copiar de cliente…</button>
     </div>
     <div class="field-group">
       <label>Notas internas (opcional)</label>
@@ -2223,6 +2336,8 @@ function renderTermArea(c) {
       <button onclick="bulkDelete()">🗑 Excluir</button>
       <button onclick="bulkMove()">↗️ Mover</button>
       <button onclick="bulkExportCSV()">⬇ CSV</button>
+      <button onclick="bulkTagAssign()">🏷 Tag</button>
+      <button onclick="bulkFavToggle()">★ Fav</button>
       <button onclick="bulkSelectAll()">Todos</button>
       <button onclick="bulkClearSel()">Limpar</button>
       <button onclick="toggleBulkMode()" style="margin-left:auto">✕</button>
