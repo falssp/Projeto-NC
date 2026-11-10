@@ -788,6 +788,23 @@ body {
 .merge-client-option:hover,.merge-client-option.selected{border-color:var(--accent);background:rgba(37,99,235,.04);}
 .merge-client-option input[type=radio]{accent-color:var(--accent);}
 
+/* ==================== CLIENT COLOR TAG ==================== */
+.client-card-color-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid rgba(0,0,0,.12);}
+.client-card-color-bar{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:8px 0 0 8px;}
+.color-picker-row{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+.color-swatch{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s;flex-shrink:0;}
+.color-swatch:hover{transform:scale(1.2);}
+.color-swatch.active-color{border-color:var(--fg);}
+
+/* ==================== STRUCTURE LAST USED BADGE ==================== */
+.struct-recent-badge{font-size:9px;background:#8b5cf6;color:#fff;border-radius:5px;padding:1px 5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-left:4px;}
+
+/* ==================== VAL HISTORY FILTER ==================== */
+.val-hist-filter-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
+.val-hist-search{padding:3px 8px;border:1px solid var(--input-border);border-radius:12px;background:var(--input-bg);color:var(--fg);font-size:11px;width:140px;outline:none;}
+.val-hist-search:focus{border-color:var(--accent);}
+.val-hist-day-label{font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;padding:2px 4px;width:100%;margin-top:4px;}
+
 /* ==================== TERM USES BADGE ==================== */
 .term-uses-badge{font-size:10px;color:var(--accent);background:rgba(37,99,235,.1);
   border-radius:8px;padding:1px 5px;white-space:nowrap;font-weight:600;}
@@ -1536,9 +1553,12 @@ function renderClientes() {
     div.dataset.clientId = c.id;
     div.dataset.clientName = c.name.toLowerCase();
     div.onclick = () => { activeId=c.id; activeSeg=null; builderVals={}; saveData(); renderClientSelect(); renderClientes(); };
+    const colorBar = c.color ? `<div class="client-card-color-bar" style="background:${esc(c.color)}"></div>` : '';
     div.innerHTML = `
+      ${colorBar}
       <div class="client-card-actions">
         <button title="${c.pinned?'Desafixar':'Fixar no topo'}" onclick="event.stopPropagation();togglePinClient('${c.id}')" class="${c.pinned?'pin-active':''}">${c.pinned?'📌':'📍'}</button>
+        <button title="Cor do cliente" onclick="event.stopPropagation();openColorPicker('${c.id}',this)">🎨</button>
         <button title="Editar" onclick="event.stopPropagation();openEditClient('${c.id}')">✏️</button>
         <button title="Duplicar" onclick="event.stopPropagation();duplicateClient('${c.id}')">📋</button>
         <button title="Exportar JSON" onclick="event.stopPropagation();exportJSON('${c.id}')">⬇️</button>
@@ -1578,6 +1598,35 @@ function togglePinClient(id) {
   c.pinned = !c.pinned;
   saveData(); renderClientes();
   showToast(c.pinned ? '📌 Cliente fixado no topo' : 'Cliente desfixado');
+}
+
+const CLIENT_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#06b6d4'];
+let _colorPickerTarget = null;
+function openColorPicker(id, btn) {
+  // Remove any existing picker
+  document.querySelectorAll('.client-color-popup').forEach(e=>e.remove());
+  const c = getClient(id); if(!c) return;
+  _colorPickerTarget = id;
+  const popup = document.createElement('div');
+  popup.className = 'client-color-popup';
+  popup.style.cssText = 'position:absolute;z-index:900;background:var(--card);border:1px solid var(--brd);border-radius:10px;padding:8px 10px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:6px;min-width:160px;';
+  popup.innerHTML = `<div style="font-size:11px;color:var(--faint);font-weight:600;margin-bottom:2px">Cor do cliente</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">${CLIENT_COLORS.map(col=>`<button onclick="setClientColor('${id}','${col}');this.closest('.client-color-popup').remove()" style="width:22px;height:22px;border-radius:50%;background:${col};border:2.5px solid ${c.color===col?'#fff':'transparent'};cursor:pointer;outline:${c.color===col?'2px solid '+col:'none'};outline-offset:1px;"></button>`).join('')}
+    <button title="Remover cor" onclick="setClientColor('${id}',null);this.closest('.client-color-popup').remove()" style="width:22px;height:22px;border-radius:50%;background:var(--pill);border:1px solid var(--brd);cursor:pointer;font-size:11px;">✕</button></div>`;
+  // Position near button
+  const rect = btn.getBoundingClientRect();
+  const card = btn.closest('.client-card');
+  const cardRect = card.getBoundingClientRect();
+  popup.style.top = (rect.bottom - cardRect.top + 4) + 'px';
+  popup.style.right = '8px';
+  card.style.position = 'relative';
+  card.appendChild(popup);
+  setTimeout(()=>document.addEventListener('click', function closer(e){ if(!popup.contains(e.target)){popup.remove();document.removeEventListener('click',closer);}},{once:false}), 50);
+}
+function setClientColor(id, color) {
+  const c = getClient(id); if(!c) return;
+  if(color) c.color = color; else delete c.color;
+  saveData(); renderClientes();
 }
 
 function initClientDragDrop() {
@@ -2984,17 +3033,41 @@ function exportValHistory() {
   showToast(`Exportando ${hist.length} validações`);
 }
 
+let _valHistFilter = '';
 function renderValHistory() {
   const row = document.getElementById('valHistRow'); if(!row) return;
   let hist = [];
   try { hist = JSON.parse(localStorage.getItem(VAL_HIST_KEY) || '[]'); } catch {}
-  const clientHist = hist.filter(h => h.clientId === activeId);
-  if(!clientHist.length) { row.innerHTML=''; return; }
-  row.innerHTML = clientHist.map(h => {
-    const tsStr = h.ts ? new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
-    const dateStr = h.ts ? new Date(h.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
-    return `<button class="val-hist-chip" title="${esc(h.name)} · ${dateStr} ${tsStr}" onclick="useHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name.length>24?h.name.slice(0,22)+'…':h.name)}${tsStr?`<span class='val-hist-ts'>${dateStr} ${tsStr}</span>`:''}</button>`;
-  }).join('') + `<button class="val-hist-clear" onclick="exportValHistory()" title="Exportar histórico como CSV">⬇</button><button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>`;
+  let clientHist = hist.filter(h => h.clientId === activeId);
+  if(!clientHist.length) { row.innerHTML=''; _valHistFilter=''; return; }
+  // Apply filter
+  const fq = _valHistFilter.toLowerCase().trim();
+  const filtered = fq ? clientHist.filter(h=>h.name.toLowerCase().includes(fq)) : clientHist;
+  // Group by date
+  const groups = {};
+  const todayStr = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  filtered.forEach(h => {
+    const d = h.ts ? new Date(h.ts) : null;
+    const key = d ? d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}) : 'Sem data';
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(h);
+  });
+  let html = `<div class="val-hist-filter-row">
+    <input class="val-hist-search" type="search" placeholder="Filtrar…" value="${esc(_valHistFilter)}" oninput="_valHistFilter=this.value;renderValHistory()" autocomplete="off">
+    <span style="font-size:11px;color:var(--faint)">${filtered.length}/${clientHist.length}</span>
+    <button class="val-hist-clear" onclick="exportValHistory()" title="Exportar histórico como CSV">⬇</button>
+    <button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>
+  </div>`;
+  Object.entries(groups).forEach(([day, items]) => {
+    const dayLabel = day === todayStr ? 'Hoje' : day;
+    html += `<div class="val-hist-day-label">${dayLabel}</div>`;
+    html += items.map(h => {
+      const tsStr = h.ts ? new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+      const dateStr = h.ts ? new Date(h.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+      return `<button class="val-hist-chip" title="${esc(h.name)} · ${dateStr} ${tsStr}" onclick="useHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name.length>24?h.name.slice(0,22)+'…':h.name)}${tsStr?`<span class='val-hist-ts'>${tsStr}</span>`:''}</button>`;
+    }).join('');
+  });
+  row.innerHTML = html;
 }
 
 function useHistItem(name) {
@@ -3140,6 +3213,7 @@ function renderEstruturas() {
         ${st.platform?`<span class="structure-item-platform">${esc(st.platform)}</span>`:''}
         ${st.level?`<span class="structure-item-level">${esc(st.level)}</span>`:''}
         <span class="structure-item-label">${esc(st.label)}</span>
+        ${st.lastUsed&&(Date.now()-st.lastUsed<604800000)?`<span class="struct-recent-badge" title="Usado ${Math.floor((Date.now()-st.lastUsed)/86400000)===0?'hoje':Math.floor((Date.now()-st.lastUsed)/86400000)+'d atrás'}">⚡ recente</span>`:''}
       </div>
       <div class="structure-pattern">${renderPatternHtml(st.pattern,c.segments)}</div>
       ${st.notes?`<div class="structure-notes">${esc(st.notes)}</div>`:''}
@@ -3230,6 +3304,9 @@ function useStructureInBuilder(structId) {
   // Parse pattern to get segment order
   const parsed = parsePattern(st.pattern);
   if(!parsed.length) { showToast('Padrão sem segmentos definidos'); return; }
+  // Track last used
+  st.lastUsed = Date.now();
+  saveData();
   // Reset builder vals and switch tab
   builderVals = {};
   // Reorder c.segments to match the pattern order (store temporarily in renderBuilder override)
