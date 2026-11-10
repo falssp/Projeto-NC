@@ -42,7 +42,7 @@ const HEADERS = [
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('📋 AdOps')
-    .addItem('＋ Nova linha no topo', 'novaLinhaNoTopo')
+    .addItem('＋ Incluir CL', 'novaLinhaNoTopo')
     .addToUi();
 
   _comLock(function() {
