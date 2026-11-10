@@ -294,6 +294,11 @@ input[type=number]{font-family:var(--mono);font-size:13px}
         <input id="duration" type="number" value="30" min="1" oninput="calc()">
         <div class="hint" id="hint-duration">Período total</div>
       </div>
+      <div id="field-eq-imps" style="display:none">
+        <label>Impressões estimadas</label>
+        <input id="eq-imps" type="number" placeholder="para CPM equivalente" min="0" oninput="calc()">
+        <div class="hint">Opcional — calcula CPM equiv. do modelo</div>
+      </div>
     </div>
 
     <div style="margin-top:14px">
@@ -417,6 +422,7 @@ input[type=number]{font-family:var(--mono);font-size:13px}
 
   <!-- ═══ RESULTADO ═══ -->
   <div id="result">
+    <div id="global-semaforo" style="margin-bottom:10px"></div>
     <div class="kpi-row" id="kpi-row"></div>
     <div class="card">
       <div class="section-title">Comparativo por ferramenta</div>
@@ -429,6 +435,7 @@ input[type=number]{font-family:var(--mono);font-size:13px}
     <div class="card" id="signals-card">
       <div class="section-title">Sinais considerados</div>
       <div class="signals" id="signals-list"></div>
+      <div class="signals" style="margin-top:6px" id="viewability-bench"></div>
     </div>
   </div>
 
@@ -614,6 +621,10 @@ function onModelChange(){
     if(lblUnit) lblUnit.textContent = cfg.unitLabel
     if(hintUnit) hintUnit.textContent = cfg.unitHint
   }
+
+  // campo de impressões estimadas (CPM equivalente) — só para modelos não-impressão
+  const needsEqImps = cfg.volField && cfg.volField!=='imps' && !cfg.flatMode
+  show('field-eq-imps', needsEqImps)
 
   // datas → duração
   updateDuration()
@@ -1061,15 +1072,53 @@ function calc(){
     </tr>`).join('')}</tbody>`
 
   // SINAIS
-  const all  = [...asSignals.map(s=>({...s,src:'AS'})),...avSignals.map(s=>({...s,src:'AV'}))]
+  const all  = [...asSignals.map(s=>({...s,src:'AS'})),...avSignals.map(s=>({...s,src:'AV'})),...dspSignals.map(s=>({...s,src:'DSP'}))]
   const seen = new Set()
   document.getElementById('signals-list').innerHTML = all.filter(s=>{if(seen.has(s.t))return false;seen.add(s.t);return true}).map(s=>`<span class="chip ${s.c}">${s.t}</span>`).join('')
+
+  // ── SEMÁFORO GLOBAL ──
+  const totalVerdicts = [asVerdict, avVerdict, dspVerdict].filter(v=>v&&v!=='—')
+  const nRec  = totalVerdicts.filter(v=>v.includes('✅')).length
+  const nNo   = totalVerdicts.filter(v=>v.includes('❌')).length
+  let globalColor, globalIcon, globalFrase
+  if(opsPct > 15){ globalColor='var(--err)'; globalIcon='🔴'; globalFrase=`Custo operacional de ${fmtP(opsPct)} do budget — acima do limite recomendado de 15%. Revisar combinação de ferramentas ou negociar tarifas antes de apresentar ao cliente.` }
+  else if(opsPct > 10){ globalColor='var(--warn)'; globalIcon='🟡'; globalFrase=`Custo operacional de ${fmtP(opsPct)} do budget — na faixa de atenção (10–15%). Aceitável em contextos de alta exigência técnica, mas justifique ao cliente.` }
+  else if(nNo > 0){ globalColor='var(--warn)'; globalIcon='🟡'; globalFrase=`${nNo} categoria${nNo>1?'s':''} não recomendada${nNo>1?'s':''}. Custo operacional de ${fmtP(opsPct)} do budget. Revisar necessidade das ferramentas indicadas como não recomendadas.` }
+  else { globalColor='var(--ok)'; globalIcon='🟢'; globalFrase=`Combinação viável. Custo operacional de ${fmtP(opsPct)} do budget${mediaBudget>0?' — dentro dos limites de mercado':''}.${nRec>0?' '+nRec+' categoria'+(nRec>1?'s':'')+' recomendada'+(nRec>1?'s':'')+'.':''}` }
+
+  // CPM equivalente para modelos não-CPM
+  const cfg2 = MODEL_CFG[model]||{}
+  const eqImps = gn('eq-imps') || (cfg2.flatMode ? 0 : (cfg2.volField==='imps' ? gn('imps') : 0))
+  const cpmEq  = (eqImps>0 && mediaBudget>0) ? (mediaBudget/(eqImps/1000)) : null
+
+  const semEl = document.getElementById('global-semaforo')
+  if(semEl) semEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:10px;border:2px solid ${globalColor};background:${globalColor==='var(--ok)'?'var(--ok-bg)':globalColor==='var(--warn)'?'var(--warn-bg)':'var(--err-bg)'}">
+      <div style="font-size:28px;line-height:1">${globalIcon}</div>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${globalColor};margin-bottom:3px">Viabilidade geral</div>
+        <div style="font-size:13px;line-height:1.5;color:#333">${globalFrase}</div>
+        ${cpmEq ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">CPM equivalente estimado: <b>${fmtR(cpmEq)}</b></div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:22px;font-weight:800;font-family:var(--mono);color:${globalColor}">${fmtR(totalOps)}</div>
+        <div style="font-size:11px;color:var(--muted)">${mediaBudget>0?fmtP(opsPct)+' do budget':''}</div>
+      </div>
+    </div>`
+
+  // Viewability benchmarks por vertical
+  const vbench = {brand:'≥ 60% desktop · ≥ 50% mobile (IAB)',perf:'≥ 60% desktop',video:'≥ 70% desktop · ≥ 50% mobile (MRC)',prem:'≥ 70% (exigência típica de premium)',retail:'≥ 60% desktop · ≥ 50% mobile',ctv:'≥ 85% (MRC CTV)'}
+  const vbKey = inventory==='ctv' ? 'ctv' : vertical
+  const vbTxt = vbench[vbKey]||vbench[vertical]||''
+  const vbEl = document.getElementById('viewability-bench')
+  if(vbEl) vbEl.innerHTML = vbTxt ? `<span class="chip blue">👁 Viewability ref.: ${vbTxt}</span>` : ''
 
   // salva estado para PDF
   window._lastCalc = { model, mediaBudget, volLabel, adopsCost, totalOps, opsPct,
     bestAS, bestASCost, bestASPct, asVerdict, asClass, asSignals, asDefenses,
     bestAV, bestAVCost, bestAVPct, avVerdict, avClass, avSignals, avDefenses,
-    bestDSP, bestDSPCost, bestDSPPct, dspVerdict, dspClass, rows }
+    bestDSP, bestDSPCost, bestDSPPct, dspVerdict, dspClass, dspSignals, rows,
+    globalIcon, globalFrase, globalColor, cpmEq, vbTxt }
 }
 
 /* ══════════════════════════════════════════
@@ -1161,6 +1210,29 @@ function exportPDF(){
   const fmtRp = n => 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
   const fmtPp = n => Number(n).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'
 
+  const { globalIcon, globalFrase, cpmEq, vbTxt } = lc
+
+  // Histórico de cenários desta campanha para o PDF
+  const allScenarios = getScenarios().filter(s=>s.state.campanha===gv('id-campanha')&&gv('id-campanha'))
+  const histHtml = allScenarios.length>1 ? `
+    <div class="section-title">Histórico de versões</div>
+    <table><thead><tr><th>Data</th><th>Nome</th><th>Budget</th><th>Total Op.</th></tr></thead>
+    <tbody>${allScenarios.map(s=>{
+      const st = s.state
+      const mb = st.imps&&st.unitCost ? (st.imps/1000)*st.unitCost : (st.flatVal||0)
+      return `<tr><td>${s.date}</td><td>${s.name}</td><td>${fmtRp(mb)}</td><td>—</td></tr>`
+    }).join('')}</tbody></table>` : ''
+
+  const asDspTable = (asTools.length||dspTools.length) ? `
+    <div class="section-title">Ad Server × DSP — funções complementares</div>
+    <table><thead><tr><th>Função</th><th>Ad Server</th><th>DSP</th></tr></thead>
+    <tbody>
+      <tr><td>Papel principal</td><td>Trafficking, serving e tracking de criativos</td><td>Compra de mídia no leilão programático</td></tr>
+      <tr><td>O que gerencia</td><td>Tags, floodlights, frequência, viewability</td><td>Lances, audiências, otimização de CPA/ROAS</td></tr>
+      <tr><td>Relatório</td><td>Impressões servidas, cliques, conversões</td><td>Win rate, CPM efetivo, performance de audiência</td></tr>
+      <tr><td>Substitui o outro?</td><td colspan="2" style="text-align:center;font-weight:700;color:#166534">Não — são complementares e coexistem na mesma campanha</td></tr>
+    </tbody></table>` : ''
+
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8">
 <title>Viabilidade AdOps — ${campanha}</title>
 <style>
@@ -1169,6 +1241,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;color:#1a237e;background:#fff;p
 @media print{body{padding:20px 24px}@page{margin:1.5cm}}
 h1{font-size:22px;font-weight:800;color:#1a237e;margin-bottom:4px}
 .subtitle{font-size:13px;color:#3d4a8a;margin-bottom:24px}
+.semaforo{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:10px;border:2px solid;margin-bottom:20px}
 .meta{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #d6dbf2}
 .meta-item{display:flex;flex-direction:column;gap:2px}
 .meta-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9fa8da}
@@ -1181,8 +1254,8 @@ h1{font-size:22px;font-weight:800;color:#1a237e;margin-bottom:4px}
 .section-title{font-size:11px;font-weight:700;color:#9fa8da;text-transform:uppercase;letter-spacing:.07em;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid #d6dbf2}
 table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 th{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#9fa8da;font-weight:700;text-align:left;padding:5px 8px;border-bottom:2px solid #d6dbf2}
-td{padding:7px 8px;border-bottom:1px solid #d6dbf2;font-family:monospace;font-size:12px}
-td:first-child{font-family:'Segoe UI',system-ui,sans-serif}
+td{padding:7px 8px;border-bottom:1px solid #d6dbf2;font-size:12px}
+td:first-child{font-weight:600}
 tr:last-child td{border-bottom:none;font-weight:700}
 .footer{margin-top:32px;padding-top:12px;border-top:1px solid #d6dbf2;font-size:10px;color:#9fa8da;display:flex;justify-content:space-between}
 </style></head><body>
@@ -1194,7 +1267,17 @@ tr:last-child td{border-bottom:none;font-weight:700}
   <div class="meta-item"><div class="meta-label">Campanha</div><div class="meta-value">${campanha}</div></div>
   <div class="meta-item"><div class="meta-label">Período</div><div class="meta-value">${periodo}</div></div>
   <div class="meta-item"><div class="meta-label">Modelo de compra</div><div class="meta-value">${modelLbl}</div></div>
+  ${cpmEq?`<div class="meta-item"><div class="meta-label">CPM equivalente</div><div class="meta-value">${fmtRp(cpmEq)}</div></div>`:''}
+  ${vbTxt?`<div class="meta-item"><div class="meta-label">Ref. Viewability</div><div class="meta-value" style="font-size:11px">${vbTxt}</div></div>`:''}
   <div class="meta-item"><div class="meta-label">Gerado em</div><div class="meta-value">${today}</div></div>
+</div>
+
+<div class="semaforo" style="border-color:${lc.opsPct>15?'#fecdd3':lc.opsPct>10?'#fde68a':'#bbf7d0'};background:${lc.opsPct>15?'#fff1f2':lc.opsPct>10?'#fffbeb':'#f0fdf4'}">
+  <div style="font-size:28px">${globalIcon||'🟢'}</div>
+  <div style="flex:1"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${lc.opsPct>15?'#9f1239':lc.opsPct>10?'#92400e':'#166534'};margin-bottom:3px">Viabilidade geral</div>
+  <div style="font-size:12px;line-height:1.5;color:#333">${globalFrase||''}</div></div>
+  <div style="text-align:right;flex-shrink:0"><div style="font-size:20px;font-weight:800;font-family:monospace;color:${lc.opsPct>15?'#9f1239':lc.opsPct>10?'#92400e':'#166534'}">${fmtRp(lc.totalOps)}</div>
+  <div style="font-size:10px;color:#9fa8da">${mediaBudget>0?fmtPp(lc.opsPct)+' do budget':''}</div></div>
 </div>
 
 <div class="kpi-row">
@@ -1210,9 +1293,13 @@ ${sectionHtml(asTools,  'Ad Servers',       '🖥️', asVerdict,  asParaText)}
 ${sectionHtml(avTools,  'Ad Verifications', '🛡️', avVerdict,  avParaText)}
 ${sectionHtml(dspTools, 'DSP / Programática','📊', dspVerdict, dspParaText)}
 
+${asDspTable}
+
 <div class="section-title">Breakdown de custos</div>
 <table><thead><tr><th>Item</th><th>Custo estimado</th><th>% do budget</th></tr></thead>
 <tbody>${rows.map((r,i)=>`<tr><td>${r[0]}</td><td>${fmtRp(r[1])}</td><td>${mediaBudget>0?fmtPp(r[2]):'-'}</td></tr>`).join('')}</tbody></table>
+
+${histHtml}
 
 <div class="footer">
   <span>Viabilidade AdOps · NC Tool — StormX Data & Tech</span>
