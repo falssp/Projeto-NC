@@ -391,6 +391,17 @@ body {
 .client-card-notes-edit{width:100%;font-size:11px;padding:4px 6px;border:1px solid var(--accent);border-radius:5px;background:var(--input-bg);color:var(--fg);resize:none;outline:none;margin-top:3px;}
 .builder-seg-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--faint);font-size:14px;padding:0 2px;line-height:1;display:none;}
 .builder-seg-clear:hover{color:var(--err);}
+.seg-lock-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;border-radius:4px;line-height:1;opacity:.45;transition:opacity .15s,background .15s;}
+.seg-lock-btn:hover{opacity:1;background:rgba(37,99,235,.1);}
+.seg-lock-btn.locked{opacity:1;color:var(--accent);}
+.builder-seg.locked-seg{border-color:var(--accent);background:rgba(37,99,235,.04);}
+:root[data-theme="dark"] .builder-seg.locked-seg, :root:not([data-theme="light"]) .builder-seg.locked-seg{background:rgba(37,99,235,.08);}
+.cross-seg-search-wrap{margin-bottom:10px;}
+.cross-seg-results{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.cross-seg-hit{display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border-radius:6px;font-size:12px;}
+.cross-seg-hit-seg{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--faint);min-width:70px;}
+.cross-seg-hit-val{flex:1;font-family:monospace;color:var(--fg);}
+.cross-seg-hit-label{color:var(--faint);font-size:11px;}
 .builder-ac-wrap{position:relative;}
 .builder-ac-wrap:has(input:not(:placeholder-shown)) .builder-seg-clear{display:block;}
 .val-copy-name-btn{font-size:11px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--fg);transition:background .1s;}
@@ -2065,6 +2076,7 @@ function fillBuilderRandom() {
   const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
   let filled = 0;
   c.segments.forEach(s => {
+    if(_lockedSegs.has(s.id)) return; // skip locked segments
     const terms = c.dictionary[s.id]||[];
     if(terms.length>0) {
       const pick = terms[Math.floor(Math.random()*terms.length)];
@@ -2773,10 +2785,13 @@ function renderBuilder() {
     div.className='builder-seg';
 
     const badge=`<span class="seg-tag ${s.required?'required':'optional'}" style="font-size:9px;padding:1px 5px">${s.required?'req':'opt'}</span>`;
+    const isLocked = (_lockedSegs||new Set()).has(s.id);
+    if(isLocked) div.classList.add('locked-seg');
+    const lockBtn=`<button class="seg-lock-btn${isLocked?' locked':''}" title="${isLocked?'Desbloquear segmento':'Bloquear segmento (protege de Limpar e Aleatório)'}" onclick="toggleSegLock('${s.id}',this)">🔒</button>`;
 
     if(terms.length>0) {
       div.innerHTML=`
-        <div class="builder-seg-label">${esc(s.label)} ${badge}</div>
+        <div class="builder-seg-label">${esc(s.label)} ${badge} ${lockBtn}</div>
         <div class="builder-ac-wrap" id="acwrap-${s.id}" style="position:relative">
           <input id="bv-${s.id}" class="builder-ac-input" type="text"
             placeholder="${s.required?'selecione ou digite…':'vazio (opcional) ou digite…'}"
@@ -2792,7 +2807,7 @@ function renderBuilder() {
       `;
     } else {
       div.innerHTML=`
-        <div class="builder-seg-label">${esc(s.label)} ${badge} <span style="color:var(--warn);font-size:10px">(sem termos)</span></div>
+        <div class="builder-seg-label">${esc(s.label)} ${badge} ${lockBtn} <span style="color:var(--warn);font-size:10px">(sem termos)</span></div>
         <div style="position:relative">
           <input id="bv-${s.id}" type="text" placeholder="valor livre" value="${esc(curVal)}"
             style="padding-right:24px;width:100%;box-sizing:border-box"
@@ -2911,9 +2926,14 @@ function sendToValBatch(name) {
 
 function clearBuilder() {
   const prev = {...builderVals};
-  builderVals={};
+  // Keep locked segment values
+  const locked = {};
+  _lockedSegs.forEach(id => { if(builderVals[id]) locked[id]=builderVals[id]; });
+  builderVals = {...locked};
   renderBuilder();
-  showToastWithUndo('Builder limpo', {type:'clearBuilder', prev});
+  const lockedCount = _lockedSegs.size;
+  const msg = lockedCount ? `Builder limpo (${lockedCount} bloqueado${lockedCount>1?'s':''})` : 'Builder limpo';
+  showToastWithUndo(msg, {type:'clearBuilder', prev});
 }
 function execClearBuilderUndo(prev) {
   builderVals = prev;
@@ -4578,6 +4598,26 @@ function handleACKey(e, segId) {
   } else if(e.key==='Escape') {
     hideAC(segId);
   }
+}
+
+/* =============================================
+   BUILDER: SEGMENT LOCKING
+   ============================================= */
+let _lockedSegs = new Set(); // persists across renders within session
+
+function toggleSegLock(segId, btn) {
+  if(_lockedSegs.has(segId)) {
+    _lockedSegs.delete(segId);
+  } else {
+    _lockedSegs.add(segId);
+  }
+  // Re-render just the seg card
+  const isLocked = _lockedSegs.has(segId);
+  btn.classList.toggle('locked', isLocked);
+  btn.title = isLocked ? 'Desbloquear segmento' : 'Bloquear segmento (protege de Limpar e Aleatório)';
+  const seg = btn.closest('.builder-seg');
+  if(seg) seg.classList.toggle('locked-seg', isLocked);
+  showToast(isLocked ? `🔒 Segmento bloqueado` : `🔓 Segmento liberado`);
 }
 
 /* =============================================
