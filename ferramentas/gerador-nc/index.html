@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador NC — Combinatório de nomenclaturas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f8f9fc;--fg:#111827;--card:#fff;--card-border:#e5e7eb;
+  --accent:#2563eb;--accent-soft:#eff6ff;--faint:#6b7280;--pill:#f3f4f6;
+  --input-bg:#fff;--input-border:#d1d5db;--ok:#16a34a;--warn:#d97706;--erro:#dc2626;
+  --divider:#f0f0f4;--shadow:0 1px 4px rgba(0,0,0,.07);--radius:10px;
+  --mono:'DM Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1117;--fg:#e5e7eb;--card:#1a1d27;--card-border:#2d3148;
+  --accent:#3b82f6;--accent-soft:#1e3a5f;--faint:#9ca3af;--pill:#252836;
+  --input-bg:#1e2130;--input-border:#3d4263;--divider:#1e2130;
+  --shadow:0 1px 4px rgba(0,0,0,.35);color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1117;--fg:#e5e7eb;--card:#1a1d27;--card-border:#2d3148;
+  --accent:#3b82f6;--accent-soft:#1e3a5f;--faint:#9ca3af;--pill:#252836;
+  --input-bg:#1e2130;--input-border:#3d4263;--divider:#1e2130;
+  --shadow:0 1px 4px rgba(0,0,0,.35);color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;font-size:14px;line-height:1.5}
+.app-header{background:var(--card);border-bottom:1px solid var(--card-border);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.logo{font-size:20px;font-weight:700;letter-spacing:-.5px}.logo span{color:var(--accent)}
+.subtitle{font-size:12px;color:var(--faint)}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:8px;padding:7px 14px;cursor:pointer;border:none;transition:opacity .12s}
+.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{opacity:.88}
+.btn.secondary{background:var(--pill);color:var(--fg);border:1px solid var(--card-border)}.btn.secondary:hover{border-color:var(--faint)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.btn.danger{background:rgba(220,38,38,.1);color:var(--erro);border:1px solid rgba(220,38,38,.2)}
+.theme-btn{background:none;border:1px solid var(--card-border);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:13px;color:var(--faint)}
+.main{max-width:1000px;margin:0 auto;padding:20px;display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+@media(max-width:700px){.main{grid-template-columns:1fr}}
+/* Config panel */
+.cfg-panel{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;position:sticky;top:70px}
+.cfg-title{font-size:13px;font-weight:700}
+label.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);display:block;margin-bottom:4px}
+.form-select{background:var(--input-bg);color:var(--fg);border:1px solid var(--input-border);border-radius:7px;padding:7px 10px;font-family:inherit;font-size:13px;width:100%}
+.form-select:focus{outline:none;border-color:var(--accent)}
+/* Segment config list */
+.seg-list{display:flex;flex-direction:column;gap:8px}
+.seg-cfg{background:var(--pill);border-radius:8px;padding:10px 12px}
+.seg-cfg-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.seg-cfg-label{font-size:12px;font-weight:700;flex:1}
+.seg-cfg-badge{font-size:10px;padding:1px 5px;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.seg-cfg-badge.opt{background:var(--divider);color:var(--faint)}
+.seg-toggle{font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;border:none;cursor:pointer;background:var(--card);color:var(--faint);border:1px solid var(--card-border)}
+.seg-toggle.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)40}
+/* Term checkboxes */
+.term-checks{display:flex;flex-wrap:wrap;gap:4px;max-height:120px;overflow-y:auto}
+.term-check-chip{display:flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;border:1px solid var(--card-border);font-size:11px;cursor:pointer;background:var(--card);transition:background .1s}
+.term-check-chip:has(input:checked){background:var(--accent-soft);border-color:var(--accent)60;color:var(--accent);font-weight:600}
+.term-check-chip input{width:11px;height:11px;cursor:pointer;accent-color:var(--accent)}
+/* Results panel */
+.res-panel{display:flex;flex-direction:column;gap:14px}
+.res-card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.res-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.res-header h3{font-size:14px;font-weight:700;flex:1}
+.count-badge{background:var(--accent-soft);color:var(--accent);border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700}
+.nc-list{display:flex;flex-direction:column;gap:4px;max-height:400px;overflow-y:auto}
+.nc-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;background:var(--pill);font-family:var(--mono);font-size:12px}
+.nc-row:hover{background:var(--accent-soft)}
+.nc-row .nc-val{flex:1;user-select:all;font-weight:500}
+.nc-copy-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;color:var(--faint);border-radius:4px}
+.nc-copy-btn:hover{background:var(--card)}
+.nc-row .seg-parts{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.nc-row .seg-part{background:var(--card);border-radius:3px;padding:0 4px;font-size:11px}
+/* Stats */
+.gen-stats{font-size:12px;color:var(--faint);display:flex;gap:12px;flex-wrap:wrap;padding:4px 0 8px}
+/* Empty */
+.gen-empty{text-align:center;padding:32px 20px;color:var(--faint)}
+/* Limit warning */
+.limit-warn{font-size:11px;color:var(--warn);padding:4px 8px;background:rgba(217,119,6,.08);border-radius:6px;margin-bottom:8px}
+/* Select all row */
+.select-all-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div>
+    <div class="logo">Gerador <span>NC</span></div>
+    <div class="subtitle">Gera combinações de nomenclaturas a partir do dicionário</div>
+  </div>
+  <div class="hdr-right">
+    <button class="theme-btn" onclick="toggleTheme()">🌓</button>
+    <a href="../index.html" class="btn secondary sm">← Ferramentas</a>
+  </div>
+</header>
+
+<main class="main">
+  <!-- Config Panel -->
+  <div class="cfg-panel">
+    <div>
+      <label class="fl">Cliente</label>
+      <select class="form-select" id="clientSel" onchange="loadClient()"></select>
+    </div>
+    <div>
+      <label class="fl">Estrutura</label>
+      <select class="form-select" id="structSel" onchange="applyStructure()">
+        <option value="">— todos os segmentos —</option>
+      </select>
+    </div>
+    <div>
+      <label class="fl">Separador</label>
+      <select class="form-select" id="sepSel" onchange="generate()">
+        <option value="_">_ (underscore)</option>
+        <option value="-">- (hífen)</option>
+        <option value="|">| (pipe)</option>
+        <option value="/">/ (barra)</option>
+        <option value=".">. (ponto)</option>
+        <option value=" ">  (espaço)</option>
+      </select>
+    </div>
+    <div id="segList" class="seg-list"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn primary" onclick="generate()" style="flex:1">⚡ Gerar</button>
+      <button class="btn secondary sm" onclick="selectAllTerms(true)" title="Selecionar todos os termos">Sel. todos</button>
+      <button class="btn secondary sm" onclick="selectAllTerms(false)" title="Desmarcar todos os termos">Limpar</button>
+    </div>
+  </div>
+
+  <!-- Results Panel -->
+  <div class="res-panel">
+    <div class="res-card">
+      <div class="res-header">
+        <h3>Nomenclaturas geradas</h3>
+        <span class="count-badge" id="genCount">0</span>
+        <button class="btn secondary sm" onclick="copyAll()">📋 Copiar todas</button>
+        <button class="btn secondary sm" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+      <div class="gen-stats" id="genStats"></div>
+      <div id="limitWarn" class="limit-warn" style="display:none">⚠️ Mais de 500 combinações — mostrando as primeiras 500. Reduza a seleção de termos.</div>
+      <div id="ncList" class="nc-list">
+        <div class="gen-empty"><p>Configure os segmentos e clique em Gerar.</p></div>
+      </div>
+    </div>
+
+    <div class="res-card" id="previewCard" style="display:none">
+      <div class="res-header"><h3>Prévia por segmento</h3></div>
+      <div id="previewContent"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const TAXO_KEY='taxo_clients_v1';
+function loadTaxo(){try{return JSON.parse(localStorage.getItem(TAXO_KEY)||'[]');}catch(e){return [];}}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+let _c=null; // active client
+let _generated=[]; // [{parts:[{segId,segLabel,val}], nc:string}]
+
+function populateClients(){
+  const taxo=loadTaxo().filter(c=>!c.archived);
+  const sel=document.getElementById('clientSel');
+  if(!sel) return;
+  sel.innerHTML=taxo.length?taxo.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join(''):'<option value="">Nenhum cliente</option>';
+  loadClient();
+}
+
+function loadClient(){
+  const taxo=loadTaxo();
+  const id=document.getElementById('clientSel')?.value;
+  _c=taxo.find(c=>c.id===id)||null;
+  if(!_c){clearAll();return;}
+  // Set separator
+  const sepSel=document.getElementById('sepSel');
+  if(sepSel) sepSel.value=_c.separator||'_';
+  // Load structures
+  const structSel=document.getElementById('structSel');
+  if(structSel){
+    structSel.innerHTML='<option value="">— todos os segmentos —</option>'+(_c.structures||[]).map(st=>`<option value="${esc(st.id)}">${esc(st.label)}</option>`).join('');
+  }
+  renderSegConfig(_c.segments||[]);
+  _generated=[];
+  renderResults([]);
+}
+
+function applyStructure(){
+  if(!_c) return;
+  const structId=document.getElementById('structSel')?.value;
+  if(!structId){ renderSegConfig(_c.segments||[]); return; }
+  const st=(_c.structures||[]).find(s=>s.id===structId);
+  if(!st) return;
+  // Parse pattern to get segment order
+  const regex=/\{([^}]+)\}/g; let m; const segs=[];
+  while((m=regex.exec(st.pattern||''))!==null){
+    const seg=_c.segments.find(s=>s.id===m[1]);
+    if(seg) segs.push(seg);
+  }
+  renderSegConfig(segs.length?segs:(_c.segments||[]));
+}
+
+function renderSegConfig(segs){
+  const el=document.getElementById('segList'); if(!el) return;
+  if(!segs.length){el.innerHTML='<p style="font-size:12px;color:var(--faint)">Nenhum segmento.</p>';return;}
+  el.innerHTML=segs.map((s,i)=>{
+    const terms=(_c.dictionary[s.id]||[]);
+    const checksHtml=terms.length?`
+      <div class="select-all-row">
+        <button class="seg-toggle" onclick="toggleSegEnabled('${esc(s.id)}')" id="segtog-${esc(s.id)}">✓ Ativo</button>
+        <button class="btn secondary sm" onclick="toggleAllInSeg('${esc(s.id)}',true)" style="font-size:10px;padding:2px 7px">Todos</button>
+        <button class="btn secondary sm" onclick="toggleAllInSeg('${esc(s.id)}',false)" style="font-size:10px;padding:2px 7px">Nenhum</button>
+      </div>
+      <div class="term-checks" id="tc-${esc(s.id)}">${terms.map((t,ti)=>`
+        <label class="term-check-chip">
+          <input type="checkbox" data-seg="${esc(s.id)}" data-val="${esc(t.value)}" checked>
+          ${esc(t.value)}${t.label&&t.label!==t.value?`<span style="font-size:10px;opacity:.6"> ${esc(t.label)}</span>`:''}
+        </label>`).join('')}
+      </div>`:
+      `<p class="gen-empty" style="padding:8px 0">Sem termos neste segmento.</p>`;
+    return `<div class="seg-cfg" id="segcfg-${esc(s.id)}">
+      <div class="seg-cfg-top">
+        <span class="seg-cfg-label">${esc(s.label)}</span>
+        <span class="seg-cfg-badge${s.required?'':' opt'}">${s.required?'Obrigatório':'Opcional'}</span>
+        <span style="font-size:10px;color:var(--faint)">${terms.length} termos</span>
+      </div>
+      ${checksHtml}
+    </div>`;
+  }).join('');
+}
+
+let _disabledSegs=new Set();
+function toggleSegEnabled(segId){
+  const btn=document.getElementById(`segtog-${segId}`);
+  if(_disabledSegs.has(segId)){
+    _disabledSegs.delete(segId);
+    btn.textContent='✓ Ativo'; btn.className='seg-toggle on';
+    document.getElementById(`tc-${segId}`)?.querySelectorAll('input').forEach(i=>i.disabled=false);
+  } else {
+    _disabledSegs.add(segId);
+    btn.textContent='⊘ Ignorado'; btn.className='seg-toggle';
+    document.getElementById(`tc-${segId}`)?.querySelectorAll('input').forEach(i=>i.disabled=true);
+  }
+}
+function toggleAllInSeg(segId,state){
+  document.getElementById(`tc-${segId}`)?.querySelectorAll('input[type=checkbox]').forEach(i=>{if(!i.disabled)i.checked=state;});
+}
+function selectAllTerms(state){
+  document.querySelectorAll('#segList input[type=checkbox]').forEach(i=>{if(!i.disabled)i.checked=state;});
+}
+
+function getSelectedBySegment(){
+  const result={};
+  document.querySelectorAll('#segList input[type=checkbox]:checked:not(:disabled)').forEach(inp=>{
+    const seg=inp.dataset.seg, val=inp.dataset.val;
+    if(!seg||!val) return;
+    if(!result[seg]) result[seg]=[];
+    result[seg].push(val);
+  });
+  return result;
+}
+
+function getActiveSegments(){
+  if(!_c) return [];
+  const structId=document.getElementById('structSel')?.value;
+  if(structId){
+    const st=(_c.structures||[]).find(s=>s.id===structId);
+    if(st){
+      const regex=/\{([^}]+)\}/g; let m; const segs=[];
+      while((m=regex.exec(st.pattern||''))!==null){
+        const seg=_c.segments.find(s=>s.id===m[1]);
+        if(seg&&!_disabledSegs.has(seg.id)) segs.push(seg);
+      }
+      return segs;
+    }
+  }
+  return (_c.segments||[]).filter(s=>!_disabledSegs.has(s.id));
+}
+
+function generate(){
+  if(!_c){ renderResults([]); return; }
+  const sep=document.getElementById('sepSel')?.value??_c.separator??'_';
+  const segs=getActiveSegments();
+  const selected=getSelectedBySegment();
+  // Build term arrays per active segment; skip if optional and no terms selected
+  const pools=[];
+  segs.forEach(s=>{
+    const vals=selected[s.id]||[];
+    if(!vals.length){
+      if(s.required){ pools.push([{segId:s.id,segLabel:s.label,val:'???'}]); }
+      // optional skipped
+    } else {
+      pools.push(vals.map(v=>({segId:s.id,segLabel:s.label,val:v})));
+    }
+  });
+  if(!pools.length){ renderResults([]); return; }
+  // Cartesian product
+  const combos=cartesian(pools);
+  _generated=combos.map(parts=>({parts,nc:parts.map(p=>p.val).join(sep)}));
+  renderResults(_generated);
+}
+
+function cartesian(arrays){
+  if(!arrays.length) return [[]];
+  const [first,...rest]=arrays;
+  const restProd=cartesian(rest);
+  const result=[];
+  first.forEach(item=>{ restProd.forEach(tail=>{ result.push([item,...tail]); }); });
+  return result;
+}
+
+function renderResults(list){
+  const countEl=document.getElementById('genCount');
+  const statsEl=document.getElementById('genStats');
+  const listEl=document.getElementById('ncList');
+  const warnEl=document.getElementById('limitWarn');
+  if(!list.length){
+    if(countEl) countEl.textContent='0';
+    if(statsEl) statsEl.textContent='';
+    if(warnEl) warnEl.style.display='none';
+    if(listEl) listEl.innerHTML='<div class="gen-empty"><p>Nenhuma combinação gerada. Selecione termos e clique em Gerar.</p></div>';
+    document.getElementById('previewCard').style.display='none';
+    return;
+  }
+  const over=list.length>500;
+  if(warnEl) warnEl.style.display=over?'block':'none';
+  const display=over?list.slice(0,500):list;
+  if(countEl) countEl.textContent=list.length.toLocaleString('pt-BR');
+  const segs=[...new Set(list[0].parts.map(p=>p.segLabel))];
+  if(statsEl) statsEl.innerHTML=`<span>${segs.length} segmentos</span><span>·</span><span>${list.length.toLocaleString('pt-BR')} combinações</span>`;
+  if(listEl) listEl.innerHTML=display.map((item,idx)=>`<div class="nc-row">
+    <span class="nc-val" title="Clique duplo para copiar" ondblclick="copySingle('${esc(item.nc.replace(/'/g,"\\'"))}')">
+      ${item.parts.map(p=>`<span class="seg-part" title="${esc(p.segLabel)}">${esc(p.val)}</span>`).join(`<span style="color:var(--faint);font-size:10px;padding:0 1px">${esc(document.getElementById('sepSel')?.value??'_')}</span>`)}</span>
+    <button class="nc-copy-btn" title="Copiar" onclick="copySingle('${esc(item.nc.replace(/'/g,"\\'"))}')">📋</button>
+  </div>`).join('');
+  // Preview card
+  if(list.length && list[0].parts.length>1){
+    document.getElementById('previewCard').style.display='block';
+    document.getElementById('previewContent').innerHTML=`<div class="gen-stats">${list[0].parts.map(p=>`<span style="font-size:11px"><b>${esc(p.segLabel)}</b>: ${[...new Set(list.map(x=>x.parts.find(q=>q.segId===p.segId)?.val||''))].join(', ')}</span>`).join(' · ')}</div>`;
+  } else { document.getElementById('previewCard').style.display='none'; }
+}
+
+function clearAll(){
+  _c=null; _generated=[];
+  document.getElementById('segList').innerHTML='';
+  renderResults([]);
+}
+
+function copySingle(val){
+  navigator.clipboard.writeText(val).then(()=>showToast('📋 '+val)).catch(()=>{});
+}
+
+function copyAll(){
+  if(!_generated.length){ showToast('Gere primeiro'); return; }
+  const text=_generated.map(x=>x.nc).join('\n');
+  navigator.clipboard.writeText(text).then(()=>showToast(`📋 ${_generated.length} NCs copiadas`)).catch(()=>{});
+}
+
+function exportCSV(){
+  if(!_generated.length){ showToast('Gere primeiro'); return; }
+  if(!_c) return;
+  const segs=_generated[0]?.parts.map(p=>p.segLabel)||[];
+  const rows=[['nc',...segs],..._generated.map(x=>[x.nc,...x.parts.map(p=>p.val)])];
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;
+  a.download=`nc_gerador_${_c.id}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`⬇ ${_generated.length} NCs exportadas`);
+}
+
+function showToast(msg){
+  let t=document.getElementById('ncToast');
+  if(!t){t=document.createElement('div');t.id='ncToast';Object.assign(t.style,{position:'fixed',bottom:'20px',right:'20px',background:'var(--fg)',color:'var(--bg)',padding:'9px 16px',borderRadius:'9px',fontSize:'13px',fontWeight:'600',zIndex:'9999',transition:'opacity .25s',opacity:'0',pointerEvents:'none'});document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2400);
+}
+
+function toggleTheme(){
+  const r=document.documentElement;
+  r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';
+  try{localStorage.setItem('genernc_theme',r.dataset.theme);}catch(e){}
+}
+(function(){try{const t=localStorage.getItem('genernc_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();
+
+window.addEventListener('storage',e=>{ if(e.key===TAXO_KEY){populateClients();} });
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();generate();}
+});
+
+populateClients();
+</script>
+</body>
+</html>

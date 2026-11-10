@@ -3907,10 +3907,37 @@ function validateName() {
     ${autoFixes.length?`<button class="val-copy-name-btn" title="Corrigir todos os avisos de capitalização/valor automaticamente" style="background:rgba(34,197,94,.12);color:#15803d" onclick="applyAllValFixes('${escapedFixed}')">🔧 Autocorrigir (${autoFixes.length})</button>`:''}
     ${!errCount?`<button class="val-copy-name-btn" title="Preencher o Builder com este nome" style="background:rgba(37,99,235,.1);color:var(--accent)" onclick="sendValidatorToBuilder('${escapedRaw}')">→ Builder</button>`:''}
   </div>` : '';
-  resultsEl.innerHTML=scoreHtml+html;
+  /* BATCH 25: show which structure matched */
+  let structMatchHtml='';
+  if(!errCount && !structId && (c.structures||[]).length) {
+    const matched=detectMatchingStructures(raw,c);
+    if(matched.length) structMatchHtml=`<div style="font-size:11px;color:var(--faint);margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span>🏗️ Estrutura:</span>${matched.map(m=>`<span style="background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 7px;font-weight:600">${esc(m.label)}</span>`).join(' ou ')}</div>`;
+  }
+  resultsEl.innerHTML=scoreHtml+structMatchHtml+html;
   if(raw) addToValHistory(raw);
   if(_compareMode) runCompare();
   renderValBreakdown(raw);
+}
+
+/* BATCH 25: Detect which structures match a given NC */
+function detectMatchingStructures(name, c) {
+  const matched=[];
+  (c.structures||[]).forEach(st=>{
+    const parsed=parsePattern(st.pattern||'');
+    if(!parsed.length) return;
+    const segDefs=parsed.map(p=>{
+      const seg=(c.segments||[]).find(s=>s.id===p.segId);
+      return {id:p.segId,sep:p.sep,label:seg?seg.label:p.segId,required:true};
+    });
+    const {parts,extra}=parseNameBySegments(name,segDefs,c.separator);
+    if(extra) return; // leftover text — no match
+    let ok=true;
+    segDefs.forEach((seg,i)=>{
+      if(parts[i]===undefined||parts[i]==='') ok=false;
+    });
+    if(ok) matched.push({label:st.label,id:st.id});
+  });
+  return matched;
 }
 
 function clearValidator() {
