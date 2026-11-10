@@ -870,6 +870,32 @@ body {
 .rename-icon{font-size:12px;color:var(--faint);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity .15s;}
 .client-card:hover .rename-icon{opacity:1;}
 
+/* ==================== TERM TAG COLORS ==================== */
+.term-tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;cursor:pointer;user-select:none;border:1px solid transparent;transition:opacity .15s;}
+.term-tag-pick{position:absolute;z-index:600;background:var(--card);border:1px solid var(--card-border);border-radius:9px;padding:8px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-lg);min-width:160px;}
+.term-tag-pick-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:2px;}
+.term-tag-pick-opts{display:flex;flex-wrap:wrap;gap:4px;}
+.term-tag-pick-opt{font-size:11px;padding:2px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent;font-weight:600;transition:opacity .12s;}
+.term-tag-pick-opt:hover{opacity:.75;}
+.term-tag-pick-clear{font-size:11px;color:var(--faint);background:none;border:none;cursor:pointer;padding:2px 6px;text-align:left;}
+.term-tag-pick-clear:hover{color:var(--erro);}
+/* ==================== BUILDER SEG RECENT VALUES ==================== */
+.seg-recents{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;min-height:0;}
+.seg-recent-pill{font-size:10.5px;padding:2px 8px;border-radius:10px;background:var(--pill);border:1px solid var(--card-border);color:var(--faint);cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+.seg-recent-pill:hover{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);}
+/* ==================== VALIDADOR: BREAKDOWN ==================== */
+.val-breakdown{margin-top:14px;border:1px solid var(--card-border);border-radius:9px;overflow:hidden;}
+.val-breakdown-hdr{padding:8px 14px;background:var(--surface2,var(--pill));font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);border-bottom:1px solid var(--card-border);}
+.val-breakdown-row{display:grid;grid-template-columns:120px 1fr 80px;gap:8px;padding:7px 14px;border-bottom:1px solid var(--card-border);font-size:12px;align-items:center;}
+.val-breakdown-row:last-child{border-bottom:none;}
+.val-bd-seg{font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.val-bd-val{font-family:monospace;color:var(--accent);}
+.val-bd-val.missing{color:var(--warn);font-style:italic;}
+.val-bd-val.invalid{color:var(--erro);}
+.val-bd-status{text-align:right;font-size:11px;font-weight:700;}
+.val-bd-ok{color:var(--success,#22c55e);}
+.val-bd-warn{color:var(--warn);}
+.val-bd-err{color:var(--erro);}
 /* ==================== TERM DRAG & DROP ==================== */
 .term-row{transition:opacity .15s,background .1s;}
 .term-row[draggable="true"]{cursor:grab;}
@@ -1158,6 +1184,7 @@ body {
         <div id="valHistRow" class="val-hist-row"></div>
         <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video|q1-2026" oninput="validateName()"></textarea>
         <div id="valResults" class="val-results"></div>
+        <div id="valBreakdownWrap"></div>
         <div id="valCompareResults" style="display:none"></div>
       </div>
       <!-- Batch mode -->
@@ -2187,8 +2214,10 @@ function renderTermArea(c) {
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
         ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder${(()=>{try{const h=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');const matches=h.filter(x=>x.includes(t.value)).slice(0,3);return matches.length?'\nRecentes:\n'+matches.join('\n'):''}catch(e){return ''}})()}">${t.uses}×</span>`:''}
         ${t.createdAt&&(Date.now()-t.createdAt<86400000)?`<span class="term-new-badge" title="Adicionado há menos de 24h">novo</span>`:''}
+        ${(()=>{if(!t.tag)return '';const col=getTagColors(t.tag);return `<span class="term-tag" style="background:${col.bg};color:${col.fg};border-color:${col.fg}40" onclick="openTermTagPick(${i},this,event)" title="Tag: ${t.tag} · Clique para trocar">${t.tag}</span>`})()}
         <div class="term-actions">
           <button class="term-fav-btn ${t.fav?'active':''}" title="${t.fav?'Remover favorito':'Favoritar'}" onclick="toggleTermFav(${i})">${t.fav?'⭐':'☆'}</button>
+          <button title="Tag de categoria" onclick="openTermTagPick(${i},this,event)">🏷️</button>
           <button title="Mover para outro segmento" onclick="openMoveTermModal(${i})">↗️</button>
           <button title="Duplicar" onclick="duplicateTerm(${i})">📋</button>
           <button onclick="editTerm(${i})">✏️</button>
@@ -2789,6 +2818,9 @@ function renderBuilder() {
     if(isLocked) div.classList.add('locked-seg');
     const lockBtn=`<button class="seg-lock-btn${isLocked?' locked':''}" title="${isLocked?'Desbloquear segmento':'Bloquear segmento (protege de Limpar e Aleatório)'}" onclick="toggleSegLock('${s.id}',this)">🔒</button>`;
 
+    const recents = getSegRecentValues(s.label);
+    const recentsHtml = recents.length ? `<div class="seg-recents">${recents.map(v=>`<span class="seg-recent-pill" title="Preencher: ${esc(v)}" onclick="fillSegFromRecent('${s.id}','${v.replace(/'/g,"\\'")}')">↩ ${esc(v)}</span>`).join('')}</div>` : '';
+
     if(terms.length>0) {
       div.innerHTML=`
         <div class="builder-seg-label">${esc(s.label)} ${badge} ${lockBtn}</div>
@@ -2804,6 +2836,7 @@ function renderBuilder() {
           <button class="builder-seg-clear" title="Limpar campo" onclick="clearSegField('${s.id}')">×</button>
           <div class="builder-ac-list" id="aclist-${s.id}"></div>
         </div>
+        ${recentsHtml}
       `;
     } else {
       div.innerHTML=`
@@ -2814,6 +2847,7 @@ function renderBuilder() {
             oninput="builderVals['${s.id}']=this.value;updatePreview()">
           <button class="builder-seg-clear" style="display:${curVal?'block':'none'}" title="Limpar campo" onclick="clearSegField('${s.id}')">×</button>
         </div>
+        ${recentsHtml}
       `;
     }
     if(terms.length>0) {
@@ -3207,11 +3241,13 @@ function validateName() {
   resultsEl.innerHTML=scoreHtml+html;
   if(raw) addToValHistory(raw);
   if(_compareMode) runCompare();
+  renderValBreakdown(raw);
 }
 
 function clearValidator() {
   const inp=document.getElementById('valInput'); if(inp) inp.value='';
   document.getElementById('valResults').innerHTML='';
+  const bd=document.getElementById('valBreakdownWrap'); if(bd) bd.innerHTML='';
   const bi=document.getElementById('valBatchInput'); if(bi) bi.value='';
   const br=document.getElementById('valBatchResults'); if(br) br.innerHTML='';
   const compRes=document.getElementById('valCompareResults'); if(compRes) compRes.innerHTML='';
@@ -4598,6 +4634,148 @@ function handleACKey(e, segId) {
   } else if(e.key==='Escape') {
     hideAC(segId);
   }
+}
+
+/* =============================================
+   TERM TAGS (BATCH 16)
+   ============================================= */
+const TERM_TAGS = [
+  {id:'evergreen', label:'evergreen', bg:'#dcfce7', fg:'#15803d'},
+  {id:'sazonal',   label:'sazonal',   bg:'#fef9c3', fg:'#a16207'},
+  {id:'teste',     label:'teste',     bg:'#fce7f3', fg:'#9d174d'},
+  {id:'pausa',     label:'pausa',     bg:'#f1f5f9', fg:'#475569'},
+  {id:'prioridade',label:'prioridade',bg:'#fee2e2', fg:'#b91c1c'},
+  {id:'novo',      label:'novo',      bg:'#dbeafe', fg:'#1d4ed8'},
+];
+const TERM_TAGS_DARK = {
+  evergreen:{bg:'#14532d',fg:'#86efac'},
+  sazonal:  {bg:'#422006',fg:'#fde68a'},
+  teste:    {bg:'#4a044e',fg:'#f0abfc'},
+  pausa:    {bg:'#1e293b',fg:'#94a3b8'},
+  prioridade:{bg:'#450a0a',fg:'#fca5a5'},
+  novo:     {bg:'#1e3a5f',fg:'#93c5fd'},
+};
+let _termTagPick = null; // {el, clientId, segId, termIdx}
+
+function getTagColors(tagId) {
+  const dark = document.documentElement.getAttribute('data-theme')==='dark' ||
+    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  if(dark && TERM_TAGS_DARK[tagId]) return TERM_TAGS_DARK[tagId];
+  const t = TERM_TAGS.find(x=>x.id===tagId);
+  return t ? {bg:t.bg, fg:t.fg} : {bg:'#e5e7eb',fg:'#374151'};
+}
+
+function openTermTagPick(termIdx, anchorEl, e) {
+  e.stopPropagation();
+  closeTermTagPick();
+  const c = active(); if(!c||!activeSeg) return;
+  const term = c.dictionary[activeSeg][termIdx]; if(!term) return;
+  const pick = document.createElement('div');
+  pick.className = 'term-tag-pick';
+  pick.style.cssText = 'position:fixed;';
+  const rect = anchorEl.getBoundingClientRect();
+  pick.innerHTML = `
+    <div class="term-tag-pick-title">Tag do termo</div>
+    <div class="term-tag-pick-opts">
+      ${TERM_TAGS.map(t=>{const col=getTagColors(t.id);return `<div class="term-tag-pick-opt" style="background:${col.bg};color:${col.fg};border-color:${col.fg}40" onclick="setTermTag(${termIdx},'${t.id}')">${t.label}</div>`;}).join('')}
+    </div>
+    ${term.tag ? `<button class="term-tag-pick-clear" onclick="setTermTag(${termIdx},null)">✕ Remover tag</button>` : ''}
+  `;
+  document.body.appendChild(pick);
+  pick.style.top = (rect.bottom + 4) + 'px';
+  pick.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
+  _termTagPick = {el: pick, termIdx};
+  setTimeout(()=>document.addEventListener('click', closeTermTagPick, {once:true}), 10);
+}
+
+function closeTermTagPick() {
+  if(_termTagPick) { _termTagPick.el.remove(); _termTagPick=null; }
+  document.removeEventListener('click', closeTermTagPick);
+}
+
+function setTermTag(termIdx, tagId) {
+  closeTermTagPick();
+  const c = active(); if(!c||!activeSeg) return;
+  const term = c.dictionary[activeSeg][termIdx]; if(!term) return;
+  if(tagId) term.tag = tagId; else delete term.tag;
+  saveData(); renderDicionario();
+  showToast(tagId ? `Tag "${tagId}" aplicada` : 'Tag removida');
+}
+
+/* =============================================
+   BUILDER: SEG RECENT VALUES (BATCH 16)
+   ============================================= */
+function getSegRecentValues(segLabel, limit) {
+  limit = limit || 5;
+  try {
+    const hist = JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');
+    const c = active(); if(!c) return [];
+    const sep = c.separator;
+    const segIdx = c.segments.findIndex(s=>s.label===segLabel || s.id===segLabel);
+    if(segIdx === -1) return [];
+    const seen = new Set(), vals = [];
+    for(let i = hist.length - 1; i >= 0 && vals.length < limit; i--) {
+      const parts = hist[i].split(sep);
+      const v = parts[segIdx];
+      if(v && !seen.has(v)) { seen.add(v); vals.push(v); }
+    }
+    return vals;
+  } catch(e) { return []; }
+}
+
+function fillSegFromRecent(segId, val) {
+  builderVals[segId] = val;
+  const inp = document.getElementById('bv-'+segId);
+  if(inp) inp.value = val;
+  updatePreview();
+  showToast('↩ '+val);
+}
+
+/* =============================================
+   VALIDADOR: SEGMENT BREAKDOWN (BATCH 16)
+   ============================================= */
+function renderValBreakdown(nameStr) {
+  const c = active(); if(!c) return;
+  const wrap = document.getElementById('valBreakdownWrap'); if(!wrap) return;
+  const segs = c.segments;
+  if(!nameStr || !segs.length) { wrap.innerHTML=''; return; }
+  const sep = c.separator;
+  const parts = nameStr.split(sep);
+  let html = `<div class="val-breakdown"><div class="val-breakdown-hdr">Decomposição por segmento</div>`;
+  segs.forEach((seg, i) => {
+    const val = parts[i] || '';
+    const dict = c.dictionary[seg.id] || [];
+    let statusHtml = '', valClass = 'val-bd-val';
+    if(!val) {
+      statusHtml = `<span class="val-bd-status val-bd-${seg.required?'err':'warn'}">${seg.required?'❌ obrig.':'— opcional'}</span>`;
+      valClass = 'val-bd-val missing';
+    } else {
+      const match = dict.find(t=>t.value===val);
+      if(match) {
+        statusHtml = `<span class="val-bd-status val-bd-ok">✓ válido</span>`;
+      } else if(dict.length) {
+        // Closest match
+        let bestDist = Infinity, bestVal = '';
+        dict.forEach(t=>{ const d=levenshtein(val,t.value); if(d<bestDist){bestDist=d;bestVal=t.value;} });
+        if(bestDist <= 2) {
+          statusHtml = `<span class="val-bd-status val-bd-warn" title="Sugestão: ${esc(bestVal)}">⚠ ~${esc(bestVal)}</span>`;
+          valClass = 'val-bd-val invalid';
+        } else {
+          statusHtml = `<span class="val-bd-status val-bd-warn">⚠ livre</span>`;
+        }
+      } else {
+        statusHtml = `<span class="val-bd-status val-bd-ok" style="opacity:.5">— livre</span>`;
+      }
+    }
+    html += `<div class="val-breakdown-row"><div class="val-bd-seg" title="${esc(seg.label)}">${esc(seg.label)}</div><div class="${valClass}">${val?esc(val):'—'}</div>${statusHtml}</div>`;
+  });
+  if(parts.length > segs.length) {
+    for(let i = segs.length; i < parts.length; i++) {
+      html += `<div class="val-breakdown-row"><div class="val-bd-seg" style="color:var(--warn)">seg extra ${i+1}</div><div class="val-bd-val invalid">${esc(parts[i])}</div><span class="val-bd-status val-bd-err">❌ extra</span></div>`;
+    }
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 
 /* =============================================
