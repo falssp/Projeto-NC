@@ -712,6 +712,34 @@ body {
 /* ==================== DICT FILTER ACTIVE ==================== */
 .btn.secondary.active{border-color:var(--accent);background:rgba(37,99,235,.1);color:var(--accent);}
 
+/* ==================== BUILDER CHAR COUNT ==================== */
+.builder-char-count{font-size:11px;color:var(--faint);text-align:right;margin-top:4px;letter-spacing:.02em;}
+.builder-char-count.warn{color:var(--warn);}
+.builder-char-count.error{color:var(--erro);}
+
+/* ==================== CLIENT LAST MODIFIED ==================== */
+.client-card-modified{font-size:10px;color:var(--faint);margin-top:4px;}
+
+/* ==================== STRUCTURE TAGS ==================== */
+.struct-tag{display:inline-block;background:rgba(37,99,235,.12);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;margin-right:4px;cursor:pointer;}
+.struct-tag.active-tag{background:var(--accent);color:#fff;}
+.struct-tag-filter-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:6px 0 2px;font-size:11px;color:var(--faint);}
+
+/* ==================== COMPARE MODE ==================== */
+.val-compare-section{margin-top:12px;border-top:1px solid var(--card-border);padding-top:12px;}
+.val-compare-row{display:grid;grid-template-columns:140px 1fr;gap:6px;align-items:start;margin-bottom:8px;}
+.val-compare-label{font-size:12px;font-weight:600;padding-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.val-compare-segs{display:flex;flex-wrap:wrap;gap:4px;}
+.val-compare-seg{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--pill);}
+.val-compare-seg.ok{background:rgba(34,197,94,.12);color:#15803d;}
+.val-compare-seg.err{background:rgba(239,68,68,.12);color:#b91c1c;}
+.val-compare-seg.warn{background:rgba(245,158,11,.12);color:#92400e;}
+
+/* ==================== MERGE CLIENT MODAL ==================== */
+.merge-client-option{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;border:2px solid var(--card-border);margin-bottom:8px;transition:border-color .15s;}
+.merge-client-option:hover,.merge-client-option.selected{border-color:var(--accent);background:rgba(37,99,235,.04);}
+.merge-client-option input[type=radio]{accent-color:var(--accent);}
+
 /* ==================== TERM USES BADGE ==================== */
 .term-uses-badge{font-size:10px;color:var(--accent);background:rgba(37,99,235,.1);
   border-radius:8px;padding:1px 5px;white-space:nowrap;font-weight:600;}
@@ -856,8 +884,11 @@ body {
           <p>Cada cliente tem estrutura própria de segmentos e dicionário de termos</p>
         </div>
         <div class="action-bar">
-          <button class="btn secondary btn-sm" onclick="triggerImport()">⬆ Importar JSON</button>
+          <button class="btn secondary btn-sm" onclick="triggerImport()">⬆ JSON</button>
+          <button class="btn secondary btn-sm" onclick="triggerImportClientCSV()" title="Importar cliente a partir de CSV exportado">⬆ CSV</button>
+          <button class="btn secondary btn-sm" onclick="openMergeClientsModal()" title="Mesclar dicionários de dois clientes">🔀 Mesclar</button>
           <button class="btn primary btn-sm" onclick="openAddClient()">+ Novo cliente</button>
+          <input type="file" id="importClientCSVInput" accept=".csv" style="display:none" onchange="importClientFromCSV(this)">
         </div>
       </div>
       <div id="clientGrid" class="client-grid"></div>
@@ -904,6 +935,7 @@ body {
           <button class="btn primary btn-sm" onclick="openAddStructure()">+ Nova estrutura</button>
         </div>
       </div>
+      <div id="structTagFilterRow" class="struct-tag-filter-row" style="display:none"></div>
       <div id="structList" class="structure-list"></div>
     </div>
   </div>
@@ -931,6 +963,7 @@ body {
         <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
       </div>
       <div id="previewBox" class="preview-box"><span style="color:var(--faint)">—</span></div>
+      <div id="builderCharCount" class="builder-char-count"></div>
       <div class="sep-preview-row" id="sepPreviewRow"></div>
       <div class="builder-hist-row" id="builderHistRow"></div>
       <div class="builder-favs-row" id="builderFavsRow"></div>
@@ -946,6 +979,7 @@ body {
         <div><h2>Validador</h2><p id="valMeta">Cole o nome da campanha para validar segmento a segmento</p></div>
         <div class="action-bar">
           <button class="btn secondary btn-sm" id="valModeBtn" onclick="toggleValMode()">📋 Batch</button>
+          <button class="btn secondary btn-sm" id="valCompareBtn" onclick="toggleCompareMode()">🔀 Comparar</button>
           <button class="btn secondary btn-sm" onclick="clearValidator()">✕ Limpar</button>
         </div>
       </div>
@@ -960,6 +994,7 @@ body {
         <div id="valHistRow" class="val-hist-row"></div>
         <textarea id="valInput" class="val-textarea" placeholder="Ex: dove_shampoo_awareness_video|q1-2026" oninput="validateName()"></textarea>
         <div id="valResults" class="val-results"></div>
+        <div id="valCompareResults" style="display:none"></div>
       </div>
       <!-- Batch mode -->
       <div id="valBatchMode" style="display:none">
@@ -1129,6 +1164,21 @@ body {
 <!-- Toast -->
 <div id="toast"><span id="toastMsg"></span><button id="toastUndo" onclick="execUndo()">Desfazer</button></div>
 
+<!-- Merge Clients Modal -->
+<div id="mergeClientsModal" class="move-term-modal" style="display:none" onclick="if(event.target===this)closeMergeClientsModal()">
+  <div class="modal-box" style="max-width:420px">
+    <h3>🔀 Mesclar clientes</h3>
+    <p style="font-size:12px;color:var(--faint);margin:6px 0 14px">Mescla o dicionário do cliente de origem no cliente de destino (ativo). Termos com mesmo valor são ignorados.</p>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">Destino: <span id="mergeTargetName" style="color:var(--accent)"></span></div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:6px">Origem (selecione):</div>
+    <div id="mergeSourceList" style="max-height:220px;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn secondary btn-sm" onclick="closeMergeClientsModal()">Cancelar</button>
+      <button class="btn primary btn-sm" onclick="confirmMergeClients()">Mesclar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Move Term Modal -->
 <div id="moveTermModal" class="move-term-modal" style="display:none" onclick="if(event.target===this)closeMoveTermModal()">
   <div class="modal-box">
@@ -1262,6 +1312,9 @@ function loadData() {
 }
 
 function saveData() {
+  // Stamp lastModified on the active client
+  const ac = active();
+  if(ac) ac.lastModified = Date.now();
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(clients));
     localStorage.setItem(ACTIVE_KEY, activeId || '');
@@ -1399,6 +1452,7 @@ function renderClientes() {
       </div>
       ${fillDotsHtml}
       <div class="segments-strip">${segsHtml}</div>
+      ${c.lastModified?`<div class="client-card-modified">✏ ${new Date(c.lastModified).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}
     `;
     grid.appendChild(div);
   });
@@ -1714,7 +1768,7 @@ function renderTermArea(c) {
         <span class="term-row-value" title="Duplo clique para editar" ondblclick="editTerm(${i})">${esc(t.value)}</span>
         <span class="term-row-label" ondblclick="editTerm(${i})">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
-        ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder">${t.uses}×</span>`:''}
+        ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder${(()=>{try{const h=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');const matches=h.filter(x=>x.includes(t.value)).slice(0,3);return matches.length?'\nRecentes:\n'+matches.join('\n'):''}catch(e){return ''}})()}">${t.uses}×</span>`:''}
         <div class="term-actions">
           <button class="term-fav-btn ${t.fav?'active':''}" title="${t.fav?'Remover favorito':'Favoritar'}" onclick="toggleTermFav(${i})">${t.fav?'⭐':'☆'}</button>
           <button title="Mover para outro segmento" onclick="openMoveTermModal(${i})">↗️</button>
@@ -2310,12 +2364,33 @@ function renderBuilder() {
   renderBuilderHistory();
   renderBuilderFavs();
   renderSepPreview();
+  // Wire Tab key: Tab from last segment → copy button; Shift+Tab from first → nothing special
+  const allSegIds = segsToRender.map(s=>`bv-${s.id}`);
+  allSegIds.forEach((elId, idx)=>{
+    const el = document.getElementById(elId); if(!el) return;
+    el.addEventListener('keydown', function(e){
+      if(e.key!=='Tab') return;
+      if(!e.shiftKey && idx < allSegIds.length-1) {
+        e.preventDefault();
+        const next = document.getElementById(allSegIds[idx+1]);
+        if(next) next.focus();
+      } else if(!e.shiftKey && idx===allSegIds.length-1) {
+        e.preventDefault();
+        document.getElementById('copyBtn')?.focus();
+      }
+    });
+  });
 }
 
 function updatePreview() {
   const c=active();
   const box=document.getElementById('previewBox');
-  if(!c) { box.innerHTML='<span style="color:var(--faint)">—</span>'; return; }
+  const charCount=document.getElementById('builderCharCount');
+  if(!c) {
+    box.innerHTML='<span style="color:var(--faint)">—</span>';
+    if(charCount) charCount.textContent='';
+    return;
+  }
 
   let parts=c.segments.map(s=>({
     val:builderVals[s.id]||'',required:s.required,label:s.label,
@@ -2327,6 +2402,7 @@ function updatePreview() {
 
   if(parts.every(p=>!p.val)) {
     box.innerHTML='<span style="color:var(--faint)">Preencha os campos acima</span>';
+    if(charCount) charCount.textContent='';
     return;
   }
 
@@ -2335,6 +2411,19 @@ function updatePreview() {
     const dot=(i<parts.length-1&&p.sep!==undefined)?`<span class="preview-sep">${esc(p.sep)}</span>`:'';
     return seg+dot;
   }).join('');
+
+  // Character count
+  if(charCount) {
+    // Build the plain text result to count chars
+    let result='';
+    for(let i=0;i<parts.length;i++){
+      result+=parts[i].val||'';
+      if(i<parts.length-1) result+=parts[i].sep!==undefined?parts[i].sep:'';
+    }
+    const len=result.length;
+    charCount.textContent=len>0?`${len} caracteres`:'';
+    charCount.className='builder-char-count'+(len>100?' warn':len>150?' error':'');
+  }
 }
 
 function clearBuilder() {
@@ -2531,6 +2620,7 @@ function validateName() {
 
   resultsEl.innerHTML=html;
   if(raw) addToValHistory(raw);
+  if(_compareMode) runCompare();
 }
 
 function clearValidator() {
@@ -2538,6 +2628,7 @@ function clearValidator() {
   document.getElementById('valResults').innerHTML='';
   const bi=document.getElementById('valBatchInput'); if(bi) bi.value='';
   const br=document.getElementById('valBatchResults'); if(br) br.innerHTML='';
+  const compRes=document.getElementById('valCompareResults'); if(compRes) compRes.innerHTML='';
 }
 
 let valBatchMode = false;
@@ -2716,9 +2807,11 @@ function renderEstruturas() {
       </div>
       <div class="structure-pattern">${renderPatternHtml(st.pattern,c.segments)}</div>
       ${st.notes?`<div class="structure-notes">${esc(st.notes)}</div>`:''}
+      ${st.tags&&st.tags.length?`<div style="margin-top:5px">${st.tags.map(t=>`<span class="struct-tag" onclick="filterByTag('${esc(t)}')">#${esc(t)}</span>`).join('')}</div>`:''}
     `;
     listEl.appendChild(div);
   });
+  renderStructTagFilters();
 }
 
 let structModalMode='add';
@@ -2778,6 +2871,10 @@ function renderStructModalBody(st) {
       <label>Observações (opcional)</label>
       <input type="text" id="sNotes" value="${esc(st.notes||'')}" placeholder="Ex: Campo CN-Code preenchido via ADP">
     </div>
+    <div class="field-group">
+      <label>Tags (opcional, separadas por vírgula)</label>
+      <input type="text" id="sTags" value="${esc((st.tags||[]).join(', '))}" placeholder="Ex: search, awareness, sempre-ativo">
+    </div>
   `;
   previewStructPattern();
 }
@@ -2813,14 +2910,16 @@ function saveStructure() {
   const level=document.getElementById('sLevel')?.value.trim();
   const pattern=document.getElementById('sPattern')?.value.trim();
   const notes=document.getElementById('sNotes')?.value.trim();
+  const tagsRaw=document.getElementById('sTags')?.value||'';
+  const tags=tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
   if(!label){showToast('Digite o label da estrutura.');return;}
   if(!pattern){showToast('Digite o padrão da estrutura.');return;}
   if(!c.structures) c.structures=[];
   if(structModalMode==='add'){
-    c.structures.push({id:genId(),label,platform,level,pattern,notes});
+    c.structures.push({id:genId(),label,platform,level,pattern,notes,...(tags.length?{tags}:{})});
   } else {
     const idx=c.structures.findIndex(s=>s.id===editingStructId);
-    if(idx>=0) c.structures[idx]={id:editingStructId,label,platform,level,pattern,notes};
+    if(idx>=0) c.structures[idx]={id:editingStructId,label,platform,level,pattern,notes,...(tags.length?{tags}:{})};
   }
   saveData(); closeStructModal(); renderEstruturas(); renderValidador();
   showToast('Estrutura salva');
@@ -3093,6 +3192,227 @@ function importStructuresFromFile(input) {
 }
 
 /* =============================================
+   STRUCTURE TAG FILTERS
+   ============================================= */
+let _activeStructTag = null;
+
+function renderStructTagFilters() {
+  const c = active();
+  const row = document.getElementById('structTagFilterRow'); if(!row) return;
+  if(!c) { row.style.display='none'; return; }
+  const structs = c.structures||[];
+  const allTags = [...new Set(structs.flatMap(s=>s.tags||[]))];
+  if(!allTags.length) { row.style.display='none'; return; }
+  row.style.display='flex';
+  row.innerHTML = `<span style="color:var(--faint)">Tags:</span>` +
+    allTags.map(t=>`<span class="struct-tag${_activeStructTag===t?' active-tag':''}" onclick="filterByTag('${esc(t)}')">#${esc(t)}</span>`).join('') +
+    (_activeStructTag?`<span style="cursor:pointer;font-size:11px;color:var(--erro);padding:1px 6px" onclick="filterByTag(null)">✕ limpar</span>`:'');
+}
+
+function filterByTag(tag) {
+  _activeStructTag = (_activeStructTag===tag) ? null : tag;
+  renderStructTagFilters();
+  document.querySelectorAll('#structList .structure-item').forEach(el=>{
+    if(!_activeStructTag) { el.style.display=''; return; }
+    // Check if the item has this tag (match text content of struct-tag spans)
+    const tags = [...el.querySelectorAll('.struct-tag')].map(e=>e.textContent.replace(/^#/,''));
+    el.style.display = tags.includes(_activeStructTag) ? '' : 'none';
+  });
+}
+
+/* =============================================
+   COMPARE MODE (VALIDADOR)
+   ============================================= */
+let _compareMode = false;
+
+function toggleCompareMode() {
+  _compareMode = !_compareMode;
+  const btn = document.getElementById('valCompareBtn');
+  if(btn) btn.classList.toggle('active', _compareMode);
+  const compRes = document.getElementById('valCompareResults');
+  const singleRes = document.getElementById('valResults');
+  if(_compareMode) {
+    if(compRes) compRes.style.display='';
+    runCompare();
+  } else {
+    if(compRes) { compRes.style.display='none'; compRes.innerHTML=''; }
+  }
+}
+
+function runCompare() {
+  if(!_compareMode) return;
+  const c = active();
+  const compRes = document.getElementById('valCompareResults'); if(!compRes) return;
+  const raw = document.getElementById('valInput')?.value.trim()||'';
+  if(!raw||!c) { compRes.innerHTML=''; return; }
+  const structs = c.structures||[];
+  if(!structs.length) { compRes.innerHTML=`<div style="font-size:12px;color:var(--faint);padding:6px 0">Nenhuma estrutura para comparar.</div>`; return; }
+  const icons={ok:'✅',similar:'⚠️',warn:'⚠️',err:'❌'};
+  let html=`<div class="val-compare-section"><div style="font-size:12px;font-weight:700;margin-bottom:8px">Comparação: "${esc(raw)}" em ${structs.length} estrutura(s)</div>`;
+  structs.forEach(st=>{
+    if(!st.pattern) return;
+    const parsed = parsePattern(st.pattern);
+    const segDefs = parsed.map(p=>{
+      const seg = c.segments.find(s=>s.id===p.segId);
+      return {id:p.segId, sep:p.sep, label:seg?seg.label:p.segId};
+    });
+    const {parts,extra} = parseNameBySegments(raw, segDefs, c.separator);
+    let okCnt=0,totalCnt=0;
+    const segsHtml = segDefs.map((seg,i)=>{
+      const part = parts[i]||'';
+      totalCnt++;
+      if(!part) return `<span class="val-compare-seg err">${esc(seg.label)}: —</span>`;
+      const result = validateValue(part, c.dictionary[seg.id]||[]);
+      if(result.status==='ok') okCnt++;
+      return `<span class="val-compare-seg ${result.status}">${esc(seg.label)}: ${esc(part)}</span>`;
+    }).join('');
+    const extraHtml = extra?`<span class="val-compare-seg err">extra: ${esc(extra)}</span>`:'';
+    const statusIcon = extra||okCnt<totalCnt ? (okCnt===totalCnt-1&&!extra?'⚠️':'❌') : '✅';
+    html+=`<div class="val-compare-row">
+      <div class="val-compare-label" title="${esc(st.label)}">${statusIcon} ${esc(st.label)}</div>
+      <div class="val-compare-segs">${segsHtml}${extraHtml}</div>
+    </div>`;
+  });
+  html+='</div>';
+  compRes.innerHTML=html;
+}
+
+/* =============================================
+   IMPORT CLIENT FROM CSV
+   ============================================= */
+function triggerImportClientCSV() {
+  document.getElementById('importClientCSVInput').value='';
+  document.getElementById('importClientCSVInput').click();
+}
+
+function importClientFromCSV(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+      if(lines.length<2) { showToast('CSV vazio ou inválido'); return; }
+      // Parse header: cliente,segmento,valor,label,descricao,favorito,usos
+      const parseCSVLine = s => {
+        const result=[]; let cur='', inQ=false;
+        for(let i=0;i<s.length;i++){
+          const ch=s[i];
+          if(ch==='"'&&!inQ&&(i===0||s[i-1]===',')){ inQ=true; }
+          else if(ch==='"'&&inQ&&(i===s.length-1||s[i+1]===',')){ inQ=false; }
+          else if(ch===','&&!inQ){ result.push(cur.trim()); cur=''; }
+          else { cur+=ch; }
+        }
+        result.push(cur.trim());
+        return result.map(v=>v.replace(/^"|"$/g,'').replace(/""/g,'"'));
+      };
+      const header = parseCSVLine(lines[0]).map(h=>h.toLowerCase());
+      const iCliente=header.indexOf('cliente'), iSeg=header.indexOf('segmento'),
+            iVal=header.indexOf('valor'), iLabel=header.indexOf('label'),
+            iDesc=header.indexOf('descricao'), iFav=header.indexOf('favorito'), iUsos=header.indexOf('usos');
+      if(iCliente<0||iSeg<0||iVal<0) { showToast('Colunas obrigatórias não encontradas (cliente, segmento, valor)'); return; }
+      // Group rows by cliente name
+      const clienteMap={};
+      lines.slice(1).forEach(line=>{
+        const cols = parseCSVLine(line);
+        const cName=(cols[iCliente]||'').trim();
+        const segLabel=(cols[iSeg]||'').trim();
+        const val=(cols[iVal]||'').trim();
+        const label=(cols[iLabel]||val).trim();
+        if(!cName||!segLabel||!val) return;
+        if(!clienteMap[cName]) clienteMap[cName]={name:cName, segsOrder:[]};
+        const cm=clienteMap[cName];
+        if(!cm.segsOrder.includes(segLabel)) cm.segsOrder.push(segLabel);
+        if(!cm.terms) cm.terms={};
+        if(!cm.terms[segLabel]) cm.terms[segLabel]=[];
+        const term={value:val,label};
+        if(iDesc>=0&&cols[iDesc]) term.desc=cols[iDesc];
+        if(iFav>=0&&cols[iFav]==='sim') term.fav=true;
+        if(iUsos>=0&&+cols[iUsos]>0) term.uses=+cols[iUsos];
+        cm.terms[segLabel].push(term);
+      });
+      const clienteNames = Object.keys(clienteMap);
+      if(!clienteNames.length) { showToast('Nenhum dado encontrado no CSV'); return; }
+      let added=0;
+      clienteNames.forEach(cName=>{
+        const cm=clienteMap[cName];
+        const newId = slug(cName)+'-'+genId();
+        const segments = cm.segsOrder.map(sl=>({id:slug(sl)+'-'+genId(),label:sl,required:false}));
+        const dictionary={};
+        segments.forEach((seg,si)=>{
+          dictionary[seg.id] = (cm.terms[cm.segsOrder[si]]||[]);
+        });
+        const newClient={id:newId,name:cName+' (CSV)',separator:'_',segments,dictionary,structures:[]};
+        clients.push(newClient);
+        activeId=newId;
+        added++;
+      });
+      saveData(); renderClientSelect(); renderClientes();
+      showToast(`${added} cliente(s) importado(s) do CSV`);
+    } catch(err){ showToast('Erro ao processar CSV: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* =============================================
+   MERGE CLIENTS
+   ============================================= */
+let _mergeSourceId = null;
+
+function openMergeClientsModal() {
+  const c = active(); if(!c) { showToast('Selecione o cliente de destino primeiro'); return; }
+  if(clients.length<2) { showToast('Precisa de pelo menos 2 clientes para mesclar'); return; }
+  _mergeSourceId = null;
+  document.getElementById('mergeTargetName').textContent = c.name;
+  const list = document.getElementById('mergeSourceList');
+  list.innerHTML = clients.filter(x=>x.id!==c.id).map(x=>`
+    <div class="merge-client-option" onclick="selectMergeSource('${x.id}',this)">
+      <input type="radio" name="mergeSource" value="${x.id}">
+      <div>
+        <div style="font-weight:600;font-size:13px">${esc(x.name)}</div>
+        <div style="font-size:11px;color:var(--faint)">${x.segments.length} segs · ${Object.values(x.dictionary||{}).reduce((a,b)=>a+b.length,0)} termos</div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('mergeClientsModal').style.display='flex';
+}
+
+function selectMergeSource(id, el) {
+  _mergeSourceId = id;
+  document.querySelectorAll('.merge-client-option').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type=radio]').checked=true;
+}
+
+function closeMergeClientsModal() {
+  document.getElementById('mergeClientsModal').style.display='none';
+  _mergeSourceId=null;
+}
+
+function confirmMergeClients() {
+  const dest = active(); if(!dest) return;
+  if(!_mergeSourceId) { showToast('Selecione o cliente de origem'); return; }
+  const src = getClient(_mergeSourceId); if(!src) return;
+  let merged=0, skipped=0;
+  // For each segment in src, find matching segment in dest by label, merge terms
+  src.segments.forEach(srcSeg=>{
+    const destSeg = dest.segments.find(s=>s.label.toLowerCase()===srcSeg.label.toLowerCase());
+    if(!destSeg) return; // skip segments not present in dest
+    const destTerms = dest.dictionary[destSeg.id]||[];
+    const destVals = new Set(destTerms.map(t=>t.value));
+    (src.dictionary[srcSeg.id]||[]).forEach(t=>{
+      if(destVals.has(t.value)) { skipped++; return; }
+      destTerms.push({...t});
+      merged++;
+    });
+    dest.dictionary[destSeg.id] = destTerms;
+  });
+  saveData(); renderDicionario();
+  closeMergeClientsModal();
+  showToast(`Mesclado: ${merged} termo(s) adicionado(s)${skipped?` · ${skipped} duplicata(s) ignorada(s)`:''}`);
+}
+
+/* =============================================
    UTILS
    ============================================= */
 function esc(str){
@@ -3242,6 +3562,7 @@ document.addEventListener('keydown', e => {
   // Escape → close modals (priority order)
   if(e.key==='Escape') {
     const gs = document.getElementById('globalSearchOverlay');
+    const mg = document.getElementById('mergeClientsModal');
     const mv = document.getElementById('moveTermModal');
     const bi = document.getElementById('batchImportModal');
     const ij = document.getElementById('importJsonModal');
@@ -3249,6 +3570,7 @@ document.addEventListener('keydown', e => {
     const mo = document.getElementById('modal');
     const qa = document.getElementById('qa-overlay');
     if(gs && gs.classList.contains('open')) { closeGlobalSearch(); return; }
+    if(mg && mg.style.display!=='none') { closeMergeClientsModal(); return; }
     if(mv && mv.style.display!=='none') { closeMoveTermModal(); return; }
     if(bi && bi.style.display!=='none') { closeBatchImportModal(); return; }
     if(ij && ij.style.display!=='none') { closeImportJsonModal(); return; }
