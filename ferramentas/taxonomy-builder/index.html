@@ -818,7 +818,7 @@ body {
       <span class="logo">🏷️</span>
       <div>
         <div class="site-title">Taxonomy Builder</div>
-        <div class="site-sub">Nomenclatura de campanhas por cliente</div>
+        <div class="site-sub" id="headerStats">Nomenclatura de campanhas por cliente</div>
       </div>
     </div>
     <div class="header-right">
@@ -897,6 +897,7 @@ body {
           <p id="structMeta">Padrões de nomenclatura por plataforma e nível</p>
         </div>
         <div class="action-bar">
+          <input class="dict-search-input" id="structSearch" type="search" placeholder="Filtrar estruturas…" oninput="filterStructures(this.value)" autocomplete="off" style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--fg);max-width:160px">
           <button class="btn secondary btn-sm" onclick="exportStructures()" title="Exportar só as estruturas deste cliente">⬇ Estruturas</button>
           <button class="btn secondary btn-sm" onclick="triggerImportStructures()" title="Importar estruturas de um JSON">⬆ Importar</button>
           <input type="file" id="importStructuresInput" accept=".json" style="display:none" onchange="importStructuresFromFile(this)">
@@ -967,6 +968,9 @@ body {
           placeholder="dove_shampoo_awareness|video|q1-2026&#10;axe_desodorante_reach|banner|q2-2026&#10;rexona_body-lotion_conversion|carousel|jan26"
           oninput="validateBatch()"></textarea>
         <div id="valBatchResults" class="batch-results"></div>
+        <div id="valBatchExportRow" style="display:none;margin-top:8px">
+          <button class="btn secondary btn-sm" onclick="exportBatchResultCSV()" style="font-size:11px">⬇ CSV resultado</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1262,6 +1266,15 @@ function saveData() {
     localStorage.setItem(STORE_KEY, JSON.stringify(clients));
     localStorage.setItem(ACTIVE_KEY, activeId || '');
   } catch {}
+  updateHeaderStats();
+}
+
+function updateHeaderStats() {
+  const el = document.getElementById('headerStats'); if(!el) return;
+  if(!clients.length) { el.textContent='Nomenclatura de campanhas por cliente'; return; }
+  const totalTerms = clients.reduce((sum,c)=>sum+Object.values(c.dictionary||{}).reduce((s,arr)=>s+arr.length,0),0);
+  const totalSegs = clients.reduce((sum,c)=>sum+c.segments.length,0);
+  el.textContent = `${clients.length} cliente(s) · ${totalSegs} segmentos · ${totalTerms} termos`;
 }
 
 function getClient(id) { return clients.find(c=>c.id===id)||null; }
@@ -2626,6 +2639,41 @@ function validateBatch() {
 
   const summary = `<div class="batch-summary">${lines.length} nomes · <strong>${okCount}</strong> ok · <strong>${warnCount}</strong> avisos · <strong>${errCount}</strong> erros</div>`;
   resultsEl.innerHTML = rows.join('') + summary;
+  const expRow = document.getElementById('valBatchExportRow');
+  if(expRow) expRow.style.display = lines.length ? '' : 'none';
+  // Store for CSV export
+  window._lastBatchLines = lines;
+  window._lastBatchSegDefs = segDefs;
+  window._lastBatchClientId = c.id;
+}
+
+function exportBatchResultCSV() {
+  const c=active(); if(!c) return;
+  const lines = window._lastBatchLines||[];
+  const segDefs = window._lastBatchSegDefs||[];
+  if(!lines.length) { showToast('Nenhum resultado para exportar'); return; }
+  const header = ['nome',...segDefs.map(s=>s.label),'status'];
+  const csvRows = [header];
+  lines.forEach(name=>{
+    const {parts,extra} = parseNameBySegments(name, segDefs, c.separator);
+    let hasErr=false, hasWarn=false;
+    const cols = [name];
+    segDefs.forEach((seg,i)=>{
+      const part = parts[i]||'';
+      cols.push(part);
+      if(part==='') { if(seg.required) hasErr=true; return; }
+      const result = validateValue(part, c.dictionary[seg.id]||[]);
+      if(result.status==='err') hasErr=true;
+      else if(result.status==='similar'||result.status==='warn') hasWarn=true;
+    });
+    if(extra) hasErr=true;
+    cols.push(hasErr?'erro':hasWarn?'aviso':'ok');
+    csvRows.push(cols);
+  });
+  const csv=csvRows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const ts=new Date().toISOString().slice(0,10);
+  dlBlob('﻿'+csv, `validacao-batch-${ts}.csv`, 'text/csv');
+  showToast('CSV exportado');
 }
 
 /* =============================================
@@ -2657,6 +2705,7 @@ function renderEstruturas() {
     div.innerHTML=`
       <div class="structure-actions">
         <button title="Usar no Builder" onclick="useStructureInBuilder('${st.id}')">🏗️</button>
+        <button title="Duplicar" onclick="duplicateStructure('${st.id}')">📋</button>
         <button onclick="openEditStructure('${st.id}')">✏️</button>
         <button onclick="deleteStructure('${st.id}')">🗑️</button>
       </div>
@@ -2775,6 +2824,23 @@ function saveStructure() {
   }
   saveData(); closeStructModal(); renderEstruturas(); renderValidador();
   showToast('Estrutura salva');
+}
+
+function filterStructures(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#structList .structure-item').forEach(el=>{
+    const text = el.textContent.toLowerCase();
+    el.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+
+function duplicateStructure(id) {
+  const c=active(); if(!c) return;
+  const st=(c.structures||[]).find(s=>s.id===id); if(!st) return;
+  const copy = {...st, id:genId(), label:st.label+' (cópia)'};
+  c.structures.push(copy);
+  saveData(); renderEstruturas();
+  showToast('Estrutura duplicada');
 }
 
 function deleteStructure(id) {
@@ -3071,6 +3137,7 @@ loadData();
 if(!activeId && clients.length) activeId=clients[0].id;
 renderClientSelect();
 renderClientes();
+updateHeaderStats();
 
 
 function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
@@ -3105,6 +3172,13 @@ function clearGlobalSearch() {
   if(clear) clear.classList.remove('visible');
   closeGlobalSearch();
 }
+function highlightMatch(str, q) {
+  if(!q) return esc(str);
+  const idx = str.toLowerCase().indexOf(q.toLowerCase());
+  if(idx===-1) return esc(str);
+  return esc(str.slice(0,idx))+'<mark style="background:rgba(37,99,235,.22);border-radius:2px;padding:0 1px">'+esc(str.slice(idx,idx+q.length))+'</mark>'+esc(str.slice(idx+q.length));
+}
+
 function runGlobalSearch(q) {
   q = q.trim().toLowerCase();
   const resEl = document.getElementById('gsearchResults'); if(!resEl) return;
@@ -3126,9 +3200,9 @@ function runGlobalSearch(q) {
     <div class="gsearch-section">${esc(g.c.name)}</div>
     ${g.items.slice(0,30).map(h=>`
       <div class="gsearch-row" onclick="goToTerm('${h.client.id}','${h.seg.id}')">
-        <span class="gsearch-row-val">${esc(h.term.value)}</span>
-        <span class="gsearch-row-label">${esc(h.term.label)}${h.term.desc?` <span style="color:var(--faint)">· ${esc(h.term.desc)}</span>`:''}</span>
-        <span class="gsearch-row-meta">${esc(h.seg.label)}</span>
+        <span class="gsearch-row-val">${highlightMatch(h.term.value,q)}</span>
+        <span class="gsearch-row-label">${highlightMatch(h.term.label,q)}${h.term.desc?` <span style="color:var(--faint)">· ${highlightMatch(h.term.desc,q)}</span>`:''}</span>
+        <span class="gsearch-row-meta">${esc(h.seg.label)}${h.term.fav?' ⭐':''}${h.term.uses?` <span style="font-size:10px;color:var(--accent)">${h.term.uses}×</span>':''}</span>
       </div>
     `).join('')}
   `).join('');
@@ -3160,6 +3234,10 @@ document.addEventListener('keydown', e => {
     const isInput = focused && (focused.tagName==='INPUT'||focused.tagName==='TEXTAREA'||focused.tagName==='SELECT');
     if(!isInput) { e.preventDefault(); copyBuilder(); }
     return;
+  }
+  // Ctrl+Enter in builder → copyBuilder (regardless of focus)
+  if((e.ctrlKey||e.metaKey) && e.key==='Enter' && currentTab==='builder') {
+    e.preventDefault(); copyBuilder(); return;
   }
   // Escape → close modals (priority order)
   if(e.key==='Escape') {
