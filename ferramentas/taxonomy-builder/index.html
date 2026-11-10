@@ -827,6 +827,7 @@ body {
 
 /* ==================== STRUCTURE LAST USED BADGE ==================== */
 .struct-recent-badge{font-size:9px;background:#8b5cf6;color:#fff;border-radius:5px;padding:1px 5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-left:4px;}
+.struct-usecount-badge{font-size:9px;background:var(--accent);color:#fff;border-radius:5px;padding:1px 6px;font-weight:700;margin-left:4px;opacity:.85;}
 
 /* ==================== VAL HISTORY FILTER ==================== */
 .val-hist-filter-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
@@ -2325,10 +2326,12 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Ordenar por uso" onclick="sortTermsByUse()" style="font-size:11px;padding:4px 8px">↕ Uso</button>
       <button class="btn secondary btn-sm" title="Mostrar só favoritos" onclick="filterTermsBy('fav')" id="dictFilterFav" style="font-size:11px;padding:4px 8px">⭐</button>
       <button class="btn secondary btn-sm" title="Ordenar por mais usados" onclick="filterTermsBy('uses')" id="dictFilterUses" style="font-size:11px;padding:4px 8px">🔥 Uso</button>
+      <button class="btn secondary btn-sm" title="Mostrar termos nunca usados no builder" onclick="filterTermsBy('unused')" id="dictFilterUnused" style="font-size:11px;padding:4px 8px">🕳 Sem uso</button>
       <button class="btn secondary btn-sm" title="Ordenar por mais recentes" onclick="sortTermsByRecent()" style="font-size:11px;padding:4px 8px">🕒 Recente</button>
       <button class="btn secondary btn-sm" title="Copiar todos os termos deste segmento (um por linha)" onclick="copySegmentTerms()" style="font-size:11px;padding:4px 8px">📋 Copiar tudo</button>
       <button class="btn secondary btn-sm" title="Copiar termos como array JSON" onclick="copySegmentJSON()" style="font-size:11px;padding:4px 8px">{ } JSON</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
+      <button class="btn secondary btn-sm" title="Detectar e mesclar termos com valor duplicado neste segmento" onclick="mergeDuplicateTerms()" style="font-size:11px;padding:4px 8px">🔀 Mesclar dupl.</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
     </div>
     <div id="bulkBar" style="display:none"><div class="bulk-bar">
@@ -2379,7 +2382,7 @@ function renderTermArea(c) {
     <div class="add-term-form">
       <div class="add-term-form-title">Novo termo</div>
       <div class="add-term-row">
-        <div><input type="text" id="tv" placeholder="valor (ex: dove)" oninput="autoSlug()"></div>
+        <div><input type="text" id="tv" placeholder="valor (ex: dove)" oninput="autoSlug();autoLabelFromVal()"></div>
         <div><input type="text" id="tl" placeholder="Label (ex: Dove)"></div>
         <div><input type="text" id="td" placeholder="Descrição (opcional)"></div>
         <div><button class="btn primary" onclick="addTerm()">+ Add</button></div>
@@ -2498,6 +2501,14 @@ function _applyDictFilters() {
       if(!terms[idx]?.fav) row.style.display='none';
     });
   }
+  // Apply unused filter (batch 20)
+  if(_dictFilter==='unused') {
+    list.querySelectorAll('.term-row').forEach(row=>{
+      if(row.style.display==='none') return;
+      const idx=+row.dataset.idx;
+      if(terms[idx]?.uses) row.style.display='none';
+    });
+  }
   // Update tag chip active states
   document.querySelectorAll('.dict-tag-chip').forEach(ch=>{
     ch.classList.toggle('active', ch.dataset.tagid===_dictTagFilter);
@@ -2515,6 +2526,7 @@ function filterTermsBy(mode) {
   const list = document.getElementById('termList'); if(!list) return;
   document.getElementById('dictFilterFav')?.classList.toggle('active', _dictFilter==='fav');
   document.getElementById('dictFilterUses')?.classList.toggle('active', _dictFilter==='uses');
+  document.getElementById('dictFilterUnused')?.classList.toggle('active', _dictFilter==='unused');
   if(_dictFilter==='uses') {
     // Sort rows by uses descending without mutating data
     const rows = [...list.querySelectorAll('.term-row')].sort((a,b)=>{
@@ -2525,7 +2537,7 @@ function filterTermsBy(mode) {
     rows.forEach(r=>{ r.style.display=''; list.appendChild(r); });
   }
   _applyDictFilters();
-  showToast(_dictFilter==='fav'?'Mostrando favoritos':_dictFilter==='uses'?'Ordenado por uso':'Filtro removido');
+  showToast(_dictFilter==='fav'?'⭐ Mostrando favoritos':_dictFilter==='uses'?'📊 Ordenado por uso':_dictFilter==='unused'?'🕳 Termos sem uso':'Filtro removido');
 }
 
 /* BATCH 17: filter by tag */
@@ -2572,10 +2584,54 @@ function autoSlug() {
     .replace(/\s+/g,'-').replace(/[^a-z0-9\-_.]/g,'');
 }
 
+/* BATCH 20: auto-fill label from value (unslugify) */
+function autoLabelFromVal() {
+  const tv=document.getElementById('tv'); const tl=document.getElementById('tl');
+  if(!tv||!tl||tl.value.trim()) return; // only fill if label is empty
+  const v = tv.value.trim();
+  if(!v) { tl.placeholder='Label (ex: Dove)'; return; }
+  // Convert slug to Title Case
+  const label = v.replace(/[-_]/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+  tl.placeholder = label; // show as placeholder, not value, so user can still type freely
+}
+
+/* BATCH 20: Merge duplicate terms (same value) in current segment */
+function mergeDuplicateTerms() {
+  const c=active(); if(!c||!activeSeg) return;
+  const terms = c.dictionary[activeSeg]||[];
+  const seen = new Map(); // value → first index
+  const toRemove = [];
+  terms.forEach((t,i)=>{
+    const key = t.value.toLowerCase().trim();
+    if(seen.has(key)) {
+      // Merge: keep first, combine label/desc/fav/uses from duplicate
+      const first = terms[seen.get(key)];
+      if(!first.label && t.label) first.label = t.label;
+      if(!first.desc && t.desc) first.desc = t.desc;
+      if(t.fav) first.fav = true;
+      first.uses = (first.uses||0) + (t.uses||0);
+      toRemove.push(i);
+    } else { seen.set(key,i); }
+  });
+  if(!toRemove.length) { showToast('Nenhuma duplicata encontrada'); return; }
+  c.dictionary[activeSeg] = terms.filter((_,i)=>!toRemove.includes(i));
+  saveData(); renderDicionario();
+  showToast(`🔀 ${toRemove.length} duplicata(s) mesclada(s)`);
+}
+
+/* BATCH 20: Builder history search */
+let _builderHistSearch = '';
+function filterBuilderHist(q) {
+  _builderHistSearch = q.toLowerCase();
+  renderBuilderHistory();
+}
+
 function addTerm() {
   const c=active(); if(!c||!activeSeg) return;
   const val   = document.getElementById('tv')?.value.trim();
-  const label = document.getElementById('tl')?.value.trim();
+  const tlEl  = document.getElementById('tl');
+  // Use label value if set, else fall back to placeholder (auto-generated from value)
+  const label = (tlEl?.value.trim()) || (tlEl?.placeholder!=='Label (ex: Dove)' ? tlEl?.placeholder : '') || '';
   const desc  = document.getElementById('td')?.value.trim();
   if(!val)   { highlight('tv'); return; }
   if(!label) { highlight('tl'); return; }
@@ -3659,6 +3715,7 @@ function renderEstruturas() {
         ${st.platform?`<span class="structure-item-platform">${esc(st.platform)}</span>`:''}
         ${st.level?`<span class="structure-item-level">${esc(st.level)}</span>`:''}
         <span class="structure-item-label">${esc(st.label)}</span>
+        ${st.usedCount?`<span class="struct-usecount-badge" title="${st.usedCount}× usado no builder">${st.usedCount}×</span>`:''}
         ${st.lastUsed&&(Date.now()-st.lastUsed<604800000)?`<span class="struct-recent-badge" title="Usado ${Math.floor((Date.now()-st.lastUsed)/86400000)===0?'hoje':Math.floor((Date.now()-st.lastUsed)/86400000)+'d atrás'}">⚡ recente</span>`:''}
       </div>
       <div class="structure-pattern">${renderPatternHtml(st.pattern,c.segments)}</div>
@@ -3750,8 +3807,9 @@ function useStructureInBuilder(structId) {
   // Parse pattern to get segment order
   const parsed = parsePattern(st.pattern);
   if(!parsed.length) { showToast('Padrão sem segmentos definidos'); return; }
-  // Track last used
+  // Track last used + use count (batch 20)
   st.lastUsed = Date.now();
+  st.usedCount = (st.usedCount||0) + 1;
   saveData();
   // Reset builder vals and switch tab
   builderVals = {};
