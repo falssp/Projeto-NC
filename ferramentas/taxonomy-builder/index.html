@@ -706,6 +706,12 @@ body {
   background:var(--bg);color:var(--fg);cursor:pointer;font-family:monospace;transition:border-color .1s,background .1s;}
 .sep-preview-btn:hover,.sep-preview-btn.active-sep{border-color:var(--accent);background:rgba(37,99,235,.07);}
 
+/* ==================== PIN CLIENT ==================== */
+.client-card-actions .pin-active{color:var(--accent);}
+
+/* ==================== DICT FILTER ACTIVE ==================== */
+.btn.secondary.active{border-color:var(--accent);background:rgba(37,99,235,.1);color:var(--accent);}
+
 /* ==================== TERM USES BADGE ==================== */
 .term-uses-badge{font-size:10px;color:var(--accent);background:rgba(37,99,235,.1);
   border-radius:8px;padding:1px 5px;white-space:nowrap;font-weight:600;}
@@ -1342,7 +1348,9 @@ function renderClientes() {
   }
 
   grid.innerHTML = '';
-  clients.forEach(c => {
+  // Pinned clients first
+  const sorted = [...clients].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0));
+  sorted.forEach(c => {
     const isAct = c.id===activeId;
     const termCount = Object.values(c.dictionary||{}).reduce((a,b)=>a+b.length, 0);
     const segsWithTerms = c.segments.filter(s=>(c.dictionary[s.id]||[]).length>0).length;
@@ -1360,6 +1368,7 @@ function renderClientes() {
     div.onclick = () => { activeId=c.id; activeSeg=null; builderVals={}; saveData(); renderClientSelect(); renderClientes(); };
     div.innerHTML = `
       <div class="client-card-actions">
+        <button title="${c.pinned?'Desafixar':'Fixar no topo'}" onclick="event.stopPropagation();togglePinClient('${c.id}')" class="${c.pinned?'pin-active':''}">${c.pinned?'📌':'📍'}</button>
         <button title="Editar" onclick="event.stopPropagation();openEditClient('${c.id}')">✏️</button>
         <button title="Duplicar" onclick="event.stopPropagation();duplicateClient('${c.id}')">📋</button>
         <button title="Exportar JSON" onclick="event.stopPropagation();exportJSON('${c.id}')">⬇️</button>
@@ -1382,6 +1391,13 @@ function renderClientes() {
   });
   renderClientSelect();
   initClientDragDrop();
+}
+
+function togglePinClient(id) {
+  const c = getClient(id); if(!c) return;
+  c.pinned = !c.pinned;
+  saveData(); renderClientes();
+  showToast(c.pinned ? '📌 Cliente fixado no topo' : 'Cliente desfixado');
 }
 
 function initClientDragDrop() {
@@ -1651,7 +1667,7 @@ function renderDicionario() {
     const btn = document.createElement('button');
     btn.className='pill'+(s.id===activeSeg?' active':'');
     btn.textContent = `${s.label} ${count?`(${count})`:''}`;
-    btn.onclick=()=>{ activeSeg=s.id; renderDicionario(); };
+    btn.onclick=()=>{ activeSeg=s.id; _dictFilter=null; renderDicionario(); };
     pillsEl.appendChild(btn);
   });
 
@@ -1674,14 +1690,16 @@ function renderTermArea(c) {
       <input class="dict-search-input" id="dictSearch" type="search" placeholder="Buscar em ${esc(seg.label)}…" oninput="filterDict(this.value)" autocomplete="off">
       <span class="dict-search-count" id="dictSearchCount">${terms.length} termos</span>
       <button class="btn secondary btn-sm" title="Ordenar A–Z" onclick="sortTermsAZ()" style="font-size:11px;padding:4px 8px">↕ A–Z</button>
+      <button class="btn secondary btn-sm" title="Mostrar só favoritos" onclick="filterTermsBy('fav')" id="dictFilterFav" style="font-size:11px;padding:4px 8px">⭐</button>
+      <button class="btn secondary btn-sm" title="Ordenar por mais usados" onclick="filterTermsBy('uses')" id="dictFilterUses" style="font-size:11px;padding:4px 8px">🔥 Uso</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
     </div>
     <div class="term-list" id="termList">` + terms.map((t,i)=>`
       <div class="term-row" id="tr-${i}" draggable="true" data-idx="${i}">
         <span class="term-drag-handle" title="Arrastar para reordenar">⠿</span>
         <span class="term-row-num">${i+1}</span>
-        <span class="term-row-value">${esc(t.value)}</span>
-        <span class="term-row-label">${esc(t.label)}</span>
+        <span class="term-row-value" title="Duplo clique para editar" ondblclick="editTerm(${i})">${esc(t.value)}</span>
+        <span class="term-row-label" ondblclick="editTerm(${i})">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
         ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder">${t.uses}×</span>`:''}
         <div class="term-actions">
@@ -1770,6 +1788,34 @@ function sortTermsAZ() {
   const c=active(); if(!c||!activeSeg) return;
   c.dictionary[activeSeg].sort((a,b)=>a.value.localeCompare(b.value));
   saveData(); renderDicionario(); showToast('Termos ordenados A–Z');
+}
+
+let _dictFilter = null; // 'fav' | 'uses' | null
+function filterTermsBy(mode) {
+  const c=active(); if(!c||!activeSeg) return;
+  if(_dictFilter===mode) { _dictFilter=null; renderDicionario(); return; }
+  _dictFilter = mode;
+  const terms = c.dictionary[activeSeg]||[];
+  const list = document.getElementById('termList'); if(!list) return;
+  // Update button active state
+  document.getElementById('dictFilterFav')?.classList.toggle('active', mode==='fav');
+  document.getElementById('dictFilterUses')?.classList.toggle('active', mode==='uses');
+  if(mode==='fav') {
+    list.querySelectorAll('.term-row').forEach(row=>{
+      const idx = +row.dataset.idx;
+      row.style.display = terms[idx]?.fav ? '' : 'none';
+    });
+    showToast('Mostrando favoritos');
+  } else if(mode==='uses') {
+    // Sort rows by uses descending without mutating data
+    const rows = [...list.querySelectorAll('.term-row')].sort((a,b)=>{
+      const ua = terms[+a.dataset.idx]?.uses||0;
+      const ub = terms[+b.dataset.idx]?.uses||0;
+      return ub-ua;
+    });
+    rows.forEach(r=>{ r.style.display=''; list.appendChild(r); });
+    showToast('Ordenado por mais usados');
+  }
 }
 
 /* Batch import modal */
@@ -1862,7 +1908,8 @@ function saveEditTerm(i) {
   const label = document.getElementById('el')?.value.trim();
   const desc  = document.getElementById('ed')?.value.trim();
   if(!val||!label) return;
-  c.dictionary[activeSeg][i]={value:val, label, ...(desc?{desc}:{})};
+  const prev = c.dictionary[activeSeg][i];
+  c.dictionary[activeSeg][i]={value:val, label, ...(desc?{desc}:{}), ...(prev.fav?{fav:true}:{}), ...(prev.uses?{uses:prev.uses}:{})};
   saveData(); renderDicionario();
 }
 
@@ -1884,10 +1931,10 @@ function exportAllJSON() {
 
 function exportCSV(id) {
   const c=getClient(id||activeId); if(!c) { showToast('Nenhum cliente selecionado'); return; }
-  const rows=[['cliente','segmento','valor','label','descricao']];
+  const rows=[['cliente','segmento','valor','label','descricao','favorito','usos']];
   c.segments.forEach(s=>{
     (c.dictionary[s.id]||[]).forEach(t=>{
-      rows.push([c.name, s.label, t.value, t.label, t.desc||'']);
+      rows.push([c.name, s.label, t.value, t.label, t.desc||'', t.fav?'sim':'', t.uses||0]);
     });
   });
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
@@ -2231,9 +2278,18 @@ function renderBuilder() {
     } else {
       div.innerHTML=`
         <div class="builder-seg-label">${esc(s.label)} ${badge} <span style="color:var(--warn);font-size:10px">(sem termos)</span></div>
-        <input type="text" placeholder="valor livre" value="${esc(curVal)}"
+        <input id="bv-${s.id}" type="text" placeholder="valor livre" value="${esc(curVal)}"
           oninput="builderVals['${s.id}']=this.value;updatePreview()">
       `;
+    }
+    // Add id to select too for required-warn highlight
+    if(terms.length>0) {
+      div.querySelector('select')?.setAttribute('id',`bv-${s.id}`);
+      // Also inject a hidden datalist for keyboard-driven free text
+      const dl = document.createElement('datalist');
+      dl.id = `dl-${s.id}`;
+      terms.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.value; opt.label=t.label; dl.appendChild(opt); });
+      div.appendChild(dl);
     }
     segsEl.appendChild(div);
   });
@@ -2268,7 +2324,17 @@ function updatePreview() {
   }).join('');
 }
 
-function clearBuilder() { builderVals={}; renderBuilder(); }
+function clearBuilder() {
+  const prev = {...builderVals};
+  builderVals={};
+  renderBuilder();
+  showToastWithUndo('Builder limpo', {type:'clearBuilder', prev});
+}
+function execClearBuilderUndo(prev) {
+  builderVals = prev;
+  renderBuilder();
+  showToast('Restaurado');
+}
 
 function copyBuilder() {
   const c=active(); if(!c) return;
@@ -2738,13 +2804,19 @@ function showToastWithUndo(msg, undoData) {
 
 function execUndo() {
   if(!_undoStack) return;
+  document.getElementById('toast')?.classList.remove('show');
+  // clearBuilder undo
+  if(_undoStack.type==='clearBuilder') {
+    execClearBuilderUndo(_undoStack.prev);
+    _undoStack = null;
+    return;
+  }
   const {clientId, segId, termIdx, term} = _undoStack;
   const c = getClient(clientId); if(!c) return;
   if(!c.dictionary[segId]) c.dictionary[segId]=[];
   c.dictionary[segId].splice(termIdx, 0, term);
   saveData(); renderDicionario();
   _undoStack = null;
-  document.getElementById('toast')?.classList.remove('show');
   showToast('Termo restaurado');
 }
 
