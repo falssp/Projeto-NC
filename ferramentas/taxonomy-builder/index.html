@@ -741,6 +741,7 @@ body {
 .builder-templ-chip button{background:none;border:none;cursor:pointer;color:var(--faint);font-size:10px;padding:0;line-height:1;}
 .builder-templ-chip button:hover{color:var(--danger);}
 .builder-templ-save-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:2px 8px;font-size:11px;cursor:pointer;}
+.term-new-badge{font-size:9px;background:#22c55e;color:#fff;border-radius:5px;padding:1px 5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
 .stat-tile{background:var(--surface2);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
 .stat-num{font-size:22px;font-weight:800;color:var(--accent);line-height:1.1;}
 .stat-lbl{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;}
@@ -1994,8 +1995,10 @@ function renderTermArea(c) {
       <input class="dict-search-input" id="dictSearch" type="search" placeholder="Buscar em ${esc(seg.label)}…" oninput="filterDict(this.value)" autocomplete="off">
       <span class="dict-search-count" id="dictSearchCount">${terms.length} termos</span>
       <button class="btn secondary btn-sm" title="Ordenar A–Z" onclick="sortTermsAZ()" style="font-size:11px;padding:4px 8px">↕ A–Z</button>
+      <button class="btn secondary btn-sm" title="Ordenar por uso" onclick="sortTermsByUse()" style="font-size:11px;padding:4px 8px">↕ Uso</button>
       <button class="btn secondary btn-sm" title="Mostrar só favoritos" onclick="filterTermsBy('fav')" id="dictFilterFav" style="font-size:11px;padding:4px 8px">⭐</button>
       <button class="btn secondary btn-sm" title="Ordenar por mais usados" onclick="filterTermsBy('uses')" id="dictFilterUses" style="font-size:11px;padding:4px 8px">🔥 Uso</button>
+      <button class="btn secondary btn-sm" title="Copiar todos os termos deste segmento" onclick="copySegmentTerms()" style="font-size:11px;padding:4px 8px">📋 Copiar tudo</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
     </div>
@@ -2017,6 +2020,7 @@ function renderTermArea(c) {
         <span class="term-row-label" ondblclick="editTerm(${i})">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
         ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder${(()=>{try{const h=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');const matches=h.filter(x=>x.includes(t.value)).slice(0,3);return matches.length?'\nRecentes:\n'+matches.join('\n'):''}catch(e){return ''}})()}">${t.uses}×</span>`:''}
+        ${t.createdAt&&(Date.now()-t.createdAt<86400000)?`<span class="term-new-badge" title="Adicionado há menos de 24h">novo</span>`:''}
         <div class="term-actions">
           <button class="term-fav-btn ${t.fav?'active':''}" title="${t.fav?'Remover favorito':'Favoritar'}" onclick="toggleTermFav(${i})">${t.fav?'⭐':'☆'}</button>
           <button title="Mover para outro segmento" onclick="openMoveTermModal(${i})">↗️</button>
@@ -2101,8 +2105,20 @@ function filterDict(q) {
 /* Sort terms A-Z */
 function sortTermsAZ() {
   const c=active(); if(!c||!activeSeg) return;
-  c.dictionary[activeSeg].sort((a,b)=>a.value.localeCompare(b.value));
+  c.dictionary[activeSeg].sort((a,b)=>a.value.localeCompare(b.value,'pt-BR'));
   saveData(); renderDicionario(); showToast('Termos ordenados A–Z');
+}
+function sortTermsByUse() {
+  const c=active(); if(!c||!activeSeg) return;
+  c.dictionary[activeSeg].sort((a,b)=>(b.uses||0)-(a.uses||0));
+  saveData(); renderDicionario(); showToast('Termos ordenados por uso');
+}
+function copySegmentTerms() {
+  const c=active(); if(!c||!activeSeg) return;
+  const terms = c.dictionary[activeSeg]||[];
+  if(!terms.length) { showToast('Nenhum termo neste segmento'); return; }
+  const csv = terms.map(t=>t.value).join('\n');
+  navigator.clipboard.writeText(csv).then(()=>showToast(`📋 ${terms.length} termos copiados`)).catch(()=>showToast(csv));
 }
 
 let _dictFilter = null; // 'fav' | 'uses' | null
@@ -2178,7 +2194,7 @@ function addTerm() {
   if(!label) { highlight('tl'); return; }
   if(!c.dictionary[activeSeg]) c.dictionary[activeSeg]=[];
   if(c.dictionary[activeSeg].find(t=>t.value===val)) { highlight('tv'); showToast('Valor já existe neste segmento'); return; }
-  c.dictionary[activeSeg].push({value:val, label, ...(desc?{desc}:{})});
+  c.dictionary[activeSeg].push({value:val, label, ...(desc?{desc}:{}), createdAt:Date.now()});
   saveData(); renderDicionario();
 }
 
