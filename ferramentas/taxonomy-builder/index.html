@@ -742,6 +742,9 @@ body {
 .builder-templ-chip button:hover{color:var(--danger);}
 .builder-templ-save-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:2px 8px;font-size:11px;cursor:pointer;}
 .term-new-badge{font-size:9px;background:#22c55e;color:#fff;border-radius:5px;padding:1px 5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.dup-warn{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:8px;padding:6px 10px;font-size:11px;margin-bottom:6px;}
+@media(prefers-color-scheme:dark){.dup-warn{background:#451a03;color:#fcd34d;border-color:#92400e;}}
+:root[data-theme="dark"] .dup-warn{background:#451a03;color:#fcd34d;border-color:#92400e;}
 .stat-tile{background:var(--surface2);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
 .stat-num{font-size:22px;font-weight:800;color:var(--accent);line-height:1.1;}
 .stat-lbl{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;}
@@ -860,6 +863,9 @@ body {
 .seg-fill-bar{display:flex;gap:2px;margin-top:4px;flex-wrap:wrap;}
 .seg-fill-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);opacity:.85;}
 .seg-fill-dot.empty{background:var(--card-border);opacity:1;}
+.fill-pct{font-size:9px;color:var(--faint);margin-left:4px;line-height:1;}
+.fill-pct.partial{color:var(--warn);}
+.fill-pct.complete{color:var(--ok);font-weight:700;}
 .seg-stats-strip{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
 .seg-stat-chip{font-size:10px;padding:1px 5px;border-radius:4px;background:var(--pill);color:var(--faint);border:1px solid var(--card-border);}
 .seg-stat-chip.has-terms{color:var(--fg);}
@@ -995,6 +1001,7 @@ body {
         <span id="dictCrossCount" style="font-size:11px;color:var(--faint)"></span>
       </div>
       <div id="dictCrossResults" style="display:none"></div>
+      <div id="dictDupWarn" class="dup-warn" style="display:none"></div>
       <div id="dictSegPills" class="pills"></div>
       <div id="dictTermArea"></div>
     </div>
@@ -1516,8 +1523,11 @@ function renderClientes() {
     const segsHtml = c.segments.map(s=>
       `<span class="seg-tag ${s.required?'required':'optional'}">${esc(s.label)}</span>`
     ).join('');
-    const fillDotsHtml = c.segments.length ? `<div class="seg-fill-bar">` +
+    const segsWithTermsFill = c.segments.filter(s=>(c.dictionary[s.id]||[]).length>0).length;
+    const completePct = c.segments.length ? Math.round(100*segsWithTermsFill/c.segments.length) : 0;
+    const fillDotsHtml = c.segments.length ? `<div class="seg-fill-bar" title="${segsWithTermsFill}/${c.segments.length} segmentos com termos">` +
       c.segments.map(s=>`<span class="seg-fill-dot ${(c.dictionary[s.id]||[]).length?'':'empty'}" title="${esc(s.label)}: ${(c.dictionary[s.id]||[]).length} termos"></span>`).join('') +
+      `<span class="fill-pct ${completePct===100?'complete':completePct>50?'partial':''}">${completePct}%</span>` +
       `</div>` : '';
 
     const div = document.createElement('div');
@@ -1966,6 +1976,23 @@ function renderDicionario() {
 
   // Ensure activeSeg is valid
   if(!c.segments.find(s=>s.id===activeSeg)) activeSeg = c.segments[0]?.id||null;
+
+  // Cross-segment duplicate detection
+  const valToSegs = {};
+  c.segments.forEach(s => {
+    (c.dictionary[s.id]||[]).forEach(t => {
+      if(!valToSegs[t.value]) valToSegs[t.value] = [];
+      valToSegs[t.value].push(s.label);
+    });
+  });
+  const dups = Object.entries(valToSegs).filter(([v,segs])=>segs.length>1);
+  const dupWarn = document.getElementById('dictDupWarn');
+  if(dupWarn) {
+    if(dups.length) {
+      dupWarn.style.display='block';
+      dupWarn.innerHTML = `⚠️ ${dups.length} valor(es) duplicado(s) em múltiplos segmentos: ${dups.slice(0,3).map(([v,s])=>`<b>${esc(v)}</b> (${s.map(esc).join(', ')})`).join('; ')}${dups.length>3?` e mais ${dups.length-3}…`:''}`;
+    } else { dupWarn.style.display='none'; }
+  }
 
   pillsEl.innerHTML='';
   c.segments.forEach(s=>{
@@ -2940,6 +2967,22 @@ function clearValHistory() {
   try { localStorage.setItem(VAL_HIST_KEY, '[]'); } catch {}
   renderValHistory();
 }
+function exportValHistory() {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(VAL_HIST_KEY)||'[]'); } catch {}
+  if(!hist.length) { showToast('Histórico vazio'); return; }
+  const rows = [['nome','cliente_id','data','hora']];
+  hist.forEach(h => {
+    const d = h.ts ? new Date(h.ts) : null;
+    rows.push([h.name, h.clientId||'',
+      d ? d.toLocaleDateString('pt-BR') : '',
+      d ? d.toLocaleTimeString('pt-BR') : ''
+    ]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  dlBlob('﻿'+csv, `taxo-val-hist-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+  showToast(`Exportando ${hist.length} validações`);
+}
 
 function renderValHistory() {
   const row = document.getElementById('valHistRow'); if(!row) return;
@@ -2951,7 +2994,7 @@ function renderValHistory() {
     const tsStr = h.ts ? new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
     const dateStr = h.ts ? new Date(h.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
     return `<button class="val-hist-chip" title="${esc(h.name)} · ${dateStr} ${tsStr}" onclick="useHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name.length>24?h.name.slice(0,22)+'…':h.name)}${tsStr?`<span class='val-hist-ts'>${dateStr} ${tsStr}</span>`:''}</button>`;
-  }).join('') + `<button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>`;
+  }).join('') + `<button class="val-hist-clear" onclick="exportValHistory()" title="Exportar histórico como CSV">⬇</button><button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>`;
 }
 
 function useHistItem(name) {
