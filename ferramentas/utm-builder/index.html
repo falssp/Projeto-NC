@@ -408,7 +408,11 @@ body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; backgrou
           </div>
 
           <hr class="divider">
-          <div class="section-head">Parâmetros UTM</div>
+          <div class="section-head" style="display:flex;align-items:center;justify-content:space-between">
+            Parâmetros UTM
+            <button id="taxoImportBtn" onclick="importFromTaxoBuilder()" title="Importar nome gerado no Taxonomy Builder como utm_campaign" style="font-size:11px;padding:3px 10px;border:1px solid var(--borda);border-radius:6px;background:var(--cinza);color:var(--text);cursor:pointer;display:none">🔗 Importar do Taxonomy Builder</button>
+          </div>
+          <div id="taxoImportBanner" style="display:none;font-size:11px;padding:6px 10px;background:var(--azul-light);border-radius:6px;margin-bottom:8px;color:var(--azul)"></div>
 
           <div class="field-row">
             <div class="field">
@@ -1174,6 +1178,68 @@ updateHistBadge();
 
 function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
 function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+/* ── Taxonomy Builder integration ── */
+(function checkTaxoData() {
+  try {
+    const clients = JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');
+    const activeId = localStorage.getItem('taxo_active_v1');
+    if(!clients.length) return;
+    const btn = document.getElementById('taxoImportBtn');
+    if(!btn) return;
+    btn.style.display = '';
+    // Show client name hint
+    const active = clients.find(c=>c.id===activeId)||clients[0];
+    if(active) btn.title = `Importar nome do taxonomy builder (cliente: ${active.name})`;
+  } catch(e) {}
+})();
+
+function importFromTaxoBuilder() {
+  try {
+    const clients = JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');
+    const activeId = localStorage.getItem('taxo_active_v1');
+    const c = clients.find(cl=>cl.id===activeId)||clients[0];
+    if(!c) { alert('Nenhum cliente encontrado no Taxonomy Builder'); return; }
+
+    // Try to read builder vals from their stored key — look for recent builder history
+    const hist = JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');
+    const latestName = hist[0] || null;
+
+    const banner = document.getElementById('taxoImportBanner');
+
+    if(latestName) {
+      document.getElementById('f_campaign').value = latestName;
+      update();
+      if(banner) {
+        banner.style.display = '';
+        banner.innerHTML = `✓ Importado do Taxonomy Builder · cliente: <b>${latestName.length>40?latestName.slice(0,38)+'…':latestName}</b>`;
+        setTimeout(()=>{ banner.style.display='none'; }, 5000);
+      }
+    } else {
+      // No history — show client info and ask user to generate a name first
+      if(banner) {
+        banner.style.display = '';
+        banner.style.background = '#fff3cd';
+        banner.style.color = '#856404';
+        banner.innerHTML = `⚠ Cliente "<b>${c.name}</b>" encontrado, mas nenhum nome gerado no builder ainda. Gere um nome no <a href="../taxonomy-builder/" style="color:inherit">Taxonomy Builder</a> e volte aqui.`;
+      }
+    }
+
+    // Also try to auto-fill source/medium from client segments if applicable
+    // Look for a segment labeled "plataforma" or "source" and suggest it
+    const srcSeg = c.segments.find(s=>/(plataforma|platform|source|mídia|midia|canal)/i.test(s.label));
+    const srcTerms = srcSeg ? (c.dictionary[srcSeg.id]||[]) : [];
+    if(srcTerms.length && !document.getElementById('f_source').value) {
+      // Offer via datalist
+      let dl = document.getElementById('taxo_source_dl');
+      if(!dl) { dl=document.createElement('datalist'); dl.id='taxo_source_dl'; document.body.appendChild(dl); }
+      dl.innerHTML = srcTerms.map(t=>`<option value="${t.value}" label="${t.label||''}">`).join('');
+      document.getElementById('f_source').setAttribute('list','taxo_source_dl');
+    }
+  } catch(e) {
+    console.error('Taxo import error', e);
+  }
+}
 
 </script>
 
