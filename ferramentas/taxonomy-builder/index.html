@@ -984,6 +984,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openPasteModal()">⬆ Importar</button>
           <button class="btn secondary btn-sm" onclick="exportJSON()">⬇ JSON</button>
           <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
+          <button class="btn secondary btn-sm" onclick="exportTSV()" title="Exportar dicionário como TSV (Excel-friendly)">⬇ TSV</button>
           <button class="btn secondary btn-sm" onclick="exportAllJSON()" title="Exportar TODOS os clientes num único arquivo">⬇ Backup</button>
         </div>
       </div>
@@ -1551,7 +1552,7 @@ function renderClientes() {
           return `<span class="seg-stat-chip ${cnt?'has-terms':''}" title="${esc(s.label)}: ${cnt} termo(s)">${esc(s.label.length>8?s.label.slice(0,7)+'…':s.label)} <b>${cnt}</b></span>`;
         }).join('')}
       </div>
-      ${c.lastModified?`<div class="client-card-modified">✏ ${new Date(c.lastModified).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}
+      ${c.lastModified?(()=>{const d=new Date(c.lastModified);const daysAgo=Math.floor((Date.now()-c.lastModified)/86400000);const dStr=daysAgo===0?'hoje':daysAgo===1?'ontem':`${daysAgo}d atrás`;return `<div class="client-card-modified" title="${d.toLocaleString('pt-BR')}">✏ ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})} · ${dStr}</div>`})():''}
       ${c.notes?`<div class="client-card-notes" title="${esc(c.notes)}">📝 ${esc(c.notes.length>60?c.notes.slice(0,57)+'…':c.notes)}</div>`:''}
     `;
     grid.appendChild(div);
@@ -2016,7 +2017,7 @@ function renderTermArea(c) {
         <input type="checkbox" class="term-row-cb" id="tcb-${i}" style="display:none" onclick="updateBulkCount()">
         <span class="term-drag-handle" title="Arrastar para reordenar">⠿</span>
         <span class="term-row-num">${i+1}</span>
-        <span class="term-row-value" title="Duplo clique para editar" ondblclick="editTerm(${i})">${esc(t.value)}</span>
+        <span class="term-row-value" title="${esc(t.label+(t.desc?'\n'+t.desc:'')+(t.uses?'\n'+t.uses+'× usado':'')+( t.createdAt?'\nCriado: '+new Date(t.createdAt).toLocaleDateString('pt-BR'):'')+'\nDuplo clique para editar')}" ondblclick="editTerm(${i})">${esc(t.value)}</span>
         <span class="term-row-label" ondblclick="editTerm(${i})">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
         ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder${(()=>{try{const h=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');const matches=h.filter(x=>x.includes(t.value)).slice(0,3);return matches.length?'\nRecentes:\n'+matches.join('\n'):''}catch(e){return ''}})()}">${t.uses}×</span>`:''}
@@ -2271,6 +2272,19 @@ function exportCSV(id) {
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   dlBlob('﻿'+csv, `taxo-${c.id}.csv`, 'text/csv');
   showToast('CSV exportado');
+}
+
+function exportTSV(id) {
+  const c=getClient(id||activeId); if(!c) { showToast('Nenhum cliente selecionado'); return; }
+  const rows=[['cliente','segmento','valor','label','descricao','favorito','usos','criado_em']];
+  c.segments.forEach(s=>{
+    (c.dictionary[s.id]||[]).forEach(t=>{
+      rows.push([c.name, s.label, t.value, t.label, t.desc||'', t.fav?'sim':'', t.uses||0, t.createdAt?new Date(t.createdAt).toLocaleDateString('pt-BR'):'']);
+    });
+  });
+  const tsv=rows.map(r=>r.map(v=>String(v).replace(/\t/g,' ')).join('\t')).join('\r\n');
+  dlBlob(tsv, `taxo-${c.id}.tsv`, 'text/tab-separated-values');
+  showToast('TSV exportado');
 }
 
 function triggerImport() { document.getElementById('importInput').click(); }
