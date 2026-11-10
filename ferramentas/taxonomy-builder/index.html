@@ -2429,10 +2429,19 @@ function renderDicionario() {
 
   pillsEl.innerHTML='';
   c.segments.forEach(s=>{
-    const count = (c.dictionary[s.id]||[]).length;
+    const terms = (c.dictionary[s.id]||[]);
+    const count = terms.length;
     const btn = document.createElement('button');
     btn.className='pill'+(s.id===activeSeg?' active':'');
-    btn.textContent = `${s.label} ${count?`(${count})`:''}`;
+    /* BATCH 26: completeness dot */
+    let dot='';
+    if(count>0){
+      const withLabel=terms.filter(t=>t.label).length;
+      const pct=Math.round(withLabel/count*100);
+      const dotColor=pct>=80?'var(--ok)':pct>=40?'var(--warn)':'var(--erro)';
+      dot=` <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};vertical-align:middle;margin-left:2px" title="${pct}% com label"></span>`;
+    }
+    btn.innerHTML = `${s.label}${count?` (${count})`:''}`+dot;
     btn.onclick=()=>{ activeSeg=s.id; _dictFilter=null; _dictTagFilter=null; renderDicionario(); };
     pillsEl.appendChild(btn);
   });
@@ -2482,6 +2491,14 @@ function renderSegHealth(c) {
     </div>
     <span style="font-size:10px;color:var(--faint);white-space:nowrap">${withFav?`⭐ ${withFav} fav`:''}</span>
   </div>`;
+  /* BATCH 26: top terms hot strip */
+  const topTerms = [...terms].filter(t=>t.uses>0).sort((a,b)=>(b.uses||0)-(a.uses||0)).slice(0,5);
+  if(topTerms.length){
+    el.innerHTML+=`<div style="margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+      <span style="font-size:9px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.05em">🔥 Mais usados:</span>
+      ${topTerms.map(t=>`<span style="font-size:10px;padding:2px 7px;border-radius:12px;background:rgba(249,115,22,.12);color:#ea580c;border:1px solid rgba(249,115,22,.2);cursor:default" title="${t.uses} uso(s) no builder">${esc(t.value)} <strong>${t.uses}</strong></span>`).join('')}
+    </div>`;
+  }
 }
 
 function renderTermArea(c) {
@@ -2510,6 +2527,7 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
       <button class="btn secondary btn-sm" title="Importar termos via CSV (valor,label,descrição)" onclick="openCSVImportModal()" style="font-size:11px;padding:4px 8px">📥 CSV</button>
       <button class="btn secondary btn-sm" title="Exportar segmento como CSV" onclick="exportSegCSV()" style="font-size:11px;padding:4px 8px">⬇ CSV seg</button>
+      <button class="btn secondary btn-sm" title="Exportar TODOS os segmentos do cliente como CSV único" onclick="exportAllClientCSV()" style="font-size:11px;padding:4px 8px">⬇ CSV tudo</button>
       <button class="btn secondary btn-sm" title="Adicionar vários termos de uma vez (separados por vírgula)" onclick="openMultiAddModal()" style="font-size:11px;padding:4px 8px">⚡ Multi-add</button>
       <button class="btn secondary btn-sm" title="Detectar e mesclar termos com valor duplicado neste segmento" onclick="mergeDuplicateTerms()" style="font-size:11px;padding:4px 8px">🔀 Mesclar dupl.</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
@@ -2640,6 +2658,32 @@ function sortTermsByUse() {
   c.dictionary[activeSeg].sort((a,b)=>(b.uses||0)-(a.uses||0));
   saveData(); renderDicionario(); showToast('Termos ordenados por uso');
 }
+
+/* BATCH 26: Export ALL segments of active client as one CSV */
+function exportAllClientCSV() {
+  const c=active(); if(!c) return;
+  const rows=[['segmento_id','segmento_label','valor','label','descricao','favorito','usos','tag']];
+  c.segments.forEach(seg=>{
+    const terms=c.dictionary[seg.id]||[];
+    if(!terms.length){
+      rows.push([seg.id,seg.label,'','','','','','']);
+    } else {
+      terms.forEach(t=>{
+        rows.push([seg.id,seg.label,t.value,t.label||'',t.desc||'',t.fav?'sim':'nao',t.uses||0,t.tag||'']);
+      });
+    }
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${c.id}_dicionario_completo_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  const totalTerms=c.segments.reduce((s,seg)=>s+(c.dictionary[seg.id]?.length||0),0);
+  showToast(`⬇ ${totalTerms} termos (${c.segments.length} segs) exportados`);
+}
+
 function copySegmentTerms() {
   const c=active(); if(!c||!activeSeg) return;
   const terms = c.dictionary[activeSeg]||[];
