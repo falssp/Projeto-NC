@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exportador NC — Documento de Nomenclatura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f8f9fc;--fg:#111827;--card:#fff;--card-border:#e5e7eb;
+  --accent:#2563eb;--accent-soft:#eff6ff;--faint:#6b7280;--pill:#f3f4f6;
+  --input-bg:#fff;--input-border:#d1d5db;--ok:#16a34a;--warn:#d97706;--erro:#dc2626;
+  --divider:#f0f0f4;--shadow:0 1px 4px rgba(0,0,0,.07);--radius:10px;
+  --mono:'DM Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1117;--fg:#e5e7eb;--card:#1a1d27;--card-border:#2d3148;
+  --accent:#3b82f6;--accent-soft:#1e3a5f;--faint:#9ca3af;--pill:#252836;
+  --input-bg:#1e2130;--input-border:#3d4263;--divider:#1e2130;
+  --shadow:0 1px 4px rgba(0,0,0,.35);color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1117;--fg:#e5e7eb;--card:#1a1d27;--card-border:#2d3148;
+  --accent:#3b82f6;--accent-soft:#1e3a5f;--faint:#9ca3af;--pill:#252836;
+  --input-bg:#1e2130;--input-border:#3d4263;--divider:#1e2130;
+  --shadow:0 1px 4px rgba(0,0,0,.35);color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;font-size:14px;line-height:1.5}
+.app-header{background:var(--card);border-bottom:1px solid var(--card-border);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.logo{font-size:20px;font-weight:700;letter-spacing:-.5px}.logo span{color:var(--accent)}
+.subtitle{font-size:12px;color:var(--faint)}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:8px;padding:7px 14px;cursor:pointer;border:none;transition:opacity .12s}
+.btn.primary{background:var(--accent);color:#fff}.btn.primary:hover{opacity:.88}
+.btn.secondary{background:var(--pill);color:var(--fg);border:1px solid var(--card-border)}.btn.secondary:hover{border-color:var(--faint)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.theme-btn{background:none;border:1px solid var(--card-border);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:13px;color:var(--faint)}
+.main{max-width:900px;margin:0 auto;padding:20px}
+/* Config panel */
+.config-panel{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.config-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.config-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.config-field.flex1{flex:1}
+label.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.form-select,.form-input-sm{background:var(--input-bg);color:var(--fg);border:1px solid var(--input-border);border-radius:7px;padding:7px 10px;font-family:inherit;font-size:13px}
+.form-select:focus,.form-input-sm:focus{outline:none;border-color:var(--accent)}
+.checks-row{display:flex;gap:12px;flex-wrap:wrap}
+.check-item{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}
+.check-item input[type=checkbox]{width:14px;height:14px;cursor:pointer}
+/* Document output */
+.doc-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:0;box-shadow:var(--shadow);overflow:hidden}
+.doc-toolbar{padding:10px 16px;border-bottom:1px solid var(--card-border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.doc-toolbar-title{font-size:12px;font-weight:600;color:var(--faint);margin-right:auto}
+#docOutput{padding:28px 32px;font-size:14px;line-height:1.6;min-height:300px}
+/* Doc styles (applied inside #docOutput) */
+#docOutput h1{font-size:22px;font-weight:700;margin-bottom:4px}
+#docOutput .doc-meta{font-size:12px;color:var(--faint);margin-bottom:24px;display:flex;gap:12px;flex-wrap:wrap}
+#docOutput .doc-meta span{display:flex;align-items:center;gap:4px}
+#docOutput h2{font-size:15px;font-weight:700;margin:28px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent);color:var(--accent)}
+#docOutput h3{font-size:13px;font-weight:700;margin:16px 0 6px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+#docOutput .seg-block{margin-bottom:20px}
+#docOutput .term-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px}
+#docOutput .term-table th{text-align:left;padding:5px 8px;background:var(--pill);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+#docOutput .term-table td{padding:5px 8px;border-bottom:1px solid var(--divider);vertical-align:top}
+#docOutput .term-table tr:last-child td{border-bottom:none}
+#docOutput .term-val{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+#docOutput .struct-list{display:flex;flex-direction:column;gap:6px}
+#docOutput .struct-item{background:var(--pill);border-radius:7px;padding:8px 12px}
+#docOutput .struct-pattern{font-family:var(--mono);font-size:12px;color:var(--accent)}
+#docOutput .struct-example{font-size:11px;color:var(--faint);margin-top:2px}
+#docOutput .doc-notes{font-size:13px;color:var(--faint);line-height:1.6;padding:10px 14px;background:var(--pill);border-radius:7px;margin-bottom:12px}
+#docOutput .doc-footer{margin-top:28px;padding-top:12px;border-top:1px solid var(--divider);font-size:11px;color:var(--faint);display:flex;justify-content:space-between}
+#docOutput .sep-badge{font-family:var(--mono);font-weight:700;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:12px}
+#docOutput .fav-star{color:#f59e0b;font-size:11px}
+#docOutput .empty-msg{font-size:12px;color:var(--faint);font-style:italic;padding:8px 0}
+#docOutput .seg-count{font-size:11px;font-weight:600;color:var(--faint);margin-left:6px;background:var(--pill);border-radius:4px;padding:1px 6px}
+/* Empty state */
+.empty{text-align:center;padding:48px 20px;color:var(--faint)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-title{font-size:15px;font-weight:600;color:var(--fg);margin-bottom:6px}
+/* Print */
+@media print{
+  .app-header,.config-panel,.doc-toolbar{display:none!important}
+  .main{max-width:100%;padding:0}
+  .doc-wrap{border:none;box-shadow:none;border-radius:0}
+  #docOutput{padding:12px 24px}
+  body{background:#fff;color:#111}
+  #docOutput .term-val{color:#1d4ed8}
+}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div>
+    <div class="logo">Exportador <span>NC</span></div>
+    <div class="subtitle">Gera documento formatado do dicionário de nomenclatura</div>
+  </div>
+  <div class="hdr-right">
+    <button class="theme-btn" onclick="toggleTheme()">🌓</button>
+    <a href="../index.html" class="btn secondary sm">← Ferramentas</a>
+  </div>
+</header>
+
+<main class="main">
+  <div class="config-panel">
+    <div class="config-row">
+      <div class="config-field flex1">
+        <label class="fl">Cliente</label>
+        <select class="form-select" id="clientSel" onchange="generate()"></select>
+      </div>
+      <div class="config-field">
+        <label class="fl">Incluir</label>
+        <div class="checks-row" style="margin-top:4px">
+          <label class="check-item"><input type="checkbox" id="optSegs" checked onchange="generate()"> Segmentos</label>
+          <label class="check-item"><input type="checkbox" id="optDict" checked onchange="generate()"> Dicionário</label>
+          <label class="check-item"><input type="checkbox" id="optStructs" checked onchange="generate()"> Estruturas</label>
+          <label class="check-item"><input type="checkbox" id="optNotes" checked onchange="generate()"> Notas</label>
+          <label class="check-item"><input type="checkbox" id="optDesc" checked onchange="generate()"> Descrições</label>
+          <label class="check-item"><input type="checkbox" id="optFav" onchange="generate()"> Só favoritos</label>
+          <label class="check-item"><input type="checkbox" id="optExamples" checked onchange="generate()"> Exemplos</label>
+        </div>
+      </div>
+      <div class="config-field">
+        <label class="fl">&nbsp;</label>
+        <div style="display:flex;gap:6px">
+          <button class="btn primary sm" onclick="generate()">🔄 Gerar</button>
+          <button class="btn secondary sm" onclick="exportMD()">⬇ .md</button>
+          <button class="btn secondary sm" onclick="exportTXT()">⬇ .txt</button>
+          <button class="btn secondary sm" onclick="window.print()">🖨 Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-wrap">
+    <div class="doc-toolbar">
+      <span class="doc-toolbar-title" id="docStatus">Selecione um cliente para gerar o documento</span>
+      <button class="btn secondary sm" onclick="copyDocText()">📋 Copiar texto</button>
+    </div>
+    <div id="docOutput">
+      <div class="empty">
+        <div class="empty-icon">📄</div>
+        <div class="empty-title">Nenhum documento gerado</div>
+        <p style="font-size:12px">Selecione um cliente acima para gerar o documento de nomenclatura.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const TAXO_KEY = 'taxo_clients_v1';
+const TAXO_ACT = 'taxo_active_v1';
+function loadTaxo(){ try{return JSON.parse(localStorage.getItem(TAXO_KEY)||'[]');}catch(e){return [];} }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(ts){ return new Date(ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}); }
+
+let taxo = loadTaxo();
+let _lastMD = '';
+
+function getColor(c){
+  if(c.color) return c.color;
+  const p=['#2563eb','#7c3aed','#db2777','#d97706','#16a34a','#0891b2','#dc2626'];
+  return p[Math.abs([...c.id].reduce((a,ch)=>a+ch.charCodeAt(0),0))%p.length];
+}
+
+function populateClients(){
+  const sel=document.getElementById('clientSel'); if(!sel) return;
+  const active=taxo.filter(c=>!c.archived);
+  if(!active.length){ sel.innerHTML='<option value="">Nenhum cliente</option>'; return; }
+  const savedId=localStorage.getItem(TAXO_ACT)||'';
+  sel.innerHTML=active.map(c=>`<option value="${esc(c.id)}"${c.id===savedId?' selected':''}>${esc(c.name)}</option>`).join('');
+}
+
+function generate(){
+  taxo=loadTaxo();
+  const sel=document.getElementById('clientSel'); if(!sel) return;
+  const c=taxo.find(x=>x.id===sel.value);
+  const out=document.getElementById('docOutput');
+  const status=document.getElementById('docStatus');
+  if(!c){ out.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Cliente não encontrado</div></div>'; return; }
+
+  const optSegs=document.getElementById('optSegs')?.checked;
+  const optDict=document.getElementById('optDict')?.checked;
+  const optStructs=document.getElementById('optStructs')?.checked;
+  const optNotes=document.getElementById('optNotes')?.checked;
+  const optDesc=document.getElementById('optDesc')?.checked;
+  const optFav=document.getElementById('optFav')?.checked;
+  const optExamples=document.getElementById('optExamples')?.checked;
+  const col=getColor(c);
+  const sep=c.separator||'_';
+  const totalTerms=Object.values(c.dictionary||{}).reduce((a,v)=>a+(v?.length||0),0);
+  const totalStructs=(c.structures||[]).length;
+  const now=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  let html=`<h1>${esc(c.name)}</h1>
+  <div class="doc-meta">
+    <span>📅 Gerado em ${now}</span>
+    <span>📋 ${(c.segments||[]).length} segmentos</span>
+    <span>📚 ${totalTerms} termos</span>
+    <span>🏗️ ${totalStructs} estruturas</span>
+    <span>Separador: <span class="sep-badge">${esc(sep)}</span></span>
+  </div>`;
+
+  if(c.notes && optNotes){
+    html+=`<div class="doc-notes">📝 ${esc(c.notes)}</div>`;
+  }
+
+  if(optSegs && (c.segments||[]).length){
+    html+=`<h2>Segmentos</h2>`;
+    html+=`<table class="term-table"><thead><tr><th>#</th><th>ID</th><th>Label</th><th>Tipo</th></tr></thead><tbody>`;
+    (c.segments||[]).forEach((s,i)=>{
+      html+=`<tr><td style="color:var(--faint)">${i+1}</td><td class="term-val">${esc(s.id)}</td><td>${esc(s.label)}</td><td>${s.required?'<span style="color:var(--ok);font-weight:600">Obrigatório</span>':'<span style="color:var(--faint)">Opcional</span>'}</td></tr>`;
+    });
+    html+=`</tbody></table>`;
+  }
+
+  if(optDict){
+    html+=`<h2>Dicionário</h2>`;
+    (c.segments||[]).forEach(s=>{
+      let terms=(c.dictionary[s.id]||[]);
+      if(optFav) terms=terms.filter(t=>t.fav);
+      const count=terms.length;
+      html+=`<div class="seg-block"><h3>${esc(s.label)}<span class="seg-count">${count}</span></h3>`;
+      if(!count){ html+=`<p class="empty-msg">Nenhum termo${optFav?' favorito':''} neste segmento.</p></div>`; return; }
+      html+=`<table class="term-table"><thead><tr><th>Valor</th><th>Label</th>${optDesc?'<th>Descrição</th>':''}</tr></thead><tbody>`;
+      terms.forEach(t=>{
+        html+=`<tr><td class="term-val">${esc(t.value)}${t.fav?` <span class="fav-star">⭐</span>`:''}</td><td>${esc(t.label)}</td>${optDesc?`<td style="color:var(--faint)">${esc(t.desc||'')}</td>`:''}</tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    });
+  }
+
+  if(optStructs && (c.structures||[]).length){
+    html+=`<h2>Estruturas</h2><div class="struct-list">`;
+    (c.structures||[]).forEach(st=>{
+      const pattern=st.segments.map(sid=>{ const sg=(c.segments||[]).find(s=>s.id===sid); return sg?sg.label:`[${sid}]`; }).join(` ${esc(sep)} `);
+      let exampleParts=st.segments.map(sid=>{
+        const sg=(c.segments||[]).find(s=>s.id===sid);
+        const terms=(c.dictionary[sid]||[]);
+        const fav=terms.find(t=>t.fav); const first=terms[0];
+        return (fav||first)?.value || (sg?.label||sid).toLowerCase().replace(/\s/g,'_');
+      });
+      const example=optExamples?exampleParts.join(sep):'';
+      html+=`<div class="struct-item"><div style="font-weight:600;font-size:13px">${esc(st.label)}</div><div class="struct-pattern">${esc(pattern)}</div>${optExamples?`<div class="struct-example">ex: <code>${esc(example)}</code></div>`:''}</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<div class="doc-footer"><span>Taxonomy Builder — Projeto NC</span><span>Cliente: ${esc(c.name)}</span></div>`;
+  out.innerHTML=html;
+  status.textContent=`${esc(c.name)} · ${totalTerms} termos · ${totalStructs} estruturas · gerado agora`;
+
+  // Build plain text / markdown version
+  _buildMD(c,{optSegs,optDict,optStructs,optNotes,optDesc,optFav,optExamples});
+}
+
+function _buildMD(c,opts){
+  const sep=c.separator||'_';
+  const now=new Date().toLocaleDateString('pt-BR');
+  let md=`# ${c.name}\n\n_Gerado em ${now} · ${(c.segments||[]).length} segmentos · ${Object.values(c.dictionary||{}).reduce((a,v)=>a+(v?.length||0),0)} termos · ${(c.structures||[]).length} estruturas_\n\n`;
+  if(c.notes&&opts.optNotes) md+=`> ${c.notes}\n\n`;
+  if(opts.optSegs&&(c.segments||[]).length){
+    md+=`## Segmentos\n\n| # | ID | Label | Tipo |\n|---|---|---|---|\n`;
+    (c.segments||[]).forEach((s,i)=>{ md+=`| ${i+1} | \`${s.id}\` | ${s.label} | ${s.required?'Obrigatório':'Opcional'} |\n`; });
+    md+='\n';
+  }
+  if(opts.optDict){
+    md+=`## Dicionário\n\n`;
+    (c.segments||[]).forEach(s=>{
+      let terms=(c.dictionary[s.id]||[]);
+      if(opts.optFav) terms=terms.filter(t=>t.fav);
+      md+=`### ${s.label} (${terms.length})\n\n`;
+      if(!terms.length){ md+=`_Nenhum termo._\n\n`; return; }
+      md+=`| Valor | Label |${opts.optDesc?' Descrição |':''}\n|---|---|${opts.optDesc?'---|':''}\n`;
+      terms.forEach(t=>{ md+=`| \`${t.value}\`${t.fav?' ⭐':''} | ${t.label} |${opts.optDesc?` ${t.desc||''} |`:''}\n`; });
+      md+='\n';
+    });
+  }
+  if(opts.optStructs&&(c.structures||[]).length){
+    md+=`## Estruturas\n\n`;
+    (c.structures||[]).forEach(st=>{
+      const pattern=st.segments.map(sid=>{ const sg=(c.segments||[]).find(s=>s.id===sid); return sg?sg.label:`[${sid}]`; }).join(` ${sep} `);
+      md+=`**${st.label}**\n\`${pattern}\`\n\n`;
+    });
+  }
+  _lastMD=md;
+}
+
+function exportMD(){
+  const sel=document.getElementById('clientSel');
+  const c=taxo.find(x=>x.id===sel?.value);
+  if(!_lastMD||!c){ showToast('Gere o documento primeiro'); return; }
+  const blob=new Blob([_lastMD],{type:'text/markdown'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`nc-${c.id}-${new Date().toISOString().slice(0,10)}.md`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('⬇ .md exportado');
+}
+
+function exportTXT(){
+  const sel=document.getElementById('clientSel');
+  const c=taxo.find(x=>x.id===sel?.value);
+  if(!_lastMD||!c){ showToast('Gere o documento primeiro'); return; }
+  const txt=_lastMD.replace(/[#*`|_]/g,'').replace(/\n{3,}/g,'\n\n');
+  const blob=new Blob([txt],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=`nc-${c.id}-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('⬇ .txt exportado');
+}
+
+function copyDocText(){
+  const out=document.getElementById('docOutput');
+  const text=out?.innerText||'';
+  navigator.clipboard.writeText(text).then(()=>showToast('📋 Copiado!')).catch(()=>{
+    const r=document.createRange(); r.selectNode(out); window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
+    document.execCommand('copy'); window.getSelection().removeAllRanges(); showToast('📋 Copiado!');
+  });
+}
+
+function showToast(msg){
+  let t=document.getElementById('ncToast');
+  if(!t){t=document.createElement('div');t.id='ncToast';Object.assign(t.style,{position:'fixed',bottom:'20px',right:'20px',background:'var(--fg)',color:'var(--bg)',padding:'9px 16px',borderRadius:'9px',fontSize:'13px',fontWeight:'600',zIndex:'9999',transition:'opacity .25s',opacity:'0',pointerEvents:'none'});document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2400);
+}
+
+function toggleTheme(){
+  const r=document.documentElement;
+  r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';
+  try{localStorage.setItem('exportnc_theme',r.dataset.theme);}catch(e){}
+}
+(function(){try{const t=localStorage.getItem('exportnc_theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();
+
+window.addEventListener('storage',e=>{ if(e.key===TAXO_KEY){taxo=loadTaxo();populateClients();generate();} });
+
+populateClients();
+generate();
+</script>
+</body>
+</html>
