@@ -8,6 +8,21 @@
 <title>Glossário AdTech | NC Tool</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
 <style>
+.tab-btn{padding:6px 16px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--mid);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.tab-btn.active,.tab-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+[data-theme="dark"] .tab-btn.active,[data-theme="dark"] .tab-btn:hover{background:var(--accent);color:var(--navy)}
+.nc-seg-block{background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:10px}
+.nc-seg-hdr{padding:10px 16px;background:var(--navy);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+[data-theme="dark"] .nc-seg-hdr{background:#1a1f3a}
+.nc-seg-hdr .seg-count{font-size:10px;opacity:.7;font-weight:600}
+.nc-term-row{display:grid;grid-template-columns:140px 1fr;gap:0;padding:8px 16px;border-bottom:1px solid var(--border);font-size:12px;align-items:start}
+.nc-term-row:last-child{border-bottom:none}
+.nc-term-val{font-family:'Courier New',monospace;font-weight:800;color:var(--navy);padding-right:12px;white-space:nowrap}
+[data-theme="dark"] .nc-term-val{color:var(--accent)}
+.nc-term-info{display:flex;flex-direction:column;gap:2px}
+.nc-term-label{font-weight:600;color:var(--text)}
+.nc-term-desc{font-size:11px;color:var(--mid)}
+.nc-term-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;margin-top:2px}
 :root{--navy:#0D2137;--navy2:#1A3F63;--accent:#38BDF8;--bg:#F0F4F8;--surface:#fff;--border:#DDE3EC;--text:#0D2137;--mid:#4A5568;--light:#8B9BBF;--blue:#2563EB;--green:#10B981;--red:#EF4444;--yellow:#F59E0B}
 [data-theme="dark"]{
   --bg:#0f1225;--surface:#1a1f3a;--border:#2a3060;--card:#1a1f3a;
@@ -153,12 +168,32 @@ footer{text-align:center;color:var(--light);font-size:11px;padding:8px}
 </div>
 
 <div class="wrap">
-  <div class="search-bar">
-    <input id="search" placeholder="🔍  Buscar termo, sigla ou definição…" oninput="render()">
+  <!-- TAB SWITCHER -->
+  <div id="tabRow" style="display:flex;gap:6px;margin-bottom:4px">
+    <button id="tabAdtech" class="tab-btn active" onclick="switchTab('adtech')">📚 AdTech</button>
+    <button id="tabMeunc" class="tab-btn" onclick="switchTab('meunc')">🏷️ Meu NC</button>
   </div>
-  <div class="filter-chips" id="filter-chips"></div>
-  <div class="stats-bar" id="stats-bar"></div>
-  <div class="glossary-grid" id="glossary-grid"></div>
+
+  <!-- ADTECH VIEW -->
+  <div id="viewAdtech">
+    <div class="search-bar">
+      <input id="search" placeholder="🔍  Buscar termo, sigla ou definição…" oninput="render()">
+    </div>
+    <div class="filter-chips" id="filter-chips"></div>
+    <div class="stats-bar" id="stats-bar"></div>
+    <div class="glossary-grid" id="glossary-grid"></div>
+  </div>
+
+  <!-- MEU NC VIEW -->
+  <div id="viewMeunc" style="display:none">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+      <input id="ncSearch" class="search-bar" style="flex:1;min-width:180px;padding:9px 14px;border:1px solid var(--border);border-radius:9px;font-size:13px;background:var(--surface);color:var(--text);outline:none;font-family:inherit" placeholder="🔍 Buscar nos termos do NC…" oninput="renderMeunc()">
+      <select id="ncClientSel" onchange="renderMeunc()" style="padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;outline:none"></select>
+    </div>
+    <div id="ncStats" style="font-size:11px;color:var(--light);margin-bottom:8px"></div>
+    <div id="ncGrid" class="glossary-grid"></div>
+  </div>
+
   <footer><a href="https://falssp.github.io/Projeto-NC/" style="color:var(--accent);text-decoration:none">← Projeto NC</a></footer>
 </div>
 
@@ -413,6 +448,123 @@ function highlight(text, q){
 
 function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
 function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+/* ── MEU NC TAB ── */
+const TAXO_CLIENTS_KEY = 'taxo_clients_v1';
+const TAXO_ACTIVE_KEY  = 'taxo_active_v1';
+let _ncClients = [];
+let _ncOpenSegs = new Set();
+
+const TERM_TAG_COLORS = {
+  evergreen:  {bg:'#dcfce7',fg:'#15803d'},
+  sazonal:    {bg:'#fef9c3',fg:'#a16207'},
+  teste:      {bg:'#fce7f3',fg:'#9d174d'},
+  pausa:      {bg:'#f1f5f9',fg:'#475569'},
+  prioridade: {bg:'#fee2e2',fg:'#b91c1c'},
+  novo:       {bg:'#dbeafe',fg:'#1d4ed8'},
+};
+
+function switchTab(tab) {
+  const isAdtech = tab==='adtech';
+  document.getElementById('viewAdtech').style.display = isAdtech?'':'none';
+  document.getElementById('viewMeunc').style.display = isAdtech?'none':'';
+  document.getElementById('tabAdtech').classList.toggle('active', isAdtech);
+  document.getElementById('tabMeunc').classList.toggle('active', !isAdtech);
+  if(!isAdtech) loadNcClients();
+}
+
+function loadNcClients() {
+  try {
+    _ncClients = JSON.parse(localStorage.getItem(TAXO_CLIENTS_KEY)||'[]');
+    const activeId = localStorage.getItem(TAXO_ACTIVE_KEY)||'';
+    const sel = document.getElementById('ncClientSel');
+    sel.innerHTML = '';
+    if(!_ncClients.length) {
+      sel.innerHTML = '<option value="">Nenhum cliente no Taxonomy Builder</option>';
+      renderMeunc(); return;
+    }
+    _ncClients.forEach(c=>{
+      const opt=document.createElement('option');
+      opt.value=c.id; opt.textContent=c.name;
+      if(c.id===activeId) opt.selected=true;
+      sel.appendChild(opt);
+    });
+    renderMeunc();
+  } catch(e) {
+    document.getElementById('ncGrid').innerHTML='<div class="empty-state">Erro ao ler dados do Taxonomy Builder.</div>';
+  }
+}
+
+function renderMeunc() {
+  const cid = document.getElementById('ncClientSel').value;
+  const q = (document.getElementById('ncSearch').value||'').toLowerCase().trim();
+  const client = _ncClients.find(c=>c.id===cid);
+  const grid = document.getElementById('ncGrid');
+
+  if(!client) {
+    grid.innerHTML='<div class="empty-state" style="padding:40px;text-align:center;color:var(--light)">Nenhum cliente selecionado.<br>Crie um NC no <a href="../taxonomy-builder/" style="color:var(--accent)">Taxonomy Builder</a>.</div>';
+    document.getElementById('ncStats').textContent='';
+    return;
+  }
+
+  const dict = client.dictionary||{};
+  const segs = client.segments||[];
+  let totalTerms=0, matchedTerms=0;
+
+  let html = '';
+  segs.forEach(seg=>{
+    const terms = (dict[seg.id]||[]).filter(t=>{
+      if(!q) return true;
+      return t.value.toLowerCase().includes(q)||
+             (t.label||'').toLowerCase().includes(q)||
+             (t.desc||'').toLowerCase().includes(q);
+    });
+    totalTerms += (dict[seg.id]||[]).length;
+    matchedTerms += terms.length;
+    if(!terms.length && q) return; // skip empty segs when searching
+    const isOpen = _ncOpenSegs.has(seg.id) || !!q;
+    const escSeg = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html += `<div class="nc-seg-block">
+      <div class="nc-seg-hdr" onclick="toggleNcSeg('${seg.id}')">
+        <span>${escSeg(seg.label)}</span>
+        <span class="seg-count">${terms.length} termos ${isOpen?'▲':'▼'}</span>
+      </div>
+      ${isOpen ? `<div>${terms.length?terms.map(t=>{
+        const tagHtml = t.tag && TERM_TAG_COLORS[t.tag]
+          ? `<span class="nc-term-tag" style="background:${TERM_TAG_COLORS[t.tag].bg};color:${TERM_TAG_COLORS[t.tag].fg}">${t.tag}</span>`
+          : '';
+        return `<div class="nc-term-row">
+          <span class="nc-term-val">${escSeg(t.value)}</span>
+          <div class="nc-term-info">
+            <span class="nc-term-label">${escSeg(t.label||t.value)}</span>
+            ${t.desc?`<span class="nc-term-desc">${escSeg(t.desc)}</span>`:''}
+            ${tagHtml}
+          </div>
+        </div>`;
+      }).join('') : '<div style="padding:12px 16px;font-size:12px;color:var(--light)">Nenhum termo ainda.</div>'}</div>` : ''}
+    </div>`;
+  });
+
+  if(!html) {
+    grid.innerHTML = q
+      ? `<div class="empty-state" style="padding:32px;text-align:center;color:var(--light)">Nenhum termo encontrado para "<b>${q}</b>"</div>`
+      : `<div class="empty-state" style="padding:32px;text-align:center;color:var(--light)">O cliente <b>${escText(client.name)}</b> não tem segmentos ainda.</div>`;
+  } else {
+    grid.innerHTML = html;
+  }
+
+  document.getElementById('ncStats').textContent = q
+    ? `${matchedTerms} resultado(s) em "${client.name}"`
+    : `${totalTerms} termos em ${segs.length} segmentos · ${client.name}`;
+}
+
+function escText(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleNcSeg(segId) {
+  if(_ncOpenSegs.has(segId)) _ncOpenSegs.delete(segId);
+  else _ncOpenSegs.add(segId);
+  renderMeunc();
+}
 
 init();
 </script>

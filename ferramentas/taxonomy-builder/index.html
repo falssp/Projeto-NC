@@ -870,6 +870,13 @@ body {
 .rename-icon{font-size:12px;color:var(--faint);cursor:pointer;flex-shrink:0;opacity:0;transition:opacity .15s;}
 .client-card:hover .rename-icon{opacity:1;}
 
+/* ==================== DICT TAG FILTER CHIPS (BATCH 17) ==================== */
+.dict-tag-filter-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:4px 0 2px;}
+.dict-tag-chip{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;cursor:pointer;border:1.5px solid transparent;transition:opacity .12s,box-shadow .1s;background:var(--chip-bg,var(--pill));color:var(--chip-fg,var(--faint));user-select:none;}
+.dict-tag-chip:hover{opacity:.75;}
+.dict-tag-chip.active{box-shadow:0 0 0 2px var(--chip-fg,var(--accent));opacity:1;}
+.dict-tag-chip-clear{font-size:10.5px;padding:2px 8px;border-radius:10px;cursor:pointer;border:1.5px solid var(--card-border);background:none;color:var(--faint);font-weight:600;}
+.dict-tag-chip-clear:hover{color:var(--erro);}
 /* ==================== TERM TAG COLORS ==================== */
 .term-tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;cursor:pointer;user-select:none;border:1px solid transparent;transition:opacity .15s;}
 .term-tag-pick{position:absolute;z-index:600;background:var(--card);border:1px solid var(--card-border);border-radius:9px;padding:8px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow-lg);min-width:160px;}
@@ -2163,7 +2170,7 @@ function renderDicionario() {
     const btn = document.createElement('button');
     btn.className='pill'+(s.id===activeSeg?' active':'');
     btn.textContent = `${s.label} ${count?`(${count})`:''}`;
-    btn.onclick=()=>{ activeSeg=s.id; _dictFilter=null; renderDicionario(); };
+    btn.onclick=()=>{ activeSeg=s.id; _dictFilter=null; _dictTagFilter=null; renderDicionario(); };
     pillsEl.appendChild(btn);
   });
 
@@ -2204,6 +2211,16 @@ function renderTermArea(c) {
       <button onclick="bulkClearSel()">Limpar</button>
       <button onclick="toggleBulkMode()" style="margin-left:auto">✕</button>
     </div></div>
+    ${(()=>{
+      // tag chips row — only if any term in this segment has a tag
+      const usedTags = [...new Set(terms.filter(t=>t.tag).map(t=>t.tag))];
+      if(!usedTags.length) return '';
+      const chips = usedTags.map(tagId=>{
+        const col=getTagColors(tagId);
+        return `<span class="dict-tag-chip" data-tagid="${tagId}" style="--chip-bg:${col.bg};--chip-fg:${col.fg}" onclick="filterTermsByTag('${tagId}')" title="Filtrar por tag: ${tagId}">${tagId}</span>`;
+      }).join('');
+      return `<div class="dict-tag-filter-row">${chips}<button class="dict-tag-chip-clear" id="dictTagClear" onclick="clearDictTagFilter()" style="display:none" title="Remover filtro de tag">✕ limpar</button></div>`;
+    })()}
     <div class="term-list" id="termList">` + terms.map((t,i)=>`
       <div class="term-row" id="tr-${i}" draggable="true" data-idx="${i}">
         <input type="checkbox" class="term-row-cb" id="tcb-${i}" style="display:none" onclick="updateBulkCount()">
@@ -2326,22 +2343,48 @@ function copySegmentJSON() {
 }
 
 let _dictFilter = null; // 'fav' | 'uses' | null
-function filterTermsBy(mode) {
+let _dictTagFilter = null; // tagId | null  (BATCH 17)
+
+function _applyDictFilters() {
+  // Apply both _dictFilter and _dictTagFilter simultaneously
   const c=active(); if(!c||!activeSeg) return;
-  if(_dictFilter===mode) { _dictFilter=null; renderDicionario(); return; }
-  _dictFilter = mode;
   const terms = c.dictionary[activeSeg]||[];
   const list = document.getElementById('termList'); if(!list) return;
-  // Update button active state
-  document.getElementById('dictFilterFav')?.classList.toggle('active', mode==='fav');
-  document.getElementById('dictFilterUses')?.classList.toggle('active', mode==='uses');
-  if(mode==='fav') {
+  // First reset all visible
+  list.querySelectorAll('.term-row').forEach(r=>r.style.display='');
+  // Apply tag filter
+  if(_dictTagFilter) {
     list.querySelectorAll('.term-row').forEach(row=>{
-      const idx = +row.dataset.idx;
-      row.style.display = terms[idx]?.fav ? '' : 'none';
+      const t = terms[+row.dataset.idx];
+      if(!t || t.tag !== _dictTagFilter) row.style.display='none';
     });
-    showToast('Mostrando favoritos');
-  } else if(mode==='uses') {
+  }
+  // Apply fav filter on top
+  if(_dictFilter==='fav') {
+    list.querySelectorAll('.term-row').forEach(row=>{
+      if(row.style.display==='none') return;
+      const idx=+row.dataset.idx;
+      if(!terms[idx]?.fav) row.style.display='none';
+    });
+  }
+  // Update tag chip active states
+  document.querySelectorAll('.dict-tag-chip').forEach(ch=>{
+    ch.classList.toggle('active', ch.dataset.tagid===_dictTagFilter);
+  });
+  document.getElementById('dictTagClear')?.style && (
+    document.getElementById('dictTagClear').style.display=_dictTagFilter?'':'none'
+  );
+}
+
+function filterTermsBy(mode) {
+  const c=active(); if(!c||!activeSeg) return;
+  if(_dictFilter===mode) { _dictFilter=null; }
+  else { _dictFilter = mode; }
+  const terms = c.dictionary[activeSeg]||[];
+  const list = document.getElementById('termList'); if(!list) return;
+  document.getElementById('dictFilterFav')?.classList.toggle('active', _dictFilter==='fav');
+  document.getElementById('dictFilterUses')?.classList.toggle('active', _dictFilter==='uses');
+  if(_dictFilter==='uses') {
     // Sort rows by uses descending without mutating data
     const rows = [...list.querySelectorAll('.term-row')].sort((a,b)=>{
       const ua = terms[+a.dataset.idx]?.uses||0;
@@ -2349,9 +2392,18 @@ function filterTermsBy(mode) {
       return ub-ua;
     });
     rows.forEach(r=>{ r.style.display=''; list.appendChild(r); });
-    showToast('Ordenado por mais usados');
   }
+  _applyDictFilters();
+  showToast(_dictFilter==='fav'?'Mostrando favoritos':_dictFilter==='uses'?'Ordenado por uso':'Filtro removido');
 }
+
+/* BATCH 17: filter by tag */
+function filterTermsByTag(tagId) {
+  _dictTagFilter = (_dictTagFilter===tagId) ? null : tagId;
+  _applyDictFilters();
+  showToast(_dictTagFilter ? `🏷️ Filtrando: ${_dictTagFilter}` : 'Filtro de tag removido');
+}
+function clearDictTagFilter() { _dictTagFilter=null; _applyDictFilters(); showToast('Filtro de tag removido'); }
 
 /* Batch import modal */
 function openBatchImportModal() {
