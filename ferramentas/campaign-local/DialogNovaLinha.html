@@ -131,6 +131,7 @@
   .btn-cancel { background: var(--ul-light); color: var(--ul-navy); border: 1px solid var(--ul-border); }
   .btn-ok     { background: var(--ul-navy); color: #fff; }
   .btn-ok:disabled { background: #9AB2D4; cursor: default; opacity: 1; }
+  .btn-undo   { background: #FFF3CD; color: #856404; border: 1px solid #FFCA28; }
   .offline-msg {
     padding: 12px; background: var(--ul-light); border: 1px solid var(--ul-border);
     border-radius: 4px; color: var(--ul-muted); font-size: 12px; display: none;
@@ -326,6 +327,7 @@
   <div class="footer">
     <div id="status"></div>
     <div class="btn-row">
+      <button class="btn-undo" id="btnUndo" onclick="desfazer()" style="display:none;margin-right:auto">↩ Desfazer última importação</button>
       <button class="btn-cancel" onclick="cancelar()">Cancelar</button>
       <button class="btn-ok" id="btnOk"    onclick="enviar()"    disabled>Inserir</button>
       <button class="btn-ok" id="btnOkAdp" onclick="enviarADP()" disabled style="display:none">Inserir 0 linhas</button>
@@ -341,9 +343,10 @@
     'Meta e Tiktok', 'Pinterest, Snapchat e Twitter', 'Flashtalking'
   ];
 
-  var _abaAtiva = '';
-  var _adpLinhas  = []; // linhas parseadas do ADP
-  var _existentes = {}; // set de "Brand|CampaignLocal" já na planilha
+  var _abaAtiva    = '';
+  var _adpLinhas   = []; // linhas parseadas do ADP
+  var _existentes  = {}; // set de "Brand|CampaignLocal" já na planilha
+  var _ultimoCount = 0;  // qtd de linhas da última importação ADP (para desfazer)
 
   // ── Guard: fora do GAS ──
   if (typeof google === 'undefined' || !google.script) {
@@ -466,12 +469,13 @@
   function _parseADP(wb) {
     var linhas = [];
     var vistas = {};
+    var abasSemHeader = [];
     ADP_PLATAFORMAS.forEach(function(nome) {
       var ws = wb.Sheets[nome];
       if (!ws) return;
       var data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
       var det  = _detectCols(data);
-      if (!det) return; // aba sem header reconhecível
+      if (!det) { abasSemHeader.push(nome); return; } // aba sem header reconhecível
       var cols      = det.cols;
       var dataStart = det.dataStart;
       for (var r = dataStart; r < data.length; r++) {
@@ -491,6 +495,14 @@
         linhas.push({colF: brand, colG: campGlobal, colB: campLocal, colD: extra});
       }
     });
+    // Ordena por Brand (F) → CampaignLocal (B)
+    linhas.sort(function(a, b) {
+      var cmp = a.colF.localeCompare(b.colF, 'pt-BR');
+      return cmp !== 0 ? cmp : a.colB.localeCompare(b.colB, 'pt-BR');
+    });
+    if (abasSemHeader.length) {
+      _status('⚠️ ' + abasSemHeader.length + ' aba(s) sem header reconhecível: ' + abasSemHeader.join(', '), 'error');
+    }
     return linhas;
   }
 
@@ -599,14 +611,36 @@
     _status('Inserindo ' + linhasSel.length + ' linha(s)…');
     google.script.run
       .withSuccessHandler(function(res) {
+        _ultimoCount = linhasSel.length;
+        document.getElementById('btnUndo').style.display = '';
         _status(res && res.msg ? res.msg : 'Linhas inseridas!', 'ok');
-        setTimeout(function(){ google.script.host.close(); }, 1400);
+        // Não fecha — deixa user ver o resultado e eventualmente desfazer
+        _atualizarBtnAdp();
       })
       .withFailureHandler(function(e) {
         _status('Erro: ' + e.message, 'error');
         _atualizarBtnAdp();
       })
       .processarLinhasADP(payload);
+  }
+
+  // ── Desfazer última importação ADP ──
+  function desfazer() {
+    if (!_ultimoCount) return;
+    var btn = document.getElementById('btnUndo');
+    btn.disabled = true;
+    _status('Desfazendo ' + _ultimoCount + ' linha(s)…');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _ultimoCount = 0;
+        btn.style.display = 'none';
+        _status(res && res.msg ? res.msg : 'Importação desfeita.', 'ok');
+      })
+      .withFailureHandler(function(e) {
+        btn.disabled = false;
+        _status('Erro ao desfazer: ' + e.message, 'error');
+      })
+      .desfazADP({qtd: _ultimoCount, aba: _abaAtiva});
   }
 
   // ── Utilitários ──

@@ -716,6 +716,34 @@ function processarLinhasADP(payload) {
   });
 }
 
+// --------------- SERVER: desfaz última importação ADP -------
+// payload: { qtd: N, aba: 'nomeAba' }
+// Remove as primeiras N linhas de dados (topo da aba), que são
+// exatamente as que processarLinhasADP acabou de inserir.
+
+function desfazADP(payload) {
+  const ss      = SpreadsheetApp.getActiveSpreadsheet();
+  const nomeAba = payload.aba || ss.getActiveSheet().getName();
+  const sheet   = ss.getSheetByName(nomeAba) || ss.getActiveSheet();
+  if (!_isAbaAtiva(sheet.getName())) return { msg: 'Aba inválida.' };
+
+  const qtd = parseInt(payload.qtd, 10) || 0;
+  if (qtd <= 0) return { msg: 'Nada a desfazer.' };
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < PRIMEIRA_LINHA_DADOS) return { msg: 'Aba sem dados.' };
+
+  const disponivel = lastRow - PRIMEIRA_LINHA_DADOS + 1;
+  const remover    = Math.min(qtd, disponivel);
+
+  _comLock(function() {
+    sheet.deleteRows(PRIMEIRA_LINHA_DADOS, remover);
+    _corrigirDrops(sheet);
+  });
+
+  return { msg: remover + ' linha(s) removida(s). Importação desfeita.' };
+}
+
 // --------------- TRIGGER onEdit -----------------------------
 
 function onEdit(e) {
