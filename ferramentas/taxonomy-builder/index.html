@@ -706,6 +706,13 @@ body {
   background:var(--bg);color:var(--fg);cursor:pointer;font-family:monospace;transition:border-color .1s,background .1s;}
 .sep-preview-btn:hover,.sep-preview-btn.active-sep{border-color:var(--accent);background:rgba(37,99,235,.07);}
 
+/* ==================== TERM USES BADGE ==================== */
+.term-uses-badge{font-size:10px;color:var(--accent);background:rgba(37,99,235,.1);
+  border-radius:8px;padding:1px 5px;white-space:nowrap;font-weight:600;}
+
+/* ==================== BUILDER REQUIRED WARN ==================== */
+.builder-required-warn{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.2)!important;}
+
 /* ==================== BATCH TERM IMPORT ==================== */
 .batch-import-modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;
   justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);}
@@ -885,6 +892,8 @@ body {
         </div>
         <div class="action-bar">
           <button class="btn secondary btn-sm" onclick="exportStructures()" title="Exportar só as estruturas deste cliente">⬇ Estruturas</button>
+          <button class="btn secondary btn-sm" onclick="triggerImportStructures()" title="Importar estruturas de um JSON">⬆ Importar</button>
+          <input type="file" id="importStructuresInput" accept=".json" style="display:none" onchange="importStructuresFromFile(this)">
           <button class="btn primary btn-sm" onclick="openAddStructure()">+ Nova estrutura</button>
         </div>
       </div>
@@ -1346,6 +1355,8 @@ function renderClientes() {
 
     const div = document.createElement('div');
     div.className = 'client-card'+(isAct?' active':'');
+    div.draggable = true;
+    div.dataset.clientId = c.id;
     div.onclick = () => { activeId=c.id; activeSeg=null; builderVals={}; saveData(); renderClientSelect(); renderClientes(); };
     div.innerHTML = `
       <div class="client-card-actions">
@@ -1370,6 +1381,44 @@ function renderClientes() {
     grid.appendChild(div);
   });
   renderClientSelect();
+  initClientDragDrop();
+}
+
+function initClientDragDrop() {
+  const grid = document.getElementById('clientGrid'); if(!grid) return;
+  let dragSrc = null;
+  grid.querySelectorAll('.client-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      dragSrc = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.clientId);
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      grid.querySelectorAll('.client-card').forEach(c2 => c2.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      grid.querySelectorAll('.client-card').forEach(c2 => c2.classList.remove('drag-over'));
+      if(card !== dragSrc) card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if(card === dragSrc) return;
+      const fromId = e.dataTransfer.getData('text/plain');
+      const toId = card.dataset.clientId;
+      const fromIdx = clients.findIndex(c2=>c2.id===fromId);
+      const toIdx = clients.findIndex(c2=>c2.id===toId);
+      if(fromIdx===-1||toIdx===-1) return;
+      const [moved] = clients.splice(fromIdx,1);
+      clients.splice(toIdx,0,moved);
+      saveData();
+      renderClientes();
+    });
+  });
 }
 
 function deleteClient(id) {
@@ -1577,9 +1626,12 @@ function closeModal() { document.getElementById('overlay').classList.remove('sho
 function renderDicionario() {
   const c = active();
   document.getElementById('dictTitle').textContent = c ? `Dicionário · ${c.name}` : 'Dicionário';
-  document.getElementById('dictMeta').textContent  = c
-    ? `Separador: "${c.separator}" · ${c.segments.length} segmentos`
-    : 'Selecione um cliente';
+  if(c) {
+    const segsWithTerms = c.segments.filter(s=>(c.dictionary[s.id]||[]).length>0).length;
+    document.getElementById('dictMeta').textContent = `Separador: "${c.separator}" · ${segsWithTerms}/${c.segments.length} segs com termos`;
+  } else {
+    document.getElementById('dictMeta').textContent = 'Selecione um cliente';
+  }
 
   const pillsEl = document.getElementById('dictSegPills');
   const areaEl  = document.getElementById('dictTermArea');
@@ -1631,6 +1683,7 @@ function renderTermArea(c) {
         <span class="term-row-value">${esc(t.value)}</span>
         <span class="term-row-label">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
+        ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder">${t.uses}×</span>`:''}
         <div class="term-actions">
           <button class="term-fav-btn ${t.fav?'active':''}" title="${t.fav?'Remover favorito':'Favoritar'}" onclick="toggleTermFav(${i})">${t.fav?'⭐':'☆'}</button>
           <button title="Mover para outro segmento" onclick="openMoveTermModal(${i})">↗️</button>
@@ -2220,6 +2273,18 @@ function clearBuilder() { builderVals={}; renderBuilder(); }
 function copyBuilder() {
   const c=active(); if(!c) return;
   const segs=c.segments;
+  // Check required segments
+  const missing = segs.filter(s=>s.required && !builderVals[s.id]);
+  if(missing.length) {
+    const labels = missing.map(s=>s.label).join(', ');
+    showToast(`⚠️ Segmento(s) obrigatório(s) vazio(s): ${labels}`, null, 3500);
+    // highlight missing seg inputs
+    missing.forEach(s=>{
+      const inp = document.getElementById(`bv-${s.id}`);
+      if(inp){ inp.classList.add('builder-required-warn'); setTimeout(()=>inp.classList.remove('builder-required-warn'),1800); }
+    });
+    return;
+  }
   const vals=segs.map(s=>builderVals[s.id]||'');
   while(vals.length>0&&!vals[vals.length-1]) vals.pop();
   if(!vals.length) return;
@@ -2233,6 +2298,15 @@ function copyBuilder() {
   }
   if(!result) return;
   addToBuilderHistory(result);
+  // Increment term usage counters for selected values
+  segs.forEach(s=>{
+    const val = builderVals[s.id];
+    if(!val) return;
+    const terms = c.dictionary[s.id]||[];
+    const term = terms.find(t=>t.value===val);
+    if(term){ term.uses = (term.uses||0)+1; }
+  });
+  saveData();
   navigator.clipboard.writeText(result).then(()=>showToast('Copiado!')).catch(()=>{
     const range=document.createRange();
     range.selectNode(document.getElementById('previewBox'));
@@ -2849,6 +2923,37 @@ function exportStructures() {
   showToast(`${structs.length} estrutura(s) exportada(s)`);
 }
 
+function triggerImportStructures() {
+  const c=active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
+  document.getElementById('importStructuresInput').value='';
+  document.getElementById('importStructuresInput').click();
+}
+
+function importStructuresFromFile(input) {
+  const c=active(); if(!c) return;
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const incoming = data.structures||[];
+      if(!Array.isArray(incoming)||!incoming.length) { showToast('Nenhuma estrutura encontrada no arquivo'); return; }
+      if(!c.structures) c.structures=[];
+      let added=0, skipped=0;
+      incoming.forEach(s=>{
+        // skip if name already exists
+        if(c.structures.find(x=>x.name===s.name)) { skipped++; return; }
+        c.structures.push({ ...s, id: genId() });
+        added++;
+      });
+      saveData();
+      renderEstruturas();
+      showToast(`${added} estrutura(s) importada(s)${skipped?` · ${skipped} duplicada(s) ignorada(s)`:''}`);
+    } catch(err) { showToast('Erro ao ler arquivo JSON'); }
+  };
+  reader.readAsText(file);
+}
+
 /* =============================================
    UTILS
    ============================================= */
@@ -2975,6 +3080,13 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key>='1' && e.key<='5') {
     const idx = +e.key - 1;
     if(idx < TAB_ORDER.length) { e.preventDefault(); switchTab(TAB_ORDER[idx]); }
+    return;
+  }
+  // Ctrl+C in builder (when no text input focused) → copyBuilder
+  if((e.ctrlKey||e.metaKey) && e.key==='c' && currentTab==='builder') {
+    const focused = document.activeElement;
+    const isInput = focused && (focused.tagName==='INPUT'||focused.tagName==='TEXTAREA'||focused.tagName==='SELECT');
+    if(!isInput) { e.preventDefault(); copyBuilder(); }
     return;
   }
   // Escape → close modals (priority order)
