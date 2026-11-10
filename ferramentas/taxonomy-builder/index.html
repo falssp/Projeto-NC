@@ -927,6 +927,9 @@ body {
 .dict-seg-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px;}
 .char-limit-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;}
 .char-limit-input{width:60px;padding:2px 6px;border:1px solid var(--input-border);border-radius:5px;background:var(--input-bg);color:var(--fg);font-size:12px;text-align:center;}
+.val-fix-btn{font-size:10px;padding:1px 7px;border:1px solid var(--ok);border-radius:4px;background:rgba(34,197,94,.08);color:#15803d;cursor:pointer;margin-left:6px;white-space:nowrap;}
+.val-fix-btn:hover{background:rgba(34,197,94,.18);}
+:root[data-theme="dark"] .val-fix-btn,:root:not([data-theme="light"]) .val-fix-btn{color:#86efac;border-color:#22c55e;background:rgba(34,197,94,.12);}
 .char-limit-badge{font-size:10px;padding:1px 5px;border-radius:5px;font-weight:600;}
 .char-limit-ok{background:rgba(34,197,94,.12);color:#15803d;}
 .char-limit-over{background:rgba(239,68,68,.12);color:#b91c1c;}
@@ -1104,6 +1107,7 @@ body {
       <div class="card-h">
         <div><h2>Nome gerado</h2><p>Clique em qualquer segmento para copiar aquele valor</p></div>
         <div style="display:flex;gap:6px">
+          <button class="btn secondary btn-sm" onclick="incrementBuilderSuffix()" title="Incrementar sufixo numérico (+1 no final do nome)">+1</button>
           <button class="btn secondary btn-sm" onclick="downloadBuilderName()" title="Baixar nome gerado como .txt">⬇ .txt</button>
           <button class="btn secondary btn-sm" id="copyJsonBtn" onclick="copyBuilderJSON()" title="Copiar como JSON {segmento: valor}">{ } JSON</button>
           <button class="btn secondary btn-sm" onclick="sendBuilderToValidator()" title="Enviar nome gerado para o Validador">✔ Validar</button>
@@ -2146,6 +2150,7 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Ordenar por uso" onclick="sortTermsByUse()" style="font-size:11px;padding:4px 8px">↕ Uso</button>
       <button class="btn secondary btn-sm" title="Mostrar só favoritos" onclick="filterTermsBy('fav')" id="dictFilterFav" style="font-size:11px;padding:4px 8px">⭐</button>
       <button class="btn secondary btn-sm" title="Ordenar por mais usados" onclick="filterTermsBy('uses')" id="dictFilterUses" style="font-size:11px;padding:4px 8px">🔥 Uso</button>
+      <button class="btn secondary btn-sm" title="Ordenar por mais recentes" onclick="sortTermsByRecent()" style="font-size:11px;padding:4px 8px">🕒 Recente</button>
       <button class="btn secondary btn-sm" title="Copiar todos os termos deste segmento (um por linha)" onclick="copySegmentTerms()" style="font-size:11px;padding:4px 8px">📋 Copiar tudo</button>
       <button class="btn secondary btn-sm" title="Copiar termos como array JSON" onclick="copySegmentJSON()" style="font-size:11px;padding:4px 8px">{ } JSON</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
@@ -3144,6 +3149,7 @@ function validateName() {
   const icons={ok:'✅',similar:'⚠️',warn:'⚠️',err:'❌'};
   let html='';
   let okCount=0, errCount=0, warnCount=0;
+  const autoFixes=[]; // {segIdx, oldVal, newVal}
 
   segDefs.forEach((seg,i)=>{
     const part=parts[i];
@@ -3154,19 +3160,28 @@ function validateName() {
     const terms=c.dictionary[seg.id]||[];
     const result=validateValue(part,terms);
     if(result.status==='ok') okCount++; else if(result.status==='err') errCount++; else warnCount++;
-    html+=`<div class="val-seg ${result.status}"><span class="val-seg-icon">${icons[result.status]}</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(result.msg)}</span></div>`;
+    // Collect fixable similar issues
+    const fixable = result.status==='similar' && result.match;
+    if(fixable) autoFixes.push({segIdx:i, oldVal:part, newVal:result.match.value});
+    const fixBtn = fixable ? `<button class="val-fix-btn" title="Corrigir para: ${esc(result.match.value)}" onclick="applyValFix('${esc(result.match.value.replace(/'/g,"\\'"))}','${esc(part.replace(/'/g,"\\'"))}')">✓ ${esc(result.match.value)}</button>` : '';
+    html+=`<div class="val-seg ${result.status}"><span class="val-seg-icon">${icons[result.status]}</span><span class="val-seg-name">${esc(seg.label)}</span><span class="val-seg-value">${esc(part)}</span><span class="val-seg-msg">${esc(result.msg)}</span>${fixBtn}</div>`;
   });
 
   if(extra){ html+=`<div class="val-seg err"><span class="val-seg-icon">❌</span><span class="val-seg-name">Extra</span><span class="val-seg-value">${esc(extra)}</span><span class="val-seg-msg">Texto não esperado no nome</span></div>`; errCount++; }
 
   const total = okCount+errCount+warnCount;
   const escapedRaw = esc(raw.replace(/'/g,"\\'"));
+  // Build autocorrected version if there are fixable similars
+  let autoFixed = raw;
+  if(autoFixes.length) autoFixes.forEach(f=>{ autoFixed=autoFixed.replace(f.oldVal, f.newVal); });
+  const escapedFixed = esc(autoFixed.replace(/'/g,"\\'"));
   const scoreHtml = total ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
     <span class="val-score-badge ${errCount?'val-score-err':'val-score-ok'}">${errCount?`❌ ${errCount} erro(s)`:`✅ Tudo ok`}</span>
     ${warnCount?`<span class="val-score-badge" style="background:rgba(245,158,11,.12);color:#92400e">⚠️ ${warnCount} aviso(s)</span>`:''}
     <span style="font-size:11px;color:var(--faint)">${okCount}/${total} segmentos válidos</span>
     <button class="val-copy-name-btn" title="Copiar nome completo" onclick="navigator.clipboard.writeText('${escapedRaw}').then(()=>showToast('📋 Nome copiado!')).catch(()=>showToast('${escapedRaw}'))">📋 Copiar nome</button>
     <button class="val-copy-name-btn" title="Adicionar ao batch" onclick="sendToValBatch('${escapedRaw}')">→ Batch</button>
+    ${autoFixes.length?`<button class="val-copy-name-btn" title="Corrigir todos os avisos de capitalização/valor automaticamente" style="background:rgba(34,197,94,.12);color:#15803d" onclick="applyAllValFixes('${escapedFixed}')">🔧 Autocorrigir (${autoFixes.length})</button>`:''}
     ${!errCount?`<button class="val-copy-name-btn" title="Preencher o Builder com este nome" style="background:rgba(37,99,235,.1);color:var(--accent)" onclick="sendValidatorToBuilder('${escapedRaw}')">→ Builder</button>`:''}
   </div>` : '';
   resultsEl.innerHTML=scoreHtml+html;
@@ -4563,6 +4578,58 @@ function handleACKey(e, segId) {
   } else if(e.key==='Escape') {
     hideAC(segId);
   }
+}
+
+/* =============================================
+   DICIONÁRIO: SORT BY RECENT
+   ============================================= */
+function sortTermsByRecent() {
+  const c=active(); if(!c||!activeSeg) return;
+  c.dictionary[activeSeg].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  saveData(); renderDicionario(); showToast('Termos ordenados por data');
+}
+
+/* =============================================
+   VALIDADOR: AUTOCORRECT FIXES
+   ============================================= */
+function applyValFix(newVal, oldVal) {
+  const inp = document.getElementById('valInput'); if(!inp) return;
+  // Replace first occurrence of oldVal with newVal
+  inp.value = inp.value.replace(oldVal, newVal);
+  validateName();
+  showToast(`✓ Corrigido: ${oldVal} → ${newVal}`);
+}
+
+function applyAllValFixes(fixedName) {
+  const inp = document.getElementById('valInput'); if(!inp) return;
+  inp.value = fixedName;
+  validateName();
+  showToast('🔧 Todas as correções aplicadas');
+}
+
+/* =============================================
+   BUILDER: INCREMENT NUMERIC SUFFIX
+   ============================================= */
+function incrementBuilderSuffix() {
+  const c = active(); if(!c) return;
+  // Find the last filled segment
+  const segs = c.segments;
+  const lastFilledIdx = segs.reduce((last, s, i)=>builderVals[s.id]?i:last, -1);
+  if(lastFilledIdx === -1) { showToast('Preencha o builder primeiro'); return; }
+  const lastSeg = segs[lastFilledIdx];
+  const val = builderVals[lastSeg.id] || '';
+  // Try to increment trailing number
+  const match = val.match(/^(.*?)(\d+)$/);
+  if(!match) {
+    // No trailing number — append "2"
+    builderVals[lastSeg.id] = val + '2';
+  } else {
+    builderVals[lastSeg.id] = match[1] + (parseInt(match[2]) + 1);
+  }
+  const inp = document.getElementById(`bv-${lastSeg.id}`);
+  if(inp) inp.value = builderVals[lastSeg.id];
+  updatePreview();
+  showToast(`+1 → ${builderVals[lastSeg.id]}`);
 }
 
 /* =============================================
