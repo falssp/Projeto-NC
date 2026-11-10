@@ -741,6 +741,10 @@ body {
 .builder-templ-chip button{background:none;border:none;cursor:pointer;color:var(--faint);font-size:10px;padding:0;line-height:1;}
 .builder-templ-chip button:hover{color:var(--danger);}
 .builder-templ-save-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:2px 8px;font-size:11px;cursor:pointer;}
+.stat-tile{background:var(--surface2);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+.stat-num{font-size:22px;font-weight:800;color:var(--accent);line-height:1.1;}
+.stat-lbl{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;}
+.val-hist-ts{font-size:9px;color:var(--faint);margin-left:4px;}
 
 /* ==================== STRUCTURE TAGS ==================== */
 .struct-tag{display:inline-block;background:rgba(37,99,235,.12);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;margin-right:4px;cursor:pointer;}
@@ -913,6 +917,7 @@ body {
     </div>
     <div class="header-right">
   <button class="btn-qa" onclick="abrirAjuda()" style="margin-left:auto">❓ Como usar</button>
+  <button class="btn-icon" onclick="openStats()" title="Estatísticas">📊</button>
   <button class="btn-icon" onclick="openShortcuts()" title="Atalhos de teclado (?)">⌨️</button>
       <div class="global-search-wrap">
         <input class="global-search-input" id="globalSearchInput" type="search"
@@ -2891,8 +2896,8 @@ function addToValHistory(name) {
   let hist = [];
   try { hist = JSON.parse(localStorage.getItem(VAL_HIST_KEY) || '[]'); } catch {}
   hist = hist.filter(h => !(h.name === name && h.clientId === activeId));
-  hist.unshift({name, clientId: activeId});
-  if(hist.length > 10) hist.length = 10;
+  hist.unshift({name, clientId: activeId, ts: Date.now()});
+  if(hist.length > 20) hist.length = 20;
   try { localStorage.setItem(VAL_HIST_KEY, JSON.stringify(hist)); } catch {}
   renderValHistory();
 }
@@ -2908,9 +2913,11 @@ function renderValHistory() {
   try { hist = JSON.parse(localStorage.getItem(VAL_HIST_KEY) || '[]'); } catch {}
   const clientHist = hist.filter(h => h.clientId === activeId);
   if(!clientHist.length) { row.innerHTML=''; return; }
-  row.innerHTML = clientHist.map(h =>
-    `<button class="val-hist-chip" title="${esc(h.name)}" onclick="useHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name)}</button>`
-  ).join('') + `<button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>`;
+  row.innerHTML = clientHist.map(h => {
+    const tsStr = h.ts ? new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+    const dateStr = h.ts ? new Date(h.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+    return `<button class="val-hist-chip" title="${esc(h.name)} · ${dateStr} ${tsStr}" onclick="useHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name.length>24?h.name.slice(0,22)+'…':h.name)}${tsStr?`<span class='val-hist-ts'>${dateStr} ${tsStr}</span>`:''}</button>`;
+  }).join('') + `<button class="val-hist-clear" onclick="clearValHistory()">✕ limpar</button>`;
 }
 
 function useHistItem(name) {
@@ -3991,6 +3998,9 @@ document.addEventListener('keydown', e => {
     if(pm && pm.classList.contains('show')) { closePasteModal(); return; }
     if(mo && mo.classList.contains('show')) { closeModal(); return; }
     if(qa && qa.classList.contains('open')) { fecharAjuda(); return; }
+    // Close stats overlay
+    const st = document.getElementById('statsOverlay');
+    if(st && st.classList.contains('open')) { closeStats(); return; }
     // Close shortcuts overlay
     const sc = document.getElementById('shortcutsOverlay');
     if(sc && sc.classList.contains('open')) { closeShortcuts(); return; }
@@ -4018,6 +4028,62 @@ document.addEventListener('keydown', e => {
    SHORTCUTS OVERLAY
    ============================================= */
 function clearBuilderVals() { clearBuilder(); }
+/* =============================================
+   STATS DASHBOARD
+   ============================================= */
+function openStats() {
+  const overlay = document.getElementById('statsOverlay');
+  const body = document.getElementById('statsBody');
+  if(!overlay||!body) return;
+
+  let totalClients = clients.length;
+  let totalTerms = 0;
+  let totalStructures = 0;
+  let totalSegs = 0;
+  let topTerms = [];
+
+  clients.forEach(c => {
+    totalStructures += (c.structures||[]).length;
+    totalSegs += (c.segments||[]).length;
+    Object.entries(c.dictionary||{}).forEach(([segId, terms]) => {
+      totalTerms += terms.length;
+      terms.forEach(t => {
+        if(t.uses) topTerms.push({client:c.name, seg: (c.segments.find(s=>s.id===segId)||{}).label||segId, value:t.value, uses:t.uses});
+      });
+    });
+  });
+  topTerms.sort((a,b)=>b.uses-a.uses);
+  topTerms = topTerms.slice(0,10);
+
+  const topHtml = topTerms.length ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px">🔥 Termos mais usados no builder</div>
+      ${topTerms.map(t=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--brd);font-size:12px;">
+          <span style="font-weight:600;flex:1">${esc(t.value)}</span>
+          <span style="color:var(--faint);font-size:10px">${esc(t.client)} · ${esc(t.seg)}</span>
+          <span style="background:var(--accent);color:#fff;border-radius:9px;padding:1px 7px;font-size:10px">${t.uses}×</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '<p style="color:var(--faint);font-size:12px;margin-top:8px">Nenhum termo foi usado no builder ainda.</p>';
+
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+      <div class="stat-tile"><span class="stat-num">${totalClients}</span><span class="stat-lbl">Clientes</span></div>
+      <div class="stat-tile"><span class="stat-num">${totalTerms}</span><span class="stat-lbl">Termos</span></div>
+      <div class="stat-tile"><span class="stat-num">${totalSegs}</span><span class="stat-lbl">Segmentos</span></div>
+      <div class="stat-tile"><span class="stat-num">${totalStructures}</span><span class="stat-lbl">Estruturas</span></div>
+    </div>
+    ${topHtml}
+  `;
+  overlay.classList.add('open');
+}
+function closeStats(e) {
+  if(!e || e.target===document.getElementById('statsOverlay'))
+    document.getElementById('statsOverlay').classList.remove('open');
+}
+
 function openShortcuts() {
   document.getElementById('shortcutsOverlay').classList.add('open');
 }
@@ -4168,6 +4234,16 @@ function handleACKey(e, segId) {
         💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
       </div>
     </div>
+  </div>
+</div>
+<!-- Stats Modal -->
+<div class="shortcuts-overlay" id="statsOverlay" onclick="closeStats(event)">
+  <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:480px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3>📊 Estatísticas do sistema</h3>
+      <button onclick="closeStats()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--faint)">✕</button>
+    </div>
+    <div id="statsBody"></div>
   </div>
 </div>
 </body>
