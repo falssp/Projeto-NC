@@ -335,16 +335,11 @@
 </div><!-- /formBody -->
 
 <script>
-  // ── Mapeamento de colunas por plataforma (índice 0-based) ──
-  var ADP_PLATAFORMAS = {
-    'Google':                        {brand:5,  campGlobal:7,  campLocal:32, extra:33},
-    'Programmatic':                  {brand:6,  campGlobal:8,  campLocal:31, extra:32},
-    'Youtube':                       {brand:6,  campGlobal:8,  campLocal:30, extra:31},
-    'Meta e Tiktok':                 {brand:5,  campGlobal:7,  campLocal:35, extra:36},
-    'Pinterest, Snapchat e Twitter': {brand:5,  campGlobal:7,  campLocal:32, extra:33},
-    'Flashtalking':                  {brand:6,  campGlobal:8,  campLocal:25, extra:26}
-  };
-  var ADP_DATA_START_ROW = 14; // row index 0-based (row 15 no Excel = index 14)
+  // Plataformas a ler (sem índices fixos — detecção dinâmica por header)
+  var ADP_PLATAFORMAS = [
+    'Google', 'Programmatic', 'Youtube',
+    'Meta e Tiktok', 'Pinterest, Snapchat e Twitter', 'Flashtalking'
+  ];
 
   var _abaAtiva = '';
   var _adpLinhas  = []; // linhas parseadas do ADP
@@ -448,18 +443,41 @@
     reader.readAsArrayBuffer(file);
   }
 
+  // Detecta os índices de coluna escaneando as linhas de header da aba
+  function _detectCols(data) {
+    for (var r = 0; r < Math.min(data.length, 25); r++) {
+      var row = data[r];
+      var map = {brand:-1, campGlobal:-1, campLocal:-1, extra:-1};
+      for (var c = 0; c < row.length; c++) {
+        var v = String(row[c] || '').toLowerCase().replace(/\s+/g,'').replace(/\n/g,'');
+        if (v === 'brandname')                                            map.brand      = c;
+        if (v === 'campaignlocal')                                        map.campLocal  = c;
+        if (v === 'midiacampaignlocal-extra')                             map.extra      = c;
+        if (v.indexOf('campaignname') === 0 && v.indexOf('requires') >= 0 && map.campGlobal === -1)
+                                                                          map.campGlobal = c;
+      }
+      if (map.brand >= 0 && map.campLocal >= 0 && map.extra >= 0) {
+        return {cols: map, dataStart: r + 1}; // linha seguinte ao header
+      }
+    }
+    return null;
+  }
+
   function _parseADP(wb) {
     var linhas = [];
-    var vistas  = {};
-    Object.keys(ADP_PLATAFORMAS).forEach(function(nome) {
+    var vistas = {};
+    ADP_PLATAFORMAS.forEach(function(nome) {
       var ws = wb.Sheets[nome];
       if (!ws) return;
-      var cols = ADP_PLATAFORMAS[nome];
       var data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-      for (var r = ADP_DATA_START_ROW; r < data.length; r++) {
-        var row = data[r];
+      var det  = _detectCols(data);
+      if (!det) return; // aba sem header reconhecível
+      var cols      = det.cols;
+      var dataStart = det.dataStart;
+      for (var r = dataStart; r < data.length; r++) {
+        var row        = data[r];
         var brand      = String(row[cols.brand]      || '').trim();
-        var campGlobal = String(row[cols.campGlobal] || '').trim();
+        var campGlobal = cols.campGlobal >= 0 ? String(row[cols.campGlobal] || '').trim() : '';
         var campLocal  = String(row[cols.campLocal]  || '').trim();
         var extra      = String(row[cols.extra]      || '').trim();
         // Pula linhas sem brand ou campLocal
