@@ -135,8 +135,51 @@
     padding: 12px; background: var(--ul-light); border: 1px solid var(--ul-border);
     border-radius: 4px; color: var(--ul-muted); font-size: 12px; display: none;
   }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 2px solid var(--ul-border); flex-shrink: 0; }
+  .tab-btn {
+    padding: 6px 16px; font-size: 13px; font-weight: bold; cursor: pointer;
+    border: none; background: none; color: var(--ul-muted);
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--ul-navy); border-bottom-color: var(--ul-navy); }
+  .tab-panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+  .tab-panel.active { display: flex; }
+
+  /* ── ADP: arquivo ── */
+  .adp-upload {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-shrink: 0;
+  }
+  .btn-file {
+    padding: 6px 14px; font-size: 13px; font-weight: bold; cursor: pointer;
+    background: var(--ul-light); color: var(--ul-navy);
+    border: 1px solid var(--ul-border); border-radius: 4px;
+  }
+  .adp-filename { font-size: 12px; color: var(--ul-muted); }
+
+  /* ── ADP: tabela de linhas ── */
+  .adp-table-wrap { flex: 1; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--ul-border); border-radius: 4px; }
+  .adp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .adp-table th {
+    background: var(--ul-light); color: var(--ul-navy); font-weight: bold;
+    padding: 5px 7px; text-align: left; position: sticky; top: 0; z-index: 1;
+    border-bottom: 1px solid var(--ul-border);
+  }
+  .adp-table td { padding: 5px 7px; border-bottom: 1px solid #E8EEF8; vertical-align: top; }
+  .adp-table tr:last-child td { border-bottom: none; }
+  .adp-table tr:hover td { background: #F4F8FF; }
+  .adp-table td:first-child { width: 28px; text-align: center; }
+  .adp-empty { padding: 20px; text-align: center; color: var(--ul-muted); font-size: 13px; }
+  .adp-sel-bar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    font-size: 12px; color: var(--ul-muted); flex-shrink: 0;
+  }
+  .adp-sel-bar a { color: var(--ul-blue); cursor: pointer; text-decoration: underline; }
+  .adp-shared { flex-shrink: 0; }
 </style>
 </head>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <body>
 
 <div class="header">
@@ -152,102 +195,184 @@
 
 <div id="formBody">
 
-  <!-- ── Seção fixa: dados da campanha ── -->
-  <div class="section-fixed">
-
-    <div class="qty-row">
-      <div>
-        <label style="margin-bottom:4px">QTD DE LINHAS</label>
-        <input type="number" id="qty" min="1" max="20" value="1" oninput="atualizarD()">
-      </div>
-      <span class="hint" style="margin-top:20px">máx 20</span>
-    </div>
-
-    <div class="cols2">
-      <div class="row">
-        <label>B — Novo Campaign Local <span style="color:var(--ul-err)">*</span></label>
-        <input type="text" id="colB" placeholder="ex: NCL_2026_Q1">
-      </div>
-      <div class="row">
-        <label>C — DE/PARA Camp. Local <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
-        <input type="text" id="colC" placeholder="opcional">
-      </div>
-    </div>
-
-    <div class="cols2">
-      <div class="row">
-        <label>E — DE/PARA EXTRA <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
-        <input type="text" id="colE" placeholder="opcional">
-      </div>
-      <div class="row">
-        <label>K — Obs <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
-        <input type="text" id="colK" placeholder="opcional">
-      </div>
-    </div>
-
-    <div class="cols4">
-      <div class="row">
-        <label>F — Brand</label>
-        <select id="colF"><option value="">—</option></select>
-      </div>
-      <div class="row">
-        <label>G — Campaign</label>
-        <select id="colG"><option value="">—</option></select>
-      </div>
-      <div class="row">
-        <label>I — Responsável</label>
-        <select id="colI"><option value="">—</option></select>
-      </div>
-      <div class="row">
-        <label>J — Agência</label>
-        <select id="colJ"><option value="">—</option></select>
-      </div>
-    </div>
-
-  </div><!-- /section-fixed -->
-
-  <!-- ── Seção D: um campo por linha ── -->
-  <div class="section-d">
-    <div class="section-label">D — EXTRA <span style="font-weight:normal;text-transform:none;color:var(--ul-muted)">(uma por linha)</span></div>
-    <div id="dFields"></div>
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabManualBtn" onclick="trocarTab('manual')">Manual</button>
+    <button class="tab-btn"        id="tabAdpBtn"    onclick="trocarTab('adp')">Importar ADP</button>
   </div>
 
-  <!-- ── Rodapé ── -->
+  <!-- ══ PAINEL MANUAL ══ -->
+  <div class="tab-panel active" id="panelManual">
+
+    <div class="section-fixed">
+      <div class="qty-row">
+        <div>
+          <label style="margin-bottom:4px">QTD DE LINHAS</label>
+          <input type="number" id="qty" min="1" max="20" value="1" oninput="atualizarD()">
+        </div>
+        <span class="hint" style="margin-top:20px">máx 20</span>
+      </div>
+
+      <div class="cols2">
+        <div class="row">
+          <label>B — Novo Campaign Local <span style="color:var(--ul-err)">*</span></label>
+          <input type="text" id="colB" placeholder="ex: NCL_2026_Q1">
+        </div>
+        <div class="row">
+          <label>C — DE/PARA Camp. Local <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+          <input type="text" id="colC" placeholder="opcional">
+        </div>
+      </div>
+
+      <div class="cols2">
+        <div class="row">
+          <label>E — DE/PARA EXTRA <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+          <input type="text" id="colE" placeholder="opcional">
+        </div>
+        <div class="row">
+          <label>K — Obs <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+          <input type="text" id="colK" placeholder="opcional">
+        </div>
+      </div>
+
+      <div class="cols4">
+        <div class="row">
+          <label>F — Brand</label>
+          <select id="colF"><option value="">—</option></select>
+        </div>
+        <div class="row">
+          <label>G — Campaign</label>
+          <select id="colG"><option value="">—</option></select>
+        </div>
+        <div class="row">
+          <label>I — Responsável</label>
+          <select id="colI"><option value="">—</option></select>
+        </div>
+        <div class="row">
+          <label>J — Agência</label>
+          <select id="colJ"><option value="">—</option></select>
+        </div>
+      </div>
+    </div><!-- /section-fixed -->
+
+    <div class="section-d">
+      <div class="section-label">D — EXTRA <span style="font-weight:normal;text-transform:none;color:var(--ul-muted)">(uma por linha)</span></div>
+      <div id="dFields"></div>
+    </div>
+
+  </div><!-- /panelManual -->
+
+  <!-- ══ PAINEL ADP ══ -->
+  <div class="tab-panel" id="panelAdp">
+
+    <!-- Seleção de arquivo -->
+    <div class="adp-upload">
+      <input type="file" id="adpFile" accept=".xlsx" style="display:none" onchange="carregarADP(this)">
+      <button class="btn-file" onclick="document.getElementById('adpFile').click()">📂 Selecionar ADP (.xlsx)</button>
+      <span class="adp-filename" id="adpFilename">nenhum arquivo selecionado</span>
+    </div>
+
+    <!-- Barra de seleção -->
+    <div class="adp-sel-bar" id="adpSelBar" style="display:none">
+      <span id="adpSelCount">0 selecionadas</span>
+      <a onclick="adpToggleAll(true)">Selecionar tudo</a>
+      <a onclick="adpToggleAll(false)">Limpar</a>
+    </div>
+
+    <!-- Tabela de linhas -->
+    <div class="adp-table-wrap" id="adpTableWrap">
+      <div class="adp-empty" id="adpEmpty">Selecione um arquivo ADP (.xlsx) para carregar as campanhas.</div>
+      <table class="adp-table" id="adpTable" style="display:none">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="adpChkAll" onchange="adpToggleAll(this.checked)"></th>
+            <th>Brand</th>
+            <th>Campaign Global</th>
+            <th>Campaign Local</th>
+            <th>Extra</th>
+          </tr>
+        </thead>
+        <tbody id="adpTbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Campos compartilhados do lote -->
+    <div class="adp-shared">
+      <div class="cols2" style="margin-bottom:8px">
+        <div class="row">
+          <label>I — Responsável</label>
+          <select id="adpColI"><option value="">—</option></select>
+        </div>
+        <div class="row">
+          <label>J — Agência</label>
+          <select id="adpColJ"><option value="">—</option></select>
+        </div>
+      </div>
+      <div class="cols2" style="margin-bottom:0">
+        <div class="row">
+          <label>C — DE/PARA Camp. Local <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+          <input type="text" id="adpColC" placeholder="opcional">
+        </div>
+        <div class="row">
+          <label>K — Obs <span style="font-weight:normal;text-transform:none">(opcional)</span></label>
+          <input type="text" id="adpColK" placeholder="opcional">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panelAdp -->
+
+  <!-- ── Rodapé (compartilhado) ── -->
   <div class="footer">
     <div id="status"></div>
     <div class="btn-row">
       <button class="btn-cancel" onclick="cancelar()">Cancelar</button>
-      <button class="btn-ok" id="btnOk" onclick="enviar()" disabled>Inserir</button>
+      <button class="btn-ok" id="btnOk"    onclick="enviar()"    disabled>Inserir</button>
+      <button class="btn-ok" id="btnOkAdp" onclick="enviarADP()" disabled style="display:none">Inserir 0 linhas</button>
     </div>
   </div>
 
 </div><!-- /formBody -->
 
 <script>
-  // Guard: fora do GAS
+  // ── Mapeamento de colunas por plataforma (índice 0-based) ──
+  var ADP_PLATAFORMAS = {
+    'Google':                        {brand:5,  campGlobal:7,  campLocal:32, extra:33},
+    'Programmatic':                  {brand:6,  campGlobal:8,  campLocal:31, extra:32},
+    'Youtube':                       {brand:6,  campGlobal:8,  campLocal:30, extra:31},
+    'Meta e Tiktok':                 {brand:5,  campGlobal:7,  campLocal:35, extra:36},
+    'Pinterest, Snapchat e Twitter': {brand:5,  campGlobal:7,  campLocal:32, extra:33},
+    'Flashtalking':                  {brand:6,  campGlobal:8,  campLocal:25, extra:26}
+  };
+  var ADP_DATA_START_ROW = 14; // row index 0-based (row 15 no Excel = index 14)
+
+  var _abaAtiva = '';
+  var _adpLinhas = []; // linhas parseadas do ADP
+
+  // ── Guard: fora do GAS ──
   if (typeof google === 'undefined' || !google.script) {
     document.getElementById('offlineMsg').style.display = 'block';
     document.getElementById('formBody').style.display   = 'none';
   } else {
     google.script.run
       .withSuccessHandler(function(data) {
-        _preencher('colF', data.brands);
-        _preencher('colG', data.camps);
-        _preencher('colI', data.resps);
-        _preencher('colJ', data.agencias);
+        _preencher('colF',   data.brands);
+        _preencher('colG',   data.camps);
+        _preencher('colI',   data.resps);
+        _preencher('colJ',   data.agencias);
+        _preencher('adpColI', data.resps);
+        _preencher('adpColJ', data.agencias);
 
-        // Auto-seleciona responsável pelo e-mail de login
         if (data.currentResp) {
-          var selI = document.getElementById('colI');
-          for (var i = 0; i < selI.options.length; i++) {
-            if (selI.options[i].value === data.currentResp) {
-              selI.selectedIndex = i; break;
+          ['colI','adpColI'].forEach(function(id) {
+            var sel = document.getElementById(id);
+            for (var i = 0; i < sel.options.length; i++) {
+              if (sel.options[i].value === data.currentResp) { sel.selectedIndex = i; break; }
             }
-          }
+          });
         }
-
-        // Exibe aba destino no cabeçalho
         if (data.abaAtiva) {
+          _abaAtiva = data.abaAtiva;
           document.getElementById('abaAtivaNome').textContent = data.abaAtiva;
           document.getElementById('abaBadge').style.display = 'inline';
         }
@@ -258,53 +383,212 @@
       .getDropdownData();
   }
 
-  // ── Validação B obrigatório ──
-  // Botão começa disabled (ver HTML) e só habilita quando B não estiver vazio.
+  // ── Tabs ──
+  function trocarTab(tab) {
+    document.getElementById('panelManual').classList.toggle('active', tab === 'manual');
+    document.getElementById('panelAdp').classList.toggle('active',    tab === 'adp');
+    document.getElementById('tabManualBtn').classList.toggle('active', tab === 'manual');
+    document.getElementById('tabAdpBtn').classList.toggle('active',    tab === 'adp');
+    document.getElementById('btnOk').style.display    = tab === 'manual' ? '' : 'none';
+    document.getElementById('btnOkAdp').style.display = tab === 'adp'    ? '' : 'none';
+  }
+
+  // ── Validação B (aba Manual) ──
   document.getElementById('colB').addEventListener('input', function() {
     var vazio = this.value.trim() === '';
     document.getElementById('btnOk').disabled = vazio;
     this.classList.toggle('vazio', vazio);
   });
 
-  // Gera os campos D dinamicamente
+  // ── Campos D dinâmicos (aba Manual) ──
   function atualizarD() {
     var qty = parseInt(document.getElementById('qty').value, 10);
     if (isNaN(qty) || qty < 1) qty = 1;
     if (qty > 20) qty = 20;
     var container = document.getElementById('dFields');
     var existentes = [];
-    container.querySelectorAll('input').forEach(function(inp) {
-      existentes.push(inp.value);
-    });
+    container.querySelectorAll('input').forEach(function(inp) { existentes.push(inp.value); });
     container.innerHTML = '';
     for (var i = 0; i < qty; i++) {
-      var row = document.createElement('div');
-      row.className = 'd-row';
-      var num = document.createElement('span');
-      num.className = 'd-num';
+      var row = document.createElement('div'); row.className = 'd-row';
+      var num = document.createElement('span'); num.className = 'd-num';
       num.textContent = qty === 1 ? 'D — EXTRA' : 'Linha ' + (i + 1) + ':';
       var inp = document.createElement('input');
-      inp.type = 'text';
-      inp.className = 'd-input';
-      inp.id = 'd_' + i;
+      inp.type = 'text'; inp.className = 'd-input'; inp.id = 'd_' + i;
       inp.placeholder = qty === 1 ? 'ex: live-0510' : 'ex: live-0' + (i + 1) + '10';
       inp.value = existentes[i] || '';
-      row.appendChild(num);
-      row.appendChild(inp);
-      container.appendChild(row);
+      row.appendChild(num); row.appendChild(inp); container.appendChild(row);
     }
   }
-
-  // Inicializa com 1 campo D
   atualizarD();
 
+  // ── Carrega ADP ──
+  function carregarADP(input) {
+    var file = input.files[0];
+    if (!file) return;
+    document.getElementById('adpFilename').textContent = file.name;
+    _status('Lendo arquivo…');
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var wb = XLSX.read(e.target.result, {type:'array'});
+        _adpLinhas = _parseADP(wb);
+        _renderTabela(_adpLinhas);
+        _atualizarBtnAdp();
+        _status('');
+      } catch(err) {
+        _status('Erro ao ler arquivo: ' + err.message, 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function _parseADP(wb) {
+    var linhas = [];
+    var vistas  = {};
+    Object.keys(ADP_PLATAFORMAS).forEach(function(nome) {
+      var ws = wb.Sheets[nome];
+      if (!ws) return;
+      var cols = ADP_PLATAFORMAS[nome];
+      var data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      for (var r = ADP_DATA_START_ROW; r < data.length; r++) {
+        var row = data[r];
+        var brand      = String(row[cols.brand]      || '').trim();
+        var campGlobal = String(row[cols.campGlobal] || '').trim();
+        var campLocal  = String(row[cols.campLocal]  || '').trim();
+        var extra      = String(row[cols.extra]      || '').trim();
+        // Pula linhas sem brand ou campLocal
+        if (!brand || !campLocal) continue;
+        // "na" ou vazio → extra em branco
+        if (!extra || extra.toLowerCase() === 'na') extra = '';
+        // Deduplicação
+        var chave = brand + '|' + campLocal + '|' + extra;
+        if (vistas[chave]) continue;
+        vistas[chave] = true;
+        linhas.push({colF: brand, colG: campGlobal, colB: campLocal, colD: extra});
+      }
+    });
+    return linhas;
+  }
+
+  function _renderTabela(linhas) {
+    var tbody = document.getElementById('adpTbody');
+    var table = document.getElementById('adpTable');
+    var empty = document.getElementById('adpEmpty');
+    var selBar = document.getElementById('adpSelBar');
+    tbody.innerHTML = '';
+    if (!linhas.length) {
+      table.style.display = 'none';
+      empty.textContent   = 'Nenhuma linha encontrada no arquivo.';
+      empty.style.display = 'block';
+      selBar.style.display = 'none';
+      return;
+    }
+    table.style.display = '';
+    empty.style.display = 'none';
+    selBar.style.display = 'flex';
+    linhas.forEach(function(l, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><input type="checkbox" class="adp-chk" data-i="' + i + '" checked onchange="_atualizarBtnAdp()"></td>' +
+        '<td>' + _esc(l.colF) + '</td>' +
+        '<td>' + _esc(l.colG) + '</td>' +
+        '<td>' + _esc(l.colB) + '</td>' +
+        '<td>' + (l.colD ? _esc(l.colD) : '<em style="color:var(--ul-muted)">—</em>') + '</td>';
+      tbody.appendChild(tr);
+    });
+    _atualizarBtnAdp();
+  }
+
+  function adpToggleAll(checked) {
+    document.querySelectorAll('.adp-chk').forEach(function(chk) { chk.checked = checked; });
+    document.getElementById('adpChkAll').checked = checked;
+    _atualizarBtnAdp();
+  }
+
+  function _atualizarBtnAdp() {
+    var selecionadas = document.querySelectorAll('.adp-chk:checked').length;
+    var btn = document.getElementById('btnOkAdp');
+    btn.disabled    = selecionadas === 0;
+    btn.textContent = 'Inserir ' + selecionadas + (selecionadas === 1 ? ' linha' : ' linhas');
+    document.getElementById('adpSelCount').textContent = selecionadas + ' selecionada' + (selecionadas === 1 ? '' : 's');
+  }
+
+  // ── Envio Manual ──
+  function enviar() {
+    var qty = parseInt(document.getElementById('qty').value, 10);
+    if (isNaN(qty) || qty < 1 || qty > 20) { _status('Qtd inválida (1–20).', 'error'); return; }
+    var colB = document.getElementById('colB').value.trim();
+    if (!colB) { _status('Campo B é obrigatório.', 'error'); document.getElementById('colB').focus(); return; }
+    var dExtras = [];
+    for (var i = 0; i < qty; i++) {
+      var inp = document.getElementById('d_' + i);
+      dExtras.push(inp ? inp.value.trim() : '');
+    }
+    var dados = {
+      qty: qty, colB: colB,
+      colC: document.getElementById('colC').value.trim(),
+      dExtras: dExtras,
+      colE: document.getElementById('colE').value.trim(),
+      colF: document.getElementById('colF').value,
+      colG: document.getElementById('colG').value,
+      colI: document.getElementById('colI').value,
+      colJ: document.getElementById('colJ').value,
+      colK: document.getElementById('colK').value.trim()
+    };
+    document.getElementById('btnOk').disabled = true;
+    _status('Inserindo…');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _status(res && res.msg ? res.msg : 'Linhas inseridas!', 'ok');
+        setTimeout(function(){ google.script.host.close(); }, 1400);
+      })
+      .withFailureHandler(function(e) {
+        _status('Erro: ' + e.message, 'error');
+        if (document.getElementById('colB').value.trim()) document.getElementById('btnOk').disabled = false;
+      })
+      .processarNovasLinhas(dados);
+  }
+
+  // ── Envio ADP ──
+  function enviarADP() {
+    var chks = document.querySelectorAll('.adp-chk:checked');
+    if (!chks.length) { _status('Nenhuma linha selecionada.', 'error'); return; }
+    var linhasSel = [];
+    chks.forEach(function(chk) {
+      var idx = parseInt(chk.getAttribute('data-i'), 10);
+      linhasSel.push(_adpLinhas[idx]);
+    });
+    var payload = {
+      linhas: linhasSel,
+      colC:   document.getElementById('adpColC').value.trim(),
+      colE:   '',
+      colI:   document.getElementById('adpColI').value,
+      colJ:   document.getElementById('adpColJ').value,
+      colK:   document.getElementById('adpColK').value.trim(),
+      aba:    _abaAtiva
+    };
+    document.getElementById('btnOkAdp').disabled = true;
+    _status('Inserindo ' + linhasSel.length + ' linha(s)…');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _status(res && res.msg ? res.msg : 'Linhas inseridas!', 'ok');
+        setTimeout(function(){ google.script.host.close(); }, 1400);
+      })
+      .withFailureHandler(function(e) {
+        _status('Erro: ' + e.message, 'error');
+        _atualizarBtnAdp();
+      })
+      .processarLinhasADP(payload);
+  }
+
+  // ── Utilitários ──
   function _preencher(id, lista) {
     var sel = document.getElementById(id);
     (lista || []).forEach(function(v) {
       if (!v) return;
       var opt = document.createElement('option');
-      opt.value = v; opt.textContent = v;
-      sel.appendChild(opt);
+      opt.value = v; opt.textContent = v; sel.appendChild(opt);
     });
   }
 
@@ -312,55 +596,13 @@
     if (typeof google !== 'undefined' && google.script) google.script.host.close();
   }
 
-  function enviar() {
-    var qty = parseInt(document.getElementById('qty').value, 10);
-    if (isNaN(qty) || qty < 1 || qty > 20) {
-      _status('Qtd inválida (1–20).', 'error'); return;
-    }
-    var colB = document.getElementById('colB').value.trim();
-    if (!colB) {
-      _status('Campo B é obrigatório.', 'error');
-      document.getElementById('colB').focus();
-      return;
-    }
-    var dExtras = [];
-    for (var i = 0; i < qty; i++) {
-      var inp = document.getElementById('d_' + i);
-      dExtras.push(inp ? inp.value.trim() : '');
-    }
-    var dados = {
-      qty:     qty,
-      colB:    colB,
-      colC:    document.getElementById('colC').value.trim(),
-      dExtras: dExtras,
-      colE:    document.getElementById('colE').value.trim(),
-      colF:    document.getElementById('colF').value,
-      colG:    document.getElementById('colG').value,
-      colI:    document.getElementById('colI').value,
-      colJ:    document.getElementById('colJ').value,
-      colK:    document.getElementById('colK').value.trim()
-    };
-    document.getElementById('btnOk').disabled = true;
-    _status('Inserindo…');
-    google.script.run
-      .withSuccessHandler(function(res) {
-        _status(res && res.msg ? res.msg : 'Linhas inseridas com sucesso!', 'ok');
-        setTimeout(function(){ google.script.host.close(); }, 1400);
-      })
-      .withFailureHandler(function(e) {
-        _status('Erro: ' + e.message, 'error');
-        // Reabilita só se B ainda tiver conteúdo
-        if (document.getElementById('colB').value.trim()) {
-          document.getElementById('btnOk').disabled = false;
-        }
-      })
-      .processarNovasLinhas(dados);
-  }
-
   function _status(msg, tipo) {
     var el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = tipo || '';
+    el.textContent = msg; el.className = tipo || '';
+  }
+
+  function _esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 </script>
 </body>

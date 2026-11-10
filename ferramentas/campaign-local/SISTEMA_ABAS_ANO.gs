@@ -653,6 +653,51 @@ function processarNovasLinhas(dados) {
   });
 }
 
+// --------------- SERVER: insere linhas do ADP ---------------
+// payload: { linhas:[{colB,colD,colF,colG},...], colC, colE, colI, colJ, colK, aba }
+// Extra "na" ou vazio já vem sanitizado como '' pelo dialog.
+
+function processarLinhasADP(payload) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const nomeAba = payload.aba || ss.getActiveSheet().getName();
+  const sheet = ss.getSheetByName(nomeAba) || ss.getActiveSheet();
+  if (!_isAbaAtiva(sheet.getName())) return { msg: 'Aba inválida.' };
+
+  const linhas = Array.isArray(payload.linhas) ? payload.linhas : [];
+  if (!linhas.length) return { msg: 'Nenhuma linha selecionada.' };
+
+  _comLock(function() {
+    const qtd  = linhas.length;
+    sheet.insertRows(PRIMEIRA_LINHA_DADOS, qtd);
+
+    const refs = _getRefSheets(ss);
+    const mapa = refs ? _buildCampMap(refs.campSheet) : {};
+    const hoje = _dataHoje();
+
+    const batch = linhas.map(function(l) {
+      const cnCode = l.colG ? _lookupCnCode(mapa, l.colG) : '';
+      return [
+        hoje,                   // A — data
+        l.colB    || '',        // B — Campaign Local
+        payload.colC || '',     // C — DE/PARA (compartilhado)
+        l.colD    || '',        // D — Extra (por linha; "na" já veio como "")
+        payload.colE || '',     // E — DE/PARA EXTRA (compartilhado)
+        l.colF    || '',        // F — Brand
+        l.colG    || '',        // G — Campaign Global
+        cnCode,                 // H — CN CODE
+        payload.colI || '',     // I — Responsável (compartilhado)
+        payload.colJ || '',     // J — Agência (compartilhado)
+        payload.colK || ''      // K — Obs (compartilhado)
+      ];
+    });
+
+    sheet.getRange(PRIMEIRA_LINHA_DADOS, 1, qtd, 11).setValues(batch);
+    sheet.getRange(PRIMEIRA_LINHA_DADOS, 1, qtd, 1).setNumberFormat('@STRING@');
+    _corrigirDrops(sheet);
+    return { msg: qtd + (qtd === 1 ? ' linha inserida' : ' linhas inseridas') + ' do ADP!' };
+  });
+}
+
 // --------------- TRIGGER onEdit -----------------------------
 
 function onEdit(e) {
