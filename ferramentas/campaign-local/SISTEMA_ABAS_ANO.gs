@@ -596,13 +596,31 @@ function getDropdownData() {
   // Nome da aba destino (exibido no cabeçalho do dialog)
   const abaAtiva = ss.getActiveSheet().getName();
 
+  // Pares Brand+CampaignLocal já existentes na aba ativa (para deduplicação no dialog ADP)
+  let existentes = [];
+  if (_isAbaAtiva(abaAtiva)) {
+    const sheet   = ss.getActiveSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= PRIMEIRA_LINHA_DADOS) {
+      const numRows = lastRow - PRIMEIRA_LINHA_DADOS + 1;
+      // cols B (2) e F (6) → índices 1 e 5 (0-based no getValues)
+      const vals = sheet.getRange(PRIMEIRA_LINHA_DADOS, 1, numRows, 6).getValues();
+      vals.forEach(function(r) {
+        const brand = (r[5] || '').toString().trim();  // col F
+        const cl    = (r[1] || '').toString().trim();  // col B
+        if (brand && cl) existentes.push(brand + '|' + cl);
+      });
+    }
+  }
+
   return {
     brands:      _col(brandSheet, 1),
     camps:       _col(campSheet,  1),
     resps:       _col(brandSheet, 3),
     agencias:    _col(brandSheet, 5),
     currentResp: currentResp,
-    abaAtiva:    _isAbaAtiva(abaAtiva) ? abaAtiva : ''
+    abaAtiva:    _isAbaAtiva(abaAtiva) ? abaAtiva : '',
+    existentes:  existentes
   };
 }
 

@@ -347,7 +347,8 @@
   var ADP_DATA_START_ROW = 14; // row index 0-based (row 15 no Excel = index 14)
 
   var _abaAtiva = '';
-  var _adpLinhas = []; // linhas parseadas do ADP
+  var _adpLinhas  = []; // linhas parseadas do ADP
+  var _existentes = {}; // set de "Brand|CampaignLocal" já na planilha
 
   // ── Guard: fora do GAS ──
   if (typeof google === 'undefined' || !google.script) {
@@ -375,6 +376,10 @@
           _abaAtiva = data.abaAtiva;
           document.getElementById('abaAtivaNome').textContent = data.abaAtiva;
           document.getElementById('abaBadge').style.display = 'inline';
+        }
+        // Indexa pares existentes para deduplicação ADP
+        if (data.existentes) {
+          data.existentes.forEach(function(par) { _existentes[par] = true; });
         }
       })
       .withFailureHandler(function(e) {
@@ -459,8 +464,8 @@
         var extra      = String(row[cols.extra]      || '').trim();
         // Pula linhas sem brand ou campLocal
         if (!brand || !campLocal) continue;
-        // "na" ou vazio → extra em branco
-        if (!extra || extra.toLowerCase() === 'na') extra = '';
+        // Pula linhas sem Extra real (mesmo comportamento do Extrator)
+        if (!extra || extra.toLowerCase() === 'na') continue;
         // Deduplicação
         var chave = brand + '|' + campLocal + '|' + extra;
         if (vistas[chave]) continue;
@@ -488,13 +493,17 @@
     empty.style.display = 'none';
     selBar.style.display = 'flex';
     linhas.forEach(function(l, i) {
+      var existe = !!_existentes[l.colF + '|' + l.colB];
       var tr = document.createElement('tr');
+      if (existe) tr.style.cssText = 'opacity:.45;background:#F8F8F8';
       tr.innerHTML =
-        '<td><input type="checkbox" class="adp-chk" data-i="' + i + '" checked onchange="_atualizarBtnAdp()"></td>' +
+        '<td><input type="checkbox" class="adp-chk" data-i="' + i + '"' +
+          (existe ? ' disabled title="Já existe nesta aba"' : ' checked onchange="_atualizarBtnAdp()"') +
+        '></td>' +
         '<td>' + _esc(l.colF) + '</td>' +
         '<td>' + _esc(l.colG) + '</td>' +
         '<td>' + _esc(l.colB) + '</td>' +
-        '<td>' + (l.colD ? _esc(l.colD) : '<em style="color:var(--ul-muted)">—</em>') + '</td>';
+        '<td>' + _esc(l.colD) + (existe ? ' <span style="color:var(--ul-muted);font-size:11px">✓ já existe</span>' : '') + '</td>';
       tbody.appendChild(tr);
     });
     _atualizarBtnAdp();
