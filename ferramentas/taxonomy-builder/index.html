@@ -2509,6 +2509,8 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Copiar termos como array JSON" onclick="copySegmentJSON()" style="font-size:11px;padding:4px 8px">{ } JSON</button>
       <button class="btn secondary btn-sm" title="Importar termos em lote" onclick="openBatchImportModal()" style="font-size:11px;padding:4px 8px">+ Lote</button>
       <button class="btn secondary btn-sm" title="Importar termos via CSV (valor,label,descrição)" onclick="openCSVImportModal()" style="font-size:11px;padding:4px 8px">📥 CSV</button>
+      <button class="btn secondary btn-sm" title="Exportar segmento como CSV" onclick="exportSegCSV()" style="font-size:11px;padding:4px 8px">⬇ CSV seg</button>
+      <button class="btn secondary btn-sm" title="Adicionar vários termos de uma vez (separados por vírgula)" onclick="openMultiAddModal()" style="font-size:11px;padding:4px 8px">⚡ Multi-add</button>
       <button class="btn secondary btn-sm" title="Detectar e mesclar termos com valor duplicado neste segmento" onclick="mergeDuplicateTerms()" style="font-size:11px;padding:4px 8px">🔀 Mesclar dupl.</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
     </div>
@@ -2982,6 +2984,68 @@ function openKbOverlay() {
 function closeKbOverlay() {
   const o=document.getElementById('kbOverlay'); if(!o) return;
   o.style.display='none';
+}
+
+/* BATCH 24: Export segment as CSV */
+function exportSegCSV() {
+  const c=active(); if(!c||!activeSeg) return;
+  const seg=c.segments.find(s=>s.id===activeSeg); if(!seg) return;
+  const terms=c.dictionary[activeSeg]||[];
+  if(!terms.length){ showToast('Segmento vazio'); return; }
+  const rows=[['valor','label','descricao','favorito','usos','tag'],...terms.map(t=>[t.value,t.label||'',t.desc||'',t.fav?'sim':'nao',t.uses||0,t.tag||''])];
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;
+  a.download=`${c.id}_${activeSeg}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`⬇ ${terms.length} termos exportados`);
+}
+
+/* BATCH 24: Quick multi-add (comma-separated) */
+function openMultiAddModal() {
+  let el=document.getElementById('multiAddModal');
+  if(el) { el.style.display='flex'; document.getElementById('multiAddText')?.focus(); return; }
+  el=document.createElement('div');
+  el.id='multiAddModal';
+  el.className='batch-import-modal';
+  el.style.display='flex';
+  el.onclick=e=>{if(e.target===el)closeMultiAddModal();};
+  el.innerHTML=`<div class="modal-box" style="max-width:460px">
+    <h3>⚡ Adição rápida de termos</h3>
+    <p style="font-size:12px;color:var(--faint);margin-bottom:10px">Digite múltiplos valores separados por vírgula ou quebra de linha. Labels serão geradas automaticamente. Você pode editar depois.</p>
+    <textarea id="multiAddText" class="batch-import-textarea" style="min-height:100px" placeholder="dove, axe, rexona, lux&#10;ou um por linha"></textarea>
+    <div id="multiAddPreview" style="font-size:11px;color:var(--faint);margin:6px 0 0"></div>
+    <div class="batch-import-actions" style="margin-top:12px">
+      <button class="btn secondary" onclick="closeMultiAddModal()">Cancelar</button>
+      <button class="btn primary" onclick="confirmMultiAdd()">Adicionar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  document.getElementById('multiAddText')?.addEventListener('input',function(){
+    const vals=this.value.split(/[,\n]/).map(v=>v.trim()).filter(Boolean);
+    document.getElementById('multiAddPreview').textContent=vals.length?`${vals.length} termo(s) detectado(s)`:'';
+  });
+}
+function closeMultiAddModal() { const el=document.getElementById('multiAddModal'); if(el) el.style.display='none'; }
+function confirmMultiAdd() {
+  const c=active(); if(!c||!activeSeg){ showToast('Selecione um segmento'); return; }
+  const raw=document.getElementById('multiAddText')?.value||'';
+  const vals=raw.split(/[,\n]/).map(v=>v.trim()).filter(Boolean);
+  if(!vals.length){ showToast('Nenhum valor encontrado'); return; }
+  if(!c.dictionary[activeSeg]) c.dictionary[activeSeg]=[];
+  let added=0, skipped=0;
+  vals.forEach(v=>{
+    const slug=v.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-_]/g,'');
+    if(!slug) return;
+    if(c.dictionary[activeSeg].find(t=>t.value===slug)){ skipped++; return; }
+    const label=v.charAt(0).toUpperCase()+v.slice(1);
+    c.dictionary[activeSeg].push({value:slug,label,createdAt:Date.now()});
+    added++;
+  });
+  saveData(); renderDicionario(); closeMultiAddModal();
+  showToast(`⚡ ${added} adicionado(s)${skipped?`, ${skipped} duplicado(s) ignorado(s)`:''}`);
+  document.getElementById('multiAddText').value='';
 }
 
 /* BATCH 20: Builder history search */
@@ -5055,6 +5119,8 @@ document.addEventListener('keydown', e => {
     if(td && td.style.display!=='none') { closeTermDetailModal(); return; }
     if(kb && kb.style.display!=='none') { closeKbOverlay(); return; }
     if(fr && fr.style.display!=='none') { closeFindReplaceModal(); return; }
+    const ma = document.getElementById('multiAddModal');
+    if(ma && ma.style.display!=='none') { closeMultiAddModal(); return; }
     if(ij && ij.style.display!=='none') { closeImportJsonModal(); return; }
     if(pm && pm.classList.contains('show')) { closePasteModal(); return; }
     if(mo && mo.classList.contains('show')) { closeModal(); return; }
