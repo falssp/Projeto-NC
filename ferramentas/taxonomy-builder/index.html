@@ -638,6 +638,7 @@ body {
 
 /* ==================== DICT SEARCH ==================== */
 .dict-search-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+#dictCrossResults{background:var(--surface2);border:1px solid var(--brd);border-radius:8px;max-height:200px;overflow-y:auto;margin-top:4px;}
 .dict-search-input{flex:1;padding:7px 12px;border:1px solid var(--input-border);border-radius:8px;
   font-size:13px;background:var(--input-bg);color:var(--fg);}
 .dict-search-input:focus{outline:none;border-color:var(--accent);}
@@ -725,6 +726,21 @@ body {
 
 /* ==================== CLIENT LAST MODIFIED ==================== */
 .client-card-modified{font-size:10px;color:var(--faint);margin-top:4px;}
+.client-card-notes{font-size:10px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default;}
+.cross-result-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--brd);font-size:12px;}
+.cross-result-row:last-child{border-bottom:none;}
+.cross-seg-badge{background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;font-size:10px;white-space:nowrap;}
+.cross-term-val{font-weight:600;color:var(--fg);}
+.cross-term-label{color:var(--faint);}
+.cross-term-desc{color:var(--faint);font-style:italic;font-size:11px;}
+.builder-templ-row{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px 0;border-top:1px solid var(--brd);}
+.builder-templ-label{font-size:12px;color:var(--faint);}
+.builder-templ-chip{display:inline-flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--brd);border-radius:12px;padding:2px 6px;font-size:11px;}
+.builder-templ-chip span{cursor:pointer;color:var(--fg);}
+.builder-templ-chip span:hover{color:var(--accent);}
+.builder-templ-chip button{background:none;border:none;cursor:pointer;color:var(--faint);font-size:10px;padding:0;line-height:1;}
+.builder-templ-chip button:hover{color:var(--danger);}
+.builder-templ-save-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:2px 8px;font-size:11px;cursor:pointer;}
 
 /* ==================== STRUCTURE TAGS ==================== */
 .struct-tag{display:inline-block;background:rgba(37,99,235,.12);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;margin-right:4px;cursor:pointer;}
@@ -939,6 +955,11 @@ body {
           <input type="file" id="importClientCSVInput" accept=".csv" style="display:none" onchange="importClientFromCSV(this)">
         </div>
       </div>
+      <div style="padding:0 0 8px">
+        <input class="dict-search-input" id="clientFilter" type="search" placeholder="🔍 Filtrar clientes…"
+          oninput="filterClients(this.value)" autocomplete="off"
+          style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--fg);width:min(260px,100%)">
+      </div>
       <div id="clientGrid" class="client-grid"></div>
     </div>
   </div>
@@ -960,6 +981,13 @@ body {
           <button class="btn secondary btn-sm" onclick="exportAllJSON()" title="Exportar TODOS os clientes num único arquivo">⬇ Backup</button>
         </div>
       </div>
+      <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
+        <input class="dict-search-input" id="dictCrossSearch" type="search" placeholder="🔍 Buscar em todos os segmentos…"
+          oninput="crossSearchDict(this.value)" autocomplete="off"
+          style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--fg);flex:1;max-width:300px">
+        <span id="dictCrossCount" style="font-size:11px;color:var(--faint)"></span>
+      </div>
+      <div id="dictCrossResults" style="display:none"></div>
       <div id="dictSegPills" class="pills"></div>
       <div id="dictTermArea"></div>
     </div>
@@ -1007,6 +1035,8 @@ body {
         </div>
         <div class="action-bar">
           <button class="btn secondary btn-sm" onclick="saveBuilderFavorite()" title="Salvar seleção atual como favorito">⭐ Salvar</button>
+          <button class="btn secondary btn-sm" onclick="openBuilderTemplates()" title="Templates de preenchimento">📋 Templates</button>
+          <button class="btn secondary btn-sm" onclick="fillBuilderRandom()" title="Preencher com termos aleatórios">🎲 Aleatório</button>
           <button class="btn secondary btn-sm" onclick="clearBuilder()">✕ Limpar</button>
         </div>
       </div>
@@ -1022,6 +1052,7 @@ body {
       <div class="sep-preview-row" id="sepPreviewRow"></div>
       <div class="builder-hist-row" id="builderHistRow"></div>
       <div class="builder-favs-row" id="builderFavsRow"></div>
+      <div class="builder-hist-row" id="builderTemplRow"></div>
     </div>
   </div>
 </div>
@@ -1486,6 +1517,7 @@ function renderClientes() {
     div.className = 'client-card'+(isAct?' active':'');
     div.draggable = true;
     div.dataset.clientId = c.id;
+    div.dataset.clientName = c.name.toLowerCase();
     div.onclick = () => { activeId=c.id; activeSeg=null; builderVals={}; saveData(); renderClientSelect(); renderClientes(); };
     div.innerHTML = `
       <div class="client-card-actions">
@@ -1514,11 +1546,14 @@ function renderClientes() {
         }).join('')}
       </div>
       ${c.lastModified?`<div class="client-card-modified">✏ ${new Date(c.lastModified).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}
+      ${c.notes?`<div class="client-card-notes" title="${esc(c.notes)}">📝 ${esc(c.notes.length>60?c.notes.slice(0,57)+'…':c.notes)}</div>`:''}
     `;
     grid.appendChild(div);
   });
   renderClientSelect();
   initClientDragDrop();
+  // Re-apply filter if active
+  if(_clientFilterQ) filterClients(_clientFilterQ);
 }
 
 function togglePinClient(id) {
@@ -1669,6 +1704,10 @@ function renderModalBody(c) {
       <div class="seg-editor-list" id="segList">${segsHtml}</div>
       <button class="btn secondary btn-sm" onclick="addModalSeg()">+ Segmento</button>
     </div>
+    <div class="field-group">
+      <label>Notas internas (opcional)</label>
+      <textarea id="mNotes" rows="2" placeholder="Ex: cliente legado, separador antigo era |" style="width:100%;resize:vertical;font-size:12px;padding:6px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg)">${esc(c.notes||'')}</textarea>
+    </div>
   `;
 }
 
@@ -1738,12 +1777,13 @@ function saveClient() {
   const validSegs = modalSegs.filter(s=>s.label.trim());
   if(!validSegs.length) { showToast('Adicione pelo menos um segmento.'); return; }
 
+  const notes = document.getElementById('mNotes')?.value.trim()||'';
   if(modalMode==='add') {
     const id = slug(name);
     if(clients.find(c=>c.id===id)) { showToast('Já existe cliente com esse nome.'); return; }
     const dict = {};
     validSegs.forEach(s=>{ dict[s.id]=[]; });
-    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})})), dictionary:dict, structures:[]});
+    clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})})), dictionary:dict, structures:[], ...(notes?{notes}:{})});
     activeId = id;
   } else {
     const c = getClient(editingId); if(!c) return;
@@ -1752,6 +1792,7 @@ function saveClient() {
     c.name=name; c.separator=sep;
     c.segments=validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})}));
     c.dictionary=newDict;
+    if(notes) c.notes=notes; else delete c.notes;
   }
 
   saveData(); closeModal(); activeSeg=null; builderVals={};
@@ -1763,6 +1804,136 @@ function saveClient() {
 
 function showModal()  { document.getElementById('overlay').classList.add('show'); document.getElementById('modal').classList.add('show'); setTimeout(()=>document.getElementById('mName')?.focus(),80); }
 function closeModal() { document.getElementById('overlay').classList.remove('show'); document.getElementById('modal').classList.remove('show'); }
+
+/* =============================================
+   CLIENT FILTER
+   ============================================= */
+let _clientFilterQ = '';
+function filterClients(q) {
+  _clientFilterQ = (q||'').toLowerCase().trim();
+  const grid = document.getElementById('clientGrid');
+  if(!grid) return;
+  grid.querySelectorAll('.client-card').forEach(card => {
+    const name = (card.dataset.clientName||'').toLowerCase();
+    card.style.display = (!_clientFilterQ || name.includes(_clientFilterQ)) ? '' : 'none';
+  });
+}
+
+/* =============================================
+   CROSS-SEGMENT DICT SEARCH
+   ============================================= */
+function crossSearchDict(q) {
+  const c = active();
+  const resDiv = document.getElementById('dictCrossResults');
+  const countDiv = document.getElementById('dictCrossCount');
+  if(!resDiv || !countDiv) return;
+  q = (q||'').trim();
+  if(!q || !c) {
+    resDiv.style.display = 'none';
+    countDiv.textContent = '';
+    return;
+  }
+  const ql = q.toLowerCase();
+  let results = [];
+  c.segments.forEach(s => {
+    const terms = c.dictionary[s.id]||[];
+    terms.forEach(t => {
+      const v = (t.value||'').toLowerCase();
+      const l = (t.label||'').toLowerCase();
+      const d = (t.desc||'').toLowerCase();
+      if(v.includes(ql)||l.includes(ql)||d.includes(ql)) {
+        results.push({seg:s, term:t});
+      }
+    });
+  });
+  countDiv.textContent = results.length ? `${results.length} resultado(s)` : 'Nenhum resultado';
+  if(!results.length) { resDiv.style.display='none'; return; }
+  resDiv.innerHTML = results.map(r=>`
+    <div class="cross-result-row">
+      <span class="cross-seg-badge">${esc(r.seg.label)}</span>
+      <span class="cross-term-val">${esc(r.term.value)}</span>
+      ${r.term.label&&r.term.label!==r.term.value?`<span class="cross-term-label">${esc(r.term.label)}</span>`:''}
+      ${r.term.desc?`<span class="cross-term-desc">${esc(r.term.desc)}</span>`:''}
+    </div>
+  `).join('');
+  resDiv.style.display = 'block';
+}
+
+/* =============================================
+   BUILDER TEMPLATES
+   ============================================= */
+const BUILDER_TEMPLATES_KEY = 'taxo_builder_templates_v1';
+function getBuilderTemplates() {
+  try { return JSON.parse(localStorage.getItem(BUILDER_TEMPLATES_KEY)||'[]'); } catch(e) { return []; }
+}
+function saveBuilderTemplatesData(arr) {
+  try { localStorage.setItem(BUILDER_TEMPLATES_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+function saveBuilderTemplate() {
+  const c = active(); if(!c) return;
+  const name = prompt('Nome do template:','');
+  if(!name||!name.trim()) return;
+  const arr = getBuilderTemplates();
+  // keep only templates for this client
+  const clientTemplates = arr.filter(t=>t.clientId===c.id);
+  if(clientTemplates.length>=20) { showToast('Máximo 20 templates por cliente'); return; }
+  arr.push({id: Date.now()+'', clientId:c.id, name:name.trim(), vals:{...builderVals}});
+  saveBuilderTemplatesData(arr);
+  renderBuilderTemplRow();
+  showToast('✅ Template salvo: '+name.trim());
+}
+function deleteBuilderTemplate(id) {
+  const arr = getBuilderTemplates().filter(t=>t.id!==id);
+  saveBuilderTemplatesData(arr);
+  renderBuilderTemplRow();
+  showToast('Template removido');
+}
+function loadBuilderTemplate(id) {
+  const t = getBuilderTemplates().find(t=>t.id===id); if(!t) return;
+  builderVals = {...t.vals};
+  renderBuilder();
+  showToast('📋 Template carregado: '+t.name);
+}
+function renderBuilderTemplRow() {
+  const c = active();
+  const row = document.getElementById('builderTemplRow'); if(!row) return;
+  const arr = getBuilderTemplates().filter(t=>t.clientId===c?.id);
+  if(!c||!arr.length) { row.innerHTML=''; return; }
+  row.innerHTML = `
+    <div class="builder-templ-row">
+      <span class="builder-templ-label">📋</span>
+      ${arr.map(t=>`
+        <span class="builder-templ-chip">
+          <span onclick="loadBuilderTemplate('${t.id}')" title="Carregar template">${esc(t.name)}</span>
+          <button onclick="deleteBuilderTemplate('${t.id}')" title="Remover">✕</button>
+        </span>
+      `).join('')}
+      <button class="builder-templ-save-btn" onclick="saveBuilderTemplate()" title="Salvar estado atual como template">+ Salvar</button>
+    </div>
+  `;
+}
+function openBuilderTemplates() {
+  const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
+  saveBuilderTemplate();
+}
+
+/* =============================================
+   BUILDER FILL RANDOM
+   ============================================= */
+function fillBuilderRandom() {
+  const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
+  let filled = 0;
+  c.segments.forEach(s => {
+    const terms = c.dictionary[s.id]||[];
+    if(terms.length>0) {
+      const pick = terms[Math.floor(Math.random()*terms.length)];
+      builderVals[s.id] = pick.value;
+      filled++;
+    }
+  });
+  if(filled) { renderBuilder(); showToast(`🎲 ${filled} segmento(s) preenchido(s) aleatoriamente`); }
+  else showToast('Nenhum segmento tem termos no dicionário');
+}
 
 /* =============================================
    TAB: DICIONÁRIO
@@ -2435,6 +2606,7 @@ function renderBuilder() {
   updatePreview();
   renderBuilderHistory();
   renderBuilderFavs();
+  renderBuilderTemplRow();
   renderSepPreview();
   // Wire Tab key: Tab from last segment → copy button; Shift+Tab from first → nothing special
   const allSegIds = segsToRender.map(s=>`bv-${s.id}`);
