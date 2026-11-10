@@ -1072,6 +1072,7 @@ body {
           style="font-size:12px;padding:5px 10px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--fg);width:min(260px,100%)">
       </div>
       <div id="clientGrid" class="client-grid"></div>
+      <div id="globalStatsBar" style="display:none;padding:8px 0 0"></div>
     </div>
   </div>
 </div>
@@ -1103,6 +1104,7 @@ body {
       <div id="dictCrossResults" style="display:none"></div>
       <div id="dictDupWarn" class="dup-warn" style="display:none"></div>
       <div id="dictSegPills" class="pills"></div>
+      <div id="dictSegHealth" style="display:none"></div>
       <div id="dictTermArea"></div>
     </div>
   </div>
@@ -1130,6 +1132,8 @@ body {
         <button class="struct-sort-btn" onclick="sortStructures('label')">Label</button>
         <button class="struct-sort-btn" onclick="sortStructures('platform')">Plataforma</button>
         <button class="struct-sort-btn" onclick="sortStructures('level')">Nível</button>
+        <button class="struct-sort-btn" onclick="sortStructures('usedCount')">🔥 Mais usadas</button>
+        <button class="struct-sort-btn" onclick="sortStructures('lastUsed')">⚡ Recentes</button>
         <button class="struct-sort-btn active" id="sortBtnDefault" onclick="sortStructures('default')">Padrão</button>
       </div>
       <div id="structTagFilterRow" class="struct-tag-filter-row" style="display:none"></div>
@@ -1165,6 +1169,7 @@ body {
           <button class="btn secondary btn-sm" onclick="downloadBuilderName()" title="Baixar nome gerado como .txt">⬇ .txt</button>
           <button class="btn secondary btn-sm" id="copyJsonBtn" onclick="copyBuilderJSON()" title="Copiar como JSON {segmento: valor}">{ } JSON</button>
           <button class="btn secondary btn-sm" onclick="sendBuilderToValidator()" title="Enviar nome gerado para o Validador">✔ Validar</button>
+          <button class="btn secondary btn-sm" onclick="quickPinBuilderResult()" title="Salvar nome gerado nos favoritos do builder">⭐ Fav</button>
           <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
         </div>
       </div>
@@ -1802,6 +1807,25 @@ function renderClientes() {
   initClientDragDrop();
   // Re-apply filter if active
   if(_clientFilterQ) filterClients(_clientFilterQ);
+  // Global stats strip (batch 21)
+  renderGlobalStats();
+}
+
+/* BATCH 21: Global stats strip */
+function renderGlobalStats() {
+  const el = document.getElementById('globalStatsBar'); if(!el) return;
+  const active = clients.filter(c=>!c.archived);
+  if(active.length < 2) { el.style.display='none'; return; }
+  const totalTerms = active.reduce((a,c)=>a+Object.values(c.dictionary||{}).reduce((x,v)=>x+(v?.length||0),0),0);
+  const totalStructs = active.reduce((a,c)=>a+(c.structures?.length||0),0);
+  const withNotes = active.filter(c=>c.notes).length;
+  el.style.display='block';
+  el.innerHTML=`<div style="display:flex;gap:12px;flex-wrap:wrap;padding:6px 12px;background:var(--card);border:1px solid var(--card-border);border-radius:9px;font-size:11px;color:var(--faint);align-items:center">
+    <span>📊 <strong style="color:var(--fg)">${active.length}</strong> clientes ativos</span>
+    <span>📚 <strong style="color:var(--fg)">${totalTerms}</strong> termos no total</span>
+    <span>🏗️ <strong style="color:var(--fg)">${totalStructs}</strong> estruturas</span>
+    <span>📝 <strong style="color:var(--fg)">${withNotes}</strong> com notas</span>
+  </div>`;
 }
 
 function togglePinClient(id) {
@@ -2304,7 +2328,51 @@ function renderDicionario() {
     pillsEl.appendChild(btn);
   });
 
+  renderSegHealth(c);
   renderTermArea(c);
+}
+
+/* BATCH 21: Segment health strip */
+function renderSegHealth(c) {
+  const el = document.getElementById('dictSegHealth'); if(!el) return;
+  if(!c || !activeSeg) { el.style.display='none'; return; }
+  const terms = c.dictionary[activeSeg]||[];
+  if(!terms.length) { el.style.display='none'; return; }
+  const withLabel  = terms.filter(t=>t.label).length;
+  const withDesc   = terms.filter(t=>t.desc).length;
+  const withUses   = terms.filter(t=>t.uses).length;
+  const withFav    = terms.filter(t=>t.fav).length;
+  const total      = terms.length;
+  const pLabel  = Math.round(withLabel/total*100);
+  const pDesc   = Math.round(withDesc/total*100);
+  const pUses   = Math.round(withUses/total*100);
+  function bar(pct,color){
+    return `<div style="flex:1;min-width:60px">
+      <div style="height:5px;background:var(--divider);border-radius:3px;overflow:hidden;margin-bottom:3px">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .3s"></div>
+      </div>
+      <div style="font-size:9px;color:var(--faint)">${pct}%</div>
+    </div>`;
+  }
+  el.style.display='block';
+  el.innerHTML=`<div style="display:flex;gap:12px;align-items:flex-end;padding:6px 0 2px;flex-wrap:wrap">
+    <span style="font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Cobertura</span>
+    <div style="display:flex;gap:8px;flex:1;align-items:flex-end;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:60px">
+        <div style="font-size:9px;color:var(--faint)">Label</div>
+        ${bar(pLabel,'var(--accent)')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:60px">
+        <div style="font-size:9px;color:var(--faint)">Descrição</div>
+        ${bar(pDesc,'#8b5cf6')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:60px">
+        <div style="font-size:9px;color:var(--faint)">Uso no builder</div>
+        ${bar(pUses,'#16a34a')}
+      </div>
+    </div>
+    <span style="font-size:10px;color:var(--faint);white-space:nowrap">${withFav?`⭐ ${withFav} fav`:''}</span>
+  </div>`;
 }
 
 function renderTermArea(c) {
@@ -3698,7 +3766,11 @@ function renderEstruturas() {
   // Apply sort
   if(typeof _structSort!=='undefined' && _structSort!=='default') {
     const key=_structSort;
-    structs=[...structs].sort((a,b)=>(a[key]||'').localeCompare(b[key]||''));
+    if(key==='usedCount'||key==='lastUsed') {
+      structs=[...structs].sort((a,b)=>(b[key]||0)-(a[key]||0)); // numeric desc
+    } else {
+      structs=[...structs].sort((a,b)=>(a[key]||'').localeCompare(b[key]||''));
+    }
   }
   listEl.innerHTML='';
   structs.forEach(st=>{
@@ -3990,6 +4062,22 @@ function saveBuilderFavorite() {
   } catch(e) {}
   renderBuilderFavs();
   showToast(`⭐ Favorito salvo: "${name}"`);
+}
+
+/* BATCH 21: quick pin without prompt */
+function quickPinBuilderResult() {
+  const c=active(); if(!c) return;
+  const box=document.getElementById('previewBox');
+  const result = box?.textContent?.trim();
+  if(!result || result==='—') { showToast('Builder vazio'); return; }
+  try {
+    let favs = JSON.parse(localStorage.getItem(BUILDER_FAVS_KEY)||'[]');
+    if(favs.find(f=>f.result===result)) { showToast('Já nos favoritos'); return; }
+    favs.unshift({name:result, result, vals:{...builderVals}, clientId:c.id});
+    localStorage.setItem(BUILDER_FAVS_KEY, JSON.stringify(favs.slice(0,20)));
+  } catch(e) {}
+  renderBuilderFavs();
+  showToast('⭐ Adicionado aos favoritos');
 }
 
 function renderBuilderFavs() {
@@ -4438,7 +4526,9 @@ let _structSort = 'default';
 function sortStructures(by) {
   _structSort = by;
   document.querySelectorAll('.struct-sort-btn').forEach(b=>b.classList.remove('active'));
-  const sel = [...document.querySelectorAll('.struct-sort-btn')].find(b=>b.textContent.toLowerCase().includes(by==='default'?'padrão':by==='label'?'label':by==='platform'?'plataforma':'nível'));
+  const keyMap={default:'padrão',label:'label',platform:'plataforma',level:'nível',usedCount:'mais usadas',lastUsed:'recentes'};
+  const target=(keyMap[by]||by).toLowerCase();
+  const sel=[...document.querySelectorAll('.struct-sort-btn')].find(b=>b.textContent.toLowerCase().includes(target));
   if(sel) sel.classList.add('active');
   renderEstruturas();
 }
