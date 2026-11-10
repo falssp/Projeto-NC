@@ -115,7 +115,7 @@ function _setGasStatus(state) {
   const badge = document.getElementById('gas-status');
   if (!badge) return;
   const states = {
-    loading:  { text: '⟳ GAS',      cls: 'gas-loading'  },
+    loading:  { text: '',            cls: 'gas-hidden'   },
     ok:       { text: '● GAS',       cls: 'gas-ok'       },
     fallback: { text: '○ Offline',   cls: 'gas-fallback' },
   };
