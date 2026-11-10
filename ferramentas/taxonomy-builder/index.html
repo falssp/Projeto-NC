@@ -839,6 +839,28 @@ body {
 .seg-fill-bar{display:flex;gap:2px;margin-top:4px;flex-wrap:wrap;}
 .seg-fill-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);opacity:.85;}
 .seg-fill-dot.empty{background:var(--card-border);opacity:1;}
+.seg-stats-strip{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.seg-stat-chip{font-size:10px;padding:1px 5px;border-radius:4px;background:var(--pill);color:var(--faint);border:1px solid var(--card-border);}
+.seg-stat-chip.has-terms{color:var(--fg);}
+.seg-stat-chip b{color:var(--accent);font-weight:700;}
+
+/* ==================== KEYBOARD SHORTCUTS OVERLAY ==================== */
+.shortcuts-overlay{position:fixed;inset:0;background:var(--overlay);z-index:9000;display:none;align-items:center;justify-content:center}
+.shortcuts-overlay.open{display:flex}
+.shortcuts-modal{background:var(--modal);border-radius:12px;width:min(480px,92vw);max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg);padding:20px 24px}
+.shortcuts-modal h3{margin:0 0 14px;font-size:15px}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--card-border);font-size:13px}
+.shortcut-row:last-child{border:none}
+.kbd{background:var(--pill);border:1px solid var(--card-border);border-radius:4px;padding:2px 7px;font-size:11px;font-family:monospace;white-space:nowrap}
+
+/* ==================== BUILDER AUTOCOMPLETE ==================== */
+.builder-ac-wrap{position:relative;}
+.builder-ac-input{width:100%;box-sizing:border-box;}
+.builder-ac-list{position:absolute;top:100%;left:0;right:0;background:var(--modal);border:1px solid var(--input-border);border-radius:6px;z-index:200;max-height:160px;overflow-y:auto;box-shadow:var(--shadow-lg);display:none}
+.builder-ac-item{padding:6px 10px;cursor:pointer;font-size:12px;display:flex;gap:8px;align-items:baseline}
+.builder-ac-item:hover,.builder-ac-item.selected{background:var(--accent);color:#fff}
+.builder-ac-item .ac-val{font-weight:600}
+.builder-ac-item .ac-lbl{font-size:11px;opacity:.75}
 
 /* ── Como usar modal ─────────────────────────────── */
 .qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
@@ -875,6 +897,7 @@ body {
     </div>
     <div class="header-right">
   <button class="btn-qa" onclick="abrirAjuda()" style="margin-left:auto">❓ Como usar</button>
+  <button class="btn-icon" onclick="openShortcuts()" title="Atalhos de teclado (?)">⌨️</button>
       <div class="global-search-wrap">
         <input class="global-search-input" id="globalSearchInput" type="search"
           placeholder="🔍 Busca global…" autocomplete="off"
@@ -1484,6 +1507,12 @@ function renderClientes() {
       </div>
       ${fillDotsHtml}
       <div class="segments-strip">${segsHtml}</div>
+      <div class="seg-stats-strip">
+        ${c.segments.map(s=>{
+          const cnt=(c.dictionary[s.id]||[]).length;
+          return `<span class="seg-stat-chip ${cnt?'has-terms':''}" title="${esc(s.label)}: ${cnt} termo(s)">${esc(s.label.length>8?s.label.slice(0,7)+'…':s.label)} <b>${cnt}</b></span>`;
+        }).join('')}
+      </div>
       ${c.lastModified?`<div class="client-card-modified">✏ ${new Date(c.lastModified).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}
     `;
     grid.appendChild(div);
@@ -2380,10 +2409,16 @@ function renderBuilder() {
     if(terms.length>0) {
       div.innerHTML=`
         <div class="builder-seg-label">${esc(s.label)} ${badge}</div>
-        <select onchange="builderVals['${s.id}']=this.value;updatePreview()">
-          <option value="">${s.required?'— selecione —':'— vazio (opcional) —'}</option>
-          ${terms.map(t=>`<option value="${esc(t.value)}"${curVal===t.value?' selected':''}>${esc(t.label)}</option>`).join('')}
-        </select>
+        <div class="builder-ac-wrap" id="acwrap-${s.id}">
+          <input id="bv-${s.id}" class="builder-ac-input" type="text"
+            placeholder="${s.required?'selecione ou digite…':'vazio (opcional) ou digite…'}"
+            value="${esc(curVal)}" autocomplete="off"
+            oninput="builderVals['${s.id}']=this.value;updatePreview();showAC('${s.id}',this.value)"
+            onfocus="showAC('${s.id}',this.value)"
+            onblur="setTimeout(()=>hideAC('${s.id}'),150)"
+            onkeydown="handleACKey(event,'${s.id}')">
+          <div class="builder-ac-list" id="aclist-${s.id}"></div>
+        </div>
       `;
     } else {
       div.innerHTML=`
@@ -2392,14 +2427,8 @@ function renderBuilder() {
           oninput="builderVals['${s.id}']=this.value;updatePreview()">
       `;
     }
-    // Add id to select too for required-warn highlight
     if(terms.length>0) {
-      div.querySelector('select')?.setAttribute('id',`bv-${s.id}`);
-      // Also inject a hidden datalist for keyboard-driven free text
-      const dl = document.createElement('datalist');
-      dl.id = `dl-${s.id}`;
-      terms.forEach(t=>{ const opt=document.createElement('option'); opt.value=t.value; opt.label=t.label; dl.appendChild(opt); });
-      div.appendChild(dl);
+      _registerACTerms(s.id, terms);
     }
     segsEl.appendChild(div);
   });
@@ -3790,8 +3819,103 @@ document.addEventListener('keydown', e => {
     if(pm && pm.classList.contains('show')) { closePasteModal(); return; }
     if(mo && mo.classList.contains('show')) { closeModal(); return; }
     if(qa && qa.classList.contains('open')) { fecharAjuda(); return; }
+    // Close shortcuts overlay
+    const sc = document.getElementById('shortcutsOverlay');
+    if(sc && sc.classList.contains('open')) { closeShortcuts(); return; }
+    // Close share URL modal
+    const su = document.getElementById('shareUrlOverlay');
+    if(su && su.style.display==='flex') { closeShareUrlModal(); return; }
+  }
+  // Ctrl+K → focus global search
+  if((e.ctrlKey||e.metaKey) && e.key==='k') {
+    e.preventDefault();
+    document.getElementById('globalSearchInput')?.focus();
+    return;
+  }
+  // Ctrl+Delete in builder → clear all fields
+  if((e.ctrlKey||e.metaKey) && e.key==='Delete' && currentTab==='builder') {
+    e.preventDefault(); clearBuilderVals(); return;
+  }
+  // ? key (not in input) → open shortcuts
+  if(e.key==='?' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+    openShortcuts(); return;
   }
 });
+
+/* =============================================
+   SHORTCUTS OVERLAY
+   ============================================= */
+function clearBuilderVals() { clearBuilder(); }
+function openShortcuts() {
+  document.getElementById('shortcutsOverlay').classList.add('open');
+}
+function closeShortcuts(e) {
+  if(!e || e.target===document.getElementById('shortcutsOverlay'))
+    document.getElementById('shortcutsOverlay').classList.remove('open');
+}
+
+/* =============================================
+   BUILDER AUTOCOMPLETE
+   ============================================= */
+const _acTermsMap = {}; // segId → [{value, label}]
+
+function _registerACTerms(segId, terms) {
+  _acTermsMap[segId] = terms;
+}
+
+function showAC(segId, q) {
+  const list = document.getElementById('aclist-' + segId); if(!list) return;
+  const terms = _acTermsMap[segId] || [];
+  const lq = (q||'').toLowerCase().trim();
+  const filtered = lq
+    ? terms.filter(t => t.value.toLowerCase().includes(lq) || (t.label||'').toLowerCase().includes(lq))
+    : terms.slice(0, 20);
+  if(!filtered.length) { list.style.display='none'; return; }
+  list.innerHTML = filtered.map((t,i)=>
+    `<div class="builder-ac-item" data-val="${esc(t.value)}" data-idx="${i}"
+      onmousedown="pickAC('${segId}','${esc(t.value)}')"
+      onmouseover="this.parentNode.querySelectorAll('.builder-ac-item').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')">
+      <span class="ac-val">${esc(t.value)}</span>
+      ${t.label&&t.label!==t.value?`<span class="ac-lbl">${esc(t.label)}</span>`:''}
+    </div>`
+  ).join('');
+  list.style.display='block';
+}
+
+function hideAC(segId) {
+  const list = document.getElementById('aclist-' + segId); if(list) list.style.display='none';
+}
+
+function pickAC(segId, val) {
+  builderVals[segId] = val;
+  const inp = document.getElementById('bv-' + segId);
+  if(inp) inp.value = val;
+  hideAC(segId);
+  updatePreview();
+}
+
+function handleACKey(e, segId) {
+  const list = document.getElementById('aclist-' + segId);
+  if(!list || list.style.display==='none') return;
+  const items = [...list.querySelectorAll('.builder-ac-item')];
+  const cur = list.querySelector('.builder-ac-item.selected');
+  let idx = items.indexOf(cur);
+  if(e.key==='ArrowDown') {
+    e.preventDefault();
+    idx = Math.min(idx+1, items.length-1);
+    items.forEach((x,i)=>x.classList.toggle('selected', i===idx));
+    items[idx]?.scrollIntoView({block:'nearest'});
+  } else if(e.key==='ArrowUp') {
+    e.preventDefault();
+    idx = Math.max(idx-1, 0);
+    items.forEach((x,i)=>x.classList.toggle('selected', i===idx));
+    items[idx]?.scrollIntoView({block:'nearest'});
+  } else if(e.key==='Enter') {
+    if(cur) { e.preventDefault(); pickAC(segId, cur.dataset.val); }
+  } else if(e.key==='Escape') {
+    hideAC(segId);
+  }
+}
 
 </script>
 
@@ -3814,6 +3938,26 @@ document.addEventListener('keydown', e => {
       ⚠️ URLs muito longas podem não funcionar em alguns browsers (limite ~8000 chars).
     </div>
     <div style="font-size:11px;color:var(--ok);margin-top:4px" id="shareUrlSize"></div>
+  </div>
+</div>
+
+<!-- ── Shortcuts modal ───────────────────────────── -->
+<div class="shortcuts-overlay" id="shortcutsOverlay" onclick="closeShortcuts(event)">
+  <div class="shortcuts-modal" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3>⌨️ Atalhos de teclado</h3>
+      <button onclick="closeShortcuts()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--faint)">✕</button>
+    </div>
+    <div class="shortcut-row"><span>Copiar resultado do builder</span><span class="kbd">Ctrl + C</span></div>
+    <div class="shortcut-row"><span>Focar busca global</span><span class="kbd">Ctrl + K</span></div>
+    <div class="shortcut-row"><span>Fechar modal / overlay</span><span class="kbd">Esc</span></div>
+    <div class="shortcut-row"><span>Aba Clientes</span><span class="kbd">Ctrl + 1</span></div>
+    <div class="shortcut-row"><span>Aba Dicionário</span><span class="kbd">Ctrl + 2</span></div>
+    <div class="shortcut-row"><span>Aba Estruturas</span><span class="kbd">Ctrl + 3</span></div>
+    <div class="shortcut-row"><span>Aba Builder</span><span class="kbd">Ctrl + 4</span></div>
+    <div class="shortcut-row"><span>Aba Validador</span><span class="kbd">Ctrl + 5</span></div>
+    <div class="shortcut-row"><span>Limpar campos do builder</span><span class="kbd">Ctrl + Delete</span></div>
+    <div class="shortcut-row"><span>Esta tela de atalhos</span><span class="kbd">?</span></div>
   </div>
 </div>
 
