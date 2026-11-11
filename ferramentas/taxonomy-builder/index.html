@@ -1111,6 +1111,8 @@ body {
         </div>
         <div class="action-bar">
           <button class="btn secondary btn-sm" onclick="openPasteModal()">⬆ Importar</button>
+          <button class="btn secondary btn-sm" onclick="triggerBulkCSVImport()" title="Importar CSV com colunas: segmento,valor,label,descricao">⬆ CSV Bulk</button>
+          <input type="file" id="bulkCSVInput" accept=".csv,.tsv,.txt" style="display:none" onchange="handleBulkCSVImport(event)">
           <button class="btn secondary btn-sm" onclick="exportJSON()">⬇ JSON</button>
           <button class="btn secondary btn-sm" onclick="exportCSV()">⬇ CSV (F3)</button>
           <button class="btn secondary btn-sm" onclick="exportTSV()" title="Exportar dicionário como TSV (Excel-friendly)">⬇ TSV</button>
@@ -1190,6 +1192,7 @@ body {
             </div>
           </div>
           <button class="btn secondary btn-sm" onclick="clearBuilder()">✕ Limpar</button>
+          <button class="btn secondary btn-sm" onclick="openSegFilterModal()" title="Mostrar/ocultar segmentos no builder">🗂 Segs</button>
         </div>
       </div>
       <div id="builderSegs" class="builder-grid"></div>
@@ -1757,6 +1760,7 @@ function switchClient(id) {
   activeId = id;
   activeSeg = null;
   builderVals = {};
+  _hiddenSegs = new Set(); // BATCH 32: reset hidden segs on client switch
   saveData();
   renderCurrent();
 }
@@ -3674,6 +3678,10 @@ function renderBuilder() {
     segsToRender = [...ordered, ...rest];
     window._builderStructOrder = null;
   }
+  /* BATCH 32: filter hidden segments */
+  if(_hiddenSegs && _hiddenSegs.size > 0) {
+    segsToRender = segsToRender.filter(s => !_hiddenSegs.has(s.id));
+  }
   segsToRender.forEach(s=>{
     const terms=c.dictionary[s.id]||[];
     const curVal=builderVals[s.id]||'';
@@ -5581,6 +5589,105 @@ function closeStats(e) {
     document.getElementById('statsOverlay').classList.remove('open');
 }
 
+/* BATCH 32: Segment visibility filter */
+let _hiddenSegs = new Set(); // segment IDs hidden from builder
+
+function openSegFilterModal() {
+  const c = active(); if(!c) { showNotif('Selecione um cliente primeiro','warn'); return; }
+  const overlay = document.getElementById('segFilterOverlay');
+  if(!overlay) return;
+  const list = document.getElementById('segFilterList');
+  if(list) {
+    list.innerHTML = c.segments.map(s => `
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;border-radius:7px;background:var(--input-bg);border:1px solid var(--input-border)">
+        <input type="checkbox" id="segVis_${esc(s.id)}" ${_hiddenSegs.has(s.id)?'':'checked'} style="width:15px;height:15px">
+        <span style="font-size:13px;font-weight:500">${esc(s.label)}</span>
+        <span style="font-size:11px;color:var(--faint);margin-left:auto">${(c.dictionary[s.id]||[]).length} termos</span>
+      </label>`).join('');
+  }
+  overlay.style.display = 'flex';
+}
+
+function closeSegFilter(e) {
+  const overlay = document.getElementById('segFilterOverlay');
+  if(!e || e.target === overlay) { if(overlay) overlay.style.display='none'; }
+}
+
+function segFilterAll(state) {
+  const c = active(); if(!c) return;
+  c.segments.forEach(s => {
+    const cb = document.getElementById(`segVis_${s.id}`);
+    if(cb) cb.checked = state;
+  });
+}
+
+function applySegFilter() {
+  const c = active(); if(!c) return;
+  _hiddenSegs = new Set();
+  c.segments.forEach(s => {
+    const cb = document.getElementById(`segVis_${s.id}`);
+    if(cb && !cb.checked) _hiddenSegs.add(s.id);
+  });
+  closeSegFilter();
+  renderBuilder();
+  const hidden = _hiddenSegs.size;
+  if(hidden) showNotif(`${hidden} segmento${hidden!==1?'s':''} oculto${hidden!==1?'s':''} do builder`, 'info');
+  else showNotif('Todos os segmentos visíveis','ok');
+}
+
+/* BATCH 32: Bulk CSV import (segmento,valor,label,descricao) */
+function triggerBulkCSVImport() {
+  const inp = document.getElementById('bulkCSVInput'); if(inp) inp.click();
+}
+
+function handleBulkCSVImport(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const c = active();
+  if(!c) { showNotif('Selecione um cliente primeiro','warn'); e.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const text = ev.target.result;
+      const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+      if(!lines.length) { showNotif('CSV vazio','warn'); return; }
+      // Detect delimiter
+      const delim = lines[0].includes('\t') ? '\t' : ',';
+      const headers = lines[0].split(delim).map(h=>h.replace(/^"|"$/g,'').trim().toLowerCase());
+      const iSeg = headers.indexOf('segmento');
+      const iVal = headers.indexOf('valor');
+      const iLbl = headers.indexOf('label');
+      const iDesc = headers.indexOf('descricao') >= 0 ? headers.indexOf('descricao') : headers.indexOf('descrição');
+      if(iSeg < 0 || iVal < 0) {
+        showNotif('CSV precisa de colunas "segmento" e "valor"','warn'); return;
+      }
+      let added=0, skipped=0;
+      lines.slice(1).forEach(line => {
+        if(!line) return;
+        const cols = line.split(delim).map(v=>v.replace(/^"|"$/g,'').trim());
+        const segName = cols[iSeg]||'';
+        const val = cols[iVal]||'';
+        const lbl = iLbl>=0 ? cols[iLbl]||'' : '';
+        const desc = iDesc>=0 ? cols[iDesc]||'' : '';
+        if(!segName || !val) { skipped++; return; }
+        // Find segment by label or id
+        const seg = c.segments.find(s=>s.label.toLowerCase()===segName.toLowerCase()||s.id.toLowerCase()===segName.toLowerCase());
+        if(!seg) { skipped++; return; }
+        if(!c.dictionary[seg.id]) c.dictionary[seg.id]=[];
+        if(c.dictionary[seg.id].some(t=>t.value===val)) { skipped++; return; }
+        c.dictionary[seg.id].push({value:val, label:lbl||val, desc:desc||''});
+        added++;
+      });
+      saveClients();
+      renderDicionario();
+      showNotif(`✓ ${added} termos importados${skipped?' ('+skipped+' ignorados)':''}`, added?'ok':'warn');
+    } catch(err) {
+      showNotif('Erro ao processar CSV','warn');
+    }
+    e.target.value='';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
 /* BATCH 29: Full builder history modal */
 function openBuilderHistModal() {
   const overlay=document.getElementById('builderHistModalOverlay');
@@ -5939,6 +6046,7 @@ function renderValBreakdown(nameStr) {
    BUILDER: SEGMENT LOCKING
    ============================================= */
 let _lockedSegs = new Set(); // persists across renders within session
+let _hiddenSegs = new Set(); // BATCH 32: segments hidden from builder view
 
 function toggleSegLock(segId, btn) {
   if(_lockedSegs.has(segId)) {
@@ -6291,6 +6399,26 @@ function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt
 </div>
 
 <!-- Stats Modal -->
+<!-- BATCH 32: Segment Filter Modal -->
+<div class="shortcuts-overlay" id="segFilterOverlay" onclick="closeSegFilter(event)" style="display:none">
+  <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:420px;max-height:80vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3>🗂 Visibilidade dos segmentos</h3>
+      <button onclick="closeSegFilter()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--faint)">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--faint);margin-bottom:12px">Desmarque segmentos para ocultá-los no builder (eles não entrarão no nome gerado).</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn secondary btn-sm" onclick="segFilterAll(true)">✓ Todos</button>
+      <button class="btn secondary btn-sm" onclick="segFilterAll(false)">✕ Nenhum</button>
+    </div>
+    <div id="segFilterList" style="display:flex;flex-direction:column;gap:7px"></div>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn secondary" onclick="closeSegFilter()">Fechar</button>
+      <button class="btn primary" onclick="applySegFilter()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
 <div class="shortcuts-overlay" id="statsOverlay" onclick="closeStats(event)">
   <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:480px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
