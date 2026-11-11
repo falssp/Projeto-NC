@@ -985,6 +985,20 @@ body {
 .pills .pill[draggable]{cursor:grab;transition:opacity .15s;}
 .pills .pill.pill-drag-over{outline:2px solid var(--accent);outline-offset:2px;}
 .pills .pill.pill-dragging{opacity:.35;}
+/* BATCH 28: pill inline rename */
+.pill-rename-input{font-size:12px;padding:2px 7px;border:2px solid var(--accent);border-radius:12px;background:var(--input-bg);color:var(--fg);min-width:60px;max-width:140px;outline:none;font-family:inherit;font-weight:600;}
+/* BATCH 28: multi-generate panel */
+.multigen-panel{position:absolute;top:calc(100% + 6px);right:0;background:var(--modal);border:1px solid var(--input-border);border-radius:10px;box-shadow:var(--shadow-lg);z-index:300;min-width:280px;max-width:420px;padding:10px 0;display:none;}
+.multigen-panel.open{display:block;}
+.multigen-item{padding:7px 14px;cursor:pointer;font-size:12px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--divider);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.multigen-item:last-child{border-bottom:none;}
+.multigen-item:hover{background:var(--accent-soft);}
+.multigen-item .mg-val{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.multigen-item .mg-load{font-size:10px;padding:2px 7px;border-radius:5px;background:var(--accent);color:#fff;border:none;cursor:pointer;flex-shrink:0;}
+.multigen-header{display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px;border-bottom:1px solid var(--divider);}
+.multigen-header span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);}
+.multigen-header button{background:none;border:none;cursor:pointer;font-size:14px;color:var(--faint);}
+.multigen-wrap{position:relative;display:inline-block;}
 .dict-seg-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px;}
 .char-limit-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;}
 .char-limit-input{width:60px;padding:2px 6px;border:1px solid var(--input-border);border-radius:5px;background:var(--input-bg);color:var(--fg);font-size:12px;text-align:center;}
@@ -1166,6 +1180,13 @@ body {
           <button class="btn secondary btn-sm" onclick="openBuilderTemplates()" title="Templates de preenchimento">📋 Templates</button>
           <button class="btn secondary btn-sm" onclick="fillBuilderTopUsed()" title="Preencher campos vazios com o termo mais usado de cada segmento">⬆ Top</button>
           <button class="btn secondary btn-sm" onclick="fillBuilderRandom()" title="Preencher com termos aleatórios">🎲 Aleatório</button>
+          <div class="multigen-wrap" id="multigenWrap">
+            <button class="btn secondary btn-sm" onclick="toggleMultiGen()" title="Gerar 5 variações aleatórias para escolher">🎲 ×5</button>
+            <div class="multigen-panel" id="multigenPanel">
+              <div class="multigen-header"><span>5 variações</span><button onclick="closeMultiGen()">✕</button></div>
+              <div id="multigenList"></div>
+            </div>
+          </div>
           <button class="btn secondary btn-sm" onclick="clearBuilder()">✕ Limpar</button>
         </div>
       </div>
@@ -2394,6 +2415,56 @@ function fillBuilderRandom() {
   else showToast('Nenhum segmento tem termos no dicionário');
 }
 
+/* BATCH 28: multi-generate 5 random variations */
+function toggleMultiGen() {
+  const panel = document.getElementById('multigenPanel');
+  if(!panel) return;
+  if(panel.classList.contains('open')) { closeMultiGen(); return; }
+  const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
+  // Generate 5 random NCs
+  const list = document.getElementById('multigenList'); if(!list) return;
+  const variants = [];
+  for(let v=0;v<5;v++) {
+    const vals = {};
+    c.segments.forEach(s=>{
+      const terms=c.dictionary[s.id]||[];
+      if(terms.length) vals[s.id]=terms[Math.floor(Math.random()*terms.length)].value;
+    });
+    // Build NC string
+    let parts=c.segments.map(s=>({val:vals[s.id]||'',required:s.required,sep:s.sep!==undefined?s.sep:c.separator}));
+    while(parts.length>0&&!parts[parts.length-1].val&&!parts[parts.length-1].required) parts.pop();
+    const nc=parts.map((p,i)=>p.val+(i<parts.length-1&&p.sep!==undefined?p.sep:'')).join('');
+    if(nc) variants.push({nc, vals});
+  }
+  if(!variants.length) { showToast('Nenhum segmento tem termos'); return; }
+  list.innerHTML=variants.map((v,i)=>
+    `<div class="multigen-item">
+      <span class="mg-val" title="${esc(v.nc)}">${esc(v.nc)}</span>
+      <button class="mg-load" onclick="loadMultiGenVariant(${i})">Usar</button>
+    </div>`
+  ).join('');
+  list.dataset.variants = JSON.stringify(variants);
+  panel.classList.add('open');
+  // close on outside click
+  setTimeout(()=>document.addEventListener('click', function closer(e){
+    const wrap=document.getElementById('multigenWrap');
+    if(wrap&&!wrap.contains(e.target)){closeMultiGen();document.removeEventListener('click',closer);}
+  }),50);
+}
+function closeMultiGen() {
+  const panel=document.getElementById('multigenPanel'); if(panel) panel.classList.remove('open');
+}
+function loadMultiGenVariant(idx) {
+  const list=document.getElementById('multigenList'); if(!list) return;
+  try {
+    const variants=JSON.parse(list.dataset.variants||'[]');
+    const v=variants[idx]; if(!v) return;
+    Object.assign(builderVals, v.vals);
+    closeMultiGen(); renderBuilder();
+    showToast('🎲 Variação carregada no builder');
+  } catch(e) {}
+}
+
 /* BATCH 27: smart-fill with most-used term per segment */
 function fillBuilderTopUsed() {
   const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
@@ -2476,6 +2547,28 @@ function renderDicionario() {
     }
     btn.innerHTML = `${s.label}${count?` (${count})`:''}`+dot;
     btn.onclick=()=>{ activeSeg=s.id; _dictFilter=null; _dictTagFilter=null; renderDicionario(); };
+    /* BATCH 28: inline rename on double-click */
+    btn.addEventListener('dblclick', e=>{
+      e.stopPropagation();
+      const c2=active(); if(!c2) return;
+      const inp=document.createElement('input');
+      inp.className='pill-rename-input';
+      inp.value=s.label;
+      inp.title='Enter para salvar · Esc para cancelar';
+      btn.replaceWith(inp);
+      inp.focus(); inp.select();
+      const save=()=>{
+        const newLabel=inp.value.trim();
+        if(newLabel && newLabel!==s.label) {
+          c2.segments.find(x=>x.id===s.id).label=newLabel;
+          c2.lastModified=Date.now();
+          saveData(); showToast(`✏ Segmento renomeado para "${newLabel}"`);
+        }
+        renderDicionario();
+      };
+      inp.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ev.preventDefault();save();} if(ev.key==='Escape') renderDicionario(); });
+      inp.addEventListener('blur',()=>{ save(); }, {once:true});
+    });
     /* BATCH 27: drag-to-reorder pills */
     btn.addEventListener('dragstart', e=>{
       _pillDragSrc = s.id;
@@ -5393,6 +5486,30 @@ function openStats() {
     </div>
   ` : '<p style="color:var(--faint);font-size:12px;margin-top:8px">Nenhum termo foi usado no builder ainda.</p>';
 
+  /* BATCH 28: unused terms per segment */
+  const unusedRows = [];
+  clients.filter(c=>!c.archived).forEach(c=>{
+    c.segments.forEach(s=>{
+      const terms=c.dictionary[s.id]||[];
+      const unused=terms.filter(t=>!t.uses).length;
+      if(unused>0) unusedRows.push({client:c.name, seg:s.label, unused, total:terms.length, pct:Math.round(unused/terms.length*100)});
+    });
+  });
+  unusedRows.sort((a,b)=>b.pct-a.pct);
+  const unusedHtml = unusedRows.length ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px">🕳 Termos nunca usados no builder</div>
+      ${unusedRows.slice(0,8).map(r=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--brd);font-size:12px;">
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.client)} · ${esc(r.seg)}</span>
+          <span style="color:var(--faint);font-size:11px">${r.unused}/${r.total}</span>
+          <span style="background:${r.pct>80?'rgba(239,68,68,.12)':r.pct>50?'rgba(245,158,11,.12)':'rgba(37,99,235,.1)'};color:${r.pct>80?'#b91c1c':r.pct>50?'#92400e':'var(--accent)'};border-radius:9px;padding:1px 7px;font-size:10px;font-weight:700">${r.pct}%</span>
+        </div>
+      `).join('')}
+      ${unusedRows.length>8?`<div style="font-size:11px;color:var(--faint);margin-top:4px">…e mais ${unusedRows.length-8} segmentos</div>`:''}
+    </div>
+  ` : '';
+
   body.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
       <div class="stat-tile"><span class="stat-num">${totalClients}</span><span class="stat-lbl">Clientes</span></div>
@@ -5403,6 +5520,7 @@ function openStats() {
     ${segChartHtml}
     ${platHtml}
     ${topHtml}
+    ${unusedHtml}
   `;
   overlay.classList.add('open');
 }
