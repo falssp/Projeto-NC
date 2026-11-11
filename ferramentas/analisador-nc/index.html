@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisador de NC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--warn:#d97706;--erro:#dc2626;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+  --mono:'JetBrains Mono',monospace;
+  --seg0:#2563eb;--seg1:#7c3aed;--seg2:#0891b2;--seg3:#15803d;--seg4:#d97706;--seg5:#dc2626;--seg6:#9333ea;--seg7:#0f766e;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1000px;margin:0 auto;padding:18px;display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+.card-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+textarea{width:100%;min-height:100px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;resize:vertical;outline:none;}
+textarea:focus{border-color:var(--accent);}
+select,input[type=text]{padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;}
+select:focus,input[type=text]:focus{border-color:var(--accent);}
+/* Segment badges */
+.seg-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:14px;font-size:11px;font-weight:700;cursor:default;white-space:nowrap;}
+/* Highlighted NC */
+.nc-analyzed{font-family:var(--mono);font-size:14px;font-weight:600;line-height:2;display:flex;flex-wrap:wrap;align-items:center;gap:0;}
+.seg-token{display:inline-flex;align-items:center;border-radius:5px;padding:1px 6px;margin:1px;position:relative;cursor:default;transition:opacity .15s;}
+.seg-token:hover{opacity:.85;}
+.seg-token .seg-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;position:absolute;bottom:calc(100%+2px);left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:1px 5px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:10;}
+.seg-token:hover .seg-label{opacity:1;}
+.sep-token{color:var(--faint);font-size:12px;padding:0 1px;}
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+/* Result rows */
+.result-row{padding:10px 0;border-bottom:1px solid var(--border);}
+.result-row:last-child{border-bottom:none;}
+.result-meta{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.meta-pill{font-size:10px;padding:2px 7px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.meta-warn{background:rgba(220,38,38,.08);color:var(--erro);}
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;}
+.stat-box{text-align:center;padding:10px 6px;background:var(--accent-soft);border-radius:8px;}
+.stat-box .n{font-size:20px;font-weight:800;color:var(--accent);}
+.stat-box .l{font-size:10px;color:var(--faint);}
+/* Seg colors */
+.c0{background:rgba(37,99,235,.12);color:#1d4ed8;}:root[data-theme="dark"] .c0,.c0d{background:rgba(96,165,250,.15);color:#93c5fd;}
+.c1{background:rgba(124,58,237,.12);color:#6d28d9;}:root[data-theme="dark"] .c1{background:rgba(167,139,250,.15);color:#c4b5fd;}
+.c2{background:rgba(8,145,178,.12);color:#0e7490;}:root[data-theme="dark"] .c2{background:rgba(34,211,238,.12);color:#67e8f9;}
+.c3{background:rgba(21,128,61,.12);color:#166534;}:root[data-theme="dark"] .c3{background:rgba(74,222,128,.12);color:#86efac;}
+.c4{background:rgba(217,119,6,.12);color:#b45309;}:root[data-theme="dark"] .c4{background:rgba(251,191,36,.12);color:#fde68a;}
+.c5{background:rgba(220,38,38,.12);color:#b91c1c;}:root[data-theme="dark"] .c5{background:rgba(252,165,165,.12);color:#fca5a5;}
+.c6{background:rgba(147,51,234,.12);color:#7e22ce;}:root[data-theme="dark"] .c6{background:rgba(216,180,254,.12);color:#e9d5ff;}
+.c7{background:rgba(15,118,110,.12);color:#0f766e;}:root[data-theme="dark"] .c7{background:rgba(94,234,212,.12);color:#99f6e4;}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🔬</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Analisador de NC</div>
+      <div style="font-size:11px;color:var(--faint)">Visualize segmentos com highlight por posição</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center">
+    <button class="btn" onclick="clearAll()">✕ Limpar</button>
+    <button class="btn" onclick="exportTSV()" title="Exportar análise como TSV">⬇ TSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="analyze()">▶ Analisar</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:var(--faint)">Separador:</span>
+        <input type="text" id="sepIn" value="_" maxlength="5" style="width:55px;text-align:center">
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="optAutoSep" checked>
+        <label for="optAutoSep" style="font-size:12px;cursor:pointer">Auto-detectar</label>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:var(--faint)">Cliente:</span>
+        <select id="clientSel" style="min-width:130px" onchange="onClientChange()">
+          <option value="">— Sem cliente —</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="optShowLabels" checked>
+        <label for="optShowLabels" style="font-size:12px;cursor:pointer">Mostrar rótulos no hover</label>
+      </div>
+    </div>
+    <textarea id="inputArea" placeholder="Cole suas NCs aqui, uma por linha…&#10;cliente_campanha_produto_br_dsp&#10;outro_cliente_fluxo_sem_segmento_x" spellcheck="false" oninput="onInput()"></textarea>
+    <div id="inputStats" style="font-size:11px;color:var(--faint);margin-top:6px"></div>
+  </div>
+
+  <div id="resultsPanel" style="display:none">
+    <!-- summary + legend -->
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div class="card-title" style="margin-bottom:0">📊 Resumo</div>
+        <div class="stats-grid" id="statBoxes" style="flex:1;min-width:260px"></div>
+      </div>
+      <div id="segLegend" class="legend" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔬 NCs analisadas</div>
+      <div id="ncList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null; try{_theme=localStorage.getItem('analisadornc_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('analisadornc_theme',_theme);}catch(e){}
+  document.querySelector('.header .btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.header .btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Clients
+let _clients=[];
+function loadClients(){
+  try{_clients=JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');}catch(e){_clients=[];}
+  const sel=document.getElementById('clientSel');if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Sem cliente —</option>'+_clients.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  if(cur)sel.value=cur;
+}
+loadClients();
+window.addEventListener('storage',e=>{if(e.key==='taxo_clients_v1')loadClients();});
+function onClientChange(){}
+
+function detectSep(lines){
+  const seps=['_','.','-','|','+'];
+  const counts={};seps.forEach(s=>counts[s]=0);
+  lines.forEach(l=>seps.forEach(s=>{counts[s]+=(l.split(s).length-1);}));
+  const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  return best&&best[1]>0?best[0]:null;
+}
+
+const SEG_COLORS=['c0','c1','c2','c3','c4','c5','c6','c7'];
+const SEG_NAMES_FALLBACK=['Seg 1','Seg 2','Seg 3','Seg 4','Seg 5','Seg 6','Seg 7','Seg 8'];
+
+let _lastData=[];
+
+function onInput(){
+  const raw=document.getElementById('inputArea').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const el=document.getElementById('inputStats');
+  if(el) el.textContent=lines.length?`${lines.length} NC${lines.length!==1?'s':''}`:' ';
+}
+
+function analyze(){
+  const raw=document.getElementById('inputArea').value.trim();
+  if(!raw){showToast('Cole pelo menos uma NC');return;}
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length)return;
+
+  const autoSep=document.getElementById('optAutoSep').checked;
+  let sep=document.getElementById('sepIn').value||'_';
+  if(autoSep){const d=detectSep(lines);if(d){sep=d;document.getElementById('sepIn').value=d;}}
+
+  const selId=document.getElementById('clientSel').value;
+  const client=_clients.find(c=>c.id===selId)||null;
+  const clientSep=client?client.separator:null;
+  if(clientSep){sep=clientSep;document.getElementById('sepIn').value=clientSep;}
+
+  const segNames=client?client.segments.map(s=>s.label):null;
+  const dict=client?client.dictionary:{};
+  const nExpected=client?client.segments.length:null;
+
+  const analyzed=lines.map(nc=>{
+    const segs=nc.split(sep);
+    const nS=segs.length;
+    const issues=[];
+    if(nExpected!==null&&nS!==nExpected) issues.push(`${nS} seg${nS!==1?'s':''} (esperado ${nExpected})`);
+    if(nc!==nc.toLowerCase()) issues.push('tem maiúsculas');
+    if(nc.includes(' ')) issues.push('tem espaços');
+    if(/[^\w.\-|+]/.test(nc.replace(new RegExp('\\'+sep,'g'),''))) issues.push('chars especiais');
+
+    // Dictionary validation
+    const dictIssues=[];
+    if(client){
+      client.segments.forEach((s,i)=>{
+        const val=segs[i];
+        if(!val) return;
+        const terms=dict[s.id]||[];
+        if(terms.length>0&&!terms.some(t=>t.value===val)){
+          dictIssues.push(`"${val}" não reconhecido em ${s.label}`);
+        }
+      });
+    }
+
+    return {nc, segs, issues:[...issues,...dictIssues]};
+  });
+
+  _lastData={analyzed, sep, segNames, nExpected};
+
+  // Stats
+  const maxSegs=Math.max(...analyzed.map(a=>a.segs.length));
+  const withIssues=analyzed.filter(a=>a.issues.length>0).length;
+  const totalIssues=analyzed.reduce((s,a)=>s+a.issues.length,0);
+  const dups=analyzed.length-new Set(analyzed.map(a=>a.nc)).size;
+
+  document.getElementById('statBoxes').innerHTML=`
+    <div class="stat-box"><div class="n">${analyzed.length}</div><div class="l">NCs</div></div>
+    <div class="stat-box"><div class="n" style="color:var(--erro)">${withIssues}</div><div class="l">Com issues</div></div>
+    <div class="stat-box"><div class="n">${maxSegs}</div><div class="l">Max segs</div></div>
+    <div class="stat-box"><div class="n" style="color:${dups>0?'var(--warn)':'var(--ok)'}"><span>${dups}</span></div><div class="l">Duplicatas</div></div>
+  `;
+
+  // Legend
+  const nSegs=Math.min(maxSegs,8);
+  document.getElementById('segLegend').innerHTML=Array.from({length:nSegs},(_,i)=>{
+    const lbl=segNames&&segNames[i]?segNames[i]:SEG_NAMES_FALLBACK[i]||`Seg ${i+1}`;
+    return `<span class="seg-badge ${SEG_COLORS[i%8]}" style="font-size:11px">${esc(lbl)}</span>`;
+  }).join('');
+
+  // NC list
+  document.getElementById('ncList').innerHTML=analyzed.map(a=>{
+    const tokens=a.segs.map((seg,i)=>{
+      const cls=SEG_COLORS[i%8];
+      const lbl=segNames&&segNames[i]?segNames[i]:SEG_NAMES_FALLBACK[i]||`Seg ${i+1}`;
+      return `<span class="seg-token ${cls}" title="${esc(lbl)}: ${esc(seg)}"><span class="seg-label">${esc(lbl)}</span>${esc(seg)}</span>`;
+    }).join(`<span class="sep-token">${esc(sep)}</span>`);
+
+    const metaPills=a.issues.map(iss=>`<span class="meta-pill meta-warn">⚠ ${esc(iss)}</span>`).join('');
+
+    return `<div class="result-row">
+      <div class="nc-analyzed">${tokens}</div>
+      ${a.issues.length?`<div class="result-meta">${metaPills}</div>`:''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultsPanel').style.display='block';
+}
+
+function exportTSV(){
+  if(!_lastData||!_lastData.analyzed){showToast('Rode a análise primeiro');return;}
+  const {analyzed, sep, segNames, nExpected}=_lastData;
+  const maxSeg=Math.max(...analyzed.map(a=>a.segs.length));
+  const headers=['nc','n_segs','issues',...Array.from({length:maxSeg},(_,i)=>(segNames&&segNames[i])?segNames[i]:`seg_${i+1}`)];
+  const rows=analyzed.map(a=>[a.nc, a.segs.length, a.issues.join('; '), ...a.segs, ...Array(maxSeg-a.segs.length).fill('')]);
+  const tsv=[headers,...rows].map(r=>r.join('\t')).join('\n');
+  const blob=new Blob([tsv],{type:'text/tab-separated-values;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const el=document.createElement('a');el.href=url;el.download=`nc_analise_${new Date().toISOString().slice(0,10)}.tsv`;el.click();URL.revokeObjectURL(url);
+  showToast(`⬇ ${analyzed.length} NCs exportadas`);
+}
+
+function clearAll(){
+  document.getElementById('inputArea').value='';
+  document.getElementById('inputStats').textContent='';
+  document.getElementById('resultsPanel').style.display='none';
+  _lastData=null;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdOps Campaign Setup Guide · StormX</title>
+<style>
+:root{
+  --azul:#1F36C7;--azul-escuro:#1a237e;--azul-light:#e8ecfd;
+  --cinza:#f4f5fb;--borda:#d6dbf2;
+  --ok:#1b8a3a;--erro:#c0392b;--warn:#9a7b00;
+  --sidebar-w:220px;--header-h:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--cinza);color:#222;min-height:100vh;}
+
+/* HEADER */
+.header{background:var(--azul-escuro);color:#fff;padding:0 24px;height:var(--header-h);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;}
+.header h1{font-size:16px;font-weight:700;}
+.header .badge{font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:20px;}
+.header .ver{font-size:10px;opacity:.5;margin-left:auto;}
+
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - var(--header-h));}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:#fff;border-right:1px solid var(--borda);padding:12px 0 24px;flex-shrink:0;position:sticky;top:var(--header-h);height:calc(100vh - var(--header-h));overflow-y:auto;}
+.sb-group{padding:14px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#aaa;}
+.plat-btn{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:13px;font-weight:500;color:#333;transition:background .1s;}
+.plat-btn:hover{background:var(--cinza);}
+.plat-btn.active{background:var(--azul-light);color:var(--azul);font-weight:700;}
+.plat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.plat-tag{font-size:9px;background:#eee;color:#888;padding:1px 5px;border-radius:3px;margin-left:auto;flex-shrink:0;}
+
+/* MAIN */
+.main{flex:1;padding:24px;min-width:0;}
+
+/* PLATFORM HEADER */
+.plat-header{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:16px;}
+.plat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.plat-header-info h2{font-size:18px;color:var(--azul-escuro);margin-bottom:3px;}
+.plat-header-info p{font-size:13px;color:#666;margin-bottom:4px;}
+.plat-header-info a{font-size:12px;color:var(--azul);text-decoration:none;}
+.plat-header-info a:hover{text-decoration:underline;}
+
+/* STEPS NAV */
+.steps-nav{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.step-btn{padding:7px 13px;border:1.5px solid var(--borda);background:#fff;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:#555;display:flex;align-items:center;gap:6px;transition:all .1s;}
+.step-btn:hover{background:var(--cinza);}
+.step-btn.active{background:var(--azul);color:#fff;border-color:var(--azul);}
+.step-num{width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+.step-btn.active .step-num{background:rgba(255,255,255,.25);}
+
+/* STEP CONTENT */
+.step-content{background:#fff;border:1px solid var(--borda);border-radius:10px;overflow:hidden;}
+.step-ch{padding:14px 22px;border-bottom:1px solid var(--borda);background:var(--azul-light);}
+.step-ch h3{font-size:15px;color:var(--azul-escuro);margin-bottom:2px;}
+.step-ch p{font-size:13px;color:#555;}
+
+/* CAMPO */
+.campo{border-bottom:1px solid var(--borda);}
+.campo:last-child{border-bottom:none;}
+.campo-h{padding:12px 22px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;user-select:none;}
+.campo-h:hover{background:#fafbff;}
+.campo-label{font-weight:600;font-size:13px;line-height:1.3;}
+.campo-meta{display:flex;gap:5px;align-items:center;margin-top:4px;flex-wrap:wrap;}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;line-height:1.4;}
+.tag-req{background:#fde8e8;color:var(--erro);}
+.tag-opt{background:#e8f4ea;color:var(--ok);}
+.tag-onde{background:#eef0fa;color:#333;}
+.tag-tipo{background:#fff3e0;color:#a85600;}
+.campo-arr{color:#bbb;font-size:12px;margin-top:2px;flex-shrink:0;transition:transform .2s;}
+.campo-arr.open{transform:rotate(180deg);}
+.campo-body{display:none;padding:0 22px 14px 22px;}
+.campo-body.open{display:block;}
+.campo-opts strong{font-size:10px;text-transform:uppercase;color:#aaa;letter-spacing:.05em;}
+.campo-opts ul{margin:4px 0 0 16px;font-size:13px;color:#444;line-height:1.8;}
+.campo-dica{margin-top:10px;padding:8px 12px;background:#fffbea;border-left:3px solid #f0c040;font-size:12px;color:#5a4500;border-radius:0 4px 4px 0;line-height:1.6;}
+.campo-dica strong{color:#a07000;}
+
+/* NAV BUTTONS */
+.nav-btns{display:flex;gap:10px;margin-top:16px;}
+.btn-prev{padding:9px 18px;border:1.5px solid var(--borda);background:#fff;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;color:#555;}
+.btn-next{padding:9px 18px;border:none;background:var(--azul);color:#fff;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;}
+.btn-prev:hover{background:var(--cinza);}
+.btn-next:hover{opacity:.9;}
+
+/* WELCOME */
+.welcome{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:40px;text-align:center;}
+.welcome h2{font-size:20px;color:var(--azul-escuro);margin-bottom:10px;}
+.welcome p{font-size:14px;color:#666;line-height:1.7;max-width:500px;margin:0 auto;}
+.plat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:28px;}
+.plat-card{border:1.5px solid var(--borda);border-radius:8px;padding:14px 10px;cursor:pointer;text-align:center;transition:border-color .15s,box-shadow .15s;}
+.plat-card:hover{border-color:var(--azul);box-shadow:0 2px 8px rgba(31,54,199,.12);}
+.plat-card .pc-icon{font-size:26px;margin-bottom:6px;}
+.plat-card .pc-name{font-size:12px;font-weight:600;color:#333;}
+.plat-card .pc-sub{font-size:10px;color:#999;margin-top:2px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:20px">📋</span>
+  <h1>AdOps Campaign Setup Guide</h1>
+  <span class="badge">StormX Data &amp; Tech</span>
+  <span class="ver">v1.0 · 2026</span>
+</div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const PLATAFORMAS = {
+
+/* ─────────────────── META ADS ─────────────────── */
+meta:{
+  nome:"Meta Ads", emoji:"📘", cor:"#1877F2",
+  descricao:"Facebook · Instagram · Messenger · Audience Network",
+  url:"https://business.facebook.com/adsmanager",
+  status:"full", grupo:"Social",
+  steps:[
+    {
+      id:"bm", titulo:"Business Manager", icone:"🏢",
+      descricao:"Configuração inicial da conta e ativos do anunciante.",
+      campos:[
+        {label:"Business Manager ID",onde:"Configurações > Informações da empresa",tipo:"ID numérico",obrigatorio:true,opcoes:null,dica:"O BM é a conta-mãe. Sempre vincule o Ad Account ao BM do cliente — não ao da agência como conta principal."},
+        {label:"Ad Account",onde:"Configurações > Contas de anúncios",tipo:"Seleção / Criação",obrigatorio:true,opcoes:["Usar account existente do cliente","Criar nova account no BM do cliente"],dica:"Fuso horário e moeda são definidos na criação e não podem ser alterados depois. Sempre confirmar com o cliente antes de criar."},
+        {label:"Página do Facebook",onde:"Configurações > Páginas",tipo:"Vinculação",obrigatorio:true,opcoes:null,dica:"A Página precisa estar vinculada ao BM. Sem página, não é possível criar anúncios de feed."},
+        {label:"Conta do Instagram",onde:"Configurações > Contas do Instagram",tipo:"Vinculação",obrigatorio:false,opcoes:null,dica:"Necessário para exibir anúncios no Instagram com identidade do cliente. Sem ela, a Página do Facebook é usada como remetente."},
+        {label:"Pixel do Meta",onde:"Gerenciador de Eventos > Fontes de dados",tipo:"ID / Criação",obrigatorio:true,opcoes:["Pixel existente do cliente","Novo pixel (gera código de instalação)","Conversions API (CAPI) paralelo"],dica:"Sempre confirmar se o pixel está disparando corretamente via Meta Pixel Helper (extensão Chrome) antes de criar campanhas de conversão."},
+        {label:"Conversions API (CAPI)",onde:"Gerenciador de Eventos > Configurações",tipo:"Configuração técnica",obrigatorio:false,opcoes:["Via parceiro (Shopify, WooCommerce, VTEX…)","Via código direto no servidor","Via GTM Server-side"],dica:"Recomendado para reduzir impacto de bloqueadores de anúncios e iOS 14+. Aumenta significativamente a qualidade do sinal de conversão."},
+        {label:"Catálogo de Produtos",onde:"Commerce Manager > Catálogos",tipo:"Upload / Integração",obrigatorio:false,opcoes:["Feed URL (atualização automática)","Upload manual (CSV/XML)","Integração com plataforma de e-commerce"],dica:"Necessário para campanhas de Vendas do Catálogo (DPA). Verificar se o pixel está associado ao catálogo."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campanha", icone:"🎯",
+      descricao:"Objetivo, tipo de compra, CBO e datas.",
+      campos:[
+        {label:"Nome da Campanha",onde:"Criar campanha > Nome",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Use naming convention: [Cliente]_[Produto]_[Objetivo]_[Mês/Ano]. Ex: UNL_Dove_CONV_Out26"},
+        {label:"Objetivo da Campanha",onde:"Criar campanha > Escolher objetivo",tipo:"Seleção única",obrigatorio:true,opcoes:["AWARENESS: Reconhecimento de marca","AWARENESS: Alcance","CONSIDERATION: Tráfego","CONSIDERATION: Engajamento","CONSIDERATION: Instalações do app","CONSIDERATION: Visualizações de vídeo","CONSIDERATION: Geração de cadastros","CONSIDERATION: Mensagens","CONVERSION: Conversões","CONVERSION: Vendas do catálogo","CONVERSION: Tráfego para o estabelecimento"],dica:"O objetivo define quais otimizações e formatos ficam disponíveis. Uma vez criada a campanha, o objetivo NÃO pode ser alterado."},
+        {label:"Tipo de Compra",onde:"Criar campanha > Tipo de compra",tipo:"Seleção única",obrigatorio:true,opcoes:["Leilão (Auction) — entrega flexível, custo variável","Alcance e Frequência (R&F) — entrega garantida, CPM fixo, reserva prévia"],dica:"R&F exige reserva com antecedência mínima de ~48h e valor mínimo de orçamento. Disponível apenas para alguns países e objetivos."},
+        {label:"Campaign Budget Optimization (CBO)",onde:"Criar campanha > Orçamento da campanha",tipo:"Toggle Sim/Não",obrigatorio:false,opcoes:["Ativo: Meta distribui o orçamento entre os conjuntos automaticamente","Inativo: orçamento definido em cada conjunto individualmente"],dica:"CBO recomendado quando há múltiplos conjuntos com públicos diferentes — a Meta otimiza a alocação dinamicamente."},
+        {label:"Orçamento da Campanha (se CBO ativo)",onde:"Criar campanha > Orçamento e período",tipo:"Valor + periodicidade",obrigatorio:false,opcoes:["Diário: valor máximo por dia","Vitalício: valor total do período"],dica:"Orçamento diário tem mais flexibilidade. Vitalício permite criar um schedule de horários de veiculação."},
+        {label:"Datas da Campanha",onde:"Criar campanha > Período",tipo:"Data início e término",obrigatorio:true,opcoes:null,dica:"Defina sempre uma data de término. Campanhas abertas podem continuar rodando após o flight planejado."},
+        {label:"Categorias Especiais de Anúncios",onde:"Criar campanha > Categoria especial",tipo:"Seleção (se aplicável)",obrigatorio:false,opcoes:["Crédito","Emprego","Habitação","Questões sociais, eleições e política"],dica:"Se o anúncio se enquadra em uma dessas categorias, é obrigatório declarar. Caso contrário deixar em Nenhuma."}
+      ]
+    },
+    {
+      id:"conjunto", titulo:"Conjunto de Anúncios", icone:"👥",
+      descricao:"Público, posicionamentos, orçamento por conjunto e otimização.",
+      campos:[
+        {label:"Nome do Conjunto",onde:"Criar conjunto > Nome",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique o público no nome: [Público]_[Dispositivo]_[Posicionamento]. Ex: Lookalike2pct_Mobile_Feed"},
+        {label:"Evento de Conversão",onde:"Criar conjunto > Conversão",tipo:"Seleção de pixel + evento",obrigatorio:false,opcoes:["Compra","Iniciar pagamento","Adicionar ao carrinho","Visualização de conteúdo","Lead","Cadastro completo"],dica:"Visível apenas em campanhas de Conversão. Selecione o evento mais próximo do objetivo — evite usar PageView como evento de otimização."},
+        {label:"Orçamento do Conjunto (se CBO desligado)",onde:"Criar conjunto > Orçamento",tipo:"Valor + periodicidade",obrigatorio:false,opcoes:["Diário","Vitalício"],dica:null},
+        {label:"Público-alvo",onde:"Criar conjunto > Público",tipo:"Configuração múltipla",obrigatorio:true,opcoes:["Público personalizado: lista de clientes / engajamento / visitantes do site","Público semelhante (Lookalike): 1% a 10% da população","Segmentação detalhada: interesses, comportamentos, dados demográficos","Expansão de público (Advantage): Meta encontra públicos similares além do definido"],dica:"Públicos de retargeting (Custom Audiences) tendem a ter melhor performance. Lookalike de Compradores (1–3%) geralmente supera segmentação por interesse."},
+        {label:"Localização",onde:"Criar conjunto > Localizações",tipo:"Geo-targeting",obrigatorio:true,opcoes:["País / Estado / Cidade / CEP / Raio em km","Pessoas que moram / Visitantes recentes / Viajantes"],dica:null},
+        {label:"Idade e Gênero",onde:"Criar conjunto > Dados demográficos",tipo:"Range + seleção",obrigatorio:false,opcoes:["Idade: 18–65+ (mínimo 18 anos)","Gênero: Todos / Masculino / Feminino"],dica:"Deixe amplo inicialmente e otimize com base em dados de performance. A Meta respeita segmentação apenas na entrega de feed, não em Reels/Stories com Advantage+."},
+        {label:"Posicionamentos",onde:"Criar conjunto > Posicionamentos",tipo:"Seleção",obrigatorio:true,opcoes:["Automático (Advantage+): Meta distribui onde performa melhor — recomendado","Manual:","→ Feed Facebook / Instagram","→ Stories Facebook / Instagram","→ Reels Facebook / Instagram","→ Colunas da direita (desktop only)","→ In-stream video","→ Inbox Messenger","→ Audience Network (apps e sites terceiros)"],dica:"Posicionamentos manuais limitam o alcance potencial. Use seletivo apenas quando o criativo for desenvolvido especificamente para um formato."},
+        {label:"Otimização de entrega",onde:"Criar conjunto > Otimização e exibição",tipo:"Seleção",obrigatorio:true,opcoes:["Conversões","Cliques no link","Alcance","Impressões","Visualizações da landing page","Visualizações de vídeo (ThruPlay / 2s contínuos)"],dica:"Sincronize sempre com o objetivo da campanha. Otimizar por Impressões em campanha de conversão gera resultado fraco."},
+        {label:"Janela de Atribuição",onde:"Criar conjunto > Otimização e exibição",tipo:"Seleção",obrigatorio:false,opcoes:["Clique de 1 dia","Clique de 7 dias (padrão)","Clique de 7 dias + visualização de 1 dia","Clique de 7 dias + visualização de 7 dias"],dica:"Janela maior capta mais conversões mas pode inflar o CPA aparente. Alinhe com o ciclo de compra típico do produto."},
+        {label:"Estratégia de Lance",onde:"Criar conjunto > Lance",tipo:"Seleção",obrigatorio:true,opcoes:["Menor custo (padrão): maximiza resultados com o orçamento disponível","Lance máximo de custo por resultado: define teto de CPA","Meta de custo por resultado: mantém CPA próximo ao valor definido","ROAS mínimo: para campanhas de vendas com meta de retorno"],dica:"Comece com Menor custo para coletar dados. Lance manual é útil quando há histórico e meta de CPA bem definida."}
+      ]
+    },
+    {
+      id:"anuncio", titulo:"Anúncio", icone:"🖼",
+      descricao:"Criativo, copy, CTA e rastreamento.",
+      campos:[
+        {label:"Nome do Anúncio",onde:"Criar anúncio > Nome",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique formato e variação: [Formato]_[Mensagem]_[Versão]. Ex: Video_Oferta_v1"},
+        {label:"Identidade",onde:"Criar anúncio > Identidade",tipo:"Seleção",obrigatorio:true,opcoes:["Página do Facebook","Conta do Instagram (se vinculada ao BM)"],dica:null},
+        {label:"Formato do Anúncio",onde:"Criar anúncio > Formato",tipo:"Seleção única",obrigatorio:true,opcoes:["Imagem única","Vídeo único","Carrossel (2–10 cards com imagens ou vídeos)","Coleção (imagem/vídeo capa + grid de produtos)","Experiência instantânea (Instant Experience / Canvas)"],dica:"Carrossel permite contar uma história ou mostrar múltiplos produtos. Coleção é ideal para e-commerce com catálogo."},
+        {label:"Especificações de Mídia",onde:"Criar anúncio > Adicionar mídia",tipo:"Upload",obrigatorio:true,opcoes:["Imagem Feed: 1200×628px (1.91:1) ou 1080×1080px (1:1) — JPG/PNG","Imagem Stories/Reels: 1080×1920px (9:16) — zona segura 14% topo e base","Vídeo: MP4/MOV — resolução mínima 720p — bitrate mínimo 125 Kbps","Carrossel: cards 1080×1080px recomendado","Texto na imagem: máximo ~20% de área (afeta alcance mesmo sem proibição formal)"],dica:"Sempre faça upload de versões diferentes para Feed e Stories/Reels. A Meta reutiliza o mesmo criativo nos 3 formatos se não houver versão específica."},
+        {label:"Texto Principal (Primary Text)",onde:"Criar anúncio > Texto principal",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Recomendado: até 125 caracteres para não ser cortado no feed. Pode adicionar até 5 variações para otimização automática (Dynamic Creative)."},
+        {label:"Título (Headline)",onde:"Criar anúncio > Título",tipo:"Texto livre",obrigatorio:false,opcoes:null,dica:"Máx recomendado: 40 caracteres. Aparece abaixo da imagem no feed. Pode adicionar até 5 variações para teste."},
+        {label:"Descrição",onde:"Criar anúncio > Descrição",tipo:"Texto livre",obrigatorio:false,opcoes:null,dica:"Máx recomendado: 30 caracteres. Nem sempre exibida, dependendo do posicionamento e do dispositivo."},
+        {label:"Call-to-Action (CTA)",onde:"Criar anúncio > Botão de chamada para ação",tipo:"Seleção",obrigatorio:false,opcoes:["Saiba mais","Comprar agora","Cadastre-se","Baixar","Entre em contato","Enviar mensagem","Ver mais","Pedir agora","Assistir vídeo","Obter oferta"],dica:"\"Saiba mais\" é o mais neutro. CTAs específicos (Comprar agora) tendem a atrair público mais qualificado mas com menor alcance."},
+        {label:"URL de Destino",onde:"Criar anúncio > URL do site",tipo:"URL",obrigatorio:true,opcoes:null,dica:"Sempre inclua parâmetros UTM. Ex: ?utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}"},
+        {label:"Parâmetros de URL dinâmicos",onde:"Criar anúncio > Parâmetros de URL",tipo:"Template",obrigatorio:true,opcoes:["{{campaign.name}} — nome da campanha","{{adset.name}} — nome do conjunto","{{ad.name}} — nome do anúncio","{{placement}} — posicionamento","{{site_source_name}} — Facebook/Instagram/Messenger/AN"],dica:"Use variáveis dinâmicas da Meta para preenchimento automático. Confirme que os parâmetros chegam corretamente no GA4."}
+      ]
+    },
+    {
+      id:"qa", titulo:"QA & Launch", icone:"✅",
+      descricao:"Verificações antes de publicar.",
+      campos:[
+        {label:"Pré-visualização do anúncio",onde:"Gerenciador de anúncios > ícone de olho > Preview",tipo:"Verificação visual",obrigatorio:true,opcoes:["Feed desktop","Feed mobile","Stories","Reels","Audience Network"],dica:"Use \"Compartilhar pré-visualização\" para enviar ao cliente sem acesso ao BM."},
+        {label:"Verificação do Pixel",onde:"Gerenciador de Eventos > Test Events",tipo:"Ferramenta de diagnóstico",obrigatorio:true,opcoes:null,dica:"Cole a URL da landing page na ferramenta Test Events e confirme se os eventos estão disparando. Use também o Meta Pixel Helper (extensão Chrome)."},
+        {label:"Estimativa de alcance",onde:"Criar conjunto > Tamanho do público",tipo:"Verificação",obrigatorio:false,opcoes:null,dica:"Público menor que 10k pode limitar entrega. Público maior que 50M pode indicar segmentação muito ampla."},
+        {label:"Revisão de política",onde:"Gerenciador de anúncios > Status do anúncio",tipo:"Status automático",obrigatorio:true,opcoes:["Em análise (normalmente < 24h)","Ativo","Rejeitado — verificar motivo e editar"],dica:"Anúncios com saúde, finanças, política ou categorias especiais têm revisão mais longa. Conte com até 48h antes do go-live."},
+        {label:"Confirmar orçamento e datas",onde:"Visão geral da campanha",tipo:"Checklist",obrigatorio:true,opcoes:null,dica:"Triplo-cheque: orçamento total vs autorização do cliente, data de início, data de término, fuso horário correto da conta."}
+      ]
+    }
+  ]
+},
+
+/* ─────────────────── GOOGLE ADS ─────────────────── */
+googleads:{
+  nome:"Google Ads", emoji:"🔵", cor:"#4285F4",
+  descricao:"Search · Display · Video (YouTube) · Shopping · Performance Max",
+  url:"https://ads.google.com",
+  status:"full", grupo:"Search/Display",
+  steps:[
+    {
+      id:"conta", titulo:"Conta & MCC", icone:"🔑",
+      descricao:"Acesso, vinculação ao MCC e acompanhamento de conversões.",
+      campos:[
+        {label:"Google Ads Account ID",onde:"Header > ID do cliente (formato XXX-XXX-XXXX)",tipo:"ID",obrigatorio:true,opcoes:null,dica:"Sempre solicite acesso a nível de MCC (Manager) da agência para visão centralizada de todas as contas do cliente."},
+        {label:"Acesso via MCC",onde:"Ferramentas > Configurações > Acesso e segurança",tipo:"Convite por e-mail",obrigatorio:true,opcoes:["Admin","Gerenciador de campanhas (leitura e escrita)","Gerenciador de campanhas (somente leitura)","Somente relatórios"],dica:"Solicite Gerenciador de campanhas no mínimo para poder criar e editar. Admin é necessário para alterar cobrança e configurações da conta."},
+        {label:"Fuso horário e Moeda",onde:"Ferramentas > Configurações > Conta > Fuso e moeda",tipo:"Verificação",obrigatorio:true,opcoes:null,dica:"Não podem ser alterados após a criação da conta. Confirme antes de qualquer configuração."},
+        {label:"Auto-tagging",onde:"Ferramentas > Configurações > Conta > Auto-tagging",tipo:"Toggle",obrigatorio:true,opcoes:["Ativado: adiciona parâmetro gclid automaticamente à URL de destino"],dica:"Fundamental para importar conversões do GA4 para o Google Ads. Mantenha SEMPRE ativado."},
+        {label:"Acompanhamento de Conversões",onde:"Ferramentas > Medição > Conversões",tipo:"Configuração",obrigatorio:true,opcoes:["Site (Tag do Google / GTM)","App (Firebase / Floodlight)","Importação do Google Analytics 4","Ligações telefônicas","Conversões offline (upload CSV)"],dica:"Priorize importar conversões do GA4 (vinculação Google Ads ↔ GA4) para evitar dupla contagem. Confirme o modelo de atribuição."},
+        {label:"Vinculação com GA4",onde:"Ferramentas > Vinculações > Google Analytics",tipo:"Vinculação",obrigatorio:false,opcoes:null,dica:"Habilite auto-import de conversões do GA4. O usuário precisa ter acesso de Admin no GA4 também. Obrigatório para Smart Bidding eficiente."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campanha", icone:"🎯",
+      descricao:"Objetivo, tipo, orçamento, lance e configurações gerais.",
+      campos:[
+        {label:"Nome da Campanha",onde:"Criar campanha > Nome",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Use: [Tipo]_[Produto]_[Objetivo]_[Mês/Ano]. Ex: SRC_Dove_LEAD_Out26 / DSP_Omo_AWR_Out26"},
+        {label:"Meta da Campanha",onde:"Criar campanha > Objetivo",tipo:"Seleção",obrigatorio:true,opcoes:["Vendas","Leads","Tráfego do site","Consideração e reconhecimento de marca","Promoção de aplicativos","Sem meta específica"],dica:"Define quais tipos de campanha e estratégias ficam disponíveis. Escolha a mais próxima do KPI da campanha."},
+        {label:"Tipo de Campanha",onde:"Criar campanha > Tipo",tipo:"Seleção",obrigatorio:true,opcoes:["Pesquisa (Search): anúncios em resultados de busca Google","Display: banners em sites da GDN","Vídeo: anúncios no YouTube e GDN","Shopping: produtos de e-commerce","Performance Max (PMax): todos os canais automatizado","Demand Gen: feed YouTube, Discover, Gmail","Campanhas de app"],dica:"PMax é recomendado pelo Google mas dá menos controle granular. Para branding com controle de posicionamento, prefira Display ou Video separadas."},
+        {label:"Estratégia de Lances",onde:"Criar campanha > Lance",tipo:"Seleção",obrigatorio:true,opcoes:["CPA desejado: custo por aquisição target (requer histórico de conversões)","ROAS desejado: retorno sobre investimento target","Maximizar conversões: gasta o orçamento gerando máximo de conversões","Maximizar valor de conversão: foca em conversões de maior valor","CPC manual: define CPC máximo por keyword","CPM alvo (tCPM): para Display/Video por alcance","CPV máximo: custo por visualização para vídeo"],dica:"Estratégias inteligentes (CPA/ROAS) precisam de ~30–50 conversões/mês para funcionar bem. Comece com Maximizar conversões e migre após acúmulo de dados."},
+        {label:"Orçamento Diário",onde:"Criar campanha > Orçamento",tipo:"Valor em R$",obrigatorio:true,opcoes:["Individual por campanha","Compartilhado entre múltiplas campanhas"],dica:"O Google pode gastar até 2× o orçamento diário em dias de alto tráfego, mas respeita o total mensal (30,4 × orçamento diário)."},
+        {label:"Redes",onde:"Criar campanha > Redes",tipo:"Checkbox",obrigatorio:false,opcoes:["Rede de Pesquisa do Google","Parceiros de pesquisa do Google","Rede de Display do Google"],dica:"Para campanhas de Search focadas, desmarque Rede de Display. Parceiros de pesquisa aumentam alcance mas geralmente têm qualidade menor."},
+        {label:"Localização",onde:"Criar campanha > Localizações",tipo:"Geo-targeting",obrigatorio:true,opcoes:["País / Estado / Cidade / Raio","Segmentar: Presença ou interesse / Presença / Pesquisa de interesse"],dica:"Opção padrão inclui quem está OU demonstrou interesse na localização. Para geo preciso, selecione apenas \"Presença\"."},
+        {label:"Idioma",onde:"Criar campanha > Idiomas",tipo:"Seleção múltipla",obrigatorio:true,opcoes:null,dica:"Selecione Português para BR. Inglês pode ser adicionado para alcançar usuários com interface no idioma inglês no Brasil."},
+        {label:"Calendário de anúncios",onde:"Criar campanha > Mais configurações > Calendário",tipo:"Grade horária",obrigatorio:false,opcoes:null,dica:"Configure ajustes de lance por horário/dia se houver padrão claro de conversão (ex: seg–sex horário comercial para B2B)."},
+        {label:"Datas",onde:"Criar campanha > Datas",tipo:"Data início e término",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Rotação de anúncios",onde:"Criar campanha > Mais configurações > Rotação",tipo:"Seleção",obrigatorio:false,opcoes:["Otimizar: favorece anúncio com melhor performance (recomendado)","Rotação uniforme: exibe igualmente (para A/B teste controlado)"],dica:null}
+      ]
+    },
+    {
+      id:"grupo", titulo:"Grupo de Anúncios", icone:"📁",
+      descricao:"Keywords, públicos, posicionamentos e CPC padrão.",
+      campos:[
+        {label:"Nome do Grupo",onde:"Criar grupo > Nome",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Agrupe por tema de keyword (Search) ou segmentação (Display/Video). Ex: [Produto]-[Intenção] para Search."},
+        {label:"Keywords (Search)",onde:"Grupo > Palavras-chave",tipo:"Lista + correspondência",obrigatorio:false,opcoes:["Ampla: sinônimos e termos relacionados — menor controle, maior alcance","Frase: sequência exata com variações — \"tênis feminino\"","Exata: correspondência precisa — [tênis feminino]","Negativa: exclui termos — -grátis -segunda mão"],dica:"Comece com Frase e Exata para controle. Ampla com Smart Bidding pode funcionar bem após histórico acumulado. Sempre adicione lista robusta de negativas."},
+        {label:"Públicos (Display/Video)",onde:"Grupo > Públicos",tipo:"Seleção",obrigatorio:false,opcoes:["Segmentos de dados (1P): visitantes do site / lista de clientes","Segmentos semelhantes","Afinidade: categorias de interesse amplo","Intenção personalizada: keywords pesquisadas","In-market: ativamente pesquisando produtos","Dados demográficos: idade, gênero, renda, status parental"],dica:"Modo Segmentação restringe entrega ao público. Modo Observação coleta dados sem restringir. Use Observação primeiro para entender o público antes de segmentar."},
+        {label:"Posicionamentos (Display/Video)",onde:"Grupo > Conteúdo > Posicionamentos",tipo:"Seleção",obrigatorio:false,opcoes:["Sites específicos da GDN","Apps específicos","Canais do YouTube","Vídeos específicos do YouTube"],dica:"Posicionamentos gerenciados dão mais controle mas limitam alcance. Combine com exclusões de conteúdo para brand safety."},
+        {label:"CPC máximo padrão",onde:"Criar grupo > CPC padrão",tipo:"Valor em R$",obrigatorio:false,opcoes:null,dica:"Com Smart Bidding, este campo é gerenciado automaticamente. Relevante apenas para campanhas com CPC manual."}
+      ]
+    },
+    {
+      id:"anuncio", titulo:"Anúncio", icone:"📝",
+      descricao:"Formatos de anúncio por tipo de campanha.",
+      campos:[
+        {label:"RSA — Anúncio Responsivo de Pesquisa",onde:"Grupo > Anúncios > + RSA",tipo:"Copy",obrigatorio:false,opcoes:["Títulos: 3 a 15 (máx 30 chars cada) — mínimo 3 obrigatórios","Descrições: 2 a 4 (máx 90 chars cada) — mínimo 2 obrigatórias","URL final","URL de exibição: domínio + 2 caminhos opcionais (máx 15 chars cada)","Fixar título/descrição em posição específica (usar com moderação)"],dica:"Google combina títulos e descrições automaticamente. Mais variações = mais combinações testadas. Inclua ao menos 1 título com a keyword principal para relevância."},
+        {label:"Ativos / Extensões (Search)",onde:"Campanha ou Grupo > Ativos",tipo:"Configuração",obrigatorio:false,opcoes:["Sitelinks: links adicionais para páginas específicas","Callouts: destaques sem link (ex: Frete grátis, 15 anos de mercado)","Snippets estruturados: lista de categorias ou serviços","Ligação: número de telefone clicável","Localização: endereço físico (exige perfil Google Business)","Preço: tabela de produtos com valores","Promoção: oferta com código/desconto","Imagem: imagem lateral no anúncio"],dica:"Ativos aumentam o Ad Rank sem custo extra. Adicione o máximo relevante — especialmente sitelinks e callouts."},
+        {label:"Anúncio Responsivo de Display (GDN)",onde:"Grupo > Anúncios > + Display responsivo",tipo:"Upload + copy",obrigatorio:false,opcoes:["Imagens: até 15 (proporções 1.91:1 e 1:1)","Logotipos: até 5 (1:1 ou 4:1)","Títulos: até 5 (máx 30 chars)","Título longo: 1 (máx 90 chars)","Descrições: até 5 (máx 90 chars)","Nome do anunciante","URL final"],dica:"O Google combina os elementos automaticamente para cada posicionamento. Inclua imagens em múltiplas proporções para maximizar cobertura nos sites da GDN."},
+        {label:"Anúncio de Vídeo (YouTube)",onde:"Grupo > Anúncios > + Vídeo",tipo:"URL YouTube + config",obrigatorio:false,opcoes:["In-stream pulável: 5s obrigatórios + skippable — cobrança CPV (visualização 30s ou conclusão)","In-stream não pulável: 15–20s fixo — cobrança CPM","Bumper: 6s fixo — cobrança CPM","In-feed (Discovery): thumbnail + título + 2 linhas — feed/resultados/watch","Masthead: homepage YouTube — reservado via equipe Google"],dica:"Para anúncios puláveis: primeiros 5s são cruciais. O vídeo precisa estar publicado no YouTube como Público ou Não listado antes de criar o anúncio."}
+      ]
+    },
+    {
+      id:"conversoes", titulo:"Conversões & Tags", icone:"🏷",
+      descricao:"Configuração do acompanhamento de conversões.",
+      campos:[
+        {label:"Ação de conversão",onde:"Ferramentas > Medição > Conversões > + Nova ação",tipo:"Configuração",obrigatorio:true,opcoes:["Compra","Lead (envio de formulário)","Pageview","Ligação telefônica","Engajamento com app","Importada do GA4"],dica:"Defina claramente o que é conversão primária (usada para otimização Smart Bidding) vs secundária (observação apenas)."},
+        {label:"Janela de conversão",onde:"Configuração da ação de conversão",tipo:"Seleção",obrigatorio:true,opcoes:["Clique: 1 / 7 / 30 / 60 / 90 dias","Visualização (view-through): 1 dia a 30 dias"],dica:"Janela padrão é 30 dias para clique. Alinhe com o ciclo de compra típico do produto/serviço."},
+        {label:"Modelo de atribuição",onde:"Configuração da ação de conversão",tipo:"Seleção",obrigatorio:false,opcoes:["Baseado em dados (recomendado — usa ML para distribuir crédito)","Último clique (legado)","Linear","Redução de tempo","Posição"],dica:"\"Baseado em dados\" é o padrão recomendado desde 2022. Usa Machine Learning para distribuir crédito entre pontos de contato."},
+        {label:"Implementação da tag",onde:"Ferramentas > Medição > Tag do Google",tipo:"Código / GTM",obrigatorio:true,opcoes:["Instalação manual do gtag.js no <head> do site","Via Google Tag Manager (recomendado)","Via parceiros de site (Shopify, WooCommerce, VTEX)"],dica:"Via GTM é mais fácil para gerenciar mudanças sem deploy de código. Confirme se a tag está disparando em TODAS as páginas do site."}
+      ]
+    },
+    {
+      id:"qa", titulo:"QA & Launch", icone:"✅",
+      descricao:"Verificações finais antes de ativar.",
+      campos:[
+        {label:"Pré-visualização de anúncios",onde:"Ferramentas > Visualizador de anúncios",tipo:"Ferramenta",obrigatorio:true,opcoes:null,dica:"Use o Visualizador de Anúncios para ver como os anúncios aparecem em diferentes dispositivos e queries sem gerar impressões reais."},
+        {label:"Status das palavras-chave",onde:"Palavras-chave > Status",tipo:"Verificação",obrigatorio:false,opcoes:["Qualificada — OK","Pouco tráfego — abaixo do limite mínimo (não vai exibir)","Em análise","Pausada / Removida"],dica:"Keywords com \"Pouco tráfego\" não exibem anúncios. Considere variações mais amplas ou consolidação de grupos."},
+        {label:"Status de conversão",onde:"Ferramentas > Medição > Conversões",tipo:"Status",obrigatorio:true,opcoes:["Registrando conversões (verde) — OK","Sem atividade recente (amarelo) — investigar","Tag inativa (vermelho) — implementação com problema"],dica:"Use Google Tag Assistant (extensão Chrome) para verificar disparo em tempo real na landing page."},
+        {label:"Diagnóstico de anúncios",onde:"Anúncios > Diagnóstico",tipo:"Ferramenta",obrigatorio:false,opcoes:null,dica:"Verifique o índice de qualidade das keywords e a força dos anúncios (Fraca / Boa / Excelente). Força \"Excelente\" impacta positivamente o Ad Rank."}
+      ]
+    }
+  ]
+},
+
+/* ─────────────────── CM360 ─────────────────── */
+cm360:{
+  nome:"Campaign Manager 360", emoji:"🔴", cor:"#DB4437",
+  descricao:"Ad Server · Trafficking · 3rd Party Tags · Floodlight",
+  url:"https://campaignmanager.google.com",
+  status:"full", grupo:"Ad Server",
+  steps:[
+    {
+      id:"advertiser", titulo:"Advertiser", icone:"🏷",
+      descricao:"Configuração inicial do anunciante no CM360.",
+      campos:[
+        {label:"Advertiser",onde:"CM360 > Network > Advertisers > New",tipo:"Criação / Seleção",obrigatorio:true,opcoes:null,dica:"Um Advertiser no CM360 é o contêiner de campanhas de um cliente. Se o cliente já tem conta, solicite acesso via compartilhamento interno (não crie duplicado)."},
+        {label:"URL padrão de landing page",onde:"Advertiser > Properties > Default landing page",tipo:"URL",obrigatorio:true,opcoes:null,dica:"Usada como fallback quando um ad/tag não tem URL própria. Preencha sempre com a homepage do cliente."},
+        {label:"Floodlight compartilhado",onde:"Advertiser > Floodlight configuration",tipo:"Verificação",obrigatorio:false,opcoes:["Floodlight próprio do advertiser","Floodlight compartilhado de advertiser mãe (ex: conta principal do grupo)"],dica:"Para clientes com múltiplos advertisers por marca (ex: Unilever com Dove, Omo, Hellmann's), o Floodlight pode ser compartilhado da conta mãe para consolidar dados."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campanha", icone:"📅",
+      descricao:"Criação da campanha com datas e URL padrão.",
+      campos:[
+        {label:"Nome da Campanha",onde:"Advertiser > Campaigns > New",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Siga a naming convention do cliente. Para Unilever BR: segue padrão da NC Tool."},
+        {label:"Data de início",onde:"Campaign > Start date",tipo:"Data",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Data de término",onde:"Campaign > End date",tipo:"Data",obrigatorio:true,opcoes:null,dica:"Campanhas expiradas param de servir automaticamente. Sempre defina e monitore. Extensões devem ser feitas antes do término."},
+        {label:"Default click-through URL",onde:"Campaign > Default landing page URL",tipo:"URL",obrigatorio:true,opcoes:null,dica:"URL de destino padrão para todos os anúncios desta campanha, a menos que sobrescritas no nível do Ad."}
+      ]
+    },
+    {
+      id:"site-placement", titulo:"Site & Placement", icone:"🌐",
+      descricao:"Publisher, site e placement (formato/posição).",
+      campos:[
+        {label:"Site (Publisher)",onde:"Campaign > Sites > New",tipo:"Criação / Busca",obrigatorio:true,opcoes:null,dica:"O Site no CM360 representa o veículo/publisher. Se não existir, crie-o com nome claro: \"Globo\", \"UOL\", \"Spotify BR\"."},
+        {label:"Placement — Nome",onde:"Campaign > Placements > New",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Convenção: [Site]_[Formato]_[Dimensão]_[Posição]. Ex: Globo_Display_300x250_Homepage"},
+        {label:"Placement — Tipo",onde:"Placement > Type",tipo:"Seleção",obrigatorio:true,opcoes:["Display","Video in-stream","Mobile (mobile web / in-app)","Audio / Rich Media"],dica:"O tipo define quais criativos podem ser vinculados e quais tags de ad server são geradas."},
+        {label:"Placement — Dimensões",onde:"Placement > Size",tipo:"Dimensão em px",obrigatorio:true,opcoes:["728×90 (leaderboard)","300×250 (medium rectangle)","300×600 (half page)","970×250 (billboard)","320×50 (mobile banner)","320×100 (large mobile banner)","1×1 (tracking pixel)","Customizado (para rich media / expandable)"],dica:"Confirme as dimensões exatas com o publisher. Dimensão incorreta impede veiculação correta dos criativos."},
+        {label:"Placement — Custo",onde:"Placement > Cost structure",tipo:"Modelo + valor",obrigatorio:false,opcoes:["CPM","CPC","CPD (custo por dia)","vCPM (viewable CPM)","Sem custo (para tracking)"],dica:"Preencha corretamente para que o relatório de custo do CM360 seja preciso. Pode ser editado após a criação."},
+        {label:"Tipo de tag",onde:"Placement > Tag settings",tipo:"Seleção",obrigatorio:true,opcoes:["iFrame: mais compatível com publishers legados","JavaScript: preferido para rastreamento avançado","Click tracker: apenas rastreia cliques sem servir criativo","VAST in-stream: para vídeo pré/mid/post roll"],dica:"Confirme com o publisher qual formato de tag ele aceita ANTES de gerar as tags. Mudança de tipo depois exige nova tag."}
+      ]
+    },
+    {
+      id:"criativo", titulo:"Criativo", icone:"🎨",
+      descricao:"Upload e configuração dos criativos no CM360.",
+      campos:[
+        {label:"Tipo de criativo",onde:"Advertiser > Creatives > New",tipo:"Seleção",obrigatorio:true,opcoes:["Display image (GIF/JPG/PNG): banner estático ou animado","HTML5: criativo interativo em .zip","Third-party: tag de terceiro (outro ad server ou plataforma)","Rich media: expandable, pushdown (via CM360 Studio)","Video VAST in-stream: MP4 para vídeo","VPAID: vídeo interativo com script"],dica:"Para clientes com agência de criação que usa ad server próprio (Sizmek, Flashtalking), use tipo Third-party."},
+        {label:"Upload do asset",onde:"Creatives > Upload",tipo:"Arquivo",obrigatorio:true,opcoes:null,dica:"HTML5: deve ser .zip com index.html na raiz. Verifique se a animação cessa após 30s (padrão IAB). Não inclua fontes externas sem fallback."},
+        {label:"URL de saída (Exit URL)",onde:"Creatives > Exit URLs",tipo:"URL",obrigatorio:true,opcoes:null,dica:"Para HTML5 e Rich Media: cada zona clicável (\"exit\") precisa ter uma URL mapeada. Confirme com o estúdio de criação os nomes exatos dos exits."},
+        {label:"Backup image",onde:"Creatives > Backup image",tipo:"Upload JPG/PNG",obrigatorio:false,opcoes:null,dica:"Obrigatório para HTML5 por política IAB. Exibida quando o browser não suporta o criativo principal. Deve ter a mesma dimensão do criativo."},
+        {label:"Impression tracking pixel",onde:"Creatives > Additional tracking",tipo:"URL de pixel 1×1",obrigatorio:false,opcoes:null,dica:"Adicione pixels de verificação de terceiros (IAS, DV, MOAT) aqui para contagem de impressão independente do CM360."}
+      ]
+    },
+    {
+      id:"ad", titulo:"Ad (Anúncio)", icone:"📢",
+      descricao:"Vinculação de criativos a placements e rotação.",
+      campos:[
+        {label:"Nome do Ad",onde:"Campaign > Ads > New",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Convenção: [Placement]_[Criativo]_[Versão]. Facilita identificação nos relatórios."},
+        {label:"Tipo do Ad",onde:"Ad > Type",tipo:"Seleção",obrigatorio:true,opcoes:["Standard display: exibe criativo no placement","Tracking: conta impressão sem servir criativo","Click tracker: conta cliques sem servir criativo","Default: fallback quando nenhum outro ad se qualifica"],dica:null},
+        {label:"Criativo vinculado",onde:"Ad > Creatives",tipo:"Vinculação",obrigatorio:true,opcoes:null,dica:"O criativo deve ter a mesma dimensão do placement. O CM360 NÃO escala criativos automaticamente."},
+        {label:"Click-through URL",onde:"Ad > Click-through URL",tipo:"URL",obrigatorio:true,opcoes:null,dica:"URL de destino do clique. O CM360 adiciona automaticamente o tracking de clique na frente desta URL (redirect chain). Inclua UTMs."},
+        {label:"Rotação de criativos",onde:"Ad > Creative rotation",tipo:"Seleção",obrigatorio:false,opcoes:["Mesmo peso: exibe todos os criativos igualmente (recomendado para análise)","Otimizado por clique: favorece o criativo com maior CTR","Sequencial: exibe na ordem definida","Customizado: define % para cada criativo"],dica:"\"Mesmo peso\" é o mais transparente para análise comparativa de performance de criativos."},
+        {label:"Datas do Ad",onde:"Ad > Dates",tipo:"Data início e término",obrigatorio:true,opcoes:null,dica:"Devem estar dentro do período da campanha. Ad com data futura ficará pendente até a data de início."}
+      ]
+    },
+    {
+      id:"floodlight", titulo:"Floodlight Tags", icone:"💡",
+      descricao:"Configuração de tags de conversão Floodlight.",
+      campos:[
+        {label:"Grupo de atividades Floodlight",onde:"Advertiser > Floodlight activities > Activity groups",tipo:"Criação",obrigatorio:true,opcoes:null,dica:"Grupos organizam as atividades por categoria. Exemplo: \"Site Actions\", \"Conversões\", \"Remarketing\"."},
+        {label:"Atividade Floodlight",onde:"Floodlight > New activity",tipo:"Criação",obrigatorio:true,opcoes:null,dica:"Cada evento de conversão (compra, cadastro, pageview) é uma atividade separada."},
+        {label:"Tipo de tag Floodlight",onde:"Floodlight activity > Tag type",tipo:"Seleção",obrigatorio:true,opcoes:["Counter: conta o número de ocorrências do evento","Sales: registra evento + valor de transação"],dica:"Use Counter para leads, cadastros, pageviews. Use Sales para compras onde o valor do pedido precisa ser capturado."},
+        {label:"Metodologia de contagem",onde:"Floodlight activity > Counting method",tipo:"Seleção",obrigatorio:true,opcoes:["Standard: 1 conversão por sessão por usuário","Unique: 1 conversão por usuário no período de atribuição","Per session: todas as conversões da sessão contabilizadas"],dica:"Para leads, use Standard ou Unique. Para vendas (Sales), Standard é o mais comum. Unique evita inflação por multi-sessão."},
+        {label:"Custom variables",onde:"Floodlight activity > Custom variables",tipo:"Configuração",obrigatorio:false,opcoes:null,dica:"Permite capturar valores dinâmicos da página (u1 = ID do produto, u2 = valor do pedido, etc.). Requer implementação técnica no site."},
+        {label:"Implementação da tag",onde:"Floodlight activity > Tag code",tipo:"Código",obrigatorio:true,opcoes:["iFrame tag","JavaScript tag","Global Site Tag (gtag.js)","Google Tag Manager"],dica:"Global Site Tag é o método mais moderno e compatível. Confirme com o time técnico do cliente qual método será implementado."}
+      ]
+    },
+    {
+      id:"tags", titulo:"Geração & Envio de Tags", icone:"📤",
+      descricao:"Exportação das tags de ad server para o publisher.",
+      campos:[
+        {label:"Download da Trafficking Sheet",onde:"Campaign > Download > Tags",tipo:"Export Excel",obrigatorio:true,opcoes:null,dica:"A trafficking sheet contém todas as tags organizadas por placement e ad. Envie ao publisher para implementação no site/app."},
+        {label:"Verificação pós go-live",onde:"Campaign > Reports",tipo:"Verificação",obrigatorio:true,opcoes:null,dica:"Aguarde 24–48h após envio das tags para verificar se impressões estão registrando. Zero impressão após 48h = problema de implementação no publisher — abrir ticket."},
+        {label:"Relatório de servimento",onde:"Campaign > Reports > Standard report",tipo:"Report",obrigatorio:false,opcoes:null,dica:"Configure relatório diário de impressões, cliques e conversões. Exporte para planilha ou conecte ao Looker Studio via conector CM360."}
+      ]
+    }
+  ]
+},
+
+/* ─────────────────── DV360 ─────────────────── */
+dv360:{
+  nome:"Display & Video 360", emoji:"🟡", cor:"#F4B400",
+  descricao:"DSP · Open Auction · PMP · Deals · Audience Management",
+  url:"https://displayvideo.google.com",
+  status:"full", grupo:"Ad Server",
+  steps:[
+    {
+      id:"partner", titulo:"Partner & Advertiser", icone:"🔗",
+      descricao:"Configuração de acesso e vinculação com CM360.",
+      campos:[
+        {label:"Partner ID",onde:"DV360 > Selecionar parceiro (dropdown topo)",tipo:"ID",obrigatorio:true,opcoes:null,dica:"O Partner é a conta da agência. Todos os clientes são Advertisers dentro do Partner. Solicite acesso ao Partner para gestão centralizada."},
+        {label:"Advertiser",onde:"Partner > Advertisers > New",tipo:"Criação / Seleção",obrigatorio:true,opcoes:null,dica:"Advertisers são os clientes. Configure moeda e fuso horário na criação — NÃO podem ser alterados depois."},
+        {label:"Vinculação com CM360",onde:"Advertiser > Settings > Linked CM360 account",tipo:"Vinculação",obrigatorio:true,opcoes:null,dica:"Essencial para: usar Floodlight do CM360 como fonte de conversão e remarketing no DV360, e para consolidar relatórios no CM360."},
+        {label:"Brand Controls",onde:"Advertiser > Settings > Brand safety",tipo:"Configuração",obrigatorio:true,opcoes:["Digital Content Labels: excluir conteúdo +18, violência, etc.","Sensitive categories: excluir categorias problemáticas para a marca","Verificação de terceiros: DoubleVerify / IAS (requer contrato separado)"],dica:"Configure no nível do Advertiser para herança automática em todos os IOs e LIs. Evita brand safety issues reativos."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campaign", icone:"🎯",
+      descricao:"Objetivo, KPI, orçamento e datas.",
+      campos:[
+        {label:"Nome da Campaign",onde:"Advertiser > Campaigns > New",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Goal",onde:"Campaign > Goal",tipo:"Seleção",obrigatorio:true,opcoes:["Reconhecimento de marca e alcance","Consideração de produto e marca","Ação e conversões online","Vendas offline"],dica:null},
+        {label:"KPI",onde:"Campaign > KPI",tipo:"Seleção + valor target",obrigatorio:true,opcoes:["CPA","CPC","CPM","CPV","CTR","Viewability (%)","ROAS","Custom"],dica:"O KPI define a métrica de sucesso e influencia a otimização automática em nível de campanha."},
+        {label:"Orçamento total",onde:"Campaign > Budget",tipo:"Valor em moeda",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Datas",onde:"Campaign > Dates",tipo:"Data início e término",obrigatorio:true,opcoes:null,dica:null}
+      ]
+    },
+    {
+      id:"io", titulo:"Insertion Order (IO)", icone:"📋",
+      descricao:"IO: nível entre Campanha e Line Items. Um IO por tipo de inventário ou estratégia.",
+      campos:[
+        {label:"Nome do IO",onde:"Campaign > Insertion Orders > New",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Organize por estratégia/inventário: IO_Display_OpenAuction / IO_Video_PMP / IO_Display_PG_Globo"},
+        {label:"Tipo de IO",onde:"IO > Type",tipo:"Seleção",obrigatorio:true,opcoes:["Display","Video","Audio","TrueView (YouTube)","Non-skippable video"],dica:"O tipo define quais formatos de Line Item ficam disponíveis dentro do IO."},
+        {label:"Performance goal",onde:"IO > Performance goal",tipo:"Seleção + valor",obrigatorio:true,opcoes:["CPA","CPC","CPM","CTR","Viewability","ROAS","Custom"],dica:null},
+        {label:"Orçamento do IO",onde:"IO > Budget",tipo:"Seleção + valor",obrigatorio:true,opcoes:["Budget automático (fluxo da campanha-mãe)","Budget fixo com pacing"],dica:null},
+        {label:"Pacing",onde:"IO > Pacing",tipo:"Seleção",obrigatorio:true,opcoes:["ASAP: gasta o mais rápido possível","Even: distribui uniformemente no período","Ahead: entrega mais rápido que Even mas não ASAP"],dica:"Even é o padrão mais seguro para controle de custo e distribuição homogênea. ASAP para campanhas de curta duração ou pré-lançamento."},
+        {label:"Frequência",onde:"IO > Frequency",tipo:"Limite de exposições",obrigatorio:false,opcoes:null,dica:"Configure frequência máxima por usuário (ex: 3 impressões / 7 dias) para evitar oversaturation e reduzir custo."}
+      ]
+    },
+    {
+      id:"li", titulo:"Line Item (LI)", icone:"📌",
+      descricao:"Unidade de entrega: segmentação, lance, criativo.",
+      campos:[
+        {label:"Nome do LI",onde:"IO > Line Items > New",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique público e estratégia: LI_Retargeting_1P / LI_InMarket_Beleza / LI_PMP_GloboID"},
+        {label:"Tipo de LI",onde:"LI > Type",tipo:"Seleção",obrigatorio:true,opcoes:["Display","Video","Audio","Native","TrueView In-stream","Non-skippable / Bumper"],dica:null},
+        {label:"Tipo de inventário",onde:"LI > Inventory source",tipo:"Seleção",obrigatorio:true,opcoes:["Open Auction: leilão aberto — maior alcance e menor CPM","Private (PMP): deal privado com publisher via Deal ID","Preferred Deal: preço fixo, sem garantia de volume","Programmatic Guaranteed (PG): CPM fixo + impressões garantidas"],dica:"Combine Open Auction + PMP no mesmo IO para balancear custo e qualidade de inventário."},
+        {label:"Estratégia de lance",onde:"LI > Bidding",tipo:"Seleção + valor",obrigatorio:true,opcoes:["CPM fixo (Open Auction / PMP)","Otimizado: tCPA / tROAS / Maximizar cliques / Viewability","CPM por impressão visível (vCPM)"],dica:"Lance otimizado por CPA requer Floodlight configuradas e volume mínimo de dados históricos."},
+        {label:"Segmentação — Público",onde:"LI > Targeting > Audience",tipo:"Configuração",obrigatorio:false,opcoes:["1P Floodlight: visitantes do site / compradores (via CM360)","Customer Match: lista de e-mails","Google Audiences: Afinidade / In-market / Intenção personalizada","Similar audiences","DV360 Lists: listas de data providers terceiros"],dica:"Para retargeting, vincule ao Floodlight configurado no CM360. Confirme que o pixel coleta dados suficientes (mínimo ~100 usuários nos últimos 30 dias)."},
+        {label:"Segmentação — Contextual",onde:"LI > Targeting > Content",tipo:"Configuração",obrigatorio:false,opcoes:["Keywords: segmentação por termos no conteúdo da página","URLs/Sites: posicionamentos específicos","Categorias IAB","Digital Content Labels: brand safety"],dica:null},
+        {label:"Segmentação — Geo / Dispositivo",onde:"LI > Targeting > Geography / Device",tipo:"Seleção",obrigatorio:true,opcoes:["País / Estado / Cidade / DMA","Mobile / Desktop / Tablet / CTV","Sistema operacional / Operadora"],dica:null},
+        {label:"Segmentação — Horário",onde:"LI > Targeting > Day & Time",tipo:"Grade horária",obrigatorio:false,opcoes:null,dica:"Configure dayparting se houver padrão claro de conversão ou restrição contratual de horário de veiculação."},
+        {label:"Criativos vinculados",onde:"LI > Creatives",tipo:"Vinculação",obrigatorio:true,opcoes:null,dica:"Criativos precisam ser aprovados no DV360 antes de servir. Tempo de aprovação: 1–2 dias úteis. Suba com antecedência."}
+      ]
+    },
+    {
+      id:"deals", titulo:"Deals & Inventário", icone:"🤝",
+      descricao:"PMP, Preferred Deals e Programmatic Guaranteed.",
+      campos:[
+        {label:"Deal ID",onde:"Advertiser > Inventory > My Inventory > Add deal",tipo:"ID + configuração",obrigatorio:false,opcoes:null,dica:"Obtenha o Deal ID junto ao publisher. Insira EXATAMENTE como fornecido. Erros de ID impedem o setup do deal."},
+        {label:"Tipo de deal",onde:"Deal > Type",tipo:"Seleção",obrigatorio:false,opcoes:["PMP (Private Marketplace): leilão restrito com preço mínimo","Preferred Deal: preço fixo, acesso preferencial, sem volume garantido","Programmatic Guaranteed (PG): CPM fixo + volume de impressões garantido + datas fixas"],dica:"PG exige mais planejamento e é o mais próximo de uma compra direta digital, com automação de trafficking. Requer aprovação bilateral (buyer + seller)."}
+      ]
+    },
+    {
+      id:"reporting", titulo:"Reporting", icone:"📊",
+      descricao:"Relatórios e integrações de dados.",
+      campos:[
+        {label:"Relatório padrão DV360",onde:"DV360 > Reports > New report",tipo:"Configuração",obrigatorio:false,opcoes:["Padrão: impressões, cliques, conversões, custo","Alcance e frequência","Viewability","Relatório por deal / publisher"],dica:null},
+        {label:"Integração Looker Studio",onde:"Via conector Google Marketing Platform",tipo:"Conector BI",obrigatorio:false,opcoes:null,dica:"Use o conector DV360 no Looker Studio para dashboards em tempo quase real. Atualização com defasagem de ~24h."},
+        {label:"Export para BigQuery",onde:"DV360 > Admin > Data transfer",tipo:"Configuração",obrigatorio:false,opcoes:null,dica:"Para análise avançada, exporte impressões/cliques/conversões para BigQuery via Offline Reporting. Requer projeto GCP configurado."}
+      ]
+    }
+  ]
+},
+
+/* ─────────────────── LINKEDIN ─────────────────── */
+linkedin:{
+  nome:"LinkedIn Campaign Manager", emoji:"🔷", cor:"#0077B5",
+  descricao:"B2B · Sponsored Content · Message Ads · Text Ads · Dynamic Ads",
+  url:"https://www.linkedin.com/campaignmanager",
+  status:"full", grupo:"Social",
+  steps:[
+    {
+      id:"conta", titulo:"Conta", icone:"🏢",
+      descricao:"Business Page, Ad Account, permissões e Insight Tag.",
+      campos:[
+        {label:"Página da Empresa (Company Page)",onde:"linkedin.com > Gerenciar > Página",tipo:"Vinculação",obrigatorio:true,opcoes:null,dica:"Necessária para Sponsored Content. O Admin da página precisa vincular ao Campaign Manager. Sem ela, só é possível criar Text Ads e Dynamic Ads."},
+        {label:"Conta de anúncios",onde:"Campaign Manager > Criar conta de anúncios",tipo:"Criação",obrigatorio:true,opcoes:null,dica:"Moeda e fuso horário são definidos na criação e NÃO podem ser alterados depois. Orçamento mínimo: ~US$10/dia. Uma empresa pode ter múltiplas contas."},
+        {label:"Permissões de acesso",onde:"Account Settings > Manage Access",tipo:"Seleção por usuário",obrigatorio:true,opcoes:["Account Manager: acesso total à conta","Campaign Manager: criar e editar campanhas","Creative Manager: criar e editar anúncios","Viewer: somente leitura e relatórios","Billing Admin: acesso a faturamento"],dica:"Adicione a equipe com o mínimo de permissão necessário. Campaign Manager é suficiente para operação diária."},
+        {label:"LinkedIn Insight Tag",onde:"Account Assets > Insight Tag",tipo:"Tag de site (JavaScript)",obrigatorio:true,opcoes:["Instalação manual (copiar e colar no <head> do site)","Via Google Tag Manager (recomendado)","Via parceiro de plataforma (WordPress, Shopify)"],dica:"Equivalente ao pixel de outras plataformas. Necessária para conversões, retargeting e Website Demographics. Confirme instalação em todas as páginas."},
+        {label:"Acompanhamento de Conversões",onde:"Account Assets > Conversions",tipo:"Configuração",obrigatorio:false,opcoes:["URL (página de obrigado / confirmação)","Event específico no site (via Insight Tag)","Lead Gen Form submit (nativo do LinkedIn)","Importação de CRM offline"],dica:"Configure antes de criar campanhas de conversão. Janela padrão: 30 dias para clique, 7 dias para impressão."}
+      ]
+    },
+    {
+      id:"grupo", titulo:"Campaign Group", icone:"📂",
+      descricao:"Agrupador de campanhas por flight, produto ou objetivo.",
+      campos:[
+        {label:"Nome do Campaign Group",onde:"Campaign Manager > New Campaign Group",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Organize por produto/linha: [Cliente]_[Produto]_[Período]. Ex: StormX_SaaS_Q4-2026"},
+        {label:"Status",onde:"Campaign Group > Status",tipo:"Toggle",obrigatorio:true,opcoes:["Active: campanhas dentro podem rodar","Archived: desativa todas as campanhas do grupo"],dica:null},
+        {label:"Orçamento total do grupo",onde:"Campaign Group > Total budget",tipo:"Valor (opcional)",obrigatorio:false,opcoes:null,dica:"Opcional — cap de gasto para todo o grupo. Quando atingido, todas as campanhas pausam automaticamente."},
+        {label:"Datas do grupo",onde:"Campaign Group > Start & End date",tipo:"Datas",obrigatorio:false,opcoes:null,dica:"Opcional. Campanhas dentro do grupo ainda podem ter datas próprias."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campaign", icone:"🎯",
+      descricao:"Objetivo, público, formato, orçamento e lance.",
+      campos:[
+        {label:"Nome da Campaign",onde:"New campaign > Name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Convenção: [Formato]_[Público]_[Objetivo]_[Mês]. Ex: SponsCont_Gerentes_LEAD_Out26"},
+        {label:"Objetivo",onde:"New campaign > Objective",tipo:"Seleção única",obrigatorio:true,opcoes:["Brand Awareness: maximizar impressões / alcance","Website Visits: cliques para o site","Engagement: curtidas, comentários, compartilhamentos","Video Views: visualizações de vídeo","Lead Generation: formulário nativo LinkedIn","Website Conversions: ações no site (requer Insight Tag + evento)","Job Applicants: candidaturas a vagas"],dica:"O objetivo define a otimização de entrega e as métricas reportadas. Não pode ser alterado após criação da campanha."},
+        {label:"Localização",onde:"Campaign > Audience > Location",tipo:"Geo-targeting",obrigatorio:true,opcoes:["País / Região / Cidade / Área metropolitana","Inclui membros que moram OU trabalham na localização"],dica:"LinkedIn usa localização do perfil, não IP. Isso torna o geo mais preciso para B2B mas menos imediato que outras plataformas."},
+        {label:"Idioma do perfil",onde:"Campaign > Audience > Profile language",tipo:"Seleção",obrigatorio:false,opcoes:null,dica:"Filtra membros pelo idioma definido no perfil. Use Português para BR. Deixar em branco = todos os idiomas."},
+        {label:"Atributos profissionais",onde:"Campaign > Audience > Who they are",tipo:"Configuração múltipla",obrigatorio:false,opcoes:["Cargo (Job title): título exato do cargo","Função (Job function): área/departamento","Senioridade: Estagiário / Pleno / Sênior / Diretor / VP / C-Level / Proprietário","Empresa (nome): lista de empresas específicas","Setor da empresa: tecnologia, varejo, saúde, etc.","Tamanho da empresa: 1-10 / 11-50 / 51-200 / 201-500 / 501-1000 / 1001-5000 / 5001-10000 / 10000+","Grau de formação: Ensino Médio / Graduação / Pós / MBA / Doutorado","Área de estudo","Habilidades (Skills): competências do perfil","Grupos LinkedIn: membros de grupos específicos","Interesses e traços"],dica:"Combinação de Cargo + Senioridade + Tamanho de empresa é o setup mais eficiente para B2B. Evite empilhar muitos filtros — pode restringir demais o público."},
+        {label:"Matched Audiences (1P)",onde:"Campaign > Audience > Retargeting & Matched",tipo:"Configuração",obrigatorio:false,opcoes:["Website retargeting: visitantes do site (via Insight Tag)","Contact list: upload de CSV de e-mails","Account list: lista de empresas (upload de CSV com domínios)","Lookalike: similares a uma Matched Audience existente","Lead Gen Form: engajou com formulário LinkedIn","Video: assistiu ao anúncio de vídeo","Company Page: visitou ou interagiu com a página"],dica:"Account-Based Marketing (ABM) via Account list é uma das funções mais poderosas do LinkedIn — segmenta por empresa, não por indivíduo."},
+        {label:"Audience Expansion",onde:"Campaign > Audience > Audience expansion",tipo:"Toggle",obrigatorio:false,opcoes:["Ativo: LinkedIn amplia para atributos similares além dos definidos","Inativo: entrega apenas para o público exato"],dica:"Similar ao Advantage+ da Meta. Desative quando o público já for amplo ou para testes de segmentação controlados."},
+        {label:"Formato do anúncio",onde:"Campaign > Ad Format",tipo:"Seleção única",obrigatorio:true,opcoes:["Single Image Ad: imagem + copy no feed","Video Ad: vídeo no feed","Carousel Ad: 2–10 cards com imagens","Document Ad: PDF / apresentação carrossel","Single Job Ad: vaga de emprego","Message Ad: InMail direto na caixa de mensagens","Conversation Ad: InMail com árvore de respostas","Text Ad: texto + imagem 100×100 lateral (desktop)","Spotlight Ad (Dynamic): imagem com dados dinâmicos do perfil","Follower Ad (Dynamic): promove seguir a página"],dica:"Sponsored Content (Image / Video / Carousel) tem o maior alcance. Message Ad tem abertura alta mas está sujeito a limites de frequência de envio por membro (1 por 30 dias por conta anunciante)."},
+        {label:"LinkedIn Audience Network",onde:"Campaign > Placement",tipo:"Toggle",obrigatorio:false,opcoes:["Ativo: inclui apps e sites parceiros fora do LinkedIn","Inativo: apenas LinkedIn (recomendado para B2B preciso)"],dica:"A Audience Network aumenta alcance mas com menor qualidade de inventário. Para B2B high-touch, mantenha desativado."},
+        {label:"Orçamento",onde:"Campaign > Budget",tipo:"Valor + tipo",obrigatorio:true,opcoes:["Diário: gasto máximo por dia","Total (lifetime): gasto máximo do período"],dica:"Mínimo diário: ~US$10. O LinkedIn pode gastar até 20% acima do orçamento diário em dias de alto tráfego."},
+        {label:"Lance",onde:"Campaign > Bid type",tipo:"Seleção",obrigatorio:true,opcoes:["Automated bid (recomendado): LinkedIn define o lance ideal automaticamente","Target cost: define CPC ou CPM alvo","Maximum CPC: define lance máximo por clique","Maximum CPM: define lance máximo por 1000 impressões","CPV: custo por visualização de vídeo (para Video Ads)"],dica:"Automated bid é o ponto de partida recomendado. Migre para Target cost quando tiver dados suficientes e meta de CPA bem definida."},
+        {label:"Datas",onde:"Campaign > Schedule",tipo:"Data início e término",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Conversão vinculada",onde:"Campaign > Conversion tracking",tipo:"Seleção",obrigatorio:false,opcoes:null,dica:"Visível apenas para objetivo Website Conversions. Vincule o evento de conversão configurado na Insight Tag."}
+      ]
+    },
+    {
+      id:"anuncio", titulo:"Ad", icone:"🖼",
+      descricao:"Criação do anúncio por formato.",
+      campos:[
+        {label:"Nome do anúncio",onde:"New ad > Ad name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique: [Formato]_[Mensagem]_[Versão]. Ex: SingleImg_CaseSaaS_v1"},
+        {label:"Introductory text",onde:"Ad > Introductory text",tipo:"Texto",obrigatorio:true,opcoes:null,dica:"Máx 150 chars (trunca após ~100 no mobile). Campo principal de copy. Use os primeiros 2 parágrafos para capturar atenção — o resto fica em \"ver mais\"."},
+        {label:"Headline",onde:"Ad > Headline",tipo:"Texto",obrigatorio:true,opcoes:null,dica:"Máx 70 chars. Aparece abaixo da imagem/vídeo em negrito."},
+        {label:"Description",onde:"Ad > Description",tipo:"Texto",obrigatorio:false,opcoes:null,dica:"Máx 70 chars. Exibida abaixo do headline em alguns posicionamentos."},
+        {label:"Mídia — Single Image",onde:"Ad > Upload image",tipo:"Upload",obrigatorio:false,opcoes:["1200×627px (landscape, proporção 1.91:1) — recomendado para feed","1200×1200px (square, proporção 1:1)","JPG ou PNG — máx 5MB"],dica:"Imagens com rostos humanos e cores contrastantes performam melhor. Evite imagens com muito texto."},
+        {label:"Mídia — Video Ad",onde:"Ad > Upload video",tipo:"Upload",obrigatorio:false,opcoes:["Formato: MP4 — máx 200MB","Duração: 3 segundos a 30 minutos (ideal: 15–30s para awareness)","Proporção: 16:9, 1:1 ou 9:16","Resolução mínima: 360p (recomendado: 720p+)","Legendas: recomendadas (.srt) — maioria assiste sem áudio"],dica:"Primeiros 3s são críticos. Inclua sempre CTA visual no vídeo independente do botão. Legendas aumentam retenção em ~50%."},
+        {label:"Carousel Ad — Cards",onde:"Ad > Add cards",tipo:"Múltiplos uploads",obrigatorio:false,opcoes:["Mínimo 2, máximo 10 cards","Cada card: imagem 1080×1080px (JPG/PNG, máx 10MB) + headline (45 chars) + URL destino","Cards com vídeo não são suportados no Carousel"],dica:"Use sequência narrativa: problema → solução → resultado → CTA. Carousel é ideal para cases com múltiplos destaques."},
+        {label:"Document Ad",onde:"Ad > Upload document",tipo:"Upload PDF",obrigatorio:false,opcoes:["PDF — máx 100MB — até 300 páginas","Capa: 1080×1080px ou 1920×1080px","Membros visualizam o conteúdo no feed sem baixar (preview)","CTA para download exige que o membro forneça e-mail (Lead Gen)"],dica:"Excelente para whitepapers, e-books e relatórios. Alto engajamento em públicos B2B que consomem conteúdo técnico."},
+        {label:"Message Ad — Remetente",onde:"Ad > Sender",tipo:"Seleção de perfil",obrigatorio:false,opcoes:null,dica:"O Message Ad é enviado de um perfil pessoal do LinkedIn, não da página da empresa. Escolha alguém com credibilidade para o público-alvo (ex: CEO, especialista do setor)."},
+        {label:"Message Ad — Conteúdo",onde:"Ad > Message body",tipo:"Texto",obrigatorio:false,opcoes:["Assunto: máx 60 chars","Corpo: máx 1500 chars (HTML básico suportado)","Banner opcional: 300×250px","Botão CTA: máx 20 chars + URL","Footer obrigatório: política do LinkedIn exige informar que é anúncio"],dica:"Mensagens com tom pessoal e contextualizado (não genérico) têm taxas de abertura muito maiores. Limite de 1 Message Ad recebido por membro a cada 30 dias por anunciante."},
+        {label:"CTA Button",onde:"Ad > CTA",tipo:"Seleção + URL",obrigatorio:false,opcoes:["Download","Learn More","Apply Now","Register","Sign Up","Subscribe","Request Demo","View Quote","Get Started","Contact Us"],dica:null},
+        {label:"URL de destino + UTM",onde:"Ad > Destination URL",tipo:"URL",obrigatorio:true,opcoes:null,dica:"Padrão sugerido: ?utm_source=linkedin&utm_medium=paid_social&utm_campaign={{nome}}&utm_content={{formato}}"}
+      ]
+    },
+    {
+      id:"conversoes", titulo:"Conversões & Insight Tag", icone:"🏷",
+      descricao:"Configuração de rastreamento de conversões.",
+      campos:[
+        {label:"Tipo de evento de conversão",onde:"Account Assets > Conversions > Create conversion",tipo:"Seleção",obrigatorio:true,opcoes:["URL: converte quando o membro visita uma URL específica (ex: /obrigado)","Evento no site: disparo de função JavaScript customizada","Lead Gen Form: envio de formulário nativo LinkedIn","Importação offline: CSV com dados de conversão"],dica:"URL é o mais simples. Para e-commerce ou formulários mais complexos, use eventos customizados via Insight Tag ou GTM."},
+        {label:"Janela de atribuição",onde:"Conversion > Attribution window",tipo:"Seleção",obrigatorio:true,opcoes:["Clique: 1 dia / 7 dias / 30 dias / 90 dias","Impressão (view-through): 1 dia / 7 dias"],dica:"Padrão: 30 dias para clique e 7 dias para impressão. Alinhe com o ciclo de compra B2B — que geralmente é mais longo."},
+        {label:"Modelo de atribuição",onde:"Conversion > Attribution model",tipo:"Seleção",obrigatorio:false,opcoes:["Last Touch: crédito total ao último ponto de contato (padrão)","First Touch: crédito total ao primeiro ponto de contato"],dica:"LinkedIn não oferece modelos multi-touch nativos. Para análise completa, cruze com dados de GA4."},
+        {label:"Verificação da Insight Tag",onde:"Account Assets > Insight Tag > Status",tipo:"Status",obrigatorio:true,opcoes:["Ativa (verde): disparando corretamente","Sem dados recentes (amarelo): verificar implementação","Inativa (cinza): não encontrada no site"],dica:"Use LinkedIn Tag Helper (extensão Chrome) para verificar o disparo em tempo real na landing page."}
+      ]
+    },
+    {
+      id:"qa", titulo:"QA & Launch", icone:"✅",
+      descricao:"Verificações antes de publicar.",
+      campos:[
+        {label:"Preview do anúncio",onde:"Ad > Preview",tipo:"Verificação visual",obrigatorio:true,opcoes:["Feed Desktop","Feed Mobile","Right Rail (Text Ads)"],dica:"Use a opção de preview para checar truncamento de texto e como a imagem/vídeo aparece em cada posicionamento."},
+        {label:"Forecast de alcance",onde:"Campaign > Audience > Estimated results",tipo:"Estimativa",obrigatorio:false,opcoes:null,dica:"Público abaixo de 50k pode limitar entrega. Se o forecast for muito baixo, amplie algum critério de segmentação (ex: abra senioridade ou tamanho de empresa)."},
+        {label:"Status da Insight Tag",onde:"Account Assets > Insight Tag",tipo:"Verificação",obrigatorio:true,opcoes:null,dica:"Confirme que a tag está ativa antes de go-live em campanhas de conversão ou retargeting."},
+        {label:"Revisão de orçamento e datas",onde:"Campaign > Review",tipo:"Checklist",obrigatorio:true,opcoes:null,dica:"Confirme: moeda correta, orçamento diário vs total alinhado com o PO do cliente, data de início e término."},
+        {label:"Aprovação do anúncio",onde:"Campaign > Ad status",tipo:"Status automático",obrigatorio:true,opcoes:["Em revisão (até 24h)","Ativo","Rejeitado — ajustar conforme política do LinkedIn"],dica:"LinkedIn é mais restritivo com anúncios de emprego, crédito e conteúdo sensível. Verifique a política antes de submeter."}
+      ]
+    }
+  ]
+},
+
+/* ─────────────────── TIKTOK ─────────────────── */
+tiktok:{
+  nome:"TikTok Ads Manager", emoji:"⬛", cor:"#010101",
+  descricao:"In-Feed · TopView · Spark Ads · Brand Takeover · Pangle",
+  url:"https://ads.tiktok.com",
+  status:"full", grupo:"Social",
+  steps:[
+    {
+      id:"conta", titulo:"Business Center & Conta", icone:"📱",
+      descricao:"TikTok Business Center, Ad Account, Pixel e Events API.",
+      campos:[
+        {label:"TikTok Business Center",onde:"business.tiktok.com",tipo:"Conta mãe",obrigatorio:true,opcoes:null,dica:"Equivalente ao Business Manager do Meta. Gerencie múltiplas Ad Accounts, Business Accounts (TikTok orgânico), ativos criativos e pixels aqui."},
+        {label:"Ad Account",onde:"Business Center > Ad Accounts > Create",tipo:"Criação",obrigatorio:true,opcoes:null,dica:"Moeda e fuso horário definidos na criação — não podem ser alterados. Confirme com o cliente antes de criar."},
+        {label:"TikTok Business Account (para Spark Ads)",onde:"Business Center > Assets > TikTok Accounts",tipo:"Vinculação de conta orgânica",obrigatorio:false,opcoes:null,dica:"Necessário para usar Spark Ads (impulsionar posts orgânicos). O dono da conta TikTok precisa autorizar o acesso via código gerado no Business Center."},
+        {label:"TikTok Pixel",onde:"Ad Account > Assets > Events > Web Events",tipo:"Tag de site",obrigatorio:true,opcoes:["Manual: código JavaScript no <head> do site","Google Tag Manager (recomendado)","Parceiros: Shopify, WooCommerce, VTEX, Magento"],dica:"Configure eventos padrão: ViewContent, AddToCart, InitiateCheckout, Purchase, Lead, CompleteRegistration. Confirme disparos via TikTok Pixel Helper (extensão Chrome)."},
+        {label:"Events API (server-side)",onde:"Web Events > Events API",tipo:"API server-side",obrigatorio:false,opcoes:null,dica:"Aumenta qualidade do sinal de conversão, especialmente pós-iOS 14 e para usuários com AdBlock. Requer implementação técnica no servidor do cliente. Pode rodar em paralelo com o pixel."},
+        {label:"App Events (para App Installs)",onde:"Assets > App > SDK / MMP",tipo:"SDK / Integração",obrigatorio:false,opcoes:["SDK nativo TikTok","MMP parceiro: AppsFlyer, Adjust, Kochava, Branch, Singular"],dica:"Para campanhas de App Installs, integre via SDK ou MMP. MMP é recomendado por centralizar dados de múltiplas fontes de mídia."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campaign", icone:"🎯",
+      descricao:"Objetivo, CBO e orçamento da campanha.",
+      campos:[
+        {label:"Nome da Campaign",onde:"New campaign > Campaign name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Convenção: [Cliente]_[Objetivo]_[Mês]. Ex: Dove_CONV_Out26"},
+        {label:"Objetivo da campanha",onde:"New campaign > Advertising objective",tipo:"Seleção",obrigatorio:true,opcoes:["Reach: maximizar número de pessoas alcançadas","Traffic: cliques para o site ou app","App Installs: instalações do app","Video Views: visualizações de vídeo (6s ou 2s)","Lead Generation: formulário nativo TikTok","Community Interaction: seguidores e visitas ao perfil","Conversions: ações no site (requer pixel + evento)","Catalog Sales: venda de produtos do catálogo","Shop Purchases: vendas no TikTok Shop"],dica:"O objetivo define o evento de otimização disponível no Ad Group. Não pode ser alterado após criação."},
+        {label:"Campaign Budget Optimization (CBO)",onde:"Campaign > Budget",tipo:"Toggle",obrigatorio:false,opcoes:["Ativo: TikTok distribui o orçamento entre os Ad Groups automaticamente","Inativo: orçamento configurado individualmente por Ad Group"],dica:"CBO recomendado quando há múltiplos Ad Groups com diferentes públicos — o algoritmo do TikTok otimiza a distribuição em tempo real."},
+        {label:"Orçamento (se CBO ativo)",onde:"Campaign > Budget type",tipo:"Valor + tipo",obrigatorio:false,opcoes:["Daily Budget: limite de gasto por dia","Lifetime Budget: limite total do período"],dica:"Mínimo por campanha: ~US$50/dia com CBO."},
+        {label:"Datas da campanha",onde:"Campaign > Schedule",tipo:"Datas",obrigatorio:true,opcoes:null,dica:"Defina sempre data de término para campanhas com orçamento vitalício."}
+      ]
+    },
+    {
+      id:"adgroup", titulo:"Ad Group", icone:"👥",
+      descricao:"Posicionamento, público, lance, orçamento e agenda.",
+      campos:[
+        {label:"Nome do Ad Group",onde:"New ad group > Ad group name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique público e estratégia: [Público]_[Posicionamento]_[Lance]. Ex: InMarket_TikTokOnly_LowestCost"},
+        {label:"Tipo de promoção",onde:"Ad Group > Promotion type",tipo:"Seleção",obrigatorio:true,opcoes:["Website: tráfego para URL externa","App: instalações ou reengajamento","Lead Generation: formulário nativo TikTok","TikTok Shop: produtos da loja nativa"],dica:null},
+        {label:"Posicionamento",onde:"Ad Group > Placements",tipo:"Seleção",obrigatorio:true,opcoes:["Automatic Placements: TikTok distribui entre TikTok + Pangle + apps parceiros (recomendado)","TikTok only: apenas o feed principal do TikTok","Pangle only: rede de apps parceiros da ByteDance (maior escala, menor qualidade)","Global App Bundle: apps de terceiros fora da rede Pangle"],dica:"Automatic Placements geralmente entrega melhor CPM. Para campanhas de branding onde o contexto importa, use TikTok only."},
+        {label:"Público — Demographics",onde:"Ad Group > Audience > Demographics",tipo:"Configuração",obrigatorio:true,opcoes:["Localização: país, estado, cidade","Idioma: idioma do dispositivo","Gênero: Todos / Masculino / Feminino","Idade: 13–17 / 18–24 / 25–34 / 35–44 / 45–54 / 55+","Nota: 13–17 tem restrições — sem retargeting, sem interesses sensíveis"],dica:"Faixa etária 18–34 é o core do TikTok no Brasil, mas 35+ cresce consistentemente. Não exclua 35–44 sem teste."},
+        {label:"Público — Interesses & Comportamento",onde:"Ad Group > Audience > Interests & Behaviors",tipo:"Configuração",obrigatorio:false,opcoes:["Interest: categorias temáticas (Beleza, Moda, Esportes, Tecnologia, etc.)","Purchase Intention: comportamento de intenção de compra por categoria","Video Interactions: interagiu com vídeos de categorias específicas","Creator Interactions: seguiu ou interagiu com criadores de categorias","Hashtag Audience: interagiu com hashtags específicas"],dica:"Targetings de interesse no TikTok são menos granulares que Meta. Comece broad (poucos filtros) para dar espaço ao algoritmo aprender."},
+        {label:"Público — Custom Audience (1P)",onde:"Ad Group > Audience > Custom Audience",tipo:"Configuração",obrigatorio:false,opcoes:["Pixel: visitantes do site / compradores / abandono de carrinho","App Activity: usuários do app (via SDK/MMP)","Customer File: upload de lista de e-mails/telefones","Engagement: interagiu com vídeo, perfil ou formulário Lead Gen","TikTok Shop: clientes da loja"],dica:"Retargeting de visitantes do site com pixel é o Custom Audience mais eficiente. Mínimo 1.000 usuários para criar uma audiência."},
+        {label:"Público — Lookalike",onde:"Ad Group > Audience > Lookalike",tipo:"Configuração",obrigatorio:false,opcoes:["Fonte: qualquer Custom Audience existente","Escala: Narrow (1–5%) / Balanced (6–15%) / Broad (16–25%)"],dica:"Lookalike de Compradores (Narrow) geralmente é o mais eficiente para conversão. Balanced para awareness com qualidade."},
+        {label:"Dispositivo",onde:"Ad Group > Audience > Device",tipo:"Configuração",obrigatorio:false,opcoes:["Tipo: iOS / Android / ambos","Versão mínima do OS","Modelo específico (para apps)","Operadora / Tipo de conexão (Wi-Fi / 4G / 5G)"],dica:"Filtros de dispositivo são relevantes para campanhas de App Install (ex: anunciar apenas para iOS) ou campanhas de telecom."},
+        {label:"Orçamento do Ad Group (se CBO desligado)",onde:"Ad Group > Budget & Schedule",tipo:"Valor + tipo",obrigatorio:false,opcoes:["Daily Budget: mínimo ~US$20/dia por ad group","Lifetime Budget: mínimo ~US$50 por ad group"],dica:null},
+        {label:"Estratégia de lance",onde:"Ad Group > Bidding & Optimization",tipo:"Seleção",obrigatorio:true,opcoes:["Lowest Cost (automático): maximiza resultados com o orçamento — ponto de partida recomendado","Cost Cap: define teto de CPA — o TikTok não ultrapassará esse valor em média","Bid Cap: define teto de lance individual por leilão","Value Optimization: maximiza o valor de conversão total (requer histórico de compras)"],dica:"Lowest Cost é o mais indicado para início de campanha. Cost Cap após histórico suficiente (50+ conversões/semana)."},
+        {label:"Evento de otimização",onde:"Ad Group > Optimization Event",tipo:"Seleção",obrigatorio:true,opcoes:["Click (para tráfego)","Reach / Impression (para awareness)","Video View (6s, 2s, completo)","Landing Page View (mais qualificado que clique)","Lead (para formulário)","Add to Cart / Purchase / Complete Registration (para conversão)"],dica:"Selecione o evento mais próximo do KPI final. Otimizar por Add to Cart gera mais volume que Purchase mas menos qualidade."},
+        {label:"Agenda / Dayparting",onde:"Ad Group > Schedule > Dayparting",tipo:"Grade horária",obrigatorio:false,opcoes:null,dica:"TikTok tem pico de uso entre 18h–22h no Brasil. Configure dayparting apenas se houver restrição contratual — o algoritmo já otimiza por horário automaticamente."},
+        {label:"Frequência e controle de alcance",onde:"Ad Group > Delivery type",tipo:"Seleção",obrigatorio:false,opcoes:["Standard: entrega uniforme ao longo do período","Accelerated: entrega o mais rápido possível"],dica:null}
+      ]
+    },
+    {
+      id:"anuncio", titulo:"Ad", icone:"🎬",
+      descricao:"Vídeo, copy, identidade e rastreamento do anúncio.",
+      campos:[
+        {label:"Nome do Ad",onde:"New ad > Ad name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique: [Formato]_[Criativo]_[Versão]. Ex: InFeed_UGC_v2"},
+        {label:"Formato do Ad",onde:"Ad > Ad format",tipo:"Seleção",obrigatorio:true,opcoes:["Single Video: vídeo padrão no feed (formato principal)","Spark Ad: impulsiona post orgânico de conta TikTok (própria ou de criador)","Collection Ad: vídeo + grid de produtos (requer catálogo)","Dynamic Showcase Ad (DSA): criativo gerado automaticamente com produtos do catálogo"],dica:"Spark Ads com UGC (User Generated Content) de criadores geralmente têm CPM menor e taxa de engajamento muito maior que criativos produzidos."},
+        {label:"Identidade do Ad (conta TikTok)",onde:"Ad > Identity",tipo:"Seleção",obrigatorio:true,opcoes:["TikTok Business Account vinculada (recomendado)","Custom identity: nome + avatar customizados sem conta vinculada"],dica:"Usar conta TikTok real permite que os comentários e compartilhamentos do anúncio apareçam no perfil orgânico (social proof acumulado)."},
+        {label:"Upload de Vídeo",onde:"Ad > Upload > Video",tipo:"Upload",obrigatorio:true,opcoes:["Proporção: 9:16 vertical (recomendado) / 1:1 quadrado / 16:9 horizontal","Resolução mínima: 540×960px (recomendado: 720×1280px ou superior)","Duração: 5s a 60s (ideal: 15–30s para performance; até 10min para alguns objetivos)","Formato: MP4 ou MOV","Tamanho máx: 500MB","Taxa de frames: mínimo 23fps"],dica:"Primeiros 3 segundos são decisivos — sem intro longa. Vídeo vertical nativo, com som, preferência por conteúdo que parece orgânico (UGC style). Caption/legenda recomendada."},
+        {label:"Thumbnail (Cover Image)",onde:"Ad > Cover",tipo:"Seleção / Upload",obrigatorio:true,opcoes:["Selecionar um frame do vídeo","Upload de imagem customizada (1080×1920px, JPG/PNG, máx 1MB)"],dica:"Escolha um frame que transmita o contexto principal do vídeo. Evite frames com blur ou transição."},
+        {label:"Texto do anúncio",onde:"Ad > Ad text",tipo:"Texto",obrigatorio:true,opcoes:null,dica:"Máx 100 chars. Aparece sobreposto abaixo do vídeo. Sem URLs ou formatação especial. Use emojis para aumentar visibilidade."},
+        {label:"Hashtags",onde:"Ad > Ad text (dentro do texto)",tipo:"Texto",obrigatorio:false,opcoes:null,dica:"Adicione até 3 hashtags relevantes ao final do texto. Aumentam descoberta orgânica e contextualização do anúncio."},
+        {label:"Música / Áudio",onde:"Ad > Music (auto-detectado do vídeo)",tipo:"Áudio do vídeo / Biblioteca",obrigatorio:false,opcoes:["Áudio original do vídeo","Música da biblioteca TikTok (uso comercial liberado)","Sem áudio (não recomendado — penaliza entrega)"],dica:"TikTok é uma plataforma de áudio-first. Anúncios sem som têm entrega reduzida. Use músicas trending da biblioteca quando possível."},
+        {label:"CTA Button",onde:"Ad > Call to action",tipo:"Seleção + URL",obrigatorio:true,opcoes:["Shop Now","Learn More","Sign Up","Download","Contact Us","Book Now","Apply Now","Get Quote","View Now","Play Game"],dica:null},
+        {label:"URL de destino + UTM",onde:"Ad > Destination URL",tipo:"URL",obrigatorio:true,opcoes:null,dica:"Padrão: ?utm_source=tiktok&utm_medium=paid_social&utm_campaign={{nome}}&utm_content={{ad_name}}"},
+        {label:"Tracking URLs (3rd party)",onde:"Ad > Tracking > Impression / Click",tipo:"URLs de tracking",obrigatorio:false,opcoes:["Impression tracking pixel (1×1) de verificação (IAS, DV, MOAT)","Click tracking URL (redirect de contagem de cliques)"],dica:"Adicione apenas se o cliente exige contagem independente do TikTok. Evite multiple redirects que aumentam latência."}
+      ]
+    },
+    {
+      id:"pixel", titulo:"Pixel & Conversões", icone:"🏷",
+      descricao:"Verificação do pixel e configuração de eventos de conversão.",
+      campos:[
+        {label:"Status do Pixel",onde:"Assets > Events > Web Events > Pixel status",tipo:"Status",obrigatorio:true,opcoes:["Active (verde): recebendo eventos","Inactive (cinza): sem dados nas últimas 24h — investigar","Not installed: não detectado"],dica:"Use TikTok Pixel Helper (extensão Chrome) para verificar disparo em tempo real na landing page antes do go-live."},
+        {label:"Eventos configurados",onde:"Assets > Events > Standard Events",tipo:"Verificação",obrigatorio:true,opcoes:["ViewContent: visualização de página de produto","AddToCart: adicionou ao carrinho","InitiateCheckout: iniciou checkout","Purchase: compra finalizada (com valor e currency)","Lead: preencheu formulário / registrou-se","CompleteRegistration: cadastro completo"],dica:"Confirme que os eventos passam os parâmetros corretos (value, currency, content_id). Dados incorretos prejudicam o Smart Bidding."},
+        {label:"Event Match Quality (EMQ)",onde:"Assets > Events > Event details",tipo:"Score 0–10",obrigatorio:false,opcoes:null,dica:"EMQ acima de 7 indica boa qualidade de matching entre eventos do pixel e perfis TikTok. Melhore adicionando e-mail/telefone hasheado aos eventos."},
+        {label:"Deduplicação de eventos",onde:"Events API > Deduplication key",tipo:"Configuração técnica",obrigatorio:false,opcoes:null,dica:"Quando pixel e Events API rodam em paralelo, configure a chave de deduplicação (event_id único) para evitar dupla contagem de conversões."}
+      ]
+    },
+    {
+      id:"qa", titulo:"QA & Launch", icone:"✅",
+      descricao:"Verificações finais antes de publicar.",
+      campos:[
+        {label:"Preview do anúncio",onde:"Ad > Preview",tipo:"Verificação visual",obrigatorio:true,opcoes:["Preview no feed TikTok (mobile)","Compartilhar preview com cliente via link"],dica:"Confirme que o vídeo está completo, sem cortes; texto não sobrepõe área importante; thumbnail atrativo; CTA visível."},
+        {label:"Status de revisão do criativo",onde:"Ad Manager > Ad status",tipo:"Status",obrigatorio:true,opcoes:["Under Review (até 24h, normalmente em horas)","Active: aprovado","Rejected: não passou na política — verificar motivo e editar"],dica:"TikTok pode rejeitar criativos com claims de saúde/financeiros sem disclaimers, conteúdo de antes/depois ou imagens com muito texto. Verifique a política antes do envio."},
+        {label:"Forecast de entrega",onde:"Ad Group > Estimated reach",tipo:"Estimativa",obrigatorio:false,opcoes:null,dica:"Público muito restrito = entrega limitada. TikTok funciona melhor com públicos mais amplos — o algoritmo é o principal filtro de qualidade."},
+        {label:"Confirmar pixel ativo",onde:"Assets > Events > Pixel",tipo:"Verificação",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Confirmar orçamento e datas",onde:"Campaign / Ad Group review",tipo:"Checklist",obrigatorio:true,opcoes:null,dica:"Verifique: CBO ligado/desligado conforme planejado, orçamento correto, data de término configurada."}
+      ]
+    }
+  ]
+},
+
+/* ─────────────────── X ADS ─────────────────── */
+xads:{
+  nome:"X Ads (Twitter)", emoji:"🐦", cor:"#14171A",
+  descricao:"Promoted Posts · Follower Ads · Pre-roll · X Takeover",
+  url:"https://ads.twitter.com",
+  status:"full", grupo:"Social",
+  steps:[
+    {
+      id:"conta", titulo:"Conta & Pixel", icone:"🔑",
+      descricao:"Ad Account, permissões, funding source e Website Tag.",
+      campos:[
+        {label:"Conta de anúncios X",onde:"ads.twitter.com > Create account",tipo:"Criação / Acesso",obrigatorio:true,opcoes:null,dica:"Vinculada a uma conta do X (perfil). Uma conta X pode ter múltiplas Ad Accounts. Solicite acesso de Ads Manager na conta do cliente — não crie nova conta com perfil da agência."},
+        {label:"Permissões de acesso",onde:"Settings > Account access",tipo:"Seleção por usuário",obrigatorio:true,opcoes:["Administrator: acesso total","Ad Manager: criar e gerenciar campanhas","Campaign Analyst: somente leitura e relatórios","Organic Analyst: acesso apenas a dados orgânicos"],dica:"Ad Manager é o mínimo para operação. Administrator para alterações de conta e faturamento."},
+        {label:"Funding Source (método de pagamento)",onde:"Settings > Billing > Funding Sources",tipo:"Configuração",obrigatorio:true,opcoes:["Cartão de crédito (pré-pago ou pós-pago)","Invoice/NF (disponível para contas com histórico e crédito aprovado)"],dica:"Verifique o método de pagamento antes de lançar campanhas. Campanhas pausam automaticamente por falha no pagamento."},
+        {label:"X Pixel (Website Tag)",onde:"Tools > Measurement > Conversion tracking > Add website tag",tipo:"Tag de site",obrigatorio:true,opcoes:["Código JavaScript manual no <head>","Via Google Tag Manager (recomendado)"],dica:"Necessário para conversões no site e para criar Custom Audiences de visitantes. Instale o pixel ANTES de criar campanhas de conversão."},
+        {label:"Eventos de conversão",onde:"Tools > Measurement > Conversion tracking > Add conversion event",tipo:"Configuração",obrigatorio:true,opcoes:["Purchase: compra (com valor)","Lead: cadastro / formulário","Sign Up: criação de conta","Page View: visita a uma página","Add to Cart","Download","Custom: evento personalizado"],dica:"Configure a janela de atribuição por evento: padrão é 1 dia (visualização) e 30 dias (clique). Ajuste conforme o ciclo de compra."}
+      ]
+    },
+    {
+      id:"campanha", titulo:"Campaign", icone:"🎯",
+      descricao:"Objetivo, orçamento, datas e pace da campanha.",
+      campos:[
+        {label:"Nome da Campaign",onde:"New campaign > Campaign name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Convenção: [Objetivo]_[Produto]_[Mês]. Ex: CONV_Dove_Out26"},
+        {label:"Objetivo",onde:"New campaign > Campaign objective",tipo:"Seleção",obrigatorio:true,opcoes:["Reach: maximizar usuários únicos alcançados","Video Views: maximizar visualizações de vídeo","Pre-roll Views: vídeo antes de conteúdo premium","App Installs: instalações do app","App Re-engagements: reabrir app","Website Traffic: cliques para o site","Engagements: curtidas, respostas, retweets","Followers: ganhar seguidores","Conversions: ações no site (requer pixel + evento)"],dica:"O objetivo determina o tipo de cobrança e a otimização de entrega. Não pode ser alterado após criação."},
+        {label:"Orçamento da campanha",onde:"Campaign > Budget",tipo:"Valor + tipo",obrigatorio:true,opcoes:["Daily Budget: limite de gasto por dia","Total Budget: limite total do período (vitalício)"],dica:"O X pode gastar até 20% acima do orçamento diário em dias de alto tráfego. Para controle preciso, use Total Budget."},
+        {label:"Datas",onde:"Campaign > Start & End date",tipo:"Datas",obrigatorio:true,opcoes:null,dica:"Defina sempre data de término. Campanhas sem data de fim continuam rodando até o orçamento acabar ou ser pausada manualmente."},
+        {label:"Pace de entrega",onde:"Campaign > Delivery pace",tipo:"Seleção",obrigatorio:false,opcoes:["Standard: distribui uniformemente ao longo do dia (recomendado)","Accelerated: entrega o mais rápido possível — ideal para campanhas de trending topics ou eventos"],dica:null}
+      ]
+    },
+    {
+      id:"adgroup", titulo:"Ad Group", icone:"👥",
+      descricao:"Segmentação, lance, orçamento e agenda.",
+      campos:[
+        {label:"Nome do Ad Group",onde:"New ad group > Name",tipo:"Texto livre",obrigatorio:true,opcoes:null,dica:"Identifique a segmentação: [Público]_[Lance]. Ex: Keywords_ConteudoBeleza_Auto"},
+        {label:"Orçamento do Ad Group",onde:"Ad Group > Budget",tipo:"Valor",obrigatorio:false,opcoes:null,dica:"Opcional quando há orçamento total na campanha. Defina se quiser controle por segmentação."},
+        {label:"Datas do Ad Group",onde:"Ad Group > Start & End date",tipo:"Datas",obrigatorio:false,opcoes:null,dica:"Herda as datas da campanha por padrão."},
+        {label:"Segmentação — Demographics",onde:"Ad Group > Targeting > Demographics",tipo:"Configuração",obrigatorio:true,opcoes:["Localização: país, estado, cidade, região metropolitana, código postal","Gênero: Todos / Masculino / Feminino","Idioma: idioma configurado no dispositivo / app","Dispositivo: iOS / Android / Desktop / outros","Operadora: segmentação por operadora de celular (para telecom)","Novo usuário do X: usuários cadastrados nos últimos X dias"],dica:"Targeting de localização no X usa IP + dados do perfil. Pode haver diferença vs geo real do usuário."},
+        {label:"Segmentação — Keywords",onde:"Ad Group > Targeting > Keywords",tipo:"Lista + tipo de match",obrigatorio:false,opcoes:["Exact match: termo exato dentro de um tweet","Phrase match: frase dentro de um tweet","Broad match: variações do termo","Negative keywords: excluir tweets com esses termos","Opção: segmentar por tweets recentes / buscas recentes / ambos"],dica:"Keywords no X é único: você alcança usuários que TWITTARAM ou BUSCARAM os termos — contexto em tempo real de conversas. Extremamente poderoso para tópicos trending."},
+        {label:"Segmentação — Interesses & Eventos",onde:"Ad Group > Targeting > Interests & events",tipo:"Seleção múltipla",obrigatorio:false,opcoes:["Categorias de interesse: Tecnologia, Entretenimento, Esportes, Notícias, Beleza, etc.","Eventos: eventos globais e locais calendaizados (Copa, Oscar, eleições)","Conversation topics: tópicos de conversas ativos na plataforma","Movies & TV: usuários que twittaram sobre filmes/séries específicas"],dica:"Eventos são especialmente valiosos no X — a plataforma é a principal para conversas em tempo real durante eventos ao vivo."},
+        {label:"Segmentação — Followers de contas",onde:"Ad Group > Targeting > Follower look-alikes",tipo:"Lista de @handles",obrigatorio:false,opcoes:null,dica:"Segmenta usuários semelhantes aos seguidores de contas específicas. Use concorrentes, influencers do setor, ou marcas relevantes para o público-alvo."},
+        {label:"Segmentação — Tailored Audiences (1P)",onde:"Ad Group > Targeting > Tailored Audiences",tipo:"Configuração",obrigatorio:false,opcoes:["Website visitors: usuários que visitaram o site (via X Pixel)","Customer list: upload de e-mails/telefones (mínimo 1.000 registros)","App activity: usuários que interagiram com o app (via MMP)","Lookalike: similares a uma Tailored Audience existente","Engagement: interagiu com anúncios anteriores"],dica:"Retargeting de visitantes do site com X Pixel é o Custom Audience mais eficiente no X."},
+        {label:"Estratégia de lance",onde:"Ad Group > Bid",tipo:"Seleção",obrigatorio:true,opcoes:["Automatic Bid: X define o lance ideal para maximizar resultados (recomendado para início)","Target Cost: define CPA ou CPM médio desejado","Maximum Bid: define lance máximo por leilão (maior controle, menor alcance potencial)"],dica:"Automatic Bid é o ponto de partida. Migre para Target Cost após acúmulo de dados de conversão suficientes."},
+        {label:"Calendário de veiculação (Dayparting)",onde:"Ad Group > Day & Time",tipo:"Grade horária",obrigatorio:false,opcoes:null,dica:"O X tem pico de uso em eventos ao vivo, manhãs e noites. Configure dayparting apenas para restrições contratuais — o algoritmo já considera horário."}
+      ]
+    },
+    {
+      id:"anuncio", titulo:"Ad", icone:"🐦",
+      descricao:"Posts promovidos, formatos e especificações de mídia.",
+      campos:[
+        {label:"Post existente (Promoted Tweet)",onde:"Ad > Select post > From account",tipo:"Seleção de post orgânico",obrigatorio:false,opcoes:null,dica:"Promover post orgânico mantém o engajamento acumulado (curtidas, retweets) visível no anúncio — social proof valioso. Ideal para posts com alto engajamento orgânico."},
+        {label:"Post novo (Dark Post)",onde:"Ad > Create new post",tipo:"Criação",obrigatorio:false,opcoes:null,dica:"Dark posts aparecem apenas como anúncio, nunca na timeline do perfil. Permite mensagens específicas por segmento sem impactar o feed orgânico da marca."},
+        {label:"Texto do Post",onde:"Ad > Post text",tipo:"Texto",obrigatorio:true,opcoes:null,dica:"Máx 280 chars. Inclua a mensagem principal nos primeiros ~100 chars (o restante fica em \"ver mais\" no mobile). URLs adicionadas no anúncio são encurtadas automaticamente (t.co)."},
+        {label:"Mídia — Imagem",onde:"Ad > Add media > Image",tipo:"Upload",obrigatorio:false,opcoes:["Landscape: 1200×675px (proporção 16:9)","Square: 1080×1080px (proporção 1:1)","Portrait: 1080×1350px (proporção 4:5)","Formato: JPG ou PNG — máx 5MB","Máximo de 4 imagens por post"],dica:"Imagens aumentam o CTR significativamente vs posts somente texto. Evite imagens com muito texto sobreposto."},
+        {label:"Mídia — Vídeo",onde:"Ad > Add media > Video",tipo:"Upload",obrigatorio:false,opcoes:["Formato: MP4 ou MOV","Duração: máx 2 minutos e 20 segundos (ideal para anúncios: 15–30s)","Proporção: 16:9, 1:1 ou 9:16","Resolução mínima: 720×720px (recomendado: 1280×720px para 16:9)","Tamanho máx: 1GB","Taxa de frames mínima: 29fps"],dica:"Legendas/closed captions são fortemente recomendadas — grande parte do X é consumida sem som. Use o primeiro frame como thumbnail impactante."},
+        {label:"Mídia — GIF",onde:"Ad > Add media > GIF",tipo:"Upload",obrigatorio:false,opcoes:["GIF animado: máx 15MB","Proporcão livre (recomendado: 16:9 ou 1:1)"],dica:"GIFs têm alto engajamento no X por se encaixarem na cultura da plataforma. Use GIFs de marca ou momentos culturais relevantes."},
+        {label:"Carousel Ad",onde:"Ad > Add carousel",tipo:"Múltiplos cards",obrigatorio:false,opcoes:["2–6 cards com imagens ou vídeos","Cada card: imagem ou vídeo + headline (máx 70 chars) + URL destino própria","Imagem do card: 800×418px (16:9) ou 800×800px (1:1)"],dica:"Carousel no X funciona bem para mostrar múltiplos produtos ou contar uma história sequencial com CTA em cada card."},
+        {label:"Website Card",onde:"Ad > Add card > Website Card",tipo:"URL + imagem",obrigatorio:false,opcoes:["Imagem: 1200×628px (landscape) ou 1080×1080px (square)","Headline: máx 70 chars","URL de destino"],dica:"Website Card aumenta o CTR vs post com URL simples — o card cria um visual clicável mais atrativo. Recomendado para campanhas de tráfego e conversão."},
+        {label:"URL de destino + UTM",onde:"Ad > Website URL",tipo:"URL",obrigatorio:true,opcoes:null,dica:"Padrão: ?utm_source=x&utm_medium=paid_social&utm_campaign={{nome}}&utm_content={{ad}}. A URL é encurtada via t.co automaticamente mas mantém os parâmetros."}
+      ]
+    },
+    {
+      id:"conversoes", titulo:"Conversão & Tags", icone:"🏷",
+      descricao:"Verificação do pixel e configuração de acompanhamento.",
+      campos:[
+        {label:"Status do X Pixel",onde:"Tools > Measurement > Conversion tracking > Status",tipo:"Status",obrigatorio:true,opcoes:["Receiving data (verde): funcionando corretamente","No data (amarelo): sem eventos nas últimas 24h","Not installed (cinza): pixel não detectado no site"],dica:"Instale e confirme o pixel ANTES de criar campanhas de conversão. Sem pixel, o X não consegue otimizar por conversão."},
+        {label:"Janela de atribuição",onde:"Conversion event > Attribution window",tipo:"Configuração por evento",obrigatorio:true,opcoes:["Clique: 1 dia / 14 dias / 30 dias","Visualização (view-through): nenhuma / 1 dia"],dica:"Padrão: 30 dias para clique. Alinhe com o ciclo de compra do produto."},
+        {label:"App Tracking (MMP)",onde:"Tools > Measurement > App install measurement",tipo:"Integração",obrigatorio:false,opcoes:["AppsFlyer","Adjust","Kochava","Branch","Singular"],dica:"Para campanhas de App Installs, integre via MMP (Mobile Measurement Partner). O MMP centraliza dados de atribuição de múltiplas fontes de mídia."}
+      ]
+    },
+    {
+      id:"qa", titulo:"QA & Launch", icone:"✅",
+      descricao:"Verificações antes de publicar.",
+      campos:[
+        {label:"Preview do anúncio",onde:"Ad > Preview post",tipo:"Verificação visual",obrigatorio:true,opcoes:["Timeline (feed mobile)","Timeline (feed desktop)","Search results"],dica:"Confirme que texto, mídia e URL estão corretos. Verifique se a imagem não está cortada no formato mobile."},
+        {label:"Status de revisão",onde:"Campaign Manager > Ad status",tipo:"Status automático",obrigatorio:true,opcoes:["Pending review: em análise (normalmente < 24h)","Running: aprovado e rodando","Paused: pausado pelo anunciante","Rejected: não passou na política — verificar motivo"],dica:"X tende a ser mais restritivo com conteúdo político, financeiro e de saúde. Verifique a política de anúncios antes de submeter."},
+        {label:"Estimativa de alcance",onde:"Ad Group > Audience size",tipo:"Estimativa",obrigatorio:false,opcoes:null,dica:"Público abaixo de 500k pode limitar a entrega. Para campanhas de Reach, mantenha pelo menos 1M+ de usuários no público."},
+        {label:"Confirmar pixel ativo",onde:"Tools > Measurement > Conversion tracking",tipo:"Verificação",obrigatorio:true,opcoes:null,dica:null},
+        {label:"Confirmar orçamento e datas",onde:"Campaign review",tipo:"Checklist",obrigatorio:true,opcoes:null,dica:"Verifique: funding source com saldo suficiente, orçamento alinhado com o plano de mídia, datas início/término corretas."}
+      ]
+    }
+  ]
+}
+
+}; // end PLATAFORMAS
+
+/* ============================================================
+   GRUPOS / ORDEM
+   ============================================================ */
+const GRUPOS = {
+  "Ad Server": ["cm360","dv360"],
+  "Search / Display": ["googleads"],
+  "Social": ["meta","linkedin","tiktok","xads"]
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let platAtual = null;
+let stepAtual = 0;
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+function renderSidebar(){
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '';
+  for(const [grupo, ids] of Object.entries(GRUPOS)){
+    const g = document.createElement('div');
+    g.className = 'sb-group';
+    g.textContent = grupo;
+    sb.appendChild(g);
+    ids.forEach(id => {
+      const p = PLATAFORMAS[id];
+      const btn = document.createElement('button');
+      btn.className = 'plat-btn' + (platAtual === id ? ' active' : '');
+      btn.onclick = () => selecionar(id);
+      const dot = document.createElement('span');
+      dot.className = 'plat-dot';
+      dot.style.background = p.cor;
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(p.nome));
+      if(p.status !== 'full'){
+        const t = document.createElement('span');
+        t.className = 'plat-tag';
+        t.textContent = p.status === 'partial' ? 'Parcial' : 'Em breve';
+        btn.appendChild(t);
+      }
+      sb.appendChild(btn);
+    });
+  }
+}
+
+/* ============================================================
+   SELECT
+   ============================================================ */
+function selecionar(id){
+  platAtual = id;
+  stepAtual = 0;
+  renderSidebar();
+  renderMain();
+  window.scrollTo(0,0);
+}
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+function renderMain(){
+  const main = document.getElementById('main');
+  if(!platAtual){ renderWelcome(); return; }
+  const p = PLATAFORMAS[platAtual];
+  main.innerHTML = '';
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.className = 'plat-header';
+  hdr.innerHTML = `
+    <div class="plat-icon" style="background:${p.cor}18">${p.emoji}</div>
+    <div class="plat-header-info">
+      <h2>${p.nome}</h2>
+      <p>${p.descricao}</p>
+      <a href="${p.url}" target="_blank" rel="noopener">↗ Abrir plataforma</a>
+    </div>
+  `;
+  main.appendChild(hdr);
+
+  // Steps nav
+  const nav = document.createElement('div');
+  nav.className = 'steps-nav';
+  p.steps.forEach((s,i) => {
+    const b = document.createElement('button');
+    b.className = 'step-btn' + (stepAtual===i?' active':'');
+    b.innerHTML = `<span class="step-num">${i+1}</span>${s.icone} ${s.titulo}`;
+    b.onclick = () => { stepAtual=i; renderMain(); };
+    nav.appendChild(b);
+  });
+  main.appendChild(nav);
+
+  // Step content
+  const step = p.steps[stepAtual];
+  const box = document.createElement('div');
+  box.className = 'step-content';
+  const ch = document.createElement('div');
+  ch.className = 'step-ch';
+  ch.innerHTML = `<h3>${step.icone} ${step.titulo}</h3>${step.descricao?`<p>${step.descricao}</p>`:''}`;
+  box.appendChild(ch);
+
+  step.campos.forEach((c,i) => {
+    const sec = document.createElement('div');
+    sec.className = 'campo';
+    const h = document.createElement('div');
+    h.className = 'campo-h';
+    h.onclick = () => toggle(i);
+    h.innerHTML = `
+      <div style="flex:1">
+        <div class="campo-label">${c.label}</div>
+        <div class="campo-meta">
+          <span class="tag ${c.obrigatorio?'tag-req':'tag-opt'}">${c.obrigatorio?'Obrigatório':'Opcional'}</span>
+          ${c.onde?`<span class="tag tag-onde">📍 ${c.onde}</span>`:''}
+          ${c.tipo?`<span class="tag tag-tipo">⚙ ${c.tipo}</span>`:''}
+        </div>
+      </div>
+      <span class="campo-arr" id="arr-${i}">▼</span>
+    `;
+    sec.appendChild(h);
+    const body = document.createElement('div');
+    body.className = 'campo-body';
+    body.id = 'cb-'+i;
+    if(c.opcoes && c.opcoes.length){
+      body.innerHTML += `<div class="campo-opts"><strong>Opções / Valores</strong><ul>${c.opcoes.map(o=>`<li>${o}</li>`).join('')}</ul></div>`;
+    }
+    if(c.dica){
+      body.innerHTML += `<div class="campo-dica"><strong>💡 Dica:</strong> ${c.dica}</div>`;
+    }
+    if(!c.opcoes && !c.dica){
+      body.innerHTML = '<p style="color:#999;font-size:12px">Sem detalhes adicionais.</p>';
+    }
+    sec.appendChild(body);
+    box.appendChild(sec);
+  });
+  main.appendChild(box);
+
+  // Prev / Next
+  const btns = document.createElement('div');
+  btns.className = 'nav-btns';
+  if(stepAtual > 0){
+    const prev = document.createElement('button');
+    prev.className = 'btn-prev';
+    prev.textContent = '← Anterior';
+    prev.onclick = () => { stepAtual--; renderMain(); window.scrollTo(0,0); };
+    btns.appendChild(prev);
+  }
+  if(stepAtual < p.steps.length - 1){
+    const nxt = document.createElement('button');
+    nxt.className = 'btn-next';
+    nxt.textContent = 'Próximo →';
+    nxt.onclick = () => { stepAtual++; renderMain(); window.scrollTo(0,0); };
+    btns.appendChild(nxt);
+  }
+  main.appendChild(btns);
+}
+
+/* ============================================================
+   TOGGLE CAMPO
+   ============================================================ */
+function toggle(i){
+  const b = document.getElementById('cb-'+i);
+  const a = document.getElementById('arr-'+i);
+  const open = b.classList.toggle('open');
+  a.classList.toggle('open', open);
+  if(open) a.textContent = '▲'; else a.textContent = '▼';
+}
+
+/* ============================================================
+   WELCOME
+   ============================================================ */
+function renderWelcome(){
+  const main = document.getElementById('main');
+  const platCards = Object.entries(PLATAFORMAS).map(([id,p]) => `
+    <div class="plat-card" onclick="selecionar('${id}')">
+      <div class="pc-icon">${p.emoji}</div>
+      <div class="pc-name">${p.nome}</div>
+      <div class="pc-sub">${p.status==='full'?'✅ Completo':p.status==='partial'?'🔶 Parcial':'🔜 Em breve'}</div>
+    </div>
+  `).join('');
+  main.innerHTML = `
+    <div class="welcome">
+      <div style="font-size:52px;margin-bottom:14px">📋</div>
+      <h2>AdOps Campaign Setup Guide</h2>
+      <p>Guia completo de setup de campanhas nas principais plataformas de mídia digital — do acesso inicial até o go-live. Selecione uma plataforma para começar.</p>
+      <div class="plat-grid">${platCards}</div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderSidebar();
+renderWelcome();
+</script>
+</body>
+</html>

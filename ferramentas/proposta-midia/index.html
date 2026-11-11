@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de Proposta de Mídia — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:960px;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul)}
+textarea{resize:vertical;min-height:80px}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-danger:hover{background:#fee2e2}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:620px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.num{font-family:var(--mono);font-size:.83rem}
+/* Channel rows */
+.ch-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;font-size:.84rem}
+@media(max-width:700px){.ch-row{grid-template-columns:1fr 1fr;}}
+.ch-header{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px}
+@media(max-width:700px){.ch-header{display:none}}
+/* Summary table */
+.sum-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.sum-table th{text-align:left;padding:7px 10px;background:var(--light);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.sum-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.sum-table tr:last-child td{border-bottom:none}
+.sum-table tfoot td{font-weight:700;border-top:2px solid var(--border);background:var(--light)}
+/* Preview card */
+#proposalPreview{font-size:.88rem;line-height:1.6}
+#proposalPreview h2{font-size:1.1rem;margin:14px 0 6px}
+#proposalPreview h3{font-size:.92rem;margin:10px 0 4px;color:var(--azul)}
+#proposalPreview table{width:100%;border-collapse:collapse;font-size:.82rem;margin:8px 0}
+#proposalPreview th{background:var(--light);padding:6px 10px;text-align:left;font-size:.74rem;text-transform:uppercase}
+#proposalPreview td{padding:6px 10px;border-bottom:1px solid var(--border)}
+#proposalPreview .total-row td{font-weight:700;border-top:2px solid var(--border);background:var(--light)}
+#proposalPreview .kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0}
+#proposalPreview .kpi-box{background:var(--light);border-radius:8px;padding:10px 14px;flex:1;min-width:120px}
+#proposalPreview .kpi-box span{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px}
+#proposalPreview .kpi-box strong{font-family:var(--mono);font-size:1.1rem;color:var(--azul)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📋 Gerador de Proposta de Mídia</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<!-- Brief -->
+<div class="card">
+  <div class="card-title">Brief da Campanha</div>
+  <div class="grid-3" style="margin-bottom:12px">
+    <div>
+      <label>Cliente</label>
+      <input id="client" type="text" placeholder="Empresa XPTO">
+    </div>
+    <div>
+      <label>Campanha</label>
+      <input id="campName" type="text" placeholder="Lançamento Produto Y">
+    </div>
+    <div>
+      <label>Período</label>
+      <div style="display:flex;gap:6px">
+        <input id="dateStart" type="date">
+        <input id="dateEnd" type="date">
+      </div>
+    </div>
+  </div>
+  <div class="grid-3" style="margin-bottom:12px">
+    <div>
+      <label>Objetivo principal</label>
+      <select id="objective">
+        <option value="awareness">Brand Awareness</option>
+        <option value="consideration">Consideração</option>
+        <option value="conversion">Conversão / Performance</option>
+        <option value="retention">Retenção / CRM</option>
+        <option value="launch">Lançamento de Produto</option>
+      </select>
+    </div>
+    <div>
+      <label>Budget total (R$)</label>
+      <input id="totalBudget" type="number" min="0" placeholder="500000" oninput="updateTotals()">
+    </div>
+    <div>
+      <label>Universo / Público-alvo</label>
+      <input id="universe" type="text" placeholder="Mulheres 25–45, AB, SP/RJ">
+    </div>
+  </div>
+  <div class="grid-2">
+    <div>
+      <label>Contexto / Desafio de negócio</label>
+      <textarea id="context" placeholder="Descreva o contexto da campanha, desafio ou briefing…"></textarea>
+    </div>
+    <div>
+      <label>KPI principal</label>
+      <textarea id="kpiMain" placeholder="Ex: 60% awareness reach, CPM &lt; R$8, +3% share of voice"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- Channels -->
+<div class="card">
+  <div class="card-title">Mix de Canais</div>
+  <div class="ch-header">
+    <span>Canal / Plataforma</span>
+    <span>Budget (R$)</span>
+    <span>% do total</span>
+    <span>KPI estimado</span>
+    <span>CPM est. (R$)</span>
+    <span></span>
+  </div>
+  <div id="chList"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary btn-sm" onclick="addChannel()">+ Canal</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadExampleChannels()">Exemplo pré-preenchido</button>
+  </div>
+  <div id="chSummary" style="margin-top:16px"></div>
+</div>
+
+<!-- Projections -->
+<div class="card">
+  <div class="card-title">Projeções Consolidadas</div>
+  <div id="projections"></div>
+</div>
+
+<!-- Actions -->
+<div class="btn-row" style="margin-bottom:16px">
+  <button class="btn btn-primary" onclick="buildProposal()">📄 Gerar Proposta</button>
+  <button class="btn btn-ghost" onclick="exportTxt()">⬇ Exportar .txt</button>
+  <button class="btn btn-ghost btn-sm" onclick="clearAll()">🗑 Limpar</button>
+</div>
+
+<!-- Preview -->
+<div id="proposalWrap" style="display:none">
+  <div class="card">
+    <div class="card-title">Preview da Proposta</div>
+    <div id="proposalPreview"></div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('prop_theme',nxt);
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('prop_theme')||'light');
+
+const CHANNEL_OPTS=['YouTube','Meta (Facebook/Instagram)','TikTok','LinkedIn','Google Search','DV360','CM360 Display','Spotify','OOH/DOOH','CTV/Streaming','Twitter/X','Pinterest','Programático','Publisher Direto','Outros'];
+let channels=[];
+
+function fmtR(v){return'R$'+Math.round(v||0).toLocaleString('pt-BR');}
+function fmtN(v){return Math.round(v||0).toLocaleString('pt-BR');}
+
+function addChannel(){
+  channels.push({name:'',budget:0,kpi:'',cpm:0});
+  renderChannels();
+}
+
+function removeChannel(i){channels.splice(i,1);renderChannels();}
+
+function updateChannel(i,field,val){
+  channels[i][field]=field==='budget'||field==='cpm'?parseFloat(val)||0:val;
+  updateTotals();
+  renderChannels(false);
+}
+
+function renderChannels(full=true){
+  const total=parseFloat(document.getElementById('totalBudget').value)||0;
+  document.getElementById('chList').innerHTML=channels.map((ch,i)=>{
+    const pct=total>0?(ch.budget/total*100).toFixed(1):'—';
+    const imps=ch.cpm>0?Math.round(ch.budget/ch.cpm*1000):0;
+    return`<div class="ch-row">
+      <select onchange="updateChannel(${i},'name',this.value)">
+        <option value="">Selecionar canal…</option>
+        ${CHANNEL_OPTS.map(o=>`<option${o===ch.name?' selected':''}>${o}</option>`).join('')}
+      </select>
+      <input type="number" value="${ch.budget||''}" placeholder="R$" oninput="updateChannel(${i},'budget',this.value)" min="0">
+      <span class="num" style="color:var(--muted)">${pct}%</span>
+      <input type="text" value="${ch.kpi||''}" placeholder="ex: 5M imps" oninput="updateChannel(${i},'kpi',this.value)">
+      <input type="number" value="${ch.cpm||''}" placeholder="R$" oninput="updateChannel(${i},'cpm',this.value)" min="0" step="0.5">
+      <button class="btn btn-sm" style="padding:5px 8px;color:var(--red);background:none;border:none;cursor:pointer" onclick="removeChannel(${i})">✕</button>
+    </div>`;
+  }).join('');
+  if(full)updateTotals();
+}
+
+function updateTotals(){
+  const total=parseFloat(document.getElementById('totalBudget').value)||0;
+  const sumBudget=channels.reduce((s,c)=>s+c.budget,0);
+  const remaining=total-sumBudget;
+  const totalImps=channels.reduce((s,c)=>s+(c.cpm>0?c.budget/c.cpm*1000:0),0);
+
+  if(channels.length){
+    const rows=channels.filter(c=>c.name).map(c=>{
+      const pct=total>0?(c.budget/total*100).toFixed(1):0;
+      const imps=c.cpm>0?fmtN(c.budget/c.cpm*1000):'—';
+      return`<tr><td>${c.name}</td><td class="num">${fmtR(c.budget)}</td><td class="num">${pct}%</td><td class="num">${imps}</td><td>${c.kpi||'—'}</td></tr>`;
+    }).join('');
+    const sumRow=`<tfoot><tr><td><b>TOTAL</b></td><td class="num">${fmtR(sumBudget)}</td><td class="num">—</td><td class="num">${fmtN(totalImps)}</td><td></td></tr></tfoot>`;
+    document.getElementById('chSummary').innerHTML=`
+      <table class="sum-table">
+        <thead><tr><th>Canal</th><th>Budget</th><th>%</th><th>Impressões est.</th><th>KPI</th></tr></thead>
+        <tbody>${rows}</tbody>${sumRow}
+      </table>`;
+    if(total&&remaining!==0){
+      document.getElementById('chSummary').innerHTML+=`<p class="hint" style="margin-top:6px;color:${remaining>=0?'var(--green)':'var(--red)'}">
+        ${remaining>=0?`✅ Saldo alocável: ${fmtR(remaining)}`:`⚠️ Budget excedido em ${fmtR(Math.abs(remaining))}`}
+      </p>`;
+    }
+  }
+
+  // Projections
+  document.getElementById('projections').innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="background:var(--light);border-radius:10px;padding:14px;flex:1;min-width:140px">
+        <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Budget Total</div>
+        <div style="font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)">${fmtR(total)}</div>
+      </div>
+      <div style="background:var(--light);border-radius:10px;padding:14px;flex:1;min-width:140px">
+        <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Impressões Estimadas</div>
+        <div style="font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)">${fmtN(totalImps)}</div>
+      </div>
+      <div style="background:var(--light);border-radius:10px;padding:14px;flex:1;min-width:140px">
+        <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">CPM Médio Est.</div>
+        <div style="font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)">${totalImps>0?fmtR(sumBudget/totalImps*1000):'—'}</div>
+      </div>
+      <div style="background:var(--light);border-radius:10px;padding:14px;flex:1;min-width:140px">
+        <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px">Canais no Mix</div>
+        <div style="font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)">${channels.filter(c=>c.name).length}</div>
+      </div>
+    </div>`;
+}
+
+function loadExampleChannels(){
+  document.getElementById('client').value='Marca Brasil';
+  document.getElementById('campName').value='Campanha Verão 2025';
+  document.getElementById('totalBudget').value='500000';
+  document.getElementById('objective').value='awareness';
+  document.getElementById('universe').value='Mulheres 25–45, AB, Sudeste';
+  document.getElementById('context').value='Lançamento da nova linha de verão. Objetivo: maximizar alcance e lembrança de marca na estação de pico.';
+  document.getElementById('kpiMain').value='60% de reach na target, awareness lift +5pp, CPM < R$10';
+  channels=[
+    {name:'YouTube',budget:150000,kpi:'15M impressões',cpm:10},
+    {name:'Meta (Facebook/Instagram)',budget:120000,kpi:'12M impressões',cpm:8},
+    {name:'DV360',budget:80000,kpi:'10M impressões',cpm:7},
+    {name:'TikTok',budget:80000,kpi:'8M impressões',cpm:9},
+    {name:'OOH/DOOH',budget:50000,kpi:'Share of voice SP/RJ',cpm:0},
+    {name:'CTV/Streaming',budget:20000,kpi:'500k imps premium',cpm:40},
+  ];
+  const today=new Date();
+  const start=new Date(today); start.setDate(1);
+  const end=new Date(today); end.setMonth(end.getMonth()+2); end.setDate(28);
+  document.getElementById('dateStart').value=start.toISOString().slice(0,10);
+  document.getElementById('dateEnd').value=end.toISOString().slice(0,10);
+  renderChannels();
+}
+
+function buildProposal(){
+  const client=document.getElementById('client').value||'Cliente';
+  const camp=document.getElementById('campName').value||'Campanha';
+  const obj=document.getElementById('objective').value;
+  const start=document.getElementById('dateStart').value;
+  const end=document.getElementById('dateEnd').value;
+  const total=parseFloat(document.getElementById('totalBudget').value)||0;
+  const universe=document.getElementById('universe').value||'—';
+  const context=document.getElementById('context').value||'—';
+  const kpi=document.getElementById('kpiMain').value||'—';
+
+  const objLabels={awareness:'Brand Awareness',consideration:'Consideração',conversion:'Conversão / Performance',retention:'Retenção / CRM',launch:'Lançamento de Produto'};
+  const totalImps=channels.reduce((s,c)=>s+(c.cpm>0?c.budget/c.cpm*1000:0),0);
+  const sumBudget=channels.reduce((s,c)=>s+c.budget,0);
+
+  const chRows=channels.filter(c=>c.name).map(c=>{
+    const pct=total>0?(c.budget/total*100).toFixed(0):'—';
+    const imps=c.cpm>0?fmtN(c.budget/c.cpm*1000):'—';
+    return`<tr><td>${c.name}</td><td>${fmtR(c.budget)}</td><td>${pct}%</td><td>${imps}</td><td>${c.kpi||'—'}</td></tr>`;
+  }).join('');
+
+  const html=`
+    <h2>Proposta de Mídia — ${client}</h2>
+    <p><b>Campanha:</b> ${camp} &nbsp;|&nbsp; <b>Período:</b> ${start||'—'} a ${end||'—'}</p>
+    <h3>1. Contexto e Objetivo</h3>
+    <p><b>Objetivo:</b> ${objLabels[obj]||obj}<br>
+    <b>Público-alvo:</b> ${universe}<br>
+    <b>Contexto:</b> ${context}</p>
+    <h3>2. KPIs Principais</h3>
+    <p>${kpi}</p>
+    <h3>3. Mix de Canais</h3>
+    <table>
+      <thead><tr><th>Canal</th><th>Budget</th><th>%</th><th>Impressões</th><th>KPI</th></tr></thead>
+      <tbody>${chRows}</tbody>
+      <tr class="total-row"><td><b>TOTAL</b></td><td><b>${fmtR(sumBudget)}</b></td><td>—</td><td><b>${fmtN(totalImps)}</b></td><td></td></tr>
+    </table>
+    <h3>4. Projeções</h3>
+    <div class="kpi-row">
+      <div class="kpi-box"><span>Budget</span><strong>${fmtR(total)}</strong></div>
+      <div class="kpi-box"><span>Impressões Est.</span><strong>${fmtN(totalImps)}</strong></div>
+      <div class="kpi-box"><span>CPM Médio</span><strong>${totalImps>0?fmtR(sumBudget/totalImps*1000):'—'}</strong></div>
+      <div class="kpi-box"><span>Canais</span><strong>${channels.filter(c=>c.name).length}</strong></div>
+    </div>
+    <h3>5. Próximos Passos</h3>
+    <ul style="padding-left:18px">
+      <li>Aprovação do budget e mix de canais</li>
+      <li>Briefing criativo por formato</li>
+      <li>Setup de tracking e floodlight tags</li>
+      <li>QA e go-live</li>
+    </ul>`;
+
+  document.getElementById('proposalPreview').innerHTML=html;
+  document.getElementById('proposalWrap').style.display='block';
+  document.getElementById('proposalWrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function exportTxt(){
+  const client=document.getElementById('client').value||'Cliente';
+  const camp=document.getElementById('campName').value||'Campanha';
+  const total=parseFloat(document.getElementById('totalBudget').value)||0;
+  const totalImps=channels.reduce((s,c)=>s+(c.cpm>0?c.budget/c.cpm*1000:0),0);
+
+  let txt=`PROPOSTA DE MÍDIA — ${client.toUpperCase()}\n${'='.repeat(60)}\n`;
+  txt+=`Campanha: ${camp}\n`;
+  txt+=`Budget Total: ${fmtR(total)}\n`;
+  txt+=`Período: ${document.getElementById('dateStart').value||'—'} a ${document.getElementById('dateEnd').value||'—'}\n\n`;
+  txt+=`MIX DE CANAIS\n${'-'.repeat(40)}\n`;
+  channels.filter(c=>c.name).forEach(c=>{
+    const pct=total>0?(c.budget/total*100).toFixed(0):0;
+    txt+=`${c.name}: ${fmtR(c.budget)} (${pct}%) — ${c.kpi||''}\n`;
+  });
+  txt+=`\nTOTAL IMPRESSÕES ESTIMADAS: ${fmtN(totalImps)}\n`;
+  txt+=`KPIs: ${document.getElementById('kpiMain').value||'—'}\n`;
+
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:`proposta-${client.replace(/\s/g,'-').toLowerCase()}.txt`});
+  a.click();
+}
+
+function clearAll(){
+  if(!confirm('Limpar tudo?'))return;
+  ['client','campName','totalBudget','universe','context','kpiMain','dateStart','dateEnd'].forEach(id=>document.getElementById(id).value='');
+  channels=[];
+  renderChannels();
+  document.getElementById('proposalWrap').style.display='none';
+}
+
+renderChannels();
+</script>
+</body>
+</html>

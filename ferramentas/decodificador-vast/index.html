@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Decodificador VAST — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:.82rem;background:var(--card);color:var(--text);resize:vertical;min-height:200px;transition:border .2s}
+textarea:focus{outline:none;border-color:var(--azul)}
+input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* Result sections */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.info-box{background:var(--light);border-radius:10px;padding:14px}
+.info-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.info-val{font-size:.92rem;font-weight:700;word-break:break-all}
+.info-val.mono{font-family:var(--mono)}
+.info-val.ok{color:var(--green)}
+.info-val.warn{color:var(--yellow)}
+.info-val.err{color:var(--red)}
+/* Tracking events */
+.event-list{display:flex;flex-direction:column;gap:4px}
+.event-row{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;border-radius:8px;background:var(--light);font-size:.82rem}
+.event-type{font-weight:700;min-width:110px;color:var(--azul)}
+.event-url{font-family:var(--mono);font-size:.76rem;word-break:break-all;color:var(--muted)}
+/* Error banner */
+.err-banner{background:#fee2e2;border-left:4px solid var(--red);padding:12px 16px;border-radius:0 8px 8px 0;font-size:.88rem;margin-bottom:12px;color:var(--red)}
+.warn-banner{background:#fef9c3;border-left:4px solid var(--yellow);padding:12px 16px;border-radius:0 8px 8px 0;font-size:.88rem;margin-bottom:12px;color:var(--yellow)}
+.ok-banner{background:#dcfce7;border-left:4px solid var(--green);padding:12px 16px;border-radius:0 8px 8px 0;font-size:.88rem;margin-bottom:12px;color:var(--green)}
+/* Media files */
+.media-row{font-family:var(--mono);font-size:.8rem;padding:8px 10px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:60px 60px 1fr;gap:8px;align-items:center}
+.media-row:last-child{border-bottom:none}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.badge{display:inline-block;padding:3px 8px;border-radius:8px;font-size:.7rem;font-weight:700}
+.badge-blue{background:var(--light);color:var(--azul)}
+.badge-green{background:#dcfce7;color:var(--green)}
+.badge-red{background:#fee2e2;color:var(--red)}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🎬 Decodificador VAST</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="card-title">Cole o XML do VAST</div>
+  <p class="hint" style="margin-bottom:12px">Cole o conteúdo XML da tag VAST diretamente. Suporta VAST 2.0, 3.0 e 4.x. Nenhum dado é enviado a servidores externos.</p>
+  <textarea id="vastInput" placeholder='<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.1">
+  <Ad id="1234">
+    ...
+  </Ad>
+</VAST>'></textarea>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="decodeVast()">🔍 Decodificar</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadExample()">Exemplo VAST 4.1</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearAll()">Limpar</button>
+  </div>
+</div>
+
+<div id="results" style="display:none">
+
+<div class="card">
+  <div class="card-title">Visão Geral</div>
+  <div id="overviewBanners"></div>
+  <div class="info-grid" id="overviewGrid"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Arquivos de Mídia (MediaFiles)</div>
+  <div id="mediaSection"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Eventos de Tracking</div>
+  <div class="event-list" id="trackingSection"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Verificação de Qualidade</div>
+  <div id="qaSection"></div>
+</div>
+
+</div>
+
+<!-- Reference -->
+<div class="card">
+  <div class="card-title">Referência VAST</div>
+  <div style="font-size:.84rem;line-height:1.6;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <b>Eventos obrigatórios (IAB)</b><br>
+      <div style="font-family:var(--mono);font-size:.78rem;line-height:2">
+        creativeView, start, firstQuartile, midpoint, thirdQuartile, complete
+      </div>
+      <br>
+      <b>Eventos recomendados</b><br>
+      <div style="font-family:var(--mono);font-size:.78rem;line-height:2">
+        impression, mute, unmute, pause, resume, fullscreen, skip, closeLinear, progress
+      </div>
+    </div>
+    <div>
+      <b>MediaFile — atributos</b><br>
+      <div style="font-family:var(--mono);font-size:.78rem;line-height:2">
+        type (MIME), width, height, bitrate, delivery (progressive/streaming), scalable, maintainAspectRatio
+      </div>
+      <br>
+      <b>VAST versions</b><br>
+      <div style="font-family:var(--mono);font-size:.78rem;line-height:2">
+        2.0 (legacy) · 3.0 (pods, viewability) · 4.0 (mezzanine, UniversalAdId) · 4.1/4.2 (interactivity, SIMID)
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('vast_theme',nxt);
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('vast_theme')||'light');
+
+function getTextContent(el,tag){
+  const node=el.querySelector(tag);
+  return node?node.textContent.trim():'';
+}
+function getAllTextContent(el,tag){
+  return Array.from(el.querySelectorAll(tag)).map(n=>n.textContent.trim());
+}
+function getAttr(el,tag,attr){
+  const node=el.querySelector(tag);
+  return node?node.getAttribute(attr)||'':'';
+}
+
+function decodeVast(){
+  const xml=document.getElementById('vastInput').value.trim();
+  if(!xml){alert('Cole o XML do VAST primeiro.');return;}
+
+  let doc;
+  try{
+    const parser=new DOMParser();
+    doc=parser.parseFromString(xml,'application/xml');
+    const parseErr=doc.querySelector('parsererror');
+    if(parseErr)throw new Error(parseErr.textContent);
+  }catch(e){
+    document.getElementById('results').style.display='block';
+    document.getElementById('overviewBanners').innerHTML=`<div class="err-banner">❌ XML inválido: ${e.message.slice(0,200)}</div>`;
+    return;
+  }
+
+  const vast=doc.querySelector('VAST');
+  const version=vast?vast.getAttribute('version'):'desconhecida';
+  const ads=doc.querySelectorAll('Ad');
+  const adType=doc.querySelector('Wrapper')?'Wrapper':doc.querySelector('InLine')?'InLine':'Desconhecido';
+  const adTitle=getTextContent(doc,'AdTitle');
+  const advertiser=getTextContent(doc,'Advertiser');
+  const duration=getTextContent(doc,'Duration');
+  const skipOffset=getAttr(doc,'Linear','skipoffset');
+  const universalAdId=getTextContent(doc,'UniversalAdId');
+  const description=getTextContent(doc,'Description');
+
+  // Impressions
+  const impressionUrls=getAllTextContent(doc,'Impression');
+  // Errors
+  const errorUrls=getAllTextContent(doc,'Error');
+  // Clicks
+  const clickThrough=getTextContent(doc,'ClickThrough');
+  const clickTracking=getAllTextContent(doc,'ClickTracking');
+
+  // Media files
+  const mediaFiles=Array.from(doc.querySelectorAll('MediaFile')).map(mf=>({
+    type:mf.getAttribute('type')||'—',
+    width:mf.getAttribute('width')||'—',
+    height:mf.getAttribute('height')||'—',
+    bitrate:mf.getAttribute('bitrate')||'—',
+    delivery:mf.getAttribute('delivery')||'—',
+    url:mf.textContent.trim(),
+  }));
+
+  // Tracking events
+  const trackingEvents=Array.from(doc.querySelectorAll('Tracking')).map(t=>({
+    event:t.getAttribute('event')||'—',
+    offset:t.getAttribute('offset')||'',
+    url:t.textContent.trim(),
+  }));
+
+  // Overview
+  const banners=[];
+  if(adType==='Wrapper')banners.push(`<div class="warn-banner">⚡ VAST Wrapper detectado — há um redirecionamento para outro VAST. Verifique a URL do wrapper para o VAST final.</div>`);
+  else banners.push(`<div class="ok-banner">✅ VAST InLine — criativo contido neste arquivo.</div>`);
+  if(!impressionUrls.length)banners.push(`<div class="err-banner">⚠️ Nenhuma Impression URL encontrada — obrigatório pela especificação IAB.</div>`);
+  if(!errorUrls.length)banners.push(`<div class="warn-banner">ℹ️ Nenhuma Error URL — recomendado para monitoramento.</div>`);
+
+  document.getElementById('overviewBanners').innerHTML=banners.join('');
+  document.getElementById('overviewGrid').innerHTML=[
+    {l:'Versão VAST',v:version,m:true},
+    {l:'Tipo de Ad',v:adType,m:false},
+    {l:'Título do Ad',v:adTitle||'—',m:false},
+    {l:'Anunciante',v:advertiser||'—',m:false},
+    {l:'Duração',v:duration||'—',m:true},
+    {l:'Skip Offset',v:skipOffset||'Não skippável',m:true},
+    {l:'Impressions',v:impressionUrls.length+' URL(s)',m:false,cls:impressionUrls.length?'ok':'err'},
+    {l:'MediaFiles',v:mediaFiles.length+' arquivo(s)',m:false,cls:mediaFiles.length?'ok':'err'},
+    {l:'Tracking Events',v:trackingEvents.length+' evento(s)',m:false},
+    {l:'ClickThrough',v:clickThrough?'Configurado':'—',m:false,cls:clickThrough?'ok':'warn'},
+    {l:'UniversalAdId',v:universalAdId||'—',m:true},
+    {l:'Nº de Ads',v:ads.length+'',m:false},
+  ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.m?'mono':''} ${r.cls||''}">${r.v}</div></div>`).join('');
+
+  // MediaFiles
+  if(mediaFiles.length){
+    const rows=mediaFiles.map(mf=>`<div class="media-row">
+      <span class="badge badge-blue">${mf.width}×${mf.height}</span>
+      <span style="font-size:.74rem;color:var(--muted)">${mf.delivery}</span>
+      <div>
+        <div style="font-size:.8rem;font-weight:600;margin-bottom:2px">${mf.type} ${mf.bitrate?'· '+mf.bitrate+'kbps':''}</div>
+        <div style="font-size:.74rem;color:var(--muted);word-break:break-all">${mf.url.slice(0,100)}${mf.url.length>100?'…':''}</div>
+      </div>
+    </div>`).join('');
+    document.getElementById('mediaSection').innerHTML=`<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">${rows}</div>`;
+  }else{
+    document.getElementById('mediaSection').innerHTML='<p class="hint">Nenhum MediaFile encontrado.</p>';
+  }
+
+  // Tracking events
+  const REQUIRED=['creativeView','start','firstQuartile','midpoint','thirdQuartile','complete'];
+  const foundEvents=trackingEvents.map(e=>e.event);
+  if(trackingEvents.length){
+    document.getElementById('trackingSection').innerHTML=trackingEvents.map(e=>`<div class="event-row">
+      <span class="event-type">${e.event}${e.offset?' ('+e.offset+')':''}</span>
+      <span class="event-url">${e.url.slice(0,120)}${e.url.length>120?'…':''}</span>
+    </div>`).join('');
+  }else{
+    document.getElementById('trackingSection').innerHTML='<p class="hint">Nenhum evento de tracking encontrado.</p>';
+  }
+
+  // QA
+  const qaItems=[];
+  REQUIRED.forEach(ev=>{
+    qaItems.push({ok:foundEvents.includes(ev),msg:`Evento obrigatório: <b>${ev}</b>`});
+  });
+  qaItems.push({ok:!!clickThrough,msg:'ClickThrough configurado'});
+  qaItems.push({ok:impressionUrls.length>0,msg:'Impression URL presente'});
+  qaItems.push({ok:errorUrls.length>0,msg:'Error URL configurada (recomendado)'});
+  qaItems.push({ok:mediaFiles.length>0,msg:'Pelo menos 1 MediaFile'});
+  qaItems.push({ok:mediaFiles.some(m=>m.type.includes('mp4')),msg:'Formato MP4 disponível (compatibilidade máxima)'});
+  if(skipOffset)qaItems.push({ok:true,msg:`Skip offset configurado em: ${skipOffset}`});
+
+  document.getElementById('qaSection').innerHTML=qaItems.map(item=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.85rem">
+      <span style="font-size:1rem">${item.ok?'✅':'⚠️'}</span>
+      <span>${item.msg}</span>
+    </div>`).join('');
+
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function clearAll(){
+  document.getElementById('vastInput').value='';
+  document.getElementById('results').style.display='none';
+}
+
+function loadExample(){
+  document.getElementById('vastInput').value=`<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="4.1">
+  <Ad id="12345" sequence="1">
+    <InLine>
+      <AdSystem version="4.0">AdServer X</AdSystem>
+      <AdTitle>My Brand Video Ad 30s</AdTitle>
+      <Advertiser>My Brand</Advertiser>
+      <Description>30-second pre-roll ad for My Brand product launch</Description>
+      <Error><![CDATA[https://tracking.example.com/error?code=[ERRORCODE]]]></Error>
+      <Impression id="imp1"><![CDATA[https://tracking.example.com/impression?id=12345]]></Impression>
+      <Impression id="imp2"><![CDATA[https://verify.example.com/impression?id=12345]]></Impression>
+      <UniversalAdId idRegistry="Ad-ID">12345-ABCDE</UniversalAdId>
+      <Creatives>
+        <Creative id="c1" sequence="1">
+          <Linear skipoffset="00:00:05">
+            <Duration>00:00:30</Duration>
+            <TrackingEvents>
+              <Tracking event="creativeView"><![CDATA[https://tracking.example.com/creativeView]]></Tracking>
+              <Tracking event="start"><![CDATA[https://tracking.example.com/start]]></Tracking>
+              <Tracking event="firstQuartile"><![CDATA[https://tracking.example.com/q1]]></Tracking>
+              <Tracking event="midpoint"><![CDATA[https://tracking.example.com/mid]]></Tracking>
+              <Tracking event="thirdQuartile"><![CDATA[https://tracking.example.com/q3]]></Tracking>
+              <Tracking event="complete"><![CDATA[https://tracking.example.com/complete]]></Tracking>
+              <Tracking event="mute"><![CDATA[https://tracking.example.com/mute]]></Tracking>
+              <Tracking event="pause"><![CDATA[https://tracking.example.com/pause]]></Tracking>
+              <Tracking event="skip"><![CDATA[https://tracking.example.com/skip]]></Tracking>
+            </TrackingEvents>
+            <VideoClicks>
+              <ClickThrough id="ct1"><![CDATA[https://www.mybrand.com/landing]]></ClickThrough>
+              <ClickTracking id="ctr1"><![CDATA[https://tracking.example.com/click]]></ClickTracking>
+            </VideoClicks>
+            <MediaFiles>
+              <MediaFile id="mp4-hd" delivery="progressive" type="video/mp4" width="1920" height="1080" bitrate="2500" scalable="true" maintainAspectRatio="true">
+                <![CDATA[https://cdn.example.com/ad_1080p.mp4]]>
+              </MediaFile>
+              <MediaFile id="mp4-sd" delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="1200" scalable="true" maintainAspectRatio="true">
+                <![CDATA[https://cdn.example.com/ad_720p.mp4]]>
+              </MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>`;
+}
+</script>
+</body>
+</html>

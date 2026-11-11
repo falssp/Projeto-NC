@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de Floodlight — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:620px){.form-grid{grid-template-columns:1fr}}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul)}
+.hint{font-size:.75rem;color:var(--muted);margin-top:3px}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* Resultado */
+.result-section{margin-top:0}
+.code-block{background:#0d0f1a;color:#e2e8f0;padding:16px;border-radius:8px;font-family:var(--mono);font-size:.8rem;overflow-x:auto;line-height:1.6;position:relative;white-space:pre-wrap;word-break:break-all}
+[data-theme="dark"] .code-block{background:#0a0c17;border:1px solid var(--border)}
+.code-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.copy-btn{padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;margin-top:8px}
+.copy-btn.copied{background:var(--green);color:#fff;border-color:var(--green)}
+/* Activity string preview */
+.activity-string{background:var(--light);border:1.5px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:.88rem;word-break:break-all;color:var(--azul);margin-bottom:10px}
+/* Params */
+.param-table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:12px}
+.param-table th{text-align:left;padding:7px 10px;background:var(--light);font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.param-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.param-table tr:last-child td{border-bottom:none}
+.param-key{font-family:var(--mono);font-weight:700;color:var(--azul)}
+.param-opt{font-size:.7rem;background:#fef9c3;color:var(--yellow);padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px}
+.param-req{font-size:.7rem;background:#fee2e2;color:var(--red);padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px}
+/* Custom vars section */
+.var-row{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center;margin-bottom:6px}
+.var-row input{padding:7px 10px;font-size:.85rem}
+.remove-var{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:4px}
+.remove-var:hover{color:var(--red);background:#fee2e2}
+/* Tag types */
+.tag-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tag-tab{padding:6px 16px;border-radius:20px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.tag-tab.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+/* Validation */
+.valid-ok{color:var(--green);font-size:.75rem;margin-top:3px}
+.valid-err{color:var(--red);font-size:.75rem;margin-top:3px}
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab{padding:9px 20px;font-size:.88rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">⚡ Gerador de Floodlight</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('gen')">Gerador de Tag</div>
+    <div class="tab" onclick="switchTab('ref')">Referência de Parâmetros</div>
+  </div>
+
+  <!-- GENERATOR -->
+  <div id="tab-gen" class="tab-panel active">
+    <div class="card-title" style="margin-bottom:12px">Tipo de Tag</div>
+    <div class="tag-tabs">
+      <div class="tag-tab active" onclick="setTagType('iframe')" id="tt-iframe">iframe</div>
+      <div class="tag-tab" onclick="setTagType('img')" id="tt-img">img (1×1)</div>
+      <div class="tag-tab" onclick="setTagType('gtag')" id="tt-gtag">gtag.js</div>
+      <div class="tag-tab" onclick="setTagType('gtm')" id="tt-gtm">GTM</div>
+    </div>
+
+    <div class="form-grid">
+      <div>
+        <label>Advertiser ID (DC-ID) *</label>
+        <input id="dcId" placeholder="1234567" oninput="generate();validateDcId()">
+        <div id="dcId_v" class="hint"></div>
+      </div>
+      <div>
+        <label>Activity Group Tag String *</label>
+        <input id="groupTag" placeholder="vendas" oninput="generate();validateTag('groupTag','groupTag_v')">
+        <div id="groupTag_v" class="hint"></div>
+        <div class="hint">Sem espaços, sem caracteres especiais. Exemplo: <code>vendas</code></div>
+      </div>
+      <div>
+        <label>Activity Tag String *</label>
+        <input id="actTag" placeholder="confirmacao" oninput="generate();validateTag('actTag','actTag_v')">
+        <div id="actTag_v" class="hint"></div>
+        <div class="hint">Exemplo: <code>confirmacao</code></div>
+      </div>
+      <div>
+        <label>Tipo de contagem</label>
+        <select id="countingMethod" onchange="generate()">
+          <option value="standard">Standard (pageview)</option>
+          <option value="unique">Unique</option>
+          <option value="per_session">Per Session</option>
+          <option value="transactions">Transactions (qty + revenue)</option>
+          <option value="items_sold">Items Sold (qty)</option>
+        </select>
+      </div>
+      <div>
+        <label>Valor (ord= / cost=)</label>
+        <input id="ord" placeholder="[Valor dinâmico]" oninput="generate()">
+        <div class="hint">Para standard: ID único de pageview. Para transactions: valor de receita.</div>
+      </div>
+      <div>
+        <label>Quantity (qty=)</label>
+        <input id="qty" placeholder="1" oninput="generate()">
+        <div class="hint">Para transactions e items_sold.</div>
+      </div>
+      <div>
+        <label>Currency Code (u=)</label>
+        <select id="currency" onchange="generate()">
+          <option value="">— (padrão da conta)</option>
+          <option value="BRL">BRL</option><option value="USD">USD</option>
+          <option value="EUR">EUR</option><option value="GBP">GBP</option>
+        </select>
+      </div>
+      <div>
+        <label>DC-User-ID (opcional)</label>
+        <input id="dcUserId" placeholder="[user_id]" oninput="generate()">
+        <div class="hint">Para conversões autenticadas / Enhanced Conversions.</div>
+      </div>
+    </div>
+
+    <!-- Custom vars u1–u100 -->
+    <div style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:8px">Variáveis Customizadas (u1–u100)</div>
+      <div id="customVars"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addVar()" style="margin-top:6px">+ Adicionar variável</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generate()">Gerar Tag</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadSample()">Exemplo</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearForm()">Limpar</button>
+    </div>
+
+    <!-- Output -->
+    <div id="outputSection" style="display:none;margin-top:20px">
+      <div class="code-label">Activity String</div>
+      <div class="activity-string" id="activityString"></div>
+
+      <div class="code-label">Tag gerada</div>
+      <div class="code-block" id="tagOutput"></div>
+      <button class="copy-btn" id="copyTagBtn" onclick="copyTag()">Copiar tag</button>
+    </div>
+  </div>
+
+  <!-- REFERENCE -->
+  <div id="tab-ref" class="tab-panel">
+    <div class="card-title">Parâmetros do Floodlight Tag</div>
+    <table class="param-table">
+      <thead>
+        <tr><th>Parâmetro</th><th>Obrig.?</th><th>Descrição</th><th>Exemplo</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="param-key">src</td><td><span class="param-req">SIM</span></td><td>Advertiser ID (DC-ID)</td><td class="param-key">src=1234567</td></tr>
+        <tr><td class="param-key">type</td><td><span class="param-req">SIM</span></td><td>Activity Group Tag String</td><td class="param-key">type=vendas</td></tr>
+        <tr><td class="param-key">cat</td><td><span class="param-req">SIM</span></td><td>Activity Tag String</td><td class="param-key">cat=confirmacao</td></tr>
+        <tr><td class="param-key">ord</td><td><span class="param-opt">DEP.</span></td><td>Valor único por pageview (standard) ou receita (transactions)</td><td class="param-key">ord=[revenue]</td></tr>
+        <tr><td class="param-key">qty</td><td><span class="param-opt">OPC.</span></td><td>Quantidade de itens (transactions/items_sold)</td><td class="param-key">qty=1</td></tr>
+        <tr><td class="param-key">cost</td><td><span class="param-opt">OPC.</span></td><td>Custo/receita (alternativa a ord= para transactions)</td><td class="param-key">cost=99.90</td></tr>
+        <tr><td class="param-key">u1–u100</td><td><span class="param-opt">OPC.</span></td><td>Variáveis customizadas mapeadas no CM360</td><td class="param-key">u1=[product_id]</td></tr>
+        <tr><td class="param-key">dc_lat</td><td><span class="param-opt">OPC.</span></td><td>Limited Ad Tracking flag (1=LAT ativo)</td><td class="param-key">dc_lat=</td></tr>
+        <tr><td class="param-key">tag_for_child_directed_treatment</td><td><span class="param-opt">OPC.</span></td><td>COPPA flag</td><td class="param-key">tag_for_child_directed_treatment=0</td></tr>
+        <tr><td class="param-key">tfua</td><td><span class="param-opt">OPC.</span></td><td>Tag for Under-Age (GDPR)</td><td class="param-key">tfua=0</td></tr>
+        <tr><td class="param-key">npa</td><td><span class="param-opt">OPC.</span></td><td>Non-Personalized Ads flag</td><td class="param-key">npa=0</td></tr>
+        <tr><td class="param-key">dc_rdid</td><td><span class="param-opt">OPC.</span></td><td>Resettable Device ID para mobile</td><td class="param-key">dc_rdid=[IDFA]</td></tr>
+        <tr><td class="param-key">num</td><td><span class="param-opt">OPC.</span></td><td>Cache buster (único p/ standard — alternativa a ord)</td><td class="param-key">num=[random]</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px">
+      <div class="card-title">Formato da Activity String</div>
+      <div class="code-block">DC-{advertiser_id}/{group_tag}/{activity_tag}+{counting_method}</div>
+      <div class="hint" style="margin-top:8px">Exemplo: <code>DC-1234567/vendas/confirmacao+standard</code></div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="card-title">Métodos de Contagem</div>
+      <table class="param-table">
+        <thead><tr><th>Método</th><th>Quando usar</th><th>Parâmetros extras</th></tr></thead>
+        <tbody>
+          <tr><td class="param-key">standard</td><td>Pageview único — cada carga dispara</td><td>ord= (ID único)</td></tr>
+          <tr><td class="param-key">unique</td><td>Conta apenas 1× por usuário/sessão</td><td>—</td></tr>
+          <tr><td class="param-key">per_session</td><td>1× por sessão (cookie-based)</td><td>—</td></tr>
+          <tr><td class="param-key">transactions</td><td>E-commerce — receita + quantidade</td><td>ord= ou cost=, qty=</td></tr>
+          <tr><td class="param-key">items_sold</td><td>Venda de itens por quantidade</td><td>ord=, qty=</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+let tagType='iframe';
+let customVarCount=0;
+let customVars=[];
+
+function setTagType(t){
+  tagType=t;
+  ['iframe','img','gtag','gtm'].forEach(tt=>{
+    document.getElementById('tt-'+tt).classList.toggle('active',tt===t);
+  });
+  generate();
+}
+
+function validateDcId(){
+  const v=document.getElementById('dcId').value.trim();
+  const el=document.getElementById('dcId_v');
+  if(!v){el.textContent='';return;}
+  if(/^\d+$/.test(v)){el.textContent='✓ ID válido';el.className='valid-ok';}
+  else{el.textContent='✕ Deve ser numérico';el.className='valid-err';}
+}
+
+function validateTag(inputId,msgId){
+  const v=document.getElementById(inputId).value.trim();
+  const el=document.getElementById(msgId);
+  if(!v){el.textContent='';return;}
+  if(/^[a-z0-9_-]+$/i.test(v)){el.textContent='✓ Tag válida';el.className='valid-ok';}
+  else{el.textContent='✕ Apenas letras, números, _ e - são permitidos';el.className='valid-err';}
+}
+
+function addVar(){
+  customVarCount++;
+  const idx=customVarCount;
+  customVars.push({idx,key:'u'+idx,val:''});
+  renderVars();
+}
+
+function removeVar(idx){
+  customVars=customVars.filter(v=>v.idx!==idx);
+  renderVars();
+  generate();
+}
+
+function renderVars(){
+  document.getElementById('customVars').innerHTML=customVars.map(v=>`
+    <div class="var-row" id="var-${v.idx}">
+      <select onchange="updateVar(${v.idx},'key',this.value)" style="padding:7px 8px;font-size:.82rem">
+        ${Array.from({length:20},(_,i)=>`<option value="u${i+1}" ${v.key==='u'+(i+1)?'selected':''}>u${i+1}</option>`).join('')}
+      </select>
+      <input placeholder="[valor ou variável dinâmica]" value="${v.val}" oninput="updateVar(${v.idx},'val',this.value)" style="padding:7px 10px;font-size:.85rem">
+      <button class="remove-var" onclick="removeVar(${v.idx})">✕</button>
+    </div>`).join('');
+}
+
+function updateVar(idx,field,val){
+  const v=customVars.find(x=>x.idx===idx);
+  if(v)v[field]=val;
+  generate();
+}
+
+function buildParams(){
+  const dcId=document.getElementById('dcId').value.trim();
+  const groupTag=document.getElementById('groupTag').value.trim();
+  const actTag=document.getElementById('actTag').value.trim();
+  const cm=document.getElementById('countingMethod').value;
+  const ord=document.getElementById('ord').value.trim();
+  const qty=document.getElementById('qty').value.trim();
+  const currency=document.getElementById('currency').value;
+  const dcUserId=document.getElementById('dcUserId').value.trim();
+
+  if(!dcId||!groupTag||!actTag)return null;
+
+  const params={src:dcId,type:groupTag,cat:actTag};
+  if(ord)params.ord=ord;
+  if(qty&&(cm==='transactions'||cm==='items_sold'))params.qty=qty;
+  if(currency)params['u']=currency; // currency via u= param
+  if(dcUserId)params['dc_guid']=dcUserId;
+  customVars.forEach(v=>{if(v.key&&v.val)params[v.key]=v.val;});
+
+  // Privacy placeholders
+  params['dc_lat']='';
+  params['tag_for_child_directed_treatment']='0';
+
+  return{params,dcId,groupTag,actTag,cm};
+}
+
+function generate(){
+  const b=buildParams();
+  if(!b){document.getElementById('outputSection').style.display='none';return;}
+  const{params,dcId,groupTag,actTag,cm}=b;
+
+  const actStr=`DC-${dcId}/${groupTag}/${actTag}+${cm}`;
+  document.getElementById('activityString').textContent=actStr;
+
+  const baseUrl='https://ad.doubleclick.net/ddm/activity/';
+  const qs=Object.entries(params).map(([k,v])=>`${k}=${v}`).join(';');
+  const tagUrl=baseUrl+qs;
+
+  let tagHtml='';
+  if(tagType==='iframe'){
+    tagHtml=`<!-- Floodlight – ${actStr} -->
+<iframe src="${tagUrl};dc_rdid=;tag_for_child_directed_treatment=0;ord=1?"
+  width="1" height="1" frameborder="0" style="display:none">
+</iframe>
+<noscript>
+  <img src="${tagUrl};dc_rdid=;tag_for_child_directed_treatment=0;ord=1?"
+    width="1" height="1" alt="">
+</noscript>`;
+  } else if(tagType==='img'){
+    tagHtml=`<!-- Floodlight img – ${actStr} -->
+<img src="${tagUrl};dc_rdid=;tag_for_child_directed_treatment=0;ord=1?"
+  width="1" height="1" alt="" style="display:none">`;
+  } else if(tagType==='gtag'){
+    tagHtml=`<!-- Floodlight gtag.js – ${actStr} -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=DC-${dcId}"><\/script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'DC-${dcId}');
+  gtag('event', 'conversion', {
+    'allow_custom_scripts': true,
+    'send_to': '${actStr}',${params.ord?`\n    'value': '${params.ord}',`:''}${params.qty?`\n    'quantity': '${params.qty}',`:''}
+  });
+<\/script>`;
+  } else if(tagType==='gtm'){
+    tagHtml=`<!-- Floodlight via GTM – ${actStr} -->
+// No GTM: criar uma tag de tipo "Floodlight" com os seguintes valores:
+// - Advertiser ID: ${dcId}
+// - Activity Group Tag: ${groupTag}
+// - Activity Tag: ${actTag}
+// - Counting Method: ${cm}
+${params.ord?`// - Custom Variable ord: ${params.ord}`:''}
+${Object.entries(params).filter(([k])=>k.match(/^u\d+$/)).map(([k,v])=>`// - Custom Var ${k}: ${v}`).join('\n')}
+
+// Ou use Floodlight Activity URL manualmente:
+// ${tagUrl}`;
+  }
+
+  document.getElementById('tagOutput').textContent=tagHtml;
+  document.getElementById('outputSection').style.display='block';
+}
+
+function copyTag(){
+  const txt=document.getElementById('tagOutput').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn=document.getElementById('copyTagBtn');
+    btn.textContent='✓ Copiado!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copiar tag';btn.classList.remove('copied');},1800);
+  });
+}
+
+function loadSample(){
+  document.getElementById('dcId').value='1234567';
+  document.getElementById('groupTag').value='vendas';
+  document.getElementById('actTag').value='confirmacao';
+  document.getElementById('countingMethod').value='transactions';
+  document.getElementById('ord').value='[revenue]';
+  document.getElementById('qty').value='[quantity]';
+  document.getElementById('currency').value='BRL';
+  customVars=[{idx:1,key:'u1',val:'[product_id]'},{idx:2,key:'u2',val:'[category]'}];
+  customVarCount=2;
+  renderVars();
+  validateDcId();
+  validateTag('groupTag','groupTag_v');
+  validateTag('actTag','actTag_v');
+  generate();
+}
+
+function clearForm(){
+  ['dcId','groupTag','actTag','ord','qty','dcUserId'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('countingMethod').value='standard';
+  document.getElementById('currency').value='';
+  customVars=[];customVarCount=0;
+  renderVars();
+  document.getElementById('outputSection').style.display='none';
+  ['dcId_v','groupTag_v','actTag_v'].forEach(id=>{document.getElementById(id).textContent='';});
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['gen','ref'][i]===t);
+  });
+  document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('fl_theme',nxt);
+}
+
+document.documentElement.setAttribute('data-theme',localStorage.getItem('fl_theme')||'light');
+</script>
+</body>
+</html>

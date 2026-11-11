@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conversor de Separador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#2563eb;--accent-soft:rgba(37,99,235,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#f8fafc;--input-border:#e2e8f0;
+  --ok:#22c55e;--warn:#f59e0b;--erro:#ef4444;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);
+  --mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#60a5fa;--accent-soft:rgba(96,165,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--input-border:#334155;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#60a5fa;--accent-soft:rgba(96,165,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--input-border:#334155;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-title{font-size:16px;font-weight:800;}
+.header-sub{font-size:11px;color:var(--faint);}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.btn.primary:hover{opacity:.9;}
+.page{max-width:1100px;margin:0 auto;padding:20px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+.card-title{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+textarea{width:100%;min-height:200px;padding:10px 12px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;resize:vertical;outline:none;}
+textarea:focus{border-color:var(--accent);}
+.sep-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0;}
+.sep-label{font-size:12px;font-weight:600;color:var(--faint);}
+.sep-input{width:60px;padding:5px 10px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:13px;text-align:center;outline:none;}
+.sep-input:focus{border-color:var(--accent);}
+.sep-presets{display:flex;gap:5px;flex-wrap:wrap;}
+.sep-preset{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-family:var(--mono);font-weight:600;cursor:pointer;transition:all .15s;}
+.sep-preset:hover{border-color:var(--accent);color:var(--accent);}
+.sep-preset.active{background:var(--accent);color:#fff;border-color:transparent;}
+.arrow{font-size:22px;color:var(--accent);text-align:center;padding:8px 0;}
+.stats-row{font-size:11px;color:var(--faint);margin-top:8px;display:flex;gap:12px;flex-wrap:wrap;}
+.stat-pill{padding:2px 8px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+/* Output line */
+.out-line{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.out-line:last-child{border-bottom:none;}
+.out-orig{color:var(--faint);font-family:var(--mono);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.out-arrow{color:var(--faint);flex-shrink:0;}
+.out-new{font-family:var(--mono);font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+.out-new:hover{color:var(--accent);}
+.out-new.changed{color:var(--ok);}
+.out-new.unchanged{color:var(--faint);}
+.copy-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;color:var(--faint);}
+.copy-btn:hover{background:var(--border);color:var(--fg);}
+.output-list{max-height:400px;overflow-y:auto;margin-top:8px;}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#f1f5f9;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:500;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Detection badge */
+.detect-badge{font-size:10px;padding:2px 7px;border-radius:7px;background:rgba(245,158,11,.1);color:#92400e;font-weight:700;}
+:root[data-theme="dark"] .detect-badge, :root:not([data-theme="light"]) .detect-badge{color:#fde68a;background:rgba(245,158,11,.15);}
+/* Options row */
+.opt-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.opt-row label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;}
+input[type=checkbox]{cursor:pointer;}
+/* Summary */
+.summary{background:var(--accent-soft);border-radius:8px;padding:10px 14px;font-size:12px;margin-top:10px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span style="font-size:20px">🔀</span>
+    <div>
+      <div class="header-title">Conversor de Separador</div>
+      <div class="header-sub">Troca o separador em uma lista de naming conventions</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn" onclick="clearAll()" title="Limpar tudo">✕ Limpar</button>
+    <button class="btn primary" onclick="copyAllOutput()" title="Copiar todas as NCs convertidas">📋 Copiar tudo</button>
+    <button class="btn" onclick="exportCSV()" title="Exportar CSV com original e convertido">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()" id="themeBtn" title="Alternar tema">🌙</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="grid">
+    <!-- INPUT -->
+    <div class="card">
+      <div class="card-title">
+        <span>📥 Entrada</span>
+        <span id="inputCount" style="font-size:11px;color:var(--faint)"></span>
+      </div>
+      <textarea id="inputArea" placeholder="Cole suas NCs aqui, uma por linha…&#10;&#10;Exemplo:&#10;cliente_campanha_produto_br&#10;cliente_campanha_outro_br" oninput="onInput()" spellcheck="false"></textarea>
+      <div class="sep-controls">
+        <span class="sep-label">Sep. original:</span>
+        <input class="sep-input" id="fromSep" value="_" oninput="onInput()" maxlength="5" title="Separador original (pode ser mais de 1 char)">
+        <div class="sep-presets" id="fromPresets"></div>
+        <span id="detectBadge" class="detect-badge" style="display:none">🔍 auto</span>
+      </div>
+      <div class="opt-row">
+        <label><input type="checkbox" id="optAutoDetect" checked onchange="onInput()"> Auto-detectar separador</label>
+        <label><input type="checkbox" id="optTrim" checked onchange="onInput()"> Remover espaços</label>
+        <label><input type="checkbox" id="optSkipEmpty" checked onchange="onInput()"> Ignorar linhas vazias</label>
+      </div>
+      <div class="stats-row" id="inputStats"></div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="card">
+      <div class="card-title">
+        <span>📤 Saída</span>
+        <span id="outputCount" style="font-size:11px;color:var(--faint)"></span>
+      </div>
+      <div style="margin-bottom:10px">
+        <div class="sep-controls" style="margin:0 0 8px">
+          <span class="sep-label">Sep. destino:</span>
+          <input class="sep-input" id="toSep" value="-" oninput="onInput()" maxlength="5" title="Separador de destino">
+          <div class="sep-presets" id="toPresets"></div>
+        </div>
+        <div class="opt-row" style="margin-top:0">
+          <label><input type="checkbox" id="optCase" onchange="onInput()"> Lowercase na saída</label>
+          <label><input type="checkbox" id="optPreserveInternal" onchange="onInput()"> Preservar sep. internos</label>
+        </div>
+      </div>
+      <div class="summary" id="summary" style="display:none"></div>
+      <div class="output-list" id="outputList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PRESETS = ['_','.','-','|','/','+',' '];
+const PRESET_LABELS = {'_':'underscore','.'.'ponto','-':'hífen','|':'pipe','/':'barra','+':'plus',' ':'espaço'};
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;
+try{_theme=localStorage.getItem('conversorsep_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('conversorsep_theme',_theme);}catch(e){}
+  document.getElementById('themeBtn').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){ const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches); document.getElementById('themeBtn').textContent=isDark?'☀️':'🌙'; })();
+
+// Build preset buttons
+function buildPresets(containerId, inputId) {
+  const c=document.getElementById(containerId);
+  PRESETS.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='sep-preset';
+    b.textContent=p===' '?'·':p;
+    b.title=PRESET_LABELS[p]||p;
+    b.onclick=()=>{ document.getElementById(inputId).value=p; updateActivePresets(); onInput(); };
+    c.appendChild(b);
+  });
+}
+buildPresets('fromPresets','fromSep');
+buildPresets('toPresets','toSep');
+
+function updateActivePresets(){
+  const fromVal=document.getElementById('fromSep').value;
+  const toVal=document.getElementById('toSep').value;
+  document.querySelectorAll('#fromPresets .sep-preset').forEach((b,i)=>b.classList.toggle('active',PRESETS[i]===fromVal));
+  document.querySelectorAll('#toPresets .sep-preset').forEach((b,i)=>b.classList.toggle('active',PRESETS[i]===toVal));
+}
+updateActivePresets();
+
+// Auto-detect separator from input
+function detectSep(lines){
+  const counts={};
+  PRESETS.filter(p=>p!==' ').forEach(p=>{ counts[p]=0; });
+  lines.forEach(l=>{ PRESETS.filter(p=>p!==' ').forEach(p=>{ counts[p]+=(l.split(p).length-1); }); });
+  const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  return best&&best[1]>0?best[0]:null;
+}
+
+function getLines(){
+  const raw=document.getElementById('inputArea').value;
+  const trim=document.getElementById('optTrim').checked;
+  const skipEmpty=document.getElementById('optSkipEmpty').checked;
+  let lines=raw.split('\n');
+  if(trim) lines=lines.map(l=>l.trim());
+  if(skipEmpty) lines=lines.filter(l=>l.length>0);
+  return lines;
+}
+
+let _lastOutput=[];
+
+function onInput(){
+  updateActivePresets();
+  const lines=getLines();
+  document.getElementById('inputCount').textContent=`${lines.length} linha(s)`;
+  document.getElementById('inputStats').innerHTML=lines.length?`<span class="stat-pill">${lines.length} NCs</span>`:'';
+
+  // Auto-detect
+  const autoDetect=document.getElementById('optAutoDetect').checked;
+  const badge=document.getElementById('detectBadge');
+  if(autoDetect && lines.length){
+    const detected=detectSep(lines);
+    if(detected){
+      document.getElementById('fromSep').value=detected;
+      badge.textContent=`🔍 detectado: "${detected==' '?'·':detected}"`;
+      badge.style.display='';
+      updateActivePresets();
+    } else { badge.style.display='none'; }
+  } else { badge.style.display='none'; }
+
+  const fromSep=document.getElementById('fromSep').value;
+  const toSep=document.getElementById('toSep').value;
+  const optCase=document.getElementById('optCase').checked;
+  const optPreserve=document.getElementById('optPreserveInternal').checked;
+
+  _lastOutput=[];
+  let changed=0;
+
+  const outputList=document.getElementById('outputList');
+  if(!lines.length){ outputList.innerHTML=''; document.getElementById('outputCount').textContent=''; document.getElementById('summary').style.display='none'; return; }
+
+  const rows=lines.map(orig=>{
+    let converted;
+    if(!fromSep){
+      converted=orig;
+    } else if(optPreserve){
+      // Replace only full-segment separators (not internal chars if sep appears inside a word)
+      // Simple: replace all occurrences
+      converted=orig.split(fromSep).join(toSep);
+    } else {
+      converted=orig.split(fromSep).join(toSep);
+    }
+    if(optCase) converted=converted.toLowerCase();
+    const isChanged=converted!==orig;
+    if(isChanged) changed++;
+    _lastOutput.push({orig, converted});
+    return {orig, converted, isChanged};
+  });
+
+  document.getElementById('outputCount').textContent=`${rows.length} linha(s) · ${changed} modificada(s)`;
+
+  // Summary
+  const pct=rows.length?Math.round(changed/rows.length*100):0;
+  const sumEl=document.getElementById('summary');
+  sumEl.style.display='block';
+  sumEl.innerHTML=`<strong>${changed}</strong> de ${rows.length} NCs modificadas (${pct}%) · Sep. <code>${esc(fromSep||'(vazio)')}</code> → <code>${esc(toSep||'(vazio)')}</code>${optCase?' · lowercase ativado':''}`;
+
+  outputList.innerHTML=rows.map((r,i)=>`
+    <div class="out-line">
+      <span class="out-orig" title="${esc(r.orig)}">${esc(r.orig)}</span>
+      <span class="out-arrow">→</span>
+      <span class="out-new ${r.isChanged?'changed':'unchanged'}" title="${esc(r.converted)} · Clique para copiar" onclick="copyVal('${esc(r.converted.replace(/'/g,"\\'"))}',this)">${esc(r.converted)}</span>
+      <button class="copy-btn" onclick="copyVal('${esc(r.converted.replace(/'/g,"\\'"))}',null)" title="Copiar">📋</button>
+    </div>
+  `).join('');
+}
+
+function copyVal(val, el){
+  navigator.clipboard.writeText(val).then(()=>{
+    showToast(`📋 ${val}`);
+    if(el){ const orig=el.style.color; el.style.color='var(--ok)'; setTimeout(()=>el.style.color=orig,600); }
+  }).catch(()=>showToast(val));
+}
+
+function copyAllOutput(){
+  if(!_lastOutput.length){ showToast('Nada para copiar'); return; }
+  const text=_lastOutput.map(r=>r.converted).join('\n');
+  navigator.clipboard.writeText(text).then(()=>showToast(`📋 ${_lastOutput.length} NCs copiadas`)).catch(()=>showToast('Erro ao copiar'));
+}
+
+function exportCSV(){
+  if(!_lastOutput.length){ showToast('Nada para exportar'); return; }
+  const rows=[['original','convertido','modificado']];
+  _lastOutput.forEach(r=>rows.push([r.orig, r.converted, r.orig!==r.converted?'sim':'não']));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`conversao_sep_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`⬇ ${_lastOutput.length} linhas exportadas`);
+}
+
+function clearAll(){
+  document.getElementById('inputArea').value='';
+  document.getElementById('outputList').innerHTML='';
+  document.getElementById('inputCount').textContent='';
+  document.getElementById('outputCount').textContent='';
+  document.getElementById('inputStats').innerHTML='';
+  document.getElementById('summary').style.display='none';
+  document.getElementById('detectBadge').style.display='none';
+  _lastOutput=[];
+}
+
+// Persist from/to sep
+document.getElementById('fromSep').addEventListener('change',()=>{try{localStorage.setItem('conversorsep_from',document.getElementById('fromSep').value);}catch(e){}});
+document.getElementById('toSep').addEventListener('change',()=>{try{localStorage.setItem('conversorsep_to',document.getElementById('toSep').value);}catch(e){}});
+try{const f=localStorage.getItem('conversorsep_from');if(f)document.getElementById('fromSep').value=f;}catch(e){}
+try{const t=localStorage.getItem('conversorsep_to');if(t)document.getElementById('toSep').value=t;}catch(e){}
+updateActivePresets();
+</script>
+</body>
+</html>

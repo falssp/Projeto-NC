@@ -1,0 +1,462 @@
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contador ADP · NC Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#0040CE;--ul-b:#E5ECFF;--ul-m:#1a56d6;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;
+  --g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;
+  --sa:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+[data-theme="dark"]{
+  --g50:#0f1225;--g100:#1a1f3a;--g200:#2a3060;--g300:#3a4080;
+  --g400:#4a5494;--g500:#6870a8;--g600:#8891c8;--g700:#c5ccf5;--g800:#e8ecff;
+}
+[data-theme="dark"] body{background:#0f1225;color:#c5ccf5;}
+[data-theme="dark"] .tool-card,[data-theme="dark"] .card-wrap,[data-theme="dark"] .panel{background:#1a1f3a;border-color:#2a3060;}
+[data-theme="dark"] a{color:#7986d8;}
+#theme-btn{position:fixed;top:10px;right:14px;z-index:9000;background:rgba(255,255,255,.92);border:1px solid #c8c8d8;color:#666;border-radius:8px;padding:5px 11px;font-size:.72rem;cursor:pointer;font-family:inherit;transition:all .15s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+#theme-btn:hover{border-color:#1F36C7;color:#1F36C7;}
+[data-theme="dark"] #theme-btn{background:rgba(26,31,58,.92);border-color:#2a3060;color:#8891c8;}
+[data-theme="dark"] #theme-btn:hover{border-color:#7986d8;color:#c5ccf5;}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sa);background:var(--g50);color:var(--g800);min-height:100vh}
+.page-wrap{width:100%;box-sizing:border-box;padding:20px 16px 32px}
+
+/* header */
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.page-header .ico{width:42px;height:42px;border-radius:10px;background:var(--ul-b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.page-header h1{font-size:22px;font-weight:700;color:var(--g800)}
+.page-header p{font-size:13px;color:var(--g500);margin-top:2px}
+.back-link{margin-left:auto;font-size:12px;color:var(--ul);text-decoration:none;font-weight:500}
+.back-link:hover{text-decoration:underline}
+
+/* card */
+.tool-card{background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden}
+.tool-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.tool-title{font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:1px}
+.tool-desc{font-size:11px;color:var(--g500)}
+.tool-actions{margin-left:auto;display:flex;gap:8px}
+.tool-body{padding:18px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--sa);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-g{background:#fff;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+/* info box */
+.ib{background:var(--ul-b);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:14px;line-height:1.55}
+.ib strong{font-weight:600}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+/* upload zone */
+.uz{border:2px dashed var(--g300);border-radius:10px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;background:#fff;min-height:calc(100vh - 220px);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.uz:hover,.uz.drag{border-color:var(--ul);background:var(--ul-b)}
+.has-result .uz{min-height:unset;display:block}
+.uz-icon{font-size:32px;margin-bottom:10px}
+.uz h3{font-size:14px;font-weight:600;color:var(--g700);margin-bottom:5px}
+.uz p{font-size:12px;color:var(--g500)}
+.uz input[type=file]{display:none}
+
+/* file info */
+.fitem{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--g50);border:1px solid var(--g200);border-radius:7px;font-size:12px}
+.fitem .fn{font-weight:600;color:var(--g700);font-family:var(--mo);font-size:11px;flex:1}
+.fitem .fsz{font-size:11px;color:var(--g500)}
+
+/* result */
+.totals{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.tot-card{flex:1;min-width:120px;background:#fff;border:2px solid var(--ul-b);border-radius:10px;padding:14px 16px}
+.tot-card.ok{border-color:var(--ok-b)}
+.tot-num{font-size:28px;font-weight:700;color:var(--ul);margin-bottom:3px}
+.tot-card.ok .tot-num{color:var(--ok)}
+.tot-lbl{font-size:10.5px;color:var(--g500);font-weight:500}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{padding:10px 14px;text-align:left;font-weight:600;font-size:10.5px;letter-spacing:.05em;color:var(--g500);border-bottom:1px solid var(--g200);background:var(--g50)}
+thead th.r{text-align:right}
+tbody td{padding:9px 14px;border-bottom:1px solid var(--g100)}
+tbody td.r{text-align:right;font-weight:700;color:var(--ok)}
+tbody td.muted{font-size:11px;color:var(--g500)}
+.tbl-wrap{overflow-x:auto;border-radius:9px;border:1px solid var(--g200);background:#fff}
+
+/* ── Nav Tabs ──────────────────────────── */
+.nav-tabs{display:flex;gap:0;border-bottom:2px solid var(--g200);margin-bottom:24px;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:9px 16px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.nav-tab.on{color:var(--ul);border-bottom-color:var(--ul);font-weight:600}
+.nav-tab:hover:not(.on){color:var(--g700);background:var(--g50)}
+.nav-pane{display:none}.nav-pane.on{display:block}
+/* ── FAQ ───────────────────────────────── */
+.faq-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.faq-search-wrap{flex:1;min-width:180px;position:relative}
+.faq-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none}
+.faq-search{width:100%;background:var(--g50);border:1px solid var(--g200);border-radius:6px;padding:8px 10px 8px 32px;font:13px 'DM Sans',sans-serif;color:var(--g700);outline:none;transition:border-color .15s}
+.faq-search:focus{border-color:var(--ul)}
+.faq-count{font-size:11px;color:var(--g400);white-space:nowrap}
+.faq-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.faq-chip{padding:5px 13px;border-radius:20px;border:1px solid var(--g200);background:#fff;font:500 12px 'DM Sans',sans-serif;color:var(--g500);cursor:pointer;transition:all .15s}
+.faq-chip:hover{border-color:var(--ul);color:var(--ul)}
+.faq-chip.on{background:var(--ul);border-color:var(--ul);color:#fff}
+.faq-item{background:#fff;border:1px solid var(--g200);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.faq-q{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-size:13px;font-weight:500}
+.faq-q:hover{background:var(--g50)}
+.faq-q-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0}
+.faq-q-text{flex:1}
+.faq-q-arr{color:var(--g400);transition:transform .2s}
+.faq-item.open .faq-q-arr{transform:rotate(90deg)}
+.faq-a{display:none;padding:0 14px 14px;font-size:13px;color:var(--g500);line-height:1.6;border-top:1px solid var(--g100)}
+.faq-item.open .faq-a{display:block}
+.faq-empty{text-align:center;padding:32px;color:var(--g400);font-size:13px}
+/* ── IA ────────────────────────────────── */
+.ia-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ia-head h2{font-size:15px;font-weight:700}
+.btn-cfg-open{background:var(--g50);border:1px solid var(--g200);border-radius:6px;padding:6px 12px;font:500 12px 'DM Sans',sans-serif;color:var(--g500);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.btn-cfg-open:hover{border-color:var(--ul);color:var(--ul)}
+.cfg-dot{width:7px;height:7px;border-radius:50%;background:var(--g300);flex-shrink:0}
+.cfg-dot.ok{background:#22c55e}
+.ia-no-key{background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:28px 24px;text-align:center;margin-bottom:16px}
+.ia-no-key p{font-size:13px;color:var(--g500);margin:8px 0 16px}
+.btn-cfg-cta{background:var(--ul);color:#fff;border:none;border-radius:6px;padding:10px 20px;font:600 13px 'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ia-ready{display:none}.ia-ready.show{display:block}
+.ia-result{background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:16px;font-size:13px;color:var(--g700);line-height:1.7;min-height:80px}
+.ia-result h3{font-size:14px;font-weight:700;margin:14px 0 6px}
+.ia-result ul{padding-left:20px;margin:6px 0}
+.ia-result strong{font-weight:600}
+.ia-actions{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+/* ── Config Modal ──────────────────────── */
+.cfg-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;align-items:center;justify-content:center;padding:16px}
+.cfg-overlay.open{display:flex}
+.cfg-modal{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:calc(100dvh - 32px);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.25);display:flex;flex-direction:column}
+.cfg-modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--g200)}
+.cfg-modal-hdr h3{font-size:15px;font-weight:700}
+.cfg-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g500);padding:2px 6px;border-radius:4px}
+.cfg-modal-body{padding:20px;overflow-y:auto}
+.cfg-tabs{display:flex;gap:6px;margin-bottom:16px}
+.cfg-tab{flex:1;padding:8px;border:1px solid var(--g200);border-radius:7px;background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;text-align:center;transition:all .15s}
+.cfg-tab.on{background:var(--ul);border-color:var(--ul);color:#fff}
+.cfg-panel{display:none}.cfg-panel.on{display:block}
+.cfg-lbl{font-size:11px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.cfg-inp{width:100%;padding:9px 12px;border:1px solid var(--g200);border-radius:7px;font-family:monospace;font-size:13px;background:var(--g50);outline:none;margin-bottom:8px;transition:border-color .15s}
+.cfg-inp:focus{border-color:var(--ul)}
+.cfg-link{font-size:12px;color:var(--ul);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px}
+.btn-cfg-save{background:var(--ul);color:#fff;border:none;border-radius:7px;padding:9px 18px;font:600 13px 'DM Sans',sans-serif;cursor:pointer;width:100%}
+
+
+/* ── Como usar modal ─────────────────────────────── */
+.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.qa-overlay.open{display:flex}
+.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.qa-header h2{font-size:15px;font-weight:800;color:#0f172a}
+.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
+.qa-body{padding:20px 24px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#3b82f6;margin-bottom:10px}
+.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
+.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
+.help-num{min-width:22px;height:22px;border-radius:50%;background:#1e3a5f;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-txt{font-size:12px;color:#475569;line-height:1.55}
+.help-txt b{color:#1e293b}
+.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
+.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
+.btn-qa{background:transparent;border:1.5px solid currentColor;color:inherit;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s;opacity:.8}
+.btn-qa:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="ico">🔢
+  <button class="btn-qa" onclick="abrirAjuda()" style="margin-left:auto">❓ Como usar</button></div>
+    <div>
+      <h1>Contador ADP</h1>
+      <p>Conta linhas válidas por aba em arquivos ADP</p>
+    </div>
+    <a class="back-link" href="https://falssp.github.io/Projeto-NC/">← NC Tools</a>
+  </div>
+
+  <div class="tool-card">
+  <div class="nav-tabs">
+    <button class="nav-tab on" onclick="cntTabSwitch('main')">🔢 Ferramenta</button>
+    <button class="nav-tab" onclick="cntTabSwitch('faq')">❓ Dúvidas</button>
+  </div>
+
+  <div class="nav-pane on" id="cnt-pane-main">
+    <div class="tool-hdr">
+      <div style="flex:1">
+        <div class="tool-title">Contador de Linhas — ADP</div>
+        <div class="tool-desc">Lê as 6 abas do ADP e conta linhas válidas vs. linhas de exemplo por aba</div>
+      </div>
+      <div class="tool-actions">
+        <button class="btn btn-g" onclick="cntReset()">Limpar</button>
+      </div>
+    </div>
+    <div class="tool-body">
+
+      <div class="ib">
+        <strong>Critério:</strong> cada aba tem linhas fixas de exemplo no topo, que <strong>não entram</strong> na contagem —
+        <strong>Google, Programmatic e Youtube:</strong> linhas 15 e 16 ·
+        <strong>Flashtalking:</strong> linha 15 ·
+        <strong>Meta e Tiktok:</strong> linhas 15 a 18 ·
+        <strong>Pinterest, Snapchat e Twitter:</strong> linhas 15 a 17.
+        A contagem usa a coluna D (Ad Name) para validar se a linha tem conteúdo.
+        Múltiplos arquivos podem ser carregados de uma vez.
+      </div>
+
+      <div class="uz" id="cnt-drop"
+        onclick="document.getElementById('cnt-file-input').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="cntHandleDrop(event)">
+        <div class="uz-icon">📊</div>
+        <h3>Clique ou arraste o arquivo ADP</h3>
+        <p>Múltiplos arquivos suportados · .xlsx .xls</p>
+        <input type="file" id="cnt-file-input" accept=".xlsx,.xls" multiple onchange="cntHandleFiles(this.files)">
+      </div>
+
+      <div id="cnt-file-info" style="display:none;margin-bottom:16px" class="fitem">
+        <span>📊</span>
+        <span class="fn" id="cnt-file-name"></span>
+        <span class="fsz" id="cnt-file-abas"></span>
+      </div>
+
+      <div id="cnt-result" style="display:none">
+        <div class="totals" id="cnt-totals"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Aba</th>
+                <th class="r">Válidas</th>
+                <th>Arquivo</th>
+              </tr>
+            </thead>
+            <tbody id="cnt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script>
+var CNT_ABA_CFG = {
+  'Google':                        {dataStart: 16},
+  'Programmatic':                  {dataStart: 16},
+  'Youtube':                       {dataStart: 16},
+  'Meta e Tiktok':                 {dataStart: 19},
+  'Pinterest, Snapchat e Twitter': {dataStart: 19},
+  'Flashtalking':                  {dataStart: 16}
+};
+var CNT_ABA_KEYS = Object.keys(CNT_ABA_CFG);
+
+function cntDetectAba(name) {
+  var n = name.toLowerCase().trim();
+  if (n === 'google' || n === 'google ads') return 'Google';
+  if (n === 'programmatic' || n === 'prog') return 'Programmatic';
+  if (n === 'youtube' || n === 'yt') return 'Youtube';
+  if (n === 'meta e tiktok' || n === 'meta & tiktok') return 'Meta e Tiktok';
+  if (n === 'pinterest, snapchat e twitter' || n === 'pinterest, snapchat e x') return 'Pinterest, Snapchat e Twitter';
+  if (n === 'flashtalking' || n === 'flash talking' || n === 'flash') return 'Flashtalking';
+  return null;
+}
+
+function cntHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('cnt-drop').classList.remove('drag');
+  if (e.dataTransfer.files.length) cntHandleFiles(e.dataTransfer.files);
+}
+
+function cntHandleFiles(files) {
+  if (!files || !files.length) return;
+  var fileArr = Array.from(files);
+  var done = 0, rows = [];
+
+  fileArr.forEach(function(f) {
+    var r = new FileReader();
+    r.onload = function(ev) {
+      try {
+        var wb = XLSX.read(ev.target.result, {type: 'binary', sheetStubs: false});
+        wb.SheetNames.forEach(function(sn) {
+          var abaKey = cntDetectAba(sn);
+          if (!abaKey) return;
+          var cfg = CNT_ABA_CFG[abaKey];
+          var ws = wb.Sheets[sn];
+          if (!ws) return;
+          var data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: '', raw: false});
+          var validas = 0;
+          for (var i = cfg.dataStart; i < data.length; i++) {
+            var colD = String(data[i][3] || '').trim();
+            if (colD) validas++;
+          }
+          rows.push({aba: abaKey, shName: sn, validas: validas, file: f.name});
+        });
+      } catch(e) { console.error(e); }
+      done++;
+      if (done === fileArr.length) cntRenderResult(rows, fileArr);
+    };
+    r.readAsBinaryString(f);
+  });
+}
+
+function cntRenderResult(rows, fileArr) {
+  if (!rows.length) return;
+
+  rows.sort(function(a, b) {
+    return CNT_ABA_KEYS.indexOf(a.aba) - CNT_ABA_KEYS.indexOf(b.aba);
+  });
+
+  var totalValidas = rows.reduce(function(s, r) { return s + r.validas; }, 0);
+
+  document.getElementById('cnt-totals').innerHTML =
+    '<div class="tot-card"><div class="tot-num">' + rows.length + '</div><div class="tot-lbl">Abas lidas</div></div>' +
+    '<div class="tot-card ok"><div class="tot-num">' + totalValidas + '</div><div class="tot-lbl">Total válidas</div></div>';
+
+  document.getElementById('cnt-tbody').innerHTML = rows.map(function(r) {
+    return '<tr>' +
+      '<td style="font-weight:500">' + r.aba + '</td>' +
+      '<td class="r">' + r.validas + '</td>' +
+      '<td class="muted">' + r.file + '</td>' +
+      '</tr>';
+  }).join('');
+
+  document.getElementById('cnt-file-info').style.display = 'flex';
+  document.getElementById('cnt-file-name').textContent = fileArr.length === 1 ? fileArr[0].name : fileArr.length + ' arquivos';
+  document.getElementById('cnt-file-abas').textContent = rows.length + ' aba(s) detectada(s)';
+  document.getElementById('cnt-result').style.display = 'block';
+  document.querySelector('.tool-body').classList.add('has-result');
+}
+
+function cntReset() {
+  document.getElementById('cnt-file-input').value = '';
+  document.getElementById('cnt-file-info').style.display = 'none';
+  document.getElementById('cnt-result').style.display = 'none';
+  document.getElementById('cnt-totals').innerHTML = '';
+  document.getElementById('cnt-tbody').innerHTML = '';
+  document.getElementById('cnt-drop').classList.remove('loaded');
+  document.querySelector('.tool-body').classList.remove('has-result');
+}
+
+// ── Nav Tabs ─────────────────────────────────────────────────────────────────
+function cntTabSwitch(name){
+  var tabs=['main','faq'];
+  document.querySelectorAll('.nav-tab').forEach(function(b,i){b.classList.toggle('on',tabs[i]===name);});
+  document.querySelectorAll('.nav-pane').forEach(function(q){q.classList.toggle('on',q.id==='cnt-pane-'+name);});
+  if(name==='faq')cntInitFAQ();
+}
+// ── FAQ ──────────────────────────────────────────────────────────────────────
+var CNT_FAQ=[{tag:'Uso',q:'Que arquivos posso carregar?',a:'Arquivos ADP exportados do sistema (.xlsx ou .xls). Múltiplos arquivos podem ser carregados de uma vez.'}, {tag:'Abas',q:'Quais abas do ADP são contadas?',a:'Google, Programmatic, Youtube, Meta, TikTok, Flashtalking, Pinterest, Snapchat e Twitter — cada uma com critério de linhas de exemplo diferente.'}, {tag:'Abas',q:'O que são as "linhas de exemplo"?',a:'Linhas fixas inseridas pelo sistema no topo de cada aba como modelo. São excluídas da contagem de dados reais.'}, {tag:'Resultados',q:'O que o contador retorna?',a:'Para cada aba: total de linhas, linhas válidas (com Ad Name), linhas vazias e linhas de exemplo removidas.'}, {tag:'Resultados',q:'Posso exportar os resultados?',a:'Sim. "Copiar resultado" exporta em TSV para o Google Sheets, ou baixe como CSV.'}];
+var cntFaqDone=false,cntFaqChip='Todas';
+function cntInitFAQ(){
+  if(cntFaqDone){cntFilterFAQ();return;}cntFaqDone=true;
+  var tags=['Todas',...new Set(CNT_FAQ.map(function(f){return f.tag;}))]
+  var cols={'Uso':'#1946E6', 'Abas':'#0D7A4E', 'Resultados':'#B45309'};
+  document.getElementById('cnt-faq-chips').innerHTML=tags.map(function(t){return'<button class="faq-chip'+(t==='Todas'?' on':'')+'" onclick="cntSetFaqChip(\''+t+'\')">'+t+'</button>';}).join('');
+  document.getElementById('cnt-faq-list').innerHTML=CNT_FAQ.map(function(f,i){
+    var col=cols[f.tag]||'#555';
+    return'<div class="faq-item" data-tag="'+f.tag+'"><div class="faq-q" onclick="this.parentElement.classList.toggle(\'open\')"><span class="faq-q-tag" style="background:'+col+'20;color:'+col+'">'+f.tag+'</span><span class="faq-q-text">'+f.q+'</span><span class="faq-q-arr">▶</span></div><div class="faq-a">'+f.a+'</div></div>';
+  }).join('');
+  cntFilterFAQ();
+}
+function cntSetFaqChip(tag){cntFaqChip=tag;document.querySelectorAll('.faq-chip').forEach(function(c){c.classList.toggle('on',c.textContent===tag);});cntFilterFAQ();}
+function cntFilterFAQ(){
+  var q=(document.getElementById('cnt-faq-search')?document.getElementById('cnt-faq-search').value:'').toLowerCase();
+  var items=document.querySelectorAll('#cnt-faq-list .faq-item'),vis=0;
+  items.forEach(function(el){var ok=(cntFaqChip==='Todas'||el.dataset.tag===cntFaqChip)&&(!q||el.textContent.toLowerCase().includes(q));el.style.display=ok?'':'none';if(ok)vis++;});
+  var cnt=document.getElementById('cnt-faq-count');if(cnt)cnt.textContent=vis+' pergunta'+(vis!==1?'s':'');
+  var lst=document.getElementById('cnt-faq-list');var emp=lst?lst.querySelector('.faq-empty'):null;
+  if(vis===0&&!emp&&lst)lst.insertAdjacentHTML('beforeend','<div class="faq-empty">Nenhuma dúvida encontrada.</div>');
+  if(vis>0&&emp)emp.remove();
+}
+
+
+function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
+function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+</script>
+  </div><!-- /nav-pane-main -->
+  <div class="nav-pane" id="cnt-pane-faq">
+    <div class="faq-toolbar">
+      <div class="faq-search-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="faq-search" id="cnt-faq-search" placeholder="Buscar dúvida..." oninput="cntFilterFAQ()"></div>
+      <span class="faq-count" id="cnt-faq-count"></span>
+    </div>
+    <div class="faq-chips" id="cnt-faq-chips"></div>
+    <div id="cnt-faq-list"></div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- ── Como usar modal ─────────────────────────────── -->
+<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
+  <div class="qa-modal">
+    <div class="qa-header">
+      <h2>🛠️ Como usar · Contador ADP</h2>
+      <button class="qa-close" onclick="fecharAjuda()">✕</button>
+    </div>
+    <div class="qa-body">
+      <div class="help-section">
+        <h3>Visão geral</h3>
+        <p>Use o <b>Contador ADP</b> para otimizar suas operações de mídia digital.</p>
+      </div>
+      <div class="help-section">
+        <h3>Passo a passo</h3>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-txt"><b>Configure a entrada</b><br>Preencha os campos de entrada com os dados necessários.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-txt"><b>Execute a operação</b><br>Clique no botão principal para processar os dados.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-txt"><b>Revise o resultado</b><br>O resultado é exibido na área de saída com destaques relevantes.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-txt"><b>Exporte ou copie</b><br>Use as opções de exportação para usar o resultado em outras ferramentas.</div>
+      </div>
+      </div>
+      <div class="help-tip">
+        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
+      </div>
+    </div>
+  </div>
+</div>
+
+<button id="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙 Dark</button>
+<script>
+(function(){
+  function toggleTheme(){
+    var d=document.documentElement,dark=d.getAttribute('data-theme')==='dark';
+    d.setAttribute('data-theme',dark?'':'dark');
+    var b=document.getElementById('theme-btn');
+    if(b)b.textContent=dark?'🌙 Dark':'☀️ Light';
+    try{localStorage.setItem('nc-theme',dark?'':'dark');}catch(e){}
+  }
+  window.toggleTheme=toggleTheme;
+  try{
+    if(localStorage.getItem('nc-theme')==='dark'){
+      document.documentElement.setAttribute('data-theme','dark');
+      document.addEventListener('DOMContentLoaded',function(){
+        var b=document.getElementById('theme-btn');if(b)b.textContent='☀️ Light';
+      });
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

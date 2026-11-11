@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador de Qualidade de Lead — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi.highlight{border-color:var(--azul);background:var(--light)}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:4px}
+.verdict{padding:14px 16px;border-radius:8px;font-size:.9rem;font-weight:600;margin:16px 0}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.section-title{font-size:1rem;font-weight:700;margin:16px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:16px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.criteria-row{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:center;margin-bottom:12px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.score-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700}
+.s-high{background:#dcfce7;color:var(--green)}
+.s-mid{background:#fef9c3;color:var(--yellow)}
+.s-low{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .s-high{background:#14532d;color:#86efac}
+[data-theme="dark"] .s-mid{background:#422006;color:#fde047}
+[data-theme="dark"] .s-low{background:#450a0a;color:#fca5a5}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-label{font-size:.82rem;width:160px;flex-shrink:0;color:var(--text)}
+.bar-bg{flex:1;background:var(--border);border-radius:4px;height:10px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.bar-val{font-size:.82rem;font-family:'JetBrains Mono',monospace;width:60px;text-align:right;color:var(--muted)}
+canvas{width:100%;border-radius:8px;display:block;margin-top:12px}
+.score-circle{width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 16px;border:6px solid var(--azul)}
+.score-circle-num{font-size:2.4rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--azul)}
+.score-circle-label{font-size:.72rem;color:var(--muted);text-transform:uppercase}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>🎯 Analisador de Qualidade de Lead</h1>
+      <div class="subtitle">Score, CPL real, eficiência de canais e taxa de conversão lead→cliente</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('score')">Score de Qualidade</button>
+      <button class="tab" onclick="switchTab('custo')">CPL vs. CPA Real</button>
+      <button class="tab" onclick="switchTab('canais')">Canais</button>
+      <button class="tab" onclick="switchTab('ref')">Benchmarks</button>
+    </div>
+
+    <!-- Score -->
+    <div class="tab-content active" id="tab-score">
+      <div class="info-box">
+        Avalie a qualidade dos leads com base em critérios de perfil e comportamento. O <strong>score ponderado</strong> identifica gargalos e compara canais.
+      </div>
+      <div class="form-grid" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Total de leads</label>
+          <input type="number" id="totalLeads" placeholder="500" oninput="calcScore()">
+        </div>
+        <div class="form-group">
+          <label>Canal</label>
+          <select id="canalScore" onchange="calcScore()">
+            <option value="social">Social Ads</option>
+            <option value="search">Search</option>
+            <option value="display">Display</option>
+            <option value="email">E-mail</option>
+            <option value="native">Native</option>
+            <option value="organico">Orgânico</option>
+          </select>
+        </div>
+      </div>
+      <div class="section-title">Critérios de qualidade (% dos leads que atendem)</div>
+      <div id="criteriaRows"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExScore()">Exemplo</button>
+        <button class="btn btn-primary" onclick="calcScore()">Calcular score</button>
+      </div>
+      <div id="scoreOutput" style="display:none;margin-top:24px">
+        <div class="score-circle" id="scoreCircle">
+          <div class="score-circle-num" id="scoreNum">—</div>
+          <div class="score-circle-label">score médio</div>
+        </div>
+        <div id="scoreVerdict" class="verdict"></div>
+        <div class="section-title">Distribuição por critério</div>
+        <div id="scoreBars"></div>
+      </div>
+    </div>
+
+    <!-- Custo -->
+    <div class="tab-content" id="tab-custo">
+      <div class="info-box">
+        Calcule o <strong>CPA real</strong> considerando a taxa de aproveitamento dos leads — não só o CPL nominal. Um CPL baixo de canal ruim pode custar mais que um CPL alto de canal bom.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Investimento total (R$)</label>
+          <input type="number" id="invCusto" placeholder="12000" oninput="calcCusto()">
+        </div>
+        <div class="form-group">
+          <label>Leads gerados</label>
+          <input type="number" id="leadsCusto" placeholder="600" oninput="calcCusto()">
+        </div>
+        <div class="form-group">
+          <label>Taxa qualificação SQL (%)</label>
+          <input type="number" id="txSQL" placeholder="38" step="0.1" oninput="calcCusto()">
+        </div>
+        <div class="form-group">
+          <label>Taxa conversão SQL→cliente (%)</label>
+          <input type="number" id="txCliente" placeholder="22" step="0.1" oninput="calcCusto()">
+        </div>
+        <div class="form-group">
+          <label>Ticket médio (R$)</label>
+          <input type="number" id="ticketCusto" placeholder="1200" oninput="calcCusto()">
+        </div>
+        <div class="form-group">
+          <label>Ciclo de vendas (dias)</label>
+          <input type="number" id="cicloVendas" placeholder="30" oninput="calcCusto()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExCusto()">Exemplo</button>
+      </div>
+      <div id="custoOutput" style="display:none;margin-top:20px">
+        <div class="kpi-grid" id="custoKpis"></div>
+        <div id="custoVerdict" class="verdict"></div>
+        <canvas id="custoChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <!-- Canais -->
+    <div class="tab-content" id="tab-canais">
+      <div class="info-box">
+        Compare até 4 canais: qual tem <strong>melhor CPL ajustado pela qualidade</strong>? O CPL real é o custo por lead qualificado, não o custo nominal.
+      </div>
+      <div id="canalRows"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="loadExCanais()">Exemplo</button>
+        <button class="btn btn-primary" onclick="calcCanais()">Comparar canais</button>
+      </div>
+      <div id="canaisOutput" style="display:none;margin-top:20px"></div>
+    </div>
+
+    <!-- Ref -->
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Benchmarks de qualidade de lead por setor</div>
+      <table>
+        <thead><tr><th>Setor</th><th>Taxa SQL (%)</th><th>SQL→Cliente (%)</th><th>Ciclo (dias)</th><th>CPL bom</th></tr></thead>
+        <tbody>
+          <tr><td>B2B SaaS</td><td>25–40%</td><td>20–30%</td><td>45–90</td><td>R$ 80–250</td></tr>
+          <tr><td>Financial Services</td><td>30–50%</td><td>15–25%</td><td>30–60</td><td>R$ 120–400</td></tr>
+          <tr><td>E-commerce</td><td>60–80%</td><td>2–8%</td><td>1–7</td><td>R$ 15–60</td></tr>
+          <tr><td>Educação</td><td>40–60%</td><td>8–18%</td><td>7–30</td><td>R$ 25–90</td></tr>
+          <tr><td>Imóveis</td><td>20–35%</td><td>5–15%</td><td>60–180</td><td>R$ 60–300</td></tr>
+          <tr><td>Seguros</td><td>35–55%</td><td>12–22%</td><td>15–45</td><td>R$ 50–200</td></tr>
+          <tr><td>Saúde</td><td>45–65%</td><td>20–35%</td><td>7–30</td><td>R$ 30–120</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Score de qualidade — faixas</div>
+      <div class="info-box" style="line-height:2">
+        <strong style="color:var(--green)">70–100 (ótimo):</strong> Lead bem qualificado; priorize SQL e acelere ciclo de vendas.<br>
+        <strong style="color:var(--yellow)">45–69 (regular):</strong> Nutrição necessária; revise critérios do formulário ou segmentação do anúncio.<br>
+        <strong style="color:var(--red)">0–44 (baixo):</strong> Alto volume de leads frios; reavaliar canal, criativo ou targeting.
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const CRITERIA=[
+  {id:'email',label:'E-mail corporativo',peso:15},
+  {id:'cargo',label:'Cargo decisor / influenciador',peso:20},
+  {id:'empresa',label:'Empresa no segmento-alvo',peso:20},
+  {id:'porte',label:'Porte de empresa adequado',peso:15},
+  {id:'intencao',label:'Intenção de compra (engajamento)',peso:20},
+  {id:'contato',label:'Telefone/WhatsApp válido',peso:10},
+];
+// Build criteria rows
+(()=>{
+  const container=document.getElementById('criteriaRows');
+  CRITERIA.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='criteria-row';
+    row.innerHTML=`<div style="font-size:.88rem;font-weight:600">${c.label}</div>
+      <div class="form-group" style="margin:0"><input type="number" id="crit_${c.id}" placeholder="% dos leads" min="0" max="100" oninput="calcScore()"></div>
+      <div style="font-size:.8rem;color:var(--muted);white-space:nowrap">Peso: ${c.peso}%</div>`;
+    container.appendChild(row);
+  });
+})();
+// Build canal rows
+(()=>{
+  const container=document.getElementById('canalRows');
+  ['Canal 1','Canal 2','Canal 3','Canal 4'].forEach((name,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px;align-items:end';
+    if(i===0){
+      row.innerHTML=`<div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Canal</div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Investimento (R$)</div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Leads</div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase">Taxa SQL (%)</div>`;
+      container.appendChild(row);
+    }
+    const r=document.createElement('div');
+    r.style.cssText='display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px;margin-bottom:10px';
+    r.innerHTML=`<input type="text" id="canalNome${i}" value="${name}">
+      <input type="number" id="canalInv${i}" placeholder="R$">
+      <input type="number" id="canalLeads${i}" placeholder="qtd">
+      <input type="number" id="canalSQL${i}" placeholder="%" step="1">`;
+    container.appendChild(r);
+  });
+})();
+
+function calcScore(){
+  const total=parseInt(document.getElementById('totalLeads').value)||0;
+  if(!total){document.getElementById('scoreOutput').style.display='none';return;}
+  let scoreSum=0;let totalPeso=0;
+  const vals=CRITERIA.map(c=>{const v=parseFloat(document.getElementById('crit_'+c.id)?.value)||0;return{...c,v};});
+  vals.forEach(c=>{scoreSum+=c.v*c.peso;totalPeso+=c.peso;});
+  const score=totalPeso>0?scoreSum/totalPeso:0;
+  document.getElementById('scoreOutput').style.display='block';
+  document.getElementById('scoreNum').textContent=score.toFixed(0);
+  const circle=document.getElementById('scoreCircle');
+  const color=score>=70?'var(--green)':score>=45?'var(--yellow)':'var(--red)';
+  circle.style.borderColor=color;document.getElementById('scoreNum').style.color=color;
+  const vEl=document.getElementById('scoreVerdict');
+  if(score>=70){vEl.className='verdict v-ok';vEl.textContent=`✅ Score ${score.toFixed(0)} — qualidade ótima. Leads com alto potencial de qualificação. Recomende SDL/SQL direto.`;}
+  else if(score>=45){vEl.className='verdict v-warn';vEl.textContent=`⚠️ Score ${score.toFixed(0)} — qualidade regular. Nutrição e qualificação manual antes de SQL. Revise formulário/segmentação.`;}
+  else{vEl.className='verdict v-bad';vEl.textContent=`🔴 Score ${score.toFixed(0)} — qualidade baixa. Alto custo de qualificação. Reavaliar canal, criativo e targeting.`;}
+  const barsEl=document.getElementById('scoreBars');
+  barsEl.innerHTML=vals.map(c=>{
+    const col=c.v>=70?'#16a34a':c.v>=45?'#ca8a04':'#dc2626';
+    return`<div class="bar-row">
+      <div class="bar-label">${c.label}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${c.v}%;background:${col}"></div></div>
+      <div class="bar-val">${c.v.toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function calcCusto(){
+  const inv=parseFloat(document.getElementById('invCusto').value)||0;
+  const leads=parseInt(document.getElementById('leadsCusto').value)||0;
+  const txSQL=parseFloat(document.getElementById('txSQL').value)||0;
+  const txCliente=parseFloat(document.getElementById('txCliente').value)||0;
+  const ticket=parseFloat(document.getElementById('ticketCusto').value)||0;
+  if(!inv||!leads||!txSQL){document.getElementById('custoOutput').style.display='none';return;}
+  document.getElementById('custoOutput').style.display='block';
+  const cpl=inv/leads;
+  const sql=leads*(txSQL/100);
+  const clientes=sql*(txCliente/100);
+  const cpalSQL=inv/sql;
+  const cpaCliente=clientes>0?inv/clientes:0;
+  const roas=ticket&&clientes?clientes*ticket/inv:0;
+  document.getElementById('custoKpis').innerHTML=[
+    {l:'CPL nominal',v:'R$ '+cpl.toFixed(2),s:'custo por lead bruto'},
+    {l:'CPL por SQL',v:'R$ '+cpalSQL.toFixed(2),s:'custo por lead qualificado',hl:true},
+    {l:'CPA real (cliente)',v:cpaCliente?'R$ '+cpaCliente.toFixed(2):'—',s:'custo por cliente gerado'},
+    {l:'SQLs estimados',v:fmt(Math.round(sql)),s:txSQL+'% dos leads'},
+    {l:'Clientes estimados',v:fmt(Math.round(clientes)),s:txCliente+'% dos SQLs'},
+    {l:'ROAS estimado',v:roas?roas.toFixed(2)+'×':'—',s:ticket?'receita/investimento':'informe ticket'},
+  ].map(k=>`<div class="kpi${k.hl?' highlight':''}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+  const vEl=document.getElementById('custoVerdict');
+  if(roas>=3){vEl.className='verdict v-ok';vEl.textContent=`✅ ROAS ${roas.toFixed(1)}× — campanha eficiente. CPL real de R$ ${cpalSQL.toFixed(0)} justificado pelo CPA de R$ ${cpaCliente.toFixed(0)}.`;}
+  else if(roas>=1.5){vEl.className='verdict v-warn';vEl.textContent=`⚠️ ROAS ${roas.toFixed(1)}× — margem apertada. CPL real R$ ${cpalSQL.toFixed(0)} / CPA real R$ ${cpaCliente.toFixed(0)}. Melhore taxa SQL ou ticket.`;}
+  else if(roas>0){vEl.className='verdict v-bad';vEl.textContent=`🔴 ROAS ${roas.toFixed(1)}× — investimento não se paga. CPL real R$ ${cpalSQL.toFixed(0)}. Revise qualificação, ticket ou canal.`;}
+  else{vEl.className='verdict v-ok';vEl.textContent=`CPL real (SQL): R$ ${cpalSQL.toFixed(0)}. CPA por cliente: ${cpaCliente?'R$ '+cpaCliente.toFixed(0):'informe taxas de conversão'}. Informe ticket para calcular ROAS.`;}
+  drawCustoChart(leads,sql,Math.round(clientes));
+}
+function drawCustoChart(leads,sql,clientes){
+  const canvas=document.getElementById('custoChart');
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*2;canvas.height=400;ctx.scale(2,2);
+  const W=canvas.offsetWidth/2,H=200;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  ctx.fillRect(0,0,W,H);
+  const data=[{l:'Leads totais',v:leads,c:'#1F36C7'},{l:'SQLs',v:sql,c:'#ca8a04'},{l:'Clientes',v:clientes,c:'#16a34a'}];
+  const pad={l:20,r:20,t:30,b:40};const bw=60;const gap=40;
+  const maxV=leads;const areaW=W-pad.l-pad.r;const startX=pad.l+(areaW-data.length*(bw+gap)+gap)/2;
+  data.forEach((d,i)=>{
+    const x=startX+i*(bw+gap);const h=(H-pad.t-pad.b)*(d.v/maxV);const y=H-pad.b-h;
+    ctx.fillStyle=d.c+'33';ctx.fillRect(x,pad.t,bw,H-pad.t-pad.b);
+    ctx.fillStyle=d.c;ctx.fillRect(x,y,bw,h);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text').trim();
+    ctx.font='bold 11px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(fmt(Math.round(d.v)),x+bw/2,y-6);
+    ctx.font='10px Space Grotesk';ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+    ctx.fillText(d.l,x+bw/2,H-pad.b+16);
+    if(i<data.length-1){
+      const pct=data[i+1].v/d.v*100;
+      const nx=startX+(i+1)*(bw+gap);
+      ctx.fillStyle='var(--muted)';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+      ctx.fillText(pct.toFixed(0)+'%',x+bw+(nx-x-bw)/2,H/2+4);
+    }
+  });
+}
+
+function calcCanais(){
+  const data=[];
+  for(let i=0;i<4;i++){
+    const nome=document.getElementById('canalNome'+i)?.value;
+    const inv=parseFloat(document.getElementById('canalInv'+i)?.value)||0;
+    const leads=parseInt(document.getElementById('canalLeads'+i)?.value)||0;
+    const sql=parseFloat(document.getElementById('canalSQL'+i)?.value)||0;
+    if(inv&&leads)data.push({nome,inv,leads,sql});
+  }
+  if(data.length<2)return;
+  const rows=data.map(d=>{
+    const cpl=d.inv/d.leads;
+    const sqls=d.sql?d.leads*(d.sql/100):null;
+    const cplSQL=sqls?d.inv/sqls:null;
+    return{...d,cpl,sqls,cplSQL};
+  });
+  const bestCPL=Math.min(...rows.map(r=>r.cpl));
+  const bestCPLSQL=Math.min(...rows.filter(r=>r.cplSQL).map(r=>r.cplSQL));
+  document.getElementById('canaisOutput').style.display='block';
+  document.getElementById('canaisOutput').innerHTML=`
+    <table><thead><tr><th>Canal</th><th>Inv. (R$)</th><th>Leads</th><th>CPL nominal</th><th>SQLs est.</th><th>CPL real (SQL)</th><th>Eficiência</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr ${r.cpl===bestCPL||r.cplSQL===bestCPLSQL?'style="background:var(--light)"':''}>
+      <td><strong>${r.nome}</strong></td>
+      <td>R$ ${fmt(r.inv)}</td>
+      <td>${fmt(r.leads)}</td>
+      <td>R$ ${r.cpl.toFixed(2)}</td>
+      <td>${r.sqls?fmt(Math.round(r.sqls)):'—'}</td>
+      <td>${r.cplSQL?'R$ '+r.cplSQL.toFixed(2):'—'}</td>
+      <td>${r.cplSQL?`<span class="score-badge ${r.cplSQL===bestCPLSQL?'s-high':'s-mid'}">
+        ${r.cplSQL===bestCPLSQL?'✅ melhor':''}${((bestCPLSQL/r.cplSQL)*100).toFixed(0)}%</span>`:'—'}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="info-box" style="margin-top:0">🏆 Melhor canal por CPL nominal: <strong>${rows.find(r=>r.cpl===bestCPL)?.nome}</strong> (R$ ${bestCPL.toFixed(2)})
+    ${bestCPLSQL<Infinity?` · Melhor CPL real (SQL): <strong>${rows.find(r=>r.cplSQL===bestCPLSQL)?.nome}</strong> (R$ ${bestCPLSQL.toFixed(2)})`:''}.</div>`;
+}
+
+function loadExScore(){
+  document.getElementById('totalLeads').value=480;
+  document.getElementById('canalScore').value='social';
+  document.getElementById('crit_email').value=72;
+  document.getElementById('crit_cargo').value=58;
+  document.getElementById('crit_empresa').value=65;
+  document.getElementById('crit_porte').value=70;
+  document.getElementById('crit_intencao').value=45;
+  document.getElementById('crit_contato').value=88;
+  calcScore();
+}
+function loadExCusto(){
+  document.getElementById('invCusto').value=18000;
+  document.getElementById('leadsCusto').value=620;
+  document.getElementById('txSQL').value=42;
+  document.getElementById('txCliente').value=25;
+  document.getElementById('ticketCusto').value=1800;
+  document.getElementById('cicloVendas').value=45;
+  calcCusto();
+}
+function loadExCanais(){
+  const ex=[
+    {n:'Google Search',inv:8000,leads:280,sql:52},
+    {n:'Meta Ads',inv:12000,leads:650,sql:28},
+    {n:'LinkedIn',inv:6000,leads:120,sql:65},
+    {n:'Display',inv:4000,leads:380,sql:15},
+  ];
+  ex.forEach((e,i)=>{
+    document.getElementById('canalNome'+i).value=e.n;
+    document.getElementById('canalInv'+i).value=e.inv;
+    document.getElementById('canalLeads'+i).value=e.leads;
+    document.getElementById('canalSQL'+i).value=e.sql;
+  });
+}
+function fmt(n){return Number(Math.round(n)).toLocaleString('pt-BR');}
+function switchTab(n){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelector(`.tab[onclick="switchTab('${n}')"]`).classList.add('active');document.getElementById('tab-'+n).classList.add('active');}
+function toggleTheme(){const d=document.documentElement;d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+window.addEventListener('resize',()=>{if(document.getElementById('custoOutput').style.display!=='none')calcCusto();});
+</script>
+</body>
+</html>

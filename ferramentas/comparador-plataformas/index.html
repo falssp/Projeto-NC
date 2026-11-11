@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparador de Plataformas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;
+  --bg:#f4f5fb;--surface:#fff;--muted:#9fa8da;--text:#1a237e;--body:#3d4a8a;
+  --green:#059669;--red:#dc2626;--yellow:#d97706;--gray:#94a3b8;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.header{background:var(--navy);color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+.header-icon{font-size:1.5rem}
+.header-title{font-size:1.1rem;font-weight:700}
+.header-sub{font-size:.8rem;opacity:.7;margin-top:2px}
+
+/* MAIN */
+.main{padding:24px 32px;min-width:0}
+
+/* SELECTOR */
+.selector-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:20px}
+.selector-title{font-size:.85rem;font-weight:600;color:var(--body);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.selector-title span{background:var(--hl);color:var(--accent);border-radius:4px;padding:2px 8px;font-size:.75rem}
+.platform-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.chip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:2px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600;color:var(--body);transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--accent);background:var(--hl)}
+.chip.selected{border-color:var(--accent);background:var(--accent);color:#fff}
+.chip.selected .chip-emoji{filter:none}
+.chip.disabled{opacity:.4;cursor:not-allowed}
+.chip-emoji{font-size:1.1rem}
+.selector-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{padding:8px 16px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:600;color:var(--body);transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent);background:var(--hl)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#1629a0}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-icon{font-size:3rem;margin-bottom:12px}
+.empty p{font-size:.9rem}
+
+/* COMPARISON TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.table-header{display:flex;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:10;background:var(--surface)}
+.th-label{flex:0 0 220px;padding:14px 20px;font-size:.78rem;font-weight:600;color:var(--muted);border-right:1px solid var(--border);background:#f9faff}
+.th-platform{flex:1;padding:12px 16px;text-align:center;border-right:1px solid var(--border);min-width:140px}
+.th-platform:last-child{border-right:none}
+.th-plat-name{font-size:.85rem;font-weight:700;color:var(--text)}
+.th-plat-emoji{font-size:1.3rem;margin-bottom:4px}
+.th-plat-type{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:4px;margin-top:4px;display:inline-block}
+.type-social{background:#fce7f3;color:#db2777}
+.type-search{background:#fef3c7;color:#d97706}
+.type-dsp{background:#ede9fe;color:#7c3aed}
+.type-adserver{background:#d1fae5;color:#059669}
+.type-display{background:#dbeafe;color:#1d4ed8}
+.type-ecommerce{background:#ffedd5;color:#ea580c}
+
+/* SECTION */
+.section{}
+.section-toggle{display:flex;align-items:center;gap:10px;padding:12px 20px;background:#f9faff;border-bottom:1px solid var(--border);cursor:pointer;font-size:.82rem;font-weight:700;color:var(--body);user-select:none;transition:background .1s}
+.section-toggle:hover{background:var(--hl)}
+.section-toggle .arrow{margin-left:auto;transition:transform .2s;font-size:.7rem;color:var(--muted)}
+.section-toggle.open .arrow{transform:rotate(90deg)}
+.section-body{display:none}
+.section-body.open{display:block}
+
+/* ROW */
+.row{display:flex;border-bottom:1px solid #f0f2fd}
+.row:last-child{border-bottom:none}
+.row:hover{background:#fafbff}
+.row-label{flex:0 0 220px;padding:10px 20px;font-size:.78rem;font-weight:500;color:var(--body);border-right:1px solid var(--border);display:flex;align-items:center;background:#fafbff}
+.row-cell{flex:1;padding:10px 16px;font-size:.78rem;text-align:center;border-right:1px solid var(--border);min-width:140px;display:flex;align-items:center;justify-content:center}
+.row-cell:last-child{border-right:none}
+.cell-val{padding:3px 8px;border-radius:5px;font-weight:600;font-size:.75rem}
+.cv-green{background:#d1fae5;color:#059669}
+.cv-red{background:#fee2e2;color:#dc2626}
+.cv-yellow{background:#fef3c7;color:#d97706}
+.cv-blue{background:var(--hl);color:var(--accent)}
+.cv-purple{background:#ede9fe;color:#7c3aed}
+.cv-gray{background:#f1f5f9;color:#94a3b8}
+.cv-plain{color:var(--body)}
+.best-badge{display:block;font-size:.65rem;color:var(--green);font-weight:700;margin-top:2px}
+
+/* COPY FEEDBACK */
+.copy-toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:.82rem;font-weight:600;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:999}
+.copy-toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:768px){
+  .main{padding:16px}
+  .th-label,.row-label{flex:0 0 130px;font-size:.7rem;padding:8px 10px}
+  .header{padding:12px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🔄</div>
+  <div>
+    <div class="header-title">Comparador de Plataformas</div>
+    <div class="header-sub">Selecione 2–4 plataformas para comparar lado a lado</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="selector-wrap">
+    <div class="selector-title">
+      Plataformas disponíveis
+      <span id="sel-count">0 / 4 selecionadas</span>
+    </div>
+    <div class="platform-grid" id="platform-grid"></div>
+    <div class="selector-actions">
+      <button class="btn primary" onclick="compareAll()">Comparar tudo</button>
+      <button class="btn" onclick="clearSelection()">Limpar seleção</button>
+      <button class="btn" onclick="copyComparison()" id="copy-btn">📋 Copiar comparação</button>
+    </div>
+  </div>
+
+  <div id="comparison-area"></div>
+
+</div>
+
+<div class="copy-toast" id="toast">✅ Copiado!</div>
+
+<script>
+const PLATFORMS = {
+  meta: {
+    name:'Meta Ads', emoji:'📘', type:'social', typeLabel:'Social DSP',
+    objetivo:{
+      melhor:'Branding + Performance', funil:'Full-Funnel', foco:'Awareness → Conversão', tipo:'DSP Social'
+    },
+    compra:{
+      leilao:'CPM, CPC, CPA, CPV, CPL', programatica:'Open Auction (interno)', direta:'Sim (Reach & Frequency)', budget:'R$ 50/dia', io:'Não'
+    },
+    segmentacao:{
+      dados:'1P + 3P (próprios)', interesse:'Avançado', comportamento:'Sim', profissional:'Não', contextual:'Não', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Não', precisao:'Alta'
+    },
+    formatos:{
+      display:'Sim', videoIn:'Não', videoOut:'Sim (Reels/Feed)', native:'Sim', stories:'Sim', carrossel:'Sim', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'1080×1080 / 1080×1920', videoDuracao:'15s–60s recomendado', imagemPeso:'30 MB', arquivos:'JPG, PNG, MP4, GIF'
+    },
+    medicao:{
+      pixel:'Meta Pixel', capi:'Sim', cm360:'Via tag', viewability:'Via 3P (IAS/DV)', brandSafety:'Básico', iasDv:'Sim', vtc:'Sim', janela:'7 dias clique / 1 dia view'
+    },
+    operacao:{
+      interface:'Meta Ads Manager', api:'Sim (Marketing API)', mcc:'Sim (Business Manager)', trafficking:'Via tag externa', aprovacao:'1–24h', dificuldade:'Intermediário'
+    },
+    alcance:{
+      usuarios:'~130M/mês', perfil:'Adultos 18–45, amplo', mobile:'Muito Alta', walledGarden:'Sim'
+    }
+  },
+  googleSearch: {
+    name:'Google Search', emoji:'🔍', type:'search', typeLabel:'Search',
+    objetivo:{
+      melhor:'Performance', funil:'Fundo de Funil', foco:'Conversão / Consideração', tipo:'Search'
+    },
+    compra:{
+      leilao:'CPC, CPM (Display), tCPA, tROAS', programatica:'N/A', direta:'Não', budget:'R$ 30/dia', io:'Não'
+    },
+    segmentacao:{
+      dados:'1P (Customer Match) + intent', interesse:'Básico (In-Market)', comportamento:'Sim (In-Market)', profissional:'Não', contextual:'Sim', lookalike:'Sim (Similar)', retargetingSite:'Sim (RLSA)', retargetingCRM:'Sim', keywords:'Sim', precisao:'Alta (intenção)'
+    },
+    formatos:{
+      display:'Não', videoIn:'Não', videoOut:'Não', native:'Não', stories:'Não', carrossel:'Não', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'N/A (Texto / RSA)', videoDuracao:'N/A', imagemPeso:'N/A', arquivos:'Texto (RSA, DSA, Shopping)'
+    },
+    medicao:{
+      pixel:'Google Tag / GA4', capi:'Sim (Enhanced Conv.)', cm360:'Via tag / integração', viewability:'Via 3P', brandSafety:'N/A', iasDv:'Não', vtc:'Não', janela:'30 dias clique / 1 dia view'
+    },
+    operacao:{
+      interface:'Google Ads', api:'Sim (Google Ads API)', mcc:'Sim (MCC)', trafficking:'Via tag externa', aprovacao:'1–3 dias', dificuldade:'Intermediário'
+    },
+    alcance:{
+      usuarios:'~140M/mês (search)', perfil:'Usuários com intenção ativa', mobile:'Alta', walledGarden:'Sim'
+    }
+  },
+  gdn: {
+    name:'Google Display (GDN)', emoji:'🖼️', type:'display', typeLabel:'Display',
+    objetivo:{
+      melhor:'Awareness + Consideração', funil:'Topo / Meio', foco:'Awareness + Retargeting', tipo:'Display Network'
+    },
+    compra:{
+      leilao:'CPM, CPC, tCPA', programatica:'Open Auction (interno)', direta:'Não', budget:'R$ 50/dia', io:'Não'
+    },
+    segmentacao:{
+      dados:'1P + Google signals', interesse:'Avançado', comportamento:'Sim', profissional:'Não', contextual:'Sim', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Sim (contextual)', precisao:'Média'
+    },
+    formatos:{
+      display:'Sim', videoIn:'Não', videoOut:'Sim', native:'Sim', stories:'Não', carrossel:'Sim', richMedia:'Sim (HTML5)', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'300×250, 728×90, 160×600', videoDuracao:'30s', imagemPeso:'150 KB', arquivos:'JPG, PNG, GIF, HTML5'
+    },
+    medicao:{
+      pixel:'Google Tag / GA4', capi:'Sim', cm360:'Via tag', viewability:'Nativo + Via 3P', brandSafety:'Básico', iasDv:'Sim', vtc:'Sim', janela:'30 dias clique / 1 dia view'
+    },
+    operacao:{
+      interface:'Google Ads', api:'Sim (Google Ads API)', mcc:'Sim (MCC)', trafficking:'Via tag / CM360', aprovacao:'1–3 dias', dificuldade:'Iniciante / Intermediário'
+    },
+    alcance:{
+      usuarios:'~130M/mês (display)', perfil:'Amplo, adultos 18–55', mobile:'Alta', walledGarden:'Sim'
+    }
+  },
+  dv360: {
+    name:'DV360', emoji:'📡', type:'dsp', typeLabel:'DSP Premium',
+    objetivo:{
+      melhor:'Branding + Programático', funil:'Full-Funnel', foco:'Awareness + Escala', tipo:'DSP Premium'
+    },
+    compra:{
+      leilao:'CPM, CPV, CPA', programatica:'Open Auction + PMP + PG', direta:'Via PG', budget:'R$ 5.000/mês (mín.)', io:'Sim (via agência/reseller)'
+    },
+    segmentacao:{
+      dados:'1P + 3P (DMP + Audiences)', interesse:'Avançado', comportamento:'Sim', profissional:'Não', contextual:'Sim', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Sim (contextual)', precisao:'Muito Alta'
+    },
+    formatos:{
+      display:'Sim', videoIn:'Sim', videoOut:'Sim', native:'Sim', stories:'Não', carrossel:'Não', richMedia:'Sim', ctv:'Sim', audio:'Sim', dooh:'Sim'
+    },
+    specs:{
+      dimensao:'IAB padrão + customizado', videoDuracao:'Sem limite (prático: 30s)', imagemPeso:'150 KB (IAB)', arquivos:'JPG, PNG, GIF, HTML5, MP4, VAST'
+    },
+    medicao:{
+      pixel:'Floodlight (CM360)', capi:'Não (Ad Server)', cm360:'Nativo', viewability:'Nativo + IAS/DV', brandSafety:'Avançado', iasDv:'Sim (nativo)', vtc:'Sim', janela:'Configurável (1–90 dias)'
+    },
+    operacao:{
+      interface:'Display & Video 360', api:'Sim (DV360 API)', mcc:'Sim (parceiro/anunciante)', trafficking:'Via CM360 (nativo)', aprovacao:'1–3 dias', dificuldade:'Avançado'
+    },
+    alcance:{
+      usuarios:'Open web BR (escala)', perfil:'Adultos 18–60, premium', mobile:'Alta', walledGarden:'Não (open web)'
+    }
+  },
+  cm360: {
+    name:'CM360', emoji:'⚙️', type:'adserver', typeLabel:'Ad Server',
+    objetivo:{
+      melhor:'Trafficking + Mensuração', funil:'Full-Funnel (atribuição)', foco:'Operação + Atribuição', tipo:'Ad Server'
+    },
+    compra:{
+      leilao:'N/A (não compra mídia)', programatica:'N/A', direta:'N/A', budget:'N/A', io:'N/A (não é veículo)'
+    },
+    segmentacao:{
+      dados:'N/A', interesse:'N/A', comportamento:'N/A', profissional:'N/A', contextual:'N/A', lookalike:'N/A', retargetingSite:'N/A', retargetingCRM:'N/A', keywords:'N/A', precisao:'N/A'
+    },
+    formatos:{
+      display:'Sim (serve tags)', videoIn:'Sim (VAST/VPAID)', videoOut:'Sim', native:'Sim', stories:'Não', carrossel:'Não', richMedia:'Sim (Studio)', ctv:'Sim', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'IAB padrão + customizado', videoDuracao:'Qualquer (VAST)', imagemPeso:'Qualquer', arquivos:'Display, HTML5 (Studio), VAST'
+    },
+    medicao:{
+      pixel:'Floodlight (próprio)', capi:'Não aplicável', cm360:'É o CM360', viewability:'Nativo + IAS/DV', brandSafety:'Via DV360/3P', iasDv:'Sim (nativo)', vtc:'Sim', janela:'Configurável'
+    },
+    operacao:{
+      interface:'Campaign Manager 360', api:'Sim (CM360 API)', mcc:'Sim (Advertiser/Network)', trafficking:'É o ad server', aprovacao:'N/A (interno)', dificuldade:'Avançado'
+    },
+    alcance:{
+      usuarios:'N/A (não é canal de mídia)', perfil:'N/A', mobile:'N/A', walledGarden:'N/A'
+    }
+  },
+  linkedin: {
+    name:'LinkedIn Ads', emoji:'💼', type:'social', typeLabel:'Social B2B',
+    objetivo:{
+      melhor:'Branding B2B', funil:'Topo / Meio', foco:'Awareness + Leads B2B', tipo:'Social B2B'
+    },
+    compra:{
+      leilao:'CPM, CPC, CPL, CPV', programatica:'Não', direta:'Não', budget:'R$ 50/dia (CPM alto)', io:'Não'
+    },
+    segmentacao:{
+      dados:'1P (próprio)', interesse:'Básico', comportamento:'Básico', profissional:'Sim (único)', contextual:'Não', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Não', precisao:'Alta (B2B profissional)'
+    },
+    formatos:{
+      display:'Sim', videoIn:'Não', videoOut:'Sim', native:'Sim (Sponsored)', stories:'Não', carrossel:'Sim', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'1200×627 / 1080×1080', videoDuracao:'30 min (prático: 30s)', imagemPeso:'5 MB', arquivos:'JPG, PNG, MP4'
+    },
+    medicao:{
+      pixel:'LinkedIn Insight Tag', capi:'Sim (Conversion API)', cm360:'Via tag', viewability:'Via 3P', brandSafety:'Básico', iasDv:'Não', vtc:'Sim', janela:'30 dias clique / 7 dias view'
+    },
+    operacao:{
+      interface:'LinkedIn Campaign Manager', api:'Sim (Marketing API)', mcc:'Sim (Business Account)', trafficking:'Via tag externa', aprovacao:'24–48h', dificuldade:'Intermediário'
+    },
+    alcance:{
+      usuarios:'~65M (BR)', perfil:'Profissionais 25–50, B2B', mobile:'Alta', walledGarden:'Sim'
+    }
+  },
+  tiktok: {
+    name:'TikTok Ads', emoji:'🎵', type:'social', typeLabel:'Social Vídeo',
+    objetivo:{
+      melhor:'Branding + Consideração', funil:'Topo / Meio', foco:'Awareness + Engajamento', tipo:'DSP Social Vídeo'
+    },
+    compra:{
+      leilao:'CPM, CPV, CPC, oCPM', programatica:'Não', direta:'Sim (TopView reserva)', budget:'R$ 50/dia', io:'Sim (formatos premium)'
+    },
+    segmentacao:{
+      dados:'1P (próprio)', interesse:'Avançado', comportamento:'Sim', profissional:'Não', contextual:'Não', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Não', precisao:'Média / Alta'
+    },
+    formatos:{
+      display:'Não', videoIn:'Não', videoOut:'Sim (In-Feed)', native:'Sim (Spark)', stories:'Sim (formato principal)', carrossel:'Sim', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'1080×1920 (9:16 obrigatório)', videoDuracao:'60s (Spark até 10min)', imagemPeso:'N/A (vídeo)', arquivos:'MP4, MOV, AVI'
+    },
+    medicao:{
+      pixel:'TikTok Pixel', capi:'Sim (Events API)', cm360:'Via tag', viewability:'Via 3P limitado', brandSafety:'Básico', iasDv:'Sim (parcial)', vtc:'Sim', janela:'7 dias clique / 1 dia view'
+    },
+    operacao:{
+      interface:'TikTok Ads Manager', api:'Sim (Marketing API)', mcc:'Sim (Business Center)', trafficking:'Via tag externa', aprovacao:'1–24h', dificuldade:'Iniciante / Intermediário'
+    },
+    alcance:{
+      usuarios:'~100M/mês (BR)', perfil:'Jovens 16–34, mobile-first', mobile:'Exclusivamente Mobile', walledGarden:'Sim'
+    }
+  },
+  xads: {
+    name:'X Ads', emoji:'𝕏', type:'social', typeLabel:'Social',
+    objetivo:{
+      melhor:'Awareness + Engajamento', funil:'Topo', foco:'Awareness + Cultura', tipo:'Social'
+    },
+    compra:{
+      leilao:'CPM, CPC, CPV, CPE', programatica:'Não', direta:'Sim (Takeovers)', budget:'R$ 30/dia', io:'Sim (formatos premium)'
+    },
+    segmentacao:{
+      dados:'1P (próprio)', interesse:'Básico', comportamento:'Básico', profissional:'Não', contextual:'Sim (keywords)', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Sim', precisao:'Média'
+    },
+    formatos:{
+      display:'Não', videoIn:'Não', videoOut:'Sim', native:'Sim (Tweet promovido)', stories:'Não', carrossel:'Sim', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'1200×675 / 1:1', videoDuracao:'2min20s (prático: 15–30s)', imagemPeso:'5 MB', arquivos:'JPG, PNG, GIF, MP4'
+    },
+    medicao:{
+      pixel:'X Website Tag', capi:'Sim (Conversion API)', cm360:'Via tag', viewability:'Via 3P limitado', brandSafety:'Básico', iasDv:'Parcial', vtc:'Sim', janela:'30 dias clique / 1 dia view'
+    },
+    operacao:{
+      interface:'X Ads Manager', api:'Sim (Ads API)', mcc:'Sim', trafficking:'Via tag externa', aprovacao:'1–24h', dificuldade:'Iniciante'
+    },
+    alcance:{
+      usuarios:'~25M (BR)', perfil:'Formadores de opinião, 25–45', mobile:'Alta', walledGarden:'Sim'
+    }
+  },
+  pinterest: {
+    name:'Pinterest Ads', emoji:'📌', type:'social', typeLabel:'Social Visual',
+    objetivo:{
+      melhor:'Consideração + Conversão', funil:'Meio / Fundo', foco:'Descoberta + Compra', tipo:'Social Visual'
+    },
+    compra:{
+      leilao:'CPM, CPC, CPCE', programatica:'Não', direta:'Não', budget:'R$ 30/dia', io:'Não'
+    },
+    segmentacao:{
+      dados:'1P (próprio)', interesse:'Avançado (interesse/intent)', comportamento:'Sim', profissional:'Não', contextual:'Sim (keywords)', lookalike:'Sim (Actalike)', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Sim', precisao:'Média'
+    },
+    formatos:{
+      display:'Sim (Static Pin)', videoIn:'Não', videoOut:'Sim (Video Pin)', native:'Sim', stories:'Sim (Idea Pin)', carrossel:'Sim', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'1000×1500 (2:3 ideal)', videoDuracao:'15s–10min', imagemPeso:'32 MB', arquivos:'JPG, PNG, MP4'
+    },
+    medicao:{
+      pixel:'Pinterest Tag', capi:'Sim (Conversion API)', cm360:'Via tag', viewability:'Via 3P', brandSafety:'Básico', iasDv:'Não', vtc:'Sim', janela:'30 dias clique / 1 dia view'
+    },
+    operacao:{
+      interface:'Pinterest Ads Manager', api:'Sim (Ads API)', mcc:'Sim (Business Account)', trafficking:'Via tag externa', aprovacao:'24h', dificuldade:'Iniciante'
+    },
+    alcance:{
+      usuarios:'~30M (BR)', perfil:'Mulheres 25–45, lifestyle/decoração', mobile:'Alta', walledGarden:'Sim'
+    }
+  },
+  amazon: {
+    name:'Amazon Ads', emoji:'🛒', type:'ecommerce', typeLabel:'E-commerce DSP',
+    objetivo:{
+      melhor:'Performance E-commerce', funil:'Meio / Fundo', foco:'Consideração + Conversão', tipo:'DSP E-commerce'
+    },
+    compra:{
+      leilao:'CPC (Sponsored), CPM (DSP)', programatica:'Open Auction + PMP (Amazon DSP)', direta:'Sim (Amazon DSP)', budget:'R$ 300/dia (DSP)', io:'Sim (DSP)'
+    },
+    segmentacao:{
+      dados:'1P Amazon (intenção de compra)', interesse:'Avançado (compra)', comportamento:'Sim', profissional:'Não', contextual:'Sim', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Sim', precisao:'Muito Alta (compra)'
+    },
+    formatos:{
+      display:'Sim', videoIn:'Sim', videoOut:'Sim', native:'Sim', stories:'Não', carrossel:'Sim', richMedia:'Não', ctv:'Sim (Fire TV)', audio:'Sim (Alexa)', dooh:'Não'
+    },
+    specs:{
+      dimensao:'IAB padrão + Amazon custom', videoDuracao:'30s (prático)', imagemPeso:'150 KB', arquivos:'JPG, PNG, MP4'
+    },
+    medicao:{
+      pixel:'Amazon Pixel', capi:'Não (sandbox fechado)', cm360:'Via tag (limitado)', viewability:'Nativo', brandSafety:'Avançado', iasDv:'Parcial', vtc:'Sim', janela:'Configurável'
+    },
+    operacao:{
+      interface:'Amazon Ads Console', api:'Sim (Ads API)', mcc:'Sim (Agency Account)', trafficking:'Limitado a tag externa', aprovacao:'1–3 dias', dificuldade:'Intermediário / Avançado'
+    },
+    alcance:{
+      usuarios:'~60M/mês (BR, estimado)', perfil:'Compradores 25–55, e-commerce', mobile:'Alta', walledGarden:'Sim'
+    }
+  },
+  kwai: {
+    name:'Kwai Ads', emoji:'🎬', type:'social', typeLabel:'Social Vídeo',
+    objetivo:{
+      melhor:'Awareness (C/D)', funil:'Topo', foco:'Awareness + Alcance', tipo:'Social Vídeo'
+    },
+    compra:{
+      leilao:'CPM, CPV, CPC', programatica:'Não', direta:'Sim (Premium)', budget:'R$ 50/dia', io:'Sim (formatos premium)'
+    },
+    segmentacao:{
+      dados:'1P (próprio)', interesse:'Básico', comportamento:'Básico', profissional:'Não', contextual:'Não', lookalike:'Sim', retargetingSite:'Sim', retargetingCRM:'Sim', keywords:'Não', precisao:'Baixa / Média'
+    },
+    formatos:{
+      display:'Não', videoIn:'Não', videoOut:'Sim (In-Feed)', native:'Sim', stories:'Sim', carrossel:'Sim', richMedia:'Não', ctv:'Não', audio:'Não', dooh:'Não'
+    },
+    specs:{
+      dimensao:'1080×1920 (9:16)', videoDuracao:'60s', imagemPeso:'N/A', arquivos:'MP4, MOV'
+    },
+    medicao:{
+      pixel:'Kwai Pixel', capi:'Sim (Events API)', cm360:'Via tag', viewability:'Não', brandSafety:'Básico', iasDv:'Não', vtc:'Não', janela:'7 dias clique'
+    },
+    operacao:{
+      interface:'Kwai for Business', api:'Parcial', mcc:'Sim', trafficking:'Via tag externa', aprovacao:'24–48h', dificuldade:'Iniciante'
+    },
+    alcance:{
+      usuarios:'~45M/mês (BR)', perfil:'Classes C/D, 18–40, mobile', mobile:'Exclusivamente Mobile', walledGarden:'Sim'
+    }
+  }
+};
+
+const SECTIONS = [
+  {
+    id:'objetivo', label:'🎯 Objetivo & Uso', fields:[
+      {key:'melhor', label:'Melhor para'},
+      {key:'funil', label:'Posição no funil'},
+      {key:'foco', label:'Foco principal'},
+      {key:'tipo', label:'Tipo de plataforma'},
+    ]
+  },
+  {
+    id:'compra', label:'📊 Modelo de Compra', fields:[
+      {key:'leilao', label:'Leilão disponível'},
+      {key:'programatica', label:'Compra programática'},
+      {key:'direta', label:'Compra direta'},
+      {key:'budget', label:'Budget mín. recomendado'},
+      {key:'io', label:'Contrato / IO'},
+    ]
+  },
+  {
+    id:'segmentacao', label:'👥 Segmentação', fields:[
+      {key:'dados', label:'Dados da plataforma'},
+      {key:'interesse', label:'Seg. por interesse'},
+      {key:'comportamento', label:'Seg. por comportamento'},
+      {key:'profissional', label:'Dados profissionais'},
+      {key:'contextual', label:'Contextual'},
+      {key:'lookalike', label:'Lookalike / Similar'},
+      {key:'retargetingSite', label:'Retargeting site/app'},
+      {key:'retargetingCRM', label:'Retargeting CRM/lista'},
+      {key:'keywords', label:'Keywords'},
+      {key:'precisao', label:'Precisão geral'},
+    ]
+  },
+  {
+    id:'formatos', label:'🎨 Formatos Disponíveis', fields:[
+      {key:'display', label:'Display / Banner'},
+      {key:'videoIn', label:'Vídeo In-Stream'},
+      {key:'videoOut', label:'Vídeo Out-Stream'},
+      {key:'native', label:'Native'},
+      {key:'stories', label:'Stories / Formato Vertical'},
+      {key:'carrossel', label:'Carrossel'},
+      {key:'richMedia', label:'Rich Media / HTML5'},
+      {key:'ctv', label:'CTV / OTT'},
+      {key:'audio', label:'Audio'},
+      {key:'dooh', label:'DOOH'},
+    ]
+  },
+  {
+    id:'specs', label:'📐 Especificações de Criativos', fields:[
+      {key:'dimensao', label:'Dimensão recomendada'},
+      {key:'videoDuracao', label:'Duração máx. vídeo'},
+      {key:'imagemPeso', label:'Peso máx. imagem'},
+      {key:'arquivos', label:'Formatos de arquivo'},
+    ]
+  },
+  {
+    id:'medicao', label:'📏 Mensuração & Atribuição', fields:[
+      {key:'pixel', label:'Pixel proprietário'},
+      {key:'capi', label:'API de conversões (server-side)'},
+      {key:'cm360', label:'Integração CM360'},
+      {key:'viewability', label:'Viewability'},
+      {key:'brandSafety', label:'Brand Safety nativo'},
+      {key:'iasDv', label:'Integração IAS / DoubleVerify'},
+      {key:'vtc', label:'View-through conversion'},
+      {key:'janela', label:'Janela de atribuição padrão'},
+    ]
+  },
+  {
+    id:'operacao', label:'🔧 Operação', fields:[
+      {key:'interface', label:'Interface de gestão'},
+      {key:'api', label:'Acesso via API'},
+      {key:'mcc', label:'Multi-anunciante / MCC'},
+      {key:'trafficking', label:'Trafficking externo'},
+      {key:'aprovacao', label:'Aprovação de criativos'},
+      {key:'dificuldade', label:'Dificuldade de operação'},
+    ]
+  },
+  {
+    id:'alcance', label:'🌍 Alcance & Audiência (BR)', fields:[
+      {key:'usuarios', label:'Usuários/mês estimados'},
+      {key:'perfil', label:'Perfil predominante'},
+      {key:'mobile', label:'Cobertura mobile'},
+      {key:'walledGarden', label:'Walled Garden'},
+    ]
+  }
+];
+
+let selected = [];
+const MAX = 4;
+
+function typeClass(t){
+  return {social:'type-social',search:'type-search',dsp:'type-dsp',adserver:'type-adserver',display:'type-display',ecommerce:'type-ecommerce'}[t]||'type-display';
+}
+
+function cellClass(val){
+  if(!val||val==='N/A'||val==='Não aplicável') return 'cv-gray';
+  const v = val.toLowerCase();
+  if(v==='sim'||v==='muito alta'||v==='avançado (plataforma)'||v.startsWith('nativo')) return 'cv-green';
+  if(v==='não') return 'cv-red';
+  if(v==='básico'||v==='parcial'||v==='parcialmente') return 'cv-yellow';
+  if(v==='avançado') return 'cv-purple';
+  if(v==='n/a'||v==='n/a (não compra mídia)'||v==='n/a (não é canal de mídia)') return 'cv-gray';
+  return 'cv-blue';
+}
+
+function renderChips(){
+  const grid = document.getElementById('platform-grid');
+  grid.innerHTML = Object.entries(PLATFORMS).map(([id,p])=>{
+    const sel = selected.includes(id);
+    const dis = !sel && selected.length>=MAX;
+    return `<button class="chip${sel?' selected':''}${dis?' disabled':''}" onclick="togglePlatform('${id}')" title="${p.name}">
+      <span class="chip-emoji">${p.emoji}</span>${p.name}
+    </button>`;
+  }).join('');
+  document.getElementById('sel-count').textContent = `${selected.length} / ${MAX} selecionadas`;
+}
+
+function togglePlatform(id){
+  if(selected.includes(id)){
+    selected = selected.filter(s=>s!==id);
+  } else {
+    if(selected.length>=MAX) return;
+    selected.push(id);
+  }
+  renderChips();
+  renderTable();
+}
+
+function compareAll(){
+  selected = Object.keys(PLATFORMS).slice(0,MAX);
+  renderChips();
+  renderTable();
+}
+
+function clearSelection(){
+  selected=[];
+  renderChips();
+  renderTable();
+}
+
+function renderTable(){
+  const area = document.getElementById('comparison-area');
+  if(selected.length<2){
+    area.innerHTML=`<div class="empty"><div class="empty-icon">🔄</div><p>Selecione pelo menos 2 plataformas para comparar.</p></div>`;
+    return;
+  }
+  const platforms = selected.map(id=>({id,...PLATFORMS[id]}));
+
+  let html = `<div class="table-wrap">`;
+
+  // Header
+  html += `<div class="table-header"><div class="th-label">Atributo</div>`;
+  platforms.forEach(p=>{
+    html += `<div class="th-platform">
+      <div class="th-plat-emoji">${p.emoji}</div>
+      <div class="th-plat-name">${p.name}</div>
+      <div class="th-plat-type ${typeClass(p.type)}">${p.typeLabel}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Sections
+  SECTIONS.forEach(sec=>{
+    html += `<div class="section">
+      <div class="section-toggle open" onclick="toggleSection(this)">
+        ${sec.label}<span class="arrow">▶</span>
+      </div>
+      <div class="section-body open">`;
+
+    sec.fields.forEach(field=>{
+      const vals = platforms.map(p=> p[sec.id]?.[field.key] || '—');
+      const unique = [...new Set(vals.filter(v=>v!=='—'))];
+      const allSame = unique.length<=1;
+
+      html += `<div class="row"><div class="row-label">${field.label}</div>`;
+      vals.forEach(val=>{
+        const cls = cellClass(val);
+        const diff = !allSame && val!=='—' ? ' style="background:#fffbeb"' : '';
+        html += `<div class="row-cell"${diff}><span class="cell-val ${cls}">${val}</span></div>`;
+      });
+      html += `</div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  area.innerHTML = html;
+}
+
+function toggleSection(el){
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+function copyComparison(){
+  if(selected.length<2){alert('Selecione ao menos 2 plataformas.');return;}
+  const platforms = selected.map(id=>({id,...PLATFORMS[id]}));
+  let txt = `COMPARADOR DE PLATAFORMAS\n${'='.repeat(60)}\n`;
+  txt += platforms.map(p=>p.name).join(' | ')+'\n\n';
+
+  SECTIONS.forEach(sec=>{
+    txt += `\n${sec.label}\n${'-'.repeat(40)}\n`;
+    sec.fields.forEach(field=>{
+      const vals = platforms.map(p=>p[sec.id]?.[field.key]||'—');
+      txt += `${field.label.padEnd(32)} ${vals.join(' | ')}\n`;
+    });
+  });
+
+  navigator.clipboard.writeText(txt).then(()=>{
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2500);
+  });
+}
+
+// Init
+renderChips();
+renderTable();
+</script>
+</body>
+</html>

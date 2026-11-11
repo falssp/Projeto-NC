@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de Viewability — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#d97706;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+/* KPI tiles */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+/* gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;margin:12px 0}
+.gauge-label{font-size:.8rem;color:var(--muted);margin-top:6px}
+/* bar */
+.bar-wrap{margin-bottom:10px}
+.bar-label{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px}
+.bar-track{height:14px;background:var(--light);border-radius:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:7px;transition:width .4s}
+.bar-blue{background:var(--azul)}
+.bar-red{background:var(--red)}
+.bar-green{background:var(--green)}
+.bar-orange{background:var(--orange)}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:8px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.72rem;font-weight:700}
+.badge-ok{background:#dcfce7;color:#15803d}
+.badge-warn{background:#fef9c3;color:#854d0e}
+.badge-err{background:#fee2e2;color:#dc2626}
+.score-block{background:var(--light);border-radius:10px;padding:16px;text-align:center}
+.score-num{font-family:var(--mono);font-size:2.5rem;font-weight:700}
+/* reference */
+.ref-section{margin-bottom:20px}
+.ref-section h3{font-size:.9rem;font-weight:700;margin-bottom:10px;color:var(--azul)}
+.ref-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ref-item{background:var(--light);border-radius:8px;padding:12px}
+.ref-item b{display:block;font-size:.8rem;margin-bottom:4px}
+.ref-item span{font-size:.8rem;color:var(--muted)}
+canvas{width:100%;border-radius:8px}
+@media(max-width:600px){.kpi-row{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">👁️ Simulador de Viewability</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('sim')">Simulador</div>
+  <div class="tab" onclick="switchTab('opt')">Otimizador</div>
+  <div class="tab" onclick="switchTab('ref')">Referência</div>
+</div>
+
+<!-- TAB: Simulador -->
+<div id="tab-sim" class="tab-panel active">
+<div class="card">
+  <div class="card-title">Parâmetros da Campanha</div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>Impressões Totais</label>
+      <input id="totalImps" type="number" value="1000000" oninput="calc()">
+      <div class="hint">Imps entregues pelo ad server</div>
+    </div>
+    <div>
+      <label>Taxa de Viewability (%)</label>
+      <input id="viewRate" type="number" value="68" min="0" max="100" step="0.1" oninput="calc()">
+      <div class="hint">% mensuráveis + viewable</div>
+    </div>
+    <div>
+      <label>% Mensuráveis</label>
+      <input id="measRate" type="number" value="85" min="0" max="100" step="0.1" oninput="calc()">
+      <div class="hint">Imps que puderam ser medidas</div>
+    </div>
+  </div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>CPM Negociado (R$)</label>
+      <input id="cpm" type="number" value="14.50" step="0.01" oninput="calc()">
+    </div>
+    <div>
+      <label>Formato</label>
+      <select id="formato" onchange="calc()">
+        <option value="display">Display (banner)</option>
+        <option value="video">Vídeo instream</option>
+        <option value="native">Native</option>
+        <option value="outstream">Vídeo outstream</option>
+      </select>
+    </div>
+    <div>
+      <label>Placement</label>
+      <select id="placement" onchange="calc()">
+        <option value="atf">Above the fold</option>
+        <option value="btf">Below the fold</option>
+        <option value="inarticle">In-article</option>
+        <option value="sticky">Sticky / fixed</option>
+        <option value="interstitial">Interstitial</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="calc()">Calcular</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Exemplo</button>
+  </div>
+</div>
+
+<div id="kpiArea" style="display:none">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Imps Viewable</div><div class="kpi-val" id="k-view">—</div><div class="kpi-sub" id="k-view-s"></div></div>
+    <div class="kpi"><div class="kpi-label">Imps Mensuráveis</div><div class="kpi-val" id="k-meas">—</div><div class="kpi-sub" id="k-meas-s"></div></div>
+    <div class="kpi"><div class="kpi-label">Imps Não-Viewable</div><div class="kpi-val" id="k-nonview" style="color:var(--red)">—</div><div class="kpi-sub" id="k-nonview-s"></div></div>
+    <div class="kpi"><div class="kpi-label">CPM Efetivo</div><div class="kpi-val" id="k-ecpm">—</div><div class="kpi-sub">por 1k viewable</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Decomposição das Impressões</div>
+    <div id="barsArea"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Custo do Desperdício</div>
+      <table id="wasteTable"></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Status vs MRC / IAB</div>
+      <table id="mrcTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Visualização das Impressões</div>
+    <canvas id="impChart" height="140"></canvas>
+  </div>
+</div>
+</div>
+
+<!-- TAB: Otimizador -->
+<div id="tab-opt" class="tab-panel">
+<div class="card">
+  <div class="card-title">Simulação de Melhoria de Viewability</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div>
+      <label>Viewability Atual (%)</label>
+      <input id="optCurrent" type="number" value="55" min="0" max="100" oninput="calcOpt()">
+    </div>
+    <div>
+      <label>Target de Viewability (%)</label>
+      <input id="optTarget" type="number" value="70" min="0" max="100" oninput="calcOpt()">
+    </div>
+    <div>
+      <label>Budget Total (R$)</label>
+      <input id="optBudget" type="number" value="50000" oninput="calcOpt()">
+    </div>
+    <div>
+      <label>CPM Negociado (R$)</label>
+      <input id="optCpm" type="number" value="14.50" step="0.01" oninput="calcOpt()">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Estratégias de Otimização</div>
+  <table id="optTable">
+    <thead><tr><th>Estratégia</th><th>Viewability Est.</th><th>Imps Viewable</th><th>eCPM Resultante</th><th>Recomendação</th></tr></thead>
+    <tbody id="optBody"></tbody>
+  </table>
+</div>
+
+<div class="card" id="placementCard">
+  <div class="card-title">Viewability por Placement × Formato</div>
+  <table id="placTable"></table>
+</div>
+</div>
+
+<!-- TAB: Referência -->
+<div id="tab-ref" class="tab-panel">
+<div class="card">
+  <div class="ref-section">
+    <h3>Padrões MRC (Media Rating Council)</h3>
+    <div class="ref-grid">
+      <div class="ref-item"><b>Display</b><span>≥50% pixels em tela por ≥1 segundo contínuo</span></div>
+      <div class="ref-item"><b>Vídeo Instream</b><span>≥50% pixels em tela por ≥2 segundos contínuos</span></div>
+      <div class="ref-item"><b>Large Format (≥242.500px)</b><span>≥30% pixels em tela por ≥1 segundo</span></div>
+      <div class="ref-item"><b>Vídeo Outstream</b><span>≥50% pixels em tela por ≥2s, com som ou muted</span></div>
+    </div>
+  </div>
+  <div class="ref-section">
+    <h3>Benchmarks de Viewability por Formato</h3>
+    <table>
+      <thead><tr><th>Formato</th><th>Referência Mercado BR</th><th>Meta Campanha</th><th>Excelente</th></tr></thead>
+      <tbody>
+        <tr><td>Display 300×250</td><td>50–60%</td><td>≥60%</td><td>≥75%</td></tr>
+        <tr><td>Display 728×90 (leaderboard)</td><td>40–55%</td><td>≥55%</td><td>≥70%</td></tr>
+        <tr><td>Display 160×600 (skyscraper)</td><td>60–70%</td><td>≥65%</td><td>≥80%</td></tr>
+        <tr><td>Vídeo Instream Pre-roll</td><td>65–80%</td><td>≥70%</td><td>≥85%</td></tr>
+        <tr><td>Vídeo Outstream</td><td>40–55%</td><td>≥50%</td><td>≥65%</td></tr>
+        <tr><td>Native</td><td>55–70%</td><td>≥65%</td><td>≥80%</td></tr>
+        <tr><td>Interstitial / Adhesion</td><td>80–95%</td><td>≥85%</td><td>≥95%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ref-section">
+    <h3>Fatores que Impactam Viewability</h3>
+    <div class="ref-grid">
+      <div class="ref-item"><b>🏆 Maior impacto (+ve)</b><span>Above the fold · Sticky/adhesion · Interstitial · Conteúdo longo (artigos) · Vídeo instream</span></div>
+      <div class="ref-item"><b>⬇️ Menor viewability (−ve)</b><span>Below the fold · Footers · Sidebar BTF · Pages with heavy content · Outstream auto-play desativado</span></div>
+      <div class="ref-item"><b>📱 Mobile vs Desktop</b><span>Mobile tende a ter maior viewability em ATF (tela menor = todo conteúdo visível). Desktop BTF pode ser muito baixo.</span></div>
+      <div class="ref-item"><b>🔧 Verificadores</b><span>IAS, DoubleVerify, Moat — cada um tem metodologia diferente. Divergência de 5–10pp é normal entre fornecedores.</span></div>
+    </div>
+  </div>
+  <div class="ref-section">
+    <h3>Fórmulas Chave</h3>
+    <div class="ref-grid">
+      <div class="ref-item"><b>eCPM Viewable</b><span>eCPM = CPM × (Imps Totais / Imps Viewable) = CPM / Viewability%</span></div>
+      <div class="ref-item"><b>Custo Desperdício</b><span>Custo_não-viewable = Budget × (1 − Viewability%)</span></div>
+      <div class="ref-item"><b>Viewability sobre mensurável</b><span>View% = Imps_viewable / Imps_mensuráveis × 100</span></div>
+      <div class="ref-item"><b>Taxa de mensurabilidade</b><span>Meas% = Imps_mensuráveis / Imps_totais × 100</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('view_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('view_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+function fmt(n){if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'k';return n.toFixed(0);}
+function fmtR(n){return 'R$'+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(n){return n.toFixed(1)+'%';}
+
+// MRC thresholds by format
+const MRC={
+  display:{viewTarget:60,measTarget:75,label:'Display'},
+  video:{viewTarget:70,measTarget:85,label:'Vídeo Instream'},
+  native:{viewTarget:65,measTarget:80,label:'Native'},
+  outstream:{viewTarget:50,measTarget:70,label:'Vídeo Outstream'},
+};
+
+// Placement benchmarks (viewability boost/penalty)
+const PLACEMENTS={
+  atf:{adj:0,label:'Above the fold'},
+  btf:{adj:-20,label:'Below the fold'},
+  inarticle:{adj:+10,label:'In-article'},
+  sticky:{adj:+25,label:'Sticky/adhesion'},
+  interstitial:{adj:+30,label:'Interstitial'},
+};
+
+function calc(){
+  const totalImps=parseFloat(document.getElementById('totalImps').value)||0;
+  const viewRate=parseFloat(document.getElementById('viewRate').value)||0;
+  const measRate=parseFloat(document.getElementById('measRate').value)||0;
+  const cpm=parseFloat(document.getElementById('cpm').value)||0;
+  const formato=document.getElementById('formato').value;
+
+  if(!totalImps||!viewRate||!cpm){document.getElementById('kpiArea').style.display='none';return;}
+  document.getElementById('kpiArea').style.display='block';
+
+  const measImps=totalImps*(measRate/100);
+  const viewImps=measImps*(viewRate/100);
+  const nonMeasImps=totalImps-measImps;
+  const nonViewImps=measImps-viewImps;
+  const budget=totalImps*cpm/1000;
+  const eCpm=viewImps>0?(budget/(viewImps/1000)):0;
+
+  // KPIs
+  document.getElementById('k-view').textContent=fmt(viewImps);
+  document.getElementById('k-view-s').textContent=pct(viewImps/totalImps*100)+' do total';
+  document.getElementById('k-meas').textContent=fmt(measImps);
+  document.getElementById('k-meas-s').textContent=pct(measRate)+'% mensuráveis';
+  document.getElementById('k-nonview').textContent=fmt(nonViewImps+nonMeasImps);
+  document.getElementById('k-nonview-s').textContent=pct((nonViewImps+nonMeasImps)/totalImps*100)+' do total';
+  document.getElementById('k-ecpm').textContent=fmtR(eCpm);
+
+  // Bars
+  const bars=[
+    {label:'Viewable',val:viewImps/totalImps*100,cls:'bar-green',abs:viewImps},
+    {label:'Não-viewable (mensuráveis)',val:nonViewImps/totalImps*100,cls:'bar-orange',abs:nonViewImps},
+    {label:'Não mensuráveis',val:nonMeasImps/totalImps*100,cls:'bar-red',abs:nonMeasImps},
+  ];
+  document.getElementById('barsArea').innerHTML=bars.map(b=>`
+    <div class="bar-wrap">
+      <div class="bar-label"><span>${b.label}</span><span>${pct(b.val)} · ${fmt(b.abs)} imps</span></div>
+      <div class="bar-track"><div class="bar-fill ${b.cls}" style="width:${b.val}%"></div></div>
+    </div>`).join('');
+
+  // Waste table
+  const costView=viewImps*cpm/1000;
+  const costNonView=nonViewImps*cpm/1000;
+  const costNonMeas=nonMeasImps*cpm/1000;
+  document.getElementById('wasteTable').innerHTML=`
+    <thead><tr><th>Categoria</th><th>Imps</th><th>Custo</th><th>%Budget</th></tr></thead>
+    <tbody>
+      <tr><td>✅ Viewable</td><td>${fmt(viewImps)}</td><td>${fmtR(costView)}</td><td>${pct(costView/budget*100)}</td></tr>
+      <tr><td>⚠️ Não-viewable</td><td>${fmt(nonViewImps)}</td><td>${fmtR(costNonView)}</td><td>${pct(costNonView/budget*100)}</td></tr>
+      <tr><td>❌ Não mensurável</td><td>${fmt(nonMeasImps)}</td><td>${fmtR(costNonMeas)}</td><td>${pct(costNonMeas/budget*100)}</td></tr>
+      <tr style="font-weight:700"><td>Total</td><td>${fmt(totalImps)}</td><td>${fmtR(budget)}</td><td>100%</td></tr>
+    </tbody>`;
+
+  // MRC table
+  const m=MRC[formato]||MRC.display;
+  function badge(ok){return ok?'<span class="badge badge-ok">✓ OK</span>':'<span class="badge badge-err">✗ Abaixo</span>';}
+  document.getElementById('mrcTable').innerHTML=`
+    <thead><tr><th>Métrica</th><th>Resultado</th><th>Meta MRC</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Viewability (sobre mensurável)</td><td>${pct(viewRate)}</td><td>≥${m.viewTarget}%</td><td>${badge(viewRate>=m.viewTarget)}</td></tr>
+      <tr><td>Mensurabilidade</td><td>${pct(measRate)}</td><td>≥${m.measTarget}%</td><td>${badge(measRate>=m.measTarget)}</td></tr>
+      <tr><td>eCPM Viewable</td><td>${fmtR(eCpm)}</td><td>Ref. ${fmtR(cpm/(m.viewTarget/100))}</td><td>${badge(eCpm<=cpm/(m.viewTarget/100)*1.1)}</td></tr>
+    </tbody>`;
+
+  // Canvas donut
+  drawChart(viewImps,nonViewImps,nonMeasImps);
+}
+
+function drawChart(view,nonView,nonMeas){
+  const c=document.getElementById('impChart');
+  const W=c.offsetWidth||700;c.width=W*2;c.height=280;
+  const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+  const total=view+nonView+nonMeas;
+  const cx=c.width*0.22,cy=c.height/2,r=90,ri=50;
+  const slices=[
+    {val:view,color:'#16a34a',label:'Viewable'},
+    {val:nonView,color:'#d97706',label:'Não-viewable'},
+    {val:nonMeas,color:'#dc2626',label:'Não mensurável'},
+  ];
+  let angle=-Math.PI/2;
+  slices.forEach(s=>{
+    const sweep=s.val/total*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,angle,angle+sweep);ctx.closePath();
+    ctx.fillStyle=s.color;ctx.fill();
+    angle+=sweep;
+  });
+  ctx.beginPath();ctx.arc(cx,cy,ri,0,Math.PI*2);
+  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--card').trim()||'#fff';
+  ctx.fill();
+  // Legend
+  const lx=c.width*0.42,ly=c.height/2-slices.length*22;
+  slices.forEach((s,i)=>{
+    const pv=(s.val/total*100).toFixed(1)+'%';
+    ctx.fillStyle=s.color;ctx.fillRect(lx,ly+i*44,20,20);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#111827';
+    ctx.font=`bold ${24}px 'Space Grotesk',sans-serif`;ctx.fillText(s.label,lx+28,ly+i*44+16);
+    ctx.font=`${20}px 'JetBrains Mono',monospace`;ctx.fillStyle='#1F36C7';
+    ctx.fillText(pv,lx+28,ly+i*44+38);
+  });
+}
+
+// Optimization tab
+const STRATEGIES=[
+  {name:'Blocklist agressiva de publishers low-view',viewAdj:+8,note:'Reduz alcance ~15%'},
+  {name:'Migrar budget para ATF',viewAdj:+12,note:'Pode aumentar CPM 10–20%'},
+  {name:'Adicionar viewability floor no DSP (≥60%)',viewAdj:+10,note:'Reduz volume de leilões ganhos'},
+  {name:'Ativar verificação IAS/DoubleVerify',viewAdj:+5,note:'Custo adicional ~R$0,50 CPM'},
+  {name:'Aumentar tamanho do banner (300×600)',viewAdj:+6,note:'Rich media pode ter maior view'},
+  {name:'Focar em mobile in-article',viewAdj:+9,note:'Mobile ATF tem viewability alta'},
+];
+
+function calcOpt(){
+  const cur=parseFloat(document.getElementById('optCurrent').value)||55;
+  const tgt=parseFloat(document.getElementById('optTarget').value)||70;
+  const budget=parseFloat(document.getElementById('optBudget').value)||50000;
+  const cpm=parseFloat(document.getElementById('optCpm').value)||14.5;
+  const totalImps=budget/cpm*1000;
+  const viewCur=totalImps*(cur/100);
+  const viewTgt=totalImps*(tgt/100);
+
+  document.getElementById('optBody').innerHTML=STRATEGIES.map(s=>{
+    const newView=Math.min(100,cur+s.viewAdj);
+    const newViewImps=totalImps*(newView/100);
+    const eCpm=cpm/(newView/100);
+    const badge=newView>=tgt?'badge-ok':newView>=(cur+tgt)/2?'badge-warn':'badge-err';
+    return `<tr>
+      <td><b>${s.name}</b><br><span style="font-size:.78rem;color:var(--muted)">${s.note}</span></td>
+      <td><b>${pct(newView)}</b> <span style="font-size:.78rem;color:var(--muted)">(+${s.viewAdj}pp)</span></td>
+      <td>${fmt(newViewImps)}</td>
+      <td>${fmtR(eCpm)}</td>
+      <td><span class="badge ${badge}">${newView>=tgt?'Atinge meta':newView>=(cur+tgt)/2?'Parcial':'Insuficiente'}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Placement × Format table
+  const formats=['display','video','native','outstream'];
+  const placements=['atf','btf','inarticle','sticky','interstitial'];
+  const BASE={display:58,video:72,native:63,outstream:48};
+  const PADJ={atf:0,btf:-18,inarticle:+10,sticky:+24,interstitial:+28};
+  document.getElementById('placTable').innerHTML=`
+    <thead><tr><th>Placement</th>${formats.map(f=>`<th>${MRC[f]?.label||f}</th>`).join('')}</tr></thead>
+    <tbody>${placements.map(p=>`<tr><td>${PLACEMENTS[p].label}</td>${formats.map(f=>{
+      const v=Math.min(98,Math.max(10,BASE[f]+PADJ[p]));
+      const cl=v>=70?'color:var(--green)':v>=55?'color:var(--orange)':'color:var(--red)';
+      return `<td style="${cl};font-family:var(--mono);font-weight:600">${v}%</td>`;
+    }).join('')}</tr>`).join('')}</tbody>`;
+}
+
+function loadExample(){
+  document.getElementById('totalImps').value=2000000;
+  document.getElementById('viewRate').value=62;
+  document.getElementById('measRate').value=80;
+  document.getElementById('cpm').value=18;
+  document.getElementById('formato').value='display';
+  document.getElementById('placement').value='btf';
+  calc();
+}
+
+calc();
+calcOpt();
+</script>
+</body>
+</html>

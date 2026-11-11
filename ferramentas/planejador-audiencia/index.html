@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planejador de Audiência — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--yellow:#d97706;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+  --c0:#1F36C7;--c1:#06b6d4;--c2:#8b5cf6;--c3:#f59e0b;--c4:#10b981;--c5:#ef4444;--c6:#f97316;--c7:#a855f7;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:960px;padding:24px 16px}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:var(--red);color:#fff;border:none}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:7px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.seg-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;position:relative}
+.seg-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.seg-color{width:12px;height:40px;border-radius:4px;flex-shrink:0}
+.seg-name{font-weight:700;font-size:1rem}
+.seg-type{font-size:.75rem;color:var(--muted)}
+.seg-remove{position:absolute;top:12px;right:12px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1rem}
+.seg-remove:hover{color:var(--red)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--light);border-radius:10px;padding:14px;text-align:center}
+.tile-val{font-size:1.4rem;font-weight:700;font-family:var(--mono);color:var(--azul)}
+.tile-lbl{font-size:.75rem;color:var(--muted);margin-top:4px}
+canvas{width:100%!important;max-height:200px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">👥 Planejador de Audiência</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('plan')">Planner</div>
+  <div class="tab" onclick="switchTab('summary')">Sumário</div>
+  <div class="tab" onclick="switchTab('ref')">Referência</div>
+</div>
+
+<!-- Planner -->
+<div id="tab-plan" class="tab-panel active">
+<div class="card">
+  <div class="card-title">Configuração da Campanha</div>
+  <div class="grid3">
+    <div>
+      <label>Budget Total (R$)</label>
+      <input id="totalBudget" type="number" value="50000" step="1000" oninput="updateSummary()">
+    </div>
+    <div>
+      <label>Universo Total (pessoas)</label>
+      <input id="universe" type="number" value="10000000" step="100000" oninput="updateSummary()">
+    </div>
+    <div>
+      <label>Canal Principal</label>
+      <select id="mainChannel" onchange="updateSummary()">
+        <option value="display">Display Programático</option>
+        <option value="social" selected>Social (Meta/TikTok)</option>
+        <option value="search">Search</option>
+        <option value="video">Vídeo</option>
+        <option value="native">Native</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Segmentos de Audiência</div>
+  <div id="segList"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="addSeg()">+ Segmento</button>
+    <button class="btn btn-primary" onclick="updateSummary()">Calcular</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Exemplo</button>
+  </div>
+</div>
+</div>
+
+<!-- Sumário -->
+<div id="tab-summary" class="tab-panel">
+<div id="tilesRow" class="tiles" style="display:none"></div>
+<div id="summaryCard" class="card" style="display:none">
+  <div class="card-title">Distribuição de Budget por Segmento</div>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;align-items:center">
+    <canvas id="donut"></canvas>
+    <div id="summaryTable"></div>
+  </div>
+</div>
+<div id="overlapCard" class="card" style="display:none">
+  <div class="card-title">Estimativa de Overlap e Alcance Deduplicado</div>
+  <div id="overlapContent"></div>
+</div>
+</div>
+
+<!-- Referência -->
+<div id="tab-ref" class="tab-panel">
+<div class="card">
+  <div class="card-title">Tipos de Audiência</div>
+  <table>
+    <thead><tr><th>Tipo</th><th>Fonte</th><th>Precisão</th><th>Escala</th><th>Uso típico</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Remarketing</strong></td><td>1st Party</td><td>Alta</td><td>Baixa</td><td>Conversão, carrinho abandonado</td></tr>
+      <tr><td><strong>CRM / Customer Match</strong></td><td>1st Party</td><td>Muito alta</td><td>Média</td><td>Upsell, retenção</td></tr>
+      <tr><td><strong>Lookalike / Similar</strong></td><td>Derivada</td><td>Média</td><td>Alta</td><td>Prospecção com base em convertidos</td></tr>
+      <tr><td><strong>In-Market</strong></td><td>3rd Party</td><td>Média</td><td>Alta</td><td>Interesse de compra ativo</td></tr>
+      <tr><td><strong>Contextual</strong></td><td>Conteúdo</td><td>Baixa</td><td>Muito alta</td><td>Branding, awareness</td></tr>
+      <tr><td><strong>Demográfico</strong></td><td>Declarado</td><td>Variável</td><td>Alta</td><td>Recorte de público amplo</td></tr>
+      <tr><td><strong>Interesse</strong></td><td>Comportamental</td><td>Baixa</td><td>Muito alta</td><td>Awareness, consideração</td></tr>
+      <tr><td><strong>Geográfico</strong></td><td>IP/GPS</td><td>Alta</td><td>Dependente</td><td>Campanhas locais, eventos</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <div class="card-title">Overlap Esperado por Par de Tipos</div>
+  <table>
+    <thead><tr><th>Tipo A</th><th>Tipo B</th><th>Overlap Estimado</th></tr></thead>
+    <tbody>
+      <tr><td>Remarketing</td><td>CRM</td><td>50–80%</td></tr>
+      <tr><td>Remarketing</td><td>Lookalike</td><td>5–15%</td></tr>
+      <tr><td>CRM</td><td>Lookalike</td><td>5–20%</td></tr>
+      <tr><td>In-Market</td><td>Interesse</td><td>20–40%</td></tr>
+      <tr><td>Demográfico</td><td>Interesse</td><td>30–60%</td></tr>
+      <tr><td>Contextual</td><td>Interesse</td><td>10–30%</td></tr>
+      <tr><td>Lookalike</td><td>In-Market</td><td>15–35%</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('aud_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('aud_theme')||'light');
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+const COLORS=['var(--c0)','var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)','var(--c7)'];
+const COLORS_HEX=['#1F36C7','#06b6d4','#8b5cf6','#f59e0b','#10b981','#ef4444','#f97316','#a855f7'];
+const SEG_TYPES=['Remarketing','CRM / Customer Match','Lookalike','In-Market','Interesse','Demográfico','Contextual','Geográfico'];
+let segs=[];let segId=0;
+
+function addSeg(name='',type='Interesse',reach='',budgetPct='',overlap=''){
+  const id=++segId;
+  const color=COLORS[(segs.length)%COLORS.length];
+  const colorHex=COLORS_HEX[(segs.length)%COLORS_HEX.length];
+  segs.push({id,color,colorHex});
+  const div=document.createElement('div');
+  div.className='seg-card';div.id='seg-'+id;
+  div.innerHTML=`
+    <button class="seg-remove" onclick="removeSeg(${id})">✕</button>
+    <div class="seg-card-head">
+      <div class="seg-color" style="background:${colorHex}"></div>
+      <div>
+        <div class="seg-name"><input id="sname-${id}" placeholder="Nome do segmento" value="${name}" style="width:220px;font-weight:700;font-size:.95rem;border:1px solid var(--border)"></div>
+        <div class="seg-type">
+          <select id="stype-${id}" style="width:180px;font-size:.8rem;padding:3px 8px;margin-top:4px">
+            ${SEG_TYPES.map(t=>`<option ${t===type?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="grid4">
+      <div>
+        <label>Reach Estimado</label>
+        <input id="sreach-${id}" type="number" value="${reach}" placeholder="ex: 500000" oninput="updateSummary()">
+      </div>
+      <div>
+        <label>% do Budget</label>
+        <input id="sbpct-${id}" type="number" value="${budgetPct}" placeholder="ex: 30" min="0" max="100" oninput="updateSummary()">
+      </div>
+      <div>
+        <label>Overlap c/ outros (%)</label>
+        <input id="soverlap-${id}" type="number" value="${overlap}" placeholder="ex: 20" min="0" max="100" oninput="updateSummary()">
+      </div>
+      <div>
+        <label>Canal/Plataforma</label>
+        <select id="schan-${id}" oninput="updateSummary()">
+          <option>DV360</option><option>Meta</option><option>Google Ads</option>
+          <option>TikTok</option><option>LinkedIn</option><option>Programático</option><option>YouTube</option>
+        </select>
+      </div>
+    </div>
+  `;
+  document.getElementById('segList').appendChild(div);
+}
+
+function removeSeg(id){
+  const el=document.getElementById('seg-'+id);
+  if(el)el.remove();
+  segs=segs.filter(s=>s.id!==id);
+  updateSummary();
+}
+
+function getSeg(id){
+  return{
+    id,
+    name:document.getElementById('sname-'+id)?.value||'Segmento '+id,
+    type:document.getElementById('stype-'+id)?.value||'',
+    reach:parseFloat(document.getElementById('sreach-'+id)?.value)||0,
+    bpct:parseFloat(document.getElementById('sbpct-'+id)?.value)||0,
+    overlap:parseFloat(document.getElementById('soverlap-'+id)?.value)||20,
+    chan:document.getElementById('schan-'+id)?.value||'',
+    color:segs.find(s=>s.id===id)?.colorHex||'#1F36C7',
+  };
+}
+
+function fmtN(n){
+  if(n>=1000000)return(n/1000000).toFixed(1)+'M';
+  if(n>=1000)return(n/1000).toFixed(0)+'K';
+  return n.toFixed(0);
+}
+
+function updateSummary(){
+  if(!segs.length){document.getElementById('tilesRow').style.display='none';document.getElementById('summaryCard').style.display='none';document.getElementById('overlapCard').style.display='none';return;}
+  const totalBudget=parseFloat(document.getElementById('totalBudget').value)||50000;
+  const universe=parseFloat(document.getElementById('universe').value)||10000000;
+  const data=segs.map(s=>getSeg(s.id));
+  const totalPct=data.reduce((a,b)=>a+b.bpct,0);
+  const totalReach=data.reduce((a,b)=>a+b.reach,0);
+
+  // dedup reach estimate using inclusion-exclusion approximation
+  let dedupReach=totalReach;
+  for(let i=0;i<data.length;i++){
+    for(let j=i+1;j<data.length;j++){
+      const avgOverlap=(data[i].overlap+data[j].overlap)/2/100;
+      dedupReach-=Math.min(data[i].reach,data[j].reach)*avgOverlap*0.5;
+    }
+  }
+  dedupReach=Math.max(0,Math.min(dedupReach,totalReach));
+  const reachPct=universe>0?(dedupReach/universe*100):0;
+
+  document.getElementById('tilesRow').style.display='grid';
+  document.getElementById('tilesRow').innerHTML=`
+    <div class="tile"><div class="tile-val">${data.length}</div><div class="tile-lbl">Segmentos</div></div>
+    <div class="tile"><div class="tile-val">${fmtN(totalReach)}</div><div class="tile-lbl">Reach Bruto Total</div></div>
+    <div class="tile"><div class="tile-val">${fmtN(dedupReach)}</div><div class="tile-lbl">Reach Deduplicado Est.</div></div>
+    <div class="tile"><div class="tile-val">${reachPct.toFixed(1)}%</div><div class="tile-lbl">% do Universo</div></div>
+    <div class="tile"><div class="tile-val">${totalPct.toFixed(0)}%</div><div class="tile-lbl">Budget Alocado</div></div>
+    <div class="tile"><div class="tile-val">R$ ${(totalBudget*(totalPct/100)/1000).toFixed(0)}K</div><div class="tile-lbl">Budget Total Atribuído</div></div>
+  `;
+
+  // donut
+  document.getElementById('summaryCard').style.display='block';
+  const canvas=document.getElementById('donut');
+  const ctx=canvas.getContext('2d');
+  canvas.width=200;canvas.height=200;
+  ctx.clearRect(0,0,200,200);
+  const total=data.reduce((a,b)=>a+b.bpct,0)||1;
+  let angle=-Math.PI/2;
+  data.forEach(s=>{
+    const slice=(s.bpct/total)*2*Math.PI;
+    ctx.beginPath();ctx.moveTo(100,100);
+    ctx.arc(100,100,80,angle,angle+slice);
+    ctx.closePath();ctx.fillStyle=s.color;ctx.fill();
+    angle+=slice;
+  });
+  ctx.beginPath();ctx.arc(100,100,45,0,2*Math.PI);ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--card').trim()||'#fff';ctx.fill();
+
+  let tableHtml=`<table><thead><tr><th>Segmento</th><th>Tipo</th><th>Canal</th><th>% Budget</th><th>Budget (R$)</th><th>Reach</th></tr></thead><tbody>`;
+  data.forEach(s=>{
+    const bud=(s.bpct/100)*totalBudget;
+    tableHtml+=`<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${s.color};margin-right:6px"></span>${s.name}</td>
+      <td>${s.type}</td>
+      <td>${s.chan}</td>
+      <td style="font-family:var(--mono)">${s.bpct.toFixed(1)}%</td>
+      <td style="font-family:var(--mono)">R$ ${bud.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}</td>
+      <td style="font-family:var(--mono)">${fmtN(s.reach)}</td>
+    </tr>`;
+  });
+  tableHtml+=`<tr style="font-weight:700"><td colspan="3">Total</td><td style="font-family:var(--mono)">${totalPct.toFixed(1)}%</td><td style="font-family:var(--mono)">R$ ${(totalBudget*(totalPct/100)).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}</td><td style="font-family:var(--mono)">${fmtN(totalReach)}</td></tr>`;
+  tableHtml+='</tbody></table>';
+  document.getElementById('summaryTable').innerHTML=tableHtml;
+
+  document.getElementById('overlapCard').style.display='block';
+  document.getElementById('overlapContent').innerHTML=`
+    <div class="grid3">
+      <div class="tile"><div class="tile-val">${fmtN(totalReach)}</div><div class="tile-lbl">Reach Bruto (soma)</div></div>
+      <div class="tile"><div class="tile-val">${fmtN(dedupReach)}</div><div class="tile-lbl">Reach Deduplicado Est.</div></div>
+      <div class="tile"><div class="tile-val">${((1-dedupReach/totalReach)*100).toFixed(1)}%</div><div class="tile-lbl">Overlap Estimado</div></div>
+    </div>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:10px">Estimativa por inclusão-exclusão com overlap médio declarado por segmento. Para cálculo exato, use a ferramenta de Audience Overlap com tamanhos reais de cada par.</p>
+  `;
+}
+
+function loadExample(){
+  document.getElementById('totalBudget').value=50000;
+  document.getElementById('universe').value=12000000;
+  document.getElementById('mainChannel').value='social';
+  document.getElementById('segList').innerHTML='';
+  segs=[];segId=0;
+  addSeg('Remarketing — Visitantes 30d','Remarketing',180000,20,70);
+  addSeg('CRM — Clientes Ativos','CRM / Customer Match',95000,15,60);
+  addSeg('Lookalike 1% — Compradores','Lookalike',850000,25,25);
+  addSeg('In-Market — Categoria do produto','In-Market',3200000,30,30);
+  addSeg('Demográfico — 25–44 mulheres BR','Demográfico',8500000,10,50);
+  document.querySelectorAll('[id^="schan-"]').forEach((el,i)=>{
+    const channels=['Meta','Meta','Meta','DV360','Meta'];
+    el.value=channels[i]||'Meta';
+  });
+  updateSummary();
+  switchTab('summary');
+}
+
+addSeg('Remarketing','Remarketing','','30','60');
+addSeg('Lookalike','Lookalike','','40','20');
+addSeg('In-Market','In-Market','','30','25');
+updateSummary();
+</script>
+</body>
+</html>

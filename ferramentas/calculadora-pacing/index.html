@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pacing — AdOps Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--ok-bg:#dcfce7;--warn-bg:#fef3c7;--bad-bg:#fee2e2;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#1a1d2e;--text:#e8ecff;--muted:#9ca3af;--border:#374151;--light:#1e2a5a;--ok-bg:#14532d;--warn-bg:#78350f;--bad-bg:#7f1d1d;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--azul);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.2rem;font-weight:700;}
+header a{color:#fff;opacity:.8;text-decoration:none;font-size:.875rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;padding:0 2rem;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}
+nav::-webkit-scrollbar{display:none;}
+.tab{padding:.75rem 1.25rem;cursor:pointer;font-size:.875rem;font-weight:500;border-bottom:3px solid transparent;color:var(--muted);transition:.2s;white-space:nowrap;}
+.tab.active{color:var(--azul);border-color:var(--azul);}
+main{padding:2rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;gap:.75rem;margin-top:1rem;flex-wrap:wrap;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.kpi .val{font-size:1.5rem;font-weight:700;color:var(--azul);}
+.kpi .lbl{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+canvas{display:block;width:100%;border-radius:8px;background:var(--bg);}
+.pane{display:none;} .pane.active{display:block;}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+th{text-align:left;padding:.6rem .75rem;background:var(--light);color:var(--azul);font-weight:600;font-size:.8rem;}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.75rem;font-weight:600;}
+.badge-ok{background:var(--ok-bg);color:var(--ok);}
+.badge-warn{background:var(--warn-bg);color:var(--warn);}
+.badge-bad{background:var(--bad-bg);color:var(--bad);}
+.info-box{background:var(--light);border-radius:8px;padding:.85rem 1rem;margin-bottom:.75rem;font-size:.82rem;color:var(--muted);line-height:1.6;}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:.2rem;">⏱️ Pacing</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<nav>
+  <div class="tab active" onclick="switchTab('diario')">Pacing Diário</div>
+  <div class="tab" onclick="switchTab('lifetime')">Lifetime / Período</div>
+  <div class="tab" onclick="switchTab('adj')">Ajuste de Budget</div>
+</nav>
+<main>
+
+<!-- TAB PACING DIÁRIO -->
+<div id="tab-diario" class="pane active">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Status de Pacing Diário</h3>
+      <label>Budget Diário (R$)</label>
+      <input id="budget-dia" type="number" placeholder="Ex: 1500">
+      <label>Gasto Atual (R$)</label>
+      <input id="gasto-atual" type="number" placeholder="Ex: 820">
+      <label>Hora Atual (0–24)</label>
+      <input id="hora-atual" type="number" value="14" min="0" max="24" step="0.5">
+      <label>Horário de Início (h)</label>
+      <input id="hora-inicio" type="number" value="6" min="0" max="23">
+      <label>Horário de Fim (h)</label>
+      <input id="hora-fim" type="number" value="23" min="0" max="24">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcPacingDiario()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExDiario()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-diario" class="kpi-grid" style="display:none;"></div>
+      <div class="card" id="chart-diario-wrap" style="display:none;">
+        <h3>Curva de Pacing (Real vs Ideal)</h3>
+        <canvas id="chart-diario" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB LIFETIME -->
+<div id="tab-lifetime" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Pacing do Período / Flight</h3>
+      <label>Budget Total do Período (R$)</label>
+      <input id="budget-lt" type="number" placeholder="Ex: 45000">
+      <label>Gasto Acumulado até Hoje (R$)</label>
+      <input id="gasto-lt" type="number" placeholder="Ex: 18200">
+      <label>Dias Totais do Período</label>
+      <input id="dias-total" type="number" placeholder="Ex: 30">
+      <label>Dias Decorridos</label>
+      <input id="dias-dec" type="number" placeholder="Ex: 13">
+      <label>Tipo de Pacing</label>
+      <select id="tipo-pacing">
+        <option value="even">Even (distribuição uniforme)</option>
+        <option value="frontload">Front-load (mais no início)</option>
+        <option value="backload">Back-load (mais no final)</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcLifetime()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExLifetime()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-lt" class="kpi-grid" style="display:none;"></div>
+      <div class="card" style="display:none;" id="chart-lt-wrap">
+        <h3>Projeção de Gasto — Período</h3>
+        <canvas id="chart-lt" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB AJUSTE -->
+<div id="tab-adj" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Calculadora de Ajuste de Budget</h3>
+      <div class="info-box">Se a campanha está behind ou ahead of pace, calcule o ajuste necessário para terminar o período no budget.</div>
+      <label>Budget Restante (R$)</label>
+      <input id="budget-rest" type="number" placeholder="Ex: 26800">
+      <label>Dias Restantes</label>
+      <input id="dias-rest" type="number" placeholder="Ex: 17">
+      <label>Budget Diário Atual (R$)</label>
+      <input id="budget-dia-adj" type="number" placeholder="Ex: 1500">
+      <label>Meta: terminar</label>
+      <select id="meta-adj">
+        <option value="exact">No zero (gasto exato)</option>
+        <option value="90">Com ~10% de buffer (gastar 90%)</option>
+        <option value="80">Com ~20% de buffer (gastar 80%)</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcAdj()">Calcular Ajuste</button>
+        <button class="btn btn-secondary" onclick="loadExAdj()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-adj" class="kpi-grid" style="display:none;"></div>
+      <div class="card" id="rec-adj" style="display:none;padding-top:1.25rem;">
+        <h3>Recomendação</h3>
+        <div id="rec-adj-text"></div>
+        <table id="table-adj" style="margin-top:1rem;"></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',h.dataset.theme);}catch(e){}}
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function switchTab(id){document.querySelectorAll('.tab').forEach((t,i)=>{const ids=['diario','lifetime','adj'];t.classList.toggle('active',ids[i]===id);});document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');}
+
+function calcPacingDiario(){
+  const budget=+document.getElementById('budget-dia').value||0;
+  const gasto=+document.getElementById('gasto-atual').value||0;
+  const hora=+document.getElementById('hora-atual').value||12;
+  const hIni=+document.getElementById('hora-inicio').value||6;
+  const hFim=+document.getElementById('hora-fim').value||23;
+  if(!budget){alert('Informe o budget diário.');return;}
+  const totalHoras=hFim-hIni;
+  const horasDecorridas=Math.max(0,hora-hIni);
+  const pctTempo=Math.min(horasDecorridas/totalHoras,1);
+  const gastoIdeal=budget*pctTempo;
+  const pacingRate=gastoIdeal>0?gasto/gastoIdeal:0;
+  const diff=gasto-gastoIdeal;
+  const projecao=pctTempo>0?gasto/pctTempo:0;
+  const status=pacingRate>1.1?'ahead':pacingRate<0.9?'behind':'ok';
+  document.getElementById('kpi-diario').style.display='grid';
+  document.getElementById('kpi-diario').innerHTML=`
+    <div class="kpi"><div class="val">${fmt1(pacingRate*100)}%</div><div class="lbl">Pacing Rate</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt0(diff>=0?diff:-diff)}</div><div class="lbl">${diff>=0?'Ahead of Pace':'Behind Pace'}</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt0(projecao)}</div><div class="lbl">Projeção Final do Dia</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt0(budget-gasto)}</div><div class="lbl">Budget Restante</div></div>`;
+  document.getElementById('chart-diario-wrap').style.display='block';
+  drawPacingChart(budget,gasto,pctTempo,hIni,hFim,hora);
+}
+
+function drawPacingChart(budget,gasto,pctTempo,hIni,hFim,horaAtual){
+  const cv=document.getElementById('chart-diario');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=240*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=240,padL=55,padB=30,padT=20,padR=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const steps=24;
+  const scaleX=h=>padL+(W-padL-padR)*(h-hIni)/(hFim-hIni);
+  const scaleY=v=>padT+(H-padT-padB)*(1-v/budget);
+  // ideal line
+  ctx.strokeStyle='#9db3f8';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(scaleX(hIni),scaleY(0));ctx.lineTo(scaleX(hFim),scaleY(budget));ctx.stroke();
+  ctx.setLineDash([]);
+  // real gasto (até agora)
+  const pts=[];for(let h=hIni;h<=Math.min(horaAtual,hFim);h+=0.5){const pct=Math.max(0,(h-hIni)/(hFim-hIni));pts.push({h,v:gasto*pct/Math.max(0.01,(horaAtual-hIni)/(hFim-hIni))});}
+  if(pts.length>1){
+    ctx.beginPath();ctx.moveTo(scaleX(pts[0].h),scaleY(pts[0].v));
+    pts.forEach(p=>ctx.lineTo(scaleX(p.h),scaleY(p.v)));
+    ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;ctx.setLineDash([]);ctx.stroke();
+  }
+  // ponto atual
+  ctx.fillStyle='#1F36C7';ctx.beginPath();ctx.arc(scaleX(horaAtual),scaleY(gasto),5,0,Math.PI*2);ctx.fill();
+  // labels eixo x
+  ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+  [hIni,Math.round((hIni+hFim)/2),hFim].forEach(h=>ctx.fillText(h+'h',scaleX(h),H-padB+13));
+  // labels eixo y
+  [0,budget/2,budget].forEach(v=>{ctx.textAlign='right';ctx.fillText('R$'+fmt0K(v),padL-4,scaleY(v)+4);});
+  // legenda
+  ctx.fillStyle='#9db3f8';ctx.fillRect(padL,padT,20,3);ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='left';ctx.fillText('Ideal',padL+24,padT+5);
+  ctx.fillStyle='#1F36C7';ctx.fillRect(padL+65,padT,20,3);ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.fillText('Real',padL+89,padT+5);
+}
+
+function loadExDiario(){
+  document.getElementById('budget-dia').value=1500;
+  document.getElementById('gasto-atual').value=820;
+  document.getElementById('hora-atual').value=14;
+  document.getElementById('hora-inicio').value=6;
+  document.getElementById('hora-fim').value=23;
+  calcPacingDiario();
+}
+
+function calcLifetime(){
+  const budget=+document.getElementById('budget-lt').value||0;
+  const gasto=+document.getElementById('gasto-lt').value||0;
+  const diasTotal=+document.getElementById('dias-total').value||1;
+  const diasDec=+document.getElementById('dias-dec').value||0;
+  const tipo=document.getElementById('tipo-pacing').value;
+  if(!budget||!diasTotal){alert('Preencha budget e dias totais.');return;}
+  const pctTempo=diasDec/diasTotal;
+  let gastoIdeal;
+  if(tipo==='frontload') gastoIdeal=budget*Math.pow(pctTempo,0.6);
+  else if(tipo==='backload') gastoIdeal=budget*Math.pow(pctTempo,1.6);
+  else gastoIdeal=budget*pctTempo;
+  const pacingRate=gastoIdeal>0?gasto/gastoIdeal:0;
+  const diasRest=diasTotal-diasDec;
+  const budgetRest=budget-gasto;
+  const diaIdeal=budgetRest/Math.max(diasRest,1);
+  const projecao=diasTotal>0?gasto/pctTempo:0;
+  document.getElementById('kpi-lt').style.display='grid';
+  document.getElementById('kpi-lt').innerHTML=`
+    <div class="kpi"><div class="val">${fmt1(pacingRate*100)}%</div><div class="lbl">Pacing Rate</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt0(diaIdeal)}</div><div class="lbl">Budget Diário Ideal</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt0(projecao)}</div><div class="lbl">Projeção Período</div></div>
+    <div class="kpi"><div class="val">${diasRest}d</div><div class="lbl">Dias Restantes</div></div>`;
+  document.getElementById('chart-lt-wrap').style.display='block';
+  drawLifetimeChart(budget,gasto,diasTotal,diasDec,tipo);
+}
+
+function drawLifetimeChart(budget,gasto,diasTotal,diasDec,tipo){
+  const cv=document.getElementById('chart-lt');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=240*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=240,padL=55,padB=30,padT=20,padR=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const scaleX=d=>padL+(W-padL-padR)*(d/diasTotal);
+  const scaleY=v=>padT+(H-padT-padB)*(1-v/budget);
+  // ideal curve
+  ctx.beginPath();
+  for(let d=0;d<=diasTotal;d++){
+    const p=d/diasTotal;
+    let v;
+    if(tipo==='frontload') v=budget*Math.pow(p,0.6);
+    else if(tipo==='backload') v=budget*Math.pow(p,1.6);
+    else v=budget*p;
+    d===0?ctx.moveTo(scaleX(d),scaleY(v)):ctx.lineTo(scaleX(d),scaleY(v));
+  }
+  ctx.strokeStyle='#9db3f8';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+  // real (assume linear até hoje)
+  if(diasDec>0){
+    ctx.beginPath();ctx.moveTo(scaleX(0),scaleY(0));
+    for(let d=0;d<=diasDec;d++){ctx.lineTo(scaleX(d),scaleY(gasto*(d/diasDec)));}
+    ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;ctx.stroke();
+    // projeção
+    const diaAtual=gasto/diasDec;
+    ctx.beginPath();ctx.moveTo(scaleX(diasDec),scaleY(gasto));ctx.lineTo(scaleX(diasTotal),scaleY(gasto+diaAtual*(diasTotal-diasDec)));
+    ctx.strokeStyle='#1F36C7';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+  }
+  // budget line
+  ctx.strokeStyle=isDark?'#374151':'#d1d5db';ctx.lineWidth=1;ctx.setLineDash([2,4]);
+  ctx.beginPath();ctx.moveTo(padL,scaleY(budget));ctx.lineTo(W-padR,scaleY(budget));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='right';
+  ctx.fillText('R$'+fmt0K(budget),padL-4,scaleY(budget)+4);
+  ctx.fillText('R$'+fmt0K(budget/2),padL-4,scaleY(budget/2)+4);
+  [0,Math.round(diasTotal/2),diasTotal].forEach(d=>{ctx.textAlign='center';ctx.fillText('d'+d,scaleX(d),H-padB+13);});
+}
+
+function loadExLifetime(){
+  document.getElementById('budget-lt').value=45000;
+  document.getElementById('gasto-lt').value=18200;
+  document.getElementById('dias-total').value=30;
+  document.getElementById('dias-dec').value=13;
+  document.getElementById('tipo-pacing').value='even';
+  calcLifetime();
+}
+
+function calcAdj(){
+  const budgetRest=+document.getElementById('budget-rest').value||0;
+  const diasRest=+document.getElementById('dias-rest').value||1;
+  const budgetDiaAtual=+document.getElementById('budget-dia-adj').value||0;
+  const meta=+document.getElementById('meta-adj').value||100;
+  if(!budgetRest||!diasRest){alert('Preencha budget restante e dias restantes.');return;}
+  const metaVal=meta==='exact'?100:+meta;
+  const budgetAlvo=budgetRest*(metaVal/100);
+  const novoDia=budgetAlvo/diasRest;
+  const diff=novoDia-budgetDiaAtual;
+  const pctAdj=budgetDiaAtual>0?diff/budgetDiaAtual*100:0;
+  const status=Math.abs(pctAdj)<5?'ok':Math.abs(pctAdj)<20?'warn':'bad';
+  document.getElementById('kpi-adj').style.display='grid';
+  document.getElementById('kpi-adj').innerHTML=`
+    <div class="kpi"><div class="val">R$ ${fmt0(novoDia)}</div><div class="lbl">Budget Diário Novo</div></div>
+    <div class="kpi"><div class="val">${pctAdj>=0?'+':''}${fmt1(pctAdj)}%</div><div class="lbl">Variação vs Atual</div></div>
+    <div class="kpi"><div class="val">R$ ${fmt0(diff>=0?diff:-diff)}</div><div class="lbl">${diff>=0?'Aumentar':'Reduzir'} em</div></div>`;
+  document.getElementById('rec-adj').style.display='block';
+  const acao=diff>0?'aumentar':'reduzir';
+  const color=diff>0?'var(--warn)':'var(--ok)';
+  document.getElementById('rec-adj-text').innerHTML=`<div style="background:var(--light);border-radius:8px;padding:.85rem 1rem;font-size:.85rem;color:var(--muted);">
+    Precisa <strong style="color:${color}">${acao} o budget diário em ${fmt1(Math.abs(pctAdj))}%</strong> (de R$ ${fmt0(budgetDiaAtual)} → R$ ${fmt0(novoDia)}) para consumir R$ ${fmt0(budgetAlvo)} nos próximos ${diasRest} dias.
+  </div>`;
+  document.getElementById('table-adj').innerHTML=`<tr><th>Cenário</th><th>Budget/dia</th><th>Total ${diasRest}d</th></tr>
+    <tr><td>Atual (sem ajuste)</td><td>R$ ${fmt0(budgetDiaAtual)}</td><td>R$ ${fmt0(budgetDiaAtual*diasRest)}</td></tr>
+    <tr><td><strong>Ajustado</strong></td><td><strong>R$ ${fmt0(novoDia)}</strong></td><td><strong>R$ ${fmt0(novoDia*diasRest)}</strong></td></tr>
+    <tr><td>Budget Disponível</td><td>—</td><td>R$ ${fmt0(budgetRest)}</td></tr>`;
+}
+
+function loadExAdj(){
+  document.getElementById('budget-rest').value=26800;
+  document.getElementById('dias-rest').value=17;
+  document.getElementById('budget-dia-adj').value=1500;
+  document.getElementById('meta-adj').value='exact';
+  calcAdj();
+}
+
+function fmt0(n){return Math.round(n).toLocaleString('pt-BR');}
+function fmt0K(n){if(n>=1e3)return'R$'+(n/1e3).toFixed(0)+'K';return'R$'+Math.round(n);}
+function fmt1(n){return(+n).toFixed(1);}
+</script>
+</body>
+</html>

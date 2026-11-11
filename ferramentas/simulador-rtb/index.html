@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de Leilão RTB — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-danger:hover{background:#fee2e2}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:620px){.grid-2,.grid-3{grid-template-columns:1fr}}
+/* Bidder table */
+.bidder-table{width:100%;border-collapse:collapse;font-size:.84rem;margin-bottom:12px}
+.bidder-table th{text-align:left;padding:7px 10px;background:var(--light);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.bidder-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.bidder-table tr:last-child td{border-bottom:none}
+.bidder-table tr.winner{background:rgba(22,163,74,.08)}
+.bidder-table tr.winner td:first-child::before{content:'🏆 ';font-size:.9rem}
+.num{font-family:var(--mono);font-size:.83rem}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--light);border-radius:10px;padding:14px}
+.kpi-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.74rem;color:var(--muted);margin-top:2px}
+/* Auction log */
+.log-entry{padding:10px 14px;border-left:3px solid var(--border);margin-bottom:6px;border-radius:0 8px 8px 0;font-size:.83rem}
+.log-entry.win{border-color:var(--green);background:rgba(22,163,74,.06)}
+.log-entry.lose{border-color:var(--border);background:var(--light)}
+.log-entry.floor{border-color:var(--red);background:rgba(220,38,38,.06)}
+.hist-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.hist-bar{height:16px;background:var(--azul);border-radius:3px;opacity:.7;transition:width .3s}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1.5px solid var(--border);padding-bottom:0}
+.tab{padding:8px 16px;border-radius:8px 8px 0 0;border:none;background:transparent;font-family:inherit;font-size:.86rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul);background:var(--light)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+/* Floor price viz */
+.price-axis{position:relative;height:140px;border-left:2px solid var(--border);border-bottom:2px solid var(--border);margin:16px 0;padding-left:50px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">⚡ Simulador de Leilão RTB</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('single')">Leilão Único</button>
+  <button class="tab" onclick="switchTab('multi')">Simulação em Massa</button>
+  <button class="tab" onclick="switchTab('ref')">Referência RTB</button>
+</div>
+
+<!-- Single Auction -->
+<div id="tab-single" class="tab-panel active">
+  <div class="card">
+    <div class="card-title">Configuração do Leilão</div>
+    <div class="grid-3" style="margin-bottom:12px">
+      <div>
+        <label>Floor price (CPM mínimo R$)</label>
+        <input id="floor" type="number" min="0" step="0.5" value="3.00">
+      </div>
+      <div>
+        <label>Tipo de leilão</label>
+        <select id="auctionType">
+          <option value="2nd">2º Preço (padrão)</option>
+          <option value="1st">1º Preço</option>
+          <option value="unified">Unified Auction</option>
+        </select>
+      </div>
+      <div>
+        <label>Margem de clearing (%)</label>
+        <input id="clearingPct" type="number" min="0" max="50" value="1" placeholder="1">
+        <div class="hint">Adicional sobre 2º lance (padrão: 0–5%)</div>
+      </div>
+    </div>
+    <div id="bidderList"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="addBidder()">+ Adicionar bidder</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadExampleBidders()">Exemplo</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Resultado do Leilão</div>
+    <button class="btn btn-primary" onclick="runAuction()">🏁 Realizar Leilão</button>
+    <div id="auctionResult" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- Multi Simulation -->
+<div id="tab-multi" class="tab-panel">
+  <div class="card">
+    <div class="card-title">Simulação Monte Carlo</div>
+    <p class="hint" style="margin-bottom:12px">Simule N leilões com lances aleatórios dentro de um intervalo para estimar win rate, clearing price médio e distribuição de custos.</p>
+    <div class="grid-3">
+      <div>
+        <label>Meu bid médio (R$ CPM)</label>
+        <input id="mc_bid_avg" type="number" value="10" step="0.5">
+      </div>
+      <div>
+        <label>Minha variância (±R$)</label>
+        <input id="mc_bid_var" type="number" value="2" step="0.5">
+      </div>
+      <div>
+        <label>Floor price (R$)</label>
+        <input id="mc_floor" type="number" value="3" step="0.5">
+      </div>
+      <div>
+        <label>Concorrentes (1–10)</label>
+        <input id="mc_competitors" type="number" min="1" max="10" value="4">
+      </div>
+      <div>
+        <label>Bid médio concorrentes (R$)</label>
+        <input id="mc_comp_avg" type="number" value="8" step="0.5">
+      </div>
+      <div>
+        <label>Número de leilões</label>
+        <input id="mc_runs" type="number" min="100" max="10000" value="1000" step="100">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="runMonteCarlo()">▶ Simular</button>
+    </div>
+    <div id="mcResult" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- Reference -->
+<div id="tab-ref" class="tab-panel">
+  <div class="card">
+    <div class="card-title">Como Funciona o RTB</div>
+    <div style="font-size:.88rem;line-height:1.6">
+      <p style="margin-bottom:10px"><strong>1º Preço (First Price):</strong> o vencedor paga exatamente o seu lance. Exige bid shading para não overpagar. Usado pela maioria dos exchanges modernos (AppNexus, PubMatic, OpenX).</p>
+      <p style="margin-bottom:10px"><strong>2º Preço (Second Price):</strong> o vencedor paga o 2º lance + R$0,01 (ou floor price, o que for maior). Incentivo a licitar o valor real. Ainda usado em ambientes fechados.</p>
+      <p style="margin-bottom:10px"><strong>Unified Auction (Google):</strong> híbrido — Google usa regras de 1º preço mas com otimização interna. AdX, header bidding e demand direta competem no mesmo leilão.</p>
+      <p><strong>Floor Price:</strong> CPM mínimo abaixo do qual o publisher não vende. Pode ser dinâmico (baseado em demanda histórica) ou fixo por placement.</p>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+    <div class="card-title">CPM Floor por Formato/Canal (Referência Brasil)</div>
+    <table class="bidder-table">
+      <thead><tr><th>Formato</th><th>Floor mín.</th><th>Floor médio</th><th>Floor premium</th></tr></thead>
+      <tbody>
+        <tr><td>Display 300×250</td><td class="num">R$ 1–3</td><td class="num">R$ 4–8</td><td class="num">R$ 10–20</td></tr>
+        <tr><td>Video pre-roll</td><td class="num">R$ 8–15</td><td class="num">R$ 20–35</td><td class="num">R$ 40–80</td></tr>
+        <tr><td>CTV / OTT</td><td class="num">R$ 20–40</td><td class="num">R$ 50–80</td><td class="num">R$ 100–150</td></tr>
+        <tr><td>Native</td><td class="num">R$ 2–5</td><td class="num">R$ 6–12</td><td class="num">R$ 15–25</td></tr>
+        <tr><td>Mobile interstitial</td><td class="num">R$ 5–10</td><td class="num">R$ 12–20</td><td class="num">R$ 25–40</td></tr>
+        <tr><td>Audio</td><td class="num">R$ 10–20</td><td class="num">R$ 25–40</td><td class="num">R$ 50–80</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('rtb_theme',nxt);
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('rtb_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const idx=['single','multi','ref'].indexOf(id);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+let bidders=[];
+function renderBidderList(){
+  document.getElementById('bidderList').innerHTML=bidders.map((b,i)=>`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+      <input style="flex:2;min-width:120px" placeholder="Nome (ex: DSP Alpha)" value="${b.name}" oninput="bidders[${i}].name=this.value">
+      <input style="flex:1;min-width:90px" type="number" step="0.5" placeholder="Bid (R$ CPM)" value="${b.bid||''}" oninput="bidders[${i}].bid=parseFloat(this.value)||0">
+      <button class="btn btn-sm" style="padding:5px 10px;color:var(--red);background:none;border:none;cursor:pointer" onclick="removeBidder(${i})">✕</button>
+    </div>`).join('');
+}
+function addBidder(){bidders.push({name:'',bid:0});renderBidderList();}
+function removeBidder(i){bidders.splice(i,1);renderBidderList();}
+
+function loadExampleBidders(){
+  bidders=[
+    {name:'DSP Alpha (seu)',bid:12.50},
+    {name:'DSP Beta',bid:11.80},
+    {name:'DSP Gamma',bid:14.20},
+    {name:'DSP Delta',bid:9.00},
+    {name:'DSP Epsilon',bid:13.90},
+  ];
+  renderBidderList();
+}
+
+function runAuction(){
+  if(!bidders.length){alert('Adicione ao menos 2 bidders.');return;}
+  const floor=parseFloat(document.getElementById('floor').value)||0;
+  const atype=document.getElementById('auctionType').value;
+  const clearPct=parseFloat(document.getElementById('clearingPct').value)||0;
+
+  const valid=bidders.filter(b=>b.bid>=floor&&b.name).sort((a,b)=>b.bid-a.bid);
+  const below=bidders.filter(b=>b.bid<floor&&b.name);
+
+  let clearingPrice=0;
+  let winner=null;
+
+  if(!valid.length){
+    document.getElementById('auctionResult').innerHTML=`<div style="color:var(--red);font-weight:700">❌ Nenhum bidder acima do floor price de R$${floor.toFixed(2)}. Leilão sem vencedor.</div>`;
+    return;
+  }
+
+  winner=valid[0];
+  if(atype==='1st'){
+    clearingPrice=winner.bid;
+  }else if(atype==='2nd'){
+    const second=valid.length>1?valid[1].bid:floor;
+    clearingPrice=Math.max(second,floor)*(1+clearPct/100);
+  }else{
+    // Unified — approximate: winner pays avg of 1st and 2nd
+    const second=valid.length>1?valid[1].bid:floor;
+    clearingPrice=(winner.bid*0.3+Math.max(second,floor)*0.7)*(1+clearPct/100);
+  }
+  clearingPrice=Math.round(clearingPrice*100)/100;
+  const saving=winner.bid-clearingPrice;
+  const savingPct=winner.bid>0?(saving/winner.bid)*100:0;
+
+  const rows=valid.map((b,i)=>`<tr class="${i===0?'winner':''}">
+    <td>${b.name||'Bidder '+(i+1)}</td>
+    <td class="num">R$${b.bid.toFixed(2)}</td>
+    <td class="num">${i===0?`R$${clearingPrice.toFixed(2)} <span style="color:var(--muted);font-size:.75rem">(pagou)</span>`:'—'}</td>
+    <td>${i===0?'✅ Ganhou':'❌ Perdeu'}</td>
+  </tr>`).join('');
+  const belowRows=below.map(b=>`<tr><td>${b.name}</td><td class="num">R$${b.bid.toFixed(2)}</td><td class="num">—</td><td style="color:var(--red)">🚫 Abaixo do floor</td></tr>`).join('');
+
+  document.getElementById('auctionResult').innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Vencedor</div><div class="kpi-val" style="font-size:1rem">${winner.name||'Bidder 1'}</div></div>
+      <div class="kpi"><div class="kpi-label">Lance vencedor</div><div class="kpi-val">R$${winner.bid.toFixed(2)}</div><div class="kpi-sub">CPM</div></div>
+      <div class="kpi"><div class="kpi-label">Clearing Price</div><div class="kpi-val" style="color:var(--green)">R$${clearingPrice.toFixed(2)}</div><div class="kpi-sub">${atype==='1st'?'1º preço':atype==='2nd'?'2º preço':'Unified'}</div></div>
+      <div class="kpi"><div class="kpi-label">Saving</div><div class="kpi-val" style="color:var(--green)">R$${saving.toFixed(2)}</div><div class="kpi-sub">${savingPct.toFixed(1)}% abaixo do bid</div></div>
+    </div>
+    <table class="bidder-table">
+      <thead><tr><th>Bidder</th><th>Lance (CPM)</th><th>Pagou</th><th>Resultado</th></tr></thead>
+      <tbody>${rows}${belowRows}</tbody>
+    </table>
+    <p class="hint">Tipo: <b>${atype==='1st'?'1º Preço':atype==='2nd'?'2º Preço':'Unified Auction'}</b> • Floor: R$${floor.toFixed(2)} • Clearing margin: ${clearPct}%</p>`;
+}
+
+function runMonteCarlo(){
+  const myAvg=parseFloat(document.getElementById('mc_bid_avg').value)||10;
+  const myVar=parseFloat(document.getElementById('mc_bid_var').value)||2;
+  const floor=parseFloat(document.getElementById('mc_floor').value)||3;
+  const nComp=parseInt(document.getElementById('mc_competitors').value)||4;
+  const compAvg=parseFloat(document.getElementById('mc_comp_avg').value)||8;
+  const runs=parseInt(document.getElementById('mc_runs').value)||1000;
+
+  let wins=0,totalClearing=0,totalBid=0;
+  const clearingDist=new Array(20).fill(0);
+
+  for(let r=0;r<runs;r++){
+    const myBid=Math.max(0,myAvg+(Math.random()*2-1)*myVar);
+    const compBids=Array.from({length:nComp},()=>Math.max(0,compAvg+(Math.random()*2-1)*compAvg*0.3));
+    const allBids=[...compBids].sort((a,b)=>b-a);
+    const topComp=allBids[0]||0;
+    if(myBid>=floor&&myBid>topComp){
+      wins++;
+      const clearing=Math.max(topComp,floor)*1.01;
+      totalClearing+=clearing;
+      const bucket=Math.min(19,Math.floor(clearing/5));
+      clearingDist[bucket]++;
+    }
+    totalBid+=myBid;
+  }
+
+  const winRate=(wins/runs)*100;
+  const avgClearing=wins>0?totalClearing/wins:0;
+  const avgBid=totalBid/runs;
+
+  const maxBucket=Math.max(...clearingDist);
+  const distHtml=clearingDist.map((c,i)=>{
+    if(!c)return'';
+    const w=Math.round((c/maxBucket)*200);
+    return`<div class="hist-bar-wrap"><span class="num" style="min-width:50px;font-size:.72rem">R$${i*5}–${(i+1)*5}</span><div class="hist-bar" style="width:${w}px"></div><span class="hint">${c}</span></div>`;
+  }).join('');
+
+  document.getElementById('mcResult').innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Win Rate</div><div class="kpi-val ${winRate>=50?'':''}">  ${winRate.toFixed(1)}%</div><div class="kpi-sub">${wins}/${runs} leilões</div></div>
+      <div class="kpi"><div class="kpi-label">Clearing Médio</div><div class="kpi-val">R$${avgClearing.toFixed(2)}</div><div class="kpi-sub">CPM médio pago</div></div>
+      <div class="kpi"><div class="kpi-label">Meu Bid Médio</div><div class="kpi-val">R$${avgBid.toFixed(2)}</div><div class="kpi-sub">CPM médio ofertado</div></div>
+      <div class="kpi"><div class="kpi-label">Saving Médio</div><div class="kpi-val" style="color:var(--green)">R$${(avgBid-avgClearing).toFixed(2)}</div><div class="kpi-sub">por impressão ganha</div></div>
+    </div>
+    <div class="card-title" style="margin-bottom:8px">Distribuição de Clearing Price</div>
+    ${distHtml||'<p class="hint">Sem vitórias no período simulado.</p>'}
+    <p class="hint" style="margin-top:8px">${runs.toLocaleString('pt-BR')} leilões simulados • ${nComp} concorrentes</p>`;
+}
+
+loadExampleBidders();
+</script>
+</body>
+</html>

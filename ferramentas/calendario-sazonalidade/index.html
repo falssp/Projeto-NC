@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendário de Sazonalidade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--surface:#fff;
+  --text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;
+  --cat-alta:#dc2626;--cat-comercial:#ea580c;--cat-sazonal:#ca8a04;
+  --cat-esportes:#2563eb;--cat-digital:#7c3aed;--cat-institucional:#16a34a;
+  --impact-muito:#dc2626;--impact-alto:#ea580c;--impact-medio:#ca8a04;--impact-baixo:#16a34a;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--navy);color:#fff;padding:0 32px;display:flex;align-items:center;gap:16px;height:60px;position:sticky;top:0;z-index:100}
+header h1{font-size:1.1rem;font-weight:700;letter-spacing:-.3px}
+header .sub{font-size:.78rem;color:#9fa8da;margin-left:auto}
+.main{padding:24px 32px;min-width:0}
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.year-select{display:flex;gap:4px}
+.year-btn{padding:6px 14px;border:2px solid var(--border);border-radius:8px;background:var(--surface);color:var(--body);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s}
+.year-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.view-select{display:flex;gap:4px;margin-left:8px}
+.view-btn{padding:6px 14px;border:2px solid var(--border);border-radius:8px;background:var(--surface);color:var(--body);font-family:inherit;font-size:.85rem;cursor:pointer;transition:.15s}
+.view-btn.active{background:var(--hl);border-color:var(--accent);color:var(--accent)}
+.export-btn{margin-left:auto;padding:6px 16px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s}
+.export-btn:hover{opacity:.85}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.chip{padding:5px 12px;border-radius:20px;border:2px solid;font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s;background:var(--surface)}
+.chip.active{color:#fff!important}
+.chip[data-cat="all"]{border-color:var(--accent);color:var(--accent)}
+.chip[data-cat="all"].active{background:var(--accent)}
+.chip[data-cat="alta"]{border-color:var(--cat-alta);color:var(--cat-alta)}
+.chip[data-cat="alta"].active{background:var(--cat-alta)}
+.chip[data-cat="comercial"]{border-color:var(--cat-comercial);color:var(--cat-comercial)}
+.chip[data-cat="comercial"].active{background:var(--cat-comercial)}
+.chip[data-cat="sazonal"]{border-color:var(--cat-sazonal);color:var(--cat-sazonal)}
+.chip[data-cat="sazonal"].active{background:var(--cat-sazonal)}
+.chip[data-cat="esportes"]{border-color:var(--cat-esportes);color:var(--cat-esportes)}
+.chip[data-cat="esportes"].active{background:var(--cat-esportes)}
+.chip[data-cat="digital"]{border-color:var(--cat-digital);color:var(--cat-digital)}
+.chip[data-cat="digital"].active{background:var(--cat-digital)}
+.chip[data-cat="institucional"]{border-color:var(--cat-institucional);color:var(--cat-institucional)}
+.chip[data-cat="institucional"].active{background:var(--cat-institucional)}
+
+/* próximas datas */
+.proximas{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:24px}
+.proximas h3{font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.proximas-list{display:flex;gap:12px;flex-wrap:wrap}
+.prox-card{flex:1;min-width:200px;background:var(--hl);border-radius:8px;padding:12px 14px;border-left:4px solid var(--accent)}
+.prox-card .prox-dias{font-size:1.6rem;font-weight:700;color:var(--accent);line-height:1}
+.prox-card .prox-label{font-size:.7rem;color:var(--muted);margin-bottom:4px}
+.prox-card .prox-nome{font-size:.88rem;font-weight:600;color:var(--text)}
+.prox-card .prox-data{font-size:.75rem;color:var(--body);margin-top:2px}
+
+/* grid calendario */
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.month-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;transition:.15s}
+.month-card:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(31,54,199,.1)}
+.month-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.month-name{font-size:.95rem;font-weight:700;color:var(--text)}
+.month-heat{width:28px;height:10px;border-radius:4px}
+.month-events{padding:0 12px 12px}
+.ev-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;margin:3px 2px;transition:.15s;border:1px solid transparent}
+.ev-badge:hover{opacity:.8;transform:translateY(-1px)}
+.ev-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ev-badge[data-cat="alta"]{background:#fef2f2;color:var(--cat-alta);border-color:#fecaca}
+.ev-badge[data-cat="alta"] .ev-dot{background:var(--cat-alta)}
+.ev-badge[data-cat="comercial"]{background:#fff7ed;color:var(--cat-comercial);border-color:#fed7aa}
+.ev-badge[data-cat="comercial"] .ev-dot{background:var(--cat-comercial)}
+.ev-badge[data-cat="sazonal"]{background:#fefce8;color:var(--cat-sazonal);border-color:#fde68a}
+.ev-badge[data-cat="sazonal"] .ev-dot{background:var(--cat-sazonal)}
+.ev-badge[data-cat="esportes"]{background:#eff6ff;color:var(--cat-esportes);border-color:#bfdbfe}
+.ev-badge[data-cat="esportes"] .ev-dot{background:var(--cat-esportes)}
+.ev-badge[data-cat="digital"]{background:#faf5ff;color:var(--cat-digital);border-color:#e9d5ff}
+.ev-badge[data-cat="digital"] .ev-dot{background:var(--cat-digital)}
+.ev-badge[data-cat="institucional"]{background:#f0fdf4;color:var(--cat-institucional);border-color:#bbf7d0}
+.ev-badge[data-cat="institucional"] .ev-dot{background:var(--cat-institucional)}
+.month-card.empty-month .month-events{padding:8px 12px 12px}
+.empty-msg{font-size:.78rem;color:var(--muted);font-style:italic}
+
+/* timeline */
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-month{margin-bottom:8px}
+.tl-month-header{padding:10px 16px;background:var(--hl);border-radius:8px 8px 0 0;font-size:.88rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px}
+.tl-month-heat{width:60px;height:6px;border-radius:3px;margin-left:auto}
+.tl-events{border:1.5px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
+.tl-event{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s}
+.tl-event:last-child{border-bottom:none}
+.tl-event:hover{background:var(--hl)}
+.tl-date{font-size:.8rem;font-weight:600;color:var(--body)}
+.tl-nome{font-size:.85rem;font-weight:600;color:var(--text)}
+.tl-impact{padding:3px 8px;border-radius:5px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.impact-muito{background:#fef2f2;color:var(--impact-muito)}
+.impact-alto{background:#fff7ed;color:var(--impact-alto)}
+.impact-medio{background:#fefce8;color:var(--impact-medio)}
+.impact-baixo{background:#f0fdf4;color:var(--impact-baixo)}
+
+/* por categoria */
+.cat-section{margin-bottom:24px}
+.cat-section-header{padding:10px 16px;border-radius:8px;font-size:.88rem;font-weight:700;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cat-events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.cat-ev-card{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:.15s}
+.cat-ev-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.cat-ev-card .ev-name{font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.cat-ev-card .ev-date{font-size:.75rem;color:var(--body)}
+.cat-ev-card .ev-sectors{font-size:.72rem;color:var(--muted);margin-top:4px}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,35,126,.35);backdrop-filter:blur(2px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:.2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(10px);transition:.2s;overflow:hidden}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px}
+.modal-cat-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.modal-title{font-size:1.1rem;font-weight:700;color:var(--text);flex:1}
+.modal-close{background:none;border:none;font-size:1.3rem;color:var(--muted);cursor:pointer;padding:0 4px;line-height:1;margin-left:auto}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 24px}
+.modal-row{margin-bottom:14px}
+.modal-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.modal-value{font-size:.88rem;color:var(--body);font-weight:500}
+.modal-impact-badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:.82rem;font-weight:700}
+.modal-dica{background:var(--hl);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 14px;font-size:.85rem;color:var(--body);line-height:1.5;margin-top:4px}
+.modal-sectors{display:flex;flex-wrap:wrap;gap:6px}
+.sector-tag{padding:3px 10px;background:var(--hl);border-radius:5px;font-size:.75rem;color:var(--accent);font-weight:600}
+
+/* heat colors */
+.heat-verylow{background:#dbeafe}
+.heat-low{background:#bbf7d0}
+.heat-med{background:#fde68a}
+.heat-high{background:#fed7aa}
+.heat-veryhigh{background:#fca5a5}
+
+/* legend */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--body);font-weight:500}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>📅 Calendário de Sazonalidade</h1>
+  <span class="sub">Mercado de mídia digital BR</span>
+</header>
+<div class="main">
+
+<div class="toolbar">
+  <div class="year-select">
+    <button class="year-btn active" onclick="setYear(2026,this)">2026</button>
+    <button class="year-btn" onclick="setYear(2027,this)">2027</button>
+  </div>
+  <div class="view-select">
+    <button class="view-btn active" onclick="setView('calendario',this)">📆 Calendário</button>
+    <button class="view-btn" onclick="setView('timeline',this)">📋 Timeline</button>
+    <button class="view-btn" onclick="setView('categoria',this)">🏷 Por Categoria</button>
+  </div>
+  <button class="export-btn" onclick="exportar()">⬇ Exportar</button>
+</div>
+
+<div class="filters">
+  <span class="chip active" data-cat="all" onclick="setFilter('all',this)">Todas</span>
+  <span class="chip" data-cat="alta" onclick="setFilter('alta',this)">🔴 Alta Temporada</span>
+  <span class="chip" data-cat="comercial" onclick="setFilter('comercial',this)">🟠 Datas Comerciais</span>
+  <span class="chip" data-cat="sazonal" onclick="setFilter('sazonal',this)">🟡 Sazonal / Cultural</span>
+  <span class="chip" data-cat="esportes" onclick="setFilter('esportes',this)">🔵 Esportes</span>
+  <span class="chip" data-cat="digital" onclick="setFilter('digital',this)">🟣 Digital</span>
+  <span class="chip" data-cat="institucional" onclick="setFilter('institucional',this)">🟢 Institucional</span>
+</div>
+
+<div class="legend">
+  <span style="font-size:.75rem;font-weight:700;color:var(--muted);margin-right:4px">Impacto CPM:</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#dc2626"></span>Muito Alto (+50–200%)</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#ea580c"></span>Alto (+25–50%)</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#ca8a04"></span>Médio (+10–25%)</span>
+  <span class="legend-item"><span class="legend-dot" style="background:#16a34a"></span>Baixo (mínimo)</span>
+</div>
+
+<div id="proximas-section"></div>
+<div id="view-container"></div>
+
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-cat-dot" id="modal-dot"></div>
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row"><div class="modal-label">Data</div><div class="modal-value" id="modal-data"></div></div>
+      <div class="modal-row"><div class="modal-label">Categoria</div><div class="modal-value" id="modal-cat"></div></div>
+      <div class="modal-row"><div class="modal-label">Impacto CPM</div><div class="modal-value" id="modal-impact"></div></div>
+      <div class="modal-row" id="modal-setores-row"><div class="modal-label">Setores Impactados</div><div class="modal-sectors" id="modal-setores"></div></div>
+      <div class="modal-row" id="modal-dica-row"><div class="modal-label">💡 Dica Estratégica</div><div class="modal-dica" id="modal-dica"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CAT_COLORS = {alta:'#dc2626',comercial:'#ea580c',sazonal:'#ca8a04',esportes:'#2563eb',digital:'#7c3aed',institucional:'#16a34a'};
+const CAT_LABELS = {alta:'🔴 Alta Temporada',comercial:'🟠 Datas Comerciais',sazonal:'🟡 Sazonal / Cultural',esportes:'🔵 Esportes',digital:'🟣 Digital',institucional:'🟢 Institucional'};
+const IMPACT_CLASS = {'Muito Alto':'impact-muito','Alto':'impact-alto','Médio':'impact-medio','Baixo':'impact-baixo'};
+// heat index per month (0-4): 0=verylow,1=low,2=med,3=high,4=veryhigh
+const MONTH_HEAT_2026 = [2,2,2,3,4,3,2,3,2,4,4,4];
+const MONTH_HEAT_2027 = [2,2,2,3,4,3,2,3,2,4,4,4];
+const HEAT_CLASS = ['heat-verylow','heat-low','heat-med','heat-high','heat-veryhigh'];
+
+const EVENTOS_2026 = [
+  // Janeiro
+  {mes:0,nome:'Réveillon / Ano Novo',data:'1 Jan',cat:'alta',impacto:'Muito Alto',setores:['Turismo','Bebidas','Moda','E-commerce'],dica:'CPMs ainda elevados da virada; aproveite primeiros dias de janeiro com inventário mais barato após dia 5.'},
+  {mes:0,nome:'Verão / Férias Escolares',data:'Jan inteiro',cat:'sazonal',impacto:'Médio',setores:['Turismo','Moda','FMCG','Entretenimento'],dica:'Alto consumo de mídia em mobile; foco em vídeo e stories.'},
+  {mes:0,nome:'Aniversário de São Paulo',data:'25 Jan',cat:'sazonal',impacto:'Baixo',setores:['Regional SP'],dica:'Oportunidade para campanhas locais em São Paulo.'},
+  // Fevereiro
+  {mes:1,nome:'Carnaval 2026',data:'14–17 Fev',cat:'sazonal',impacto:'Alto',setores:['Bebidas','Turismo','Entretenimento','FMCG'],dica:'Inventário premium escasso; planeje budget com antecedência de 60 dias; pico de consumo mobile.'},
+  {mes:1,nome:'Valentine\'s Day',data:'14 Fev',cat:'comercial',impacto:'Baixo',setores:['Flores','Jóias','Restaurantes'],dica:'Impacto menor no BR; mais relevante para marcas internacionais.'},
+  // Março
+  {mes:2,nome:'Dia Internacional da Mulher',data:'8 Mar',cat:'institucional',impacto:'Alto',setores:['Moda','Beleza','Varejo','FMCG'],dica:'Grande ativação de marcas; concorrência alta especialmente em social.'},
+  {mes:2,nome:'Dia do Consumidor',data:'15 Mar',cat:'institucional',impacto:'Médio',setores:['E-commerce','Varejo'],dica:'Crescendo anualmente; bom momento para ofertas e ativações de marca.'},
+  {mes:2,nome:'Mês da Mulher',data:'Mar inteiro',cat:'institucional',impacto:'Médio',setores:['Beleza','Moda','FMCG'],dica:'Período estendido de ativações; aproveite para campanhas de awareness.'},
+  // Abril
+  {mes:3,nome:'Semana Santa',data:'2–5 Abr',cat:'sazonal',impacto:'Médio',setores:['Turismo','Alimentos'],dica:'Feriado prolongado; inventário de news diminui; aumento em streaming.'},
+  {mes:3,nome:'Páscoa',data:'5 Abr',cat:'comercial',impacto:'Alto',setores:['Alimentos','Supermercados','Varejo'],dica:'Segunda maior data do varejo depois do Natal; pico entre 2–4 semanas antes.'},
+  {mes:3,nome:'Tiradentes',data:'21 Abr',cat:'sazonal',impacto:'Baixo',setores:['Turismo'],dica:'Feriado nacional; maior consumo de entretenimento e streaming.'},
+  // Maio
+  {mes:4,nome:'Dia do Trabalho',data:'1 Mai',cat:'sazonal',impacto:'Baixo',setores:['Varejo'],dica:'Feriado nacional; foco em e-commerce e mobile.'},
+  {mes:4,nome:'Dia das Mães',data:'10 Mai',cat:'alta',impacto:'Muito Alto',setores:['Varejo','Flores','Restaurantes','Moda','Jóias','Eletroeletrônicos'],dica:'Terceira maior data do varejo BR; pico de CPM 2–3 semanas antes; invista em vídeo e retargeting.'},
+  // Junho
+  {mes:5,nome:'Dia dos Namorados',data:'12 Jun',cat:'comercial',impacto:'Alto',setores:['Jóias','Flores','Restaurantes','Viagens','Moda','Perfumes'],dica:'Quarta maior data comercial do BR; pico 1–2 semanas antes.'},
+  {mes:5,nome:'Festa Junina / São João',data:'Jun inteiro',cat:'sazonal',impacto:'Médio',setores:['Alimentos','Bebidas','Turismo NE'],dica:'Forte no Nordeste; campanhas regionalizadas têm bom desempenho.'},
+  {mes:5,nome:'Início do Inverno',data:'21 Jun',cat:'sazonal',impacto:'Baixo',setores:['Moda de Inverno'],dica:'Opportunity para moda inverno; impulse coleção de frio.'},
+  // Julho
+  {mes:6,nome:'Férias Escolares de Inverno',data:'Jul inteiro',cat:'sazonal',impacto:'Médio',setores:['Turismo','Entretenimento','Educação'],dica:'Alto consumo de streaming e gaming; bom para awareness de marca.'},
+  {mes:6,nome:'Dia do Motorista',data:'25 Jul',cat:'comercial',impacto:'Baixo',setores:['Automotivo','Combustíveis'],dica:'Nicho específico; bom para marcas do setor automotivo.'},
+  // Agosto
+  {mes:7,nome:'Dia dos Pais',data:'9 Ago',cat:'comercial',impacto:'Alto',setores:['Eletroeletrônicos','Moda Masculina','Bebidas','Automotivo'],dica:'Quinta maior data comercial; similar ao Dia das Mães em intensidade.'},
+  {mes:7,nome:'Volta às Aulas',data:'Ago inteiro',cat:'comercial',impacto:'Médio',setores:['Educação','Material Escolar','Bancário'],dica:'Período de decisão de compra para educação; aposte em conteúdo educacional.'},
+  {mes:7,nome:'Dia do Estudante',data:'11 Ago',cat:'institucional',impacto:'Baixo',setores:['Educação','Livrarias'],dica:'Oportunidade para marcas de educação e tecnologia.'},
+  // Setembro
+  {mes:8,nome:'Independência do Brasil',data:'7 Set',cat:'sazonal',impacto:'Baixo',setores:['Varejo'],dica:'Feriado nacional; planeje para mobile-first.'},
+  {mes:8,nome:'Dia do Cliente',data:'15 Set',cat:'institucional',impacto:'Médio',setores:['E-commerce','Varejo','Bancário'],dica:'Crescendo como data de promoções; Amazon e grandes varejistas ativam forte.'},
+  {mes:8,nome:'Início da Primavera',data:'23 Set',cat:'sazonal',impacto:'Baixo',setores:['Moda','Beleza'],dica:'Lançamento de coleção primavera/verão; bom timing para moda.'},
+  // Outubro
+  {mes:9,nome:'Dia das Crianças',data:'12 Out',cat:'alta',impacto:'Muito Alto',setores:['Brinquedos','Roupas Infantis','Entretenimento','Games'],dica:'Alta competição por inventário; planeje criativos e orçamento com 45 dias de antecedência.'},
+  {mes:9,nome:'Pré-Crianças (semana comercial)',data:'2–11 Out',cat:'comercial',impacto:'Alto',setores:['Brinquedos','Varejo Infantil'],dica:'Mercado antecipa a data; campanhas performam bem desde o início do mês.'},
+  {mes:9,nome:'Outubro Rosa',data:'Out inteiro',cat:'institucional',impacto:'Médio',setores:['Saúde','Beleza','Farmácias'],dica:'Ativações de propósito têm alto engajamento; bom para branding.'},
+  {mes:9,nome:'Halloween',data:'31 Out',cat:'sazonal',impacto:'Médio',setores:['Entretenimento','Varejo','Candy'],dica:'Crescendo no BR; relevante para entretenimento e redes sociais.'},
+  // Novembro
+  {mes:10,nome:'Black Friday',data:'27 Nov',cat:'alta',impacto:'Muito Alto',setores:['E-commerce','Varejo','Eletroeletrônicos','Moda','Turismo'],dica:'CPM mais alto do ano; inventário esgota em programático aberto; garanta deals diretos e PMP. CPC pode triplicar.'},
+  {mes:10,nome:'Black November',data:'Nov inteiro',cat:'alta',impacto:'Alto',setores:['E-commerce','Varejo'],dica:'Período estendido; planeje budget para o mês todo, não só a semana da BF.'},
+  {mes:10,nome:'Pré-Black Friday',data:'1–26 Nov',cat:'alta',impacto:'Alto',setores:['E-commerce','Varejo','Eletroeletrônicos'],dica:'CPMs começam a subir 2 semanas antes; antecipe compras de mídia.'},
+  {mes:10,nome:'Cyber Monday',data:'30 Nov',cat:'digital',impacto:'Alto',setores:['E-commerce'],dica:'Continua os efeitos da Black Friday; foco em remarketing.'},
+  {mes:10,nome:'Novembro Azul',data:'Nov inteiro',cat:'institucional',impacto:'Médio',setores:['Saúde','Farmácias'],dica:'Ativações de propósito crescem; bom para awareness de marca.'},
+  // Dezembro
+  {mes:11,nome:'Natal',data:'25 Dez',cat:'alta',impacto:'Muito Alto',setores:['Varejo','E-commerce','Supermercados','Turismo'],dica:'Segunda maior data do ano; CPM sobe progressivamente a partir de 1/12; pico entre 10–20/12.'},
+  {mes:11,nome:'Festas de Fim de Ano',data:'Dez inteiro',cat:'alta',impacto:'Muito Alto',setores:['Varejo','Supermercados','Bebidas','Turismo'],dica:'Mês de maior CPM acumulado do ano; garanta inventory com antecedência.'},
+  {mes:11,nome:'Réveillon',data:'31 Dez',cat:'alta',impacto:'Alto',setores:['Turismo','Moda','Beleza','Supermercados'],dica:'Inventário mobile pico na virada; aposte em vídeo e stories.'},
+  {mes:11,nome:'Férias Escolares de Verão',data:'20 Dez+',cat:'sazonal',impacto:'Médio',setores:['Turismo','Entretenimento'],dica:'Alto consumo de streaming; bom para awareness e reach.'},
+];
+
+// 2027 events — same recurring dates
+const EVENTOS_2027 = EVENTOS_2026.map(e => {
+  const dateMap = {'1 Jan':'1 Jan','14–17 Fev':'28 Fev–3 Mar','14 Fev':'14 Fev','8 Mar':'8 Mar','15 Mar':'15 Mar','5 Abr':'25 Abr','2–5 Abr':'18–21 Abr','21 Abr':'21 Abr','1 Mai':'1 Mai','10 Mai':'9 Mai','12 Jun':'12 Jun','21 Jun':'21 Jun','7 Set':'7 Set','15 Set':'15 Set','23 Set':'23 Set','12 Out':'12 Out','31 Out':'31 Out','27 Nov':'26 Nov','30 Nov':'29 Nov','25 Dez':'25 Dez','31 Dez':'31 Dez','9 Ago':'8 Ago','11 Ago':'11 Ago','25 Jul':'25 Jul'};
+  return {...e, data: dateMap[e.data] || e.data};
+});
+
+let currentYear = 2026;
+let currentView = 'calendario';
+let currentFilter = 'all';
+
+function getEvents(){return currentYear===2026?EVENTOS_2026:EVENTOS_2027;}
+function getHeat(){return currentYear===2026?MONTH_HEAT_2026:MONTH_HEAT_2027;}
+function filteredEvents(){
+  const ev = getEvents();
+  if(currentFilter==='all') return ev;
+  return ev.filter(e=>e.cat===currentFilter);
+}
+
+function setYear(y, btn){
+  currentYear=y;
+  document.querySelectorAll('.year-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+function setView(v, btn){
+  currentView=v;
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+function setFilter(f, btn){
+  currentFilter=f;
+  document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function impactClass(imp){
+  if(imp==='Muito Alto') return 'impact-muito';
+  if(imp==='Alto') return 'impact-alto';
+  if(imp==='Médio') return 'impact-medio';
+  return 'impact-baixo';
+}
+function impactLabel(imp){
+  const icons={'Muito Alto':'🔴','Alto':'🟠','Médio':'🟡','Baixo':'🟢'};
+  return (icons[imp]||'')+ ' '+imp;
+}
+
+function openModal(idx){
+  const ev = filteredEvents()[idx]||getEvents()[idx];
+  document.getElementById('modal-dot').style.background = CAT_COLORS[ev.cat]||'#999';
+  document.getElementById('modal-title').textContent = ev.nome;
+  document.getElementById('modal-data').textContent = ev.data;
+  document.getElementById('modal-cat').textContent = CAT_LABELS[ev.cat]||ev.cat;
+  document.getElementById('modal-impact').innerHTML = `<span class="modal-impact-badge ${impactClass(ev.impacto)}">${impactLabel(ev.impacto)}</span>`;
+  const setRow = document.getElementById('modal-setores-row');
+  const setEl = document.getElementById('modal-setores');
+  if(ev.setores&&ev.setores.length){setRow.style.display='';setEl.innerHTML=ev.setores.map(s=>`<span class="sector-tag">${s}</span>`).join('');}
+  else{setRow.style.display='none';}
+  const dicaRow = document.getElementById('modal-dica-row');
+  const dicaEl = document.getElementById('modal-dica');
+  if(ev.dica){dicaRow.style.display='';dicaEl.textContent=ev.dica;}
+  else{dicaRow.style.display='none';}
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e){if(e.target===document.getElementById('modal'))closeModalBtn();}
+function closeModalBtn(){document.getElementById('modal').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalBtn();});
+
+function renderProximas(){
+  const today = new Date();
+  const year = today.getFullYear();
+  // build upcoming events with real dates
+  const upcoming = [];
+  const allEv = getEvents();
+  allEv.forEach((ev,i)=>{
+    // try to parse a day from data
+    const match = ev.data.match(/^(\d+)\s+(\w+)/);
+    if(!match) return;
+    const dayNum = parseInt(match[1]);
+    const mesNames = {Jan:0,Fev:1,'Mar':2,'Abr':3,'Mai':4,'Jun':5,'Jul':6,'Ago':7,'Set':8,'Out':9,'Nov':10,'Dez':11};
+    const mesIdx = mesNames[match[2]];
+    if(mesIdx===undefined) return;
+    const d = new Date(currentYear,mesIdx,dayNum);
+    if(d>=today) upcoming.push({ev,d,i});
+  });
+  upcoming.sort((a,b)=>a.d-b.d);
+  const next3 = upcoming.slice(0,3);
+  if(!next3.length){document.getElementById('proximas-section').innerHTML='';return;}
+  const html = `<div class="proximas"><h3>⏰ Próximas datas</h3><div class="proximas-list">${next3.map(({ev,d})=>{
+    const diff = Math.round((d-today)/(1000*60*60*24));
+    return `<div class="prox-card" style="border-left-color:${CAT_COLORS[ev.cat]}">
+      <div class="prox-label">em</div>
+      <div class="prox-dias">${diff}</div>
+      <div class="prox-label">dias</div>
+      <div class="prox-nome">${ev.nome}</div>
+      <div class="prox-data">${ev.data} · <span class="modal-impact-badge ${impactClass(ev.impacto)}" style="font-size:.7rem;padding:2px 6px">${ev.impacto}</span></div>
+    </div>`;
+  }).join('')}</div></div>`;
+  document.getElementById('proximas-section').innerHTML = html;
+}
+
+function renderCalendario(){
+  const heat = getHeat();
+  const ev = filteredEvents();
+  const html = `<div class="cal-grid">${MESES.map((mes,mi)=>{
+    const monthEv = ev.filter(e=>e.mes===mi);
+    const heatIdx = heat[mi]||0;
+    return `<div class="month-card">
+      <div class="month-header">
+        <span class="month-name">${mes}</span>
+        <span class="month-heat ${HEAT_CLASS[heatIdx]}" title="Pressão de CPM"></span>
+      </div>
+      <div class="month-events">
+        ${monthEv.length?monthEv.map((e,li)=>{
+          const globalIdx = getEvents().indexOf(e);
+          return `<span class="ev-badge" data-cat="${e.cat}" onclick="openModal(${globalIdx})"><span class="ev-dot"></span>${e.nome}</span>`;
+        }).join(''):'<span class="empty-msg">Sem eventos filtrados</span>'}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+  document.getElementById('view-container').innerHTML = html;
+}
+
+function renderTimeline(){
+  const heat = getHeat();
+  const ev = filteredEvents();
+  const html = `<div class="timeline">${MESES.map((mes,mi)=>{
+    const monthEv = ev.filter(e=>e.mes===mi);
+    if(!monthEv.length) return '';
+    const heatIdx = heat[mi]||0;
+    return `<div class="tl-month">
+      <div class="tl-month-header" style="background:${CAT_COLORS[monthEv[0]?.cat]||'var(--hl)'}22;color:var(--text)">
+        ${mes}
+        <span class="tl-month-heat ${HEAT_CLASS[heatIdx]}"></span>
+      </div>
+      <div class="tl-events">${monthEv.map(e=>{
+        const gi = getEvents().indexOf(e);
+        return `<div class="tl-event" onclick="openModal(${gi})">
+          <span class="tl-date">${e.data}</span>
+          <span class="tl-nome"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${CAT_COLORS[e.cat]};margin-right:6px;vertical-align:middle"></span>${e.nome}</span>
+          <span class="tl-impact ${impactClass(e.impacto)}">${e.impacto}</span>
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+  }).join('')}</div>`;
+  document.getElementById('view-container').innerHTML = html;
+}
+
+function renderCategoria(){
+  const ev = filteredEvents();
+  const cats = ['alta','comercial','sazonal','esportes','digital','institucional'];
+  const html = cats.map(cat=>{
+    const catEv = ev.filter(e=>e.cat===cat);
+    if(!catEv.length) return '';
+    return `<div class="cat-section">
+      <div class="cat-section-header" style="background:${CAT_COLORS[cat]}">${CAT_LABELS[cat]} <span style="margin-left:auto;font-size:.75rem;opacity:.85">${catEv.length} evento${catEv.length!==1?'s':''}</span></div>
+      <div class="cat-events-grid">${catEv.map(e=>{
+        const gi = getEvents().indexOf(e);
+        return `<div class="cat-ev-card" onclick="openModal(${gi})" style="border-left:3px solid ${CAT_COLORS[e.cat]}">
+          <div class="ev-name">${e.nome}</div>
+          <div class="ev-date">${MESES[e.mes]} · ${e.data} · <span class="${impactClass(e.impacto)}" style="font-size:.72rem;font-weight:700">${e.impacto}</span></div>
+          ${e.setores?`<div class="ev-sectors">${e.setores.slice(0,3).join(' · ')}${e.setores.length>3?' …':''}</div>`:''}
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('view-container').innerHTML = html;
+}
+
+function render(){
+  renderProximas();
+  if(currentView==='calendario') renderCalendario();
+  else if(currentView==='timeline') renderTimeline();
+  else renderCategoria();
+}
+
+function exportar(){
+  const ev = getEvents();
+  let txt = `CALENDÁRIO DE SAZONALIDADE ${currentYear}\nMercado de Mídia Digital BR\n${'='.repeat(50)}\n\n`;
+  MESES.forEach((mes,mi)=>{
+    const monthEv = ev.filter(e=>e.mes===mi);
+    if(!monthEv.length) return;
+    txt += `${mes.toUpperCase()}\n${'-'.repeat(30)}\n`;
+    monthEv.forEach(e=>{
+      txt += `• ${e.nome} (${e.data})\n  Categoria: ${CAT_LABELS[e.cat]}\n  Impacto CPM: ${e.impacto}\n`;
+      if(e.setores) txt += `  Setores: ${e.setores.join(', ')}\n`;
+      if(e.dica) txt += `  Dica: ${e.dica}\n`;
+      txt += '\n';
+    });
+  });
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn = document.querySelector('.export-btn');
+    btn.textContent='✓ Copiado!';
+    setTimeout(()=>btn.textContent='⬇ Exportar',2000);
+  }).catch(()=>{
+    const w = window.open('','_blank');
+    w.document.write('<pre>'+txt+'</pre>');
+  });
+}
+
+render();
+</script>
+</body>
+</html>

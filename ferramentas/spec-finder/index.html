@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec Finder</title>
+<style>
+:root{
+  --azul:#1F36C7;--azul-escuro:#1a237e;--azul-light:#e8ecfd;
+  --cinza:#f4f5fb;--borda:#d6dbf2;
+  --sidebar-w:220px;--header-h:52px;
+  --tag-img:#e8f4ea;--tag-img-c:#1b6b2f;
+  --tag-vid:#fde8e8;--tag-vid-c:#b71c1c;
+  --tag-html:#fff3e0;--tag-html-c:#a85600;
+  --tag-disp:#e8ecfd;--tag-disp-c:#1F36C7;
+  --tag-soc:#f3e5f5;--tag-soc-c:#6a1b9a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--cinza);color:#222;min-height:100vh;}
+
+.header{background:var(--azul-escuro);color:#fff;padding:0 24px;height:var(--header-h);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;}
+.header h1{font-size:16px;font-weight:700;}
+.header .badge{font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:20px;}
+.header .ver{font-size:10px;opacity:.5;margin-left:auto;}
+
+.search-wrap{margin-left:auto;margin-right:0;position:relative;}
+.search-input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px 6px 32px;border-radius:6px;font-size:13px;width:260px;outline:none;}
+.search-input::placeholder{color:rgba(255,255,255,.5);}
+.search-input:focus{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.6;}
+
+.layout{display:flex;min-height:calc(100vh - var(--header-h));}
+
+.sidebar{width:var(--sidebar-w);background:#fff;border-right:1px solid var(--borda);padding:12px 0 24px;flex-shrink:0;position:sticky;top:var(--header-h);height:calc(100vh - var(--header-h));overflow-y:auto;}
+.sb-group{padding:14px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#aaa;}
+.plat-btn{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border:none;background:none;width:100%;text-align:left;font-size:13px;font-weight:500;color:#333;transition:background .1s;}
+.plat-btn:hover{background:var(--cinza);}
+.plat-btn.active{background:var(--azul-light);color:var(--azul);font-weight:700;}
+.plat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+.main{flex:1;padding:24px;min-width:0;}
+
+/* Search results */
+.search-results{background:#fff;border:1px solid var(--borda);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.sr-header{padding:12px 20px;background:var(--azul-light);font-size:13px;font-weight:600;color:var(--azul-escuro);border-bottom:1px solid var(--borda);}
+.sr-item{padding:12px 20px;border-bottom:1px solid var(--borda);display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .1s;}
+.sr-item:last-child{border-bottom:none;}
+.sr-item:hover{background:var(--cinza);}
+.sr-plat{font-size:11px;background:var(--cinza);padding:2px 6px;border-radius:4px;color:#555;font-weight:600;white-space:nowrap;}
+.sr-name{font-size:13px;font-weight:600;}
+.sr-dim{font-size:12px;color:#666;font-family:monospace;}
+
+/* Platform header */
+.plat-header{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;}
+.plat-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.plat-header-info h2{font-size:16px;color:var(--azul-escuro);}
+.plat-header-info p{font-size:12px;color:#666;margin-top:2px;}
+
+/* Format tabs */
+.format-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.fmt-tab{padding:6px 12px;border:1.5px solid var(--borda);background:#fff;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;color:#555;display:flex;align-items:center;gap:5px;transition:all .1s;}
+.fmt-tab:hover{border-color:var(--azul);color:var(--azul);}
+.fmt-tab.active{background:var(--azul);color:#fff;border-color:var(--azul);}
+
+/* Spec cards grid */
+.specs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+.spec-card{background:#fff;border:1px solid var(--borda);border-radius:10px;overflow:hidden;}
+.spec-card-head{padding:12px 16px;border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.spec-card-head h3{font-size:13px;font-weight:700;color:#222;}
+.spec-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;}
+.tag-img{background:var(--tag-img);color:var(--tag-img-c);}
+.tag-vid{background:var(--tag-vid);color:var(--tag-vid-c);}
+.tag-html{background:var(--tag-html);color:var(--tag-html-c);}
+.tag-disp{background:var(--tag-disp);color:var(--tag-disp-c);}
+.tag-soc{background:var(--tag-soc);color:var(--tag-soc-c);}
+.tag-nat{background:#e0f7fa;color:#006064;}
+
+.spec-card-body{padding:12px 16px;}
+.spec-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #f0f2fa;}
+.spec-row:last-child{border-bottom:none;}
+.spec-key{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.04em;min-width:110px;flex-shrink:0;padding-top:1px;}
+.spec-val{font-size:12px;color:#222;line-height:1.5;}
+.spec-val code{font-family:monospace;background:#f0f2fa;padding:1px 4px;border-radius:3px;font-size:11px;}
+
+.spec-card-foot{padding:8px 16px;border-top:1px solid var(--borda);display:flex;justify-content:flex-end;}
+.copy-btn{font-size:11px;padding:5px 10px;background:var(--azul-light);color:var(--azul);border:none;border-radius:5px;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px;}
+.copy-btn:hover{background:var(--azul);color:#fff;}
+.copy-btn.copied{background:#e8f4ea;color:#1b6b2f;}
+
+.spec-obs{margin-top:8px;padding:7px 10px;background:#fffbea;border-left:3px solid #f0c040;font-size:11px;color:#5a4500;border-radius:0 4px 4px 0;line-height:1.5;}
+
+/* Welcome */
+.welcome{background:#fff;border:1px solid var(--borda);border-radius:10px;padding:40px;text-align:center;}
+.welcome h2{font-size:20px;color:var(--azul-escuro);margin-bottom:8px;}
+.welcome p{font-size:14px;color:#666;line-height:1.7;max-width:500px;margin:0 auto 28px;}
+.plat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.plat-card{border:1.5px solid var(--borda);border-radius:8px;padding:14px 10px;cursor:pointer;text-align:center;transition:border-color .15s,box-shadow .15s;}
+.plat-card:hover{border-color:var(--azul);box-shadow:0 2px 8px rgba(31,54,199,.12);}
+.plat-card .pc-icon{font-size:26px;margin-bottom:6px;}
+.plat-card .pc-name{font-size:12px;font-weight:600;color:#333;}
+.plat-card .pc-count{font-size:10px;color:#999;margin-top:2px;}
+
+.empty{padding:40px;text-align:center;color:#aaa;font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span style="font-size:20px">📐</span>
+  <h1>Spec Finder</h1>
+  <span class="badge"></span>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="Buscar por dimensão, formato ou plataforma…" oninput="handleSearch()">
+  </div>
+  <span class="ver">v1.0 · 2026</span>
+</div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+/* =====================================================
+   DATA
+   ===================================================== */
+const PLATS = {
+  meta:{
+    nome:"Meta Ads", emoji:"📘", cor:"#1877F2", grupo:"Social",
+    formatos:[
+      {
+        nome:"Feed — Imagem", tipos:["img","soc"],
+        specs:{
+          "Dimensões":"1200×628 px (landscape 1.91:1) ou 1080×1080 px (quadrado 1:1)",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo":"30 MB",
+          "Texto na imagem":"< 20% da área (penaliza alcance se ultrapassar)",
+          "Resolução mínima":"600×314 px (landscape) / 600×600 px (quadrado)",
+        },
+        obs:"Imagens quadradas (1:1) tendem a ocupar mais espaço no feed mobile, gerando maior atenção visual."
+      },
+      {
+        nome:"Feed — Vídeo", tipos:["vid","soc"],
+        specs:{
+          "Dimensões":"1080×1080 px (1:1) ou 1920×1080 px (16:9) — ambas aceitas no feed",
+          "Formato de arquivo":"MP4, MOV",
+          "Peso máximo":"4 GB",
+          "Duração":"1 s – 241 min (recomendado: 15–30 s para performance)",
+          "Bitrate mínimo":"125 Kbps",
+          "Thumbnail":"JPG/PNG — mesma proporção do vídeo",
+        },
+        obs:"Os primeiros 3 segundos são decisivos. Inclua legenda/closed caption — maioria assiste sem som."
+      },
+      {
+        nome:"Stories & Reels — Imagem", tipos:["img","soc"],
+        specs:{
+          "Dimensões":"1080×1920 px (9:16)",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo":"30 MB",
+          "Zona segura":"14% do topo e da base reservados para interface (não coloque texto/logo nessas áreas)",
+        },
+        obs:"Conteúdo dentro da zona segura: 1080×1420 px centralizado. Sempre exporte versão específica para Stories."
+      },
+      {
+        nome:"Stories & Reels — Vídeo", tipos:["vid","soc"],
+        specs:{
+          "Dimensões":"1080×1920 px (9:16)",
+          "Formato de arquivo":"MP4, MOV",
+          "Peso máximo":"4 GB",
+          "Duração":"Stories: 1 s – 60 s | Reels: até 90 s",
+          "Zona segura":"14% topo e base",
+        },
+        obs:"Vídeos com proporção diferente de 9:16 são cortados automaticamente pela Meta."
+      },
+      {
+        nome:"Carrossel", tipos:["img","vid","soc"],
+        specs:{
+          "Dimensões por card":"1080×1080 px (1:1) — recomendado",
+          "Formato de arquivo":"JPG, PNG (imagem) | MP4, MOV (vídeo)",
+          "Peso máximo":"30 MB/imagem | 4 GB/vídeo",
+          "Nº de cards":"2 – 10 cards",
+          "Headline por card":"Máx 40 chars",
+          "URL por card":"Pode ter URL diferente em cada card",
+        },
+        obs:"Use sequência narrativa: problema → solução → resultado → CTA."
+      },
+      {
+        nome:"Collection", tipos:["img","soc"],
+        specs:{
+          "Capa":"1200×628 px (1.91:1) ou 1080×1080 px (1:1) — imagem ou vídeo",
+          "Grade de produtos":"4 produtos do catálogo exibidos abaixo da capa",
+          "Proporção grade":"1:1 recomendado",
+          "Catálogo":"Requer catálogo de produtos configurado no Commerce Manager",
+        },
+        obs:"Ideal para e-commerce. Catálogo precisa estar associado ao pixel da conta."
+      },
+    ]
+  },
+  googleads:{
+    nome:"Google Ads", emoji:"🔵", cor:"#4285F4", grupo:"Search/Display",
+    formatos:[
+      {
+        nome:"Display Responsivo", tipos:["img","disp"],
+        specs:{
+          "Imagens landscape":"Até 1200×628 px (1.91:1) — JPG/PNG/GIF | máx 5 MB",
+          "Imagens quadradas":"Até 1200×1200 px (1:1) — JPG/PNG/GIF | máx 5 MB",
+          "Logotipos landscape":"1200×300 px (4:1) | máx 5 MB",
+          "Logotipos quadrados":"1200×1200 px (1:1) | máx 5 MB",
+          "Nº de imagens":"Até 15 imagens + 5 logotipos",
+          "Títulos":"Até 5 (máx 30 chars cada)",
+          "Título longo":"1 (máx 90 chars)",
+          "Descrições":"Até 5 (máx 90 chars cada)",
+        },
+        obs:"Google combina os elementos automaticamente. Mais variações = mais testes. Mínimo: 1 imagem landscape + 1 quadrada + 1 logo + 1 título + 1 descrição."
+      },
+      {
+        nome:"Display HTML5 (IAB)", tipos:["html","disp"],
+        specs:{
+          "Dimensões IAB":
+            "728×90 (Leaderboard)\n300×250 (Medium Rectangle)\n300×600 (Half Page)\n970×250 (Billboard)\n160×600 (Wide Skyscraper)\n320×50 (Mobile Banner)\n320×100 (Large Mobile Banner)",
+          "Formato de arquivo":"ZIP (com index.html na raiz)",
+          "Peso máximo":"150 KB (inicial) — recursos externos adicionais via polite load",
+          "Animação":"Cessa após 30 s (padrão IAB/Google)",
+          "Backup image":"Obrigatório — JPG/PNG na mesma dimensão",
+          "Fontes externas":"Devem ter fallback — Google Fonts aceitas",
+        },
+        obs:"O index.html deve estar na raiz do ZIP. Clique deve ser implementado via window.open() ou ClickTag. Não use alert() ou dialogs."
+      },
+      {
+        nome:"Vídeo In-stream Pulável", tipos:["vid","disp"],
+        specs:{
+          "Dimensões":"1920×1080 px recomendado | mín 480×360 px",
+          "Formato de arquivo":"MP4, MOV, AVI, ASF, WMV",
+          "Duração":"Mínimo 12 s (pulável após 5 s)",
+          "Peso máximo":"Sem limite fixo — recomendado < 1 GB",
+          "Cobrança":"CPV: cobrado quando o usuário assiste 30 s ou conclui o vídeo",
+        },
+        obs:"Os primeiros 5 segundos não são puláveis — garanta uma abertura impactante. CTA pode ser adicionado via companion banner."
+      },
+      {
+        nome:"Vídeo Bumper", tipos:["vid","disp"],
+        specs:{
+          "Dimensões":"1920×1080 px recomendado",
+          "Formato de arquivo":"MP4",
+          "Duração":"Máx 6 s — não pulável",
+          "Cobrança":"CPM",
+        },
+        obs:"Ideal para reforço de mensagem em frequência. Funciona bem em conjunto com campanhas In-stream mais longas."
+      },
+      {
+        nome:"Vídeo Non-skippable", tipos:["vid","disp"],
+        specs:{
+          "Dimensões":"1920×1080 px recomendado",
+          "Formato de arquivo":"MP4",
+          "Duração":"15 – 20 s (dependendo da região)",
+          "Cobrança":"CPM",
+        },
+        obs:"Disponível em YouTube e rede de display. Garantia de 100% de visualização até o fim."
+      },
+    ]
+  },
+  cm360:{
+    nome:"CM360", emoji:"🔴", cor:"#DB4437", grupo:"Ad Server",
+    formatos:[
+      {
+        nome:"Banner 728×90 — Leaderboard", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"728×90 px",
+          "Formato (estático)":"JPG, GIF, PNG",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP com index.html na raiz",
+          "Peso (HTML5)":"Máx 150 KB (load inicial)",
+          "Animação":"Cessa após 30 s",
+          "Backup image":"Obrigatório (JPG/PNG 728×90)",
+        },
+        obs:"Usado amplamente em portais, jornais e sites de notícias. Performance geralmente abaixo de formatos maiores."
+      },
+      {
+        nome:"Banner 300×250 — Medium Rectangle", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"300×250 px",
+          "Formato (estático)":"JPG, GIF, PNG",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP com index.html",
+          "Peso (HTML5)":"Máx 150 KB",
+          "Animação":"Cessa após 30 s",
+          "Backup image":"Obrigatório",
+        },
+        obs:"Formato mais veiculado no mercado BR. Alta cobertura de posicionamento em publishers nacionais."
+      },
+      {
+        nome:"Banner 300×600 — Half Page", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"300×600 px",
+          "Formato (estático)":"JPG, GIF, PNG",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP",
+          "Peso (HTML5)":"Máx 150 KB",
+          "Animação":"Cessa após 30 s",
+        },
+        obs:"Formato premium de alta visibilidade. Taxa de viewability geralmente acima da média."
+      },
+      {
+        nome:"Banner 970×250 — Billboard", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"970×250 px",
+          "Formato (estático)":"JPG, GIF, PNG",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP",
+          "Peso (HTML5)":"Máx 150 KB",
+          "Animação":"Cessa após 30 s",
+        },
+        obs:"Posicionamento acima do fold em portais. Geralmente posição premium com CPM mais alto."
+      },
+      {
+        nome:"Banner 320×50 — Mobile Banner", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"320×50 px",
+          "Formato (estático)":"JPG, GIF, PNG",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP",
+          "Peso (HTML5)":"Máx 100 KB",
+          "Animação":"Cessa após 30 s",
+        },
+        obs:"Formato padrão mobile. Considere também o 320×100 (Large Mobile Banner) para maior área criativa."
+      },
+      {
+        nome:"Banner 320×100 — Large Mobile Banner", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"320×100 px",
+          "Formato (estático)":"JPG, GIF, PNG",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP",
+          "Peso (HTML5)":"Máx 100 KB",
+          "Animação":"Cessa após 30 s",
+        },
+        obs:"Substituto do 320×50 com o dobro de altura. Melhor desempenho de CTR em mobile."
+      },
+      {
+        nome:"VAST In-stream", tipos:["vid","disp"],
+        specs:{
+          "Dimensões":"1920×1080 px (recomendado) | mín 854×480 px",
+          "Formato de arquivo":"MP4",
+          "Duração":"Definida pelo publisher (sem limite global no CM360)",
+          "Bitrate mínimo":"400 Kbps",
+          "Protocolo":"VAST 2.0 / 3.0 / 4.0 — confirmar versão com o publisher",
+        },
+        obs:"A tag VAST gerada pelo CM360 deve ser testada em player VAST antes do envio ao publisher. Use o VAST Inspector do Google."
+      },
+      {
+        nome:"Rich Media Expandable", tipos:["html","disp"],
+        specs:{
+          "Formato de arquivo":"ZIP com index.html na raiz",
+          "Tamanho colapsado":"Ex: 300×250 px",
+          "Tamanho expandido":"Ex: 600×250 px (expansão lateral) ou 300×500 px (vertical)",
+          "Peso inicial":"Máx 200 KB",
+          "Polite load":"Recursos adicionais até 2,2 MB",
+          "Tecnologia":"HTML5, CSS3, JavaScript — sem Flash",
+        },
+        obs:"Expansão deve ser iniciada por interação do usuário (hover ou clique) — expansão automática não é aceita por publishers."
+      },
+    ]
+  },
+  dv360:{
+    nome:"DV360", emoji:"🟡", cor:"#F4B400", grupo:"Ad Server",
+    formatos:[
+      {
+        nome:"Display IAB (mesmos do CM360)", tipos:["img","html","disp"],
+        specs:{
+          "Dimensões":"728×90 / 300×250 / 300×600 / 970×250 / 160×600 / 320×50 / 320×100 px",
+          "Formato (estático)":"JPG, PNG, GIF",
+          "Peso (estático)":"Máx 40 KB",
+          "Formato (HTML5)":"ZIP — máx 150 KB",
+          "Animação":"Cessa após 30 s",
+        },
+        obs:"Os criativos são carregados no DV360 e servidos via CM360. Specs são as mesmas do CM360 Display."
+      },
+      {
+        nome:"Vídeo In-stream (VAST/VPAID)", tipos:["vid","disp"],
+        specs:{
+          "Dimensões":"1920×1080 px",
+          "Formato de arquivo":"MP4",
+          "Protocolo":"VAST 2.0/3.0 ou VPAID 2.0",
+          "Peso máximo":"Sem limite fixo — recomendado < 1 GB",
+          "Aprovação":"1–2 dias úteis no DV360",
+        },
+        obs:"VPAID permite interatividade dentro do player de vídeo. Confirme suporte com o publisher antes de usar VPAID."
+      },
+      {
+        nome:"Native Display", tipos:["img","disp","nat"],
+        specs:{
+          "Imagem principal":"1200×627 px | JPG/PNG | máx 1 MB",
+          "Logotipo":"128×128 px | JPG/PNG | máx 200 KB",
+          "Título":"Máx 25 chars",
+          "Descrição":"Máx 90 chars",
+          "Nome do anunciante":"Máx 25 chars",
+        },
+        obs:"Native no DV360 usa o template do publisher — a aparência final varia por site. Sempre peça preview no publisher antes do go-live."
+      },
+    ]
+  },
+  linkedin:{
+    nome:"LinkedIn", emoji:"🔷", cor:"#0077B5", grupo:"Social",
+    formatos:[
+      {
+        nome:"Single Image Feed", tipos:["img","soc"],
+        specs:{
+          "Dimensões":"1200×627 px (1.91:1 landscape) ou 1200×1200 px (1:1 quadrado)",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo":"5 MB",
+          "Headline":"Máx 70 chars",
+          "Introductory text":"Máx 150 chars (trunca após ~100 no mobile)",
+        },
+        obs:"Imagens com rostos humanos e cores contrastantes tendem a ter melhor performance. Evite imagens com muito texto."
+      },
+      {
+        nome:"Video Feed", tipos:["vid","soc"],
+        specs:{
+          "Dimensões":"1920×1080 px (16:9) | 1080×1080 px (1:1) | 1080×1920 px (9:16)",
+          "Formato de arquivo":"MP4",
+          "Peso máximo":"200 MB",
+          "Duração":"3 s – 30 min (ideal para anúncios: 15–30 s)",
+          "Subtítulos":"Recomendado (.srt) — maioria assiste sem áudio",
+          "Thumbnail":"Capturada automaticamente ou upload customizado",
+        },
+        obs:"Primeiros 3 s são críticos. Adicione sempre legenda — maioria dos usuários assiste sem som no feed."
+      },
+      {
+        nome:"Carousel Ad", tipos:["img","soc"],
+        specs:{
+          "Dimensões por card":"1080×1080 px (1:1) — recomendado",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo por card":"10 MB",
+          "Nº de cards":"2 – 10",
+          "Headline por card":"Máx 45 chars",
+          "URL por card":"Pode ter URL diferente em cada card",
+        },
+        obs:"Carrossel no LinkedIn permite URL diferente por card — use para mostrar múltiplos produtos ou cases."
+      },
+      {
+        nome:"Document Ad", tipos:["img","soc"],
+        specs:{
+          "Formato de arquivo":"PDF",
+          "Peso máximo":"100 MB",
+          "Páginas":"Até 300 páginas",
+          "Capa":"1080×1080 px ou 1920×1080 px",
+          "Visualização":"Preview inline no feed — usuário lê sem baixar",
+        },
+        obs:"Muito eficiente para whitepaper, e-book, relatório. Lead Gen Form pode ser exigido para download completo."
+      },
+      {
+        nome:"Message Ad — Banner", tipos:["img","soc"],
+        specs:{
+          "Dimensões":"300×250 px",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo":"2 MB",
+          "Assunto do Message":"Máx 60 chars",
+          "Corpo da mensagem":"Máx 1.500 chars",
+          "Botão CTA":"Máx 20 chars",
+        },
+        obs:"O banner aparece no lado direito da mensagem (desktop). Em mobile, a mensagem é exibida sem o banner lateral."
+      },
+    ]
+  },
+  tiktok:{
+    nome:"TikTok Ads", emoji:"⬛", cor:"#010101", grupo:"Social",
+    formatos:[
+      {
+        nome:"In-Feed Video", tipos:["vid","soc"],
+        specs:{
+          "Dimensões":"1080×1920 px (9:16) — recomendado | 1:1 ou 16:9 aceitos",
+          "Formato de arquivo":"MP4, MOV",
+          "Resolução mínima":"720×1280 px",
+          "Peso máximo":"500 MB",
+          "Duração":"5 s – 60 s (ideal: 15–30 s)",
+          "Taxa de frames":"Mínimo 23 fps (recomendado: 30 fps)",
+          "Bitrate":"Mínimo 516 Kbps",
+          "Texto do anúncio":"Máx 100 chars (sem links)",
+        },
+        obs:"Vídeo vertical nativo performa muito melhor. Use música/áudio — ausência de som penaliza entrega. Primeiros 3 s são decisivos."
+      },
+      {
+        nome:"TopView", tipos:["vid","soc"],
+        specs:{
+          "Dimensões":"1080×1920 px (9:16)",
+          "Formato de arquivo":"MP4, MOV",
+          "Resolução mínima":"720×1280 px",
+          "Peso máximo":"500 MB",
+          "Duração":"5 s – 60 s",
+          "Taxa de frames":"Mínimo 23 fps",
+          "Exibição":"Primeiro vídeo que aparece ao abrir o app",
+        },
+        obs:"Formato de máxima visibilidade no TikTok. Ativação via reserva com equipe TikTok — não disponível via self-serve."
+      },
+      {
+        nome:"Brand Takeover", tipos:["img","vid","soc"],
+        specs:{
+          "Imagem estática":"1080×1920 px | JPG | máx 3 MB | exibida por 3 s",
+          "Vídeo":"1080×1920 px | MP4 | 3–5 s | máx 3 MB",
+          "Exibição":"Tela cheia ao abrir o app — antes do feed",
+        },
+        obs:"Alta impactância mas sem interatividade. Ativação via reserva com equipe TikTok. Inclui link clicável ou sticker."
+      },
+      {
+        nome:"Spark Ad", tipos:["vid","soc"],
+        specs:{
+          "Fonte":"Post orgânico de conta TikTok vinculada (própria ou de criador)",
+          "Formato":"O criativo é o vídeo original da conta — sem upload separado",
+          "Autorização":"Criador concede acesso via código no Business Center",
+          "Benefício":"Engajamento orgânico (curtidas, comentários) acumula junto com o anúncio",
+        },
+        obs:"Spark Ads com UGC de criadores costumam ter CPM menor e maior engajamento que criativos produzidos. Exige parceria prévia com o criador."
+      },
+    ]
+  },
+  xads:{
+    nome:"X Ads", emoji:"🐦", cor:"#14171A", grupo:"Social",
+    formatos:[
+      {
+        nome:"Imagem Estática", tipos:["img","soc"],
+        specs:{
+          "Dimensões":"1200×675 px (16:9) ou 1080×1080 px (1:1)",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo":"5 MB",
+          "Nº de imagens":"Até 4 por post",
+          "Texto do post":"Máx 280 chars",
+        },
+        obs:"Imagens aumentam CTR significativamente vs posts somente texto. Evite imagens com muito texto sobreposto."
+      },
+      {
+        nome:"Vídeo", tipos:["vid","soc"],
+        specs:{
+          "Dimensões":"Mín 720×720 px | recomendado: 1280×720 px (16:9) ou 720×1280 px (9:16)",
+          "Formato de arquivo":"MP4, MOV",
+          "Peso máximo":"1 GB",
+          "Duração":"Máx 2 min 20 s (ideal para anúncios: 15–30 s)",
+          "Taxa de frames":"Mínimo 29 fps",
+          "Thumbnail":"JPG/PNG — capturada automaticamente ou upload",
+        },
+        obs:"Legendas/closed captions fortemente recomendadas — grande parte do X é consumida sem som."
+      },
+      {
+        nome:"GIF", tipos:["img","soc"],
+        specs:{
+          "Formato de arquivo":"GIF animado",
+          "Peso máximo":"15 MB",
+          "Proporção":"Livre (recomendado: 16:9 ou 1:1)",
+        },
+        obs:"GIFs têm alto engajamento no X por se encaixarem na cultura da plataforma. Loop automático."
+      },
+      {
+        nome:"Carousel", tipos:["img","soc"],
+        specs:{
+          "Dimensões por card":"800×418 px (16:9) ou 800×800 px (1:1)",
+          "Formato de arquivo":"JPG, PNG",
+          "Nº de cards":"2 – 6",
+          "Headline por card":"Máx 70 chars",
+          "URL por card":"URL independente por card",
+        },
+        obs:"Carousel no X funciona bem para múltiplos produtos ou sequência narrativa."
+      },
+      {
+        nome:"Website Card", tipos:["img","soc"],
+        specs:{
+          "Dimensões":"1200×628 px (landscape) ou 1080×1080 px (square)",
+          "Formato de arquivo":"JPG, PNG",
+          "Peso máximo":"20 MB",
+          "Headline":"Máx 70 chars",
+          "URL":"Encurtada automaticamente via t.co (mantém parâmetros UTM)",
+        },
+        obs:"Website Card aumenta CTR vs post com URL simples — cria visual clicável mais atrativo no feed."
+      },
+    ]
+  },
+};
+
+/* =====================================================
+   GRUPOS
+   ===================================================== */
+const GRUPOS = {
+  "Ad Server":["cm360","dv360"],
+  "Search / Display":["googleads"],
+  "Social":["meta","linkedin","tiktok","xads"]
+};
+
+/* =====================================================
+   STATE
+   ===================================================== */
+let platAtual = null;
+let tipoAtual = "todos";
+let searchMode = false;
+let searchTerm = "";
+
+/* =====================================================
+   SIDEBAR
+   ===================================================== */
+function renderSidebar(){
+  const sb = document.getElementById("sidebar");
+  sb.innerHTML = "";
+  for(const [g,ids] of Object.entries(GRUPOS)){
+    const dg = document.createElement("div");
+    dg.className = "sb-group";
+    dg.textContent = g;
+    sb.appendChild(dg);
+    ids.forEach(id => {
+      const p = PLATS[id];
+      const btn = document.createElement("button");
+      btn.className = "plat-btn" + (platAtual===id?" active":"");
+      btn.onclick = () => selecionar(id);
+      const dot = document.createElement("span");
+      dot.className = "plat-dot";
+      dot.style.background = p.cor;
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(p.nome));
+      sb.appendChild(btn);
+    });
+  }
+}
+
+/* =====================================================
+   SELECT
+   ===================================================== */
+function selecionar(id){
+  platAtual = id;
+  tipoAtual = "todos";
+  searchMode = false;
+  document.getElementById("searchInput").value = "";
+  renderSidebar();
+  renderMain();
+  window.scrollTo(0,0);
+}
+
+/* =====================================================
+   SEARCH
+   ===================================================== */
+function handleSearch(){
+  searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
+  if(searchTerm.length >= 2){
+    searchMode = true;
+    platAtual = null;
+    renderSidebar();
+    renderSearchResults();
+  } else {
+    searchMode = false;
+    renderMain();
+  }
+}
+
+function renderSearchResults(){
+  const main = document.getElementById("main");
+  const results = [];
+  for(const [pid,p] of Object.entries(PLATS)){
+    for(const fmt of p.formatos){
+      const haystack = (fmt.nome + " " + p.nome + " " + Object.values(fmt.specs).join(" ") + " " + (fmt.obs||"")).toLowerCase();
+      if(haystack.includes(searchTerm)){
+        results.push({pid, p, fmt});
+      }
+    }
+  }
+  if(results.length === 0){
+    main.innerHTML = `<div class="welcome"><div style="font-size:48px;margin-bottom:16px">🔍</div><h2>Nenhum resultado</h2><p>Tente buscar por dimensão (ex: "300×250"), tipo de arquivo (ex: "MP4") ou nome da plataforma.</p></div>`;
+    return;
+  }
+  main.innerHTML = `<div class="search-results">
+    <div class="sr-header">🔍 ${results.length} resultado${results.length>1?"s":""} para "${searchTerm}"</div>
+    ${results.map(r=>`
+      <div class="sr-item" onclick="selectFromSearch('${r.pid}','${r.fmt.nome}')">
+        <span class="sr-plat">${r.p.emoji} ${r.p.nome}</span>
+        <div>
+          <div class="sr-name">${r.fmt.nome}</div>
+          <div class="sr-dim">${Object.values(r.fmt.specs)[0]}</div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;color:#aaa">Ver specs →</span>
+      </div>
+    `).join("")}
+  </div>`;
+}
+
+function selectFromSearch(pid, fmtNome){
+  platAtual = pid;
+  tipoAtual = "todos";
+  searchMode = false;
+  document.getElementById("searchInput").value = "";
+  renderSidebar();
+  renderMain(fmtNome);
+}
+
+/* =====================================================
+   MAIN
+   ===================================================== */
+function renderMain(highlightFmt){
+  const main = document.getElementById("main");
+  if(!platAtual){ renderWelcome(); return; }
+  const p = PLATS[platAtual];
+  main.innerHTML = "";
+
+  // Header
+  const hdr = document.createElement("div");
+  hdr.className = "plat-header";
+  hdr.innerHTML = `
+    <div class="plat-icon" style="background:${p.cor}18">${p.emoji}</div>
+    <div class="plat-header-info">
+      <h2>${p.nome}</h2>
+      <p>${p.formatos.length} formatos disponíveis</p>
+    </div>
+  `;
+  main.appendChild(hdr);
+
+  // Filter tabs
+  const tipos = ["todos","img","vid","html","disp","soc","nat"];
+  const tipoLabels = {todos:"Todos",img:"📷 Imagem",vid:"🎬 Vídeo",html:"</> HTML5",disp:"🖥 Display",soc:"📱 Social",nat:"🔗 Native"};
+  const tiposPresentes = new Set(p.formatos.flatMap(f=>f.tipos));
+  const tabs = document.createElement("div");
+  tabs.className = "format-tabs";
+  tipos.filter(t => t==="todos" || tiposPresentes.has(t)).forEach(t => {
+    const b = document.createElement("button");
+    b.className = "fmt-tab" + (tipoAtual===t?" active":"");
+    b.textContent = tipoLabels[t];
+    b.onclick = () => { tipoAtual=t; renderMain(); };
+    tabs.appendChild(b);
+  });
+  main.appendChild(tabs);
+
+  // Cards
+  const fmtsFiltrados = p.formatos.filter(f => tipoAtual==="todos" || f.tipos.includes(tipoAtual));
+  const grid = document.createElement("div");
+  grid.className = "specs-grid";
+  if(fmtsFiltrados.length === 0){
+    grid.innerHTML = `<div class="empty">Nenhum formato desse tipo nesta plataforma.</div>`;
+  } else {
+    fmtsFiltrados.forEach(fmt => {
+      const card = buildCard(fmt, fmt.nome === highlightFmt);
+      grid.appendChild(card);
+    });
+  }
+  main.appendChild(grid);
+
+  if(highlightFmt){
+    setTimeout(()=>{
+      const el = main.querySelector("[data-fmt='"+highlightFmt+"']");
+      if(el) el.scrollIntoView({behavior:"smooth",block:"center"});
+    },100);
+  }
+}
+
+function buildCard(fmt, highlight){
+  const card = document.createElement("div");
+  card.className = "spec-card";
+  card.setAttribute("data-fmt", fmt.nome);
+  if(highlight) card.style.boxShadow = "0 0 0 2px var(--azul)";
+
+  const tagMap = {img:"tag-img",vid:"tag-vid",html:"tag-html",disp:"tag-disp",soc:"tag-soc",nat:"tag-nat"};
+  const tagLabel = {img:"Imagem",vid:"Vídeo",html:"HTML5",disp:"Display",soc:"Social",nat:"Native"};
+  const tagsHtml = fmt.tipos.map(t=>`<span class="tag ${tagMap[t]||""}">${tagLabel[t]||t}</span>`).join("");
+
+  card.innerHTML = `
+    <div class="spec-card-head">
+      <h3>${fmt.nome}</h3>
+      <div class="spec-tags">${tagsHtml}</div>
+    </div>
+    <div class="spec-card-body">
+      ${Object.entries(fmt.specs).map(([k,v])=>`
+        <div class="spec-row">
+          <span class="spec-key">${k}</span>
+          <span class="spec-val">${v.replace(/\n/g,"<br>")}</span>
+        </div>
+      `).join("")}
+      ${fmt.obs ? `<div class="spec-obs">💡 ${fmt.obs}</div>` : ""}
+    </div>
+    <div class="spec-card-foot">
+      <button class="copy-btn" onclick="copySpecs(this, '${fmt.nome.replace(/'/g,"\\'")}')">📋 Copiar specs</button>
+    </div>
+  `;
+  return card;
+}
+
+/* =====================================================
+   COPY
+   ===================================================== */
+function copySpecs(btn, fmtNome){
+  const p = PLATS[platAtual];
+  const fmt = p.formatos.find(f=>f.nome===fmtNome);
+  if(!fmt) return;
+  let txt = `📐 ESPECIFICAÇÕES — ${p.nome.toUpperCase()} · ${fmt.nome}\n`;
+  txt += "─".repeat(50) + "\n";
+  for(const [k,v] of Object.entries(fmt.specs)){
+    txt += `${k}: ${v}\n`;
+  }
+  if(fmt.obs) txt += `\n⚠ Observação: ${fmt.obs}`;
+  navigator.clipboard.writeText(txt).then(()=>{
+    btn.textContent = "✅ Copiado!";
+    btn.classList.add("copied");
+    setTimeout(()=>{ btn.textContent = "📋 Copiar specs"; btn.classList.remove("copied"); }, 2000);
+  });
+}
+
+/* =====================================================
+   WELCOME
+   ===================================================== */
+function renderWelcome(){
+  const main = document.getElementById("main");
+  const cards = Object.entries(PLATS).map(([id,p])=>`
+    <div class="plat-card" onclick="selecionar('${id}')">
+      <div class="pc-icon">${p.emoji}</div>
+      <div class="pc-name">${p.nome}</div>
+      <div class="pc-count">${p.formatos.length} formatos</div>
+    </div>
+  `).join("");
+  main.innerHTML = `
+    <div class="welcome">
+      <div style="font-size:52px;margin-bottom:14px">📐</div>
+      <h2>Spec Finder</h2>
+      <p>Especificações técnicas de criativos para todas as plataformas de mídia digital. Selecione uma plataforma ou use a busca global por dimensão, formato ou tipo de arquivo.</p>
+      <div class="plat-grid">${cards}</div>
+    </div>
+  `;
+}
+
+/* =====================================================
+   INIT
+   ===================================================== */
+renderSidebar();
+renderWelcome();
+</script>
+</body>
+</html>

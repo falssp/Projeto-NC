@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Calculadora de Métricas | NC Tool</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul:   #1F36C7;
+      --escuro: #1a237e;
+      --light:  #e8ecff;
+      --bg:     #f0f2ff;
+      --surface:#ffffff;
+      --border: #d6dbf2;
+      --muted:  #9fa8da;
+      --text:   #1a237e;
+      --body:   #3d4a8a;
+      --ok:     #059669;
+      --warn:   #d97706;
+      --danger: #dc2626;
+    }
+
+    [data-theme="dark"] {
+      --bg:     #0f1225;
+      --surface:#1a1f3a;
+      --border: #2a3060;
+      --muted:  #4a5494;
+      --text:   #c5ccf5;
+      --body:   #8891c8;
+      --light:  #1f2650;
+    }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 36px;
+    }
+    .nav-left { display:flex; align-items:center; gap:8px; }
+    .back { font-size:.78rem; font-weight:600; color:var(--muted); text-decoration:none; }
+    .back:hover { color:var(--azul); }
+    .sep { color:var(--border); }
+    .crumb { font-size:.78rem; color:var(--body); }
+
+    .theme-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); border-radius:8px; padding:5px 10px;
+      font-size:.72rem; cursor:pointer; font-family:inherit;
+      transition: border-color .15s, color .15s;
+    }
+    .theme-btn:hover { border-color:var(--azul); color:var(--azul); }
+
+    /* ── Header ── */
+    header { margin-bottom: 32px; }
+    .kicker { font-size:.72rem; font-weight:600; letter-spacing:.1em; color:var(--muted); margin-bottom:8px; text-transform:uppercase; }
+    h1 { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; color:var(--escuro); line-height:1.1; margin-bottom:8px; }
+    .subtitle { font-size:.85rem; color:var(--body); line-height:1.6; }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .panel-title {
+      font-size:.7rem; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--muted);
+      margin-bottom: 20px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* ── Inputs ── */
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--body);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .field-row { display:flex; align-items:center; gap:8px; }
+    .field input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .88rem;
+      transition: border-color .15s;
+      outline: none;
+    }
+    .field input:focus { border-color: var(--azul); }
+    .field input::placeholder { color: var(--muted); }
+    .field-unit {
+      font-size:.72rem; font-weight:600; color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .currency-toggle {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .currency-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .72rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: none;
+      color: var(--body);
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .currency-btn.active {
+      background: var(--azul);
+      border-color: var(--azul);
+      color: #fff;
+    }
+
+    .btn-calc {
+      width: 100%;
+      padding: 11px;
+      background: var(--azul);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity .15s;
+    }
+    .btn-calc:hover { opacity: .88; }
+
+    .btn-clear {
+      width: 100%;
+      padding: 8px;
+      background: none;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: .78rem;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all .15s;
+    }
+    .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Results ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 16px;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top:0; left:0;
+      width: 4px; height: 100%;
+      background: var(--accent, var(--azul));
+      border-radius: 14px 0 0 14px;
+    }
+    .metric-card:hover { box-shadow: 0 4px 16px rgba(31,54,199,.1); }
+
+    .metric-card.accent-blue   { --accent: #1F36C7; }
+    .metric-card.accent-green  { --accent: #059669; }
+    .metric-card.accent-purple { --accent: #7c3aed; }
+    .metric-card.accent-cyan   { --accent: #0891b2; }
+    .metric-card.accent-pink   { --accent: #db2777; }
+    .metric-card.accent-orange { --accent: #d97706; }
+
+    .metric-label {
+      font-size: .65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--accent, var(--azul));
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .metric-value.empty { color: var(--muted); font-size: 1rem; }
+    .metric-desc {
+      font-size: .67rem;
+      color: var(--body);
+      line-height: 1.4;
+    }
+
+    /* ── Reverse calc ── */
+    .reverse-panel .fields-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .reverse-panel .fields-2col { grid-template-columns: 1fr; }
+    }
+
+    .reverse-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (max-width: 600px) {
+      .reverse-results { grid-template-columns: 1fr; }
+    }
+
+    .rev-card {
+      background: var(--light);
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .rev-card .rev-label {
+      font-size:.62rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.07em; color:var(--muted); margin-bottom:4px;
+    }
+    .rev-card .rev-val {
+      font-family:'JetBrains Mono',monospace;
+      font-size:1.1rem; font-weight:600; color:var(--azul);
+    }
+    .rev-card .rev-val.empty { color:var(--muted); font-size:.85rem; }
+
+    /* ── Formula table ── */
+    .formula-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .75rem;
+    }
+    .formula-table th {
+      text-align: left;
+      font-size:.62rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.07em; color:var(--muted);
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .formula-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--body);
+      vertical-align: top;
+    }
+    .formula-table tr:last-child td { border-bottom: none; }
+    .formula-table td:first-child { font-weight:700; color:var(--text); white-space:nowrap; }
+    .formula-table td code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .72rem;
+      background: var(--light);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--azul);
+    }
+
+    footer { margin-top:48px; font-size:.72rem; color:var(--muted); text-align:center; }
+
+    /* copy toast */
+    .toast {
+      position: fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      background: var(--escuro); color:#fff;
+      padding:8px 18px; border-radius:20px;
+      font-size:.75rem; font-weight:600;
+      opacity:0; transition:opacity .2s;
+      pointer-events:none; z-index:999;
+    }
+    .toast.show { opacity:1; }
+
+    /* copy on click */
+    .metric-value { cursor:pointer; user-select:none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="nav">
+    <div class="nav-left">
+      <a class="back" href="/Projeto-NC/ferramentas/">&#8592; Ferramentas</a>
+      <span class="sep">/</span>
+      <span class="crumb">Calculadora de Métricas</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+  </nav>
+
+  <header>
+    <p class="kicker">NC Tool &nbsp;·&nbsp; AdOps</p>
+    <h1>Calculadora de Métricas</h1>
+    <p class="subtitle">CPM · CPC · CPA · CTR · VTR · CPV — cálculo direto e reverso. Clique em qualquer resultado para copiar.</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── INPUTS ── -->
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <p class="panel-title">Dados da Campanha</p>
+
+        <div class="currency-toggle">
+          <button class="currency-btn active" data-cur="R$" onclick="setCurrency(this,'R$')">R$</button>
+          <button class="currency-btn" data-cur="US$" onclick="setCurrency(this,'US$')">US$</button>
+          <button class="currency-btn" data-cur="€"   onclick="setCurrency(this,'€')">€</button>
+        </div>
+
+        <div class="field">
+          <label>Impressões</label>
+          <div class="field-row">
+            <input type="text" id="impressoes" placeholder="ex: 1.500.000" oninput="calcMain()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Cliques</label>
+          <input type="text" id="cliques" placeholder="ex: 7.500" oninput="calcMain()">
+        </div>
+        <div class="field">
+          <label>Conversões</label>
+          <input type="text" id="conversoes" placeholder="ex: 300" oninput="calcMain()">
+        </div>
+        <div class="field">
+          <label>Visualizações de Vídeo</label>
+          <input type="text" id="views" placeholder="ex: 450.000" oninput="calcMain()">
+        </div>
+        <div class="field">
+          <label id="custo-label">Custo (R$)</label>
+          <input type="text" id="custo" placeholder="ex: 15.000,00" oninput="calcMain()">
+        </div>
+        <div class="field">
+          <label>Duração do Vídeo (segundos)</label>
+          <div class="field-row">
+            <input type="text" id="duracao" placeholder="ex: 30" oninput="calcMain()">
+            <span class="field-unit">seg</span>
+          </div>
+        </div>
+
+        <button class="btn-clear" onclick="clearAll()">Limpar tudo</button>
+      </div>
+
+      <!-- ── CÁLCULO REVERSO ── -->
+      <div class="panel reverse-panel">
+        <p class="panel-title">Cálculo Reverso</p>
+        <p style="font-size:.72rem;color:var(--body);margin-bottom:14px;">Informe 2 campos para calcular o terceiro.</p>
+
+        <div class="fields-2col">
+          <div class="field">
+            <label id="rev-custo-label">Custo (R$)</label>
+            <input type="text" id="rev-custo" placeholder="ex: 10.000" oninput="calcReverse()">
+          </div>
+          <div class="field">
+            <label>CPM desejado</label>
+            <div class="field-row">
+              <input type="text" id="rev-cpm" placeholder="ex: 8,00" oninput="calcReverse()">
+              <span class="field-unit">R$</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>CPC desejado</label>
+            <div class="field-row">
+              <input type="text" id="rev-cpc" placeholder="ex: 1,20" oninput="calcReverse()">
+              <span class="field-unit">R$</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>CTR esperado</label>
+            <div class="field-row">
+              <input type="text" id="rev-ctr" placeholder="ex: 0,5" oninput="calcReverse()">
+              <span class="field-unit">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reverse-results" id="rev-results">
+          <div class="rev-card">
+            <div class="rev-label">Impressões</div>
+            <div class="rev-val empty" id="rev-out-imp">—</div>
+          </div>
+          <div class="rev-card">
+            <div class="rev-label">Cliques</div>
+            <div class="rev-val empty" id="rev-out-cli">—</div>
+          </div>
+          <div class="rev-card">
+            <div class="rev-label">Custo</div>
+            <div class="rev-val empty" id="rev-out-cus">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RESULTS ── -->
+    <div>
+      <div class="panel" style="margin-bottom:16px;">
+        <p class="panel-title">Resultados</p>
+        <div class="results-grid" id="results-grid">
+          <!-- preenchido por JS -->
+        </div>
+      </div>
+
+      <!-- fórmulas -->
+      <div class="panel">
+        <p class="panel-title">Fórmulas</p>
+        <table class="formula-table">
+          <thead>
+            <tr><th>Métrica</th><th>Nome</th><th>Fórmula</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>CPM</td><td>Custo por Mil Impressões</td><td><code>(Custo / Impressões) × 1.000</code></td></tr>
+            <tr><td>CPC</td><td>Custo por Clique</td><td><code>Custo / Cliques</code></td></tr>
+            <tr><td>CPA</td><td>Custo por Aquisição</td><td><code>Custo / Conversões</code></td></tr>
+            <tr><td>CTR</td><td>Click-Through Rate</td><td><code>(Cliques / Impressões) × 100</code></td></tr>
+            <tr><td>VTR</td><td>View-Through Rate</td><td><code>(Views / Impressões) × 100</code></td></tr>
+            <tr><td>CPV</td><td>Custo por Visualização</td><td><code>Custo / Views</code></td></tr>
+            <tr><td>CVR</td><td>Conversion Rate</td><td><code>(Conversões / Cliques) × 100</code></td></tr>
+            <tr><td>Freq.</td><td>Frequency (reach req.)</td><td><code>Impressões / Usuários Únicos</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /layout -->
+
+  <footer>NC Tool &nbsp;·&nbsp; Unilever BR × Grasp &nbsp;·&nbsp; Calculadora de Métricas</footer>
+</div>
+
+<div class="toast" id="toast">Copiado!</div>
+
+<script>
+  let currency = 'R$';
+
+  /* ── utilidades ── */
+  function parseBR(val) {
+    if (!val) return NaN;
+    // aceita 1.500.000,50 ou 1500000.50
+    const s = String(val).trim().replace(/\s/g,'');
+    // se tem vírgula e ponto: formato pt-BR
+    if (s.includes(',') && s.includes('.')) {
+      return parseFloat(s.replace(/\./g,'').replace(',','.'));
+    }
+    if (s.includes(',') && !s.includes('.')) {
+      return parseFloat(s.replace(',','.'));
+    }
+    return parseFloat(s.replace(/\./g,''));
+  }
+
+  function fmt(n, decimals=2) {
+    if (!isFinite(n)) return null;
+    return n.toLocaleString('pt-BR', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+  }
+
+  function fmtInt(n) {
+    if (!isFinite(n)) return null;
+    return Math.round(n).toLocaleString('pt-BR');
+  }
+
+  function pct(n, decimals=2) {
+    if (!isFinite(n)) return null;
+    return n.toLocaleString('pt-BR', {minimumFractionDigits: decimals, maximumFractionDigits: decimals}) + '%';
+  }
+
+  /* ── cálculo principal ── */
+  const METRICS = [
+    { id:'cpm',   label:'CPM',  cls:'accent-blue',   desc:'Custo por mil impressões' },
+    { id:'cpc',   label:'CPC',  cls:'accent-green',  desc:'Custo por clique' },
+    { id:'cpa',   label:'CPA',  cls:'accent-purple', desc:'Custo por conversão' },
+    { id:'ctr',   label:'CTR',  cls:'accent-cyan',   desc:'Click-through rate' },
+    { id:'vtr',   label:'VTR',  cls:'accent-pink',   desc:'View-through rate' },
+    { id:'cpv',   label:'CPV',  cls:'accent-orange', desc:'Custo por visualização' },
+    { id:'cvr',   label:'CVR',  cls:'accent-blue',   desc:'Conversion rate (cliques→conv.)' },
+  ];
+
+  function calcMain() {
+    const imp  = parseBR(document.getElementById('impressoes').value);
+    const cli  = parseBR(document.getElementById('cliques').value);
+    const conv = parseBR(document.getElementById('conversoes').value);
+    const views= parseBR(document.getElementById('views').value);
+    const cus  = parseBR(document.getElementById('custo').value);
+
+    const results = {
+      cpm: (cus / imp) * 1000,
+      cpc: cus / cli,
+      cpa: cus / conv,
+      ctr: (cli / imp) * 100,
+      vtr: (views / imp) * 100,
+      cpv: cus / views,
+      cvr: (conv / cli) * 100,
+    };
+
+    const grid = document.getElementById('results-grid');
+    grid.innerHTML = '';
+
+    METRICS.forEach(m => {
+      const val = results[m.id];
+      const isMonetary = ['cpm','cpc','cpa','cpv'].includes(m.id);
+      const isPct      = ['ctr','vtr','cvr'].includes(m.id);
+
+      let display, raw;
+      if (isFinite(val) && val >= 0) {
+        if (isMonetary) { display = currency + ' ' + fmt(val); raw = fmt(val); }
+        else if (isPct) { display = pct(val); raw = fmt(val) + '%'; }
+        else { display = fmt(val); raw = fmt(val); }
+      } else {
+        display = '—';
+        raw = null;
+      }
+
+      const card = document.createElement('div');
+      card.className = `metric-card ${m.cls}`;
+      card.innerHTML = `
+        <div class="metric-label">${m.label}</div>
+        <div class="metric-value ${raw ? '' : 'empty'}" data-raw="${raw || ''}" title="Clique para copiar">${display}</div>
+        <div class="metric-desc">${m.desc}</div>
+      `;
+      card.querySelector('.metric-value').addEventListener('click', () => copyVal(raw, m.label));
+      grid.appendChild(card);
+    });
+  }
+
+  /* ── cálculo reverso ── */
+  function calcReverse() {
+    const cus = parseBR(document.getElementById('rev-custo').value);
+    const cpm = parseBR(document.getElementById('rev-cpm').value);
+    const cpc = parseBR(document.getElementById('rev-cpc').value);
+    const ctr = parseBR(document.getElementById('rev-ctr').value);  // %
+
+    const setOut = (id, val, isInt=false) => {
+      const el = document.getElementById(id);
+      if (val !== null && isFinite(val) && val > 0) {
+        el.textContent = isInt ? fmtInt(val) : (currency + ' ' + fmt(val));
+        el.classList.remove('empty');
+      } else {
+        el.textContent = '—';
+        el.classList.add('empty');
+      }
+    };
+
+    // Impressões a partir de Custo + CPM
+    const imp_from_cpm = (isFinite(cus) && isFinite(cpm) && cpm > 0)
+      ? (cus / cpm) * 1000 : null;
+
+    // Cliques a partir de Custo + CPC
+    const cli_from_cpc = (isFinite(cus) && isFinite(cpc) && cpc > 0)
+      ? cus / cpc : null;
+
+    // Custo a partir de Impressões(via CPM) + CPC
+    // ou de Impressões + CTR + CPC
+    let cus_out = null;
+    if (isFinite(imp_from_cpm) && isFinite(cpc) && isFinite(ctr)) {
+      const cli = imp_from_cpm * (ctr / 100);
+      cus_out = cli * cpc;
+    }
+
+    setOut('rev-out-imp', imp_from_cpm, true);
+    setOut('rev-out-cli', cli_from_cpc, true);
+    setOut('rev-out-cus', cus_out);
+  }
+
+  /* ── copiar ── */
+  function copyVal(raw, label) {
+    if (!raw) return;
+    navigator.clipboard.writeText(raw).then(() => {
+      const t = document.getElementById('toast');
+      t.textContent = `${label} copiado: ${raw}`;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+    });
+  }
+
+  /* ── limpar ── */
+  function clearAll() {
+    ['impressoes','cliques','conversoes','views','custo','duracao',
+     'rev-custo','rev-cpm','rev-cpc','rev-ctr'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    calcMain();
+    calcReverse();
+  }
+
+  /* ── moeda ── */
+  function setCurrency(btn, cur) {
+    currency = cur;
+    document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('custo-label').textContent = `Custo (${cur})`;
+    document.getElementById('rev-custo-label').textContent = `Custo (${cur})`;
+    calcMain();
+    calcReverse();
+  }
+
+  /* ── dark mode ── */
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? '' : 'dark');
+    document.querySelector('.theme-btn').textContent = isDark ? '🌙 Dark' : '☀️ Light';
+    try { localStorage.setItem('nc-theme', isDark ? '' : 'dark'); } catch(e) {}
+  }
+
+  // init
+  try {
+    const saved = localStorage.getItem('nc-theme');
+    if (saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.querySelector('.theme-btn').textContent = '☀️ Light';
+    }
+  } catch(e) {}
+
+  calcMain();
+</script>
+</body>
+</html>

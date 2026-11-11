@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rastreador de Redirect | NC Tool</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;--mono:'JetBrains Mono',monospace;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;--warn:#e65100;--warn-bg:#fff3e0;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;--ok:#a5d6a7;--ok-bg:#0a2010;--warn:#ffcc80;--warn-bg:#2a1800;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.06em}
+input,select{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus{border-color:var(--azul)}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}.btn-sm:hover{background:var(--border)}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* chain */
+.hop{display:flex;gap:0;margin-bottom:4px;align-items:stretch}
+.hop-num{width:28px;min-width:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);flex-direction:column}
+.hop-num .dot{width:10px;height:10px;border-radius:50%;margin-bottom:2px}
+.hop-num .line{width:2px;flex:1;background:var(--border);margin:0 auto}
+.hop-body{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);margin-left:6px;min-width:0}
+.hop-url{font-family:var(--mono);font-size:11px;word-break:break-all;color:var(--azul);margin-bottom:3px}
+.hop-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--muted)}
+.status-badge{padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono)}
+.s2xx{background:var(--ok-bg);color:var(--ok)}
+.s3xx{background:var(--light);color:var(--azul)}
+.s4xx,.s5xx{background:var(--warn-bg);color:var(--warn)}
+.serr{background:#fce4e4;color:#c62828}
+.scors{background:#fff3e0;color:#e65100}
+
+.hop-loading{opacity:.5;animation:pulse 1s infinite alternate}
+@keyframes pulse{from{opacity:.5}to{opacity:1}}
+
+.final-box{padding:12px 14px;border-radius:8px;background:var(--ok-bg);border:1px solid var(--ok);font-size:12px}
+.final-box .final-url{font-family:var(--mono);font-size:11px;word-break:break-all;color:var(--ok);margin-top:4px}
+
+/* summary pills */
+.sum-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.sum-pill{padding:4px 12px;border-radius:16px;font-size:11px;font-weight:700}
+.sp-blue{background:var(--light);color:var(--azul)}
+.sp-ok{background:var(--ok-bg);color:var(--ok)}
+.sp-warn{background:var(--warn-bg);color:var(--warn)}
+
+/* macro hint */
+.macro-hint{font-size:11px;color:var(--warn);background:var(--warn-bg);border:1px solid #ffcc80;border-radius:6px;padding:6px 10px;margin-top:6px}
+
+/* ── Como usar modal ─────────────────────────────── */
+.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.qa-overlay.open{display:flex}
+.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.qa-header h2{font-size:15px;font-weight:800;color:#1a237e}
+.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
+.qa-body{padding:20px 24px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--azul,#1F36C7);margin-bottom:10px}
+.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
+.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
+.help-num{min-width:22px;height:22px;border-radius:50%;background:var(--azul,#1F36C7);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-txt{font-size:12px;color:#475569;line-height:1.55}
+.help-txt b{color:#1e293b}
+.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
+.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
+.btn-qa{background:transparent;border:1.5px solid rgba(255,255,255,.7);color:rgba(255,255,255,.9);font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn-qa:hover{background:rgba(255,255,255,.2)}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>Rastreador de Redirect de URL</h1>
+  <p class="subtitle">Segue a cadeia de redirecionamentos de uma URL de clique hop a hop. Exibe status HTTP, servidor, tempo por hop e URL final. Detecta macros não substituídas e CORS.</p>
+
+  <button class="btn-qa" onclick="abrirAjuda()">❓ Como usar</button></div>
+<div class="main">
+
+<div class="card">
+  <label>URL de clique</label>
+  <input id="url-input" type="url" placeholder="https://ad.doubleclick.net/ddm/trackclk/..." style="margin-bottom:8px">
+  <div id="macro-warning" class="macro-hint" style="display:none"></div>
+  <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+    <button class="btn-primary" id="trace-btn" onclick="startTrace()">▶ Rastrear</button>
+    <button class="btn-sm" onclick="loadSample()">Exemplo</button>
+    <button class="btn-sm" onclick="clearAll()">✕ Limpar</button>
+  </div>
+  <div class="hint" style="margin-top:6px">Nota: alguns servidores bloqueiam chamadas de outros domínios (CORS). Nesses casos, a rastreador mostra até onde conseguiu seguir.</div>
+</div>
+
+<div id="result-card" class="card" style="display:none">
+  <div class="section-title">Cadeia de redirecionamentos</div>
+  <div class="sum-row" id="summary-row"></div>
+  <div id="chain-list"></div>
+  <div id="final-box"></div>
+  <div style="display:flex;gap:5px;margin-top:10px">
+    <button class="btn-sm" onclick="copyChain()">📋 Copiar cadeia</button>
+    <button class="btn-sm" onclick="copyFinal()">📋 Copiar URL final</button>
+  </div>
+</div>
+
+</div>
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';}
+
+const MAX_HOPS=12;
+const MACROS_PATTERNS=[/%%[A-Z_]+%%/g,/\$\{[A-Z_]+\}/g,/\[[a-z_]+\]/g];
+
+function detectMacros(url){
+  const found=[];
+  MACROS_PATTERNS.forEach(rx=>{const m=url.match(rx);if(m)found.push(...m);});
+  return[...new Set(found)];
+}
+
+function detectServer(url){
+  try{
+    const h=new URL(url).hostname;
+    if(/doubleclick\.net/i.test(h))return'CM360';
+    if(/googlesyndication|googleads/i.test(h))return'Google Ads';
+    if(/bing\.com|microsoftadvertising/i.test(h))return'Microsoft';
+    if(/serving\.sys\.com|appnexus/i.test(h))return'Xandr';
+    if(/adnxs\.com/i.test(h))return'Xandr';
+    if(/teads\.tv/i.test(h))return'Teads';
+    if(/amazon-adsystem/i.test(h))return'Amazon';
+    if(/facebook\.com|fbcdn/i.test(h))return'Meta';
+    if(/tiktok\.com/i.test(h))return'TikTok';
+    if(/linkedin\.com/i.test(h))return'LinkedIn';
+    if(/twitter\.com|t\.co/i.test(h))return'Twitter/X';
+    return h;
+  }catch(e){return'?';}
+}
+
+const SAMPLE_URL='https://ad.doubleclick.net/ddm/trackclk/N123456.0PXL/B12345678.345678901;dc_trk_aid=456789012;dc_trk_cid=123456789;ord=[timestamp];dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;gdpr=${GDPR};gdpr_consent=${GDPR_CONSENT_755};ltd=?https://www.google.com/search?q=adtech';
+
+function loadSample(){document.getElementById('url-input').value=SAMPLE_URL;checkMacros();}
+function clearAll(){document.getElementById('url-input').value='';document.getElementById('macro-warning').style.display='none';document.getElementById('result-card').style.display='none';}
+
+function checkMacros(){
+  const url=document.getElementById('url-input').value;
+  const macros=detectMacros(url);
+  const warn=document.getElementById('macro-warning');
+  if(macros.length){
+    warn.style.display='block';
+    warn.textContent=`⚠️ Macros não substituídas detectadas: ${macros.join(', ')} — a requisição pode falhar ou retornar resultado incorreto.`;
+  } else {
+    warn.style.display='none';
+  }
+}
+
+document.getElementById('url-input').addEventListener('input',checkMacros);
+
+let _hops=[];
+
+async function startTrace(){
+  const urlRaw=document.getElementById('url-input').value.trim();
+  if(!urlRaw){toast('Informe uma URL.');return;}
+  _hops=[];
+  document.getElementById('result-card').style.display='block';
+  document.getElementById('chain-list').innerHTML='';
+  document.getElementById('final-box').innerHTML='';
+  document.getElementById('summary-row').innerHTML='';
+  document.getElementById('trace-btn').disabled=true;
+  document.getElementById('trace-btn').textContent='⏳ Rastreando...';
+
+  let currentUrl=urlRaw;
+  const t0=Date.now();
+
+  for(let i=0;i<MAX_HOPS;i++){
+    const hop={index:i,url:currentUrl,status:null,location:null,server:detectServer(currentUrl),ms:0,state:'loading'};
+    _hops.push(hop);
+    renderChain();
+
+    const ht0=Date.now();
+    try{
+      const resp=await fetch(currentUrl,{method:'HEAD',redirect:'manual',signal:AbortSignal.timeout(8000)});
+      hop.ms=Date.now()-ht0;
+      hop.status=resp.status;
+      hop.location=resp.headers.get('location')||'';
+
+      if(resp.status>=300&&resp.status<400&&hop.location){
+        hop.state='redirect';
+        // resolve relative
+        try{currentUrl=new URL(hop.location,currentUrl).href;}catch(e){currentUrl=hop.location;}
+      } else {
+        hop.state='final';
+        renderChain();
+        break;
+      }
+    }catch(e){
+      hop.ms=Date.now()-ht0;
+      if(e.name==='AbortError'||e.name==='TimeoutError'){
+        hop.state='timeout';hop.status='TIMEOUT';
+      } else {
+        hop.state='cors';hop.status='CORS';
+      }
+      renderChain();
+      break;
+    }
+    renderChain();
+  }
+
+  const totalMs=Date.now()-t0;
+  renderSummary(totalMs);
+  document.getElementById('trace-btn').disabled=false;
+  document.getElementById('trace-btn').textContent='▶ Rastrear';
+}
+
+function statusClass(s){
+  if(!s||s==='CORS')return'scors';
+  if(s==='TIMEOUT')return'serr';
+  if(s>=200&&s<300)return's2xx';
+  if(s>=300&&s<400)return's3xx';
+  if(s>=400&&s<500)return's4xx';
+  if(s>=500)return's5xx';
+  return'';
+}
+function dotColor(state){
+  if(state==='redirect')return'var(--azul)';
+  if(state==='final')return'var(--ok)';
+  if(state==='cors'||state==='timeout')return'var(--warn)';
+  return'var(--muted)';
+}
+
+function renderChain(){
+  const list=document.getElementById('chain-list');
+  list.innerHTML=_hops.map((h,i)=>`
+    <div class="hop">
+      <div class="hop-num">
+        <div class="dot" style="background:${dotColor(h.state)}"></div>
+        ${i<_hops.length-1?'<div class="line"></div>':''}
+      </div>
+      <div class="hop-body ${h.state==='loading'?'hop-loading':''}">
+        <div class="hop-url">${esc(h.url.length>120?h.url.substring(0,120)+'…':h.url)}</div>
+        <div class="hop-meta">
+          <span class="status-badge ${statusClass(h.status)}">${esc(String(h.status||'…'))}</span>
+          <span>${esc(h.server)}</span>
+          ${h.ms?`<span>${h.ms}ms</span>`:''}
+          ${h.location?`<span style="color:var(--azul);font-size:10px">→ ${esc(h.location.length>60?h.location.substring(0,60)+'…':h.location)}</span>`:''}
+          <span style="font-size:10px">${{redirect:'Redirect',final:'Destino final',cors:'CORS bloqueado',timeout:'Timeout',loading:'Carregando…'}[h.state]||''}</span>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // Final box
+  const last=_hops[_hops.length-1];
+  const fb=document.getElementById('final-box');
+  if(last&&(last.state==='final'||last.state==='cors'||last.state==='timeout')){
+    const isFinal=last.state==='final';
+    fb.innerHTML=`<div class="final-box" style="${isFinal?'':'background:var(--warn-bg);border-color:var(--warn)'}">
+      <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:${isFinal?'var(--ok)':'var(--warn)'}">${isFinal?'✅ URL Final':'⚠️ Cadeia interrompida ('+last.state+')'}</strong>
+      <div class="final-url" style="color:${isFinal?'var(--ok)':'var(--warn)'}">${esc(last.url)}</div>
+    </div>`;
+  }
+}
+
+function renderSummary(totalMs){
+  const redirects=_hops.filter(h=>h.state==='redirect').length;
+  const hasCors=_hops.some(h=>h.state==='cors');
+  const hasTimeout=_hops.some(h=>h.state==='timeout');
+  const isFinal=_hops.some(h=>h.state==='final');
+  const row=document.getElementById('summary-row');
+  row.innerHTML=`
+    <span class="sum-pill sp-blue">${_hops.length} hops</span>
+    <span class="sum-pill sp-blue">${redirects} redirects</span>
+    <span class="sum-pill sp-blue">${totalMs}ms total</span>
+    ${isFinal?'<span class="sum-pill sp-ok">✅ Destino alcançado</span>':''}
+    ${hasCors?'<span class="sum-pill sp-warn">⚠️ CORS detectado</span>':''}
+    ${hasTimeout?'<span class="sum-pill sp-warn">⏱ Timeout</span>':''}
+  `;
+}
+
+function copyChain(){
+  const lines=_hops.map((h,i)=>`${i+1}. [${h.status||'?'}] ${h.url}`).join('\n');
+  navigator.clipboard.writeText(lines).then(()=>toast('Cadeia copiada!'));
+}
+
+function copyFinal(){
+  const last=_hops[_hops.length-1];
+  if(!last)return;
+  navigator.clipboard.writeText(last.url).then(()=>toast('URL final copiada!'));
+}
+
+
+function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
+function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+</script>
+
+<!-- ── Como usar modal ─────────────────────────────── -->
+<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
+  <div class="qa-modal">
+    <div class="qa-header">
+      <h2>🔍 Como usar · Rastreador de Redirect</h2>
+      <button class="qa-close" onclick="fecharAjuda()">✕</button>
+    </div>
+    <div class="qa-body">
+      <div class="help-section">
+        <h3>Visão geral</h3>
+        <p>Use o <b>Rastreador de Redirect</b> para inspecionar e diagnosticar dados de tracking e tags.</p>
+      </div>
+      <div class="help-section">
+        <h3>Passo a passo</h3>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-txt"><b>Cole a URL ou tag</b><br>Insira a URL, tag ou string que deseja inspecionar no campo de entrada.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-txt"><b>Execute a análise</b><br>Clique em <b>Analisar</b> ou <b>Inspecionar</b> para processar os dados.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-txt"><b>Revise os parâmetros</b><br>Os campos são exibidos de forma legível com seus respectivos valores.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-txt"><b>Identifique problemas</b><br>Erros e alertas são destacados em vermelho ou amarelo.</div>
+      </div>
+      </div>
+      <div class="help-tip">
+        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

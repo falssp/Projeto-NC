@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora ROAS / ROI — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#d97706;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+/* Result tiles */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+.kpi-val{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-val.good{color:var(--green)}.kpi-val.bad{color:var(--red)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:2px}
+/* Gauge bar */
+.gauge{height:16px;background:var(--light);border-radius:8px;overflow:hidden;margin:8px 0}
+.gauge-fill{height:100%;border-radius:8px;transition:width .4s}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:7px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.highlight-row{background:var(--light);font-weight:700}
+.verdict{padding:14px 16px;border-radius:10px;font-size:.88rem;font-weight:600;margin-bottom:12px}
+.verdict-ok{background:#dcfce7;color:#15803d}
+.verdict-warn{background:#fef9c3;color:#854d0e}
+.verdict-bad{background:#fee2e2;color:#dc2626}
+@media(max-width:600px){.kpi-row,.grid2,.grid3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📈 Calculadora ROAS / ROI</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('roas')">ROAS / ROI</div>
+  <div class="tab" onclick="switchTab('breakeven')">Break-Even</div>
+  <div class="tab" onclick="switchTab('scenarios')">Cenários</div>
+</div>
+
+<!-- ROAS tab -->
+<div id="tab-roas" class="tab-panel active">
+<div class="card">
+  <div class="card-title">Dados da Campanha</div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>Receita Gerada (R$)</label>
+      <input id="receita" type="number" value="150000" oninput="calcRoas()">
+    </div>
+    <div>
+      <label>Investimento em Mídia (R$)</label>
+      <input id="invest" type="number" value="30000" oninput="calcRoas()">
+    </div>
+    <div>
+      <label>Custo dos Produtos / CMV (R$)</label>
+      <input id="cmv" type="number" value="90000" oninput="calcRoas()">
+      <div class="hint">Custo direto dos produtos/serviços vendidos</div>
+    </div>
+  </div>
+  <div class="grid3">
+    <div>
+      <label>Ticket Médio (R$)</label>
+      <input id="ticket" type="number" value="250" oninput="calcRoas()">
+    </div>
+    <div>
+      <label>Conversões</label>
+      <input id="conv" type="number" value="600" oninput="calcRoas()">
+    </div>
+    <div>
+      <label>Cliques</label>
+      <input id="clicks" type="number" value="12000" oninput="calcRoas()">
+    </div>
+  </div>
+</div>
+
+<div class="kpi-row" id="kpiRoas"></div>
+
+<div class="card" id="verdictCard" style="display:none"></div>
+
+<div class="card" id="roasBreakdown" style="display:none">
+  <div class="card-title">Decomposição</div>
+  <table id="roasTable"></table>
+</div>
+</div>
+
+<!-- Break-even tab -->
+<div id="tab-breakeven" class="tab-panel">
+<div class="card">
+  <div class="card-title">Calculadora de Break-Even ROAS</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div>
+      <label>Margem Bruta (%)</label>
+      <input id="margin" type="number" value="40" min="1" max="99" oninput="calcBreakEven()">
+      <div class="hint">Margem = (Receita - CMV) / Receita × 100</div>
+    </div>
+    <div>
+      <label>Taxas Adicionais (% da receita)</label>
+      <input id="fees" type="number" value="5" min="0" max="50" oninput="calcBreakEven()">
+      <div class="hint">Gateway de pagamento, marketplace, etc.</div>
+    </div>
+  </div>
+</div>
+<div class="card" id="breakevenResult"></div>
+<div class="card">
+  <div class="card-title">Tabela: Margem × ROAS Break-Even</div>
+  <table id="beTable"></table>
+</div>
+</div>
+
+<!-- Scenarios tab -->
+<div id="tab-scenarios" class="tab-panel">
+<div class="card">
+  <div class="card-title">Simulação de Cenários de Budget</div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>CPA Alvo (R$)</label>
+      <input id="scCpa" type="number" value="50" oninput="calcScenarios()">
+    </div>
+    <div>
+      <label>Taxa de Conversão (%)</label>
+      <input id="scCvr" type="number" value="2.5" step="0.1" oninput="calcScenarios()">
+    </div>
+    <div>
+      <label>CPC Médio (R$)</label>
+      <input id="scCpc" type="number" value="1.25" step="0.01" oninput="calcScenarios()">
+    </div>
+  </div>
+  <button class="btn btn-ghost" onclick="loadScenariosExample()">Exemplo</button>
+</div>
+<div class="card">
+  <div class="card-title">Cenários de Escala</div>
+  <table id="scenTable"></table>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('roas_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('roas_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='breakeven')calcBreakEven();
+  if(id==='scenarios')calcScenarios();
+}
+
+function fmtR(n){return 'R$'+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt2(n){return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function calcRoas(){
+  const receita=parseFloat(document.getElementById('receita').value)||0;
+  const invest=parseFloat(document.getElementById('invest').value)||0;
+  const cmv=parseFloat(document.getElementById('cmv').value)||0;
+  const ticket=parseFloat(document.getElementById('ticket').value)||0;
+  const conv=parseFloat(document.getElementById('conv').value)||0;
+  const clicks=parseFloat(document.getElementById('clicks').value)||0;
+  if(!receita||!invest)return;
+
+  const roas=receita/invest;
+  const lucroBruto=receita-cmv;
+  const lucroLiq=lucroBruto-invest;
+  const roi=invest>0?lucroLiq/invest*100:0;
+  const margem=receita>0?lucroBruto/receita*100:0;
+  const cpa=conv>0?invest/conv:0;
+  const cvr=clicks>0?conv/clicks*100:0;
+  const beRoas=margem>0?100/margem:0;
+
+  const kpis=[
+    {label:'ROAS',val:fmt2(roas)+'×',sub:'Receita / Investimento'},
+    {label:'ROI',val:fmt2(roi)+'%',sub:'Lucro líquido / Investimento',cls:roi>0?'good':'bad'},
+    {label:'Margem Bruta',val:fmt2(margem)+'%',sub:'Sem deduzir investimento'},
+    {label:'Break-Even ROAS',val:fmt2(beRoas)+'×',sub:'ROAS mínimo para lucro'},
+  ];
+  document.getElementById('kpiRoas').innerHTML=kpis.map(k=>`
+    <div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-val ${k.cls||''}">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  const verdictCard=document.getElementById('verdictCard');
+  verdictCard.style.display='block';
+  const cls=roas>beRoas*1.2?'verdict-ok':roas>beRoas?'verdict-warn':'verdict-bad';
+  verdictCard.innerHTML=`<div class="verdict ${cls}">${roas>beRoas*1.2?'✅ Campanha lucrativa — ROAS muito acima do break-even ('+fmt2(beRoas)+'×). Performance sólida.':roas>beRoas?'⚠️ Campanha no limiar de lucratividade. ROAS ('+fmt2(roas)+'×) está acima do break-even ('+fmt2(beRoas)+'×) mas com margem estreita.':'❌ Campanha não lucrativa. ROAS ('+fmt2(roas)+'×) está abaixo do break-even ('+fmt2(beRoas)+'×). Necessário reduzir custos ou aumentar conversões.'}</div>`;
+
+  document.getElementById('roasBreakdown').style.display='block';
+  document.getElementById('roasTable').innerHTML=`
+    <thead><tr><th>Métrica</th><th>Valor</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Receita Total</td><td style="font-family:var(--mono)">${fmtR(receita)}</td><td>Atribuída às campanhas</td></tr>
+      <tr><td>Investimento em Mídia</td><td style="font-family:var(--mono)">${fmtR(invest)}</td><td>Ad spend</td></tr>
+      <tr><td>Custo dos Produtos (CMV)</td><td style="font-family:var(--mono)">${fmtR(cmv)}</td><td>${fmt2(margem)}% margem bruta</td></tr>
+      <tr><td>Lucro Bruto</td><td style="font-family:var(--mono)">${fmtR(lucroBruto)}</td><td>Receita - CMV</td></tr>
+      <tr class="highlight-row"><td>Lucro Líquido</td><td style="font-family:var(--mono)">${fmtR(lucroLiq)}</td><td>Lucro Bruto - Mídia</td></tr>
+      ${conv?`<tr><td>CPA</td><td style="font-family:var(--mono)">${fmtR(cpa)}</td><td>${conv.toLocaleString('pt-BR')} conversões</td></tr>`:''}
+      ${clicks&&conv?`<tr><td>Taxa de Conversão</td><td style="font-family:var(--mono)">${fmt2(cvr)}%</td><td>${clicks.toLocaleString('pt-BR')} cliques</td></tr>`:''}
+      ${ticket?`<tr><td>Ticket Médio</td><td style="font-family:var(--mono)">${fmtR(ticket)}</td><td>Verificação: ${conv?fmtR(conv*ticket):'-'} vs receita declarada</td></tr>`:''}
+    </tbody>`;
+}
+
+function calcBreakEven(){
+  const margin=parseFloat(document.getElementById('margin').value)||40;
+  const fees=parseFloat(document.getElementById('fees').value)||0;
+  const netMargin=margin-fees;
+  const beRoas=netMargin>0?100/netMargin:Infinity;
+  document.getElementById('breakevenResult').innerHTML=`
+    <div class="card-title">Break-Even ROAS</div>
+    <div style="text-align:center;padding:10px">
+      <div style="font-size:.8rem;color:var(--muted)">Com margem bruta de ${margin}% e taxas de ${fees}%</div>
+      <div style="font-family:var(--mono);font-size:2.5rem;font-weight:700;color:var(--azul)">${fmt2(beRoas)}×</div>
+      <div style="font-size:.85rem;color:var(--muted)">ROAS mínimo para breakeven</div>
+    </div>
+    <p style="font-size:.85rem;line-height:1.6">Fórmula: ROAS_BE = 1 / Margem_líquida = 1 / ${fmt2(netMargin/100)} = ${fmt2(beRoas)}×<br>
+    Todo ROAS acima de <b>${fmt2(beRoas)}×</b> gera lucro. Abaixo = prejuízo.</p>`;
+
+  const margins=[10,15,20,25,30,35,40,50,60,70];
+  document.getElementById('beTable').innerHTML=`
+    <thead><tr><th>Margem Bruta</th><th>BE ROAS (sem taxas)</th><th>BE ROAS (com ${fees}% taxas)</th></tr></thead>
+    <tbody>${margins.map(m=>`
+      <tr${m===margin?' class="highlight-row"':''}>
+        <td style="font-family:var(--mono)">${m}%${m===margin?' ◀':''}</td>
+        <td style="font-family:var(--mono)">${fmt2(100/m)}×</td>
+        <td style="font-family:var(--mono)">${fees<m?fmt2(100/(m-fees))+'×':'∞ (inviável)'}</td>
+      </tr>`).join('')}</tbody>`;
+}
+
+function calcScenarios(){
+  const cpa=parseFloat(document.getElementById('scCpa').value)||50;
+  const cvr=parseFloat(document.getElementById('scCvr').value)||2.5;
+  const cpc=parseFloat(document.getElementById('scCpc').value)||1.25;
+  const budgets=[5000,10000,20000,30000,50000,75000,100000];
+  document.getElementById('scenTable').innerHTML=`
+    <thead><tr><th>Budget</th><th>Cliques</th><th>Conversões</th><th>CPA Resultado</th><th>CPA vs Meta</th></tr></thead>
+    <tbody>${budgets.map(b=>{
+      const clicks=Math.floor(b/cpc);
+      const convs=Math.floor(clicks*cvr/100);
+      const cpaRes=convs>0?b/convs:Infinity;
+      const delta=cpaRes-cpa;
+      const cls=delta<=0?'style="color:var(--green);font-weight:700"':delta<cpa*0.2?'style="color:var(--orange);font-weight:700"':'style="color:var(--red)"';
+      return `<tr>
+        <td style="font-family:var(--mono)">${fmtR(b)}</td>
+        <td style="font-family:var(--mono)">${clicks.toLocaleString('pt-BR')}</td>
+        <td style="font-family:var(--mono)">${convs.toLocaleString('pt-BR')}</td>
+        <td style="font-family:var(--mono)" ${cls}>${convs>0?fmtR(cpaRes):'—'}</td>
+        <td ${cls}>${convs>0?(delta<=0?'✅ Abaixo da meta':'⚠️ +'+fmtR(delta)):'—'}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+}
+
+function loadScenariosExample(){
+  document.getElementById('scCpa').value=45;
+  document.getElementById('scCvr').value=3.2;
+  document.getElementById('scCpc').value=1.44;
+  calcScenarios();
+}
+
+calcRoas();
+calcBreakEven();
+calcScenarios();
+</script>
+</body>
+</html>

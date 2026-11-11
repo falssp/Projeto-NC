@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de Funil — AdOps Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--ok-bg:#dcfce7;--warn-bg:#fef3c7;--bad-bg:#fee2e2;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#1a1d2e;--text:#e8ecff;--muted:#9ca3af;--border:#374151;--light:#1e2a5a;--ok-bg:#14532d;--warn-bg:#78350f;--bad-bg:#7f1d1d;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--azul);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.2rem;font-weight:700;}
+header a{color:#fff;opacity:.8;text-decoration:none;font-size:.875rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;padding:0 2rem;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}nav::-webkit-scrollbar{display:none;}
+.tab{padding:.75rem 1.25rem;cursor:pointer;font-size:.875rem;font-weight:500;border-bottom:3px solid transparent;color:var(--muted);transition:.2s;white-space:nowrap;}
+.tab.active{color:var(--azul);border-color:var(--azul);}
+main{padding:2rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;gap:.75rem;margin-top:1rem;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.kpi .val{font-size:1.6rem;font-weight:700;color:var(--azul);}
+.kpi .lbl{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+canvas{display:block;width:100%;border-radius:8px;background:var(--bg);}
+.pane{display:none;} .pane.active{display:block;}
+.verdict{padding:.75rem 1rem;border-radius:8px;font-weight:600;font-size:.9rem;margin-bottom:1rem;}
+.verdict.ok{background:var(--ok-bg);color:var(--ok);}
+.verdict.warn{background:var(--warn-bg);color:var(--warn);}
+.verdict.bad{background:var(--bad-bg);color:var(--bad);}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+th{text-align:left;padding:.6rem .75rem;background:var(--light);color:var(--azul);font-weight:600;font-size:.8rem;}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+.stage-row{display:grid;grid-template-columns:140px 1fr 1fr 1fr;gap:.75rem;align-items:end;margin-bottom:.5rem;padding:.75rem;background:var(--light);border-radius:8px;}
+.stage-row label{margin-top:0;font-size:.75rem;}
+.stage-label{font-size:.8rem;font-weight:600;color:var(--azul);padding-top:1.5rem;}
+.funnel-stage{display:flex;align-items:center;margin-bottom:.5rem;}
+.funnel-bar{height:44px;border-radius:6px;display:flex;align-items:center;padding:0 1rem;color:#fff;font-weight:600;font-size:.85rem;transition:width .4s;}
+.funnel-pct{font-size:.75rem;color:var(--muted);margin-left:.75rem;min-width:60px;}
+.funnel-num{font-size:.75rem;color:var(--muted);min-width:80px;}
+.ref-block{background:var(--light);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;}
+.ref-block h4{font-size:.9rem;font-weight:600;color:var(--azul);margin-bottom:.5rem;}
+.ref-block p,.ref-block li{font-size:.82rem;color:var(--muted);line-height:1.6;}
+.ref-block ul{padding-left:1.2rem;}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;margin:.4rem 0;}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr;}.stage-row{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:.2rem;">🔽 Simulador de Funil</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<nav>
+  <div class="tab active" onclick="switchTab('funil')">Funil de Conversão</div>
+  <div class="tab" onclick="switchTab('cenarios')">Cenários</div>
+  <div class="tab" onclick="switchTab('ref')">Referência</div>
+</nav>
+<main>
+
+<!-- TAB FUNIL -->
+<div id="tab-funil" class="pane active">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Etapas do Funil</h3>
+      <div id="stage-inputs"></div>
+      <label style="margin-top:1rem;">Ticket Médio (R$)</label>
+      <input id="ticket-funil" type="number" placeholder="Ex: 480">
+      <label>Investimento Total (R$)</label>
+      <input id="inv-funil" type="number" placeholder="Ex: 35000">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcFunil()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExFunil()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-funil" class="kpi-grid" style="display:none;"></div>
+      <div id="verdict-funil"></div>
+      <div class="card">
+        <h3>Visualização do Funil</h3>
+        <div id="funnel-viz" style="padding:.5rem 0;"></div>
+      </div>
+    </div>
+  </div>
+  <div id="table-funil-wrap" style="display:none;margin-top:1.5rem;">
+    <div class="card">
+      <h3>Análise Detalhada por Etapa</h3>
+      <table id="table-funil"></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB CENARIOS -->
+<div id="tab-cenarios" class="pane">
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem;">Simule o impacto de melhorar uma etapa específica do funil e compare o resultado com o baseline.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Baseline (preencha o funil primeiro)</h3>
+      <div id="baseline-info" style="font-size:.85rem;color:var(--muted);">Calcule o funil na aba anterior para habilitar a comparação.</div>
+      <div id="cenario-inputs" style="display:none;">
+        <label>Etapa a Melhorar</label>
+        <select id="etapa-melhorar"></select>
+        <label>Nova Taxa de Conversão (%)</label>
+        <input id="nova-taxa" type="number" step="0.1" placeholder="Ex: 5.0">
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="calcCenario()">Simular Cenário</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div id="cenario-result" style="display:none;">
+        <div id="kpi-cenario" class="kpi-grid"></div>
+        <div class="card">
+          <h3>Comparação — Baseline vs. Cenário</h3>
+          <canvas id="chart-cenario" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB REF -->
+<div id="tab-ref" class="pane">
+  <div class="grid-2">
+    <div class="ref-block">
+      <h4>Taxas de Conversão por Etapa — Benchmarks BR</h4>
+      <table style="font-size:.82rem;">
+        <tr><th>Etapa</th><th>Referência</th></tr>
+        <tr><td>Impressão → Clique (CTR)</td><td>0.1–1.5%</td></tr>
+        <tr><td>Clique → Lead (CVR Landing)</td><td>2–8%</td></tr>
+        <tr><td>Lead → MQL</td><td>20–40%</td></tr>
+        <tr><td>MQL → SQL</td><td>30–60%</td></tr>
+        <tr><td>SQL → Cliente</td><td>20–50%</td></tr>
+        <tr><td>Clique → Compra (e-commerce)</td><td>1–4%</td></tr>
+      </table>
+    </div>
+    <div class="ref-block">
+      <h4>Métricas de Eficiência do Funil</h4>
+      <div class="mono">CPL = Invest / Leads</div>
+      <div class="mono">CPA = Invest / Conversões Finais</div>
+      <div class="mono">CVR Total = Conv. Final / Entrada × 100</div>
+      <div class="mono">ROAS = Receita / Investimento</div>
+    </div>
+    <div class="ref-block">
+      <h4>Lei de Pareto no Funil</h4>
+      <p>Em geral, 80% das perdas de um funil estão concentradas em 1–2 etapas críticas (os "gargalos"). Identificar e otimizar o gargalo tem mais impacto do que melhorar todas as etapas uniformemente.</p>
+    </div>
+    <div class="ref-block">
+      <h4>Tipos de Funil por Negócio</h4>
+      <ul>
+        <li><strong>E-commerce:</strong> Imp → Clique → PDP → Carrinho → Checkout → Compra</li>
+        <li><strong>Lead Gen B2B:</strong> Imp → Clique → LP → Lead → MQL → SQL → Cliente</li>
+        <li><strong>App:</strong> Imp → Clique → Install → Registro → Ativação → Retenção</li>
+        <li><strong>SaaS:</strong> Visita → Trial → Ativação → Upgrade → Churn</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+const STAGES=[
+  {id:'imp',label:'Impressões',txLabel:'',txPlaceholder:'',readOnly:true},
+  {id:'clique',label:'Cliques',txLabel:'CTR (%)',txPlaceholder:'Ex: 0.8'},
+  {id:'lead',label:'Leads',txLabel:'CVR Landing (%)',txPlaceholder:'Ex: 4.5'},
+  {id:'sql',label:'SQLs / Oportunidades',txLabel:'Taxa Lead→SQL (%)',txPlaceholder:'Ex: 35'},
+  {id:'conv',label:'Conversões / Clientes',txLabel:'Taxa SQL→Cliente (%)',txPlaceholder:'Ex: 28'},
+];
+const COLORS=['#1F36C7','#3b5de6','#6b8ef5','#9db3f8','#c4d0fb'];
+let lastResult=null;
+
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',h.dataset.theme);}catch(e){}}
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function switchTab(id){document.querySelectorAll('.tab').forEach((t,i)=>{const ids=['funil','cenarios','ref'];t.classList.toggle('active',ids[i]===id);});document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');}
+
+function buildInputs(){
+  const c=document.getElementById('stage-inputs');c.innerHTML='';
+  STAGES.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='stage-row';
+    if(i===0){
+      d.innerHTML=`<div class="stage-label">${s.label}</div>
+        <div><label>Volume</label><input id="in-${s.id}" type="number" placeholder="Ex: 2000000"></div>
+        <div></div><div></div>`;
+    } else {
+      d.innerHTML=`<div class="stage-label">${s.label}</div>
+        <div><label>${s.txLabel}</label><input id="tx-${s.id}" type="number" step="0.01" placeholder="${s.txPlaceholder}"></div>
+        <div><label>Volume (opcional)</label><input id="in-${s.id}" type="number" placeholder="Ou informe direto"></div>
+        <div></div>`;
+    }
+    c.appendChild(d);
+  });
+}
+
+function calcFunil(){
+  const impV=+document.getElementById('in-imp').value;
+  if(!impV){alert('Informe o volume de impressões.');return;}
+  const vals=[impV];
+  for(let i=1;i<STAGES.length;i++){
+    const s=STAGES[i];
+    const tx=+document.getElementById('tx-'+s.id).value;
+    const direct=+document.getElementById('in-'+s.id).value;
+    if(direct>0){vals.push(direct);}
+    else if(tx>0){vals.push(vals[i-1]*tx/100);}
+    else{vals.push(null);}
+  }
+  // Fill nulls with 0
+  for(let i=0;i<vals.length;i++)if(vals[i]===null)vals[i]=0;
+  const ticket=+document.getElementById('ticket-funil').value||0;
+  const inv=+document.getElementById('inv-funil').value||0;
+  const finalConv=vals[vals.length-1];
+  const cvrTotal=impV>0?finalConv/impV*100:0;
+  const cpa=inv>0&&finalConv>0?inv/finalConv:0;
+  const receita=finalConv*ticket;
+  const roas=inv>0&&receita>0?receita/inv:0;
+  lastResult={vals,ticket,inv,cvrTotal,cpa,receita,roas};
+  document.getElementById('kpi-funil').style.display='grid';
+  document.getElementById('kpi-funil').innerHTML=`
+    <div class="kpi"><div class="val">${fmtN(Math.round(finalConv))}</div><div class="lbl">Conversões Finais</div></div>
+    <div class="kpi"><div class="val">${fmt2(cvrTotal)}%</div><div class="lbl">CVR Total</div></div>
+    ${cpa?`<div class="kpi"><div class="val">R$ ${fmtN(Math.round(cpa))}</div><div class="lbl">CPA</div></div>`:''}
+    ${receita?`<div class="kpi"><div class="val">R$ ${fmtNK(receita)}</div><div class="lbl">Receita Est.</div></div>`:''}
+    ${roas?`<div class="kpi"><div class="val">${fmt1(roas)}×</div><div class="lbl">ROAS</div></div>`:''}`;
+  // Find bottleneck
+  const drops=[];
+  for(let i=1;i<vals.length;i++){if(vals[i-1]>0)drops.push({i,pct:(1-vals[i]/vals[i-1])*100});}
+  const worst=drops.reduce((a,b)=>b.pct>a.pct?b:a,{i:0,pct:0});
+  let cls='ok',txt='';
+  if(cvrTotal>=2){cls='ok';txt=`✅ Funil eficiente — CVR total de ${fmt2(cvrTotal)}%.`;}
+  else if(cvrTotal>=0.5){cls='warn';txt=`⚠️ CVR total baixo (${fmt2(cvrTotal)}%). Maior gargalo: etapa ${worst.i+1} (${STAGES[worst.i].label}, −${fmt1(worst.pct)}%).`;}
+  else{cls='bad';txt=`❌ CVR total muito baixo (${fmt2(cvrTotal)}%). Revisar etapa ${worst.i+1} (${STAGES[worst.i].label}, −${fmt1(worst.pct)}%) com urgência.`;}
+  document.getElementById('verdict-funil').innerHTML=`<div class="verdict ${cls}">${txt}</div>`;
+  drawFunnelViz(vals);
+  buildFunnelTable(vals,inv);
+  document.getElementById('table-funil-wrap').style.display='block';
+  enableCenarios(vals);
+}
+
+function drawFunnelViz(vals){
+  const c=document.getElementById('funnel-viz');c.innerHTML='';
+  const max=vals[0]||1;
+  STAGES.forEach((s,i)=>{
+    const v=vals[i]||0;
+    const pct=v/max*100;
+    const txPct=i>0&&vals[i-1]>0?(v/vals[i-1]*100):100;
+    const div=document.createElement('div');div.className='funnel-stage';
+    const minW=8;const barW=Math.max(pct,minW);
+    div.innerHTML=`<div class="funnel-bar" style="width:${barW}%;background:${COLORS[i]};min-width:60px;">${s.label.substring(0,12)}</div>
+      <div class="funnel-num">${fmtNK(v)}</div>
+      <div class="funnel-pct">${i>0?fmt1(txPct)+'%':''}</div>`;
+    c.appendChild(div);
+  });
+}
+
+function buildFunnelTable(vals,inv){
+  const tb=document.getElementById('table-funil');
+  tb.innerHTML=`<tr><th>Etapa</th><th>Volume</th><th>Taxa</th><th>Perda</th><th>CPx (R$)</th></tr>`;
+  STAGES.forEach((s,i)=>{
+    const v=Math.round(vals[i]||0);
+    const prev=i>0?vals[i-1]:null;
+    const tx=prev>0?fmt1(v/prev*100)+'%':'—';
+    const perda=prev>0?fmtN(Math.round(prev-v)):'-';
+    const cpx=inv>0&&v>0?'R$ '+fmtN(Math.round(inv/v)):'—';
+    tb.innerHTML+=`<tr><td><strong>${s.label}</strong></td><td>${fmtN(v)}</td><td>${tx}</td><td style="color:var(--bad);">${perda}</td><td>${cpx}</td></tr>`;
+  });
+}
+
+function enableCenarios(vals){
+  document.getElementById('baseline-info').style.display='none';
+  document.getElementById('cenario-inputs').style.display='block';
+  const sel=document.getElementById('etapa-melhorar');
+  sel.innerHTML='';
+  STAGES.slice(1).forEach((s,i)=>{sel.innerHTML+=`<option value="${i+1}">${s.label} (tx atual: ${vals[i]>0?fmt1(vals[i+1]/vals[i]*100)+'%':'—'})</option>`;});
+}
+
+function calcCenario(){
+  if(!lastResult){return;}
+  const idx=+document.getElementById('etapa-melhorar').value;
+  const novaTx=+document.getElementById('nova-taxa').value;
+  if(!novaTx){alert('Informe a nova taxa.');return;}
+  const {vals,ticket,inv}=lastResult;
+  const novoVals=[...vals];
+  novoVals[idx]=novoVals[idx-1]*novaTx/100;
+  // recalc downstream
+  for(let i=idx+1;i<novoVals.length;i++){
+    const prevTx=vals[i-1]>0?vals[i]/vals[i-1]:0;
+    novoVals[i]=novoVals[i-1]*prevTx;
+  }
+  const baseFinal=vals[vals.length-1];
+  const novoFinal=novoVals[novoVals.length-1];
+  const uplift=(novoFinal-baseFinal)/baseFinal*100;
+  const recBase=baseFinal*ticket,recNovo=novoFinal*ticket;
+  document.getElementById('cenario-result').style.display='block';
+  document.getElementById('kpi-cenario').innerHTML=`
+    <div class="kpi"><div class="val">${fmtN(Math.round(baseFinal))}</div><div class="lbl">Conv. Baseline</div></div>
+    <div class="kpi"><div class="val">${fmtN(Math.round(novoFinal))}</div><div class="lbl">Conv. Cenário</div></div>
+    <div class="kpi"><div class="val" style="color:var(--ok);">+${fmt1(uplift)}%</div><div class="lbl">Uplift</div></div>
+    ${ticket?`<div class="kpi"><div class="val" style="color:var(--ok);">+R$ ${fmtNK(recNovo-recBase)}</div><div class="lbl">Receita Adicional</div></div>`:''}`;
+  drawCenarioChart(vals,novoVals);
+}
+
+function drawCenarioChart(base,novo){
+  const cv=document.getElementById('chart-cenario');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=220*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=220,padL=80,padB=40,padT=20,padR=20;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const n=STAGES.length;
+  const maxV=Math.max(base[0],novo[0])||1;
+  const stepW=(W-padL-padR)/(n-1);
+  [[base,'#9ca3af','Baseline'],[novo,'#1F36C7','Cenário']].forEach(([vals,color,lbl],li)=>{
+    ctx.strokeStyle=color;ctx.lineWidth=li===1?3:2;ctx.setLineDash(li===0?[6,4]:[]);
+    ctx.beginPath();
+    vals.forEach((v,i)=>{
+      const x=padL+i*stepW;const y=padT+(H-padT-padB)*(1-v/maxV);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();ctx.setLineDash([]);
+    // dots
+    vals.forEach((v,i)=>{
+      const x=padL+i*stepW;const y=padT+(H-padT-padB)*(1-v/maxV);
+      ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+    });
+  });
+  // labels
+  STAGES.forEach((s,i)=>{
+    const x=padL+i*stepW;
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='9px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(s.label.substring(0,8),x,H-padB+16);
+  });
+}
+
+function loadExFunil(){
+  buildInputs();
+  document.getElementById('in-imp').value=1500000;
+  document.getElementById('tx-clique').value=0.6;
+  document.getElementById('tx-lead').value=4.2;
+  document.getElementById('tx-sql').value=38;
+  document.getElementById('tx-conv').value=24;
+  document.getElementById('ticket-funil').value=580;
+  document.getElementById('inv-funil').value=42000;
+  calcFunil();
+}
+
+function fmt1(n){return(+n).toFixed(1);}
+function fmt2(n){return(+n).toFixed(2);}
+function fmtN(n){return(+n).toLocaleString('pt-BR');}
+function fmtNK(n){if(n>=1e6)return'R$ '+fmt1(n/1e6)+'M';if(n>=1e3)return'R$ '+fmt1(n/1e3)+'K';return'R$ '+fmtN(Math.round(n));}
+
+buildInputs();
+</script>
+</body>
+</html>

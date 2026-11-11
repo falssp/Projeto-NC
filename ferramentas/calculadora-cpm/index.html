@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora CPM/CPC/CPA — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{max-width:1050px;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* Plataforma cards */
+.plat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.plat-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:16px;position:relative}
+.plat-card.best{border-color:var(--green);background:linear-gradient(135deg,var(--card) 85%,rgba(22,163,74,.06))}
+.plat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.plat-name{font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:6px}
+.plat-dot{width:10px;height:10px;border-radius:50%}
+.plat-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;border-radius:4px}
+.plat-remove:hover{color:var(--red);background:#fee2e2}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini-field label{font-size:.75rem}
+.mini-field input{padding:7px 10px;font-size:.85rem}
+.plat-results{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.metric-box{text-align:center;background:var(--light);border-radius:7px;padding:8px 4px}
+.metric-val{font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--azul)}
+.metric-val.best-val{color:var(--green)}
+.metric-val.worst-val{color:var(--red)}
+.metric-label{font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.best-badge{position:absolute;top:10px;right:10px;background:var(--green);color:#fff;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px}
+/* Comparação side-by-side */
+.compare-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.compare-table th{text-align:left;padding:8px 12px;background:var(--light);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.compare-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table tr:hover td{background:var(--light)}
+.num{font-family:var(--mono);font-size:.82rem}
+.bar-wrap{display:flex;align-items:center;gap:6px}
+.bar-bg{flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+/* Add platform */
+.add-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:14px;background:var(--light);border-radius:10px;margin-bottom:16px}
+.add-row .mini-field{flex:1;min-width:140px}
+/* Alert */
+.alert{padding:11px 14px;border-radius:8px;font-size:.84rem;margin-top:10px}
+.alert-info{background:var(--light);border:1.5px solid var(--border)}
+.alert-ok{background:#dcfce7;border:1.5px solid var(--green);color:#14532d}
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab{padding:9px 20px;font-size:.88rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* Formula helper */
+.formula-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+@media(max-width:620px){.formula-row{grid-template-columns:1fr}}
+.formula-box{background:var(--light);border-radius:8px;padding:12px}
+.formula-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.formula-eq{font-family:var(--mono);font-size:.82rem;color:var(--azul)}
+.formula-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.formula-result{background:var(--azul);color:#fff;border-radius:6px;padding:8px;text-align:center;margin-top:8px;font-family:var(--mono);font-size:1.1rem;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">💰 Calculadora CPM / CPC / CPA</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('compare')">Comparar Plataformas</div>
+    <div class="tab" onclick="switchTab('formula')">Calculadora de Métricas</div>
+  </div>
+
+  <!-- COMPARE -->
+  <div id="tab-compare" class="tab-panel active">
+    <div class="card-title">Adicionar plataforma</div>
+    <div class="add-row">
+      <div class="mini-field">
+        <label>Plataforma</label>
+        <select id="newPlat">
+          <option>Google Ads</option><option>Meta Ads</option><option>TikTok Ads</option>
+          <option>LinkedIn Ads</option><option>DV360</option><option>CM360</option>
+          <option>Pinterest Ads</option><option>Twitter/X</option><option>Amazon DSP</option>
+          <option>Outbrain</option><option>Taboola</option><option>Personalizado</option>
+        </select>
+      </div>
+      <div class="mini-field">
+        <label>Nome (personalizado)</label>
+        <input id="newPlatName" placeholder="Deixar em branco p/ usar seleção">
+      </div>
+      <div class="mini-field">
+        <label>Impressões</label>
+        <input id="newImps" type="number" placeholder="1000000">
+      </div>
+      <div class="mini-field">
+        <label>Cliques</label>
+        <input id="newClicks" type="number" placeholder="5000">
+      </div>
+      <div class="mini-field">
+        <label>Conversões</label>
+        <input id="newConvs" type="number" placeholder="120">
+      </div>
+      <div class="mini-field">
+        <label>Investimento (R$)</label>
+        <input id="newBudget" type="number" placeholder="8500">
+      </div>
+      <button class="btn btn-primary" onclick="addPlatform()">+ Adicionar</button>
+    </div>
+
+    <div id="platGrid" class="plat-grid"></div>
+
+    <div id="compareSection" style="display:none;margin-top:16px">
+      <div class="card-title" style="margin-bottom:12px">Ranking comparativo</div>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Plataforma</th>
+            <th>CPM</th><th>CPC</th><th>CPA</th>
+            <th>CTR</th><th>Conv. Rate</th>
+            <th>CPM (bar)</th>
+          </tr>
+        </thead>
+        <tbody id="compareTable"></tbody>
+      </table>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="loadSample()">Exemplo</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportCompare()">Exportar CSV</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">Limpar tudo</button>
+    </div>
+  </div>
+
+  <!-- FORMULA -->
+  <div id="tab-formula" class="tab-panel">
+    <div class="formula-row">
+      <!-- CPM -->
+      <div class="formula-box">
+        <div class="formula-title">CPM</div>
+        <div class="formula-eq">Investimento ÷ Impressões × 1000</div>
+        <div class="formula-inputs">
+          <div><label style="font-size:.72rem">Investimento (R$)</label><input id="f_inv1" type="number" placeholder="10000" oninput="calcCpm()"></div>
+          <div><label style="font-size:.72rem">Impressões</label><input id="f_imp1" type="number" placeholder="2000000" oninput="calcCpm()"></div>
+        </div>
+        <div class="formula-result" id="r_cpm">—</div>
+      </div>
+      <!-- CPC -->
+      <div class="formula-box">
+        <div class="formula-title">CPC</div>
+        <div class="formula-eq">Investimento ÷ Cliques</div>
+        <div class="formula-inputs">
+          <div><label style="font-size:.72rem">Investimento (R$)</label><input id="f_inv2" type="number" placeholder="10000" oninput="calcCpc()"></div>
+          <div><label style="font-size:.72rem">Cliques</label><input id="f_clk2" type="number" placeholder="4500" oninput="calcCpc()"></div>
+        </div>
+        <div class="formula-result" id="r_cpc">—</div>
+      </div>
+      <!-- CPA -->
+      <div class="formula-box">
+        <div class="formula-title">CPA</div>
+        <div class="formula-eq">Investimento ÷ Conversões</div>
+        <div class="formula-inputs">
+          <div><label style="font-size:.72rem">Investimento (R$)</label><input id="f_inv3" type="number" placeholder="10000" oninput="calcCpa()"></div>
+          <div><label style="font-size:.72rem">Conversões</label><input id="f_conv3" type="number" placeholder="85" oninput="calcCpa()"></div>
+        </div>
+        <div class="formula-result" id="r_cpa">—</div>
+      </div>
+    </div>
+
+    <div class="formula-row">
+      <!-- CTR -->
+      <div class="formula-box">
+        <div class="formula-title">CTR</div>
+        <div class="formula-eq">Cliques ÷ Impressões × 100</div>
+        <div class="formula-inputs">
+          <div><label style="font-size:.72rem">Cliques</label><input id="f_clk4" type="number" placeholder="4500" oninput="calcCtr()"></div>
+          <div><label style="font-size:.72rem">Impressões</label><input id="f_imp4" type="number" placeholder="2000000" oninput="calcCtr()"></div>
+        </div>
+        <div class="formula-result" id="r_ctr">—</div>
+      </div>
+      <!-- Conv Rate -->
+      <div class="formula-box">
+        <div class="formula-title">Taxa de Conversão</div>
+        <div class="formula-eq">Conversões ÷ Cliques × 100</div>
+        <div class="formula-inputs">
+          <div><label style="font-size:.72rem">Conversões</label><input id="f_conv5" type="number" placeholder="85" oninput="calcCvr()"></div>
+          <div><label style="font-size:.72rem">Cliques</label><input id="f_clk5" type="number" placeholder="4500" oninput="calcCvr()"></div>
+        </div>
+        <div class="formula-result" id="r_cvr">—</div>
+      </div>
+      <!-- ROAS -->
+      <div class="formula-box">
+        <div class="formula-title">ROAS</div>
+        <div class="formula-eq">Receita ÷ Investimento × 100</div>
+        <div class="formula-inputs">
+          <div><label style="font-size:.72rem">Receita (R$)</label><input id="f_rev6" type="number" placeholder="45000" oninput="calcRoas()"></div>
+          <div><label style="font-size:.72rem">Investimento (R$)</label><input id="f_inv6" type="number" placeholder="10000" oninput="calcRoas()"></div>
+        </div>
+        <div class="formula-result" id="r_roas">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+let platforms=JSON.parse(localStorage.getItem('cpm_platforms')||'[]');
+
+function fmtR(n){return'R$ '+n.toFixed(2).replace('.',',')}
+function fmtPct(n){return n.toFixed(2)+'%'}
+function fmtNum(n){return n.toLocaleString('pt-BR')}
+function fmtM(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';return n.toString()}
+
+const COLORS={
+  'Google Ads':'#4285f4','Meta Ads':'#0866ff','TikTok Ads':'#ff0050',
+  'LinkedIn Ads':'#0a66c2','DV360':'#5c35cc','CM360':'#1F36C7',
+  'Pinterest Ads':'#e60023','Twitter/X':'#000000','Amazon DSP':'#ff9900',
+  'Outbrain':'#f78416','Taboola':'#4f8aff','Personalizado':'#6b7280'
+};
+
+function calcMetrics(p){
+  const cpm=p.budget&&p.impressions?p.budget/p.impressions*1000:null;
+  const cpc=p.budget&&p.clicks?p.budget/p.clicks:null;
+  const cpa=p.budget&&p.conversions?p.budget/p.conversions:null;
+  const ctr=p.clicks&&p.impressions?p.clicks/p.impressions*100:null;
+  const cvr=p.conversions&&p.clicks?p.conversions/p.clicks*100:null;
+  return{cpm,cpc,cpa,ctr,cvr};
+}
+
+function addPlatform(){
+  const selName=document.getElementById('newPlat').value;
+  const customName=document.getElementById('newPlatName').value.trim();
+  const name=customName||selName;
+  const imps=parseFloat(document.getElementById('newImps').value)||0;
+  const clicks=parseFloat(document.getElementById('newClicks').value)||0;
+  const convs=parseFloat(document.getElementById('newConvs').value)||0;
+  const budget=parseFloat(document.getElementById('newBudget').value)||0;
+  if(!name||!budget)return alert('Preencha pelo menos a plataforma e o investimento.');
+  platforms.push({id:Date.now(),name,impressions:imps,clicks,conversions:convs,budget});
+  save();render();
+  ['newPlatName','newImps','newClicks','newConvs','newBudget'].forEach(id=>{document.getElementById(id).value='';});
+}
+
+function removePlatform(id){
+  platforms=platforms.filter(p=>p.id!==id);save();render();
+}
+
+function save(){localStorage.setItem('cpm_platforms',JSON.stringify(platforms));}
+
+function render(){
+  if(!platforms.length){
+    document.getElementById('platGrid').innerHTML='<div style="color:var(--muted);font-size:.88rem;padding:8px 0">Adicione plataformas acima para comparar.</div>';
+    document.getElementById('compareSection').style.display='none';
+    return;
+  }
+
+  const metricsAll=platforms.map(p=>({...p,...calcMetrics(p)}));
+  // Best = lowest CPM
+  const cpms=metricsAll.filter(m=>m.cpm!==null).map(m=>m.cpm);
+  const bestCpm=cpms.length?Math.min(...cpms):null;
+  const worstCpm=cpms.length?Math.max(...cpms):null;
+
+  document.getElementById('platGrid').innerHTML=metricsAll.map(m=>{
+    const isBest=bestCpm!==null&&m.cpm===bestCpm;
+    const color=COLORS[m.name]||COLORS['Personalizado'];
+    return`<div class="plat-card${isBest?' best':''}">
+      ${isBest?'<div class="best-badge">🏆 Melhor CPM</div>':''}
+      <div class="plat-header">
+        <div class="plat-name">
+          <div class="plat-dot" style="background:${color}"></div>${m.name}
+        </div>
+        <button class="plat-remove" onclick="removePlatform(${m.id})">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.8rem;color:var(--muted)">
+        <div>Invest: <b style="color:var(--text)">${fmtR(m.budget)}</b></div>
+        <div>Imps: <b style="color:var(--text)">${fmtM(m.impressions||0)}</b></div>
+        <div>Cliques: <b style="color:var(--text)">${fmtM(m.clicks||0)}</b></div>
+        <div>Conv.: <b style="color:var(--text)">${fmtM(m.conversions||0)}</b></div>
+      </div>
+      <div class="plat-results">
+        <div class="metric-box">
+          <div class="metric-val${m.cpm===bestCpm?' best-val':m.cpm===worstCpm?' worst-val':''}">${m.cpm!==null?fmtR(m.cpm):'—'}</div>
+          <div class="metric-label">CPM</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">${m.cpc!==null?fmtR(m.cpc):'—'}</div>
+          <div class="metric-label">CPC</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">${m.cpa!==null?fmtR(m.cpa):'—'}</div>
+          <div class="metric-label">CPA</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">${m.ctr!==null?fmtPct(m.ctr):'—'}</div>
+          <div class="metric-label">CTR</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">${m.cvr!==null?fmtPct(m.cvr):'—'}</div>
+          <div class="metric-label">CVR</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val">${fmtR(m.budget)}</div>
+          <div class="metric-label">Invest.</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Tabela comparativa
+  const sorted=[...metricsAll].sort((a,b)=>(a.cpm||999)-(b.cpm||999));
+  const maxCpm=Math.max(...sorted.map(m=>m.cpm||0));
+  document.getElementById('compareTable').innerHTML=sorted.map((m,i)=>`
+    <tr>
+      <td><b>${i===0?'🏆 ':''}</b>${m.name}</td>
+      <td class="num">${m.cpm!==null?fmtR(m.cpm):'—'}</td>
+      <td class="num">${m.cpc!==null?fmtR(m.cpc):'—'}</td>
+      <td class="num">${m.cpa!==null?fmtR(m.cpa):'—'}</td>
+      <td class="num">${m.ctr!==null?fmtPct(m.ctr):'—'}</td>
+      <td class="num">${m.cvr!==null?fmtPct(m.cvr):'—'}</td>
+      <td>
+        <div class="bar-wrap">
+          <div class="bar-bg"><div class="bar-fill" style="width:${maxCpm?Math.round((m.cpm||0)/maxCpm*100):0}%;background:${COLORS[m.name]||'var(--azul)'}"></div></div>
+          <span style="font-family:var(--mono);font-size:.75rem;color:var(--muted);min-width:60px">${m.cpm!==null?fmtR(m.cpm):'—'}</span>
+        </div>
+      </td>
+    </tr>`).join('');
+  document.getElementById('compareSection').style.display='block';
+}
+
+function loadSample(){
+  platforms=[
+    {id:1,name:'Google Ads',impressions:3200000,clicks:12800,conversions:384,budget:28000},
+    {id:2,name:'Meta Ads',impressions:5100000,clicks:20400,conversions:510,budget:32000},
+    {id:3,name:'TikTok Ads',impressions:4600000,clicks:9200,conversions:184,budget:18500},
+    {id:4,name:'LinkedIn Ads',impressions:850000,clicks:2550,conversions:76,budget:22000},
+  ];
+  save();render();
+}
+
+function clearAll(){
+  platforms=[];save();render();
+}
+
+function exportCompare(){
+  if(!platforms.length)return;
+  const rows=[['Plataforma','Investimento','Impressões','Cliques','Conversões','CPM','CPC','CPA','CTR','CVR']];
+  platforms.forEach(p=>{
+    const m=calcMetrics(p);
+    rows.push([p.name,p.budget,p.impressions,p.clicks,p.conversions,
+      m.cpm?m.cpm.toFixed(2):'',m.cpc?m.cpc.toFixed(2):'',
+      m.cpa?m.cpa.toFixed(2):'',m.ctr?m.ctr.toFixed(2):'',
+      m.cvr?m.cvr.toFixed(2):'']);
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='comparativo-cpm.csv';a.click();
+}
+
+// Formula calculators
+function calcCpm(){
+  const inv=parseFloat(document.getElementById('f_inv1').value)||0;
+  const imp=parseFloat(document.getElementById('f_imp1').value)||0;
+  document.getElementById('r_cpm').textContent=imp?'CPM: '+fmtR(inv/imp*1000):'—';
+}
+function calcCpc(){
+  const inv=parseFloat(document.getElementById('f_inv2').value)||0;
+  const clk=parseFloat(document.getElementById('f_clk2').value)||0;
+  document.getElementById('r_cpc').textContent=clk?'CPC: '+fmtR(inv/clk):'—';
+}
+function calcCpa(){
+  const inv=parseFloat(document.getElementById('f_inv3').value)||0;
+  const cnv=parseFloat(document.getElementById('f_conv3').value)||0;
+  document.getElementById('r_cpa').textContent=cnv?'CPA: '+fmtR(inv/cnv):'—';
+}
+function calcCtr(){
+  const clk=parseFloat(document.getElementById('f_clk4').value)||0;
+  const imp=parseFloat(document.getElementById('f_imp4').value)||0;
+  document.getElementById('r_ctr').textContent=imp?'CTR: '+fmtPct(clk/imp*100):'—';
+}
+function calcCvr(){
+  const cnv=parseFloat(document.getElementById('f_conv5').value)||0;
+  const clk=parseFloat(document.getElementById('f_clk5').value)||0;
+  document.getElementById('r_cvr').textContent=clk?'CVR: '+fmtPct(cnv/clk*100):'—';
+}
+function calcRoas(){
+  const rev=parseFloat(document.getElementById('f_rev6').value)||0;
+  const inv=parseFloat(document.getElementById('f_inv6').value)||0;
+  document.getElementById('r_roas').textContent=inv?'ROAS: '+(rev/inv*100).toFixed(0)+'%':'—';
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['compare','formula'][i]===t);
+  });
+  document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+}
+
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('cpm_theme',nxt);
+}
+
+document.documentElement.setAttribute('data-theme',localStorage.getItem('cpm_theme')||'light');
+render();
+</script>
+</body>
+</html>

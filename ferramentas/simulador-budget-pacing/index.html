@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Budget Pacing — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5ef;--green:#16a34a;--yellow:#ca8a04;--red:#dc2626;--radius:12px;--shadow:0 2px 12px rgba(31,54,199,.08)}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#161827;--text:#e8ecff;--muted:#9ca3af;--border:#2a2d4a;--light:#1e2240}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:linear-gradient(135deg,var(--escuro),var(--azul));color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:16px}
+.back-btn{color:#fff;text-decoration:none;opacity:.8;font-size:14px}
+.back-btn:hover{opacity:1}
+h1{font-size:1.5rem;font-weight:700}
+.subtitle{opacity:.8;font-size:.9rem}
+.theme-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-family:inherit}
+main{max-width:960px;padding:32px 24px;display:flex;flex-direction:column;gap:24px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border)}
+.tab{padding:14px 20px;font-size:.9rem;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all .2s}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-content{display:none;padding:24px}
+.tab-content.active{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:.85rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.95rem;background:var(--bg);color:var(--text);outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--azul)}
+.btn{padding:10px 20px;border-radius:8px;font-weight:600;font-size:.9rem;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-secondary{background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm{padding:6px 14px;font-size:.82rem}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+.kpi{background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:14px;text-align:center}
+.kpi-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--azul)}
+.kpi-sub{font-size:.75rem;color:var(--muted);margin-top:4px}
+.verdict{margin-top:16px;padding:12px 16px;border-radius:8px;font-size:.9rem;font-weight:600;display:flex;gap:10px;align-items:center}
+.v-ok{background:#dcfce7;color:var(--green)}
+.v-warn{background:#fef9c3;color:var(--yellow)}
+.v-bad{background:#fee2e2;color:var(--red)}
+[data-theme="dark"] .v-ok{background:#14532d;color:#86efac}
+[data-theme="dark"] .v-warn{background:#422006;color:#fde047}
+[data-theme="dark"] .v-bad{background:#450a0a;color:#fca5a5}
+.chart-wrap{margin-top:20px}
+.chart-label{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+canvas{border-radius:8px;max-width:100%}
+.section-title{font-size:1rem;font-weight:700;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;font-size:.87rem;margin-bottom:20px}
+th{background:var(--light);color:var(--azul);font-weight:600;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.code{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--light);padding:2px 7px;border-radius:4px;color:var(--azul)}
+.info-box{background:var(--light);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:var(--muted);line-height:1.6}
+.pacing-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.pacing-day{font-family:'JetBrains Mono',monospace;font-size:.82rem;min-width:60px;color:var(--muted)}
+.pacing-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.pacing-bar{height:100%;border-radius:4px;transition:width .3s}
+.pacing-amt{font-family:'JetBrains Mono',monospace;font-size:.8rem;min-width:80px;text-align:right}
+.pacing-status{font-size:.75rem;font-weight:600;min-width:70px;text-align:center;padding:2px 6px;border-radius:8px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <a class="back-btn" href="../">← Ferramentas</a>
+    <div>
+      <h1>⏱️ Simulador de Budget Pacing</h1>
+      <div class="subtitle">Projeta gasto diário, detecta under/overpacing e calcula ajustes</div>
+    </div>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('sim')">Simulador</button>
+      <button class="tab" onclick="switchTab('ref')">Referência</button>
+    </div>
+
+    <div class="tab-content active" id="tab-sim">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Budget total (R$)</label>
+          <input type="number" id="budgetTotal" placeholder="30000" oninput="simulate()">
+        </div>
+        <div class="form-group">
+          <label>Dias totais da campanha</label>
+          <input type="number" id="diasTotal" placeholder="30" oninput="simulate()">
+        </div>
+        <div class="form-group">
+          <label>Dia atual (nº)</label>
+          <input type="number" id="diaAtual" placeholder="10" oninput="simulate()">
+        </div>
+        <div class="form-group">
+          <label>Gasto até agora (R$)</label>
+          <input type="number" id="gastoAtual" placeholder="8500" oninput="simulate()">
+        </div>
+        <div class="form-group">
+          <label>Estratégia de pacing</label>
+          <select id="pacingType" onchange="simulate()">
+            <option value="even">Even (uniforme)</option>
+            <option value="front">Front-loaded (maior peso início)</option>
+            <option value="back">Back-loaded (maior peso fim)</option>
+            <option value="weekday">Weekday-weighted (pesos dias úteis)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tolerância de pacing (%)</label>
+          <input type="number" id="tolerancia" placeholder="10" value="10" oninput="simulate()">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="simulate()">Simular</button>
+        <button class="btn btn-secondary" onclick="loadExample()">Exemplo</button>
+      </div>
+
+      <div id="simResults" style="display:none">
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div id="verdict" class="verdict" style="display:none"></div>
+        <div class="chart-wrap">
+          <div class="chart-label">Projeção de gasto diário vs. plano</div>
+          <canvas id="pacingChart" height="220"></canvas>
+        </div>
+        <div style="margin-top:20px">
+          <div class="chart-label">Pacing por dia (restante)</div>
+          <div id="pacingRows"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-ref">
+      <div class="section-title">Conceitos de pacing</div>
+      <div class="info-box">
+        <strong>Pacing</strong> é o ritmo de gasto de um budget ao longo do período da campanha. Um pacing desalinhado resulta em budget esgotado antes do fim (overpacing) ou budget sobrando ao final (underpacing), impactando alcance, frequência e eficiência.
+      </div>
+      <table>
+        <thead><tr><th>Situação</th><th>Definição</th><th>Risco</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td><span style="color:var(--green)">✅ On pace</span></td><td>Gasto dentro da tolerância (default ±10%)</td><td>Baixo</td><td>Monitorar</td></tr>
+          <tr><td><span style="color:var(--yellow)">⚠️ Underpacing</span></td><td>Gasto abaixo do esperado para a data</td><td>Budget sobrando no final</td><td>Aumentar lances/bids, ampliar segmentação, remover restrições</td></tr>
+          <tr><td><span style="color:var(--red)">🚨 Overpacing</span></td><td>Gasto acima do esperado para a data</td><td>Budget zerado antes do fim</td><td>Reduzir bids, adicionar frequency cap, pausar creative underperformer</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Estratégias de distribuição de budget</div>
+      <table>
+        <thead><tr><th>Estratégia</th><th>Descrição</th><th>Quando usar</th></tr></thead>
+        <tbody>
+          <tr><td>Even (uniforme)</td><td>Mesmo valor por dia</td><td>Campanhas de awareness sem sazonalidade</td></tr>
+          <tr><td>Front-loaded</td><td>Maior gasto nos primeiros dias</td><td>Lançamentos, datas comemorativas, eventos</td></tr>
+          <tr><td>Back-loaded</td><td>Maior gasto nos últimos dias</td><td>Campanhas de remarketing, conversão no fim do mês</td></tr>
+          <tr><td>Weekday-weighted</td><td>Mais gasto em dias úteis</td><td>B2B, search por produto/serviço</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Fórmulas</div>
+      <table>
+        <thead><tr><th>Métrica</th><th>Fórmula</th></tr></thead>
+        <tbody>
+          <tr><td>Budget diário ideal (even)</td><td><span class="code">Budget_total / Dias_total</span></td></tr>
+          <tr><td>Budget esperado até hoje</td><td><span class="code">Budget_diário × Dia_atual</span></td></tr>
+          <tr><td>Pacing ratio</td><td><span class="code">Gasto_atual / Budget_esperado</span></td></tr>
+          <tr><td>Budget restante</td><td><span class="code">Budget_total − Gasto_atual</span></td></tr>
+          <tr><td>Dias restantes</td><td><span class="code">Dias_total − Dia_atual</span></td></tr>
+          <tr><td>Budget/dia necessário</td><td><span class="code">Budget_restante / Dias_restantes</span></td></tr>
+          <tr><td>Projeção de gasto final</td><td><span class="code">Gasto_atual / Dia_atual × Dias_total</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script>
+function simulate(){
+  const bt=parseFloat(document.getElementById('budgetTotal').value)||0;
+  const dt=parseFloat(document.getElementById('diasTotal').value)||0;
+  const da=parseFloat(document.getElementById('diaAtual').value)||0;
+  const ga=parseFloat(document.getElementById('gastoAtual').value)||0;
+  const tol=parseFloat(document.getElementById('tolerancia').value)||10;
+  const ptype=document.getElementById('pacingType').value;
+  if(!bt||!dt||!da){document.getElementById('simResults').style.display='none';return;}
+
+  document.getElementById('simResults').style.display='block';
+
+  const dailyEven=bt/dt;
+  const budgetExpected=dailyEven*da;
+  const pacingRatio=ga/budgetExpected;
+  const restante=bt-ga;
+  const diasRest=dt-da;
+  const dailyNec=diasRest>0?restante/diasRest:0;
+  const projecao=(ga/da)*dt;
+
+  document.getElementById('kpiGrid').innerHTML=[
+    {l:'Budget diário ideal',v:'R$'+fmt2(dailyEven),s:'even pacing'},
+    {l:'Esperado até hoje',v:'R$'+fmt2(budgetExpected),s:`dia ${da} de ${dt}`},
+    {l:'Pacing ratio',v:(pacingRatio*100).toFixed(1)+'%',s:pacingRatio<1?'underpace':pacingRatio>1?'overpace':'on pace'},
+    {l:'Necessário/dia (restante)',v:'R$'+fmt2(dailyNec),s:`${diasRest} dias restantes`},
+    {l:'Budget restante',v:'R$'+fmt2(restante),s:`de R$${fmt2(bt)}`},
+    {l:'Projeção de gasto final',v:'R$'+fmt2(projecao),s:projecao>bt?'⚠️ ultrapassa budget':projecao<bt*0.85?'⚠️ underspend':'✅ ok'},
+    {l:'Delta vs. budget',v:(((projecao-bt)/bt)*100).toFixed(1)+'%',s:projecao>bt?'overspend':'underspend'},
+    {l:'Eficiência de gasto',v:((ga/bt)*100).toFixed(1)+'%',s:`do total já gasto`},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+
+  // verdict
+  const thr=tol/100;
+  const vEl=document.getElementById('verdict');
+  vEl.style.display='flex';
+  if(pacingRatio<1-thr){vEl.className='verdict v-warn';vEl.textContent=`⚠️ Underpacing: gastou ${(pacingRatio*100).toFixed(1)}% do esperado. Revise bids, segmentação e creative.`;}
+  else if(pacingRatio>1+thr){vEl.className='verdict v-bad';vEl.textContent=`🚨 Overpacing: gastou ${(pacingRatio*100).toFixed(1)}% do esperado. Reduza bids ou adicione frequency cap.`;}
+  else{vEl.className='verdict v-ok';vEl.textContent=`✅ On pace: gasto dentro da tolerância (${(pacingRatio*100).toFixed(1)}% do esperado).`;}
+
+  drawChart(bt,dt,da,ga,ptype);
+  buildPacingRows(bt,dt,da,ga,ptype,tol);
+}
+
+function getDailyPlan(bt,dt,type){
+  const days=Array.from({length:dt},(_,i)=>i+1);
+  if(type==='even') return days.map(()=>bt/dt);
+  if(type==='front'){
+    const weights=days.map(d=>1+(dt-d)/(dt*0.5));
+    const wsum=weights.reduce((a,b)=>a+b,0);
+    return weights.map(w=>(w/wsum)*bt);
+  }
+  if(type==='back'){
+    const weights=days.map(d=>1+(d-1)/(dt*0.5));
+    const wsum=weights.reduce((a,b)=>a+b,0);
+    return weights.map(w=>(w/wsum)*bt);
+  }
+  if(type==='weekday'){
+    const weights=days.map(d=>{const wd=(d%7);return(wd===0||wd===6)?0.3:1;});
+    const wsum=weights.reduce((a,b)=>a+b,0);
+    return weights.map(w=>(w/wsum)*bt);
+  }
+  return days.map(()=>bt/dt);
+}
+
+function drawChart(bt,dt,da,ga,ptype){
+  const canvas=document.getElementById('pacingChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||800;
+  canvas.width=W;canvas.height=220;
+  ctx.clearRect(0,0,W,220);
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const textColor=dark?'#9ca3af':'#6b7280';
+  const gridColor=dark?'#2a2d4a':'#e5e7eb';
+  const plan=getDailyPlan(bt,dt,ptype);
+  const cumPlan=plan.reduce((acc,v)=>{acc.push((acc[acc.length-1]||0)+v);return acc;},[]);
+  // actual: days up to da linear, rest projected
+  const rateActual=ga/da;
+  const cumActual=Array.from({length:dt},(_,i)=>i<da?ga/da*(i+1):(ga+rateActual*(i-da+1)));
+  const pad={l:60,r:16,t:16,b:30};
+  const W2=W-pad.l-pad.r,H=220-pad.t-pad.b;
+  const maxY=Math.max(...cumPlan,...cumActual)*1.05;
+  // grid
+  ctx.strokeStyle=gridColor;ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+H-(i/4)*H;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+W2,y);ctx.stroke();
+    ctx.fillStyle=textColor;ctx.font='11px JetBrains Mono,monospace';
+    ctx.fillText('R$'+fmtK(maxY*(i/4)),2,y+4);
+  }
+  // x labels
+  [1,Math.round(dt/4),Math.round(dt/2),Math.round(dt*3/4),dt].forEach(d=>{
+    const x=pad.l+(d-1)/(dt-1)*W2;
+    ctx.fillStyle=textColor;ctx.font='11px JetBrains Mono,monospace';ctx.fillText('D'+d,x-8,pad.t+H+18);
+  });
+  // plan line
+  ctx.beginPath();ctx.strokeStyle='#9ca3af';ctx.lineWidth=1.5;ctx.setLineDash([6,4]);
+  cumPlan.forEach((v,i)=>{const x=pad.l+(i/(dt-1||1))*W2;const y=pad.t+H-(v/maxY)*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();ctx.setLineDash([]);
+  // actual (solid up to da, dashed after)
+  ctx.beginPath();ctx.strokeStyle='#1F36C7';ctx.lineWidth=2.5;
+  cumActual.slice(0,da).forEach((v,i)=>{const x=pad.l+(i/(dt-1||1))*W2;const y=pad.t+H-(v/maxY)*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  ctx.beginPath();ctx.strokeStyle='#1F36C7';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  const startX=pad.l+((da-1)/(dt-1||1))*W2;const startY=pad.t+H-(cumActual[da-1]/maxY)*H;
+  ctx.moveTo(startX,startY);
+  cumActual.slice(da).forEach((v,i)=>{const x=pad.l+((da+i)/(dt-1||1))*W2;const y=pad.t+H-(v/maxY)*H;ctx.lineTo(x,y);});
+  ctx.stroke();ctx.setLineDash([]);
+  // budget line
+  ctx.beginPath();ctx.strokeStyle='#dc2626';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.moveTo(pad.l,pad.t+H-(bt/maxY)*H);ctx.lineTo(pad.l+W2,pad.t+H-(bt/maxY)*H);
+  ctx.stroke();ctx.setLineDash([]);
+  // legend
+  ctx.font='11px Space Grotesk,sans-serif';ctx.fillStyle=textColor;
+  ctx.fillStyle='#9ca3af';ctx.fillRect(W-200,pad.t,16,2);ctx.fillStyle=textColor;ctx.fillText('Plano',W-178,pad.t+5);
+  ctx.fillStyle='#1F36C7';ctx.fillRect(W-130,pad.t,16,3);ctx.fillStyle=textColor;ctx.fillText('Real/Proj.',W-108,pad.t+5);
+  ctx.fillStyle='#dc2626';ctx.fillRect(W-200,pad.t+14,16,1);ctx.fillStyle=textColor;ctx.fillText('Budget total',W-178,pad.t+19);
+}
+
+function buildPacingRows(bt,dt,da,ga,ptype,tol){
+  const plan=getDailyPlan(bt,dt,ptype);
+  const rows=document.getElementById('pacingRows');
+  const remaining=plan.slice(da).map((v,i)=>({day:da+i+1,ideal:v}));
+  const dailyNec=(bt-ga)/Math.max(dt-da,1);
+  const thr=tol/100;
+  rows.innerHTML=remaining.slice(0,14).map(r=>{
+    const ratio=dailyNec/r.ideal;
+    const cls=ratio>1+thr?'v-bad':ratio<1-thr?'v-warn':'v-ok';
+    const label=ratio>1+thr?'acima':'ratio<'+(1-thr)?'abaixo':'ok';
+    const pct=Math.min(ratio,2)*50;
+    return `<div class="pacing-row">
+      <span class="pacing-day">Dia ${r.day}</span>
+      <div class="pacing-bar-wrap"><div class="pacing-bar" style="width:${pct}%;background:${ratio>1+thr?'var(--red)':ratio<1-thr?'var(--yellow)':'var(--green)'}"></div></div>
+      <span class="pacing-amt">R$${fmt2(dailyNec)}</span>
+      <span class="pacing-status badge ${cls==='v-ok'?'badge-ok':cls==='v-warn'?'badge-warn':'badge-bad'}">${ratio>1+thr?'acima':ratio<1-thr?'abaixo':'ok'}</span>
+    </div>`;
+  }).join('');
+}
+
+function loadExample(){
+  document.getElementById('budgetTotal').value=50000;
+  document.getElementById('diasTotal').value=30;
+  document.getElementById('diaAtual').value=12;
+  document.getElementById('gastoAtual').value=15600;
+  document.getElementById('pacingType').value='even';
+  document.getElementById('tolerancia').value=10;
+  simulate();
+}
+
+function fmt2(n){return Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtK(n){return n>=1000?(n/1000).toFixed(0)+'K':n.toFixed(0);}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function toggleTheme(){
+  const d=document.documentElement;
+  d.setAttribute('data-theme',d.getAttribute('data-theme')==='dark'?'':'dark');
+  try{localStorage.setItem('theme',d.getAttribute('data-theme'));}catch{}
+  simulate();
+}
+(()=>{try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch{}})();
+window.addEventListener('resize',simulate);
+</script>
+</body>
+</html>

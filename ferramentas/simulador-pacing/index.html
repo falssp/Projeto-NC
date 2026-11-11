@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none';">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Simulador de Pacing | NC Tool</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul:   #1F36C7;
+      --escuro: #1a237e;
+      --light:  #e8ecff;
+      --bg:     #f0f2ff;
+      --surface:#ffffff;
+      --border: #d6dbf2;
+      --muted:  #9fa8da;
+      --text:   #1a237e;
+      --body:   #3d4a8a;
+      --ok:     #059669;
+      --ok-bg:  #d1fae5;
+      --warn:   #d97706;
+      --warn-bg:#fef3c7;
+      --danger: #dc2626;
+      --danger-bg:#fee2e2;
+    }
+    [data-theme="dark"] {
+      --bg:#0f1225; --surface:#1a1f3a; --border:#2a3060;
+      --muted:#4a5494; --text:#c5ccf5; --body:#8891c8; --light:#1f2650;
+      --ok-bg:#064e3b; --warn-bg:#451a03; --danger-bg:#450a0a;
+    }
+
+    body { font-family:'Space Grotesk',system-ui,sans-serif; background:var(--bg); color:var(--text); padding:2rem; }
+
+    .nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:36px; }
+    .nav-left { display:flex; align-items:center; gap:8px; }
+    .back { font-size:.78rem; font-weight:600; color:var(--muted); text-decoration:none; }
+    .back:hover { color:var(--azul); }
+    .sep { color:var(--border); }
+    .crumb { font-size:.78rem; color:var(--body); }
+    .theme-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 10px; font-size:.72rem; cursor:pointer; font-family:inherit; }
+    .theme-btn:hover { border-color:var(--azul); color:var(--azul); }
+
+    header { margin-bottom:32px; }
+    .kicker { font-size:.72rem; font-weight:600; letter-spacing:.1em; color:var(--muted); margin-bottom:8px; text-transform:uppercase; }
+    h1 { font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; color:var(--escuro); margin-bottom:8px; }
+    .subtitle { font-size:.85rem; color:var(--body); line-height:1.6; }
+
+    .layout { display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start; }
+    @media (max-width:860px) { .layout { grid-template-columns:1fr; } }
+
+    .panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; }
+    .panel-title { font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+    .panel-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:.72rem; font-weight:600; color:var(--body); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+    .field-row { display:flex; align-items:center; gap:8px; }
+    .field input {
+      width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:9px;
+      background:var(--bg); color:var(--text);
+      font-family:'JetBrains Mono',monospace; font-size:.88rem; outline:none; transition:border-color .15s;
+    }
+    .field input:focus { border-color:var(--azul); }
+    .field input::placeholder { color:var(--muted); }
+    .field-unit { font-size:.72rem; font-weight:600; color:var(--muted); white-space:nowrap; }
+
+    .currency-toggle { display:flex; gap:6px; margin-bottom:16px; }
+    .currency-btn { padding:5px 12px; border:1px solid var(--border); border-radius:7px; font-size:.72rem; font-weight:600; cursor:pointer; background:none; color:var(--body); font-family:inherit; transition:all .15s; }
+    .currency-btn.active { background:var(--azul); border-color:var(--azul); color:#fff; }
+
+    .btn-calc { width:100%; padding:11px; background:var(--azul); color:#fff; border:none; border-radius:10px; font-family:inherit; font-size:.85rem; font-weight:700; cursor:pointer; margin-top:4px; transition:opacity .15s; }
+    .btn-calc:hover { opacity:.88; }
+    .btn-clear { width:100%; padding:8px; background:none; color:var(--muted); border:1px solid var(--border); border-radius:10px; font-family:inherit; font-size:.78rem; cursor:pointer; margin-top:8px; transition:all .15s; }
+    .btn-clear:hover { border-color:var(--danger); color:var(--danger); }
+
+    /* Status badge */
+    .status-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:12px 20px; border-radius:12px;
+      font-size:1rem; font-weight:700; margin-bottom:20px; width:100%;
+    }
+    .status-badge .dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .status-on    { background:var(--ok-bg);   color:var(--ok);   }
+    .status-on .dot    { background:var(--ok); }
+    .status-under { background:var(--warn-bg); color:var(--warn); }
+    .status-under .dot { background:var(--warn); }
+    .status-over  { background:var(--danger-bg); color:var(--danger); }
+    .status-over .dot  { background:var(--danger); }
+    .status-empty { background:var(--light); color:var(--muted); }
+    .status-empty .dot { background:var(--muted); }
+
+    /* KPI grid */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; margin-bottom:20px; }
+
+    .kpi-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;
+      position:relative; overflow:hidden;
+    }
+    .kpi-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:var(--kpi-accent,var(--azul)); border-radius:14px 0 0 14px; }
+    .kpi-label { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:5px; }
+    .kpi-val { font-family:'JetBrains Mono',monospace; font-size:1.25rem; font-weight:600; color:var(--kpi-accent,var(--azul)); line-height:1; margin-bottom:3px; }
+    .kpi-sub { font-size:.67rem; color:var(--body); line-height:1.4; }
+
+    /* Progress bar */
+    .prog-section { margin-bottom:20px; }
+    .prog-row { margin-bottom:14px; }
+    .prog-labels { display:flex; justify-content:space-between; font-size:.72rem; color:var(--body); margin-bottom:5px; }
+    .prog-labels strong { font-weight:700; }
+    .prog-bar { height:10px; background:var(--light); border-radius:99px; overflow:hidden; }
+    .prog-fill { height:100%; border-radius:99px; transition:width .4s; }
+    .prog-fill.time    { background:var(--muted); }
+    .prog-fill.budget  { background:var(--azul); }
+    .prog-fill.spent   { background:var(--ok); }
+    .prog-fill.over    { background:var(--danger); }
+    .prog-fill.warning { background:var(--warn); }
+
+    /* Recommendation */
+    .rec-box { background:var(--light); border-radius:12px; padding:16px 18px; }
+    .rec-box .rec-title { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:8px; }
+    .rec-box p { font-size:.82rem; color:var(--body); line-height:1.6; }
+    .rec-box strong { color:var(--text); }
+
+    footer { margin-top:48px; font-size:.72rem; color:var(--muted); text-align:center; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="nav">
+    <div class="nav-left">
+      <a class="back" href="/Projeto-NC/ferramentas/">&#8592; Ferramentas</a>
+      <span class="sep">/</span>
+      <span class="crumb">Simulador de Pacing</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌙 Dark</button>
+  </nav>
+
+  <header>
+    <p class="kicker">NC Tool &nbsp;·&nbsp; AdOps</p>
+    <h1>Simulador de Pacing</h1>
+    <p class="subtitle">Verifica se a campanha está on-pace, under-pacing ou over-pacing — projeta o gasto final e calcula o ajuste diário necessário.</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- INPUTS -->
+    <div class="panel">
+      <p class="panel-title">Dados da Campanha</p>
+
+      <div class="currency-toggle">
+        <button class="currency-btn active" data-cur="R$" onclick="setCurrency(this,'R$')">R$</button>
+        <button class="currency-btn" data-cur="US$" onclick="setCurrency(this,'US$')">US$</button>
+        <button class="currency-btn" data-cur="€"   onclick="setCurrency(this,'€')">€</button>
+      </div>
+
+      <div class="field">
+        <label id="lbl-budget">Orçamento Total (R$)</label>
+        <input type="text" id="budget" placeholder="ex: 50.000,00" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Data de Início</label>
+        <input type="date" id="dt-start" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Data de Término</label>
+        <input type="date" id="dt-end" oninput="calc()">
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+
+      <div class="field">
+        <label id="lbl-spent">Gasto Atual (R$)</label>
+        <input type="text" id="spent" placeholder="ex: 18.000,00" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>Data de Referência do Gasto</label>
+        <input type="date" id="dt-ref" oninput="calc()">
+        <p style="font-size:.68rem;color:var(--muted);margin-top:4px;">Deixe em branco para usar hoje.</p>
+      </div>
+
+      <button class="btn-clear" onclick="clearAll()">Limpar</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <!-- Status -->
+      <div id="status-badge" class="status-badge status-empty" style="margin-bottom:20px;">
+        <span class="dot"></span>
+        <span id="status-text">Preencha os campos para ver o pacing</span>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpi-grid">
+        <!-- preenchido por JS -->
+      </div>
+
+      <!-- Progress bars -->
+      <div class="panel prog-section" id="prog-panel" style="display:none;margin-bottom:16px;">
+        <p class="panel-title">Progresso</p>
+
+        <div class="prog-row">
+          <div class="prog-labels"><span>Tempo decorrido</span><strong id="prog-time-label">—</strong></div>
+          <div class="prog-bar"><div class="prog-fill time" id="prog-time" style="width:0%"></div></div>
+        </div>
+        <div class="prog-row">
+          <div class="prog-labels"><span>Orçamento esperado (linear)</span><strong id="prog-expected-label">—</strong></div>
+          <div class="prog-bar"><div class="prog-fill budget" id="prog-expected" style="width:0%"></div></div>
+        </div>
+        <div class="prog-row">
+          <div class="prog-labels"><span>Gasto real</span><strong id="prog-spent-label">—</strong></div>
+          <div class="prog-bar"><div class="prog-fill spent" id="prog-spent" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <!-- Recommendation -->
+      <div class="panel rec-box" id="rec-panel" style="display:none;">
+        <p class="rec-title">Recomendação</p>
+        <p id="rec-text"></p>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>NC Tool &nbsp;·&nbsp; Unilever BR × Grasp &nbsp;·&nbsp; Simulador de Pacing · Offline</footer>
+</div>
+
+<script>
+  let currency = 'R$';
+
+  /* ── utilidades ── */
+  function parseBR(v) {
+    if (!v) return NaN;
+    const s = String(v).trim().replace(/\s/g,'');
+    if (s.includes(',') && s.includes('.')) return parseFloat(s.replace(/\./g,'').replace(',','.'));
+    if (s.includes(',')) return parseFloat(s.replace(',','.'));
+    return parseFloat(s.replace(/\./g,''));
+  }
+
+  function fmt(n, dec=2) {
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  }
+
+  function fmtMoney(n) { return isFinite(n) ? currency + ' ' + fmt(n) : '—'; }
+  function fmtPct(n, dec=1) { return isFinite(n) ? fmt(n,dec) + '%' : '—'; }
+
+  function daysBetween(a, b) {
+    // a, b são Date objects; retorna número de dias (pode ser fracionado)
+    return (b - a) / 86400000;
+  }
+
+  function parseDate(id) {
+    const v = document.getElementById(id).value;
+    if (!v) return null;
+    const [y,m,d] = v.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  /* ── cálculo principal ── */
+  function calc() {
+    const budget = parseBR(document.getElementById('budget').value);
+    const spent  = parseBR(document.getElementById('spent').value);
+    const dtStart= parseDate('dt-start');
+    const dtEnd  = parseDate('dt-end');
+    const dtRefRaw = parseDate('dt-ref');
+    const today  = new Date(); today.setHours(0,0,0,0);
+    const dtRef  = dtRefRaw || today;
+
+    const badge = document.getElementById('status-badge');
+    const statusText = document.getElementById('status-text');
+
+    // Validação mínima
+    if (!isFinite(budget) || !isFinite(spent) || !dtStart || !dtEnd) {
+      badge.className = 'status-badge status-empty';
+      statusText.textContent = 'Preencha os campos para ver o pacing';
+      document.getElementById('kpi-grid').innerHTML = '';
+      document.getElementById('prog-panel').style.display = 'none';
+      document.getElementById('rec-panel').style.display = 'none';
+      return;
+    }
+    if (dtEnd <= dtStart || dtRef < dtStart) {
+      badge.className = 'status-badge status-empty';
+      statusText.textContent = 'Datas inválidas — verifique início/fim/referência';
+      document.getElementById('kpi-grid').innerHTML = '';
+      document.getElementById('prog-panel').style.display = 'none';
+      document.getElementById('rec-panel').style.display = 'none';
+      return;
+    }
+
+    const totalDays    = daysBetween(dtStart, dtEnd);
+    const elapsedDays  = Math.min(Math.max(daysBetween(dtStart, dtRef), 0), totalDays);
+    const remainDays   = totalDays - elapsedDays;
+    const timePct      = (elapsedDays / totalDays) * 100;
+
+    // Orçamento esperado de forma linear até dtRef
+    const expectedSpend = budget * (elapsedDays / totalDays);
+    const expectedPct   = (expectedSpend / budget) * 100;
+    const spentPct      = (spent / budget) * 100;
+
+    // Variação
+    const variance      = spent - expectedSpend;
+    const variancePct   = expectedSpend > 0 ? (variance / expectedSpend) * 100 : 0;
+
+    // Média diária real
+    const dailyActual   = elapsedDays > 0 ? spent / elapsedDays : 0;
+
+    // Projeção: se mantiver ritmo atual
+    const projected     = elapsedDays > 0 ? (spent / elapsedDays) * totalDays : 0;
+
+    // Necessário: para bater o budget com o restante
+    const remaining     = budget - spent;
+    const dailyNeeded   = remainDays > 0 ? remaining / remainDays : NaN;
+
+    // Status
+    const THRESHOLD = 5; // ±5% = on pace
+    let statusClass, statusMsg;
+    if (spentPct > expectedPct + THRESHOLD) {
+      statusClass = 'status-over';
+      statusMsg   = '🔴 Over-pacing — gasto acima do esperado';
+    } else if (spentPct < expectedPct - THRESHOLD) {
+      statusClass = 'status-under';
+      statusMsg   = '🟡 Under-pacing — gasto abaixo do esperado';
+    } else {
+      statusClass = 'status-on';
+      statusMsg   = '🟢 On Pace — campanha dentro do ritmo esperado';
+    }
+
+    badge.className = `status-badge ${statusClass}`;
+    statusText.textContent = statusMsg;
+
+    // KPIs
+    const kpis = [
+      { label:'Orçamento Total',      val:fmtMoney(budget),         sub:`${fmt(totalDays,0)} dias de campanha`,        accent:'#1F36C7' },
+      { label:'Gasto Atual',          val:fmtMoney(spent),          sub:`${fmtPct(spentPct)} do orçamento`,            accent:'#059669' },
+      { label:'Esperado até hoje',    val:fmtMoney(expectedSpend),  sub:`${fmtPct(timePct)} do período decorrido`,     accent:'#7c3aed' },
+      { label:'Variação',             val:fmtMoney(variance),       sub:variancePct >= 0 ? `+${fmtPct(Math.abs(variancePct))} acima` : `${fmtPct(Math.abs(variancePct))} abaixo`, accent: variance >= 0 ? '#dc2626' : '#d97706' },
+      { label:'Média Diária Real',    val:fmtMoney(dailyActual),    sub:`${fmt(elapsedDays,0)} dias decorridos`,       accent:'#0891b2' },
+      { label:'Média Diária Necessária', val: isFinite(dailyNeeded) ? fmtMoney(dailyNeeded) : (remainDays <= 0 ? 'Campanha encerrada' : '—'), sub: remainDays > 0 ? `para ${fmt(remainDays,0)} dias restantes` : '', accent:'#db2777' },
+      { label:'Projeção Final',       val:fmtMoney(projected),      sub: projected > budget ? `↑ ${fmtMoney(projected-budget)} acima do budget` : `↓ ${fmtMoney(budget-projected)} abaixo do budget`, accent: Math.abs(projected - budget) / budget > 0.1 ? '#dc2626' : '#059669' },
+      { label:'Saldo Restante',       val:fmtMoney(remaining),      sub:`${fmt(remainDays,0)} dias restantes`,        accent:'#475569' },
+    ];
+
+    const grid = document.getElementById('kpi-grid');
+    grid.innerHTML = kpis.map(k => `
+      <div class="kpi-card" style="--kpi-accent:${k.accent}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-val">${k.val}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>
+    `).join('');
+
+    // Progress bars
+    document.getElementById('prog-panel').style.display = '';
+    const setBar = (id, pct, cls) => {
+      const el = document.getElementById(id);
+      const p = Math.min(Math.max(pct, 0), 100);
+      el.style.width = p + '%';
+      el.className = `prog-fill ${cls}`;
+    };
+    setBar('prog-time',     timePct,                    'time');
+    setBar('prog-expected', Math.min(expectedPct, 100), 'budget');
+    const spentFillCls = statusClass === 'status-over' ? 'over' : statusClass === 'status-under' ? 'warning' : 'spent';
+    setBar('prog-spent',    Math.min(spentPct, 100),    spentFillCls);
+
+    document.getElementById('prog-time-label').textContent     = fmtPct(timePct);
+    document.getElementById('prog-expected-label').textContent = fmtPct(Math.min(expectedPct,100));
+    document.getElementById('prog-spent-label').textContent    = fmtPct(Math.min(spentPct,100));
+
+    // Recommendation
+    document.getElementById('rec-panel').style.display = '';
+    let rec = '';
+    if (remainDays <= 0) {
+      rec = `Campanha encerrada. Gasto final: <strong>${fmtMoney(spent)}</strong> de <strong>${fmtMoney(budget)}</strong> (${fmtPct(spentPct)}).`;
+    } else if (statusClass === 'status-on') {
+      rec = `Campanha no ritmo. Mantenha a média diária de <strong>${fmtMoney(dailyActual)}</strong> para atingir o budget. Projeção final: <strong>${fmtMoney(projected)}</strong>.`;
+    } else if (statusClass === 'status-under') {
+      rec = `Gasto <strong>${fmtPct(Math.abs(variancePct))}</strong> abaixo do esperado. Para atingir o budget, aumente a média diária de <strong>${fmtMoney(dailyActual)}</strong> para <strong>${fmtMoney(dailyNeeded)}</strong>. Se mantiver o ritmo atual, o gasto projetado é <strong>${fmtMoney(projected)}</strong> (${fmtPct(Math.abs(100 - projected/budget*100))} abaixo do budget).`;
+    } else {
+      rec = `Gasto <strong>${fmtPct(Math.abs(variancePct))}</strong> acima do esperado. Reduza a média diária de <strong>${fmtMoney(dailyActual)}</strong> para <strong>${fmtMoney(dailyNeeded)}</strong>. Se mantiver o ritmo, o budget será esgotado antes do fim da campanha — projeção: <strong>${fmtMoney(projected)}</strong>.`;
+    }
+    document.getElementById('rec-text').innerHTML = rec;
+  }
+
+  function clearAll() {
+    ['budget','spent','dt-start','dt-end','dt-ref'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    calc();
+  }
+
+  function setCurrency(btn, cur) {
+    currency = cur;
+    document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('lbl-budget').textContent = `Orçamento Total (${cur})`;
+    document.getElementById('lbl-spent').textContent  = `Gasto Atual (${cur})`;
+    calc();
+  }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const dark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', dark ? '' : 'dark');
+    document.querySelector('.theme-btn').textContent = dark ? '🌙 Dark' : '☀️ Light';
+    try { localStorage.setItem('nc-theme', dark ? '' : 'dark'); } catch(e){}
+  }
+
+  // init: data de hoje no campo de referência
+  const today = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('dt-ref').value = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+  try {
+    if (localStorage.getItem('nc-theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme','dark');
+      document.querySelector('.theme-btn').textContent = '☀️ Light';
+    }
+  } catch(e){}
+</script>
+</body>
+</html>

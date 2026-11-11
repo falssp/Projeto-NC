@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Incrementalidade — AdOps Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;--card:#fff;--text:#0d0f1a;--muted:#6b7280;--border:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--ok-bg:#dcfce7;--warn-bg:#fef3c7;--bad-bg:#fee2e2;}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#1a1d2e;--text:#e8ecff;--muted:#9ca3af;--border:#374151;--light:#1e2a5a;--ok-bg:#14532d;--warn-bg:#78350f;--bad-bg:#7f1d1d;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:var(--azul);color:#fff;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:1.2rem;font-weight:700;}
+header a{color:#fff;opacity:.8;text-decoration:none;font-size:.875rem;}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;padding:0 2rem;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;}nav::-webkit-scrollbar{display:none;}
+.tab{padding:.75rem 1.25rem;cursor:pointer;font-size:.875rem;font-weight:500;border-bottom:3px solid transparent;color:var(--muted);transition:.2s;white-space:nowrap;}
+.tab.active{color:var(--azul);border-color:var(--azul);}
+main{padding:2rem;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--azul);}
+label{display:block;font-size:.8rem;font-weight:500;color:var(--muted);margin-bottom:.3rem;margin-top:.8rem;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:.55rem .75rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--azul);}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;border-radius:8px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:.2s;}
+.btn-primary{background:var(--azul);color:#fff;}
+.btn-primary:hover{background:var(--escuro);}
+.btn-secondary{background:var(--light);color:var(--azul);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;gap:.75rem;margin-top:1rem;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;}
+.kpi .val{font-size:1.6rem;font-weight:700;color:var(--azul);}
+.kpi .lbl{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+.kpi.highlight .val{color:var(--ok);}
+.kpi.highlight{border-color:var(--ok);}
+canvas{display:block;width:100%;border-radius:8px;background:var(--bg);}
+.pane{display:none;} .pane.active{display:block;}
+.verdict{padding:.75rem 1rem;border-radius:8px;font-weight:600;font-size:.9rem;margin-bottom:1rem;}
+.verdict.ok{background:var(--ok-bg);color:var(--ok);}
+.verdict.warn{background:var(--warn-bg);color:var(--warn);}
+.verdict.bad{background:var(--bad-bg);color:var(--bad);}
+table{width:100%;border-collapse:collapse;font-size:.875rem;}
+th{text-align:left;padding:.6rem .75rem;background:var(--light);color:var(--azul);font-weight:600;font-size:.8rem;}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);}
+.ref-block{background:var(--light);border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;}
+.ref-block h4{font-size:.9rem;font-weight:600;color:var(--azul);margin-bottom:.5rem;}
+.ref-block p,.ref-block li{font-size:.82rem;color:var(--muted);line-height:1.6;}
+.ref-block ul{padding-left:1.2rem;}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;margin:.4rem 0;}
+.ci-bar{display:flex;align-items:center;gap:.5rem;margin:.5rem 0;}
+.ci-track{flex:1;height:12px;background:var(--border);border-radius:6px;position:relative;overflow:visible;}
+.ci-fill{height:12px;border-radius:6px;position:absolute;}
+.ci-label{font-size:.75rem;color:var(--muted);min-width:40px;text-align:right;}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:.2rem;">🧪 Incrementalidade</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">🌙 Tema</button>
+</header>
+<nav>
+  <div class="tab active" onclick="switchTab('geo')">Teste Geo Split</div>
+  <div class="tab" onclick="switchTab('holdout')">Holdout Group</div>
+  <div class="tab" onclick="switchTab('ref')">Referência</div>
+</nav>
+<main>
+
+<!-- TAB GEO SPLIT -->
+<div id="tab-geo" class="pane active">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Configuração do Teste Geo</h3>
+      <label>Região de Teste (Exposta à Mídia)</label>
+      <input id="geo-regiao-test" placeholder="Ex: São Paulo - Capital">
+      <label>Conversões na Região Teste</label>
+      <input id="geo-conv-test" type="number" placeholder="Ex: 480">
+      <label>Impressões / Usuários Alcançados (Teste)</label>
+      <input id="geo-imp-test" type="number" placeholder="Ex: 120000">
+      <label>Investimento na Região Teste (R$)</label>
+      <input id="geo-inv-test" type="number" placeholder="Ex: 25000">
+      <hr style="margin:1rem 0;border:none;border-top:1px solid var(--border);">
+      <label>Região de Controle (Sem Mídia)</label>
+      <input id="geo-regiao-ctrl" placeholder="Ex: Interior SP">
+      <label>Conversões na Região Controle</label>
+      <input id="geo-conv-ctrl" type="number" placeholder="Ex: 190">
+      <label>Impressões / Usuários Alcançados (Controle)</label>
+      <input id="geo-imp-ctrl" type="number" placeholder="Ex: 95000">
+      <label>Período do Teste (dias)</label>
+      <input id="geo-dias" type="number" placeholder="Ex: 21">
+      <label>Ticket Médio (R$)</label>
+      <input id="geo-ticket" type="number" placeholder="Ex: 350">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcGeo()">Calcular Incrementalidade</button>
+        <button class="btn btn-secondary" onclick="loadExGeo()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-geo" class="kpi-grid" style="display:none;"></div>
+      <div id="verdict-geo"></div>
+      <div class="card">
+        <h3>Teste vs. Controle — Taxas de Conversão</h3>
+        <canvas id="chart-geo" height="220"></canvas>
+      </div>
+      <div id="roi-geo" style="display:none;margin-top:1rem;" class="card">
+        <h3>ROI Incremental</h3>
+        <div id="roi-geo-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB HOLDOUT -->
+<div id="tab-holdout" class="pane">
+  <div class="grid-2">
+    <div class="card">
+      <h3>Configuração do Holdout</h3>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;">Grupo holdout = usuários elegíveis mas propositalmente excluídos da campanha.</p>
+      <label>Tamanho do Grupo Exposto (%)</label>
+      <input id="ho-pct-exp" type="number" placeholder="Ex: 80" value="80">
+      <label>Tamanho do Holdout (%)</label>
+      <input id="ho-pct-hold" type="number" placeholder="Ex: 20" value="20">
+      <label>Conversões no Grupo Exposto</label>
+      <input id="ho-conv-exp" type="number" placeholder="Ex: 620">
+      <label>Usuários no Grupo Exposto</label>
+      <input id="ho-users-exp" type="number" placeholder="Ex: 50000">
+      <label>Conversões no Holdout</label>
+      <input id="ho-conv-hold" type="number" placeholder="Ex: 95">
+      <label>Usuários no Holdout</label>
+      <input id="ho-users-hold" type="number" placeholder="Ex: 12500">
+      <label>Investimento Total (R$)</label>
+      <input id="ho-inv" type="number" placeholder="Ex: 18000">
+      <label>Ticket Médio (R$)</label>
+      <input id="ho-ticket" type="number" placeholder="Ex: 280">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcHoldout()">Calcular</button>
+        <button class="btn btn-secondary" onclick="loadExHoldout()">Exemplo</button>
+      </div>
+    </div>
+    <div>
+      <div id="kpi-hold" class="kpi-grid" style="display:none;"></div>
+      <div id="verdict-hold"></div>
+      <div class="card">
+        <h3>Exposto vs. Holdout</h3>
+        <canvas id="chart-hold" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB REF -->
+<div id="tab-ref" class="pane">
+  <div class="grid-2">
+    <div class="ref-block">
+      <h4>O que é Incrementalidade?</h4>
+      <p>Incrementalidade mede quantas conversões <em>de fato aconteceram por causa da mídia</em>, removendo conversões que teriam ocorrido de qualquer forma (orgânico, intenção prévia, etc.).</p>
+      <div class="mono">Inc. Lift = (CVR_teste − CVR_controle) / CVR_controle × 100</div>
+    </div>
+    <div class="ref-block">
+      <h4>Tipos de Teste</h4>
+      <ul>
+        <li><strong>Geo Split:</strong> compara regiões expostas vs. não expostas à mídia. Mais realista para campanhas com alto alcance.</li>
+        <li><strong>Holdout Group:</strong> exclui propositalmente um subgrupo aleatório de usuários elegíveis. Mais controlado mas requer capacidade técnica.</li>
+        <li><strong>PSA Test:</strong> substitui anúncios da campanha por anúncios neutros (PSA) no grupo controle. Controla o efeito da exibição.</li>
+      </ul>
+    </div>
+    <div class="ref-block">
+      <h4>Interpretando o Lift</h4>
+      <table style="font-size:.82rem;">
+        <tr><th>Lift Incremental</th><th>Interpretação</th></tr>
+        <tr><td>&gt; 20%</td><td>Alta incrementalidade — mídia muito efetiva</td></tr>
+        <tr><td>10–20%</td><td>Incrementalidade moderada — boa contribuição</td></tr>
+        <tr><td>5–10%</td><td>Baixa incrementalidade — rever targeting/canal</td></tr>
+        <tr><td>&lt; 5%</td><td>Mídia quase não contribui — risco de desperdiçar budget</td></tr>
+      </table>
+    </div>
+    <div class="ref-block">
+      <h4>iROAS — ROAS Incremental</h4>
+      <p>Diferente do ROAS tradicional, o iROAS considera apenas a receita gerada <em>incrementalmente</em> pela mídia.</p>
+      <div class="mono">iROAS = Receita Incremental / Investimento</div>
+      <ul style="margin-top:.5rem;">
+        <li>iROAS &lt; 1 → campanha não paga o investimento incremental</li>
+        <li>iROAS 1–2 → rentável mas com margem apertada</li>
+        <li>iROAS &gt; 2 → boa performance incremental</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',h.dataset.theme);}catch(e){}}
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+function switchTab(id){document.querySelectorAll('.tab').forEach((t,i)=>{const ids=['geo','holdout','ref'];t.classList.toggle('active',ids[i]===id);});document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+id).classList.add('active');}
+
+function calcGeo(){
+  const convT=+document.getElementById('geo-conv-test').value;
+  const impT=+document.getElementById('geo-imp-test').value;
+  const invT=+document.getElementById('geo-inv-test').value;
+  const convC=+document.getElementById('geo-conv-ctrl').value;
+  const impC=+document.getElementById('geo-imp-ctrl').value;
+  const dias=+document.getElementById('geo-dias').value;
+  const ticket=+document.getElementById('geo-ticket').value;
+  if(!convT||!impT||!convC||!impC){alert('Preencha os campos de conversões e impressões.');return;}
+  const cvrT=convT/impT*100;
+  const cvrC=convC/impC*100;
+  const lift=(cvrT-cvrC)/cvrC*100;
+  const convInc=convT-(convC/impC*impT);
+  const recInc=convInc*ticket;
+  const iroas=invT>0?recInc/invT:0;
+  document.getElementById('kpi-geo').style.display='grid';
+  document.getElementById('kpi-geo').innerHTML=`
+    <div class="kpi"><div class="val">${fmt1(cvrT)}%</div><div class="lbl">CVR Teste</div></div>
+    <div class="kpi"><div class="val">${fmt1(cvrC)}%</div><div class="lbl">CVR Controle</div></div>
+    <div class="kpi highlight"><div class="val">${lift>=0?'+':''}${fmt1(lift)}%</div><div class="lbl">Lift Incremental</div></div>
+    <div class="kpi"><div class="val">${fmtN(Math.round(convInc))}</div><div class="lbl">Conv. Incrementais</div></div>
+    ${ticket?`<div class="kpi"><div class="val">R$ ${fmtN(Math.round(recInc))}</div><div class="lbl">Receita Incremental</div></div>`:''}
+    ${invT&&ticket?`<div class="kpi highlight"><div class="val">${fmt1(iroas)}×</div><div class="lbl">iROAS</div></div>`:''}`;
+  let cls,txt;
+  if(lift>=20){cls='ok';txt=`✅ Alta incrementalidade (+${fmt1(lift)}%). A mídia está gerando conversões genuínas.`;}
+  else if(lift>=10){cls='ok';txt=`✅ Incrementalidade moderada (+${fmt1(lift)}%). Boa contribuição da mídia.`;}
+  else if(lift>=5){cls='warn';txt=`⚠️ Baixa incrementalidade (+${fmt1(lift)}%). Rever targeting e criativos.`;}
+  else if(lift>=0){cls='warn';txt=`⚠️ Incrementalidade muito baixa (+${fmt1(lift)}%). Mídia quase não está contribuindo.`;}
+  else{cls='bad';txt=`❌ Incrementalidade negativa (${fmt1(lift)}%). Revisar segmentação ou pausar campanha.`;}
+  document.getElementById('verdict-geo').innerHTML=`<div class="verdict ${cls}">${txt}</div>`;
+  drawGeoChart(cvrT,cvrC);
+  if(invT&&ticket){
+    document.getElementById('roi-geo').style.display='block';
+    document.getElementById('roi-geo-content').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:.875rem;">
+        <div><span style="color:var(--muted);">Conversões totais (teste):</span> ${fmtN(convT)}</div>
+        <div><span style="color:var(--muted);">Conv. teria ocorrido sem mídia:</span> ${fmtN(Math.round(convT-convInc))}</div>
+        <div><span style="color:var(--muted);">Conv. incrementais:</span> <strong>${fmtN(Math.round(convInc))}</strong></div>
+        <div><span style="color:var(--muted);">% conversões incrementais:</span> <strong>${fmt1(convInc/convT*100)}%</strong></div>
+        <div><span style="color:var(--muted);">Receita incremental:</span> <strong>R$ ${fmtN(Math.round(recInc))}</strong></div>
+        <div><span style="color:var(--muted);">iROAS:</span> <strong style="color:${iroas>=2?'var(--ok)':iroas>=1?'var(--warn)':'var(--bad)'};">${fmt1(iroas)}×</strong></div>
+      </div>`;
+  }
+}
+
+function drawGeoChart(cvrT,cvrC){
+  const cv=document.getElementById('chart-geo');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=220*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=220,pad=50;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const maxV=Math.max(cvrT,cvrC)*1.3;
+  const bars=[['Teste',cvrT,'#1F36C7'],['Controle',cvrC,'#9ca3af']];
+  const bw=90,gap=60,startX=(W-(bars.length*(bw+gap)))/2+30;
+  bars.forEach(([lbl,v,color],i)=>{
+    const bh=(H-pad*2)*(v/maxV);
+    const x=startX+i*(bw+gap);const y=H-pad-bh;
+    ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,bw,bh,4);ctx.fill();
+    ctx.fillStyle=isDark?'#e8ecff':'#0d0f1a';ctx.font='bold 13px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(fmt1(v)+'%',x+bw/2,y-8);
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='11px Space Grotesk';
+    ctx.fillText(lbl,x+bw/2,H-pad+16);
+  });
+}
+
+function loadExGeo(){
+  document.getElementById('geo-regiao-test').value='São Paulo - Capital';
+  document.getElementById('geo-conv-test').value=480;
+  document.getElementById('geo-imp-test').value=120000;
+  document.getElementById('geo-inv-test').value=25000;
+  document.getElementById('geo-regiao-ctrl').value='Interior SP';
+  document.getElementById('geo-conv-ctrl').value=190;
+  document.getElementById('geo-imp-ctrl').value=95000;
+  document.getElementById('geo-dias').value=21;
+  document.getElementById('geo-ticket').value=350;
+  calcGeo();
+}
+
+function calcHoldout(){
+  const convE=+document.getElementById('ho-conv-exp').value;
+  const usersE=+document.getElementById('ho-users-exp').value;
+  const convH=+document.getElementById('ho-conv-hold').value;
+  const usersH=+document.getElementById('ho-users-hold').value;
+  const inv=+document.getElementById('ho-inv').value;
+  const ticket=+document.getElementById('ho-ticket').value;
+  if(!convE||!usersE||!convH||!usersH){alert('Preencha os campos.');return;}
+  const cvrE=convE/usersE*100;
+  const cvrH=convH/usersH*100;
+  const lift=(cvrE-cvrH)/cvrH*100;
+  const convInc=(cvrE/100-cvrH/100)*usersE;
+  const recInc=convInc*ticket;
+  const iroas=inv>0?recInc/inv:0;
+  const orgPct=cvrH/cvrE*100;
+  document.getElementById('kpi-hold').style.display='grid';
+  document.getElementById('kpi-hold').innerHTML=`
+    <div class="kpi"><div class="val">${fmt1(cvrE)}%</div><div class="lbl">CVR Exposto</div></div>
+    <div class="kpi"><div class="val">${fmt1(cvrH)}%</div><div class="lbl">CVR Holdout</div></div>
+    <div class="kpi highlight"><div class="val">${lift>=0?'+':''}${fmt1(lift)}%</div><div class="lbl">Lift Incremental</div></div>
+    <div class="kpi"><div class="val">${fmt1(100-orgPct)}%</div><div class="lbl">% Incremental</div></div>
+    <div class="kpi"><div class="val">${fmtN(Math.round(convInc))}</div><div class="lbl">Conv. Incrementais</div></div>
+    ${inv&&ticket?`<div class="kpi highlight"><div class="val">${fmt1(iroas)}×</div><div class="lbl">iROAS</div></div>`:''}`;
+  let cls,txt;
+  if(lift>=20){cls='ok';txt=`✅ Alta incrementalidade (+${fmt1(lift)}%). A campanha está gerando conversões genuínas.`;}
+  else if(lift>=10){cls='ok';txt=`✅ Incrementalidade moderada (+${fmt1(lift)}%). Boa performance.`;}
+  else if(lift>=5){cls='warn';txt=`⚠️ Baixa incrementalidade (+${fmt1(lift)}%). Muitas conversões seriam orgânicas.`;}
+  else if(lift>=0){cls='warn';txt=`⚠️ Incrementalidade muito baixa. ${fmt1(orgPct)}% das conversões teria ocorrido sem mídia.`;}
+  else{cls='bad';txt=`❌ Lift negativo — rever campanha e segmentação urgente.`;}
+  document.getElementById('verdict-hold').innerHTML=`<div class="verdict ${cls}">${txt}</div>`;
+  drawHoldChart(cvrE,cvrH);
+}
+
+function drawHoldChart(cvrE,cvrH){
+  const cv=document.getElementById('chart-hold');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=cv.offsetWidth*dpr;cv.height=220*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  const W=cv.offsetWidth,H=220,pad=50;
+  const isDark=document.documentElement.dataset.theme==='dark';
+  ctx.fillStyle=isDark?'#0d0f1a':'#f0f2ff';ctx.fillRect(0,0,W,H);
+  const maxV=Math.max(cvrE,cvrH)*1.3;
+  const bars=[['Exposto',cvrE,'#1F36C7'],['Holdout',cvrH,'#9ca3af']];
+  const bw=90,gap2=60,startX=(W-(bars.length*(bw+gap2)))/2+30;
+  bars.forEach(([lbl,v,color],i)=>{
+    const bh=(H-pad*2)*(v/maxV);
+    const x=startX+i*(bw+gap2);const y=H-pad-bh;
+    // baseline (holdout) reference line on first bar
+    if(i===0&&cvrH>0){
+      const yRef=H-pad-(H-pad*2)*(cvrH/maxV);
+      ctx.strokeStyle='#dc2626';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+      ctx.beginPath();ctx.moveTo(x-10,yRef);ctx.lineTo(x+bw*2+gap2+10,yRef);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#dc2626';ctx.font='10px Space Grotesk';ctx.textAlign='left';
+      ctx.fillText('Baseline',x+bw*2+gap2+14,yRef+4);
+    }
+    ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,bw,bh,4);ctx.fill();
+    ctx.fillStyle=isDark?'#e8ecff':'#0d0f1a';ctx.font='bold 13px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(fmt1(v)+'%',x+bw/2,y-8);
+    ctx.fillStyle=isDark?'#9ca3af':'#6b7280';ctx.font='11px Space Grotesk';
+    ctx.fillText(lbl,x+bw/2,H-pad+16);
+  });
+}
+
+function loadExHoldout(){
+  document.getElementById('ho-pct-exp').value=80;
+  document.getElementById('ho-pct-hold').value=20;
+  document.getElementById('ho-conv-exp').value=620;
+  document.getElementById('ho-users-exp').value=50000;
+  document.getElementById('ho-conv-hold').value=95;
+  document.getElementById('ho-users-hold').value=12500;
+  document.getElementById('ho-inv').value=18000;
+  document.getElementById('ho-ticket').value=280;
+  calcHoldout();
+}
+
+function fmt1(n){return(+n).toFixed(1);}
+function fmtN(n){return(+n).toLocaleString('pt-BR');}
+</script>
+</body>
+</html>

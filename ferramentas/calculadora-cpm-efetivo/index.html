@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora de CPM Efetivo — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.info-box{background:var(--light);border-radius:10px;padding:14px}
+.info-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.info-val{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.info-val.ok{color:var(--green)}
+.info-val.warn{color:var(--yellow)}
+.info-val.err{color:var(--red)}
+.section-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--azul);border-bottom:2px solid var(--light);padding-bottom:6px;margin-bottom:12px}
+.factor-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.factor-name{color:var(--text)}
+.factor-val{font-family:var(--mono);font-weight:600}
+.factor-val.deduct{color:var(--red)}
+.factor-val.add{color:var(--orange)}
+table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:12px}
+th{text-align:left;padding:7px 10px;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.82rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">💡 CPM Efetivo</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="card">
+  <div class="card-title">Dados Base da Campanha</div>
+  <div class="grid3" style="margin-bottom:12px">
+    <div>
+      <label>CPM negociado (R$)</label>
+      <input type="number" id="cpmBase" value="15.00" step="0.01" min="0" oninput="calc()">
+    </div>
+    <div>
+      <label>Impressões totais</label>
+      <input type="number" id="totalImps" value="5000000" min="0" oninput="calc()">
+    </div>
+    <div>
+      <label>Budget total (R$)</label>
+      <input type="number" id="totalBudget" value="75000" min="0" oninput="calc()">
+    </div>
+  </div>
+  <p class="hint">Preencha CPM + Impressões <b>ou</b> Budget + Impressões — o campo restante será calculado.</p>
+</div>
+
+<div class="card">
+  <div class="card-title">Fatores de Ajuste</div>
+  <div class="section-label">Qualidade de Inventário</div>
+  <div class="grid3" style="margin-bottom:16px">
+    <div>
+      <label>Viewability (%)</label>
+      <input type="number" id="viewability" value="70" min="0" max="100" step="1" oninput="calc()">
+      <p class="hint">Impressões mensuráveis e viewable</p>
+    </div>
+    <div>
+      <label>IVT / Bot Traffic (%)</label>
+      <input type="number" id="ivt" value="6" min="0" max="100" step=".1" oninput="calc()">
+      <p class="hint">Tráfego inválido estimado</p>
+    </div>
+    <div>
+      <label>Brand Safety Block (%)</label>
+      <input type="number" id="blockRate" value="8" min="0" max="100" step=".1" oninput="calc()">
+      <p class="hint">Impressões bloqueadas por brand safety</p>
+    </div>
+  </div>
+  <div class="section-label">Taxas e Custos Adicionais</div>
+  <div class="grid3" style="margin-bottom:16px">
+    <div>
+      <label>Taxa DSP / Tech fee (%)</label>
+      <input type="number" id="dspFee" value="15" min="0" max="100" step=".1" oninput="calc()">
+      <p class="hint">% sobre o investimento em mídia</p>
+    </div>
+    <div>
+      <label>Taxa de verificação (%)</label>
+      <input type="number" id="verifyFee" value="5" min="0" max="100" step=".1" oninput="calc()">
+      <p class="hint">IAS/DV sobre impressões mensuradas</p>
+    </div>
+    <div>
+      <label>Agency fee (%)</label>
+      <input type="number" id="agencyFee" value="0" min="0" max="100" step=".1" oninput="calc()">
+      <p class="hint">Comissão de agência</p>
+    </div>
+  </div>
+  <div class="section-label">Ajuste de Frequência</div>
+  <div class="grid2">
+    <div>
+      <label>Impressões acima do frequency cap (%)</label>
+      <input type="number" id="freqWaste" value="10" min="0" max="100" step=".1" oninput="calc()">
+    </div>
+    <div>
+      <label>Duplicate reach (% de duplicatas)</label>
+      <input type="number" id="dupReach" value="5" min="0" max="100" step=".1" oninput="calc()">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Resultado — CPM Efetivo</div>
+  <div class="info-grid" id="resultGrid"></div>
+  <div id="factorBreakdown"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Comparativo — CPM por Canal (Benchmarks BR 2025)</div>
+  <table>
+    <thead><tr><th>Canal</th><th>CPM nominal</th><th>Viewab. típ.</th><th>IVT típ.</th><th>CPM Efetivo est.</th></tr></thead>
+    <tbody>
+      <tr><td>YouTube (Pre-roll)</td><td>R$18–35</td><td>80–90%</td><td>3–5%</td><td>R$22–40</td></tr>
+      <tr><td>Meta (Feed/Stories)</td><td>R$12–25</td><td>65–75%</td><td>5–8%</td><td>R$18–38</td></tr>
+      <tr><td>DV360 Programático</td><td>R$8–20</td><td>55–70%</td><td>8–15%</td><td>R$15–45</td></tr>
+      <tr><td>Portais (Globo, UOL)</td><td>R$15–50</td><td>70–80%</td><td>5–10%</td><td>R$20–65</td></tr>
+      <tr><td>CTV / Streaming</td><td>R$30–70</td><td>90–99%</td><td>2–4%</td><td>R$32–75</td></tr>
+      <tr><td>Native Ads</td><td>R$5–15</td><td>60–75%</td><td>8–12%</td><td>R$10–28</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-title">Referência — Fórmula do CPM Efetivo</div>
+  <div style="font-size:.85rem;line-height:1.9;font-family:var(--mono);background:var(--light);padding:14px;border-radius:8px">
+    CPM_efetivo = CPM_negociado<br>
+    &nbsp;&nbsp;÷ (viewability/100)<br>
+    &nbsp;&nbsp;÷ (1 − IVT/100)<br>
+    &nbsp;&nbsp;÷ (1 − blockRate/100)<br>
+    &nbsp;&nbsp;÷ (1 − freqWaste/100)<br>
+    &nbsp;&nbsp;× (1 + dspFee/100)<br>
+    &nbsp;&nbsp;× (1 + verifyFee/100)<br>
+    &nbsp;&nbsp;× (1 + agencyFee/100)<br>
+    &nbsp;&nbsp;÷ (1 − dupReach/100)
+  </div>
+  <p class="hint" style="margin-top:8px">O CPM efetivo representa o custo real por 1.000 impressões viewable, válidas, brand-safe e únicas — incluindo todas as taxas de tecnologia.</p>
+</div>
+
+<div class="btn-row" style="margin-bottom:4px">
+  <button class="btn btn-ghost btn-sm" onclick="loadExample()">Exemplo</button>
+  <button class="btn btn-ghost btn-sm" onclick="clearAll()">Limpar</button>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('cpmef_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('cpmef_theme')||'light');
+
+function g(id){return parseFloat(document.getElementById(id).value)||0;}
+
+function calc(){
+  const cpmBase=g('cpmBase')||0;
+  let totalImps=g('totalImps');
+  let totalBudget=g('totalBudget');
+  // Derive missing field
+  if(cpmBase&&totalImps&&!totalBudget){
+    totalBudget=totalImps/1000*cpmBase;
+    document.getElementById('totalBudget').value=totalBudget.toFixed(2);
+  }else if(cpmBase&&totalBudget&&!totalImps){
+    totalImps=totalBudget/cpmBase*1000;
+    document.getElementById('totalImps').value=Math.round(totalImps);
+  }else if(totalImps&&totalBudget&&!cpmBase){
+    const derived=totalBudget/totalImps*1000;
+    document.getElementById('cpmBase').value=derived.toFixed(2);
+  }
+
+  const view=g('viewability')||100;
+  const ivt=g('ivt');
+  const block=g('blockRate');
+  const dsp=g('dspFee');
+  const verify=g('verifyFee');
+  const agency=g('agencyFee');
+  const freqW=g('freqWaste');
+  const dup=g('dupReach');
+
+  const cpmN=g('cpmBase');
+  if(!cpmN)return;
+
+  let cpmEff=cpmN;
+  cpmEff=cpmEff/(view/100);
+  cpmEff=cpmEff/(1-ivt/100);
+  cpmEff=cpmEff/(1-block/100);
+  cpmEff=cpmEff/(1-freqW/100);
+  cpmEff=cpmEff*(1+dsp/100);
+  cpmEff=cpmEff*(1+verify/100);
+  cpmEff=cpmEff*(1+agency/100);
+  cpmEff=cpmEff/(1-dup/100);
+
+  const uplift=((cpmEff-cpmN)/cpmN*100);
+  const impsEffective=totalImps*(view/100)*(1-ivt/100)*(1-block/100)*(1-freqW/100)*(1-dup/100);
+  const totalFees=totalBudget?totalBudget*(dsp+verify+agency)/100:0;
+  const qualityScore=Math.max(0,100-(100-view)-(ivt)-block-freqW);
+
+  const cls=uplift>80?'err':uplift>40?'warn':'ok';
+  document.getElementById('resultGrid').innerHTML=[
+    {l:'CPM Negociado',v:'R$'+cpmN.toFixed(2)},
+    {l:'CPM Efetivo',v:'R$'+cpmEff.toFixed(2),cls},
+    {l:'Uplift de custo',v:'+'+uplift.toFixed(1)+'%',cls},
+    {l:'Impressões válidas',v:fmt(impsEffective)},
+    {l:'Score de qualidade',v:qualityScore.toFixed(0)+'/100',cls:qualityScore>=70?'ok':qualityScore>=50?'warn':'err'},
+    {l:'Total de fees',v:totalFees?'R$'+fmtR(totalFees):'—'},
+  ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.cls||''}">${r.v}</div></div>`).join('');
+
+  document.getElementById('factorBreakdown').innerHTML=`
+    <div style="margin-top:16px">
+      <div style="font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:8px">DETALHAMENTO DO AJUSTE</div>
+      ${[
+        {n:'CPM negociado (base)',v:'R$'+cpmN.toFixed(2)},
+        {n:`÷ Viewability (${view}%)`,v:'+'+((1/(view/100)-1)*100).toFixed(1)+'%',cls:'deduct'},
+        {n:`÷ IVT removido (${ivt}%)`,v:ivt?'+'+((1/(1-ivt/100)-1)*100).toFixed(1)+'%':'0%',cls:'deduct'},
+        {n:`÷ Brand Safety block (${block}%)`,v:block?'+'+((1/(1-block/100)-1)*100).toFixed(1)+'%':'0%',cls:'deduct'},
+        {n:`÷ Freq. cap waste (${freqW}%)`,v:freqW?'+'+((1/(1-freqW/100)-1)*100).toFixed(1)+'%':'0%',cls:'deduct'},
+        {n:`× DSP/Tech fee (${dsp}%)`,v:dsp?'+'+dsp.toFixed(1)+'%':'0%',cls:'add'},
+        {n:`× Verificação (${verify}%)`,v:verify?'+'+verify.toFixed(1)+'%':'0%',cls:'add'},
+        {n:`× Agency fee (${agency}%)`,v:agency?'+'+agency.toFixed(1)+'%':'0%',cls:'add'},
+        {n:`÷ Duplicate reach (${dup}%)`,v:dup?'+'+((1/(1-dup/100)-1)*100).toFixed(1)+'%':'0%',cls:'deduct'},
+        {n:'= CPM Efetivo',v:'R$'+cpmEff.toFixed(2),bold:true},
+      ].map(r=>`<div class="factor-row">
+        <span class="factor-name" style="${r.bold?'font-weight:700':''}">${r.n}</span>
+        <span class="factor-val ${r.cls||''}" style="${r.bold?'font-size:1rem':''}">${r.v}</span>
+      </div>`).join('')}
+    </div>`;
+}
+
+function fmt(n){
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return (n/1e3).toFixed(1)+'k';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+function fmtR(n){return n>=1000?(n/1000).toFixed(1)+'k':n.toFixed(2);}
+
+function loadExample(){
+  document.getElementById('cpmBase').value='14.50';
+  document.getElementById('totalImps').value='5000000';
+  document.getElementById('totalBudget').value='72500';
+  document.getElementById('viewability').value='68';
+  document.getElementById('ivt').value='7.2';
+  document.getElementById('blockRate').value='9';
+  document.getElementById('dspFee').value='15';
+  document.getElementById('verifyFee').value='5';
+  document.getElementById('agencyFee').value='0';
+  document.getElementById('freqWaste').value='12';
+  document.getElementById('dupReach').value='4';
+  calc();
+}
+
+function clearAll(){
+  ['cpmBase','totalImps','totalBudget','ivt','blockRate','dspFee','verifyFee','agencyFee','freqWaste','dupReach'].forEach(id=>document.getElementById(id).value='0');
+  document.getElementById('viewability').value='100';
+  document.getElementById('resultGrid').innerHTML='';
+  document.getElementById('factorBreakdown').innerHTML='';
+}
+
+// Auto-calc on load
+calc();
+</script>
+</body>
+</html>
