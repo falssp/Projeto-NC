@@ -977,6 +977,14 @@ body {
 .builder-ac-item .ac-val{font-weight:600}
 .builder-ac-item .ac-lbl{font-size:11px;opacity:.75}
 .builder-ac-item .ac-desc{font-size:10px;opacity:.6;margin-left:auto;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* BATCH 27: AC uses badge + fav */
+.builder-ac-item .ac-uses{font-size:9px;padding:1px 5px;border-radius:9px;background:rgba(37,99,235,.1);color:var(--accent);font-weight:700;margin-left:auto;flex-shrink:0;}
+.builder-ac-item:hover .ac-uses,.builder-ac-item.selected .ac-uses{background:rgba(255,255,255,.2);color:#fff;}
+.builder-ac-item .ac-fav{font-size:10px;flex-shrink:0;}
+/* BATCH 27: seg pill drag reorder in dicionário */
+.pills .pill[draggable]{cursor:grab;transition:opacity .15s;}
+.pills .pill.pill-drag-over{outline:2px solid var(--accent);outline-offset:2px;}
+.pills .pill.pill-dragging{opacity:.35;}
 .dict-seg-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px;}
 .char-limit-row{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;}
 .char-limit-input{width:60px;padding:2px 6px;border:1px solid var(--input-border);border-radius:5px;background:var(--input-bg);color:var(--fg);font-size:12px;text-align:center;}
@@ -1156,6 +1164,7 @@ body {
           <select id="builderStructSel" onchange="applyBuilderStructure(this.value)" title="Aplicar estrutura ao builder" style="font-size:11px;padding:3px 8px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);cursor:pointer;max-width:160px"><option value="">— estrutura —</option></select>
           <button class="btn secondary btn-sm" onclick="saveBuilderFavorite()" title="Salvar seleção atual como favorito">⭐ Salvar</button>
           <button class="btn secondary btn-sm" onclick="openBuilderTemplates()" title="Templates de preenchimento">📋 Templates</button>
+          <button class="btn secondary btn-sm" onclick="fillBuilderTopUsed()" title="Preencher campos vazios com o termo mais usado de cada segmento">⬆ Top</button>
           <button class="btn secondary btn-sm" onclick="fillBuilderRandom()" title="Preencher com termos aleatórios">🎲 Aleatório</button>
           <button class="btn secondary btn-sm" onclick="clearBuilder()">✕ Limpar</button>
         </div>
@@ -2385,6 +2394,24 @@ function fillBuilderRandom() {
   else showToast('Nenhum segmento tem termos no dicionário');
 }
 
+/* BATCH 27: smart-fill with most-used term per segment */
+function fillBuilderTopUsed() {
+  const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
+  let filled = 0;
+  c.segments.forEach(s => {
+    if(_lockedSegs.has(s.id)) return;
+    if(builderVals[s.id]) return; // skip already-filled
+    const terms = c.dictionary[s.id]||[];
+    if(!terms.length) return;
+    // Pick most-used; fall back to first if no usage data
+    const sorted = [...terms].sort((a,b)=>(b.uses||0)-(a.uses||0));
+    builderVals[s.id] = sorted[0].value;
+    filled++;
+  });
+  if(filled) { renderBuilder(); showToast(`⬆ ${filled} campo(s) preenchido(s) com o termo mais usado`); }
+  else showToast('Todos os campos já preenchidos ou nenhum termo disponível');
+}
+
 /* =============================================
    TAB: DICIONÁRIO
    ============================================= */
@@ -2428,11 +2455,17 @@ function renderDicionario() {
   }
 
   pillsEl.innerHTML='';
-  c.segments.forEach(s=>{
+  /* BATCH 27: drag hint tooltip on first pill */
+  let _pillDragSrc = null;
+  c.segments.forEach((s,idx)=>{
     const terms = (c.dictionary[s.id]||[]);
     const count = terms.length;
     const btn = document.createElement('button');
     btn.className='pill'+(s.id===activeSeg?' active':'');
+    btn.draggable = true;
+    btn.dataset.segId = s.id;
+    btn.dataset.segIdx = String(idx);
+    btn.title = idx===0 ? 'Arraste para reordenar segmentos' : '';
     /* BATCH 26: completeness dot */
     let dot='';
     if(count>0){
@@ -2443,6 +2476,30 @@ function renderDicionario() {
     }
     btn.innerHTML = `${s.label}${count?` (${count})`:''}`+dot;
     btn.onclick=()=>{ activeSeg=s.id; _dictFilter=null; _dictTagFilter=null; renderDicionario(); };
+    /* BATCH 27: drag-to-reorder pills */
+    btn.addEventListener('dragstart', e=>{
+      _pillDragSrc = s.id;
+      btn.classList.add('pill-dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain', s.id);
+    });
+    btn.addEventListener('dragend', ()=>{ btn.classList.remove('pill-dragging'); _pillDragSrc=null; pillsEl.querySelectorAll('.pill').forEach(p=>p.classList.remove('pill-drag-over')); });
+    btn.addEventListener('dragover', e=>{ if(_pillDragSrc && _pillDragSrc!==s.id){ e.preventDefault(); btn.classList.add('pill-drag-over'); } });
+    btn.addEventListener('dragleave', ()=>btn.classList.remove('pill-drag-over'));
+    btn.addEventListener('drop', e=>{
+      e.preventDefault(); btn.classList.remove('pill-drag-over');
+      const fromId = e.dataTransfer.getData('text/plain');
+      if(!fromId || fromId===s.id) return;
+      const c2=active(); if(!c2) return;
+      const fromIdx=c2.segments.findIndex(x=>x.id===fromId);
+      const toIdx=c2.segments.findIndex(x=>x.id===s.id);
+      if(fromIdx<0||toIdx<0) return;
+      const seg=c2.segments.splice(fromIdx,1)[0];
+      c2.segments.splice(toIdx,0,seg);
+      c2.lastModified=Date.now();
+      saveData(); renderDicionario();
+      showToast(`↕ Segmento "${seg.label}" movido`);
+    });
     pillsEl.appendChild(btn);
   });
 
@@ -5379,13 +5436,16 @@ function showAC(segId, q) {
     ? terms.filter(t => t.value.toLowerCase().includes(lq) || (t.label||'').toLowerCase().includes(lq))
     : terms.slice(0, 20);
   if(!filtered.length) { list.style.display='none'; return; }
+  /* BATCH 27: show fav + uses count in AC item */
   list.innerHTML = filtered.map((t,i)=>
     `<div class="builder-ac-item" data-val="${esc(t.value)}" data-idx="${i}"
       onmousedown="pickAC('${segId}','${esc(t.value)}')"
       onmouseover="this.parentNode.querySelectorAll('.builder-ac-item').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')">
+      ${t.fav?`<span class="ac-fav" title="Favorito">⭐</span>`:''}
       <span class="ac-val">${esc(t.value)}</span>
       ${t.label&&t.label!==t.value?`<span class="ac-lbl">${esc(t.label)}</span>`:''}
       ${t.desc?`<span class="ac-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
+      ${t.uses?`<span class="ac-uses" title="${t.uses} uso(s) no builder">${t.uses}×</span>`:''}
     </div>`
   ).join('');
   list.style.display='block';
