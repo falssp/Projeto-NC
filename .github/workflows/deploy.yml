@@ -5,7 +5,6 @@ on:
     branches: [main]
 
 # Evita deploys paralelos que poderiam sobrescrever um ao outro.
-# O gh-pages espelha o main via force-push — não editar gh-pages diretamente.
 concurrency:
   group: gh-pages-deploy
   cancel-in-progress: false
@@ -21,8 +20,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push main to gh-pages
+      - name: Prepara conteúdo sem binários
         run: |
+          # Copia repo para diretório temporário excluindo xlsx/xlsm
+          rsync -a --exclude='*.xlsx' --exclude='*.xlsm' --exclude='.git' . /tmp/pages-build/
+
+      - name: Push para gh-pages (sem binários)
+        run: |
+          cd /tmp/pages-build
+          git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} main:gh-pages --force
+          git add -A
+          git commit -m "deploy: pages sem binários [skip ci]"
+          git push --force https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:gh-pages
