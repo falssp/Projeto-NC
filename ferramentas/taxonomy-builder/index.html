@@ -1082,6 +1082,7 @@ body {
           <button class="btn secondary btn-sm" onclick="triggerImport()">⬆ JSON</button>
           <button class="btn secondary btn-sm" onclick="triggerImportClientCSV()" title="Importar cliente a partir de CSV exportado">⬆ CSV</button>
           <button class="btn secondary btn-sm" onclick="openMergeClientsModal()" title="Mesclar dicionários de dois clientes">🔀 Mesclar</button>
+          <button class="btn secondary btn-sm" onclick="openClientDiffModal()" title="Comparar termos de dois clientes (ver exclusivos e em comum)">🔍 Comparar</button>
           <button class="btn secondary btn-sm" onclick="exportClientAsURL()" title="Exportar cliente como URL compartilhável">🔗 Compartilhar</button>
           <button class="btn secondary btn-sm" id="archivedToggleBtn" onclick="toggleShowArchived()" title="Mostrar/ocultar clientes arquivados">🗄 Arquivados</button>
           <button class="btn primary btn-sm" onclick="openAddClient()">+ Novo cliente</button>
@@ -1199,8 +1200,10 @@ body {
           <button class="btn secondary btn-sm" onclick="incrementBuilderSuffix()" title="Incrementar sufixo numérico (+1 no final do nome)">+1</button>
           <button class="btn secondary btn-sm" onclick="downloadBuilderName()" title="Baixar nome gerado como .txt">⬇ .txt</button>
           <button class="btn secondary btn-sm" id="copyJsonBtn" onclick="copyBuilderJSON()" title="Copiar como JSON {segmento: valor}">{ } JSON</button>
+          <button class="btn secondary btn-sm" onclick="copyBuilderMarkdown()" title="Copiar como tabela Markdown (segmento | valor)">⬡ MD</button>
           <button class="btn secondary btn-sm" onclick="sendBuilderToValidator()" title="Enviar nome gerado para o Validador">✔ Validar</button>
           <button class="btn secondary btn-sm" onclick="quickPinBuilderResult()" title="Salvar nome gerado nos favoritos do builder">⭐ Fav</button>
+          <button class="btn secondary btn-sm" onclick="openBuilderHistModal()" title="Ver histórico completo de NCs geradas">📜 Histórico</button>
           <button class="btn primary btn-sm" id="copyBtn" onclick="copyBuilder()">📋 Copiar</button>
         </div>
       </div>
@@ -3892,6 +3895,23 @@ function copyBuilderJSON() {
   navigator.clipboard.writeText(json).then(()=>showToast('{ } JSON copiado!')).catch(()=>showToast(json));
 }
 
+/* BATCH 29: copy builder result as markdown table */
+function copyBuilderMarkdown() {
+  const c=active(); if(!c) return;
+  const rows=c.segments.filter(s=>builderVals[s.id]);
+  if(!rows.length) { showToast('Preencha pelo menos um campo'); return; }
+  const previewEl=document.getElementById('previewBox');
+  const nc=previewEl?previewEl.textContent:'';
+  const lines=[
+    `| Segmento | Valor |`,
+    `|---|---|`,
+    ...rows.map(s=>`| ${s.label} | ${builderVals[s.id]} |`),
+    ``,
+    `**NC:** \`${nc}\``
+  ];
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>showToast('⬡ Tabela MD copiada!')).catch(()=>showToast('Erro ao copiar'));
+}
+
 function clearSegField(segId) {
   builderVals[segId] = '';
   const inp = document.getElementById(`bv-${segId}`);
@@ -3905,8 +3925,11 @@ function clearSegField(segId) {
 function addToBuilderHistory(name) {
   try {
     let hist = JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]');
-    hist = hist.filter(h=>h!==name);
-    hist.unshift(name);
+    // Normalize: migrate legacy string entries to objects
+    hist = hist.map(h=>typeof h==='string'?{name:h,ts:0,client:''}:h);
+    hist = hist.filter(h=>h.name!==name);
+    const c=active();
+    hist.unshift({name, ts:Date.now(), client: c?c.name:''});
     if(hist.length > BUILDER_HIST_MAX) hist = hist.slice(0, BUILDER_HIST_MAX);
     localStorage.setItem(BUILDER_HIST_KEY, JSON.stringify(hist));
     renderBuilderHistory();
@@ -3921,12 +3944,14 @@ function renderBuilderHistory() {
   const row = document.getElementById('builderHistRow'); if(!row) return;
   let hist = [];
   try { hist = JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]'); } catch(e) {}
+  // normalize
+  hist = hist.map(h=>typeof h==='string'?{name:h,ts:0,client:''}:h);
   if(!hist.length) { row.innerHTML=''; _builderHistFilter=''; return; }
-  const filtered = _builderHistFilter ? hist.filter(h=>h.toLowerCase().includes(_builderHistFilter.toLowerCase())) : hist;
+  const filtered = _builderHistFilter ? hist.filter(h=>h.name.toLowerCase().includes(_builderHistFilter.toLowerCase())) : hist;
   row.innerHTML = `<span class="builder-hist-label">Recentes:</span>` +
     `<input class="builder-hist-search" type="search" placeholder="filtrar…" value="${esc(_builderHistFilter)}" oninput="_builderHistFilter=this.value;renderBuilderHistory()" style="font-size:11px;padding:2px 6px;border:1px solid var(--input-border);border-radius:6px;background:var(--input-bg);color:var(--fg);width:80px;flex-shrink:0">` +
-    filtered.slice(0,15).map(h=>`<span class="builder-hist-chip" title="${esc(h)}" onclick="useBuilderHistItem(${JSON.stringify(h).replace(/"/g,'&quot;')})">${esc(h.length>28?h.slice(0,26)+'…':h)}</span>`).join('') +
-    (filtered.length>15?`<span style="font-size:10px;color:var(--faint)">${filtered.length-15} mais…</span>`:'') +
+    filtered.slice(0,15).map(h=>`<span class="builder-hist-chip" title="${esc(h.name)}${h.client?' ('+h.client+')':''}" onclick="useBuilderHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">${esc(h.name.length>28?h.name.slice(0,26)+'…':h.name)}</span>`).join('') +
+    (filtered.length>15?`<span style="font-size:10px;color:var(--faint)">${filtered.length-15} mais… <button class="builder-hist-clear" onclick="openBuilderHistModal()" style="color:var(--accent)">ver todos</button></span>`:'') +
     `<button class="builder-hist-clear" onclick="clearBuilderHistory()" title="Limpar histórico">✕</button>`;
 }
 function useBuilderHistItem(name) {
@@ -5529,6 +5554,143 @@ function closeStats(e) {
     document.getElementById('statsOverlay').classList.remove('open');
 }
 
+/* BATCH 29: Full builder history modal */
+function openBuilderHistModal() {
+  const overlay=document.getElementById('builderHistModalOverlay');
+  if(overlay) { overlay.style.display='flex'; renderHistModal(); }
+  setTimeout(()=>{ const s=document.getElementById('histModalSearch'); if(s) s.focus(); },50);
+}
+function closeBuilderHistModal(e) {
+  const overlay=document.getElementById('builderHistModalOverlay');
+  if(!e || e.target===overlay) { if(overlay) overlay.style.display='none'; }
+}
+function renderHistModal() {
+  const body=document.getElementById('histModalBody'); if(!body) return;
+  let hist=[];
+  try{hist=JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]');}catch(e){}
+  hist=hist.map(h=>typeof h==='string'?{name:h,ts:0,client:''}:h);
+  const q=(document.getElementById('histModalSearch')||{}).value||'';
+  const filtered=q?hist.filter(h=>h.name.toLowerCase().includes(q.toLowerCase())||(h.client||'').toLowerCase().includes(q.toLowerCase())):hist;
+  if(!filtered.length){body.innerHTML=`<p style="color:var(--faint);font-size:13px;text-align:center;padding:24px">${q?'Nenhum resultado para "'+esc(q)+'"':'Histórico vazio'}</p>`;return;}
+  // Group by date
+  const groups={};
+  filtered.forEach((h,i)=>{
+    const dateKey=h.ts?new Date(h.ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}):'Sem data';
+    if(!groups[dateKey]) groups[dateKey]=[];
+    groups[dateKey].push({...h, _idx:i});
+  });
+  body.innerHTML=Object.entries(groups).map(([date,items])=>`
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);padding:4px 0 6px;border-bottom:1px solid var(--brd);margin-bottom:6px">${esc(date)}</div>
+      ${items.map(h=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd)">
+          <span style="font-family:var(--mono,monospace);font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(h.name)}">${esc(h.name)}</span>
+          ${h.client?`<span style="font-size:10px;color:var(--faint);flex-shrink:0">${esc(h.client)}</span>`:''}
+          ${h.ts?`<span style="font-size:10px;color:var(--faint);flex-shrink:0">${new Date(h.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>`:''}
+          <button style="background:none;border:none;cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;color:var(--faint)" title="Carregar no builder" onclick="useBuilderHistItem(${JSON.stringify(h.name).replace(/"/g,'&quot;')});closeBuilderHistModal()">↩</button>
+          <button style="background:none;border:none;cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;color:var(--faint)" title="Copiar" onclick="navigator.clipboard.writeText(${JSON.stringify(h.name).replace(/"/g,'&quot;')}).then(()=>showToast('📋 Copiado'))">📋</button>
+          <button style="background:none;border:none;cursor:pointer;font-size:11px;padding:2px 6px;border-radius:5px;color:var(--faint)" title="Remover do histórico" onclick="removeFromBuilderHist(${JSON.stringify(h.name).replace(/"/g,'&quot;')})">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+function removeFromBuilderHist(name) {
+  try{
+    let hist=JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]');
+    hist=hist.map(h=>typeof h==='string'?{name:h,ts:0,client:''}:h);
+    hist=hist.filter(h=>h.name!==name);
+    localStorage.setItem(BUILDER_HIST_KEY,JSON.stringify(hist));
+    renderBuilderHistory(); renderHistModal();
+    showToast('Entrada removida do histórico');
+  }catch(e){}
+}
+function clearBuilderHistoryFull() {
+  if(!confirm('Limpar todo o histórico?')) return;
+  try{localStorage.removeItem(BUILDER_HIST_KEY);}catch(e){}
+  renderBuilderHistory(); renderHistModal();
+  showToast('Histórico limpo');
+}
+function exportBuilderHistCSV() {
+  let hist=[];
+  try{hist=JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]');}catch(e){}
+  hist=hist.map(h=>typeof h==='string'?{name:h,ts:0,client:''}:h);
+  if(!hist.length){showToast('Histórico vazio');return;}
+  const rows=[['nc','cliente','data','hora']];
+  hist.forEach(h=>{
+    const d=h.ts?new Date(h.ts):null;
+    rows.push([h.name,h.client||'',d?d.toLocaleDateString('pt-BR'):'',d?d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'' ]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`builder_historico_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();URL.revokeObjectURL(url);
+  showToast(`⬇ ${hist.length} NCs exportadas`);
+}
+
+/* BATCH 29: Client diff modal */
+function openClientDiffModal() {
+  const overlay=document.getElementById('clientDiffOverlay');
+  if(!overlay) return;
+  overlay.style.display='flex';
+  // Populate selects
+  ['diffClientA','diffClientB'].forEach(id=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const curVal=sel.value;
+    sel.innerHTML='<option value="">— Selecione —</option>'+
+      clients.filter(c=>!c.archived).map(c=>`<option value="${c.id}"${c.id===curVal?' selected':''}>${esc(c.name)}</option>`).join('');
+  });
+  // Pre-select active client as A
+  const selA=document.getElementById('diffClientA');
+  if(selA && activeId && !selA.value) selA.value=activeId;
+  runClientDiff();
+}
+function closeClientDiff(e) {
+  const overlay=document.getElementById('clientDiffOverlay');
+  if(!e||e.target===overlay) { if(overlay) overlay.style.display='none'; }
+}
+function runClientDiff() {
+  const body=document.getElementById('diffBody'); if(!body) return;
+  const idA=document.getElementById('diffClientA')?.value;
+  const idB=document.getElementById('diffClientB')?.value;
+  if(!idA||!idB) { body.innerHTML='<p style="color:var(--faint);font-size:13px;padding:16px;text-align:center">Selecione dois clientes para comparar.</p>'; return; }
+  if(idA===idB) { body.innerHTML='<p style="color:var(--faint);font-size:13px;padding:16px;text-align:center">Selecione clientes diferentes.</p>'; return; }
+  const cA=clients.find(c=>c.id===idA);
+  const cB=clients.find(c=>c.id===idB);
+  if(!cA||!cB) return;
+  // Build value sets per client
+  const setA=new Set(); const setB=new Set();
+  Object.values(cA.dictionary||{}).forEach(terms=>terms.forEach(t=>setA.add(t.value)));
+  Object.values(cB.dictionary||{}).forEach(terms=>terms.forEach(t=>setB.add(t.value)));
+  const onlyA=[...setA].filter(v=>!setB.has(v)).sort();
+  const onlyB=[...setB].filter(v=>!setA.has(v)).sort();
+  const common=[...setA].filter(v=>setB.has(v)).sort();
+  const renderList=(arr,color)=>arr.length
+    ?arr.map(v=>`<span style="font-family:monospace;font-size:11px;background:${color};padding:2px 7px;border-radius:6px;margin:2px;display:inline-block">${esc(v)}</span>`).join('')
+    :`<span style="color:var(--faint);font-size:12px">Nenhum</span>`;
+  body.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div style="background:var(--surface2,var(--pill));border-radius:8px;padding:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Só em ${esc(cA.name)} (${onlyA.length})</div>
+        ${renderList(onlyA,'rgba(37,99,235,.12)')}
+      </div>
+      <div style="background:var(--surface2,var(--pill));border-radius:8px;padding:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Só em ${esc(cB.name)} (${onlyB.length})</div>
+        ${renderList(onlyB,'rgba(16,185,129,.12)')}
+      </div>
+    </div>
+    <div style="background:var(--surface2,var(--pill));border-radius:8px;padding:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Em comum (${common.length})</div>
+      ${renderList(common,'rgba(100,116,139,.1)')}
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-top:10px;padding:8px;border:1px solid var(--brd);border-radius:8px">
+      📊 ${esc(cA.name)}: ${setA.size} termos únicos · ${esc(cB.name)}: ${setB.size} termos únicos · ${common.length} em comum (${setA.size+setB.size>0?Math.round(common.length*2/(setA.size+setB.size)*100):0}% similaridade)
+    </div>
+  `;
+}
+
 function openShortcuts() {
   document.getElementById('shortcutsOverlay').classList.add('open');
 }
@@ -6003,6 +6165,39 @@ function exportDictAllSegCSV() {
     </div>
   </div>
 </div>
+<!-- BATCH 29: Client Diff Modal -->
+<div class="shortcuts-overlay" id="clientDiffOverlay" onclick="closeClientDiff(event)" style="display:none">
+  <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:620px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
+      <h3>🔍 Comparar clientes</h3>
+      <button onclick="closeClientDiff()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--faint)">✕</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-shrink:0;margin-bottom:12px">
+      <select id="diffClientA" onchange="runClientDiff()" style="flex:1;padding:7px 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:12px"><option value="">— Cliente A —</option></select>
+      <select id="diffClientB" onchange="runClientDiff()" style="flex:1;padding:7px 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:12px"><option value="">— Cliente B —</option></select>
+    </div>
+    <div id="diffBody" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
+<!-- BATCH 29: Full Builder History Modal -->
+<div class="shortcuts-overlay" id="builderHistModalOverlay" onclick="closeBuilderHistModal(event)" style="display:none">
+  <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:560px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
+      <h3>📜 Histórico completo</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn secondary btn-sm" onclick="exportBuilderHistCSV()" title="Exportar histórico como CSV">⬇ CSV</button>
+        <button class="btn secondary btn-sm" onclick="clearBuilderHistoryFull()" title="Limpar todo o histórico" style="color:var(--erro)">🗑 Limpar</button>
+        <button onclick="closeBuilderHistModal()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--faint)">✕</button>
+      </div>
+    </div>
+    <div style="flex-shrink:0;margin-bottom:10px">
+      <input type="search" id="histModalSearch" placeholder="Buscar NC…" oninput="renderHistModal()" style="width:100%;padding:7px 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none">
+    </div>
+    <div id="histModalBody" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
 <!-- Stats Modal -->
 <div class="shortcuts-overlay" id="statsOverlay" onclick="closeStats(event)">
   <div class="shortcuts-modal" onclick="event.stopPropagation()" style="max-width:480px">
