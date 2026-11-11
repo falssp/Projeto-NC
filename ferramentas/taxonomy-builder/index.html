@@ -1116,6 +1116,7 @@ body {
           <button class="btn secondary btn-sm" onclick="exportTSV()" title="Exportar dicionário como TSV (Excel-friendly)">⬇ TSV</button>
           <button class="btn secondary btn-sm" onclick="exportAllJSON()" title="Exportar TODOS os clientes num único arquivo">⬇ Backup</button>
           <button class="btn secondary btn-sm" onclick="exportDictAllSegCSV()" title="Exportar todos os segmentos do cliente ativo em um único CSV">⬇ CSV Completo</button>
+          <button class="btn secondary btn-sm" onclick="exportDictHTML()" title="Exportar dicionário do cliente como página HTML standalone para compartilhar">⬇ HTML</button>
           <button class="btn secondary btn-sm" onclick="openFindReplaceModal()" title="Localizar e substituir valor/label em todos os segmentos">🔎 Localizar…</button>
         </div>
       </div>
@@ -1209,6 +1210,7 @@ body {
       </div>
       <div id="previewBox" class="preview-box"><span style="color:var(--faint)">—</span></div>
       <div id="builderCharCount" class="builder-char-count"></div>
+      <div id="builderScore" style="display:none;padding:4px 0 2px"></div>
       <div class="sep-preview-row" id="sepPreviewRow"></div>
       <div class="builder-hist-row" id="builderHistRow"></div>
       <div class="builder-favs-row" id="builderFavsRow"></div>
@@ -3791,6 +3793,31 @@ function updatePreview() {
       charCount.className='builder-char-count'+(len>100?' warn':len>150?' error':'');
     }
   }
+
+  /* BATCH 30: NC completeness score */
+  const scoreEl = document.getElementById('builderScore');
+  if(scoreEl) {
+    const totalSegs = c.segments.length;
+    const filled = c.segments.filter(s=>builderVals[s.id]).length;
+    const requiredSegs = c.segments.filter(s=>s.required);
+    const requiredFilled = requiredSegs.filter(s=>builderVals[s.id]).length;
+    const allRequiredOk = requiredSegs.every(s=>builderVals[s.id]);
+    const pct = totalSegs ? Math.round(filled/totalSegs*100) : 0;
+    if(filled===0) { scoreEl.style.display='none'; }
+    else {
+      scoreEl.style.display='block';
+      const color = allRequiredOk ? (pct===100?'var(--ok)':'var(--accent)') : 'var(--warn)';
+      scoreEl.innerHTML = `<span style="font-size:10px;color:var(--faint)">Completude</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+          <div style="flex:1;height:4px;background:var(--divider);border-radius:2px;overflow:hidden;max-width:120px">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:2px;transition:width .3s"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:${color}">${pct}%</span>
+          ${!allRequiredOk?`<span style="font-size:10px;color:var(--warn)">⚠ ${requiredSegs.length-requiredFilled} obrig.</span>`:''}
+          <span style="font-size:10px;color:var(--faint)">${filled}/${totalSegs} segs</span>
+        </div>`;
+    }
+  }
 }
 
 function sendBuilderToValidator() {
@@ -6077,6 +6104,71 @@ function exportDictAllSegCSV() {
   showToast(`Exportando ${rows.length-1} termos de ${c.segments.length} segmentos`);
 }
 
+/* BATCH 30: export full client dictionary as standalone HTML glossary */
+function exportDictHTML() {
+  const c = active(); if(!c) { showToast('Selecione um cliente'); return; }
+  const date = new Date().toLocaleDateString('pt-BR');
+  const sectionsHtml = c.segments.map(seg=>{
+    const terms = c.dictionary[seg.id]||[];
+    if(!terms.length) return '';
+    const rows = [...terms].sort((a,b)=>a.value.localeCompare(b.value));
+    return `<section class="seg-section">
+      <h2>${escHtml(seg.label)} <span class="seg-count">${terms.length}</span>${seg.required?'<span class="req-badge">obrigatório</span>':''}</h2>
+      <table>
+        <thead><tr><th>Valor</th><th>Label</th><th>Descrição</th><th>Info</th></tr></thead>
+        <tbody>${rows.map(t=>`<tr>
+          <td class="val-cell">${escHtml(t.value)}</td>
+          <td>${escHtml(t.label||'')}</td>
+          <td class="desc-cell">${escHtml(t.desc||'')}</td>
+          <td>${t.fav?'⭐ ':''}<span class="uses-badge">${t.uses?t.uses+'×':''}</span></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </section>`;
+  }).filter(Boolean).join('');
+  const totalTerms = c.segments.reduce((n,s)=>n+(c.dictionary[s.id]||[]).length,0);
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glossário NC — ${escHtml(c.name)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f8fafc;color:#0f172a;padding:24px 16px;max-width:900px;margin:0 auto}
+header{margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #e2e8f0}
+header h1{font-size:1.5rem;font-weight:800}
+header .meta{font-size:12px;color:#64748b;margin-top:4px}
+.seg-section{background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:16px;overflow:hidden}
+.seg-section h2{padding:12px 16px;font-size:13px;font-weight:700;background:#f1f5f9;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e2e8f0}
+.seg-count{font-size:11px;background:#2563eb;color:#fff;border-radius:9px;padding:1px 7px}
+.req-badge{font-size:10px;background:#fef3c7;color:#92400e;border-radius:5px;padding:1px 6px;margin-left:4px}
+table{width:100%;border-collapse:collapse}
+th{padding:7px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:7px 12px;font-size:12px;border-bottom:1px solid #f1f5f9}
+tr:last-child td{border-bottom:none}
+.val-cell{font-family:monospace;font-weight:600;color:#1e40af}
+.desc-cell{color:#475569;font-size:11px;max-width:300px}
+.uses-badge{font-size:10px;color:#2563eb;font-weight:600}
+@media print{body{padding:0}section{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <h1>${escHtml(c.name)}</h1>
+  <div class="meta">Separador: <code>${escHtml(c.separator)}</code> · ${c.segments.length} segmentos · ${totalTerms} termos · Exportado em ${date}</div>
+</header>
+${sectionsHtml}
+<footer style="margin-top:24px;font-size:11px;color:#94a3b8;text-align:center">Gerado pelo Taxonomy Builder</footer>
+</body></html>`;
+  function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`glossario_${c.name.replace(/[^a-z0-9]/gi,'_')}_${new Date().toISOString().slice(0,10)}.html`;
+  a.click();URL.revokeObjectURL(url);
+  showToast(`⬇ Glossário HTML exportado — ${totalTerms} termos`);
+}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 
 <!-- ── Share URL modal ───────────────────────────── -->
