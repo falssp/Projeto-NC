@@ -1,11 +1,14 @@
-# Gerador de Proposta de Mídia
+# 📄 Gerador de Proposta de Mídia
 
-Preencha os dados da campanha e gere uma proposta de mídia formatada e exportável.
+Cria propostas de mídia digital formatadas, prontas para apresentar ao cliente.
 
 **URL:** https://falssp.github.io/Projeto-NC/ferramentas/gerador-proposta-midia/
 
 ## Funcionalidades
-- Formulário: cliente, campanha, agência, objetivo, público, período, budget, plataformas, observações
-- 10 plataformas: Meta, Google, YouTube, TikTok, LinkedIn, DV360, CM360, Kwai, X, Pinterest
-- Proposta gerada: cabeçalho, objetivo, mix de plataformas com tabela de investimento, KPIs esperados, timeline, próximos passos
-- Exportação: imprimir como PDF ou copiar como texto plano
+
+- Formulário: cliente, campanha, objetivo, período, budget, público, KPI, observações
+- Tabela de mídia dinâmica: plataforma, formato, budget (R$), % automática, KPI, obs
+- Plataformas: Meta, Google Ads, DV360, CM360, TikTok, LinkedIn, X Ads, YouTube, Kwai, Pinterest, Programático
+- Validação do budget total vs soma das linhas
+- Preview ao vivo da proposta formatada
+- Exportação: Copiar texto ou Imprimir/PDF
