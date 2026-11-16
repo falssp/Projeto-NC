@@ -1122,6 +1122,7 @@ body {
           <button class="btn secondary btn-sm" onclick="exportDictAllSegCSV()" title="Exportar todos os segmentos do cliente ativo em um único CSV">⬇ CSV Completo</button>
           <button class="btn secondary btn-sm" onclick="exportDictHTML()" title="Exportar dicionário do cliente como página HTML standalone para compartilhar">⬇ HTML</button>
           <button class="btn secondary btn-sm" onclick="openFindReplaceModal()" title="Localizar e substituir valor/label em todos os segmentos">🔎 Localizar…</button>
+          <button class="btn secondary btn-sm" onclick="openDictOverview()" title="Visão geral de todos os segmentos em tabela" id="btnDictOverview">👁 Visão Geral</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1397,6 +1398,20 @@ body {
     <div class="gsearch-results" id="gsearchResults">
       <div class="gsearch-empty">Digite para buscar termos em todos os clientes</div>
     </div>
+  </div>
+</div>
+
+<!-- Dict Overview Modal (batch 44) -->
+<div id="dictOverviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;overflow:auto;padding:16px" onclick="if(event.target===this)closeDictOverview()">
+  <div style="background:var(--card);border-radius:14px;max-width:900px;margin:0 auto;padding:18px 20px;position:relative;min-width:280px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px">
+      <div style="font-size:15px;font-weight:800">👁 Visão Geral dos Segmentos</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="search" id="overviewSearch" placeholder="Filtrar termos…" oninput="filterOverview(this.value)" style="height:28px;padding:0 10px;font-size:12px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--fg);outline:none;width:150px">
+        <button onclick="closeDictOverview()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--faint);line-height:1">×</button>
+      </div>
+    </div>
+    <div id="overviewBody" style="overflow-x:auto"></div>
   </div>
 </div>
 
@@ -6386,6 +6401,73 @@ ${sectionsHtml}
   showToast(`⬇ Glossário HTML exportado — ${totalTerms} termos`);
 }
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* BATCH 44: Dict overview modal — all segments side-by-side table */
+let _overviewFilter='';
+function openDictOverview(){
+  const c=active(); if(!c||!c.segments.length){showToast('Sem segmentos');return;}
+  _overviewFilter='';
+  document.getElementById('overviewSearch').value='';
+  document.getElementById('dictOverviewModal').style.display='block';
+  document.body.style.overflow='hidden';
+  renderOverviewBody(c,'');
+}
+function closeDictOverview(){
+  document.getElementById('dictOverviewModal').style.display='none';
+  document.body.style.overflow='';
+}
+function filterOverview(val){
+  _overviewFilter=val;
+  const c=active(); if(!c) return;
+  renderOverviewBody(c,val.trim().toLowerCase());
+}
+function renderOverviewBody(c,search){
+  const segs=c.segments;
+  const dict=c.dictionary||{};
+  const maxRows=Math.max(...segs.map(s=>{
+    const terms=dict[s.id]||[];
+    return search?terms.filter(t=>t.value.toLowerCase().includes(search)||( t.label&&t.label.toLowerCase().includes(search))).length:terms.length;
+  }),0);
+  if(!maxRows){
+    document.getElementById('overviewBody').innerHTML=`<div style="text-align:center;padding:24px;color:var(--faint)">${search?'Nenhum resultado para "'+esc(search)+'"':'Nenhum termo cadastrado'}</div>`;
+    return;
+  }
+  const colsHtml=segs.map(s=>{
+    const allTerms=dict[s.id]||[];
+    const terms=search?allTerms.filter(t=>t.value.toLowerCase().includes(search)||(t.label&&t.label.toLowerCase().includes(search))):allTerms;
+    return `<th style="min-width:120px;max-width:200px;text-align:left;padding:7px 10px;position:sticky;top:0;background:var(--card);border-bottom:2px solid var(--border)">
+      <div style="font-size:12px;font-weight:700">${esc(s.label)}</div>
+      <div style="font-size:10px;color:var(--faint);font-weight:400">${terms.length} termo${terms.length!==1?'s':''} ${s.required?'· req':'· opt'}</div>
+    </th>`;
+  }).join('');
+  const rowsHtml=Array.from({length:maxRows},(_,i)=>
+    `<tr>${segs.map(s=>{
+      const allTerms=dict[s.id]||[];
+      const terms=search?allTerms.filter(t=>t.value.toLowerCase().includes(search)||(t.label&&t.label.toLowerCase().includes(search))):allTerms;
+      const t=terms[i];
+      if(!t) return `<td style="padding:5px 10px;border-bottom:1px solid var(--divider)"></td>`;
+      const val=search?t.value.replace(new RegExp('('+search.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')', 'gi'),'<mark style="background:rgba(124,58,237,.2);border-radius:2px">$1</mark>'):esc(t.value);
+      return `<td style="padding:5px 10px;border-bottom:1px solid var(--divider);cursor:pointer" onclick="navigator.clipboard.writeText('${esc(t.value.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado: ${esc(t.value.replace(/'/g,"\\'"))}')).catch(()=>{})" title="${esc(t.label||'')}${t.uses?' · '+t.uses+'×':''}">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px">${val}</span>
+        ${t.label?`<div style="font-size:9.5px;color:var(--faint)">${esc(t.label)}</div>`:''}
+      </td>`;
+    }).join('')}</tr>`
+  ).join('');
+  document.getElementById('overviewBody').innerHTML=`
+    <div style="max-height:70vh;overflow:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>${colsHtml}</tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-top:6px">${segs.length} segmentos · ${maxRows} linhas${search?' (filtrado)':''} · clique em célula para copiar valor</div>
+  `;
+}
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && document.getElementById('dictOverviewModal')?.style.display==='block'){
+    closeDictOverview();
+  }
+});
 </script>
 
 <!-- ── Share URL modal ───────────────────────────── -->
