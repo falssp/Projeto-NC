@@ -1214,6 +1214,7 @@ body {
       <div id="previewBox" class="preview-box"><span style="color:var(--faint)">—</span></div>
       <div id="builderCharCount" class="builder-char-count"></div>
       <div id="builderScore" style="display:none;padding:4px 0 2px"></div>
+      <div id="builderNcCount" style="display:none;font-size:10px;color:var(--faint);padding:2px 0 4px"></div>
       <div class="sep-preview-row" id="sepPreviewRow"></div>
       <div class="builder-hist-row" id="builderHistRow"></div>
       <div class="builder-favs-row" id="builderFavsRow"></div>
@@ -3880,6 +3881,23 @@ function updatePreview() {
         </div>`;
     }
   }
+  /* BATCH 38: update NC count */
+  updateBuilderNcCount();
+}
+
+/* BATCH 38: NC count — total combinations possible from current dict */
+function updateBuilderNcCount() {
+  const el = document.getElementById('builderNcCount'); if(!el) return;
+  const c = active(); if(!c) { el.style.display='none'; return; }
+  const visibleSegs = c.segments.filter(s => !(_hiddenSegs&&_hiddenSegs.has(s.id)));
+  const counts = visibleSegs.map(s => (c.dictionary[s.id]||[]).length || 1);
+  const total = counts.reduce((a,b)=>a*b, 1);
+  if(total > 1) {
+    el.style.display = 'block';
+    el.textContent = `⚡ ${total.toLocaleString('pt-BR')} NCs possíveis (${visibleSegs.length} segs visíveis)`;
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 function sendBuilderToValidator() {
@@ -4027,6 +4045,7 @@ function addToBuilderHistory(name) {
 function clearBuilderHistory() {
   try { localStorage.removeItem(BUILDER_HIST_KEY); } catch(e) {}
   renderBuilderHistory();
+  updateBuilderNcCount(); // BATCH 38
 }
 let _builderHistFilter = '';
 function renderBuilderHistory() {
@@ -5492,6 +5511,13 @@ document.addEventListener('keydown', e => {
     document.getElementById('globalSearchInput')?.focus();
     return;
   }
+  // Ctrl+S → save / sync data
+  if((e.ctrlKey||e.metaKey) && e.key==='s') {
+    e.preventDefault();
+    saveData();
+    showToast('💾 Salvo');
+    return;
+  }
   // Ctrl+Delete in builder → clear all fields
   if((e.ctrlKey||e.metaKey) && e.key==='Delete' && currentTab==='builder') {
     e.preventDefault(); clearBuilderVals(); return;
@@ -6368,6 +6394,7 @@ function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt
     <div class="shortcut-row"><span>Copiar como JSON</span><span class="kbd">Ctrl + J</span></div>
     <div class="shortcut-row"><span>Preencher aleatório</span><span class="kbd">Ctrl + R</span></div>
     <div class="shortcut-row"><span>Limpar campos</span><span class="kbd">Ctrl + Delete</span></div>
+    <div class="shortcut-row"><span>Salvar dados</span><span class="kbd">Ctrl + S</span></div>
     <div style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Navegação</div>
     <div class="shortcut-row"><span>Focar busca global</span><span class="kbd">Ctrl + K</span></div>
     <div class="shortcut-row"><span>Aba Clientes</span><span class="kbd">Ctrl + 1</span></div>
