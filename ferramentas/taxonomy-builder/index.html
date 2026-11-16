@@ -2613,6 +2613,21 @@ function renderDicionario() {
   renderTermArea(c);
 }
 
+/* BATCH 42: Duplicate active segment */
+function duplicateActiveSeg() {
+  const c=active(); if(!c||!activeSeg) return;
+  const seg=c.segments.find(s=>s.id===activeSeg); if(!seg) return;
+  const newId='s'+Date.now();
+  const newSeg={...JSON.parse(JSON.stringify(seg)), id:newId, label:seg.label+' (cópia)'};
+  const idx=c.segments.findIndex(s=>s.id===activeSeg);
+  c.segments.splice(idx+1,0,newSeg);
+  c.dictionary[newId]=JSON.parse(JSON.stringify(c.dictionary[activeSeg]||[]));
+  c.lastModified=Date.now();
+  activeSeg=newId;
+  saveData(); renderDicionario();
+  showToast(`📋 Segmento "${seg.label}" duplicado`);
+}
+
 /* BATCH 21: Segment health strip */
 function renderSegHealth(c) {
   const el = document.getElementById('dictSegHealth'); if(!el) return;
@@ -5537,6 +5552,17 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key==='j' && currentTab==='builder') {
     e.preventDefault(); copyBuilderJSON(); return;
   }
+  // F2 → rename active segment (dicionário)
+  if(e.key==='F2' && currentTab==='dicionario' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+    e.preventDefault();
+    const btn=document.querySelector('#dictSegPills .pill.active');
+    if(btn) btn.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));
+    return;
+  }
+  // Ctrl+D → duplicate active segment (dicionário)
+  if((e.ctrlKey||e.metaKey) && e.key==='d' && currentTab==='dicionario') {
+    e.preventDefault(); duplicateActiveSeg(); return;
+  }
   // ? key (not in input) → open shortcuts
   if(e.key==='?' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
     openShortcuts(); return;
@@ -6398,6 +6424,8 @@ function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt
     <div class="shortcut-row"><span>Preencher aleatório</span><span class="kbd">Ctrl + R</span></div>
     <div class="shortcut-row"><span>Limpar campos</span><span class="kbd">Ctrl + Delete</span></div>
     <div class="shortcut-row"><span>Salvar dados</span><span class="kbd">Ctrl + S</span></div>
+    <div class="shortcut-row"><span>Renomear segmento ativo (dicionário)</span><span class="kbd">F2</span></div>
+    <div class="shortcut-row"><span>Duplicar segmento ativo (dicionário)</span><span class="kbd">Ctrl + D</span></div>
     <div style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Navegação</div>
     <div class="shortcut-row"><span>Focar busca global</span><span class="kbd">Ctrl + K</span></div>
     <div class="shortcut-row"><span>Aba Clientes</span><span class="kbd">Ctrl + 1</span></div>
