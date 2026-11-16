@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Padrões de NC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#f8fafc;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--erro:#dc2626;--erro-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--erro:#f87171;--erro-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--erro:#f87171;--erro-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1000px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+textarea{width:100%;height:220px;resize:vertical;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;outline:none;}
+textarea:focus{border-color:var(--accent);}
+/* Seg column */
+.seg-col{padding:12px 14px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;}
+.seg-col-title{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.seg-num{font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px;background:var(--accent-soft);color:var(--accent);}
+.seg-title{font-size:13px;font-weight:700;}
+.seg-coverage{font-size:11px;color:var(--faint);margin-left:auto;}
+/* Value pills */
+.val-pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:5px;margin:2px;cursor:pointer;transition:all .1s;}
+.val-pill:hover{border-color:var(--accent);background:var(--accent-soft);}
+.val-pill .cnt{font-size:9px;color:var(--faint);font-weight:700;}
+/* Bar chart */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.bar-label{font-family:var(--mono);font-size:11px;width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;}
+.bar-track{flex:1;height:12px;background:var(--divider);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .4s;}
+.bar-pct{font-size:10px;color:var(--faint);min-width:36px;text-align:right;}
+/* Summary badges */
+.sum-badge{font-size:11px;padding:4px 10px;border-radius:7px;background:var(--divider);font-weight:600;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Seg colors */
+.c0{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}.c1{background:#fce7f3;color:#be185d;border-color:#fbcfe8;}.c2{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}.c3{background:#fef3c7;color:#b45309;border-color:#fde68a;}.c4{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe;}.c5{background:#cffafe;color:#0e7490;border-color:#a5f3fc;}.c6{background:#ffe4e6;color:#be123c;border-color:#fecdd3;}.c7{background:#ecfdf5;color:#065f46;border-color:#a7f3d0;}
+[data-theme="dark"] .c0{background:rgba(29,78,216,.2);color:#93c5fd;border-color:rgba(29,78,216,.3);}
+[data-theme="dark"] .c1{background:rgba(190,24,93,.2);color:#f9a8d4;border-color:rgba(190,24,93,.3);}
+[data-theme="dark"] .c2{background:rgba(21,128,61,.2);color:#86efac;border-color:rgba(21,128,61,.3);}
+[data-theme="dark"] .c3{background:rgba(180,83,9,.2);color:#fcd34d;border-color:rgba(180,83,9,.3);}
+[data-theme="dark"] .c4{background:rgba(109,40,217,.2);color:#c4b5fd;border-color:rgba(109,40,217,.3);}
+[data-theme="dark"] .c5{background:rgba(14,116,144,.2);color:#67e8f9;border-color:rgba(14,116,144,.3);}
+[data-theme="dark"] .c6{background:rgba(190,18,60,.2);color:#fda4af;border-color:rgba(190,18,60,.3);}
+[data-theme="dark"] .c7{background:rgba(6,95,70,.2);color:#6ee7b7;border-color:rgba(6,95,70,.3);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🔎</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Extrator de Padrões de NC</div>
+      <div style="font-size:11px;color:var(--faint)">Analisa uma lista e extrai estrutura, valores e frequências por segmento</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportJSON()">⬇ JSON</button>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="analyze()">🔎 Analisar</button>
+  </div>
+</div>
+
+<div class="page">
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:14px;align-items:start">
+    <!-- Left: input -->
+    <div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">Lista de NCs</div>
+        <textarea id="ncInput" placeholder="Cole as NCs aqui, uma por linha&#10;&#10;ex:&#10;dove_cabelos_hidratacao_br&#10;dove_body_creme_br&#10;samsung_galaxy_s24_br&#10;samsung_galaxy_a55_br"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+          <div style="font-size:10px;color:var(--faint)" id="inputCount">0 NCs</div>
+          <button class="btn" onclick="document.getElementById('ncInput').value='';document.getElementById('inputCount').textContent='0 NCs'" style="height:24px;padding:0 8px;font-size:10px">limpar</button>
+        </div>
+        <div style="margin-top:10px;padding:8px 10px;background:var(--divider);border-radius:7px">
+          <div style="font-size:11px;font-weight:700;margin-bottom:5px">Opções</div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:5px;cursor:pointer">
+            <input type="checkbox" id="optCase" style="accent-color:var(--accent)"> Ignorar maiúsculas
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer">
+            Separador:
+            <input type="text" id="optSep" placeholder="auto" style="width:50px;height:24px;font-size:11px;padding:0 7px;border:1px solid var(--border);border-radius:5px;background:var(--input-bg);color:var(--fg);outline:none;">
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: results -->
+    <div id="resultsPanel">
+      <div class="card" style="text-align:center;padding:40px;color:var(--faint)">
+        <div style="font-size:36px;margin-bottom:10px">🔎</div>
+        <div>Cole as NCs e clique em <strong>Analisar</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('padnc_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('padnc_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+document.getElementById('ncInput').addEventListener('input',function(){
+  const c=this.value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('inputCount').textContent=c+' NC'+(c!==1?'s':'');
+});
+
+function detectSep(lines){
+  const counts={};
+  for(const l of lines.slice(0,30)) for(const s of ['_','-','|','.','/']) counts[s]=(counts[s]||0)+(l.split(s).length-1);
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'_';
+}
+
+let _analysis=null;
+
+function analyze(){
+  const raw=document.getElementById('ncInput').value;
+  const optCase=document.getElementById('optCase').checked;
+  const userSep=document.getElementById('optSep').value.trim();
+
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length){showToast('Cole as NCs primeiro');return;}
+
+  const sep=userSep||detectSep(lines);
+  const processed=lines.map(l=>optCase?l.toLowerCase():l);
+
+  // Count lengths
+  const lengthCount={};
+  processed.forEach(nc=>{
+    const c=nc.split(sep).length;
+    lengthCount[c]=(lengthCount[c]||0)+1;
+  });
+
+  // Most common length
+  const mostCommon=parseInt(Object.entries(lengthCount).sort((a,b)=>b[1]-a[1])[0][0]);
+
+  // Per-position analysis
+  const maxPos=Math.max(...processed.map(nc=>nc.split(sep).length));
+  const positions=[];
+  for(let i=0;i<maxPos;i++){
+    const vals={};
+    let present=0;
+    processed.forEach(nc=>{
+      const parts=nc.split(sep);
+      if(parts[i]!==undefined&&parts[i]!=='') {
+        vals[parts[i]]=(vals[parts[i]]||0)+1;
+        present++;
+      }
+    });
+    const sorted=Object.entries(vals).sort((a,b)=>b[1]-a[1]);
+    positions.push({pos:i+1,vals:sorted,present,total:lines.length,unique:sorted.length});
+  }
+
+  // Global stats
+  const totalChars=processed.map(nc=>nc.length);
+  const avgLen=Math.round(totalChars.reduce((a,b)=>a+b,0)/totalChars.length);
+  const minLen=Math.min(...totalChars);
+  const maxLen=Math.max(...totalChars);
+
+  _analysis={sep,positions,lengthCount,mostCommon,total:lines.length,avgLen,minLen,maxLen};
+
+  renderResults();
+}
+
+function renderResults(){
+  const a=_analysis; if(!a) return;
+  const p=document.getElementById('resultsPanel');
+
+  // Summary
+  const summaryHtml=`
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Resumo da análise</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="sum-badge">📊 ${a.total} NCs</span>
+        <span class="sum-badge">⚡ sep: <code>${esc(a.sep)}</code></span>
+        <span class="sum-badge">📏 avg ${a.avgLen} chars (${a.minLen}–${a.maxLen})</span>
+        <span class="sum-badge">📐 estrutura mais comum: ${a.mostCommon} segs</span>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--faint);margin-bottom:5px">Distribuição por nº de segmentos:</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${Object.entries(a.lengthCount).sort((a,b)=>a[0]-b[0]).map(([k,v])=>`
+          <span style="font-size:11px;padding:3px 10px;border-radius:12px;background:${parseInt(k)===a.mostCommon?'var(--accent)':'var(--divider)'};color:${parseInt(k)===a.mostCommon?'#fff':'var(--fg)'};font-weight:600">
+            ${k} segs: ${v} (${Math.round(v/a.total*100)}%)
+          </span>`).join('')}
+      </div>
+    </div>
+  `;
+
+  // Per-position cols
+  const posHtml=a.positions.map(pos=>{
+    const pct=Math.round(pos.present/pos.total*100);
+    const topVals=pos.vals.slice(0,10);
+    const hasMore=pos.vals.length>10;
+    return `
+      <div class="seg-col">
+        <div class="seg-col-title">
+          <span class="seg-num">seg ${pos.pos}</span>
+          <span class="seg-title">${pos.unique} valor${pos.unique!==1?'es':''} únicos</span>
+          <span class="seg-coverage">${pct}% das NCs</span>
+        </div>
+        ${topVals.map(([v,n])=>{
+          const barPct=Math.round(n/pos.present*100);
+          return `<div class="bar-row">
+            <span class="bar-label val-pill c${(pos.pos-1)%8}" onclick="navigator.clipboard.writeText('${esc(v.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado: ${esc(v.replace(/'/g,"\\'"))}')).catch(()=>{})" title="Clique para copiar">${esc(v)} <span class="cnt">${n}×</span></span>
+            <div class="bar-track"><div class="bar-fill" style="width:${barPct}%"></div></div>
+            <span class="bar-pct">${barPct}%</span>
+          </div>`;
+        }).join('')}
+        ${hasMore?`<div style="font-size:10px;color:var(--faint);margin-top:4px">+ ${pos.vals.length-10} outros valores…</div>`:''}
+      </div>
+    `;
+  }).join('');
+
+  p.innerHTML=summaryHtml+`<div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:10px">Valores por posição <span style="font-size:11px;font-weight:400;color:var(--faint)">(clique em um valor para copiar)</span></div>${posHtml}</div>`;
+}
+
+function exportJSON(){
+  if(!_analysis){showToast('Analise primeiro');return;}
+  const out={sep:_analysis.sep,total:_analysis.total,positions:_analysis.positions.map(p=>({pos:p.pos,unique:p.unique,coverage_pct:Math.round(p.present/p.total*100),top_values:p.vals.slice(0,20).map(([v,n])=>({value:v,count:n,pct:Math.round(n/p.present*100)}))}))};
+  const blob=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='padroes_nc.json';a.click();
+  showToast('⬇ JSON exportado');
+}
+
+function exportCSV(){
+  if(!_analysis){showToast('Analise primeiro');return;}
+  const rows=[['segmento','valor','ocorrencias','pct_posicao']];
+  _analysis.positions.forEach(pos=>{
+    pos.vals.forEach(([v,n])=>{
+      rows.push([`seg_${pos.pos}`,v,n,Math.round(n/pos.present*100)]);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='padroes_nc.csv';a.click();
+  showToast(`⬇ ${rows.length-1} linhas exportadas`);
+}
+
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')analyze();});
+</script>
+</body>
+</html>
