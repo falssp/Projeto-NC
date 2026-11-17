@@ -1125,6 +1125,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openDictOverview()" title="Visão geral de todos os segmentos em tabela" id="btnDictOverview">👁 Visão Geral</button>
           <button class="btn secondary btn-sm" onclick="openMergeSegModal()" title="Mesclar o segmento ativo com outro (une os termos)" id="btnMergeSeg">⇄ Mesclar</button>
           <button class="btn secondary btn-sm" onclick="openMoveSegModal()" title="Mover segmento ativo (com termos) para outro cliente" id="btnMoveSeg">📤 Mover para…</button>
+          <button class="btn secondary btn-sm" onclick="recalcUsage()" title="Recalcula os contadores de uso de todos os termos com base no histórico do Builder" id="btnRecalcUsage">🔄 Recalc. Uso</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -2794,6 +2795,7 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Exportar TODOS os segmentos do cliente como CSV único" onclick="exportAllClientCSV()" style="font-size:11px;padding:4px 8px">⬇ CSV tudo</button>
       <button class="btn secondary btn-sm" title="Adicionar vários termos de uma vez (separados por vírgula)" onclick="openMultiAddModal()" style="font-size:11px;padding:4px 8px">⚡ Multi-add</button>
       <button class="btn secondary btn-sm" title="Detectar e mesclar termos com valor duplicado neste segmento" onclick="mergeDuplicateTerms()" style="font-size:11px;padding:4px 8px">🔀 Mesclar dupl.</button>
+      <button class="btn secondary btn-sm" title="Zerar contadores de uso deste segmento" onclick="resetSegUsage()" style="font-size:11px;padding:4px 8px">🔄 Zerar uso</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
     </div>
     <div id="bulkBar" style="display:none"><div class="bulk-bar">
@@ -2931,6 +2933,14 @@ function sortTermsByUse() {
   const c=active(); if(!c||!activeSeg) return;
   c.dictionary[activeSeg].sort((a,b)=>(b.uses||0)-(a.uses||0));
   saveData(); renderDicionario(); showToast('Termos ordenados por uso');
+}
+function resetSegUsage(){
+  const c=active(); if(!c||!activeSeg) return;
+  const seg=c.segments.find(s=>s.id===activeSeg);
+  if(!confirm(`Zerar contadores de uso de "${seg?.label||activeSeg}"?`)) return;
+  (c.dictionary[activeSeg]||[]).forEach(t=>{ delete t.uses; });
+  c.lastModified=Date.now();
+  saveData(); renderDicionario(); showToast('🔄 Uso zerado para este segmento');
 }
 
 /* BATCH 26: Export ALL segments of active client as one CSV */
@@ -6549,6 +6559,42 @@ document.addEventListener('keydown', e=>{
     if(mv&&mv.style.display==='flex') closeMoveSegModal();
   }
 });
+
+/* BATCH 49: Recalculate usage from builder history */
+function recalcUsage(){
+  const c=active(); if(!c){showToast('Nenhum cliente ativo');return;}
+  let hist=[];
+  try{hist=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');}catch(e){}
+  // Filter history entries for this client by name
+  const clientHist=hist.filter(h=>{
+    if(typeof h==='string') return h.startsWith(c.name+':');
+    if(h&&h.client) return h.client===c.name;
+    return false;
+  });
+  // Reset all usage counts to 0
+  c.segments.forEach(seg=>{
+    (c.dictionary[seg.id]||[]).forEach(t=>{ t.uses=0; });
+  });
+  // Rebuild counts from history
+  const sep=c.separator||'_';
+  let totalHits=0;
+  hist.forEach(entry=>{
+    // entry can be string NC or object with .nc property
+    const nc=typeof entry==='string'?entry:(entry?.nc||'');
+    if(!nc) return;
+    const parts=nc.split(sep);
+    c.segments.forEach((seg,idx)=>{
+      if(idx>=parts.length) return;
+      const val=parts[idx];
+      const term=(c.dictionary[seg.id]||[]).find(t=>t.value===val);
+      if(term){term.uses=(term.uses||0)+1;totalHits++;}
+    });
+  });
+  c.lastModified=Date.now();
+  saveData();
+  renderDicionario();
+  showToast(`🔄 Uso recalculado — ${totalHits} hits em ${hist.length} NCs do histórico`);
+}
 
 /* BATCH 48: Move Segment to Another Client */
 function openMoveSegModal(){
