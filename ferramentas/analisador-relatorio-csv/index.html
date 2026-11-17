@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador de Relatório — AdOps Suite</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--white:#fff;--green:#1b8c3e;--yellow:#b45309;--red:#b91c1c;--gray:#6b7280}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:#1e293b;min-height:100vh}
+header{background:var(--blue);color:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.1rem;font-weight:600}
+header .sub{opacity:.7;font-size:.85rem;margin-left:auto}
+.main{padding:28px 32px;min-width:0}
+.section{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px}
+.section-title{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);margin-bottom:14px}
+textarea{width:100%;min-height:140px;padding:12px;border:1.5px solid var(--border);border-radius:8px;font-family:monospace;font-size:.82rem;resize:vertical;background:#fafafa;transition:border .2s}
+textarea:focus{outline:none;border-color:var(--accent);background:#fff}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+select,input[type=date]{padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:.87rem;background:#fff}
+select:focus,input:focus{outline:none;border-color:var(--accent)}
+.btn{padding:9px 20px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.87rem;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn-sm{padding:6px 13px;font-size:.8rem}
+.btn-ghost{background:transparent;color:var(--accent);border:1.5px solid var(--border)}
+.btn-ghost:hover{background:var(--hl)}
+/* detection badge */
+.detect-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:.78rem;font-weight:600;background:var(--hl);color:var(--accent);border:1px solid var(--border)}
+.badge.plat{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:4px}
+.card{background:var(--hl);border:1px solid var(--border);border-radius:9px;padding:14px 16px}
+.card-label{font-size:.72rem;color:var(--gray);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.card-val{font-size:1.4rem;font-weight:700;color:var(--blue);margin-top:3px;line-height:1.1}
+.card-sub{font-size:.72rem;color:var(--gray);margin-top:2px}
+/* tables */
+.tbl-wrap{overflow-x:auto;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{background:var(--hl);padding:9px 10px;text-align:left;font-weight:600;color:var(--blue);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#dde2f8}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8f9ff}
+.anom-row td{background:#fff8f0}
+.top-row td{background:#f0faf4}
+.bot-row td{background:#fff2f2}
+/* status pills */
+.pill{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.73rem;font-weight:600}
+.pill-ok{background:#dcfce7;color:#15803d}
+.pill-warn{background:#fef3c7;color:#92400e}
+.pill-err{background:#fee2e2;color:#991b1b}
+.pill-info{background:var(--hl);color:var(--accent)}
+/* benchmarks */
+.bm-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.bm-table th{background:var(--hl);padding:8px 10px;text-align:left;font-weight:600;color:var(--blue);border-bottom:2px solid var(--border)}
+.bm-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
+/* insights block */
+.insights-box{background:#f8f9ff;border:1.5px solid var(--border);border-radius:8px;padding:16px;font-size:.88rem;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+/* pagination */
+.pag{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pag button{padding:5px 11px;border:1.5px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:.8rem}
+.pag button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pag button:hover:not(.active){background:var(--hl)}
+/* filter */
+.filter-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.filter-row input{padding:7px 11px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem;width:220px}
+/* anom severity */
+.sev-high{color:var(--red);font-weight:600}
+.sev-med{color:var(--yellow);font-weight:600}
+/* derived metrics */
+.derived-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.derived-card{background:#f8f9ff;border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.derived-card .d-label{font-size:.72rem;color:var(--gray);font-weight:500}
+.derived-card .d-val{font-size:1.1rem;font-weight:700;color:var(--blue);margin-top:2px}
+.derived-card .d-formula{font-size:.7rem;color:var(--gray);margin-top:3px;font-style:italic}
+/* hidden */
+.hidden{display:none!important}
+/* empty state */
+.empty{text-align:center;padding:48px 20px;color:var(--gray)}
+.empty svg{opacity:.3;margin-bottom:12px}
+.empty p{font-size:.9rem}
+/* score bar */
+.score-bar-wrap{width:80px;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px}
+.score-bar{height:100%;border-radius:4px;background:var(--accent)}
+/* anom icon */
+.anom-icon{font-size:1rem;margin-right:4px}
+/* copy btn in box */
+.box-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.5rem">📊</span>
+  <h1>Analisador de Relatório de Plataforma</h1>
+  <span class="sub">AdOps Suite</span>
+</header>
+
+<div class="main">
+
+  <!-- INPUT -->
+  <div class="section">
+    <div class="section-title">Dados do relatório</div>
+    <textarea id="csvInput" placeholder="Cole aqui o CSV exportado da plataforma (CM360, Meta Ads, Google Ads, DV360, LinkedIn, TikTok...)&#10;&#10;Suporte a vírgula e tabulação como delimitador. Primeira linha deve conter os cabeçalhos."></textarea>
+    <div class="row">
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--gray);margin-right:6px">Plataforma:</label>
+        <select id="platformOverride">
+          <option value="auto">Auto-detectar</option>
+          <option value="cm360">CM360</option>
+          <option value="meta">Meta Ads</option>
+          <option value="google">Google Ads</option>
+          <option value="dv360">DV360</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="tiktok">TikTok</option>
+          <option value="generic">Genérico</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:600;color:var(--gray);margin-right:6px">De:</label>
+        <input type="date" id="dateFrom">
+        <label style="font-size:.8rem;font-weight:600;color:var(--gray);margin:0 6px">Até:</label>
+        <input type="date" id="dateTo">
+      </div>
+      <button class="btn" onclick="analyze()">Analisar</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadDemo()">Carregar demo</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearAll()">Limpar</button>
+    </div>
+  </div>
+
+  <!-- RESULTS (hidden until analyzed) -->
+  <div id="results" class="hidden">
+
+    <!-- Detection badges -->
+    <div class="section" id="detectionSection">
+      <div class="detect-row" id="detectBadges"></div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="section">
+      <div class="section-title">Resumo geral</div>
+      <div class="cards" id="summaryCards"></div>
+    </div>
+
+    <!-- Derived metrics -->
+    <div class="section" id="derivedSection">
+      <div class="section-title">Métricas derivadas</div>
+      <div class="derived-grid" id="derivedGrid"></div>
+    </div>
+
+    <!-- Anomalies -->
+    <div class="section" id="anomSection">
+      <div class="section-title">Anomalias detectadas</div>
+      <div id="anomCount" style="margin-bottom:10px;font-size:.85rem;color:var(--gray)"></div>
+      <div class="tbl-wrap">
+        <table id="anomTable">
+          <thead><tr><th>Dimensão</th><th>Anomalia</th><th>Valor</th><th>Sugestão</th></tr></thead>
+          <tbody id="anomBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Efficiency ranking -->
+    <div class="section">
+      <div class="section-title">Ranking por eficiência</div>
+      <div class="tbl-wrap">
+        <table id="rankTable">
+          <thead><tr>
+            <th onclick="sortRank('name')">Nome</th>
+            <th onclick="sortRank('spend')">Investimento</th>
+            <th onclick="sortRank('impr')">Impressões</th>
+            <th onclick="sortRank('ctr')">CTR</th>
+            <th onclick="sortRank('cpm')">CPM</th>
+            <th onclick="sortRank('cpa')">CPA</th>
+            <th onclick="sortRank('score')">Score</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Benchmarks -->
+    <div class="section" id="benchSection">
+      <div class="section-title">Comparativo com benchmarks BR</div>
+      <div class="tbl-wrap">
+        <table class="bm-table" id="benchTable">
+          <thead><tr><th>Métrica</th><th>Seu resultado</th><th>Benchmark BR</th><th>Status</th></tr></thead>
+          <tbody id="benchBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Insights block -->
+    <div class="section">
+      <div class="box-header">
+        <div class="section-title" style="margin-bottom:0">Bloco de insights</div>
+        <button class="btn btn-ghost btn-sm" onclick="copyInsights()">Copiar texto</button>
+      </div>
+      <div class="insights-box" id="insightsBox"></div>
+    </div>
+
+    <!-- Full data table -->
+    <div class="section">
+      <div class="section-title">Tabela completa</div>
+      <div class="filter-row">
+        <input type="text" id="tableFilter" placeholder="Filtrar por nome..." oninput="filterTable()">
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV()">Baixar CSV processado</button>
+      </div>
+      <div class="tbl-wrap">
+        <table id="dataTable">
+          <thead id="dataHead"></thead>
+          <tbody id="dataBody"></tbody>
+        </table>
+      </div>
+      <div class="pag" id="pagination"></div>
+    </div>
+
+  </div>
+
+  <!-- Empty state -->
+  <div id="emptyState" class="section">
+    <div class="empty">
+      <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6M5 21h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+      <p>Cole um CSV exportado de qualquer plataforma de mídia e clique em <strong>Analisar</strong>.</p>
+      <p style="margin-top:6px;font-size:.8rem">Suporte: CM360 · Meta Ads · Google Ads · DV360 · LinkedIn · TikTok · Genérico</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let parsedRows = [];
+let parsedHeaders = [];
+let detectedPlatform = 'generic';
+let canonMap = {};
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let rankSortKey = 'score';
+let rankSortDir = -1;
+let filteredRows = [];
+let processedRows = []; // rows with derived cols
+
+// ─── Platform signatures ─────────────────────────────────────────────────────
+const PLATFORM_SIGS = {
+  cm360:    ['placement','click-through conversions','floodlight','advertiser'],
+  meta:     ['ad set name','reach','frequency','roas'],
+  google:   ['avg. cpc','quality score','search impression share'],
+  dv360:    ['line item','active view: % viewable impressions','complete views'],
+  linkedin: ['company name','click through rate (ctr)','average cpc','follows'],
+  tiktok:   ['video view rate','profile visits','video views'],
+};
+
+// ─── Column name mappings (canonical → aliases) ──────────────────────────────
+const COL_ALIASES = {
+  impr:    ['impressions','impressões','impressões veiculadas','impr.','impressionss'],
+  clicks:  ['clicks','cliques','cliques no link','link clicks','clks'],
+  spend:   ['spend','cost','investimento','custo','amount spent','cost (brl)','cost (usd)'],
+  conv:    ['conversions','conversões','click-through conversions','all conversions','purchase','leads'],
+  revenue: ['revenue','receita','conversion value','purchase value','roas value','value'],
+  ctr:     ['ctr','click-through rate','taxa de cliques'],
+  cpm:     ['cpm','cost per 1000 impressions','cpm (brl)'],
+  cpc:     ['cpc','cost per click','avg. cpc','average cpc','cpc (brl)'],
+  cpa:     ['cpa','cost per conversion','cost per result','custo por resultado'],
+  reach:   ['reach','alcance','unique reach'],
+  freq:    ['frequency','frequência','avg. frequency'],
+  view:    ['viewability','viewability %','active view: % viewable impressions','% viewable'],
+  vidviews:['video views','visualizações de vídeo','views'],
+  vidvr:   ['video view rate','vtr','taxa de visualização'],
+  date:    ['date','data','day','dia','date range','reporting date','report date'],
+  name:    ['placement','ad set name','ad name','line item','campaign','campanha','ad group','nome','name','creative','title'],
+  budget:  ['budget','orçamento','planned budget','daily budget'],
+  roas:    ['roas','return on ad spend','retorno sobre gasto'],
+};
+
+function detectCol(headers, canonical) {
+  const aliases = COL_ALIASES[canonical] || [];
+  for (const h of headers) {
+    const hl = h.toLowerCase().trim();
+    for (const a of aliases) {
+      if (hl === a || hl.includes(a)) return h;
+    }
+  }
+  return null;
+}
+
+function buildCanonMap(headers) {
+  const m = {};
+  for (const [canon, _] of Object.entries(COL_ALIASES)) {
+    const found = detectCol(headers, canon);
+    if (found) m[canon] = found;
+  }
+  return m;
+}
+
+// ─── Platform detection ───────────────────────────────────────────────────────
+function detectPlatform(headers, override) {
+  if (override !== 'auto') return override;
+  const hl = headers.map(h => h.toLowerCase());
+  let best = 'generic', bestScore = 0;
+  for (const [plat, sigs] of Object.entries(PLATFORM_SIGS)) {
+    const score = sigs.filter(s => hl.some(h => h.includes(s.toLowerCase()))).length;
+    if (score > bestScore) { bestScore = score; best = plat; }
+  }
+  return best;
+}
+
+const PLAT_LABELS = {cm360:'CM360',meta:'Meta Ads',google:'Google Ads',dv360:'DV360',linkedin:'LinkedIn',tiktok:'TikTok',generic:'Genérico'};
+
+// ─── CSV parser ───────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  // detect delimiter
+  const firstLine = text.split('\n')[0];
+  const tabs = (firstLine.match(/\t/g)||[]).length;
+  const commas = (firstLine.match(/,/g)||[]).length;
+  const semi = (firstLine.match(/;/g)||[]).length;
+  let delim = ',';
+  if (tabs >= commas && tabs >= semi) delim = '\t';
+  else if (semi > commas) delim = ';';
+
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return { headers: [], rows: [] };
+
+  function splitLine(line) {
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === delim && !inQ) { result.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  // Find header row (skip summary/total rows at top)
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const cols = splitLine(lines[i]);
+    if (cols.length > 2 && cols.filter(c => c.length > 0).length > 2) { headerIdx = i; break; }
+  }
+
+  const headers = splitLine(lines[headerIdx]);
+  const rows = [];
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = splitLine(line);
+    if (cols.every(c => c === '')) continue;
+    const row = {};
+    headers.forEach((h, j) => { row[h] = cols[j] || ''; });
+    rows.push(row);
+  }
+  return { headers, rows };
+}
+
+function parseNum(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const s = String(v).replace(/[R$\s%]/g,'').replace(/\./g,'').replace(',','.');
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function fmtNum(n, dec=0) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function fmtR(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtPct(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%';
+}
+
+// ─── Main analyze ─────────────────────────────────────────────────────────────
+let debounceTimer;
+document.getElementById('csvInput').addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => { if (document.getElementById('csvInput').value.trim().length > 50) analyze(); }, 800);
+});
+
+function analyze() {
+  const raw = document.getElementById('csvInput').value.trim();
+  if (!raw) return;
+
+  const { headers, rows } = parseCSV(raw);
+  if (!headers.length || !rows.length) { alert('Não foi possível parsear o CSV. Verifique o formato.'); return; }
+
+  parsedHeaders = headers;
+  parsedRows = rows;
+  canonMap = buildCanonMap(headers);
+
+  const override = document.getElementById('platformOverride').value;
+  detectedPlatform = detectPlatform(headers, override);
+
+  // date filter
+  const df = document.getElementById('dateFrom').value;
+  const dt = document.getElementById('dateTo').value;
+  let filtRows = rows;
+  if ((df || dt) && canonMap.date) {
+    filtRows = rows.filter(r => {
+      const d = r[canonMap.date];
+      if (!d) return true;
+      const rd = new Date(d);
+      if (isNaN(rd)) return true;
+      if (df && rd < new Date(df)) return false;
+      if (dt && rd > new Date(dt)) return false;
+      return true;
+    });
+  }
+
+  processedRows = filtRows.map(r => enrichRow(r));
+  filteredRows = [...processedRows];
+
+  document.getElementById('results').classList.remove('hidden');
+  document.getElementById('emptyState').classList.add('hidden');
+
+  renderDetection(filtRows, headers);
+  renderSummary();
+  renderDerived();
+  renderAnomalies();
+  renderRanking();
+  renderBenchmarks();
+  renderInsights();
+  renderDataTable();
+}
+
+function enrichRow(r) {
+  const e = {...r};
+  const impr = parseNum(r[canonMap.impr]);
+  const clicks = parseNum(r[canonMap.clicks]);
+  const spend = parseNum(r[canonMap.spend]);
+  const conv = parseNum(r[canonMap.conv]);
+  const reach = parseNum(r[canonMap.reach]);
+  const view = parseNum(r[canonMap.view]);
+  const vidviews = parseNum(r[canonMap.vidviews]);
+
+  if (impr > 0 && clicks !== null) e._ctr = clicks / impr * 100;
+  else if (r[canonMap.ctr]) e._ctr = parseNum(r[canonMap.ctr]);
+
+  if (impr > 0 && spend !== null) e._cpm = spend / impr * 1000;
+  else if (r[canonMap.cpm]) e._cpm = parseNum(r[canonMap.cpm]);
+
+  if (clicks > 0 && spend !== null) e._cpc = spend / clicks;
+  else if (r[canonMap.cpc]) e._cpc = parseNum(r[canonMap.cpc]);
+
+  if (conv > 0 && spend !== null) e._cpa = spend / conv;
+  else if (r[canonMap.cpa]) e._cpa = parseNum(r[canonMap.cpa]);
+
+  if (impr > 0 && conv !== null) e._cvr = conv / impr * 100;
+
+  // viewability
+  if (view !== null) {
+    e._viewability = view > 1 ? view : view * 100;
+    if (e._cpm) e._vcpm = e._cpm / (e._viewability / 100);
+  }
+
+  // vtr
+  if (vidviews !== null && impr > 0) e._vtr = vidviews / impr * 100;
+
+  // efficiency score
+  let score = 50, parts = 0;
+  if (e._ctr !== undefined) { score += (Math.min(e._ctr, 2) / 2 * 100 - 50) * 0.3; parts++; }
+  if (e._viewability !== undefined) { score += (e._viewability / 100 * 100 - 50) * 0.3; parts++; }
+  if (e._cpa !== undefined && e._cpa > 0) { const cpaScore = Math.max(0, 100 - e._cpa); score += (Math.min(cpaScore, 100) - 50) * 0.4; parts++; }
+  e._score = Math.max(0, Math.min(100, score));
+
+  e._impr = impr;
+  e._clicks = clicks;
+  e._spend = spend;
+  e._conv = conv;
+  e._reach = reach;
+
+  // name
+  e._name = r[canonMap.name] || Object.values(r)[0] || 'Item';
+
+  return e;
+}
+
+// ─── Detection badges ─────────────────────────────────────────────────────────
+function renderDetection(rows, headers) {
+  const el = document.getElementById('detectBadges');
+  // find date range
+  let minDate = null, maxDate = null;
+  if (canonMap.date) {
+    rows.forEach(r => {
+      const d = new Date(r[canonMap.date]);
+      if (!isNaN(d)) {
+        if (!minDate || d < minDate) minDate = d;
+        if (!maxDate || d > maxDate) maxDate = d;
+      }
+    });
+  }
+  const dims = headers.filter(h => !Object.values(canonMap).includes(h)).length;
+  const mets = Object.values(canonMap).filter(v => v).length;
+  const dateStr = (minDate && maxDate) ? `${minDate.toLocaleDateString('pt-BR')} – ${maxDate.toLocaleDateString('pt-BR')}` : '—';
+
+  el.innerHTML = `
+    <span class="badge plat">🎯 ${PLAT_LABELS[detectedPlatform]||'Genérico'}</span>
+    <span class="badge">📋 ${rows.length} linhas</span>
+    <span class="badge">📅 Período: ${dateStr}</span>
+    <span class="badge">📐 ${headers.length} colunas detectadas</span>
+    <span class="badge">✅ ${mets} métricas mapeadas</span>
+  `;
+}
+
+// ─── Summary cards ────────────────────────────────────────────────────────────
+function sum(key) { return processedRows.reduce((a,r) => a + (r[key]||0), 0); }
+function wavg(numKey, denKey) {
+  const n = processedRows.reduce((a,r) => a + (r[numKey]||0), 0);
+  const d = processedRows.reduce((a,r) => a + (r[denKey]||0), 0);
+  return d > 0 ? n / d : null;
+}
+
+function renderSummary() {
+  const el = document.getElementById('summaryCards');
+  const totalImpr = sum('_impr');
+  const totalClicks = sum('_clicks');
+  const totalSpend = sum('_spend');
+  const totalConv = sum('_conv');
+  const totalReach = sum('_reach');
+  const avgFreq = canonMap.freq ? wavg(canonMap.freq, '_impr') : null;
+  const roas = canonMap.roas ? processedRows.reduce((a,r) => a + (parseNum(r[canonMap.roas])||0),0)/processedRows.length : null;
+
+  const ctr = totalImpr > 0 ? totalClicks / totalImpr * 100 : null;
+  const cpm = totalImpr > 0 ? totalSpend / totalImpr * 1000 : null;
+  const cpc = totalClicks > 0 ? totalSpend / totalClicks : null;
+  const cpa = totalConv > 0 ? totalSpend / totalConv : null;
+  const avgFreqV = canonMap.freq ? processedRows.reduce((a,r)=>a+(parseNum(r[canonMap.freq])||0),0)/processedRows.length : null;
+
+  const cards = [
+    {label:'Impressões', val: fmtNum(totalImpr)},
+    {label:'Cliques', val: fmtNum(totalClicks)},
+    {label:'CTR médio', val: fmtPct(ctr)},
+    {label:'Investimento', val: fmtR(totalSpend)},
+    {label:'CPM médio', val: fmtR(cpm)},
+    {label:'CPC médio', val: fmtR(cpc)},
+  ];
+  if (totalConv > 0) cards.push({label:'Conversões', val: fmtNum(totalConv)},{label:'CPA médio', val: fmtR(cpa)});
+  if (totalReach > 0) cards.push({label:'Alcance', val: fmtNum(totalReach)});
+  if (avgFreqV) cards.push({label:'Frequência média', val: fmtNum(avgFreqV,1)+'x'});
+  if (roas && roas > 0) cards.push({label:'ROAS médio', val: fmtNum(roas,2)+'x'});
+
+  el.innerHTML = cards.map(c => `<div class="card"><div class="card-label">${c.label}</div><div class="card-val">${c.val}</div></div>`).join('');
+}
+
+// ─── Derived metrics ──────────────────────────────────────────────────────────
+function renderDerived() {
+  const el = document.getElementById('derivedGrid');
+  const items = [];
+
+  const hasView = processedRows.some(r => r._viewability !== undefined);
+  const totalImpr = sum('_impr');
+  const totalClicks = sum('_clicks');
+  const totalSpend = sum('_spend');
+  const totalConv = sum('_conv');
+
+  if (hasView) {
+    const avgView = processedRows.reduce((a,r)=>a+(r._viewability||0),0)/processedRows.filter(r=>r._viewability!==undefined).length;
+    const avgCpm = totalImpr > 0 ? totalSpend/totalImpr*1000 : null;
+    if (avgCpm) items.push({label:'vCPM médio', val: fmtR(avgCpm/(avgView/100)), formula:'CPM ÷ (Viewability% ÷ 100)'});
+    items.push({label:'Viewability média', val: fmtPct(avgView), formula:'Ponderada por impressões'});
+  }
+
+  if (totalClicks > 0 && totalSpend > 0) {
+    const ctr = totalClicks/totalImpr*100;
+    const ecpm = totalSpend/totalClicks*1000/ctr*100;
+    items.push({label:'eCPM (baseado em cliques)', val: fmtR(isFinite(ecpm)?ecpm:null), formula:'(Invest ÷ Cliques) × 1000 ÷ CTR × 100'});
+  }
+
+  const avgScore = processedRows.reduce((a,r)=>a+(r._score||0),0)/processedRows.length;
+  items.push({label:'Efficiency Score médio', val: fmtNum(avgScore,0)+'/100', formula:'CTR 30% + Viewability 30% + CPA 40%'});
+
+  if (canonMap.budget) {
+    const totalBudget = processedRows.reduce((a,r)=>a+(parseNum(r[canonMap.budget])||0),0);
+    if (totalBudget > 0) items.push({label:'Budget utilizado', val: fmtPct(totalSpend/totalBudget*100), formula:'Investimento ÷ Budget planejado'});
+  }
+
+  if (totalConv > 0 && totalClicks > 0) {
+    items.push({label:'Taxa de conversão (CVR)', val: fmtPct(totalConv/totalClicks*100), formula:'Conversões ÷ Cliques'});
+  }
+
+  const vidRows = processedRows.filter(r=>r._vtr!==undefined);
+  if (vidRows.length) {
+    const avgVtr = vidRows.reduce((a,r)=>a+r._vtr,0)/vidRows.length;
+    items.push({label:'VTR médio', val: fmtPct(avgVtr), formula:'Visualizações ÷ Impressões'});
+  }
+
+  if (!items.length) { document.getElementById('derivedSection').classList.add('hidden'); return; }
+  document.getElementById('derivedSection').classList.remove('hidden');
+  el.innerHTML = items.map(i=>`<div class="derived-card"><div class="d-label">${i.label}</div><div class="d-val">${i.val}</div><div class="d-formula">${i.formula}</div></div>`).join('');
+}
+
+// ─── Anomaly detection ────────────────────────────────────────────────────────
+function renderAnomalies() {
+  const tbody = document.getElementById('anomBody');
+  const anoms = [];
+
+  for (const r of processedRows) {
+    const name = r._name;
+    const spend = r._spend;
+    const ctr = r._ctr;
+    const cpm = r._cpm;
+    const freq = parseNum(r[canonMap.freq]);
+    const view = r._viewability;
+    const conv = r._conv;
+    const cpc = r._cpc;
+    const cvr = r._cvr;
+
+    if (ctr !== undefined && ctr < 0.02) anoms.push({name, anom:'CTR criticamente baixo', val:fmtPct(ctr), sug:'Revisar criativo ou segmentação', sev:'high'});
+    if (ctr !== undefined && ctr > 5) anoms.push({name, anom:'CTR anormalmente alto', val:fmtPct(ctr), sug:'Verificar tráfego inválido ou cliques fraudulentos', sev:'med'});
+    if (cpm !== undefined && cpm > 50) anoms.push({name, anom:'CPM acima do benchmark', val:fmtR(cpm), sug:'Verificar leilão, targeting muito restrito ou publisher premium', sev:'med'});
+    if (freq !== null && freq > 7) anoms.push({name, anom:'Frequência alta', val:fmtNum(freq,1)+'x', sug:'Risco de fadiga de criativo — adicionar frequency cap', sev:'med'});
+    if (view !== undefined && view < 40) anoms.push({name, anom:'Viewability crítica', val:fmtPct(view), sug:'Placement problemático — verificar posição na página, lazy-load ou fraude', sev:'high'});
+    if (spend > 100 && conv !== null && conv === 0) anoms.push({name, anom:'Alto investimento sem conversão', val:fmtR(spend), sug:'Verificar landing page, pixel Floodlight ou janela de atribuição', sev:'high'});
+    if (cpc !== undefined && cpc > 10 && cvr !== undefined && cvr < 0.5) anoms.push({name, anom:'CPC alto + CVR baixo', val:`CPC ${fmtR(cpc)} / CVR ${fmtPct(cvr)}`, sug:'Revisar qualidade do tráfego e alinhamento entre anúncio e landing page', sev:'med'});
+  }
+
+  document.getElementById('anomCount').textContent = anoms.length
+    ? `${anoms.length} anomalia(s) encontrada(s)`
+    : '✅ Nenhuma anomalia detectada nos dados analisados.';
+
+  tbody.innerHTML = anoms.map(a => `
+    <tr class="anom-row">
+      <td><strong>${esc(a.name)}</strong></td>
+      <td><span class="sev-${a.sev}">${esc(a.anom)}</span></td>
+      <td>${esc(a.val)}</td>
+      <td>${esc(a.sug)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">Nenhuma anomalia encontrada</td></tr>';
+}
+
+// ─── Efficiency ranking ───────────────────────────────────────────────────────
+function sortRank(key) {
+  if (rankSortKey === key) rankSortDir *= -1;
+  else { rankSortKey = key; rankSortDir = -1; }
+  renderRanking();
+}
+
+function renderRanking() {
+  const rows = [...processedRows].sort((a,b) => {
+    const kmap = {name:'_name',spend:'_spend',impr:'_impr',ctr:'_ctr',cpm:'_cpm',cpa:'_cpa',score:'_score'};
+    const k = kmap[rankSortKey] || '_score';
+    const av = a[k]||0, bv = b[k]||0;
+    if (typeof av === 'string') return av.localeCompare(bv) * rankSortDir;
+    return (av - bv) * rankSortDir;
+  });
+
+  const tbody = document.getElementById('rankBody');
+  tbody.innerHTML = rows.map((r,i) => {
+    const cls = i < 3 ? 'top-row' : (i >= rows.length-3 ? 'bot-row' : '');
+    const score = r._score;
+    const bar = `<div class="score-bar-wrap"><div class="score-bar" style="width:${score}%"></div></div>${fmtNum(score,0)}`;
+    let status = score >= 70 ? '<span class="pill pill-ok">Excelente</span>' : score >= 45 ? '<span class="pill pill-warn">Regular</span>' : '<span class="pill pill-err">Baixo</span>';
+    return `<tr class="${cls}">
+      <td>${esc(r._name)}</td>
+      <td>${fmtR(r._spend)}</td>
+      <td>${fmtNum(r._impr)}</td>
+      <td>${fmtPct(r._ctr)}</td>
+      <td>${fmtR(r._cpm)}</td>
+      <td>${fmtR(r._cpa)}</td>
+      <td>${bar}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Benchmarks ───────────────────────────────────────────────────────────────
+const BENCHMARKS = {
+  cm360: [
+    {m:'CTR Display',key:'_ctr',lo:0.05,hi:0.2,fmt:'pct',unit:'%'},
+    {m:'CPM Display (R$)',key:'_cpm',lo:5,hi:15,fmt:'r'},
+    {m:'Viewability',key:'_viewability',lo:60,hi:80,fmt:'pct',unit:'%'},
+  ],
+  meta: [
+    {m:'CTR Feed',key:'_ctr',lo:0.5,hi:2,fmt:'pct'},
+    {m:'CPM Social (R$)',key:'_cpm',lo:8,hi:25,fmt:'r'},
+    {m:'Frequência',key:'_freq',lo:1,hi:4,fmt:'num'},
+  ],
+  google: [
+    {m:'CTR Search',key:'_ctr',lo:1,hi:5,fmt:'pct'},
+    {m:'CPC (R$)',key:'_cpc',lo:0.5,hi:5,fmt:'r'},
+  ],
+  dv360: [
+    {m:'CTR Programático',key:'_ctr',lo:0.05,hi:0.3,fmt:'pct'},
+    {m:'Viewability',key:'_viewability',lo:55,hi:75,fmt:'pct'},
+    {m:'CPM (R$)',key:'_cpm',lo:4,hi:18,fmt:'r'},
+  ],
+  linkedin: [
+    {m:'CTR LinkedIn',key:'_ctr',lo:0.3,hi:1.5,fmt:'pct'},
+    {m:'CPM (R$)',key:'_cpm',lo:30,hi:80,fmt:'r'},
+  ],
+  tiktok: [
+    {m:'VTR TikTok',key:'_vtr',lo:20,hi:50,fmt:'pct'},
+    {m:'CPM (R$)',key:'_cpm',lo:8,hi:20,fmt:'r'},
+  ],
+  generic: [
+    {m:'CTR',key:'_ctr',lo:0.05,hi:2,fmt:'pct'},
+    {m:'CPM (R$)',key:'_cpm',lo:5,hi:30,fmt:'r'},
+  ],
+};
+
+function renderBenchmarks() {
+  const bms = BENCHMARKS[detectedPlatform] || BENCHMARKS.generic;
+  const tbody = document.getElementById('benchBody');
+
+  const rows = bms.map(bm => {
+    const vals = processedRows.map(r => r[bm.key]).filter(v => v !== undefined && v !== null);
+    if (!vals.length) return null;
+    const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const fmted = bm.fmt==='pct' ? fmtPct(avg) : bm.fmt==='r' ? fmtR(avg) : fmtNum(avg,2);
+    const bmStr = bm.fmt==='pct' ? `${bm.lo}–${bm.hi}%` : bm.fmt==='r' ? `R$ ${bm.lo}–${bm.hi}` : `${bm.lo}–${bm.hi}`;
+    let status;
+    if (avg >= bm.lo && avg <= bm.hi) status = '<span class="pill pill-ok">✅ Normal</span>';
+    else if (avg < bm.lo) status = '<span class="pill pill-warn">⬇ Abaixo</span>';
+    else status = '<span class="pill pill-warn">⬆ Acima</span>';
+    return `<tr><td>${bm.m}</td><td><strong>${fmted}</strong></td><td>${bmStr}</td><td>${status}</td></tr>`;
+  }).filter(Boolean);
+
+  tbody.innerHTML = rows.join('') || '<tr><td colspan="4" style="color:var(--gray)">Dados insuficientes para benchmarking</td></tr>';
+}
+
+// ─── Insights block ───────────────────────────────────────────────────────────
+function renderInsights() {
+  const totalImpr = sum('_impr');
+  const totalSpend = sum('_spend');
+  const totalConv = sum('_conv');
+  const cpm = totalImpr > 0 ? totalSpend/totalImpr*1000 : null;
+  const cpa = totalConv > 0 ? totalSpend/totalConv : null;
+
+  // top 2 by score
+  const sorted = [...processedRows].sort((a,b) => b._score - a._score);
+  const top2 = sorted.slice(0,2).map(r=>r._name).join(' e ');
+  const bot2 = sorted.slice(-2).map(r=>r._name).filter(Boolean).join(' e ');
+
+  // anomalies count
+  let anom = 0;
+  for (const r of processedRows) {
+    if (r._ctr !== undefined && r._ctr < 0.02) anom++;
+    if (r._viewability !== undefined && r._viewability < 40) anom++;
+    if (r._spend > 100 && r._conv !== null && r._conv === 0) anom++;
+  }
+
+  const plat = PLAT_LABELS[detectedPlatform] || 'Plataforma';
+  const lines = [
+    `Análise de relatório ${plat} — ${processedRows.length} dimensões analisadas.`,
+    '',
+    `A campanha entregou ${fmtNum(totalImpr)} impressões com investimento total de ${fmtR(totalSpend)}`,
+    cpm ? `e CPM médio de ${fmtR(cpm)}.` : '.',
+    '',
+    top2 ? `Os itens de maior eficiência foram ${top2}.` : '',
+    bot2 && bot2 !== top2 ? `Os itens com menor performance foram ${bot2}, que merecem revisão ou pausa.` : '',
+    '',
+    anom > 0
+      ? `Foram identificadas ${anom} anomalia(s) nos dados — incluindo CTR crítico, viewability abaixo do aceitável ou investimento sem retorno mensurável.`
+      : 'Nenhuma anomalia crítica foi identificada nos dados analisados.',
+    '',
+    cpa ? `O CPA médio consolidado foi de ${fmtR(cpa)}.` : '',
+    '',
+    'Recomendações:',
+    '• Revisar itens de baixo Efficiency Score e comparar criativos e segmentações com os de melhor desempenho.',
+    '• Monitorar placements com alta frequência para evitar fadiga de audiência.',
+    anom > 0 ? '• Investigar as anomalias detectadas antes da próxima otimização de lances.' : '',
+  ].filter(l => l !== null);
+
+  document.getElementById('insightsBox').textContent = lines.join('\n');
+}
+
+function copyInsights() {
+  const text = document.getElementById('insightsBox').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copiado!';
+    setTimeout(() => btn.textContent = 'Copiar texto', 1500);
+  });
+}
+
+// ─── Data table ───────────────────────────────────────────────────────────────
+function renderDataTable() {
+  currentPage = 1;
+  renderPage();
+}
+
+function filterTable() {
+  const q = document.getElementById('tableFilter').value.toLowerCase();
+  filteredRows = processedRows.filter(r => r._name.toLowerCase().includes(q));
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  const start = (currentPage-1)*PAGE_SIZE;
+  const pageRows = filteredRows.slice(start, start+PAGE_SIZE);
+
+  // Headers: name + canonical keys present
+  const showCols = ['_name'];
+  if (canonMap.impr) showCols.push('_impr');
+  if (canonMap.clicks) showCols.push('_clicks');
+  showCols.push('_ctr');
+  if (canonMap.spend) showCols.push('_spend');
+  showCols.push('_cpm','_cpc');
+  if (canonMap.conv) showCols.push('_conv','_cpa');
+  if (processedRows.some(r=>r._viewability!==undefined)) showCols.push('_viewability','_vcpm');
+  showCols.push('_score');
+
+  const colLabels = {_name:'Nome',_impr:'Impressões',_clicks:'Cliques',_ctr:'CTR',_spend:'Investimento',_cpm:'CPM',_cpc:'CPC',_conv:'Conversões',_cpa:'CPA',_viewability:'Viewability',_vcpm:'vCPM',_score:'Score'};
+
+  document.getElementById('dataHead').innerHTML = '<tr>' + showCols.map(c=>`<th>${colLabels[c]||c}</th>`).join('') + '</tr>';
+
+  document.getElementById('dataBody').innerHTML = pageRows.map(r => {
+    return '<tr>' + showCols.map(c => {
+      let v = r[c];
+      let cell = '';
+      if (c === '_name') cell = `<strong>${esc(v||'—')}</strong>`;
+      else if (c === '_ctr') cell = fmtPct(v);
+      else if (c === '_viewability') cell = fmtPct(v);
+      else if (['_spend','_cpm','_cpc','_cpa','_vcpm'].includes(c)) cell = fmtR(v);
+      else if (c === '_score') {
+        const s = v||0;
+        cell = `<div class="score-bar-wrap"><div class="score-bar" style="width:${s}%"></div></div>${fmtNum(s,0)}`;
+      }
+      else cell = fmtNum(v);
+      // anomaly highlight
+      let style = '';
+      if (c==='_ctr' && v!==undefined && v<0.02) style='background:#fff0f0';
+      if (c==='_viewability' && v!==undefined && v<40) style='background:#fff0f0';
+      return `<td style="${style}">${cell}</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = Math.ceil(filteredRows.length / PAGE_SIZE);
+  const el = document.getElementById('pagination');
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let html = `<span style="font-size:.8rem;color:var(--gray)">${filteredRows.length} registros</span>`;
+  for (let i = 1; i <= total; i++) {
+    html += `<button class="${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderPage(); }
+
+// ─── CSV export ───────────────────────────────────────────────────────────────
+function downloadCSV() {
+  const extraCols = ['_ctr','_cpm','_cpc','_cpa','_cvr','_viewability','_vcpm','_vtr','_score'];
+  const extraLabels = {_ctr:'CTR_calculado',_cpm:'CPM_calculado',_cpc:'CPC_calculado',_cpa:'CPA_calculado',_cvr:'CVR_calculado',_viewability:'Viewability_pct',_vcpm:'vCPM',_vtr:'VTR_calculado',_score:'Efficiency_Score'};
+
+  const headers = [...parsedHeaders, ...extraCols.map(c=>extraLabels[c])];
+  const rows = processedRows.map(r => {
+    const base = parsedHeaders.map(h => `"${(r[h]||'').replace(/"/g,'""')}"`);
+    const extra = extraCols.map(c => r[c] !== undefined ? fmtNum(r[c],4).replace(/\./g,'').replace(',','.') : '');
+    return [...base, ...extra].join(',');
+  });
+
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `relatorio_processado_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ─── Demo data ────────────────────────────────────────────────────────────────
+function loadDemo() {
+  const demo = `Placement\tImpressions\tClicks\tCost (BRL)\tConversions\tActive View: % Viewable Impressions
+Portal UOL - Billboard 970x250\t1200000\t960\t8400\t12\t68
+Portal Globo - Half Page 300x600\t850000\t425\t7225\t8\t72
+iG Sports - Leaderboard 728x90\t2300000\t230\t2300\t0\t41
+Terra Entretenimento - MR 300x250\t680000\t816\t3400\t22\t78
+MSN Brasil - Interstitial\t90000\t900\t4500\t35\t81
+Veja.com - Nativo Feed\t440000\t528\t2640\t5\t65
+Estadão Digital - Billboard\t560000\t168\t3920\t3\t55
+R7 - Medium Rectangle\t1800000\t360\t2700\t0\t38`;
+  document.getElementById('csvInput').value = demo;
+  document.getElementById('platformOverride').value = 'cm360';
+  analyze();
+}
+
+function clearAll() {
+  document.getElementById('csvInput').value = '';
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('emptyState').classList.remove('hidden');
+}
+
+function esc(s) {
+  if (s === null || s === undefined) return '—';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
