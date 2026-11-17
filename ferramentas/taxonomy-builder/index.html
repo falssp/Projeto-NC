@@ -1132,6 +1132,7 @@ body {
           <button class="btn secondary btn-sm" onclick="recalcUsage()" title="Recalcula os contadores de uso de todos os termos com base no histórico do Builder" id="btnRecalcUsage">🔄 Recalc. Uso</button>
           <button class="btn secondary btn-sm" onclick="openSaveTemplateModal()" title="Salvar estrutura de segmentos deste cliente como template reutilizável" id="btnSaveTemplate">📋 Template</button>
           <button class="btn secondary btn-sm" onclick="openGlobalFavoritesModal()" title="Painel de todos os termos favoritos de todos os clientes" id="btnGlobalFav">⭐ Favoritos</button>
+          <button class="btn secondary btn-sm" onclick="openCompareClientsModal()" title="Comparar dicionários de dois clientes lado a lado" id="btnCompareClients">🔀 Comparar</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1595,6 +1596,35 @@ body {
 </div>
 
 <!-- BATCH 22: Find & Replace Modal -->
+<!-- Compare Clients Modal -->
+<div id="compareClientsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center" onclick="if(event.target===this)closeCompareClientsModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(880px,96vw);max-height:88vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="font-size:16px;font-weight:800">🔀 Comparar Clientes</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="cmpClientA" onchange="runCompareClients()" style="height:28px;padding:0 8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;max-width:170px">
+          <option value="">— Cliente A —</option>
+        </select>
+        <span style="font-size:14px;color:var(--faint)">vs</span>
+        <select id="cmpClientB" onchange="runCompareClients()" style="height:28px;padding:0 8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;max-width:170px">
+          <option value="">— Cliente B —</option>
+        </select>
+        <select id="cmpMode" onchange="runCompareClients()" style="height:28px;padding:0 8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none">
+          <option value="all">Todos os segs</option>
+          <option value="common">Só segs em comum</option>
+          <option value="diff">Só divergentes</option>
+        </select>
+        <button onclick="exportCompareCSV()" class="btn" style="height:28px;font-size:11px">⬇ CSV</button>
+        <button onclick="closeCompareClientsModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--faint);line-height:1" title="Fechar">×</button>
+      </div>
+    </div>
+    <div id="cmpSummary" style="font-size:12px;color:var(--faint)"></div>
+    <div style="overflow-y:auto;flex:1" id="cmpContent">
+      <div style="text-align:center;padding:36px;color:var(--faint)">Selecione dois clientes para comparar</div>
+    </div>
+  </div>
+</div>
+
 <!-- Global Favorites Modal -->
 <div id="globalFavModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center" onclick="if(event.target===this)closeGlobalFavoritesModal()">
   <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(760px,96vw);max-height:82vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 40px rgba(0,0,0,.3)">
@@ -3581,6 +3611,139 @@ function gfCopy(val, btn) {
     showToast('✓ Copiado: '+val);
     if(btn){ const orig=btn.style.opacity; btn.style.opacity='1'; setTimeout(()=>btn.style.opacity=orig||'.5',900); }
   }).catch(()=>showToast('Não foi possível copiar'));
+}
+
+// ── Compare Clients Modal ─────────────────────────────────────────────────
+let _cmpData=null;
+
+function openCompareClientsModal() {
+  const modal=document.getElementById('compareClientsModal');
+  if(!modal) return;
+  const clients=getClients().filter(c=>!c.archived);
+  const opts=clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  document.getElementById('cmpClientA').innerHTML='<option value="">— Cliente A —</option>'+opts;
+  document.getElementById('cmpClientB').innerHTML='<option value="">— Cliente B —</option>'+opts;
+  // Pre-select active client as A
+  const ac=active();
+  if(ac) document.getElementById('cmpClientA').value=ac.id;
+  _cmpData=null;
+  document.getElementById('cmpSummary').textContent='';
+  document.getElementById('cmpContent').innerHTML='<div style="text-align:center;padding:36px;color:var(--faint)">Selecione dois clientes para comparar</div>';
+  modal.style.display='flex';
+}
+
+function closeCompareClientsModal() {
+  document.getElementById('compareClientsModal').style.display='none';
+}
+
+function runCompareClients() {
+  const idA=document.getElementById('cmpClientA').value;
+  const idB=document.getElementById('cmpClientB').value;
+  const mode=document.getElementById('cmpMode').value;
+  const content=document.getElementById('cmpContent');
+  if(!idA||!idB||idA===idB) {
+    content.innerHTML='<div style="text-align:center;padding:24px;color:var(--faint)">'+(idA===idB&&idA?'Selecione clientes diferentes':'Selecione dois clientes para comparar')+'</div>';
+    document.getElementById('cmpSummary').textContent='';
+    return;
+  }
+  const clients=getClients();
+  const cA=clients.find(c=>c.id===idA);
+  const cB=clients.find(c=>c.id===idB);
+  if(!cA||!cB) return;
+
+  // Build seg map keyed by lowercase label
+  const segsA={}, segsB={};
+  (cA.segments||[]).forEach(s=>{ segsA[s.label.toLowerCase()]={seg:s, terms:(cA.dictionary[s.id]||[])}; });
+  (cB.segments||[]).forEach(s=>{ segsB[s.label.toLowerCase()]={seg:s, terms:(cB.dictionary[s.id]||[])}; });
+
+  const allKeys=[...new Set([...Object.keys(segsA),...Object.keys(segsB)])].sort();
+  const commonKeys=allKeys.filter(k=>segsA[k]&&segsB[k]);
+  const onlyA=allKeys.filter(k=>segsA[k]&&!segsB[k]);
+  const onlyB=allKeys.filter(k=>!segsA[k]&&segsB[k]);
+
+  // Build comparison rows
+  const rows=[];
+  for(const key of allKeys) {
+    const inA=!!segsA[key], inB=!!segsB[key];
+    if(mode==='common'&&(!inA||!inB)) continue;
+    const termsA=segsA[key]?.terms||[];
+    const termsB=segsB[key]?.terms||[];
+    const valsA=new Set(termsA.map(t=>t.value.toLowerCase()));
+    const valsB=new Set(termsB.map(t=>t.value.toLowerCase()));
+    const onlyInA=termsA.filter(t=>!valsB.has(t.value.toLowerCase()));
+    const onlyInB=termsB.filter(t=>!valsA.has(t.value.toLowerCase()));
+    const shared=[...valsA].filter(v=>valsB.has(v)).length;
+    const hasDiff=onlyInA.length>0||onlyInB.length>0;
+    if(mode==='diff'&&!hasDiff&&inA&&inB) continue;
+    rows.push({key, inA, inB, termsA, termsB, onlyInA, onlyInB, shared, hasDiff,
+      labelA: segsA[key]?.seg.label||key, labelB: segsB[key]?.seg.label||key});
+  }
+  _cmpData={rows, cA, cB};
+
+  document.getElementById('cmpSummary').innerHTML=
+    `<b>${cA.name}</b> (${(cA.segments||[]).length} segs) · <b>${cB.name}</b> (${(cB.segments||[]).length} segs) · `+
+    `<span style="color:var(--ok)">${commonKeys.length} em comum</span> · `+
+    `<span style="color:var(--warn)">${onlyA.length} só em A</span> · `+
+    `<span style="color:var(--err)">${onlyB.length} só em B</span>`;
+
+  if(!rows.length) { content.innerHTML='<div style="text-align:center;padding:24px;color:var(--faint)">Nenhum segmento corresponde ao filtro</div>'; return; }
+
+  content.innerHTML=rows.map(r=>{
+    const statusBadge=r.inA&&r.inB
+      ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(22,163,74,.12);color:var(--ok);font-weight:700">Ambos</span>`
+      : r.inA
+        ? `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--warn-bg);color:var(--warn);font-weight:700">Só em A</span>`
+        : `<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:var(--err-bg);color:var(--err);font-weight:700">Só em B</span>`;
+    const diffNote=r.inA&&r.inB&&r.hasDiff
+      ? `<span style="font-size:10px;color:var(--warn);margin-left:6px">⚠ ${r.onlyInA.length+r.onlyInB.length} termos divergentes</span>` : '';
+    const sharedNote=r.inA&&r.inB
+      ? `<span style="font-size:10px;color:var(--faint);margin-left:6px">${r.shared} compartilhados</span>` : '';
+
+    let termsHtml='';
+    if(r.inA&&r.inB&&r.hasDiff) {
+      const colStyle='flex:1;min-width:0';
+      const tagA=`<span style="font-size:10px;font-weight:700;color:var(--warn);opacity:.8">${esc(cA.name)}</span>`;
+      const tagB=`<span style="font-size:10px;font-weight:700;color:var(--err);opacity:.8">${esc(cB.name)}</span>`;
+      const listA=r.onlyInA.map(t=>`<div style="padding:2px 0;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--warn)">+ ${esc(t.value)}<span style="color:var(--faint);font-family:inherit"> ${esc(t.label||'')}</span></div>`).join('');
+      const listB=r.onlyInB.map(t=>`<div style="padding:2px 0;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--err)">+ ${esc(t.value)}<span style="color:var(--faint);font-family:inherit"> ${esc(t.label||'')}</span></div>`).join('');
+      termsHtml=`<div style="display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--divider)">
+        <div style="${colStyle}">${tagA}${listA||'<div style="font-size:11px;color:var(--faint);font-style:italic;margin-top:2px">sem exclusivos</div>'}</div>
+        <div style="${colStyle}">${tagB}${listB||'<div style="font-size:11px;color:var(--faint);font-style:italic;margin-top:2px">sem exclusivos</div>'}</div>
+      </div>`;
+    }
+
+    return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:13px">${esc(r.key)}</span>
+        ${statusBadge}${sharedNote}${diffNote}
+        ${r.inA?`<span style="font-size:10px;color:var(--faint)">${r.termsA.length} termos em A</span>`:''}
+        ${r.inB?`<span style="font-size:10px;color:var(--faint)">${r.termsB.length} termos em B</span>`:''}
+      </div>
+      ${termsHtml}
+    </div>`;
+  }).join('');
+}
+
+function exportCompareCSV() {
+  if(!_cmpData) { showToast('Rode a comparação primeiro'); return; }
+  const {rows,cA,cB}=_cmpData;
+  const lines=[['segmento','presente_em','termos_A','termos_B','compartilhados','so_em_A','so_em_B','valores_so_A','valores_so_B']];
+  for(const r of rows) {
+    lines.push([
+      r.key,
+      r.inA&&r.inB?'ambos':r.inA?'A':'B',
+      r.termsA.length, r.termsB.length, r.shared,
+      r.onlyInA.length, r.onlyInB.length,
+      r.onlyInA.map(t=>t.value).join('; '),
+      r.onlyInB.map(t=>t.value).join('; ')
+    ]);
+  }
+  const csv=lines.map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`comparacao_${cA.name}_vs_${cB.name}.csv`.replace(/\s+/g,'_');
+  a.click();
+  showToast(`⬇ ${rows.length} segmentos exportados`);
 }
 
 function exportGlobalFavCSV() {
