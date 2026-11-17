@@ -1069,6 +1069,7 @@ body {
   <button class="tab"         data-tab="estruturas"  onclick="switchTab('estruturas')">🗂️ Estruturas</button>
   <button class="tab"         data-tab="builder"     onclick="switchTab('builder')">🏗️ Builder</button>
   <button class="tab"         data-tab="validador"   onclick="switchTab('validador')">✅ Validador</button>
+  <button class="tab"         data-tab="auditlog"    onclick="switchTab('auditlog')">🕵️ Audit Log</button>
 </nav>
 
 <!-- TAB: CLIENTES -->
@@ -1268,6 +1269,36 @@ body {
           <button class="btn secondary btn-sm" onclick="exportBatchResultCSV()" style="font-size:11px">⬇ CSV resultado</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: AUDIT LOG -->
+<div id="tab-auditlog" class="tab-content">
+  <div class="page">
+    <div class="card">
+      <div class="card-h" style="margin-bottom:12px">
+        <div><h2>Audit Log</h2><p style="color:var(--faint);font-size:12px">Histórico de modificações do dicionário (termos e segmentos)</p></div>
+        <div class="action-bar">
+          <select id="auditClientFilter" onchange="renderAuditLog()" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px">
+            <option value="">Todos os clientes</option>
+          </select>
+          <select id="auditActionFilter" onchange="renderAuditLog()" style="padding:5px 8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px">
+            <option value="">Todas as ações</option>
+            <option value="add_term">+ Termo adicionado</option>
+            <option value="remove_term">− Termo removido</option>
+            <option value="edit_term">✏ Termo editado</option>
+            <option value="add_seg">+ Segmento criado</option>
+            <option value="remove_seg">− Segmento removido</option>
+            <option value="rename_seg">✏ Segmento renomeado</option>
+            <option value="add_client">+ Cliente criado</option>
+            <option value="remove_client">− Cliente removido</option>
+          </select>
+          <button class="btn secondary btn-sm" onclick="clearAuditLog()" style="color:var(--err)">🗑 Limpar log</button>
+          <button class="btn secondary btn-sm" onclick="exportAuditCSV()">⬇ CSV</button>
+        </div>
+      </div>
+      <div id="auditLogList"></div>
     </div>
   </div>
 </div>
@@ -1882,6 +1913,7 @@ function renderCurrent() {
   if(currentTab==='estruturas') renderEstruturas();
   if(currentTab==='builder')    renderBuilder();
   if(currentTab==='validador')  renderValidador();
+  if(currentTab==='auditlog')   renderAuditLog();
 }
 
 function renderClientSelect() {
@@ -2215,6 +2247,7 @@ function initClientDragDrop() {
 function deleteClient(id) {
   const c = getClient(id);
   if(!c || !confirm(`Excluir "${c.name}"? Todos os dados serão perdidos.`)) return;
+  auditLog('remove_client',c.id,c.name,`${c.segments?.length||0} segmentos removidos`);
   clients = clients.filter(x=>x.id!==id);
   if(activeId===id) { activeId = clients[0]?.id||null; activeSeg=null; builderVals={}; }
   saveData(); renderClientSelect(); renderClientes();
@@ -2407,6 +2440,7 @@ function saveClient() {
     validSegs.forEach(s=>{ dict[s.id]=[]; });
     clients.push({id, name, separator:sep, segments:validSegs.map(s=>({id:s.id,label:s.label.trim(),required:s.required,...(s.sep!==undefined?{sep:s.sep}:{})})), dictionary:dict, structures:[], ...(notes?{notes}:{}),...(charLimit?{charLimit}:{})});
     activeId = id;
+    auditLog('add_client',id,name,`${validSegs.length} segmentos · sep "${sep}"`);
   } else {
     const c = getClient(editingId); if(!c) return;
     const newDict = {};
@@ -2672,6 +2706,91 @@ function confirmCreateFromTemplate() {
 }
 
 /* =============================================
+   AUDIT LOG
+   ============================================= */
+const AUDIT_KEY='taxo_audit_v1';
+const AUDIT_MAX=500; // keep last N entries
+function getAuditLog(){try{return JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]');}catch(e){return[];}}
+function saveAuditLog(arr){try{localStorage.setItem(AUDIT_KEY,JSON.stringify(arr));}catch(e){}}
+function auditLog(action, clientId, clientName, detail){
+  const arr=getAuditLog();
+  arr.unshift({id:Date.now()+'_'+Math.random().toString(36).slice(2,6), action, clientId, clientName, detail, ts:Date.now()});
+  if(arr.length>AUDIT_MAX) arr.length=AUDIT_MAX;
+  saveAuditLog(arr);
+}
+const AUDIT_LABELS={
+  add_term:'+ Termo adicionado',remove_term:'− Termo removido',edit_term:'✏ Termo editado',
+  add_seg:'+ Segmento criado',remove_seg:'− Segmento removido',rename_seg:'✏ Segmento renomeado',
+  add_client:'+ Cliente criado',remove_client:'− Cliente removido',
+};
+const AUDIT_COLORS={
+  add_term:'var(--ok)',remove_term:'var(--err)',edit_term:'var(--warn)',
+  add_seg:'var(--ok)',remove_seg:'var(--err)',rename_seg:'var(--warn)',
+  add_client:'var(--accent)',remove_client:'var(--err)',
+};
+function renderAuditLog(){
+  const all=getAuditLog();
+  const cf=document.getElementById('auditClientFilter')?.value||'';
+  const af=document.getElementById('auditActionFilter')?.value||'';
+  // Populate client filter
+  const sel=document.getElementById('auditClientFilter');
+  if(sel){
+    const existing=new Set(Array.from(sel.options).map(o=>o.value));
+    const clients=getClients();
+    clients.forEach(c=>{if(!existing.has(c.id)){const o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.appendChild(o);}});
+  }
+  const filtered=all.filter(e=>{
+    if(cf&&e.clientId!==cf) return false;
+    if(af&&e.action!==af) return false;
+    return true;
+  });
+  const el=document.getElementById('auditLogList');
+  if(!el) return;
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--faint);font-size:12px">'+
+      (all.length?'Nenhum resultado para os filtros selecionados.':'Nenhuma modificação registrada ainda.')+
+      '</div>'; return;
+  }
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr>
+      <th style="text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;width:140px">Horário</th>
+      <th style="text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em">Ação</th>
+      <th style="text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em">Cliente</th>
+      <th style="text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em">Detalhe</th>
+    </tr></thead>
+    <tbody>
+    ${filtered.map(e=>{
+      const color=AUDIT_COLORS[e.action]||'var(--faint)';
+      const label=AUDIT_LABELS[e.action]||e.action;
+      const ts=new Date(e.ts).toLocaleString('pt-BR');
+      return `<tr style="border-bottom:1px solid var(--divider)">
+        <td style="padding:7px 10px;font-size:11px;color:var(--faint);white-space:nowrap">${esc(ts)}</td>
+        <td style="padding:7px 10px"><span style="font-size:11px;font-weight:700;color:${color}">${esc(label)}</span></td>
+        <td style="padding:7px 10px;font-size:11px">${esc(e.clientName||'')}</td>
+        <td style="padding:7px 10px;font-size:11px;color:var(--faint)">${esc(e.detail||'')}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+}
+function clearAuditLog(){
+  if(!confirm('Limpar todo o audit log? Essa ação não pode ser desfeita.')) return;
+  saveAuditLog([]);
+  renderAuditLog();
+  showToast('🗑 Audit log limpo');
+}
+function exportAuditCSV(){
+  const all=getAuditLog();
+  if(!all.length){showToast('Log vazio');return;}
+  const header=['timestamp','acao','cliente_id','cliente_nome','detalhe'];
+  const rows=all.map(e=>[new Date(e.ts).toISOString(),e.action,e.clientId,e.clientName,e.detail]);
+  const csv=[header,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='audit_log.csv';a.click();
+  showToast(`⬇ ${rows.length} eventos exportados`);
+}
+
+/* =============================================
    BUILDER FILL RANDOM
    ============================================= */
 function fillBuilderRandom() {
@@ -2835,9 +2954,11 @@ function renderDicionario() {
       const save=()=>{
         const newLabel=inp.value.trim();
         if(newLabel && newLabel!==s.label) {
+          const oldLabel=s.label;
           c2.segments.find(x=>x.id===s.id).label=newLabel;
           c2.lastModified=Date.now();
           saveData(); showToast(`✏ Segmento renomeado para "${newLabel}"`);
+          auditLog('rename_seg',c2.id,c2.name,`"${oldLabel}"→"${newLabel}"`);
         }
         renderDicionario();
       };
@@ -3594,6 +3715,8 @@ function addTerm() {
       added++;
     });
     saveData(); renderDicionario();
+    const segBatch=c.segments.find(s=>s.id===activeSeg);
+    if(added) auditLog('add_term',c.id,c.name,`${added} termo(s) em lote → seg "${segBatch?.name||segBatch?.label||activeSeg}"`);
     if(skipped) showToast(`✓ ${added} adicionados, ${skipped} duplicados ignorados`);
     else showToast(`✓ ${added} termos adicionados`);
     document.getElementById('tv').value='';
@@ -3615,12 +3738,16 @@ function addTerm() {
 
   c.dictionary[activeSeg].push({value:val, label, ...(desc?{desc}:{}), createdAt:Date.now()});
   saveData(); renderDicionario();
+  const seg=c.segments.find(s=>s.id===activeSeg);
+  auditLog('add_term',c.id,c.name,`"${val}" → seg "${seg?.name||activeSeg}"`);
 }
 
 function deleteTerm(i) {
   const c=active(); if(!c||!activeSeg) return;
   const [removed] = c.dictionary[activeSeg].splice(i,1);
   saveData(); renderDicionario();
+  const seg=c.segments.find(s=>s.id===activeSeg);
+  auditLog('remove_term',c.id,c.name,`"${removed.value}" ← seg "${seg?.name||activeSeg}"`);
   showToastWithUndo(`Termo "${removed.value}" removido`, {clientId:c.id, segId:activeSeg, termIdx:i, term:removed});
 }
 
@@ -3659,8 +3786,11 @@ function saveEditTerm(i) {
   const desc  = document.getElementById('ed')?.value.trim();
   if(!val||!label) return;
   const prev = c.dictionary[activeSeg][i];
+  const oldVal = prev.value;
   c.dictionary[activeSeg][i]={value:val, label, ...(desc?{desc}:{}), ...(prev.fav?{fav:true}:{}), ...(prev.uses?{uses:prev.uses}:{})};
   saveData(); renderDicionario();
+  const seg=c.segments.find(s=>s.id===activeSeg);
+  auditLog('edit_term',c.id,c.name,`"${oldVal}"→"${val}" seg "${seg?.name||activeSeg}"`);
 }
 
 /* =============================================
@@ -5721,10 +5851,10 @@ function goToTerm(clientId, segId) {
 /* =============================================
    KEYBOARD SHORTCUTS
    ============================================= */
-const TAB_ORDER = ['clientes','dicionario','estruturas','builder','validador'];
+const TAB_ORDER = ['clientes','dicionario','estruturas','builder','validador','auditlog'];
 document.addEventListener('keydown', e => {
   // Ctrl/Cmd + 1-5 → switch tabs
-  if((e.ctrlKey||e.metaKey) && e.key>='1' && e.key<='5') {
+  if((e.ctrlKey||e.metaKey) && e.key>='1' && e.key<='6') {
     const idx = +e.key - 1;
     if(idx < TAB_ORDER.length) { e.preventDefault(); switchTab(TAB_ORDER[idx]); }
     return;
@@ -6987,6 +7117,7 @@ function confirmMerge(){
     <div class="shortcut-row"><span>Aba Estruturas</span><span class="kbd">Ctrl + 3</span></div>
     <div class="shortcut-row"><span>Aba Builder</span><span class="kbd">Ctrl + 4</span></div>
     <div class="shortcut-row"><span>Aba Validador</span><span class="kbd">Ctrl + 5</span></div>
+    <div class="shortcut-row"><span>Aba Audit Log</span><span class="kbd">Ctrl + 6</span></div>
     <div style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Geral</div>
     <div class="shortcut-row"><span>Estatísticas do sistema</span><span class="kbd">Ctrl + I</span></div>
     <div class="shortcut-row"><span>Fechar modal / overlay</span><span class="kbd">Esc</span></div>
