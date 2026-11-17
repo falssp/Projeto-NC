@@ -1,35 +1,39 @@
-# Calculadora de ROAS e ROI
+# 💰 Calculadora de ROAS e Break-even
 
-Ferramenta de análise de retorno sobre investimento em mídia paga, com cálculo de breakeven e simulação de cenários de budget.
+**AdOps Suite — NC Tools**
+URL: https://falssp.github.io/Projeto-NC/ferramentas/calculadora-roas/
 
-**URL:** https://falssp.github.io/Projeto-NC/ferramentas/calculadora-roas/
+## O que é
 
-## Abas
+Calculadora completa para análise de lucratividade de campanhas: ROAS mínimo para break-even, CPA máximo sustentável e simulação de cenários por nível de ROAS.
 
-### 1 — Análise de ROAS
-- ROAS atual, ROI%, lucro bruto após COGS
-- Breakeven ROAS automático pela margem bruta
-- Gauge visual com zonas: abaixo do breakeven / sub-meta / acima da meta
-- Tabela de referência por vertical
+## 3 módulos
 
-### 2 — Breakeven e Meta
-- Breakeven ROAS = 100 ÷ Margem%
-- CPA máximo sustentável = Ticket × Margem%
-- Receita e conversões necessárias para a meta
-- Alerta se CPA atual ultrapassa o limite
+### 1. ROAS & Break-even
+- Calcula ROAS de break-even baseado em ticket médio, margem bruta, custo fixo e taxa de plataforma
+- Compara ROAS atual vs mínimo necessário
+- Mostra lucro/prejuízo total e por pedido
+- Gráfico de composição de custos por pedido
 
-### 3 — Cenários de Budget
-- Simulação +20% / +50% / +100% de budget
-- Modelo: `Conv_base × (Budget_novo ÷ Budget_base)^expoente`
-- Expoente configurável (padrão 0.7)
-- Gráfico de ROI por cenário + recomendação de melhor retorno marginal
+### 2. Simulador de Cenários
+- Tabela com 7 cenários de ROAS (1x break-even até 5x)
+- Mostra receita, lucro e ROI para cada cenário
+- Destaca o cenário atual e o break-even
+
+### 3. CPA Máximo
+- Calcula CPA máximo baseado em % da margem disponível para mídia
+- Faixas de alerta: ótimo / atenção / prejuízo
+- Sugestões de meta de bidding para Google Ads e Meta (tCPA / Cost Cap)
 
 ## Fórmulas
 
-| Métrica | Fórmula |
-|---|---|
-| ROAS | Receita ÷ Investimento |
-| ROI % | (Receita − Investimento) ÷ Investimento × 100 |
-| Breakeven ROAS | 100 ÷ Margem% |
-| CPA Máximo | Ticket × Margem% ÷ 100 |
-| Conversões (cenário) | Conv_base × (Budget_novo ÷ Budget_base)^exp |
+```
+Margem Líquida/Pedido = (Ticket × Margem%) − Custo Fixo − (Ticket × Taxa Plataforma%)
+ROAS Break-even = Ticket ÷ Margem Líquida
+CPA Máximo = Margem Líquida × (% Mídia / 100)
+ROAS Atual = Receita ÷ Budget
+ROI = (Lucro ÷ Budget) × 100
+```
+
+---
+*Parte do projeto [NC Tools — AdOps Suite](https://falssp.github.io/Projeto-NC/ferramentas/)*
