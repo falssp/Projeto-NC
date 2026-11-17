@@ -102,7 +102,7 @@ input[type="range"]{width:100%;accent-color:var(--accent);}
           <span>Threshold de similaridade</span>
           <span id="threshVal" style="color:var(--accent)">70%</span>
         </label>
-        <input type="range" id="threshRange" min="50" max="99" value="70" oninput="document.getElementById('threshVal').textContent=this.value+'%'" style="margin-top:6px">
+        <input type="range" id="threshRange" min="50" max="99" value="70" oninput="onThreshChange(this.value)" style="margin-top:6px">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:2px"><span>50% (permissivo)</span><span>99% (estrito)</span></div>
       </div>
       <div style="margin-bottom:10px">
@@ -221,8 +221,21 @@ function diffHL(a,b){
 }
 
 // ── Main analysis ─────────────────────────────────────────────────────────
-let _pairs=[];
+let _allPairs=[];   // all pairs ≥50% (raw)
+let _pairs=[];      // filtered by current threshold
 let _filter='all';
+let _reviewed=new Set(); // pair keys marked as reviewed
+
+function pairKey(p){return [p.a.value,p.b.value].sort().join('|||');}
+
+function onThreshChange(val){
+  document.getElementById('threshVal').textContent=val+'%';
+  if(!_allPairs.length) return;
+  const thresh=parseInt(val)||70;
+  _pairs=_allPairs.filter(p=>p.score>=thresh);
+  _filter='all';
+  renderResults();
+}
 
 function getTerms(){
   const manual=document.getElementById('manualInput').value.trim();
@@ -269,7 +282,7 @@ function run(){
         continue;
       }
       const sc=similarity(a,b);
-      if(sc>=thresh&&a!==b) {
+      if(sc>=50&&a!==b) {
         const len=Math.min(a.length,b.length);
         const type=sc>=95?'near-exact':sc>=80?'high':sc>=65?'medium':'low';
         pairs.push({a:terms[i],b:terms[j],score:sc,type,len});
@@ -294,7 +307,11 @@ function run(){
     const key=[p.a.value,p.b.value].sort().join('|||');
     if(!seen.has(key)||seen.get(key).score<p.score) seen.set(key,p);
   }
-  _pairs=[...seen.values()].sort((a,b)=>b.score-a.score);
+  const sorted=[...seen.values()].sort((a,b)=>b.score-a.score);
+  _allPairs=sorted; // keep all ≥50% for live threshold re-filter
+  const thresh=parseInt(document.getElementById('threshRange').value)||70;
+  _pairs=_allPairs.filter(p=>p.score>=thresh);
+  _reviewed=new Set();
   _filter='all';
   renderResults();
   showToast(`✓ ${_pairs.length} par(es) encontrado(s) em ${terms.length} termos`);
@@ -305,12 +322,15 @@ function renderResults(){
     if(_filter==='near-exact') return p.score>=95;
     if(_filter==='high') return p.score>=80&&p.score<95;
     if(_filter==='case') return p.type==='case';
+    if(_filter==='pending') return !_reviewed.has(pairKey(p));
+    if(_filter==='reviewed') return _reviewed.has(pairKey(p));
     return true;
   });
 
   const nearExact=_pairs.filter(p=>p.score>=95).length;
   const high=_pairs.filter(p=>p.score>=80&&p.score<95).length;
   const caseV=_pairs.filter(p=>p.type==='case').length;
+  const reviewedCount=_pairs.filter(p=>_reviewed.has(pairKey(p))).length;
 
   const p=document.getElementById('resultsPanel');
   if(!_pairs.length){
@@ -329,12 +349,15 @@ function renderResults(){
         <span class="kpi" style="background:var(--warn-bg);color:var(--warn)">${high} alta sim. (80–94%)</span>
         ${caseV?`<span class="kpi" style="background:var(--accent-soft);color:var(--accent)">Aa ${caseV} capitalização</span>`:''}
         <span class="kpi">${_pairs.length} pares total</span>
+        ${reviewedCount?`<span class="kpi" style="background:var(--ok-bg);color:var(--ok)">✓ ${reviewedCount} revisados</span>`:''}
       </div>
       <div class="filter-row">
         <span class="fc ${_filter==='all'?'active':''}" onclick="setFilter('all')">Todos (${_pairs.length})</span>
+        <span class="fc ${_filter==='pending'?'active':''}" onclick="setFilter('pending')">Pendentes (${_pairs.length-reviewedCount})</span>
         <span class="fc ${_filter==='near-exact'?'active':''}" onclick="setFilter('near-exact')">⚠ Quase-exatos (${nearExact})</span>
         <span class="fc ${_filter==='high'?'active':''}" onclick="setFilter('high')">Alta sim. (${high})</span>
         ${caseV?`<span class="fc ${_filter==='case'?'active':''}" onclick="setFilter('case')">Aa Capital. (${caseV})</span>`:''}
+        ${reviewedCount?`<span class="fc ${_filter==='reviewed'?'active':''}" onclick="setFilter('reviewed')">✓ Revisados (${reviewedCount})</span>`:''}
       </div>
       <div style="font-size:11px;color:var(--faint)">${filtered.length} de ${_pairs.length} par(es) exibido(s)</div>
     </div>
@@ -346,7 +369,9 @@ function renderResults(){
         const bHL=diffHL(pair.b.value,pair.a.value);
         const sameSeg=pair.a.seg===pair.b.seg;
         const sameClient=pair.a.client===pair.b.client;
-        return `<div class="pair-card">
+        const key=pairKey(pair);
+        const isRev=_reviewed.has(key);
+        return `<div class="pair-card" style="${isRev?'opacity:.55':''}">
           <div style="display:flex;align-items:center;gap:12px">
             <div class="pair-score" style="background:${scoreBg};color:${scoreColor}">${pair.score}%</div>
             <div style="flex:1;min-width:0">
@@ -354,6 +379,7 @@ function renderResults(){
                 <span class="term-mono">${aHL}</span>
                 <span style="font-size:12px;color:var(--faint)">vs</span>
                 <span class="term-mono">${bHL}</span>
+                ${isRev?`<span style="font-size:10px;background:var(--ok-bg);color:var(--ok);padding:1px 6px;border-radius:8px;font-weight:700">✓ revisado</span>`:''}
               </div>
               <div style="font-size:11px;color:var(--faint);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
                 ${pair.a.label?`<span>A: ${esc(pair.a.label)}</span>`:''}
@@ -363,7 +389,10 @@ function renderResults(){
                 ${pair.type==='case'?`<span style="color:var(--accent)">Aa capitalização diferente</span>`:''}
               </div>
             </div>
-            <button class="btn" style="height:26px;font-size:11px;flex-shrink:0" onclick="copyPair('${esc(pair.a.value.replace(/'/g,"\\'"))}','${esc(pair.b.value.replace(/'/g,"\\'"))}')">📋</button>
+            <div style="display:flex;gap:5px;flex-shrink:0">
+              <button class="btn" style="height:26px;font-size:11px" onclick="toggleReview(${JSON.stringify(key)})">${isRev?'↩':'✓'}</button>
+              <button class="btn" style="height:26px;font-size:11px" onclick="copyPair('${esc(pair.a.value.replace(/'/g,"\\'"))}','${esc(pair.b.value.replace(/'/g,"\\'"))}')">📋</button>
+            </div>
           </div>
         </div>`;
       }).join('')}
@@ -372,6 +401,7 @@ function renderResults(){
 }
 
 function setFilter(f){_filter=f;renderResults();}
+function toggleReview(key){if(_reviewed.has(key))_reviewed.delete(key);else _reviewed.add(key);renderResults();}
 
 function copyPair(a,b){
   navigator.clipboard.writeText(`${a}\t${b}`).then(()=>showToast('✓ Copiado')).catch(()=>{});

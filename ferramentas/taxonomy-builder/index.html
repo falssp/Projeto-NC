@@ -1797,6 +1797,23 @@ body {
   </div>
 </div>
 
+<!-- Bulk Paste Modal -->
+<div id="bulkPasteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center" onclick="if(event.target===this)closeBulkPasteModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(560px,95vw);box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:15px;font-weight:800">📋 Bulk Paste</span>
+      <button class="btn secondary btn-sm" onclick="closeBulkPasteModal()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:8px">Cole seus termos abaixo — um por linha. Formato: <code style="font-family:var(--mono);background:var(--divider);padding:1px 4px;border-radius:4px">valor | label | descrição</code> (label e desc opcionais)</div>
+    <textarea id="bulkPasteInput" rows="10" placeholder="dove&#10;Dove | Dove&#10;hidratacao | Hidratação | Produtos de hidratação&#10;loreal | L'Oréal" style="width:100%;resize:vertical;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;outline:none" oninput="previewBulkPaste()"></textarea>
+    <div id="bulkPastePreview" style="margin-top:8px;max-height:160px;overflow-y:auto;font-size:11px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+      <button class="btn secondary btn-sm" onclick="closeBulkPasteModal()">Cancelar</button>
+      <button class="btn primary btn-sm" id="bulkPasteConfirm" onclick="confirmBulkPaste()" disabled>✓ Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Move Term Modal -->
 <div id="moveTermModal" class="move-term-modal" style="display:none" onclick="if(event.target===this)closeMoveTermModal()">
   <div class="modal-box">
@@ -3250,7 +3267,10 @@ function renderTermArea(c) {
 
   areaEl.innerHTML=`${listHtml}${topTermsHtml}
     <div class="add-term-form">
-      <div class="add-term-form-title">Novo termo</div>
+      <div class="add-term-form-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Novo termo</span>
+        <button class="btn secondary btn-sm" onclick="openBulkPasteModal()" title="Colar vários termos de uma vez (um por linha)">📋 Bulk paste</button>
+      </div>
       <div class="add-term-row">
         <div><input type="text" id="tv" placeholder="valor (ex: dove) — ou vários separados por vírgula" oninput="autoSlug();autoLabelFromVal()" title="Dica: adicione vários valores de uma vez separando por vírgula: val1, val2, val3"></div>
         <div><input type="text" id="tl" placeholder="Label (ex: Dove)"></div>
@@ -5545,6 +5565,71 @@ function openMoveTermModal(i) {
 function closeMoveTermModal() {
   document.getElementById('moveTermModal').style.display='none';
   _moveTermIdx = null;
+}
+
+/* =============================================
+   BULK PASTE
+   ============================================= */
+function openBulkPasteModal(){
+  const c=active(); if(!c||!activeSeg){showToast('Selecione um segmento primeiro');return;}
+  const m=document.getElementById('bulkPasteModal'); if(!m) return;
+  document.getElementById('bulkPasteInput').value='';
+  document.getElementById('bulkPastePreview').innerHTML='';
+  document.getElementById('bulkPasteConfirm').disabled=true;
+  m.style.display='flex';
+  setTimeout(()=>document.getElementById('bulkPasteInput').focus(),60);
+}
+
+function closeBulkPasteModal(){
+  const m=document.getElementById('bulkPasteModal'); if(m) m.style.display='none';
+}
+
+function parseBulkLine(line){
+  // Format: value | label | desc  OR  value,label,desc  OR  just value
+  const parts=line.includes('|')?line.split('|').map(s=>s.trim()):line.split('\t').map(s=>s.trim());
+  if(parts.length>=3) return {value:parts[0],label:parts[1],desc:parts[2]};
+  if(parts.length===2) return {value:parts[0],label:parts[1],desc:''};
+  return {value:parts[0]||'',label:'',desc:''};
+}
+
+function previewBulkPaste(){
+  const raw=document.getElementById('bulkPasteInput').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const btn=document.getElementById('bulkPasteConfirm');
+  const prev=document.getElementById('bulkPastePreview');
+  if(!lines.length){prev.innerHTML='';btn.disabled=true;return;}
+  const parsed=lines.map(parseBulkLine).filter(p=>p.value);
+  btn.disabled=!parsed.length;
+  btn.textContent=`✓ Adicionar ${parsed.length} termo(s)`;
+  prev.innerHTML=`<div style="color:var(--faint);margin-bottom:5px;font-weight:600">${parsed.length} termo(s) detectado(s):</div>`+
+    parsed.slice(0,8).map(p=>`<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--divider)">
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);flex-shrink:0">${esc(p.value)}</code>
+      ${p.label?`<span style="font-size:11px;color:var(--faint)">${esc(p.label)}</span>`:''}
+      ${p.desc?`<span style="font-size:10px;color:var(--faint);opacity:.7">${esc(p.desc)}</span>`:''}
+    </div>`).join('')+
+    (parsed.length>8?`<div style="font-size:10px;color:var(--faint);margin-top:4px">…e mais ${parsed.length-8}</div>`:'');
+}
+
+function confirmBulkPaste(){
+  const c=active(); if(!c||!activeSeg) return;
+  const raw=document.getElementById('bulkPasteInput').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const parsed=lines.map(parseBulkLine).filter(p=>p.value);
+  if(!parsed.length) return;
+  if(!c.dictionary[activeSeg]) c.dictionary[activeSeg]=[];
+  const existing=new Set(c.dictionary[activeSeg].map(t=>t.value.toLowerCase()));
+  let added=0, skipped=0;
+  for(const p of parsed){
+    if(existing.has(p.value.toLowerCase())){skipped++;continue;}
+    c.dictionary[activeSeg].push({value:p.value,label:p.label||labelFromValue(p.value),desc:p.desc||'',createdAt:Date.now()});
+    existing.add(p.value.toLowerCase());
+    added++;
+  }
+  saveData();
+  auditLog('bulk_paste',c.id,c.name,`${added} adicionado(s), ${skipped} ignorado(s) por duplicata — seg: ${activeSeg}`);
+  closeBulkPasteModal();
+  renderTerms();
+  showToast(`✓ ${added} termo(s) adicionado(s)${skipped?` (${skipped} duplicata(s) ignorada(s))`:''}`);;
 }
 
 function confirmMoveTerm(targetSegId) {
