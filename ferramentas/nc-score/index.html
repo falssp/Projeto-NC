@@ -77,9 +77,24 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent);}
     </div>
   </div>
   <div style="display:flex;gap:7px">
+    <button class="btn" onclick="openHistModal()">📜 Histórico</button>
     <button class="btn" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn" onclick="toggleTheme()">🌙</button>
     <button class="btn primary" onclick="scoreAll()">🎯 Pontuar</button>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div id="histModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center" onclick="if(event.target===this)closeHistModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(600px,95vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0">
+      <span style="font-size:15px;font-weight:800">📜 Histórico de execuções</span>
+      <div style="display:flex;gap:7px">
+        <button class="btn" style="height:28px;font-size:11px" onclick="clearHist()">🗑 Limpar</button>
+        <button class="btn secondary" style="height:28px;font-size:11px" onclick="closeHistModal()">✕</button>
+      </div>
+    </div>
+    <div id="histList" style="overflow-y:auto;flex:1"></div>
   </div>
 </div>
 
@@ -273,6 +288,12 @@ let _sortMode='input'; // 'input'|'asc'|'desc'
 const CFG_KEY='ncscore_cfg_v1';
 function loadCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||'null');}catch(e){return null;}}
 function saveCfg(cfg){try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}}
+
+// Run history
+const HIST_KEY='ncscore_hist_v1';
+const HIST_MAX=20;
+function loadHist(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return [];}}
+function saveHist(arr){try{localStorage.setItem(HIST_KEY,JSON.stringify(arr.slice(0,HIST_MAX)));}catch(e){}}
 (function(){
   const c=loadCfg(); if(!c) return;
   if(c.sep) document.getElementById('cfgSep').value=c.sep;
@@ -313,6 +334,17 @@ function scoreAll(){
   saveCfg({sep:cfg.sep,segsMin:cfg.segsMin,segsMax:cfg.segsMax,maxLen:cfg.maxLen,
     cfgNoSpaces:cfg.noSpaces,cfgNoUpper:cfg.noUpper,cfgNoSpecial:cfg.noSpecial,cfgNoDup:cfg.noDup,cfgNoEmpty:cfg.noEmpty});
   renderResults();
+  // Save to history
+  const scores=_results.map(r=>r.score);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const perfect=_results.filter(r=>r.issues.length===0).length;
+  const withErr=_results.filter(r=>r.issues.some(i=>i.type==='err')).length;
+  const hist=loadHist();
+  hist.unshift({ts:Date.now(),total:_results.length,avg,perfect,withErr,sep:cfg.sep,
+    grades:{A:_results.filter(r=>r.score>=90).length,B:_results.filter(r=>r.score>=80&&r.score<90).length,
+            C:_results.filter(r=>r.score>=70&&r.score<80).length,D:_results.filter(r=>r.score>=60&&r.score<70).length,
+            F:_results.filter(r=>r.score<60).length}});
+  saveHist(hist);
 }
 
 function renderResults(){
@@ -391,6 +423,44 @@ function exportCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nc_score.csv';a.click();
   showToast(`⬇ ${rows.length-1} linhas exportadas`);
 }
+
+function openHistModal(){
+  renderHistList();
+  document.getElementById('histModal').style.display='flex';
+}
+function closeHistModal(){document.getElementById('histModal').style.display='none';}
+function clearHist(){if(!confirm('Limpar todo o histórico?'))return;saveHist([]);renderHistList();showToast('Histórico limpo');}
+
+function renderHistList(){
+  const hist=loadHist();
+  const el=document.getElementById('histList');
+  if(!hist.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--faint)">Nenhuma execução ainda</div>';return;}
+  el.innerHTML=hist.map((h,i)=>{
+    const dt=new Date(h.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const gradeBar=`<div style="display:flex;gap:3px;margin-top:5px">
+      ${['A','B','C','D','F'].map(g=>{
+        const n=h.grades?.[g]||0;
+        const pct=h.total?Math.round(n/h.total*100):0;
+        const colors={A:'var(--ok)',B:'#22c55e',C:'var(--warn)',D:'#f97316',F:'var(--err)'};
+        return n?`<div style="flex:${pct||1};background:${colors[g]};height:5px;border-radius:2px;opacity:.8" title="${g}: ${n} (${pct}%)"></div>`:'';
+      }).join('')}
+    </div>`;
+    return `<div style="padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:11px;color:var(--faint)">${dt}</span>
+        <span style="font-size:12px;font-weight:700">${h.total} NCs · média <span style="color:${h.avg>=80?'var(--ok)':h.avg>=60?'var(--warn)':'var(--err)'}">${h.avg}</span>/100</span>
+      </div>
+      <div style="font-size:11px;color:var(--faint);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+        <span>✓ ${h.perfect} perfeitas</span>
+        ${h.withErr?`<span style="color:var(--err)">✗ ${h.withErr} com erro</span>`:''}
+        <span>sep: <code style="font-family:var(--mono)">${esc(h.sep||'auto')}</code></span>
+      </div>
+      ${gradeBar}
+    </div>`;
+  }).join('');
+}
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')scoreAll();});
 </script>
