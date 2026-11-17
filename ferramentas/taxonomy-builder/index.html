@@ -1087,6 +1087,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openClientDiffModal()" title="Comparar termos de dois clientes (ver exclusivos e em comum)">🔍 Comparar</button>
           <button class="btn secondary btn-sm" onclick="exportClientAsURL()" title="Exportar cliente como URL compartilhável">🔗 Compartilhar</button>
           <button class="btn secondary btn-sm" id="archivedToggleBtn" onclick="toggleShowArchived()" title="Mostrar/ocultar clientes arquivados">🗄 Arquivados</button>
+          <button class="btn secondary btn-sm" onclick="openFromTemplateModal()" title="Criar novo cliente a partir de um template de estrutura salvo">📋 De template</button>
           <button class="btn primary btn-sm" onclick="openAddClient()">+ Novo cliente</button>
           <input type="file" id="importClientCSVInput" accept=".csv" style="display:none" onchange="importClientFromCSV(this)">
         </div>
@@ -1126,6 +1127,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openMergeSegModal()" title="Mesclar o segmento ativo com outro (une os termos)" id="btnMergeSeg">⇄ Mesclar</button>
           <button class="btn secondary btn-sm" onclick="openMoveSegModal()" title="Mover segmento ativo (com termos) para outro cliente" id="btnMoveSeg">📤 Mover para…</button>
           <button class="btn secondary btn-sm" onclick="recalcUsage()" title="Recalcula os contadores de uso de todos os termos com base no histórico do Builder" id="btnRecalcUsage">🔄 Recalc. Uso</button>
+          <button class="btn secondary btn-sm" onclick="openSaveTemplateModal()" title="Salvar estrutura de segmentos deste cliente como template reutilizável" id="btnSaveTemplate">📋 Template</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1483,6 +1485,56 @@ body {
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn secondary" onclick="closeMoveSegModal()">Cancelar</button>
       <button class="btn primary" onclick="confirmMoveSeg()">📤 Mover</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Template Modal -->
+<div id="saveTemplateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center" onclick="if(event.target===this)closeSaveTemplateModal()">
+  <div class="modal-box" style="max-width:420px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:800">📋 Salvar como Template</div>
+      <button onclick="closeSaveTemplateModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--faint)">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:12px">Salva apenas a estrutura de segmentos (nomes e configurações), sem os termos do dicionário.</div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);display:block;margin-bottom:4px">Nome do template *</label>
+      <input id="templateNameInput" type="text" placeholder="ex: Template E-commerce BR" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);display:block;margin-bottom:4px">Descrição (opcional)</label>
+      <input id="templateDescInput" type="text" placeholder="ex: 6 segmentos padrão para e-commerce" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px">
+    </div>
+    <div id="saveTemplatePreview" style="background:var(--divider,var(--pill));border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn secondary" onclick="closeSaveTemplateModal()">Cancelar</button>
+      <button class="btn primary" onclick="confirmSaveTemplate()">💾 Salvar template</button>
+    </div>
+  </div>
+</div>
+
+<!-- From Template Modal -->
+<div id="fromTemplateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center" onclick="if(event.target===this)closeFromTemplateModal()">
+  <div class="modal-box" style="max-width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:800">📋 Criar cliente de template</div>
+      <button onclick="closeFromTemplateModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--faint)">×</button>
+    </div>
+    <div id="fromTemplateList" style="margin-bottom:14px;max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <div id="fromTemplateEmpty" style="display:none;text-align:center;padding:24px;color:var(--faint);font-size:12px">Nenhum template salvo ainda.<br>Use "📋 Template" no dicionário para salvar.</div>
+    <div id="fromTemplateForm" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:6px">Novo cliente baseado em: <span id="fromTemplateName" style="color:var(--accent)"></span></div>
+      <div style="display:grid;grid-template-columns:1fr 60px;gap:8px;margin-bottom:10px">
+        <input id="fromTemplateClientName" type="text" placeholder="Nome do cliente *" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px">
+        <input id="fromTemplateClientSep" type="text" placeholder="Sep." maxlength="3" style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;text-align:center">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn secondary" onclick="document.getElementById('fromTemplateForm').style.display='none'">Voltar</button>
+        <button class="btn primary" onclick="confirmCreateFromTemplate()">✅ Criar cliente</button>
+      </div>
+    </div>
+    <div id="fromTemplateFooter" style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn secondary" onclick="closeFromTemplateModal()">Fechar</button>
     </div>
   </div>
 </div>
@@ -2494,6 +2546,129 @@ function renderBuilderTemplRow() {
 function openBuilderTemplates() {
   const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
   saveBuilderTemplate();
+}
+
+/* =============================================
+   SEGMENT STRUCTURE TEMPLATES (Dicionário)
+   ============================================= */
+const SEG_TEMPLATES_KEY = 'taxo_seg_templates_v1';
+function getSegTemplates() {
+  try { return JSON.parse(localStorage.getItem(SEG_TEMPLATES_KEY)||'[]'); } catch(e) { return []; }
+}
+function saveSegTemplatesData(arr) {
+  try { localStorage.setItem(SEG_TEMPLATES_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+function openSaveTemplateModal() {
+  const c = active(); if(!c) { showToast('Selecione um cliente primeiro'); return; }
+  const input = document.getElementById('templateNameInput');
+  const desc = document.getElementById('templateDescInput');
+  if(input) input.value = c.name + ' — template';
+  if(desc) desc.value = '';
+  const preview = document.getElementById('saveTemplatePreview');
+  if(preview) {
+    const segs = c.segments||[];
+    if(!segs.length) { preview.innerHTML='<span style="color:var(--faint)">Nenhum segmento neste cliente.</span>'; }
+    else { preview.innerHTML='<b style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)">Segmentos que serão salvos:</b><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">'+segs.map(s=>`<span style="background:var(--accent-soft,rgba(124,58,237,.08));color:var(--accent);border-radius:5px;padding:2px 7px;font-size:11px">${esc(s.name)}</span>`).join('')+'</div>'; }
+  }
+  const m = document.getElementById('saveTemplateModal');
+  if(m) { m.style.display='flex'; document.body.style.overflow='hidden'; }
+  setTimeout(()=>{ const i=document.getElementById('templateNameInput'); if(i) i.focus(); },50);
+}
+function closeSaveTemplateModal() {
+  const m = document.getElementById('saveTemplateModal');
+  if(m) { m.style.display='none'; document.body.style.overflow=''; }
+}
+function confirmSaveTemplate() {
+  const c = active(); if(!c) return;
+  const name = (document.getElementById('templateNameInput')?.value||'').trim();
+  if(!name) { showToast('Informe um nome para o template'); return; }
+  const desc = (document.getElementById('templateDescInput')?.value||'').trim();
+  const arr = getSegTemplates();
+  const segs = (c.segments||[]).map(s=>({name:s.name,required:s.required||false}));
+  arr.push({ id: Date.now()+'', name, desc, separator: c.separator||'_', segments: segs, createdAt: Date.now() });
+  saveSegTemplatesData(arr);
+  closeSaveTemplateModal();
+  showToast('✅ Template "'+name+'" salvo ('+segs.length+' segmentos)');
+}
+function openFromTemplateModal() {
+  const arr = getSegTemplates();
+  const list = document.getElementById('fromTemplateList');
+  const empty = document.getElementById('fromTemplateEmpty');
+  const form = document.getElementById('fromTemplateForm');
+  const footer = document.getElementById('fromTemplateFooter');
+  if(form) form.style.display='none';
+  if(footer) footer.style.display='flex';
+  if(!arr.length) {
+    if(list) list.innerHTML=''; if(empty) empty.style.display='';
+  } else {
+    if(empty) empty.style.display='none';
+    if(list) list.innerHTML = arr.map(t=>`
+      <div style="border:1px solid var(--border);border-radius:9px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:13px">${esc(t.name)}</div>
+          ${t.desc?`<div style="font-size:11px;color:var(--faint)">${esc(t.desc)}</div>`:''}
+          <div style="font-size:10px;color:var(--faint);margin-top:3px">${(t.segments||[]).length} segmento${(t.segments||[]).length!==1?'s':''} · sep: <code>${esc(t.separator)}</code></div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="btn secondary btn-sm" onclick="selectTemplate('${t.id}')" style="font-size:11px">✅ Usar</button>
+          <button class="btn secondary btn-sm" onclick="deleteSegTemplate('${t.id}')" style="font-size:11px;color:var(--err)">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  const m = document.getElementById('fromTemplateModal');
+  if(m) { m.style.display='flex'; document.body.style.overflow='hidden'; }
+}
+function closeFromTemplateModal() {
+  const m = document.getElementById('fromTemplateModal');
+  if(m) { m.style.display='none'; document.body.style.overflow=''; }
+}
+let _selectedTemplateId = null;
+function selectTemplate(id) {
+  _selectedTemplateId = id;
+  const t = getSegTemplates().find(x=>x.id===id); if(!t) return;
+  const name = document.getElementById('fromTemplateName');
+  if(name) name.textContent = t.name;
+  const clientName = document.getElementById('fromTemplateClientName');
+  if(clientName) clientName.value = '';
+  const sep = document.getElementById('fromTemplateClientSep');
+  if(sep) sep.value = t.separator||'_';
+  const form = document.getElementById('fromTemplateForm');
+  const footer = document.getElementById('fromTemplateFooter');
+  if(form) form.style.display='';
+  if(footer) footer.style.display='none';
+  setTimeout(()=>{ const i=document.getElementById('fromTemplateClientName'); if(i) i.focus(); },50);
+}
+function deleteSegTemplate(id) {
+  const arr = getSegTemplates().filter(x=>x.id!==id);
+  saveSegTemplatesData(arr);
+  openFromTemplateModal();
+  showToast('Template removido');
+}
+function confirmCreateFromTemplate() {
+  const t = getSegTemplates().find(x=>x.id===_selectedTemplateId); if(!t) return;
+  const name = (document.getElementById('fromTemplateClientName')?.value||'').trim();
+  if(!name) { showToast('Informe o nome do cliente'); return; }
+  const sep = (document.getElementById('fromTemplateClientSep')?.value||'_').trim()||'_';
+  const clients = getClients();
+  const id = 'c_'+ Date.now();
+  const newClient = {
+    id, name, separator: sep,
+    segments: (t.segments||[]).map((s,i)=>({id:'s_'+Date.now()+'_'+i, name:s.name, required:s.required||false, terms:[]})),
+    dictionary: {},
+    pinned: false,
+    lastModified: Date.now(),
+    notes: 'Criado a partir do template: '+t.name,
+    color: null, charLimit: null, archived: false
+  };
+  // ensure dictionary keys match segment ids
+  newClient.segments.forEach(s=>{ newClient.dictionary[s.id]=[]; });
+  clients.push(newClient);
+  saveData();
+  renderClients();
+  setActive(id);
+  closeFromTemplateModal();
+  showToast('✅ Cliente "'+name+'" criado a partir do template "'+t.name+'"');
 }
 
 /* =============================================
@@ -5663,6 +5838,10 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key==='m' && currentTab==='dicionario' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
     e.preventDefault(); openMergeSegModal(); return;
   }
+  // Ctrl+T → save structure as template (dicionário)
+  if((e.ctrlKey||e.metaKey) && e.key==='t' && currentTab==='dicionario' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+    e.preventDefault(); openSaveTemplateModal(); return;
+  }
   // ? key (not in input) → open shortcuts
   if(e.key==='?' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
     openShortcuts(); return;
@@ -6557,6 +6736,10 @@ document.addEventListener('keydown', e=>{
     if(mm&&mm.style.display==='flex') closeMergeSegModal();
     const mv=document.getElementById('moveSegModal');
     if(mv&&mv.style.display==='flex') closeMoveSegModal();
+    const st=document.getElementById('saveTemplateModal');
+    if(st&&st.style.display==='flex') closeSaveTemplateModal();
+    const ft=document.getElementById('fromTemplateModal');
+    if(ft&&ft.style.display==='flex') closeFromTemplateModal();
   }
 });
 
@@ -6796,6 +6979,7 @@ function confirmMerge(){
     <div class="shortcut-row"><span>Renomear segmento ativo (dicionário)</span><span class="kbd">F2</span></div>
     <div class="shortcut-row"><span>Duplicar segmento ativo (dicionário)</span><span class="kbd">Ctrl + D</span></div>
     <div class="shortcut-row"><span>Mesclar segmento ativo com outro</span><span class="kbd">Ctrl + M</span></div>
+    <div class="shortcut-row"><span>Salvar estrutura como template</span><span class="kbd">Ctrl + T</span></div>
     <div style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Navegação</div>
     <div class="shortcut-row"><span>Focar busca global</span><span class="kbd">Ctrl + K</span></div>
     <div class="shortcut-row"><span>Aba Clientes</span><span class="kbd">Ctrl + 1</span></div>
