@@ -60,6 +60,13 @@ input[type="text"]:focus{border-color:var(--accent);}
 .filter-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
 .fc{padding:3px 9px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--card);}
 .fc.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* Presets */
+.preset-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.preset-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:var(--divider);font-size:11px;font-weight:600;cursor:pointer;max-width:160px;}
+.preset-chip:hover{border-color:var(--accent);color:var(--accent);}
+.preset-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.preset-chip .pdel{color:var(--faint);font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;}
+.preset-chip .pdel:hover{color:var(--err);}
 /* Toast */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
@@ -124,6 +131,11 @@ input[type="text"]:focus{border-color:var(--accent);}
       </div>
       <div id="rulesContainer"></div>
       <button class="btn" onclick="addRule()" style="margin-top:6px;height:26px;font-size:11px;width:100%">+ Adicionar regra</button>
+      <!-- Preset bar -->
+      <div class="preset-bar" id="presetBar">
+        <button class="btn" onclick="saveCurrentAsPreset()" style="height:24px;font-size:11px;flex-shrink:0">💾 Salvar preset</button>
+        <div id="presetChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+      </div>
     </div>
   </div>
 
@@ -326,6 +338,74 @@ function exportCSV(){
 }
 
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')run();});
+
+// ── Presets ───────────────────────────────────────────────────────────────
+const PRESETS_KEY='bulkrename_presets_v1';
+
+function getPresets(){
+  try{return JSON.parse(localStorage.getItem(PRESETS_KEY)||'[]');}catch(e){return [];}
+}
+function savePresets(arr){
+  try{localStorage.setItem(PRESETS_KEY,JSON.stringify(arr));}catch(e){}
+}
+
+function renderPresetBar(){
+  const presets=getPresets();
+  const chips=document.getElementById('presetChips');
+  if(!chips) return;
+  if(!presets.length){chips.innerHTML='<span style="font-size:11px;color:var(--faint);font-style:italic">Nenhum preset salvo</span>';return;}
+  chips.innerHTML=presets.map(p=>`
+    <div class="preset-chip" title="Carregar preset '${esc(p.name)}'">
+      <span onclick="loadPreset('${esc(p.id)}')">${esc(p.name)}</span>
+      <span class="pdel" onclick="deletePreset('${esc(p.id)}')" title="Excluir">×</span>
+    </div>`).join('');
+}
+
+function saveCurrentAsPreset(){
+  const rules=_rules.filter(r=>r.from.trim()||r.to.trim()||r.pos.trim());
+  if(!rules.length){showToast('Adicione regras antes de salvar');return;}
+  const name=prompt('Nome do preset:','');
+  if(!name||!name.trim()) return;
+  const presets=getPresets();
+  // Max 15 presets
+  if(presets.length>=15){showToast('Limite de 15 presets atingido — exclua um antes');return;}
+  presets.push({
+    id: Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6),
+    name: name.trim(),
+    sep: document.getElementById('sepInput').value,
+    caseIns: document.getElementById('optCase').checked,
+    rules: JSON.parse(JSON.stringify(_rules)),
+    createdAt: new Date().toISOString()
+  });
+  savePresets(presets);
+  renderPresetBar();
+  showToast(`💾 Preset "${name.trim()}" salvo`);
+}
+
+function loadPreset(id){
+  const preset=getPresets().find(p=>p.id===id);
+  if(!preset){showToast('Preset não encontrado');return;}
+  _rules=JSON.parse(JSON.stringify(preset.rules));
+  if(!_rules.length) _rules=[{pos:'',from:'',to:''}];
+  document.getElementById('sepInput').value=preset.sep||'';
+  document.getElementById('optCase').checked=!!preset.caseIns;
+  saveRules();
+  renderRules();
+  showToast(`📂 Preset "${preset.name}" carregado`);
+}
+
+function deletePreset(id){
+  const presets=getPresets();
+  const idx=presets.findIndex(p=>p.id===id);
+  if(idx<0) return;
+  const name=presets[idx].name;
+  presets.splice(idx,1);
+  savePresets(presets);
+  renderPresetBar();
+  showToast(`🗑 Preset "${name}" excluído`);
+}
+
+renderPresetBar();
 </script>
 </body>
 </html>

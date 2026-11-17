@@ -1131,6 +1131,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openMoveSegModal()" title="Mover segmento ativo (com termos) para outro cliente" id="btnMoveSeg">📤 Mover para…</button>
           <button class="btn secondary btn-sm" onclick="recalcUsage()" title="Recalcula os contadores de uso de todos os termos com base no histórico do Builder" id="btnRecalcUsage">🔄 Recalc. Uso</button>
           <button class="btn secondary btn-sm" onclick="openSaveTemplateModal()" title="Salvar estrutura de segmentos deste cliente como template reutilizável" id="btnSaveTemplate">📋 Template</button>
+          <button class="btn secondary btn-sm" onclick="openGlobalFavoritesModal()" title="Painel de todos os termos favoritos de todos os clientes" id="btnGlobalFav">⭐ Favoritos</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1594,6 +1595,45 @@ body {
 </div>
 
 <!-- BATCH 22: Find & Replace Modal -->
+<!-- Global Favorites Modal -->
+<div id="globalFavModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center" onclick="if(event.target===this)closeGlobalFavoritesModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(760px,96vw);max-height:82vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:16px;font-weight:800">⭐ Favoritos Globais</div>
+        <div style="font-size:11px;color:var(--faint);margin-top:2px">Todos os termos marcados como favorito em todos os clientes</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="gfClientFilter" onchange="renderGlobalFav()" style="height:28px;padding:0 8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none">
+          <option value="">Todos os clientes</option>
+        </select>
+        <input type="search" id="gfSearch" placeholder="🔍 Buscar valor ou label…" oninput="renderGlobalFav()" style="height:28px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;width:180px;outline:none">
+        <button onclick="exportGlobalFavCSV()" class="btn" style="height:28px;font-size:11px" title="Exportar favoritos como CSV">⬇ CSV</button>
+        <button onclick="closeGlobalFavoritesModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--faint);line-height:1;padding:0 2px" title="Fechar">×</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--faint)" id="gfCountLine"></div>
+    <div style="overflow-y:auto;flex:1">
+      <table id="gfTable" style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);text-align:left">
+            <th style="padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--faint);white-space:nowrap;cursor:pointer" onclick="gfSort('value')">Valor <span id="gfSortValueInd"></span></th>
+            <th style="padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--faint);white-space:nowrap;cursor:pointer" onclick="gfSort('label')">Label <span id="gfSortLabelInd"></span></th>
+            <th style="padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--faint)">Segmento</th>
+            <th style="padding:6px 8px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--faint)">Cliente</th>
+            <th style="padding:6px 4px;width:30px"></th>
+          </tr>
+        </thead>
+        <tbody id="gfTbody"></tbody>
+      </table>
+      <div id="gfEmpty" style="display:none;text-align:center;padding:36px;color:var(--faint)">
+        <div style="font-size:32px;margin-bottom:8px">⭐</div>
+        <div>Nenhum favorito encontrado</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="findReplaceModal" class="batch-import-modal" style="display:none" onclick="if(event.target===this)closeFindReplaceModal()">
   <div class="modal-box" style="max-width:420px">
     <h3>🔎 Localizar e substituir</h3>
@@ -3438,6 +3478,126 @@ function openFindReplaceModal() {
   setTimeout(()=>document.getElementById('frFind').focus(),50);
 }
 function closeFindReplaceModal() { document.getElementById('findReplaceModal').style.display='none'; }
+
+// ── Global Favorites Modal ────────────────────────────────────────────────
+let _gfSortKey='value', _gfSortAsc=true;
+
+function openGlobalFavoritesModal() {
+  const modal=document.getElementById('globalFavModal');
+  if(!modal) return;
+  // Populate client filter
+  const sel=document.getElementById('gfClientFilter');
+  const clients=getClients().filter(c=>!c.archived);
+  sel.innerHTML='<option value="">Todos os clientes</option>'+
+    clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  document.getElementById('gfSearch').value='';
+  _gfSortKey='value'; _gfSortAsc=true;
+  renderGlobalFav();
+  modal.style.display='flex';
+}
+
+function closeGlobalFavoritesModal() {
+  document.getElementById('globalFavModal').style.display='none';
+}
+
+function buildGlobalFavRows() {
+  const rows=[];
+  const clients=getClients().filter(c=>!c.archived);
+  for(const c of clients) {
+    if(!c.segments) continue;
+    for(const seg of c.segments) {
+      const terms=(c.dictionary&&c.dictionary[seg.id])||[];
+      for(const t of terms) {
+        if(t.fav) rows.push({
+          clientId:c.id, clientName:c.name,
+          segId:seg.id, segLabel:seg.label,
+          value:t.value||'', label:t.label||'',
+          desc:t.desc||'', notes:t.notes||'',
+          tag:t.tag||'', uses:t.uses||0
+        });
+      }
+    }
+  }
+  return rows;
+}
+
+function renderGlobalFav() {
+  const clientFilter=document.getElementById('gfClientFilter')?.value||'';
+  const sq=(document.getElementById('gfSearch')?.value||'').trim().toLowerCase();
+  let rows=buildGlobalFavRows();
+
+  if(clientFilter) rows=rows.filter(r=>r.clientId===clientFilter);
+  if(sq) rows=rows.filter(r=>(r.value+' '+r.label+' '+r.segLabel+' '+r.clientName).toLowerCase().includes(sq));
+
+  // Sort
+  rows.sort((a,b)=>{
+    const va=a[_gfSortKey]||'', vb=b[_gfSortKey]||'';
+    return _gfSortAsc? va.localeCompare(vb,'pt'):vb.localeCompare(va,'pt');
+  });
+
+  // Sort indicators
+  ['value','label'].forEach(k=>{
+    const el=document.getElementById('gfSort'+k.charAt(0).toUpperCase()+k.slice(1)+'Ind');
+    if(el) el.textContent=_gfSortKey===k?(_gfSortAsc?'▲':'▼'):'';
+  });
+
+  const countEl=document.getElementById('gfCountLine');
+  const total=buildGlobalFavRows().length;
+  if(countEl) countEl.textContent=rows.length===total?`${total} favorito${total!==1?'s':''}`:
+    `${rows.length} de ${total} favorito${total!==1?'s':''}`;
+
+  const tbody=document.getElementById('gfTbody');
+  const empty=document.getElementById('gfEmpty');
+  if(!rows.length){
+    if(tbody) tbody.innerHTML='';
+    if(empty) empty.style.display='block';
+    return;
+  }
+  if(empty) empty.style.display='none';
+  if(tbody) tbody.innerHTML=rows.map(r=>`
+    <tr style="border-bottom:1px solid var(--divider)">
+      <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">
+        <span onclick="gfCopy('${esc(r.value.replace(/'/g,"\\'"))}',this)" style="cursor:pointer" title="Clique para copiar">${esc(r.value)}</span>
+      </td>
+      <td style="padding:6px 8px;font-size:12px">${esc(r.label)}</td>
+      <td style="padding:6px 8px">
+        <span style="display:inline-block;padding:2px 8px;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600">${esc(r.segLabel)}</span>
+      </td>
+      <td style="padding:6px 8px;font-size:12px;color:var(--faint)">${esc(r.clientName)}</td>
+      <td style="padding:6px 4px;text-align:center">
+        <button onclick="gfCopy('${esc(r.value.replace(/'/g,"\\'"))}',this)" title="Copiar valor" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:.5" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">📋</button>
+      </td>
+    </tr>`).join('');
+}
+
+function gfSort(key) {
+  if(_gfSortKey===key) _gfSortAsc=!_gfSortAsc;
+  else { _gfSortKey=key; _gfSortAsc=true; }
+  renderGlobalFav();
+}
+
+function gfCopy(val, btn) {
+  navigator.clipboard.writeText(val).then(()=>{
+    showToast('✓ Copiado: '+val);
+    if(btn){ const orig=btn.style.opacity; btn.style.opacity='1'; setTimeout(()=>btn.style.opacity=orig||'.5',900); }
+  }).catch(()=>showToast('Não foi possível copiar'));
+}
+
+function exportGlobalFavCSV() {
+  const clientFilter=document.getElementById('gfClientFilter')?.value||'';
+  const sq=(document.getElementById('gfSearch')?.value||'').trim().toLowerCase();
+  let rows=buildGlobalFavRows();
+  if(clientFilter) rows=rows.filter(r=>r.clientId===clientFilter);
+  if(sq) rows=rows.filter(r=>(r.value+' '+r.label+' '+r.segLabel+' '+r.clientName).toLowerCase().includes(sq));
+  const header=['valor','label','segmento','cliente','descricao','notas','tag','usos'];
+  const lines=[header,...rows.map(r=>[r.value,r.label,r.segLabel,r.clientName,r.desc,r.notes,r.tag,r.uses])];
+  const csv=lines.map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='favoritos_globais.csv'; a.click();
+  showToast(`⬇ ${rows.length} favoritos exportados`);
+}
+
 
 function _frMatches(c) {
   const field  = document.getElementById('frField').value;
