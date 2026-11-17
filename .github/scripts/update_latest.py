@@ -116,6 +116,13 @@ for tipo in ["ADP", "RM"]:
     rel_path = f"{best_year}/{filename}"
     download_url = f"https://github.com/{REPO}/releases/download/{tag}/{filename}"
 
+    # Data do último commit do arquivo (não a data de hoje)
+    git_date = subprocess.run(
+        ["git", "log", "-1", "--format=%cs", str(best)],
+        capture_output=True, text=True
+    ).stdout.strip()
+    file_date = git_date if git_date else date.today().isoformat()
+
     print(f"[{tipo}] Versão mais recente: {filename}  →  tag: {tag}")
 
     # Cria Release (ou faz upload do asset se já existir sem ele)
@@ -151,7 +158,7 @@ for tipo in ["ADP", "RM"]:
         "filename": filename,
         "path": rel_path,
         "version": version_str,
-        "updated": date.today().isoformat(),
+        "updated": file_date,
         "download_url": download_url,
     }
     (base / "latest.json").write_text(json.dumps(latest, indent=2) + "\n", encoding="utf-8")
