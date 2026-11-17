@@ -1123,6 +1123,7 @@ body {
           <button class="btn secondary btn-sm" onclick="exportDictHTML()" title="Exportar dicionário do cliente como página HTML standalone para compartilhar">⬇ HTML</button>
           <button class="btn secondary btn-sm" onclick="openFindReplaceModal()" title="Localizar e substituir valor/label em todos os segmentos">🔎 Localizar…</button>
           <button class="btn secondary btn-sm" onclick="openDictOverview()" title="Visão geral de todos os segmentos em tabela" id="btnDictOverview">👁 Visão Geral</button>
+          <button class="btn secondary btn-sm" onclick="openMergeSegModal()" title="Mesclar o segmento ativo com outro (une os termos)" id="btnMergeSeg">⇄ Mesclar</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1412,6 +1413,47 @@ body {
       </div>
     </div>
     <div id="overviewBody" style="overflow-x:auto"></div>
+  </div>
+</div>
+
+<!-- Merge Segment Modal (batch 46) -->
+<div id="mergeSegModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;display:none;align-items:center;justify-content:center" onclick="if(event.target===this)closeMergeSegModal()">
+  <div style="background:var(--card);border-radius:14px;width:min(460px,96vw);padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.2);position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:800">⇄ Mesclar Segmentos</div>
+      <button onclick="closeMergeSegModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--faint);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:14px">
+      Une os termos do segmento <strong id="mergeFromLabel">—</strong> com outro segmento do mesmo cliente.
+      O segmento de origem pode ser mantido (esvaziado) ou removido.
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Mesclar COM (destino)</label>
+      <select id="mergeTargetSel" style="width:100%;height:34px;padding:0 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:13px;outline:none"></select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Conflito de duplicatas</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+          <input type="radio" name="mergeDup" value="skip" checked style="accent-color:var(--accent)"> Ignorar (manter original)
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+          <input type="radio" name="mergeDup" value="overwrite" style="accent-color:var(--accent)"> Sobrescrever com origem
+        </label>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="mergeRemoveSrc" style="accent-color:var(--accent)" checked>
+        Remover segmento de origem após mesclar
+      </label>
+    </div>
+    <div id="mergePreview" style="background:var(--divider,var(--pill));border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:14px;display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn secondary" onclick="closeMergeSegModal()">Cancelar</button>
+      <button class="btn primary" onclick="previewMerge()" id="btnPreviewMerge">👁 Prévia</button>
+      <button class="btn primary" onclick="confirmMerge()" id="btnConfirmMerge" style="display:none">✅ Confirmar Mesclagem</button>
+    </div>
   </div>
 </div>
 
@@ -5578,6 +5620,10 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key==='d' && currentTab==='dicionario') {
     e.preventDefault(); duplicateActiveSeg(); return;
   }
+  // Ctrl+M → merge active segment (dicionário)
+  if((e.ctrlKey||e.metaKey) && e.key==='m' && currentTab==='dicionario' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+    e.preventDefault(); openMergeSegModal(); return;
+  }
   // ? key (not in input) → open shortcuts
   if(e.key==='?' && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
     openShortcuts(); return;
@@ -6467,7 +6513,101 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && document.getElementById('dictOverviewModal')?.style.display==='block'){
     closeDictOverview();
   }
+  if(e.key==='Escape'){
+    const mm=document.getElementById('mergeSegModal');
+    if(mm&&mm.style.display==='flex') closeMergeSegModal();
+  }
 });
+
+/* BATCH 46: Merge Segments */
+function openMergeSegModal(){
+  const c=active(); if(!c||!activeSeg){showToast('Selecione um segmento no dicionário');return;}
+  const srcSeg=c.segments.find(s=>s.id===activeSeg); if(!srcSeg) return;
+  const others=c.segments.filter(s=>s.id!==activeSeg);
+  if(!others.length){showToast('Não há outros segmentos para mesclar');return;}
+  document.getElementById('mergeFromLabel').textContent=srcSeg.label||srcSeg.id;
+  const sel=document.getElementById('mergeTargetSel');
+  sel.innerHTML=others.map(s=>`<option value="${s.id}">${s.label||s.id} (${(c.dictionary[s.id]||[]).length} termos)</option>`).join('');
+  document.getElementById('mergePreview').style.display='none';
+  document.getElementById('btnPreviewMerge').style.display='';
+  document.getElementById('btnConfirmMerge').style.display='none';
+  const m=document.getElementById('mergeSegModal');
+  m.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeMergeSegModal(){
+  const m=document.getElementById('mergeSegModal');
+  m.style.display='none';
+  document.body.style.overflow='';
+}
+function previewMerge(){
+  const c=active(); if(!c||!activeSeg) return;
+  const srcSeg=c.segments.find(s=>s.id===activeSeg); if(!srcSeg) return;
+  const tgtId=document.getElementById('mergeTargetSel').value;
+  const tgtSeg=c.segments.find(s=>s.id===tgtId); if(!tgtSeg) return;
+  const dup=document.querySelector('input[name="mergeDup"]:checked')?.value||'skip';
+  const srcTerms=c.dictionary[activeSeg]||[];
+  const tgtTerms=c.dictionary[tgtId]||[];
+  const tgtVals=new Set(tgtTerms.map(t=>(t.value||t).toLowerCase()));
+  let added=0,skipped=0,overwritten=0;
+  for(const t of srcTerms){
+    const val=(t.value||t).toLowerCase();
+    if(tgtVals.has(val)){
+      if(dup==='overwrite') overwritten++;
+      else skipped++;
+    } else { added++; }
+  }
+  const removeSrc=document.getElementById('mergeRemoveSrc').checked;
+  const prev=document.getElementById('mergePreview');
+  prev.innerHTML=`
+    <div style="font-weight:700;margin-bottom:6px">Prévia da mesclagem</div>
+    <div style="color:var(--ok)">+ ${added} termos adicionados ao destino</div>
+    ${skipped?`<div style="color:var(--warn)">↷ ${skipped} duplicata${skipped!==1?'s':''} ignorada${skipped!==1?'s':''}</div>`:''}
+    ${overwritten?`<div style="color:var(--accent)">↻ ${overwritten} sobrescrito${overwritten!==1?'s':''}</div>`:''}
+    <div style="margin-top:6px;font-size:11px;color:var(--faint)">
+      <strong>Destino:</strong> ${tgtSeg.label||tgtId} → ${tgtTerms.length+added} termos${removeSrc?`<br><strong>Origem (${srcSeg.label||activeSeg})</strong> será removida`:' · origem mantida (esvaziada)'}
+    </div>`;
+  prev.style.display='block';
+  document.getElementById('btnPreviewMerge').style.display='none';
+  document.getElementById('btnConfirmMerge').style.display='';
+}
+function confirmMerge(){
+  const c=active(); if(!c||!activeSeg) return;
+  const srcSeg=c.segments.find(s=>s.id===activeSeg); if(!srcSeg) return;
+  const tgtId=document.getElementById('mergeTargetSel').value;
+  if(!tgtId) return;
+  const dup=document.querySelector('input[name="mergeDup"]:checked')?.value||'skip';
+  const removeSrc=document.getElementById('mergeRemoveSrc').checked;
+  const srcTerms=JSON.parse(JSON.stringify(c.dictionary[activeSeg]||[]));
+  const tgtTerms=c.dictionary[tgtId]||[];
+  const tgtVals=new Map(tgtTerms.map((t,i)=>[(t.value||t).toLowerCase(),i]));
+  for(const t of srcTerms){
+    const val=(t.value||t).toLowerCase();
+    if(tgtVals.has(val)){
+      if(dup==='overwrite'){
+        tgtTerms[tgtVals.get(val)]=t;
+      }
+    } else {
+      tgtTerms.push(t);
+      tgtVals.set(val,tgtTerms.length-1);
+    }
+  }
+  c.dictionary[tgtId]=tgtTerms;
+  if(removeSrc){
+    c.segments=c.segments.filter(s=>s.id!==activeSeg);
+    delete c.dictionary[activeSeg];
+    activeSeg=tgtId;
+  } else {
+    c.dictionary[activeSeg]=[];
+  }
+  c.lastModified=Date.now();
+  saveData();
+  closeMergeSegModal();
+  renderDicionario();
+  const srcLabel=srcSeg.label||activeSeg;
+  const tgtSeg=c.segments.find(s=>s.id===tgtId);
+  showToast(`⇄ "${srcLabel}" mesclado em "${tgtSeg?.label||tgtId}"${removeSrc?' e removido':' (esvaziado)'}`);
+}
 </script>
 
 <!-- ── Share URL modal ───────────────────────────── -->
@@ -6508,6 +6648,7 @@ document.addEventListener('keydown', e=>{
     <div class="shortcut-row"><span>Salvar dados</span><span class="kbd">Ctrl + S</span></div>
     <div class="shortcut-row"><span>Renomear segmento ativo (dicionário)</span><span class="kbd">F2</span></div>
     <div class="shortcut-row"><span>Duplicar segmento ativo (dicionário)</span><span class="kbd">Ctrl + D</span></div>
+    <div class="shortcut-row"><span>Mesclar segmento ativo com outro</span><span class="kbd">Ctrl + M</span></div>
     <div style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">Navegação</div>
     <div class="shortcut-row"><span>Focar busca global</span><span class="kbd">Ctrl + K</span></div>
     <div class="shortcut-row"><span>Aba Clientes</span><span class="kbd">Ctrl + 1</span></div>
