@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Alcance e Cobertura</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.2rem;font-weight:600}
+header span{font-size:.85rem;opacity:.7;margin-left:8px}
+.main{padding:28px 32px;min-width:0}
+.grid2{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:20px}
+.card h2{font-size:.95rem;font-weight:600;color:#1a237e;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.8rem;font-weight:500;color:#555;margin-bottom:4px}
+.form-group input,.form-group select{width:100%;padding:8px 12px;border:1px solid #d6dbf2;border-radius:8px;font-family:inherit;font-size:.9rem;background:#fff;color:#1a1a2e;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#1F36C7}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{background:#1F36C7;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;width:100%;transition:background .2s}
+.btn:hover{background:#1a237e}
+.btn-sec{background:#e8ecfd;color:#1F36C7;border:1px solid #d6dbf2}
+.btn-sec:hover{background:#d6dbf2}
+.results{display:none}
+.cards-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:1200px){.cards-row{grid-template-columns:repeat(2,1fr)}}
+.metric-card{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:14px 16px}
+.metric-card .label{font-size:.75rem;color:#888;margin-bottom:4px}
+.metric-card .value{font-size:1.4rem;font-weight:700;color:#1a237e}
+.metric-card .sub{font-size:.75rem;color:#aaa;margin-top:2px}
+.metric-card.highlight{border-color:#1F36C7;background:#e8ecfd}
+.section-title{font-size:.95rem;font-weight:600;color:#1a237e;margin:24px 0 12px}
+.chart-wrap{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:20px;margin-bottom:20px}
+.chart-wrap h3{font-size:.9rem;font-weight:600;color:#333;margin-bottom:16px}
+/* SVG Chart */
+.chart-svg{width:100%;overflow:visible}
+/* Scenario table */
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+table th{background:#e8ecfd;color:#1a237e;padding:8px 12px;text-align:left;font-weight:600;font-size:.8rem}
+table td{padding:8px 12px;border-bottom:1px solid #f0f1f8}
+table tr:last-child td{border-bottom:none}
+table tr.current-row td{background:#e8ecfd;font-weight:600}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:500}
+.tag-green{background:#e6f4ea;color:#2e7d32}
+.tag-yellow{background:#fff8e1;color:#f57f17}
+.tag-red{background:#fce8e6;color:#c62828}
+/* freq dist bars */
+.freq-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.82rem}
+.freq-bar-label{width:120px;flex-shrink:0;color:#555}
+.freq-bar-track{flex:1;background:#f0f1f8;border-radius:4px;height:20px;overflow:hidden}
+.freq-bar-fill{height:100%;border-radius:4px;transition:width .6s ease;display:flex;align-items:center;padding-left:8px;font-size:.75rem;font-weight:600;color:#fff}
+.freq-pct{width:50px;text-align:right;color:#555;font-weight:600}
+/* saturation */
+.sat-box{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:14px 16px;font-size:.85rem;color:#5d4037}
+.sat-box strong{color:#e65100}
+/* recommendation */
+.rec-card{background:#e8ecfd;border:1px solid #d6dbf2;border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:.85rem;color:#1a237e}
+.rec-card.warn{background:#fff8e1;border-color:#ffe082;color:#5d4037}
+.rec-card.ok{background:#e6f4ea;border-color:#a5d6a7;color:#2e7d32}
+.milestone-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.milestone{background:#fff;border:1px solid #d6dbf2;border-radius:8px;padding:10px 14px;font-size:.82rem;text-align:center;flex:1;min-width:140px}
+.milestone .m-label{color:#888;margin-bottom:4px}
+.milestone .m-val{font-weight:700;color:#1a237e;font-size:1rem}
+/* freq ref table */
+.freq-ref-wrap{background:#fff;border:1px solid #d6dbf2;border-radius:12px;overflow:hidden;margin-bottom:20px}
+.freq-ref-wrap table tr.active-obj td{background:#e8ecfd;font-weight:600;color:#1a237e}
+</style>
+</head>
+<body>
+<header>
+  <div>📡</div>
+  <div>
+    <h1>Calculadora de Alcance e Cobertura</h1>
+    <span>Reach &amp; Frequency Planning — Digital</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="grid2">
+    <!-- INPUT FORM -->
+    <div>
+      <div class="card">
+        <h2>⚙️ Configuração da Campanha</h2>
+        <div class="form-group">
+          <label>Universo Total (TAM)</label>
+          <input type="number" id="universo" value="5000000" placeholder="ex: 5.000.000">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Budget Total (R$)</label>
+            <input type="number" id="budget" value="150000" step="1000">
+          </div>
+          <div class="form-group">
+            <label>CPM Estimado (R$)</label>
+            <input type="number" id="cpm" value="12" step="0.5">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Período (dias)</label>
+            <input type="number" id="periodo" value="30" min="1">
+          </div>
+          <div class="form-group">
+            <label>Objetivo</label>
+            <select id="objetivo">
+              <option value="awareness">Awareness</option>
+              <option value="consideracao">Consideração</option>
+              <option value="conversao">Conversão</option>
+              <option value="remarketing">Remarketing</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Plataforma Principal</label>
+          <select id="plataforma">
+            <option>Meta</option>
+            <option>Google Display</option>
+            <option>DV360</option>
+            <option>YouTube</option>
+            <option>LinkedIn</option>
+            <option>TikTok</option>
+            <option>Mix</option>
+          </select>
+        </div>
+
+        <h2 style="margin-top:16px">🎯 Configuração de Frequência</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Frequência Cap (por período)</label>
+            <input type="number" id="freqCap" value="7" min="1" max="30">
+          </div>
+          <div class="form-group">
+            <label>Frequência Efetiva Mínima</label>
+            <input type="number" id="freqMin" value="3" min="1" max="15">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Modelo de Alcance</label>
+          <select id="modelo">
+            <option value="log">Logarítmico (Ephron)</option>
+            <option value="linear">Linear</option>
+            <option value="scurve">S-Curve (Brand Awareness)</option>
+          </select>
+        </div>
+        <button class="btn" onclick="calcular()">Calcular Alcance</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results">
+      <!-- Summary Cards -->
+      <div class="cards-row" id="cardsRow"></div>
+
+      <!-- Saturation Point -->
+      <div class="sat-box" id="satBox" style="margin-bottom:20px"></div>
+
+      <!-- Recommendations -->
+      <div id="recsDiv"></div>
+
+      <!-- Milestone budgets -->
+      <div class="section-title">📊 Budget necessário por meta de cobertura</div>
+      <div class="milestone-row" id="milestones"></div>
+
+      <!-- Reach Curve Chart -->
+      <div class="chart-wrap" style="margin-top:20px">
+        <h3>Curva de Alcance × Frequência</h3>
+        <svg id="reachChart" class="chart-svg" height="260" viewBox="0 0 800 260"></svg>
+        <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+          <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#1F36C7;display:inline-block;border-radius:2px"></span>Logarítmico</span>
+          <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#43a047;display:inline-block;border-radius:2px"></span>Linear</span>
+          <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#fb8c00;display:inline-block;border-radius:2px"></span>S-Curve</span>
+          <span style="font-size:.78rem;display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#e53935;display:inline-block;border-radius:2px;border-top:2px dashed #e53935"></span>Freq. Efetiva</span>
+        </div>
+      </div>
+
+      <!-- Scenario Table -->
+      <div class="chart-wrap">
+        <h3>Cenários por Frequência Cap</h3>
+        <table id="scenarioTable">
+          <thead><tr>
+            <th>Freq Cap</th><th>Alcance</th><th>Cobertura</th><th>Impressões</th><th>GRP Digital</th><th>Budget p/ alcance</th><th>Status</th>
+          </tr></thead>
+          <tbody id="scenarioBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Freq distribution -->
+      <div class="chart-wrap">
+        <h3>Distribuição de Frequência Estimada</h3>
+        <div id="freqDistDiv"></div>
+      </div>
+
+      <!-- Freq reference table -->
+      <div class="section-title">📋 Referência de Frequência Efetiva por Objetivo</div>
+      <div class="freq-ref-wrap">
+        <table id="freqRefTable">
+          <thead><tr>
+            <th>Objetivo</th><th>Freq. Mínima</th><th>Freq. Ideal</th><th>Saturação</th>
+          </tr></thead>
+          <tbody>
+            <tr data-obj="awareness"><td>Awareness</td><td>1–2</td><td>3–5</td><td>7+</td></tr>
+            <tr data-obj="consideracao"><td>Consideração</td><td>3–4</td><td>5–7</td><td>10+</td></tr>
+            <tr data-obj="conversao"><td>Conversão</td><td>5–7</td><td>8–12</td><td>15+</td></tr>
+            <tr data-obj="remarketing"><td>Remarketing</td><td>3–5</td><td>6–10</td><td>12+</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fmt(n){if(n>=1e6)return(n/1e6).toFixed(1).replace('.',',')+'M';if(n>=1e3)return(n/1e3).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'K';return n.toLocaleString('pt-BR')}
+function fmtR(n){return'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function fmtPct(n){return n.toFixed(1).replace('.',',')+' %'}
+
+function reachLog(impressoes,universo){
+  const k=0.5;
+  return universo*(1-Math.exp(-k*impressoes/universo));
+}
+function reachLinear(impressoes,universo,freqCap){
+  return Math.min(universo,impressoes/freqCap);
+}
+function reachSCurve(impressoes,universo){
+  const x=impressoes/universo;
+  return universo*(x*x)/(0.3+x*x);
+}
+
+function calcularAlcance(impressoes,universo,freqCap,modelo){
+  if(modelo==='log')return Math.min(universo,reachLog(impressoes,universo));
+  if(modelo==='linear')return Math.min(universo,reachLinear(impressoes,universo,freqCap));
+  return Math.min(universo,reachSCurve(impressoes,universo));
+}
+
+function calcular(){
+  const universo=parseFloat(document.getElementById('universo').value)||0;
+  const budget=parseFloat(document.getElementById('budget').value)||0;
+  const cpm=parseFloat(document.getElementById('cpm').value)||1;
+  const freqCap=parseInt(document.getElementById('freqCap').value)||7;
+  const freqMin=parseInt(document.getElementById('freqMin').value)||3;
+  const objetivo=document.getElementById('objetivo').value;
+  const modelo=document.getElementById('modelo').value;
+
+  if(!universo||!budget||!cpm){alert('Preencha todos os campos obrigatórios.');return;}
+
+  const impressoes=budget/cpm*1000;
+  const alcance=calcularAlcance(impressoes,universo,freqCap,modelo);
+  const cobertura=alcance/universo*100;
+  const grp=impressoes/universo*100;
+  const freqMedia=impressoes/alcance;
+  const budgetPorPonto=cobertura>0?budget/cobertura:0;
+
+  // impressões na freq efetiva
+  const imprEfetivas=alcance*freqMin;
+  const pctEfetiva=Math.min(100,(imprEfetivas/impressoes)*100);
+
+  // Show results
+  document.getElementById('results').style.display='block';
+
+  // Cards
+  const cards=[
+    {label:'Impressões Totais',value:fmt(Math.round(impressoes)),sub:'Budget / CPM × 1000'},
+    {label:'Alcance Estimado',value:fmt(Math.round(alcance)),sub:'Usuários únicos',hl:true},
+    {label:'Cobertura do Universo',value:fmtPct(cobertura),sub:'do TAM'},
+    {label:'Frequência Média',value:freqMedia.toFixed(1).replace('.',',')+'×',sub:'impressões por usuário'},
+    {label:'GRP Digital Equiv.',value:grp.toFixed(0),sub:'Impressões/Universo×100'},
+    {label:'Budget por Ponto',value:fmtR(budgetPorPonto),sub:'por 1% de cobertura'},
+    {label:'Acima da Freq. Efetiva',value:fmtPct(pctEfetiva),sub:'do total de impressões'},
+    {label:'Período',value:document.getElementById('periodo').value+'d',sub:document.getElementById('plataforma').value},
+  ];
+  document.getElementById('cardsRow').innerHTML=cards.map(c=>`<div class="metric-card${c.hl?' highlight':''}"><div class="label">${c.label}</div><div class="value">${c.value}</div><div class="sub">${c.sub}</div></div>`).join('');
+
+  // Saturation
+  const satFreq=Math.ceil(-Math.log(0.05)/0.5*(universo/impressoes)*freqCap)||Math.round(freqCap*1.5);
+  document.getElementById('satBox').innerHTML=`<strong>Ponto de saturação estimado: frequência ${Math.min(satFreq,20)}×</strong> — a partir deste ponto, o ganho incremental de alcance cai abaixo de 5% por impressão adicional. Considerar redirecionar budget para ampliar audiência.`;
+
+  // Recommendations
+  let recs='';
+  if(cobertura<20){
+    const budgetFor30=cpm/1000*alcance*5/(0.3)*budget/budget;
+    recs+=`<div class="rec-card warn">⚠️ Cobertura abaixo de 20% — budget insuficiente para impacto significativo no universo. Para atingir 30% de cobertura com freq. 5, seriam necessários aproximadamente ${fmtR(universo*0.3*5*cpm/1000)}.</div>`;
+  }
+  if(freqMedia>10&&cobertura<40){
+    recs+=`<div class="rec-card warn">⚠️ Alta frequência (${freqMedia.toFixed(1)}×) com cobertura baixa — considerar ampliar segmentação de audiência ou reduzir frequency cap para ${Math.round(freqMedia*0.6)}×.</div>`;
+  }
+  const freqIdeal={awareness:'3–5',consideracao:'5–7',conversao:'8–12',remarketing:'6–10'}[objetivo];
+  const freqMinObj={awareness:3,consideracao:5,conversao:8,remarketing:6}[objetivo];
+  recs+=`<div class="rec-card ok">✅ Para objetivo de <strong>${objetivo}</strong>, frequência ideal é <strong>${freqIdeal}×</strong>. Com o budget atual, frequência média estimada é <strong>${freqMedia.toFixed(1).replace('.',',')}×</strong> para ${fmtPct(cobertura)} do universo.</div>`;
+  document.getElementById('recsDiv').innerHTML=recs;
+
+  // Milestones
+  const targets=[0.5,0.7,0.9];
+  const msHtml=targets.map(t=>{
+    // Solve for budget: Reach = Universe×t → find impressions from model
+    let imprNeeded;
+    if(modelo==='log'){
+      imprNeeded=universo*(-Math.log(1-t))/0.5;
+    } else if(modelo==='linear'){
+      imprNeeded=universo*t*freqCap;
+    } else {
+      imprNeeded=Math.sqrt(0.3*t/(1-t))*universo;
+    }
+    imprNeeded=Math.max(imprNeeded,impressoes);
+    const budgetNeeded=imprNeeded/1000*cpm;
+    return `<div class="milestone"><div class="m-label">${(t*100).toFixed(0)}% cobertura</div><div class="m-val">${fmtR(budgetNeeded)}</div></div>`;
+  });
+  document.getElementById('milestones').innerHTML=msHtml.join('');
+
+  // Draw Reach Curve SVG
+  drawReachCurve(impressoes,universo,freqCap,freqMin,modelo);
+
+  // Scenario Table
+  const freqCaps=[3,5,7,10,15];
+  const tbody=document.getElementById('scenarioBody');
+  tbody.innerHTML=freqCaps.map(fc=>{
+    const impr=Math.min(impressoes,universo*fc);
+    const alc=calcularAlcance(impr,universo,fc,modelo);
+    const cob=alc/universo*100;
+    const grpV=impr/universo*100;
+    const budgNeed=impr/1000*cpm;
+    const isCurrent=fc===freqCap;
+    let statusTag='';
+    if(cob>=50)statusTag='<span class="tag tag-green">Ótimo</span>';
+    else if(cob>=25)statusTag='<span class="tag tag-yellow">Regular</span>';
+    else statusTag='<span class="tag tag-red">Baixo</span>';
+    return `<tr${isCurrent?' class="current-row"':''}><td>${fc}×${isCurrent?' ✦':''}</td><td>${fmt(Math.round(alc))}</td><td>${fmtPct(cob)}</td><td>${fmt(Math.round(impr))}</td><td>${grpV.toFixed(0)}</td><td>${fmtR(budgNeed)}</td><td>${statusTag}</td></tr>`;
+  }).join('');
+
+  // Freq distribution
+  const totalImpr=impressoes;
+  const p1=alcance*(1-Math.exp(-1));
+  const p35=alcance*(Math.exp(-1)-Math.exp(-3));
+  const p610=alcance*(Math.exp(-3)-Math.exp(-6));
+  const p11=alcance*Math.exp(-6);
+  const total2=p1+p35+p610+p11||1;
+  const pcts=[(p1/total2)*100,(p35/total2)*100,(p610/total2)*100,(p11/total2)*100];
+  const labels=['1–2× (sub-efetiva)','3–5× (efetiva)','6–10× (alta)','11+× (sobre-exposição)'];
+  const colors=['#90caf9','#1F36C7','#fb8c00','#e53935'];
+  document.getElementById('freqDistDiv').innerHTML=labels.map((l,i)=>`
+    <div class="freq-bar-row">
+      <div class="freq-bar-label">${l}</div>
+      <div class="freq-bar-track"><div class="freq-bar-fill" style="width:${pcts[i].toFixed(1)}%;background:${colors[i]}">${pcts[i]>8?pcts[i].toFixed(0)+'%':''}</div></div>
+      <div class="freq-pct">${pcts[i].toFixed(1)}%</div>
+    </div>`).join('');
+
+  // Highlight freq ref table row
+  document.querySelectorAll('#freqRefTable tbody tr').forEach(tr=>{
+    tr.classList.toggle('active-obj',tr.dataset.obj===objetivo);
+  });
+}
+
+function drawReachCurve(baseImpressoes,universo,freqCap,freqMin,currentModelo){
+  const svg=document.getElementById('reachChart');
+  const W=800,H=240,padL=50,padB=35,padT=15,padR=20;
+  const chartW=W-padL-padR,chartH=H-padB-padT;
+  const maxFreq=15;
+
+  // Generate curve data
+  function getPoints(modelName){
+    const pts=[];
+    for(let f=0.1;f<=maxFreq;f+=0.2){
+      const impr=universo*f; // impressões proporcionais
+      let r;
+      if(modelName==='log')r=Math.min(1,reachLog(impr,universo)/universo);
+      else if(modelName==='linear')r=Math.min(1,impr/(freqCap*universo));
+      else r=Math.min(1,reachSCurve(impr,universo)/universo);
+      pts.push({f,r});
+    }
+    return pts;
+  }
+
+  const models=[
+    {name:'log',color:'#1F36C7',pts:getPoints('log')},
+    {name:'linear',color:'#43a047',pts:getPoints('linear')},
+    {name:'scurve',color:'#fb8c00',pts:getPoints('scurve')},
+  ];
+
+  function px(f){return padL+((f/maxFreq)*chartW)}
+  function py(r){return padT+chartH-(r*chartH)}
+
+  let svgContent='';
+
+  // Grid lines
+  for(let f=0;f<=maxFreq;f+=3){
+    const x=px(f);
+    svgContent+=`<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT+chartH}" stroke="#e8ecfd" stroke-width="1"/>`;
+    svgContent+=`<text x="${x}" y="${H-8}" text-anchor="middle" font-size="10" fill="#888">${f}×</text>`;
+  }
+  for(let r=0;r<=1;r+=0.25){
+    const y=py(r);
+    svgContent+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#e8ecfd" stroke-width="1"/>`;
+    svgContent+=`<text x="${padL-5}" y="${y+4}" text-anchor="end" font-size="10" fill="#888">${(r*100).toFixed(0)}%</text>`;
+  }
+
+  // Effective freq line
+  const efx=px(freqMin);
+  svgContent+=`<line x1="${efx}" y1="${padT}" x2="${efx}" y2="${padT+chartH}" stroke="#e53935" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  svgContent+=`<text x="${efx+4}" y="${padT+16}" font-size="9" fill="#e53935">Freq. efetiva</text>`;
+
+  // Curves
+  models.forEach(m=>{
+    const d=m.pts.map((p,i)=>`${i===0?'M':'L'}${px(p.f).toFixed(1)},${py(p.r).toFixed(1)}`).join(' ');
+    svgContent+=`<path d="${d}" fill="none" stroke="${m.color}" stroke-width="${currentModelo===m.name?2.5:1.5}" opacity="${currentModelo===m.name?1:0.4}"/>`;
+  });
+
+  // Current scenario dot
+  const curFreqMedia=baseImpressoes/universo;
+  const curModPts=models.find(m=>m.name===currentModelo).pts;
+  const nearest=curModPts.reduce((a,b)=>Math.abs(b.f-curFreqMedia)<Math.abs(a.f-curFreqMedia)?b:a);
+  svgContent+=`<circle cx="${px(nearest.f)}" cy="${py(nearest.r)}" r="6" fill="${models.find(m=>m.name===currentModelo).color}" stroke="#fff" stroke-width="2"/>`;
+  svgContent+=`<text x="${px(nearest.f)+10}" y="${py(nearest.r)-6}" font-size="10" fill="#333" font-weight="600">${(nearest.r*100).toFixed(0)}%</text>`;
+
+  // Axes
+  svgContent+=`<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="#aaa" stroke-width="1.5"/>`;
+  svgContent+=`<line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="#aaa" stroke-width="1.5"/>`;
+  svgContent+=`<text x="${padL-14}" y="${padT+chartH/2}" text-anchor="middle" font-size="10" fill="#888" transform="rotate(-90,${padL-14},${padT+chartH/2})">Alcance (%)</text>`;
+  svgContent+=`<text x="${padL+chartW/2}" y="${H-1}" text-anchor="middle" font-size="10" fill="#888">Frequência</text>`;
+
+  svg.innerHTML=svgContent;
+}
+
+// Auto-calculate on load with defaults
+window.addEventListener('load',()=>calcular());
+</script>
+</body>
+</html>
