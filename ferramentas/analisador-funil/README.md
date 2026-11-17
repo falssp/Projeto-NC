@@ -1,47 +1,49 @@
-# 🔽 Analisador de Funil de Campanha
+# 📊 Analisador de Funil de Conversão
 
-**URL:** https://falssp.github.io/Projeto-NC/ferramentas/analisador-funil/
+**AdOps Suite — NC Tools**
+URL: https://falssp.github.io/Projeto-NC/ferramentas/analisador-funil/
 
-Visualize drop-offs, identifique gargalos e compare períodos no funil de conversão das suas campanhas.
+---
+
+## O que é
+
+Ferramenta interativa para análise de funil click-to-conversion em campanhas digitais. Identifica gargalos, calcula taxas de conversão por etapa e compara com benchmarks de mercado por vertical.
 
 ## Funcionalidades
 
-### Dados do Funil
-- Configuração de estágios personalizados (nome, volume, custo, meta)
-- Padrão AdOps: Impressões → Cliques → Visitas → Leads → Conversões → Vendas
-- Adicionar/remover estágios livremente
-- Campo de receita total para cálculo de ROAS
+- **7 etapas configuráveis**: Impressões → Cliques → Landing → Produto → Cart → Checkout → Conversões
+- **Ativação por etapa**: habilite/desabilite cada etapa conforme o modelo de campanha
+- **Visualização do funil**: barras proporcionais coloridas por status (verde/amarelo/vermelho)
+- **Benchmarks por vertical**: E-commerce, Lead Gen, App Install, Branding
+- **Identificação de gargalo**: destaca automaticamente a etapa com maior drop-off crítico
+- **Recomendações por etapa**: sugestões práticas baseadas no gargalo identificado
+- **KPIs globais**: Taxa de Conversão Global, CTR, CPA, ROAS (com inputs de budget/receita)
 
-### Visualização
-- Funil visual proporcional com cores gradiente
-- Drop-off e CVR exibidos entre cada par de estágios
+## Métricas calculadas
 
-### Métricas
-- CVR global e entre cada estágio
-- Custo acumulado por estágio
-- Custo por unidade em cada nível do funil
-- ROAS (quando receita preenchida)
-- Semáforo verde/amarelo/vermelho vs meta configurada
-- **Destaque automático do maior gargalo**
+| Métrica | Fórmula |
+|---------|---------|
+| Taxa de Conversão | Etapa N / Etapa N-1 × 100 |
+| Drop-off | 100 - Taxa de Conversão |
+| CTR | Cliques / Impressões × 100 |
+| CPA | Budget / Conversões |
+| ROAS | Receita / Budget |
+| Conv. Global | Conversões / Impressões × 100 |
 
-### Comparar Períodos
-- Cole dados de Período A e B no formato `Estágio,Volume`
-- Tabela comparativa com variação percentual (delta)
+## Benchmarks por vertical
 
-### Export
-- Copiar resumo para clipboard
-- Baixar CSV completo com todas as métricas
+### E-commerce
+- Impressões→Cliques: ≥1% ótimo, ≥0,3% ok
+- Cliques→Landing: ≥80% ótimo, ≥50% ok
+- Landing→Produto: ≥40% ótimo, ≥20% ok
+- Produto→Cart: ≥15% ótimo, ≥8% ok
+- Cart→Checkout: ≥60% ótimo, ≥30% ok
+- Checkout→Conversão: ≥60% ótimo, ≥30% ok
 
-## Formato de entrada (comparação)
-```
-Impressões,100000
-Cliques,3500
-Visitas,2800
-Leads,420
-Conversões,85
-```
+### Lead Generation
+- CTR: ≥2% ótimo, ≥0,5% ok
+- Conversão final: ≥70% ótimo, ≥40% ok
 
-## Dados e privacidade
-- Sem backend — tudo processado no browser
-- Estado salvo automaticamente no localStorage
-- Funciona 100% offline após carregamento
+---
+
+*Parte do projeto [NC Tools — AdOps Suite](https://falssp.github.io/Projeto-NC/ferramentas/)*
