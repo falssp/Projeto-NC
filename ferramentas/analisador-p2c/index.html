@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador de Path to Conversion — AdOps Suite</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+
+/* HEADER */
+.header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+.header-icon{font-size:28px}
+.header h1{font-size:20px;font-weight:700;letter-spacing:-0.3px}
+.header p{font-size:13px;opacity:.75;margin-top:2px}
+.badge-gmp{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;letter-spacing:.5px;margin-left:auto;white-space:nowrap}
+
+/* MAIN */
+.main{padding:28px 32px;min-width:0}
+
+/* INPUT SECTION */
+.input-card{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:24px;margin-bottom:20px}
+.input-card h2{font-size:15px;font-weight:700;color:#1a237e;margin-bottom:4px}
+.input-card p{font-size:13px;color:#666;margin-bottom:16px}
+
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{padding:7px 18px;border-radius:6px;border:1.5px solid #d6dbf2;background:#fff;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;color:#555;transition:all .15s}
+.tab.active{background:#1F36C7;border-color:#1F36C7;color:#fff}
+
+textarea.csv-input{width:100%;height:160px;border:1.5px solid #d6dbf2;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;resize:vertical;outline:none;transition:border-color .15s;background:#fafbff}
+textarea.csv-input:focus{border-color:#1F36C7}
+.csv-hint{font-size:11px;color:#888;margin-top:6px;line-height:1.5}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:7px;border:none;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:#1F36C7;color:#fff}
+.btn-primary:hover{background:#1a237e}
+.btn-secondary{background:#e8ecfd;color:#1F36C7;border:1.5px solid #d6dbf2}
+.btn-secondary:hover{background:#d6dbf2}
+.btn-sm{padding:6px 14px;font-size:12px}
+
+.parse-status{margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px;display:none}
+.parse-status.ok{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:block}
+.parse-status.err{background:#fff3e0;color:#e65100;border:1px solid #ffcc80;display:block}
+
+/* MANUAL MODE */
+.manual-form{display:none}
+.manual-form.show{display:block}
+.form-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.form-group label{display:block;font-size:11px;font-weight:600;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.form-group input, .form-group select{width:100%;border:1.5px solid #d6dbf2;border-radius:7px;padding:8px 10px;font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.form-group input:focus, .form-group select:focus{border-color:#1F36C7}
+
+/* LIMITATION WARNING */
+.warning-card{background:#fff8e1;border:1.5px solid #ffc107;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start}
+.warning-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.warning-card p{font-size:13px;color:#5d4037;line-height:1.5}
+.warning-card strong{color:#e65100}
+
+/* RESULTS */
+#results{display:none}
+#results.show{display:block}
+
+.section-title{font-size:16px;font-weight:700;color:#1a237e;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title .icon{font-size:18px}
+
+/* CARDS ROW */
+.cards-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+.stat-card{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:16px}
+.stat-card .label{font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.stat-card .value{font-size:24px;font-weight:700;color:#1a237e}
+.stat-card .sub{font-size:11px;color:#aaa;margin-top:3px}
+
+/* TABLE */
+.table-wrap{background:#fff;border:1px solid #d6dbf2;border-radius:10px;overflow:hidden;margin-bottom:28px}
+table{width:100%;border-collapse:collapse}
+th{background:#e8ecfd;color:#1a237e;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:10px 14px;text-align:left;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#d6dbf2}
+th .sort-icon{margin-left:4px;opacity:.5}
+th.sorted .sort-icon{opacity:1}
+td{padding:10px 14px;border-top:1px solid #f0f0f8;font-size:13px;vertical-align:middle}
+tr:hover td{background:#fafbff}
+
+.channel-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.ch-display{background:#e3f2fd;color:#1565c0}
+.ch-search{background:#e8f5e9;color:#2e7d32}
+.ch-social{background:#f3e5f5;color:#6a1b9a}
+.ch-direct{background:#eceff1;color:#455a64}
+.ch-email{background:#fff3e0;color:#e65100}
+.ch-video{background:#fce4ec;color:#c62828}
+.ch-native{background:#f1f8e9;color:#558b2f}
+.ch-outro{background:#f5f5f5;color:#757575}
+
+.idx-high{background:#ffebee;color:#c62828;font-weight:700;padding:3px 8px;border-radius:4px;font-size:12px}
+.idx-balanced{background:#e8f5e9;color:#2e7d32;font-weight:700;padding:3px 8px;border-radius:4px;font-size:12px}
+.idx-lc{background:#fff8e1;color:#f57f17;font-weight:700;padding:3px 8px;border-radius:4px;font-size:12px}
+
+/* FUNNEL VIZ */
+.funnel-section{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:20px;margin-bottom:28px}
+.funnel-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.funnel-col h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e8ecfd}
+.funnel-col h3.top{border-color:#1F36C7}
+.funnel-col h3.mid{border-color:#9c27b0}
+.funnel-col h3.bot{border-color:#2e7d32}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bar-label{font-size:12px;width:80px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:16px;background:#f4f5fb;border-radius:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:8px;transition:width .4s}
+.bar-pct{font-size:11px;color:#888;width:36px;text-align:right}
+
+/* PATHS TABLE */
+.paths-table{background:#fff;border:1px solid #d6dbf2;border-radius:10px;overflow:hidden;margin-bottom:28px}
+.path-sequence{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.path-arrow{color:#aaa;font-size:10px}
+
+/* RECOMMENDATIONS */
+.recs-section{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:20px;margin-bottom:28px}
+.rec-item{display:flex;gap:12px;padding:12px;border-radius:8px;margin-bottom:10px;border-left:3px solid #1F36C7}
+.rec-item:last-child{margin-bottom:0}
+.rec-item.warning{border-color:#ff9800;background:#fff8f0}
+.rec-item.success{border-color:#4caf50;background:#f1f8e9}
+.rec-item.info{border-color:#1F36C7;background:#e8ecfd}
+.rec-icon{font-size:18px;flex-shrink:0}
+.rec-text{font-size:13px;line-height:1.5;color:#333}
+.rec-text strong{color:#1a237e}
+
+/* ACTION BUTTONS */
+.actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+
+@media(max-width:768px){
+  .main{padding:16px}
+  .cards-row{grid-template-columns:repeat(2,1fr)}
+  .funnel-cols{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr;gap:8px}
+  .header{padding:12px 16px}
+  .header h1{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🔀</div>
+  <div>
+    <h1>Analisador de Path to Conversion</h1>
+    <p>Atribuição assistida, posição no funil e índice de subfinanciamento por canal</p>
+  </div>
+  <div class="badge-gmp">GMP · CM360</div>
+</div>
+
+<div class="main">
+
+  <!-- LIMITATION WARNING -->
+  <div class="warning-card">
+    <div class="warning-icon">⚠️</div>
+    <p><strong>Limitação do P2C:</strong> O relatório Path to Conversion do CM360 captura apenas touchpoints de ads servidos via CM360 — não inclui search orgânico, social fora do GMP (Meta, TikTok, LinkedIn direto) nem e-mail marketing. A análise abaixo reflete somente o ecossistema GMP.</p>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="input-card">
+    <h2>📂 Dados de Path to Conversion</h2>
+    <p>Cole o CSV exportado do CM360 ou insira os dados manualmente por canal.</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('csv')">📋 CSV do CM360</button>
+      <button class="tab" onclick="switchTab('manual')">✏️ Entrada manual</button>
+    </div>
+
+    <!-- CSV MODE -->
+    <div id="csvMode">
+      <textarea class="csv-input" id="csvInput" placeholder="Cole aqui o CSV do relatório Path to Conversion do CM360.
+
+Formato esperado (separado por vírgula ou tab):
+Path,Conversões,Receita,Comprimento do Path,Dias até Conversão
+Display > Search > Direct,145,12300.00,3,5
+Search > Direct,89,,2,2
+Display > Display > Search,42,3800.00,3,8
+...
+
+A primeira linha pode ser cabeçalho (detectado automaticamente)."></textarea>
+      <div class="csv-hint">
+        📌 No CM360: Relatórios → Path to Conversion → Export CSV &nbsp;|&nbsp; Colunas esperadas: Path, Conversões, Receita (opcional), Comprimento do Path, Dias até Conversão
+      </div>
+      <div class="parse-status" id="parseStatus"></div>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn btn-primary" onclick="parseCSV()">⚡ Analisar</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadSample()">📊 Carregar dados de exemplo</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAll()">🗑️ Limpar</button>
+      </div>
+    </div>
+
+    <!-- MANUAL MODE -->
+    <div class="manual-form" id="manualMode">
+      <div id="manualRows"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addManualRow()" style="margin-bottom:12px">+ Adicionar canal</button>
+      <br>
+      <button class="btn btn-primary" onclick="analyzeManual()">⚡ Analisar</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="actions-row">
+      <button class="btn btn-secondary btn-sm" onclick="copyReport()">📋 Copiar relatório</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearAll()">🔄 Nova análise</button>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="section-title"><span class="icon">📊</span> Resumo Geral</div>
+    <div class="cards-row" id="summaryCards"></div>
+
+    <!-- CHANNEL TABLE -->
+    <div class="section-title"><span class="icon">📡</span> Análise por Canal</div>
+    <div class="table-wrap">
+      <table id="channelTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">Canal <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(1)">Aparições <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(2)">Início (%) <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(3)">Meio (%) <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(4)">Fim (%) <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(5)">Conv. Assistidas <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(6)">Conv. Last-Click <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(7)">Assisted Rate (%) <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable(8)">Índice Subfinanciam. <span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="channelTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- FUNNEL VIZ -->
+    <div class="section-title"><span class="icon">🎯</span> Posição no Funil por Canal</div>
+    <div class="funnel-section">
+      <div class="funnel-cols">
+        <div class="funnel-col">
+          <h3 class="top">🔝 Topo (Início do Path)</h3>
+          <div id="funnelTop"></div>
+        </div>
+        <div class="funnel-col">
+          <h3 class="mid">🔄 Meio do Funil</h3>
+          <div id="funnelMid"></div>
+        </div>
+        <div class="funnel-col">
+          <h3 class="bot">✅ Fundo (Last-Click)</h3>
+          <div id="funnelBot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP PATHS -->
+    <div class="section-title"><span class="icon">🗺️</span> Top 10 Paths Mais Comuns</div>
+    <div class="paths-table">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Sequência de Canais</th>
+            <th>Conversões</th>
+            <th>% do Total</th>
+            <th>Dias Médios</th>
+            <th>Receita</th>
+          </tr>
+        </thead>
+        <tbody id="pathsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="section-title"><span class="icon">💡</span> Recomendações</div>
+    <div class="recs-section" id="recsSection"></div>
+
+  </div><!-- /results -->
+
+</div><!-- /main -->
+
+<script>
+// ===================== DATA =====================
+let analysisData = null;
+let sortCol = -1, sortAsc = true;
+
+const CHANNEL_COLORS = {
+  'Display':  'ch-display',
+  'Search':   'ch-search',
+  'Social':   'ch-social',
+  'Direct':   'ch-direct',
+  'E-mail':   'ch-email',
+  'Vídeo':    'ch-video',
+  'Native':   'ch-native',
+  'Outro':    'ch-outro'
+};
+
+const CHANNEL_BAR_COLORS = {
+  'Display':  '#1565c0',
+  'Search':   '#2e7d32',
+  'Social':   '#6a1b9a',
+  'Direct':   '#455a64',
+  'E-mail':   '#e65100',
+  'Vídeo':    '#c62828',
+  'Native':   '#558b2f',
+  'Outro':    '#757575'
+};
+
+function detectChannel(str) {
+  const s = str.toLowerCase().trim();
+  if (/dbm|display|banner/.test(s)) return 'Display';
+  if (/\bsearch\b|sem|paid.?search/.test(s)) return 'Search';
+  if (/social|meta|facebook|instagram|linkedin|tiktok|twitter|kwai/.test(s)) return 'Social';
+  if (/direct|direto/.test(s)) return 'Direct';
+  if (/e.?mail/.test(s)) return 'E-mail';
+  if (/video|youtube|vídeo/.test(s)) return 'Vídeo';
+  if (/native/.test(s)) return 'Native';
+  return 'Outro';
+}
+
+// ===================== TABS =====================
+function switchTab(mode) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', (mode==='csv'&&i===0)||(mode==='manual'&&i===1)));
+  document.getElementById('csvMode').style.display = mode==='csv'?'block':'none';
+  document.getElementById('manualMode').classList.toggle('show', mode==='manual');
+  if (mode==='manual' && document.getElementById('manualRows').children.length===0) addManualRow();
+}
+
+// ===================== MANUAL MODE =====================
+let manualRowCount = 0;
+function addManualRow() {
+  manualRowCount++;
+  const id = manualRowCount;
+  const div = document.createElement('div');
+  div.className = 'form-row';
+  div.id = 'mrow_'+id;
+  div.innerHTML = `
+    <div class="form-group">
+      <label>Canal</label>
+      <input type="text" placeholder="ex: Display, Search, Meta..." id="mc_${id}">
+    </div>
+    <div class="form-group">
+      <label>Posição</label>
+      <select id="mp_${id}">
+        <option value="inicio">Início</option>
+        <option value="meio">Meio</option>
+        <option value="fim">Fim</option>
+        <option value="unico">Único</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Conv. Assistidas</label>
+      <input type="number" id="ma_${id}" placeholder="0" min="0">
+    </div>
+    <div class="form-group">
+      <label>Conv. Last-Click</label>
+      <input type="number" id="ml_${id}" placeholder="0" min="0">
+    </div>
+    <div class="form-group" style="padding-top:18px">
+      <button class="btn btn-secondary btn-sm" onclick="removeRow(${id})">✕</button>
+    </div>
+  `;
+  document.getElementById('manualRows').appendChild(div);
+}
+function removeRow(id) {
+  const el = document.getElementById('mrow_'+id);
+  if (el) el.remove();
+}
+
+function analyzeManual() {
+  const rows = document.getElementById('manualRows').querySelectorAll('.form-row');
+  if (!rows.length) return;
+  const channels = {};
+  let totalAssisted = 0, totalLC = 0;
+  rows.forEach(r => {
+    const id = r.id.replace('mrow_','');
+    const canal = document.getElementById('mc_'+id).value.trim();
+    if (!canal) return;
+    const pos = document.getElementById('mp_'+id).value;
+    const assisted = parseInt(document.getElementById('ma_'+id).value)||0;
+    const lc = parseInt(document.getElementById('ml_'+id).value)||0;
+    const ch = detectChannel(canal)||canal;
+    if (!channels[ch]) channels[ch] = {name:ch, appearances:0, inicio:0, meio:0, fim:0, unico:0, assisted:0, lc:0};
+    channels[ch].appearances += assisted + lc;
+    channels[ch][pos]++;
+    channels[ch].assisted += assisted;
+    channels[ch].lc += lc;
+    totalAssisted += assisted;
+    totalLC += lc;
+  });
+  const total = totalAssisted + totalLC;
+  analysisData = {
+    summary: { paths: rows.length, conversions: total, avgLength: 2, avgDays: 0, multiPct: 60, revenue: 0 },
+    channels: Object.values(channels),
+    paths: [],
+    total
+  };
+  renderResults();
+}
+
+// ===================== CSV PARSING =====================
+function parseCSV() {
+  const raw = document.getElementById('csvInput').value.trim();
+  if (!raw) { showStatus('Cole o CSV antes de analisar.', 'err'); return; }
+  const lines = raw.split('\n').filter(l=>l.trim());
+  const delim = raw.includes('\t') ? '\t' : ',';
+  let skipped = 0, loaded = 0;
+  const pathMap = {};
+
+  // Detect header
+  const firstCells = parseLine(lines[0], delim);
+  const hasHeader = isNaN(parseFloat(firstCells[1]));
+  const start = hasHeader ? 1 : 0;
+
+  for (let i = start; i < lines.length; i++) {
+    const cells = parseLine(lines[i], delim);
+    if (cells.length < 2) { skipped++; continue; }
+    const pathStr = cells[0].trim();
+    const convs = parseFloat(cells[1]) || 0;
+    if (!pathStr || convs <= 0) { skipped++; continue; }
+    const revenue = cells[2] ? parseFloat(cells[2].replace(',','.')) || 0 : 0;
+    const pathLen = cells[3] ? parseInt(cells[3]) || pathStr.split('>').length : pathStr.split('>').length;
+    const days = cells[4] ? parseFloat(cells[4]) || 0 : 0;
+
+    if (!pathMap[pathStr]) pathMap[pathStr] = { path: pathStr, conversions: 0, revenue: 0, totalDays: 0, count: 0, length: pathLen };
+    pathMap[pathStr].conversions += convs;
+    pathMap[pathStr].revenue += revenue;
+    pathMap[pathStr].totalDays += days;
+    pathMap[pathStr].count++;
+    loaded++;
+  }
+
+  if (loaded === 0) { showStatus('Nenhuma linha válida encontrada. Verifique o formato.', 'err'); return; }
+  showStatus(`✅ ${loaded} linha${loaded>1?'s':''} carregada${loaded>1?'s':''}, ${skipped} ignorada${skipped!==1?'s':''}.`, 'ok');
+
+  // Build analysis
+  buildAnalysis(Object.values(pathMap));
+  renderResults();
+}
+
+function parseLine(line, delim) {
+  const result = [];
+  let inQuote = false, cur = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQuote = !inQuote; continue; }
+    if (c === delim && !inQuote) { result.push(cur); cur = ''; continue; }
+    cur += c;
+  }
+  result.push(cur);
+  return result;
+}
+
+function buildAnalysis(paths) {
+  const channels = {};
+  let totalConversions = 0, totalRevenue = 0, totalDays = 0, totalLen = 0, multiTouchConvs = 0;
+
+  paths.forEach(p => {
+    const steps = p.path.split('>').map(s=>s.trim()).filter(Boolean);
+    const len = steps.length;
+    totalConversions += p.conversions;
+    totalRevenue += p.revenue;
+    totalDays += (p.totalDays / (p.count||1)) * p.conversions;
+    totalLen += len * p.conversions;
+    if (len > 1) multiTouchConvs += p.conversions;
+
+    steps.forEach((step, idx) => {
+      const ch = detectChannel(step);
+      if (!channels[ch]) channels[ch] = {name:ch, appearances:0, inicio:0, meio:0, fim:0, assisted:0, lc:0};
+      channels[ch].appearances += p.conversions;
+      if (len === 1) {
+        channels[ch].fim += p.conversions;
+        channels[ch].lc += p.conversions;
+      } else {
+        if (idx === 0) channels[ch].inicio += p.conversions;
+        else if (idx === len - 1) { channels[ch].fim += p.conversions; channels[ch].lc += p.conversions; }
+        else channels[ch].meio += p.conversions;
+        if (idx < len - 1) channels[ch].assisted += p.conversions;
+      }
+    });
+  });
+
+  const sortedPaths = [...paths].sort((a,b)=>b.conversions-a.conversions).slice(0,10);
+
+  analysisData = {
+    summary: {
+      paths: paths.length,
+      conversions: totalConversions,
+      avgLength: totalLen / (totalConversions||1),
+      avgDays: totalDays / (totalConversions||1),
+      multiPct: (multiTouchConvs / (totalConversions||1)) * 100,
+      revenue: totalRevenue
+    },
+    channels: Object.values(channels),
+    paths: sortedPaths.map(p => ({ ...p, avgDays: p.totalDays / (p.count||1) })),
+    total: totalConversions
+  };
+}
+
+// ===================== RENDER =====================
+function renderResults() {
+  if (!analysisData) return;
+  document.getElementById('results').classList.add('show');
+  renderSummary();
+  renderChannelTable();
+  renderFunnel();
+  renderPaths();
+  renderRecommendations();
+}
+
+function renderSummary() {
+  const s = analysisData.summary;
+  const cards = [
+    { label: 'Paths Únicos', value: fmtNum(s.paths), sub: 'sequências distintas' },
+    { label: 'Total de Conversões', value: fmtNum(s.conversions), sub: '' },
+    { label: 'Path Médio', value: s.avgLength.toFixed(1), sub: 'touchpoints' },
+    { label: 'Dias Médios', value: s.avgDays.toFixed(1), sub: 'até conversão' },
+    { label: 'Multi-Touch', value: s.multiPct.toFixed(1)+'%', sub: 'das conversões' },
+    { label: 'Receita Total', value: s.revenue > 0 ? fmtBRL(s.revenue) : '—', sub: s.revenue>0?'':'não informada' }
+  ];
+  document.getElementById('summaryCards').innerHTML = cards.map(c=>`
+    <div class="stat-card">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      ${c.sub?`<div class="sub">${c.sub}</div>`:''}
+    </div>
+  `).join('');
+}
+
+function renderChannelTable() {
+  const total = analysisData.total || 1;
+  const rows = analysisData.channels.map(ch => {
+    const assistedRate = (ch.assisted / total) * 100;
+    const lcRate = (ch.lc / total) * 100;
+    const idx = lcRate > 0 ? assistedRate / lcRate : (assistedRate > 0 ? 99 : 0);
+    return { ...ch, assistedRate, lcRate, idx };
+  });
+  rows.sort((a,b)=>b.appearances-a.appearances);
+
+  document.getElementById('channelTableBody').innerHTML = rows.map(ch => {
+    const totalApp = ch.appearances || 1;
+    const idxLabel = ch.idx > 1.5 ? `<span class="idx-high">${ch.idx.toFixed(1)} ⚠️</span>` :
+                     ch.idx >= 0.8 ? `<span class="idx-balanced">${ch.idx.toFixed(1)} ✓</span>` :
+                     `<span class="idx-lc">${ch.idx.toFixed(1)} LC</span>`;
+    return `<tr>
+      <td><span class="channel-badge ${CHANNEL_COLORS[ch.name]||'ch-outro'}">${ch.name}</span></td>
+      <td>${fmtNum(ch.appearances)}</td>
+      <td>${pct(ch.inicio, totalApp)}</td>
+      <td>${pct(ch.meio, totalApp)}</td>
+      <td>${pct(ch.fim, totalApp)}</td>
+      <td>${fmtNum(ch.assisted)}</td>
+      <td>${fmtNum(ch.lc)}</td>
+      <td>${ch.assistedRate.toFixed(1)}%</td>
+      <td>${idxLabel}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFunnel() {
+  const channels = [...analysisData.channels];
+  const render = (containerId, getter) => {
+    const sorted = channels.map(ch=>({name:ch.name, val: getter(ch)})).sort((a,b)=>b.val-a.val).filter(x=>x.val>0);
+    const max = sorted[0]?.val || 1;
+    document.getElementById(containerId).innerHTML = sorted.slice(0,6).map(item=>`
+      <div class="bar-row">
+        <span class="bar-label" title="${item.name}">${item.name}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(item.val/max*100).toFixed(0)}%;background:${CHANNEL_BAR_COLORS[item.name]||'#90a4ae'}"></div></div>
+        <span class="bar-pct">${fmtNum(item.val)}</span>
+      </div>
+    `).join('') || '<p style="color:#aaa;font-size:12px">Sem dados</p>';
+  };
+  render('funnelTop', ch=>ch.inicio);
+  render('funnelMid', ch=>ch.meio);
+  render('funnelBot', ch=>ch.fim);
+}
+
+function renderPaths() {
+  const total = analysisData.total || 1;
+  if (!analysisData.paths.length) {
+    document.getElementById('pathsTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">Dados de path não disponíveis no modo manual.</td></tr>';
+    return;
+  }
+  document.getElementById('pathsTableBody').innerHTML = analysisData.paths.map((p,i) => {
+    const steps = p.path.split('>').map(s=>s.trim()).filter(Boolean);
+    const badges = steps.map((s,idx) => {
+      const ch = detectChannel(s);
+      return `<span class="channel-badge ${CHANNEL_COLORS[ch]||'ch-outro'}" style="font-size:11px">${ch}</span>${idx<steps.length-1?'<span class="path-arrow"> → </span>':''}`;
+    }).join('');
+    return `<tr>
+      <td style="color:#aaa;font-weight:700">${i+1}</td>
+      <td><div class="path-sequence">${badges}</div></td>
+      <td>${fmtNum(p.conversions)}</td>
+      <td>${pct(p.conversions, total)}</td>
+      <td>${(p.avgDays||0).toFixed(1)}d</td>
+      <td>${p.revenue > 0 ? fmtBRL(p.revenue) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRecommendations() {
+  const recs = [];
+  const channels = analysisData.channels;
+  const total = analysisData.total || 1;
+  const s = analysisData.summary;
+
+  // Find subfinanced channels
+  channels.forEach(ch => {
+    const assistedRate = (ch.assisted / total) * 100;
+    const lcRate = (ch.lc / total) * 100;
+    const idx = lcRate > 0 ? assistedRate / lcRate : 0;
+    const topPct = ((ch.inicio / (ch.appearances||1)) * 100).toFixed(0);
+    if (idx > 1.5 && assistedRate > 5) {
+      recs.push({ type:'warning', icon:'⚠️', text:`<strong>${ch.name}</strong> apresenta índice de subfinanciamento de <strong>${idx.toFixed(1)}x</strong> — aparece em <strong>${assistedRate.toFixed(1)}%</strong> dos paths como assistente, mas captura apenas <strong>${lcRate.toFixed(1)}%</strong> das conversões last-click. Considere migrar para DDA ou aumentar budget neste canal.` });
+    }
+  });
+
+  // Dominant last-click channel
+  const lcLeader = [...channels].sort((a,b)=>b.lc-a.lc)[0];
+  if (lcLeader && lcLeader.lc > 0) {
+    const lcPct = (lcLeader.lc / total * 100).toFixed(1);
+    recs.push({ type:'info', icon:'🎯', text:`<strong>${lcLeader.name}</strong> é o canal de fechamento dominante, capturando <strong>${lcPct}%</strong> das conversões last-click. Manter budget garantido; cortes neste canal impactam diretamente o volume de conversões reportadas.` });
+  }
+
+  // Multi-touch insight
+  if (s.multiPct > 50) {
+    recs.push({ type:'info', icon:'🔀', text:`<strong>${s.multiPct.toFixed(0)}%</strong> das conversões envolvem múltiplos touchpoints (path médio: <strong>${s.avgLength.toFixed(1)}</strong>). Modelo last-click subestima significativamente canais de topo e meio de funil. Recomendado: ativar DDA no CM360 para distribuição proporcional de crédito.` });
+  }
+
+  // Revenue per path
+  if (s.revenue > 0 && s.avgLength > 1) {
+    recs.push({ type:'success', icon:'💰', text:`Receita total de <strong>${fmtBRL(s.revenue)}</strong> distribuída por <strong>${fmtNum(s.conversions)}</strong> conversões (ticket médio: <strong>${fmtBRL(s.revenue/s.conversions)}</strong>). Use revenue-based attribution para otimizar canais por valor, não apenas volume.` });
+  }
+
+  // Long paths
+  if (s.avgDays > 7) {
+    recs.push({ type:'info', icon:'⏱️', text:`Ciclo médio de conversão de <strong>${s.avgDays.toFixed(0)} dias</strong>. Janelas de atribuição padrão (30 dias) podem ser adequadas, mas verifique se a janela de view-through está configurada para capturar Display no início do path.` });
+  }
+
+  if (!recs.length) recs.push({ type:'success', icon:'✅', text:'Dados insuficientes para gerar recomendações automáticas. Carregue um CSV com mais volume de conversões para análise completa.' });
+
+  document.getElementById('recsSection').innerHTML = recs.map(r=>`
+    <div class="rec-item ${r.type}">
+      <div class="rec-icon">${r.icon}</div>
+      <div class="rec-text">${r.text}</div>
+    </div>
+  `).join('');
+}
+
+// ===================== SORT =====================
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = false; }
+  document.querySelectorAll('#channelTable th').forEach((th,i)=>{
+    th.classList.toggle('sorted', i===col);
+    if (i===col) th.querySelector('.sort-icon').textContent = sortAsc?'↑':'↓';
+    else th.querySelector('.sort-icon').textContent = '↕';
+  });
+  const total = analysisData.total || 1;
+  const rows = analysisData.channels.map(ch => {
+    const assistedRate = (ch.assisted / total) * 100;
+    const lcRate = (ch.lc / total) * 100;
+    const idx = lcRate > 0 ? assistedRate / lcRate : 0;
+    return { ...ch, assistedRate, lcRate, idx };
+  });
+  const getVal = (r,c) => [r.name,r.appearances,r.inicio/r.appearances,r.meio/r.appearances,r.fim/r.appearances,r.assisted,r.lc,r.assistedRate,r.idx][c];
+  rows.sort((a,b)=>{ const v = getVal(a,col)<getVal(b,col)?-1:1; return sortAsc?v:-v; });
+  const tbody = document.getElementById('channelTableBody');
+  tbody.innerHTML = '';
+  rows.forEach(ch => {
+    const totalApp = ch.appearances || 1;
+    const idxLabel = ch.idx > 1.5 ? `<span class="idx-high">${ch.idx.toFixed(1)} ⚠️</span>` :
+                     ch.idx >= 0.8 ? `<span class="idx-balanced">${ch.idx.toFixed(1)} ✓</span>` :
+                     `<span class="idx-lc">${ch.idx.toFixed(1)} LC</span>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="channel-badge ${CHANNEL_COLORS[ch.name]||'ch-outro'}">${ch.name}</span></td>
+      <td>${fmtNum(ch.appearances)}</td>
+      <td>${pct(ch.inicio, totalApp)}</td>
+      <td>${pct(ch.meio, totalApp)}</td>
+      <td>${pct(ch.fim, totalApp)}</td>
+      <td>${fmtNum(ch.assisted)}</td>
+      <td>${fmtNum(ch.lc)}</td>
+      <td>${ch.assistedRate.toFixed(1)}%</td>
+      <td>${idxLabel}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===================== UTILS =====================
+function fmtNum(n) {
+  return Math.round(n).toLocaleString('pt-BR');
+}
+function fmtBRL(n) {
+  return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function pct(val, total) {
+  return total > 0 ? (val/total*100).toFixed(1)+'%' : '0%';
+}
+function showStatus(msg, type) {
+  const el = document.getElementById('parseStatus');
+  el.textContent = msg;
+  el.className = 'parse-status '+type;
+}
+function clearAll() {
+  document.getElementById('csvInput').value = '';
+  document.getElementById('parseStatus').className = 'parse-status';
+  document.getElementById('results').classList.remove('show');
+  analysisData = null;
+}
+function copyReport() {
+  if (!analysisData) return;
+  const s = analysisData.summary;
+  let txt = `RELATÓRIO PATH TO CONVERSION\n${'='.repeat(40)}\n\n`;
+  txt += `Paths únicos: ${fmtNum(s.paths)}\n`;
+  txt += `Total de conversões: ${fmtNum(s.conversions)}\n`;
+  txt += `Path médio: ${s.avgLength.toFixed(1)} touchpoints\n`;
+  txt += `Dias médios: ${s.avgDays.toFixed(1)}\n`;
+  txt += `Multi-touch: ${s.multiPct.toFixed(1)}%\n\n`;
+  txt += `ANÁLISE POR CANAL\n${'-'.repeat(40)}\n`;
+  analysisData.channels.forEach(ch => {
+    const ar = (ch.assisted / (analysisData.total||1) * 100).toFixed(1);
+    txt += `${ch.name}: ${fmtNum(ch.appearances)} aparições, ${ar}% assisted rate\n`;
+  });
+  navigator.clipboard.writeText(txt).then(()=>alert('Relatório copiado!'));
+}
+
+// ===================== SAMPLE DATA =====================
+function loadSample() {
+  const sample = `Path,Conversões,Receita,Comprimento do Path,Dias até Conversão
+Display > Search > Direct,145,52200.00,3,5
+Search > Direct,312,89640.00,2,2
+Display > Display > Search,78,28080.00,3,8
+Social > Search > Direct,56,20160.00,3,4
+Display > Search,89,24920.00,2,3
+Search,198,51480.00,1,1
+Display > Social > Search > Direct,34,16320.00,4,12
+Display,67,8040.00,1,0
+Social > Direct,45,9900.00,2,1
+Display > Search > Social > Direct,23,12420.00,4,9
+Email > Display > Search,19,8550.00,3,7
+Video > Search > Direct,41,14760.00,3,5`;
+  document.getElementById('csvInput').value = sample;
+  parseCSV();
+}
+</script>
+</body>
+</html>
