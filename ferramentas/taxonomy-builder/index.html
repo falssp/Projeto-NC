@@ -1299,6 +1299,10 @@ body {
           <button class="btn secondary btn-sm" onclick="clearAuditLog()" style="color:var(--err)">🗑 Limpar log</button>
           <button class="btn secondary btn-sm" onclick="exportAuditCSV()">⬇ CSV</button>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <input type="text" id="auditSearch" placeholder="🔍 Buscar em ações, clientes, detalhes…" oninput="renderAuditLog()" style="flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none">
+          <span id="auditCountLabel" style="font-size:11px;color:var(--faint);white-space:nowrap"></span>
+        </div>
       </div>
       <div id="auditLogList"></div>
     </div>
@@ -2738,6 +2742,7 @@ function renderAuditLog(){
   const all=getAuditLog();
   const cf=document.getElementById('auditClientFilter')?.value||'';
   const af=document.getElementById('auditActionFilter')?.value||'';
+  const sq=(document.getElementById('auditSearch')?.value||'').trim().toLowerCase();
   // Populate client filter
   const sel=document.getElementById('auditClientFilter');
   if(sel){
@@ -2748,14 +2753,27 @@ function renderAuditLog(){
   const filtered=all.filter(e=>{
     if(cf&&e.clientId!==cf) return false;
     if(af&&e.action!==af) return false;
+    if(sq){
+      const hay=[(AUDIT_LABELS[e.action]||e.action),(e.clientName||''),(e.detail||''),new Date(e.ts).toLocaleString('pt-BR')].join(' ').toLowerCase();
+      if(!hay.includes(sq)) return false;
+    }
     return true;
   });
+  const countEl=document.getElementById('auditCountLabel');
+  if(countEl) countEl.textContent=sq||cf||af?`${filtered.length} de ${all.length}`:`${all.length} eventos`;
   const el=document.getElementById('auditLogList');
   if(!el) return;
   if(!filtered.length){
     el.innerHTML='<div style="text-align:center;padding:32px;color:var(--faint);font-size:12px">'+
       (all.length?'Nenhum resultado para os filtros selecionados.':'Nenhuma modificação registrada ainda.')+
       '</div>'; return;
+  }
+  // highlight helper
+  function hlAudit(text,q){
+    if(!q) return esc(text);
+    const idx=text.toLowerCase().indexOf(q);
+    if(idx<0) return esc(text);
+    return esc(text.slice(0,idx))+'<mark style="background:rgba(37,99,235,.25);border-radius:2px">'+esc(text.slice(idx,idx+q.length))+'</mark>'+esc(text.slice(idx+q.length));
   }
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:12px">
     <thead><tr>
@@ -2770,10 +2788,10 @@ function renderAuditLog(){
       const label=AUDIT_LABELS[e.action]||e.action;
       const ts=new Date(e.ts).toLocaleString('pt-BR');
       return `<tr style="border-bottom:1px solid var(--divider)">
-        <td style="padding:7px 10px;font-size:11px;color:var(--faint);white-space:nowrap">${esc(ts)}</td>
-        <td style="padding:7px 10px"><span style="font-size:11px;font-weight:700;color:${color}">${esc(label)}</span></td>
-        <td style="padding:7px 10px;font-size:11px">${esc(e.clientName||'')}</td>
-        <td style="padding:7px 10px;font-size:11px;color:var(--faint)">${esc(e.detail||'')}</td>
+        <td style="padding:7px 10px;font-size:11px;color:var(--faint);white-space:nowrap">${hlAudit(ts,sq)}</td>
+        <td style="padding:7px 10px"><span style="font-size:11px;font-weight:700;color:${color}">${hlAudit(label,sq)}</span></td>
+        <td style="padding:7px 10px;font-size:11px">${hlAudit(e.clientName||'',sq)}</td>
+        <td style="padding:7px 10px;font-size:11px;color:var(--faint)">${hlAudit(e.detail||'',sq)}</td>
       </tr>`;
     }).join('')}
     </tbody>
