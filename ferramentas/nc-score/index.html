@@ -267,6 +267,22 @@ function scoreNC(nc, cfg, seen){
 
 let _results=[];
 let _resultFilter='all';
+let _sortMode='input'; // 'input'|'asc'|'desc'
+
+// Persist config
+const CFG_KEY='ncscore_cfg_v1';
+function loadCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||'null');}catch(e){return null;}}
+function saveCfg(cfg){try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}}
+(function(){
+  const c=loadCfg(); if(!c) return;
+  if(c.sep) document.getElementById('cfgSep').value=c.sep;
+  if(c.segsMin) document.getElementById('cfgSegsMin').value=c.segsMin;
+  if(c.segsMax) document.getElementById('cfgSegsMax').value=c.segsMax;
+  if(c.maxLen) document.getElementById('cfgMaxLen').value=c.maxLen;
+  ['cfgNoSpaces','cfgNoUpper','cfgNoSpecial','cfgNoDup','cfgNoEmpty'].forEach(id=>{
+    if(id in c) document.getElementById(id).checked=c[id];
+  });
+})();
 
 function scoreAll(){
   const raw=document.getElementById('ncInput').value;
@@ -293,17 +309,21 @@ function scoreAll(){
 
   const seen=new Set();
   _results=lines.map(nc=>({nc,...scoreNC(nc,cfg,seen)}));
-  _resultFilter='all';
+  _resultFilter='all'; _sortMode='input';
+  saveCfg({sep:cfg.sep,segsMin:cfg.segsMin,segsMax:cfg.segsMax,maxLen:cfg.maxLen,
+    cfgNoSpaces:cfg.noSpaces,cfgNoUpper:cfg.noUpper,cfgNoSpecial:cfg.noSpecial,cfgNoDup:cfg.noDup,cfgNoEmpty:cfg.noEmpty});
   renderResults();
 }
 
 function renderResults(){
-  const filtered=_results.filter(r=>{
+  let filtered=_results.filter(r=>{
     if(_resultFilter==='ok') return r.issues.length===0;
     if(_resultFilter==='warn') return r.issues.some(i=>i.type==='warn')&&!r.issues.some(i=>i.type==='err');
     if(_resultFilter==='err') return r.issues.some(i=>i.type==='err');
     return true;
   });
+  if(_sortMode==='asc') filtered=[...filtered].sort((a,b)=>a.score-b.score);
+  else if(_sortMode==='desc') filtered=[...filtered].sort((a,b)=>b.score-a.score);
 
   const total=_results.length;
   const perfect=_results.filter(r=>r.issues.length===0).length;
@@ -332,11 +352,17 @@ function renderResults(){
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
       <span class="btn ${_resultFilter==='all'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('all')">Todos (${_results.length})</span>
       <span class="btn ${_resultFilter==='ok'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('ok')">✓ Perfeitas (${perfect})</span>
       <span class="btn ${_resultFilter==='warn'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('warn')">⚠ Avisos</span>
       <span class="btn ${_resultFilter==='err'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('err')">✗ Erros (${withErr})</span>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Ordem:</span>
+      <span class="btn ${_sortMode==='input'?'primary':''}" style="height:24px;font-size:10px;cursor:pointer" onclick="setSort('input')">Entrada</span>
+      <span class="btn ${_sortMode==='asc'?'primary':''}" style="height:24px;font-size:10px;cursor:pointer" onclick="setSort('asc')">↑ Score</span>
+      <span class="btn ${_sortMode==='desc'?'primary':''}" style="height:24px;font-size:10px;cursor:pointer" onclick="setSort('desc')">↓ Score</span>
     </div>
     <div style="max-height:65vh;overflow-y:auto">
       ${filtered.map(r=>`
@@ -354,6 +380,7 @@ function renderResults(){
 }
 
 function setFilter(f){_resultFilter=f;renderResults();}
+function setSort(m){_sortMode=m;renderResults();}
 
 function exportCSV(){
   if(!_results.length){showToast('Pontue primeiro');return;}
