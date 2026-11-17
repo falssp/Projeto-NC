@@ -4,14 +4,14 @@ Treinamento completo sobre o fluxo operacional da conta Unilever 2026.
 
 ## Acesso
 
-🔗 **[https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/)**
+🔗 **[https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao/2026/](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao/2026/)**
 
 ## Arquivos
 
 | Arquivo | Descrição | Link |
 |---|---|---|
-| `index.html` | Apresentação interativa — 23 slides | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
-| `roteiro.md` | Roteiro com falas sugeridas por slide | [Ver no GitHub](https://github.com/falssp/Projeto-NC/blob/main/Treinamentos/UL_Operacao_2026/roteiro.md) |
+| `index.html` | Apresentação interativa — 23 slides | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao/2026/index.html) |
+| `roteiro.md` | Roteiro com falas sugeridas por slide | [Ver no GitHub](https://github.com/falssp/Projeto-NC/blob/main/Treinamentos/UL_Operacao/2026/roteiro.md) |
 
 ## Conteúdo (23 slides)
 

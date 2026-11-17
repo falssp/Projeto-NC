@@ -7,8 +7,8 @@
 
 ## Acesso
 
-🔗 [Abrir apresentação — v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/)  
-🔗 [Abrir apresentação — v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/)
+🔗 [Abrir apresentação — v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v2/)  
+🔗 [Abrir apresentação — v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v1/)
 
 ---
 
@@ -16,8 +16,8 @@
 
 | Versão | Descrição | Link |
 |--------|-----------|------|
-| **v2** | PPTX corrigido pelo autor (fonte original ajustada) | [Abrir v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
-| v1 | Correções via python-pptx (dots, layout) | [Abrir v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/) |
+| **v2** | PPTX corrigido pelo autor (fonte original ajustada) | [Abrir v2](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v2/) |
+| v1 | Correções via python-pptx (dots, layout) | [Abrir v1](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v1/) |
 
 ---
 

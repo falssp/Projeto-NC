@@ -10,17 +10,17 @@ Apresentações interativas de treinamento operacional para o ecossistema Unilev
 
 | Versão | AdServer | Slides | Link |
 |--------|----------|--------|------|
-| **V3 v2** | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/) |
-| V3 v1 | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v1/) |
-| V2 | Innovid | 25 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V2/) |
-| V1 | Flashtalking | 22 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V1/) |
+| **V3 v2** | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v2/) |
+| V3 v1 | Innovid | 51 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v1/) |
+| V2 | Innovid | 25 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V2/) |
+| V1 | Flashtalking | 22 | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V1/) |
 
 ---
 
 ## Estrutura de pastas
 
 ```
-UL_Agencia_2026/
+UL_Agencia/2026/
 ├── README.md
 ├── V1/
 │   ├── README.md

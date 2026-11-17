@@ -8,11 +8,11 @@ Materiais de treinamento organizados por tema. Cada pasta contém o HTML interat
 Treinamentos/
 ├── index.html                       ← portal de acesso (GitHub Pages)
 │
-├── UL_Operacao_2026/                ← Operação Unilever 2026 (Out/26)
+├── UL_Operacao/2026/                ← Operação Unilever 2026 (Out/26)
 │   ├── index.html
 │   └── roteiro.md
 │
-├── UL_Agencia_2026/                 ← Agência × StormX × Flashtalking (Out/26)
+├── UL_Agencia/2026/                 ← Agência × StormX × Flashtalking (Out/26)
 │   └── index.html
 │
 ├── Custo_Produtos_Pacote/           ← Custo de produtos em pacote (Out/26)
@@ -61,8 +61,8 @@ Treinamentos/
 
 | Treinamento | Edição | Tipo | Link |
 |---|---|---|---|
-| UL Operação 2026 | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao_2026/index.html) |
-| UL Agência × StormX × Flashtalking | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/index.html) |
+| UL Operação 2026 | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Operacao/2026/index.html) |
+| UL Agência × StormX × Flashtalking | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/index.html) |
 | Custo de Produtos em Pacote | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/index.html) |
 | Ad Server | v15 — atual | PPTX + PDF | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
 | RM StormX ADP | Nov/2026 | Treinamento completo | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-11-26/RM_STORMX_ADP_Treinamento_Completo.html) |

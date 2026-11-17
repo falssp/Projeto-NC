@@ -7,7 +7,7 @@
 
 ## Acesso
 
-🔗 [Abrir apresentação](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia_2026/V3/v2/)
+🔗 [Abrir apresentação](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/V3/v2/)
 
 ---
 
