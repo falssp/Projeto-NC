@@ -18,6 +18,7 @@ Arquivos/
 | Download ADP | https://falssp.github.io/Projeto-NC/Arquivos/ADP/ |
 | Download RM | https://falssp.github.io/Projeto-NC/Arquivos/RM/ |
 | Manual RM | https://falssp.github.io/Projeto-NC/Arquivos/RM/Manual/ |
+| Como subir arquivos | [COMO-SUBIR.md](./COMO-SUBIR.md) |
 
 ## Nota
 
