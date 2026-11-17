@@ -228,6 +228,65 @@ code {
 </style>
 </head>
 <body>
+<script>
+async function loadStats() {
+  // Fetch latest.json for each tool
+  async function getLatest(url) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      return await r.json();
+    } catch { return null; }
+  }
+
+  // Count xlsx files via GitHub API tree (public repo, no auth needed)
+  async function countXlsx(prefix) {
+    try {
+      const r = await fetch('https://api.github.com/repos/falssp/Projeto-NC/git/trees/main?recursive=1');
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (data.truncated) return null; // too many files
+      return data.tree.filter(f => f.path.startsWith(prefix) && f.path.endsWith('.xlsx')).length;
+    } catch { return null; }
+  }
+
+  const [adpLatest, rmLatest, adpCount, rmCount] = await Promise.all([
+    getLatest('../latest.json'),
+    getLatest('../../RM/latest.json'),
+    countXlsx('Arquivos/ADP/'),
+    countXlsx('Arquivos/RM/')
+  ]);
+
+  function fmt(d) {
+    if (!d) return d;
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
+  }
+
+  if (adpLatest) {
+    const v = document.getElementById('adp-version');
+    const d = document.getElementById('adp-date');
+    if (v) v.textContent = 'v' + adpLatest.version;
+    if (d) d.textContent = fmt(adpLatest.updated);
+  }
+  if (rmLatest) {
+    const v = document.getElementById('rm-version');
+    const d = document.getElementById('rm-date');
+    if (v) v.textContent = 'v' + rmLatest.version;
+    if (d) d.textContent = fmt(rmLatest.updated);
+  }
+  if (adpCount !== null) {
+    const el = document.getElementById('adp-count');
+    if (el) el.textContent = adpCount;
+  }
+  if (rmCount !== null) {
+    const el = document.getElementById('rm-count');
+    if (el) el.textContent = rmCount;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadStats);
+</script>
 
 <div class="hero">
   <div class="hero-inner">
@@ -254,15 +313,15 @@ code {
     <div class="stats-row">
       <div class="stat-chip warn">
         <div>
-          <div class="stat-val">78</div>
+          <div class="stat-val" id="adp-count">78</div>
         </div>
         <div class="stat-label">arquivos xlsx<br>no repositório</div>
       </div>
       <div class="stat-chip">
         <div>
-          <div class="stat-val">v5.6</div>
+          <div class="stat-val" id="adp-version">v5.6</div>
         </div>
-        <div class="stat-label">última versão<br>10/11/2026</div>
+        <div class="stat-label">última versão<br><span id="adp-date">10/11/2026</span></div>
       </div>
     </div>
 
@@ -387,15 +446,15 @@ code {
     <div class="stats-row">
       <div class="stat-chip warn">
         <div>
-          <div class="stat-val">22</div>
+          <div class="stat-val" id="rm-count">22</div>
         </div>
         <div class="stat-label">arquivos xlsx<br>no repositório</div>
       </div>
       <div class="stat-chip">
         <div>
-          <div class="stat-val">v6.1</div>
+          <div class="stat-val" id="rm-version">v6.1</div>
         </div>
-        <div class="stat-label">última versão<br>09/11/2026</div>
+        <div class="stat-label">última versão<br><span id="rm-date">09/11/2026</span></div>
       </div>
     </div>
 
