@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consolidador Multi-Plataforma</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.3rem;font-weight:700}
+header p{font-size:.85rem;opacity:.8}
+.main{padding:28px 32px;min-width:0}
+.section-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.btn{background:#1F36C7;color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .15s}
+.btn:hover{background:#1a237e}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.btn-outline{background:#fff;color:#1F36C7;border:1.5px solid #1F36C7}
+.btn-outline:hover{background:#e8ecfd}
+.platform-panel{background:#fff;border:1.5px solid #d6dbf2;border-radius:12px;margin-bottom:14px;overflow:hidden}
+.panel-header{padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.panel-header:hover{background:#f4f5fb}
+.color-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.panel-name{font-weight:600;font-size:.95rem;flex:1}
+.panel-name input{font-family:inherit;font-weight:600;font-size:.95rem;border:none;outline:none;background:transparent;width:200px}
+.panel-toggle{color:#888;font-size:.85rem;transition:transform .2s}
+.panel-toggle.open{transform:rotate(180deg)}
+.panel-body{padding:18px;border-top:1px solid #d6dbf2;display:none}
+.panel-body.open{display:block}
+.mode-tabs{display:flex;gap:8px;margin-bottom:16px}
+.mode-tab{padding:6px 16px;border-radius:6px;border:1.5px solid #d6dbf2;background:#fff;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:500;color:#666}
+.mode-tab.active{background:#e8ecfd;border-color:#1F36C7;color:#1F36C7;font-weight:600}
+.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.field-group{display:flex;flex-direction:column;gap:4px}
+.field-group label{font-size:.78rem;font-weight:600;color:#666}
+.field-group input,.field-group select{font-family:inherit;font-size:.88rem;border:1.5px solid #d6dbf2;border-radius:7px;padding:7px 10px;outline:none;transition:border .15s;background:#fff}
+.field-group input:focus,.field-group select:focus{border-color:#1F36C7}
+.field-group input.auto{background:#f4f5fb;color:#666;font-style:italic}
+.csv-area{width:100%;font-family:monospace;font-size:.82rem;border:1.5px solid #d6dbf2;border-radius:7px;padding:10px;min-height:80px;outline:none;resize:vertical}
+.csv-area:focus{border-color:#1F36C7}
+.csv-hint{font-size:.77rem;color:#888;margin-top:6px}
+.platform-select{font-family:inherit;font-size:.85rem;border:1.5px solid #d6dbf2;border-radius:7px;padding:6px 10px;outline:none;background:#fff}
+.platform-select:focus{border-color:#1F36C7}
+.actions-bar{display:flex;gap:12px;align-items:center;margin-top:24px;flex-wrap:wrap}
+.results{margin-top:28px;display:none}
+.results.show{display:block}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:28px}
+.card{background:#fff;border:1.5px solid #d6dbf2;border-radius:12px;padding:16px}
+.card-label{font-size:.78rem;color:#888;font-weight:600;margin-bottom:6px}
+.card-value{font-size:1.3rem;font-weight:700;color:#1a237e}
+.card-sub{font-size:.75rem;color:#aaa;margin-top:3px}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1.5px solid #d6dbf2}
+table{width:100%;border-collapse:collapse;background:#fff}
+th{background:#e8ecfd;color:#1a237e;font-size:.8rem;font-weight:700;padding:10px 12px;text-align:left;white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{background:#d6dbf2}
+th .sort-icon{margin-left:4px;opacity:.5}
+td{padding:10px 12px;font-size:.85rem;border-top:1px solid #f0f0f8;white-space:nowrap}
+tr:hover td{background:#f8f9ff}
+td.best{background:#e8f5e9;color:#2e7d32;font-weight:600}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+.chart-box{background:#fff;border:1.5px solid #d6dbf2;border-radius:12px;padding:18px}
+.chart-title{font-size:.85rem;font-weight:700;color:#1a237e;margin-bottom:14px}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-label{font-size:.8rem;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:#f0f0f8;border-radius:4px;height:18px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.bar-val{font-size:.78rem;color:#666;width:80px;text-align:right;flex-shrink:0}
+.ranking-list{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.rank-item{background:#fff;border:1.5px solid #d6dbf2;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.rank-medal{font-size:1.4rem;width:30px;text-align:center}
+.rank-name{font-weight:600;flex:1}
+.rank-score{font-size:1rem;font-weight:700;color:#1F36C7}
+.rank-label{font-size:.75rem;color:#888}
+.insights-box{background:#e8ecfd;border:1.5px solid #d6dbf2;border-radius:12px;padding:18px}
+.insight-item{display:flex;gap:10px;margin-bottom:10px;font-size:.88rem;line-height:1.5}
+.insight-item:last-child{margin-bottom:0}
+.insight-icon{flex-shrink:0;font-size:1rem}
+.copy-table-box{background:#fff;border:1.5px solid #d6dbf2;border-radius:12px;padding:18px}
+.copy-table-box table{font-size:.8rem}
+.section-block{margin-bottom:28px}
+.rank-controls{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.rank-controls label{font-size:.85rem;font-weight:600;color:#1a237e}
+.rank-controls select{font-family:inherit;font-size:.85rem;border:1.5px solid #d6dbf2;border-radius:7px;padding:6px 10px;outline:none}
+.export-bar{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.panel-controls{display:flex;align-items:center;gap:10px;margin-left:auto}
+.add-panel-btn{background:#e8ecfd;color:#1F36C7;border:1.5px dashed #1F36C7;border-radius:10px;padding:12px;width:100%;text-align:center;cursor:pointer;font-family:inherit;font-size:.88rem;font-weight:600;transition:background .15s;margin-bottom:14px}
+.add-panel-btn:hover{background:#d6dbf2}
+.remove-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:4px}
+.remove-btn:hover{color:#e53e3e;background:#fff0f0}
+.empty-state{text-align:center;padding:40px;color:#888;font-size:.9rem}
+@media(max-width:768px){.charts-row{grid-template-columns:1fr}.fields-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 Consolidador Multi-Plataforma</h1>
+    <p>Unifique dados de até 5 plataformas em uma visão consolidada</p>
+  </div>
+</header>
+<div class="main">
+
+  <!-- Input Section -->
+  <div class="section-block">
+    <div class="section-title">📥 Plataformas</div>
+    <div id="panels-container"></div>
+    <button class="add-panel-btn" id="add-panel-btn" onclick="addPanel()">+ Adicionar Plataforma</button>
+    <div class="actions-bar">
+      <button class="btn" onclick="consolidate()">📊 Consolidar</button>
+      <button class="btn btn-outline btn-sm" onclick="loadDemo()">Carregar demo</button>
+      <button class="btn btn-outline btn-sm" onclick="clearAll()">Limpar tudo</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Summary Cards -->
+    <div class="section-block">
+      <div class="section-title">📈 Visão Consolidada</div>
+      <div class="cards-grid" id="summary-cards"></div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="section-block">
+      <div class="section-title">🔢 Comparativo por Plataforma</div>
+      <div class="table-wrap">
+        <table id="comparison-table">
+          <thead id="comparison-thead"></thead>
+          <tbody id="comparison-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="section-block">
+      <div class="section-title">📊 Distribuição</div>
+      <div class="charts-row">
+        <div class="chart-box">
+          <div class="chart-title">Budget por plataforma</div>
+          <div id="budget-chart"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Conversões por plataforma</div>
+          <div id="conv-chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="section-block">
+      <div class="section-title">🏆 Ranking de Eficiência</div>
+      <div class="rank-controls">
+        <label>Ordenar por:</label>
+        <select id="rank-metric" onchange="renderRanking()">
+          <option value="cpa">CPA (menor = melhor)</option>
+          <option value="roas">ROAS (maior = melhor)</option>
+          <option value="ctr">CTR (maior = melhor)</option>
+          <option value="cpm">CPM (menor = melhor)</option>
+        </select>
+      </div>
+      <div class="ranking-list" id="ranking-list"></div>
+    </div>
+
+    <!-- Mix Analysis -->
+    <div class="section-block">
+      <div class="section-title">💡 Análise de Mix</div>
+      <div class="insights-box" id="insights-box"></div>
+    </div>
+
+    <!-- Copy Table -->
+    <div class="section-block">
+      <div class="section-title">📋 Tabela para Relatório</div>
+      <div class="copy-table-box">
+        <div class="table-wrap">
+          <table id="report-table"></table>
+        </div>
+        <div class="export-bar">
+          <button class="btn btn-sm" onclick="copyTable()">📋 Copiar tabela (para Sheets)</button>
+          <button class="btn btn-outline btn-sm" onclick="copyInsights()">💡 Copiar insights</button>
+          <button class="btn btn-outline btn-sm" onclick="downloadCSV()">⬇️ Baixar CSV</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PLATFORM_COLORS = {
+  'Meta Ads': '#1877F2','Google Ads': '#34A853','DV360': '#FF6900',
+  'LinkedIn': '#0A66C2','TikTok': '#010101','CM360': '#1a237e',
+  'Programático Direto': '#7B1FA2','Outro': '#607D8B'
+};
+const MEDALS = ['🏆','🥈','🥉','4️⃣','5️⃣'];
+
+let panels = [];
+let panelId = 0;
+let sortCol = null, sortDir = 1;
+let consolidatedData = null;
+
+function addPanel(data) {
+  if (panels.length >= 5) { alert('Máximo de 5 plataformas.'); return; }
+  const id = ++panelId;
+  const idx = panels.length;
+  const defaults = ['Meta Ads','Google Ads','DV360','LinkedIn','TikTok'];
+  const platform = data?.platform || defaults[idx] || 'Outro';
+  const name = data?.name || platform;
+  panels.push({id, platform, name, mode:'manual', data: data || {}});
+  renderPanels();
+}
+
+function removePanel(id) {
+  panels = panels.filter(p => p.id !== id);
+  renderPanels();
+}
+
+function renderPanels() {
+  const container = document.getElementById('panels-container');
+  container.innerHTML = '';
+  panels.forEach((p, idx) => {
+    const color = PLATFORM_COLORS[p.platform] || '#607D8B';
+    const div = document.createElement('div');
+    div.className = 'platform-panel';
+    div.id = `panel-${p.id}`;
+    div.innerHTML = `
+      <div class="panel-header" onclick="togglePanel(${p.id})">
+        <div class="color-dot" style="background:${color}"></div>
+        <div class="panel-name">
+          <input type="text" value="${escHtml(p.name)}" onclick="e => e.stopPropagation()"
+            onchange="updatePanelName(${p.id}, this.value)" />
+        </div>
+        <select class="platform-select" onchange="updatePlatform(${p.id}, this.value)" onclick="event.stopPropagation()">
+          ${Object.keys(PLATFORM_COLORS).map(pl => `<option value="${pl}" ${pl===p.platform?'selected':''}>${pl}</option>`).join('')}
+        </select>
+        <button class="remove-btn" onclick="event.stopPropagation(); removePanel(${p.id})" title="Remover">✕</button>
+        <span class="panel-toggle ${p.open?'open':''}">▼</span>
+      </div>
+      <div class="panel-body ${p.open?'open':''}">
+        <div class="mode-tabs">
+          <button class="mode-tab ${p.mode==='manual'?'active':''}" onclick="setMode(${p.id},'manual')">Manual</button>
+          <button class="mode-tab ${p.mode==='csv'?'active':''}" onclick="setMode(${p.id},'csv')">Colar CSV</button>
+        </div>
+        ${p.mode==='manual' ? renderManualFields(p) : renderCSVMode(p)}
+      </div>`;
+    container.appendChild(div);
+  });
+  document.getElementById('add-panel-btn').style.display = panels.length >= 5 ? 'none' : 'block';
+}
+
+function renderManualFields(p) {
+  const d = p.data;
+  const f = (key, label, auto) => `
+    <div class="field-group">
+      <label>${label}</label>
+      <input type="number" step="any" class="${auto?'auto':''}" placeholder="${auto?'Auto':''}"
+        value="${d[key]!==undefined?d[key]:''}"
+        onchange="updateField(${p.id},'${key}',this.value)"
+        oninput="autoCalc(${p.id})" />
+    </div>`;
+  return `<div class="fields-grid">
+    ${f('impressoes','Impressões',false)}
+    ${f('cliques','Cliques',false)}
+    ${f('ctr','CTR (%)',true)}
+    ${f('investimento','Investimento (R$)',false)}
+    ${f('cpm','CPM (R$)',true)}
+    ${f('cpc','CPC (R$)',true)}
+    ${f('conversoes','Conversões',false)}
+    ${f('cpa','CPA (R$)',true)}
+    ${f('receita','Receita (R$)',false)}
+    ${f('roas','ROAS',true)}
+    ${f('alcance','Alcance',false)}
+    ${f('frequencia','Frequência',true)}
+    ${f('views_video','Visualizações de Vídeo',false)}
+    ${f('vtr','VTR (%)',true)}
+    ${f('viewability','Viewability (%)',false)}
+  </div>`;
+}
+
+function renderCSVMode(p) {
+  return `
+    <div>
+      <textarea class="csv-area" placeholder="Cole uma linha CSV com os dados da plataforma (separado por vírgula ou tab)..."
+        onchange="parseCSV(${p.id}, this.value)">${p.csvRaw||''}</textarea>
+      <div class="csv-hint">Mapeamento automático: procura colunas com nomes como "impressões", "cliques", "investimento", "conversões", "CPM", "CTR", "CPA", "ROAS", "receita", "alcance"</div>
+    </div>`;
+}
+
+function togglePanel(id) {
+  const p = panels.find(x => x.id === id);
+  if (p) { p.open = !p.open; renderPanels(); }
+}
+
+function updatePanelName(id, val) {
+  const p = panels.find(x => x.id === id);
+  if (p) p.name = val;
+}
+
+function updatePlatform(id, val) {
+  const p = panels.find(x => x.id === id);
+  if (p) { p.platform = val; renderPanels(); }
+}
+
+function setMode(id, mode) {
+  const p = panels.find(x => x.id === id);
+  if (p) { p.mode = mode; p.open = true; renderPanels(); }
+}
+
+function updateField(id, key, val) {
+  const p = panels.find(x => x.id === id);
+  if (p) p.data[key] = val === '' ? undefined : parseFloat(val);
+}
+
+function autoCalc(id) {
+  const p = panels.find(x => x.id === id);
+  if (!p) return;
+  const d = p.data;
+  const n = k => parseFloat(d[k]) || 0;
+  // CTR
+  if (n('impressoes') && n('cliques')) d.ctr = +(n('cliques')/n('impressoes')*100).toFixed(4);
+  // CPM
+  if (n('impressoes') && n('investimento')) d.cpm = +(n('investimento')/n('impressoes')*1000).toFixed(2);
+  // CPC
+  if (n('cliques') && n('investimento')) d.cpc = +(n('investimento')/n('cliques')).toFixed(2);
+  // CPA
+  if (n('conversoes') && n('investimento')) d.cpa = +(n('investimento')/n('conversoes')).toFixed(2);
+  // ROAS
+  if (n('receita') && n('investimento')) d.roas = +(n('receita')/n('investimento')).toFixed(2);
+  // Frequência
+  if (n('impressoes') && n('alcance')) d.frequencia = +(n('impressoes')/n('alcance')).toFixed(2);
+  // VTR
+  if (n('views_video') && n('impressoes')) d.vtr = +(n('views_video')/n('impressoes')*100).toFixed(2);
+}
+
+function parseCSV(id, raw) {
+  const p = panels.find(x => x.id === id);
+  if (!p) return;
+  p.csvRaw = raw;
+  const lines = raw.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return;
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/[^a-z0-9ã-úç]/g,''));
+  const values = lines[1].split(sep).map(v => v.trim().replace(/[R$\s]/g,'').replace(',','.'));
+  const map = {
+    'impressoes':['impressoes','impressões','impr'],
+    'cliques':['cliques','clicks','clk'],
+    'investimento':['investimento','custo','spend','cost','budget'],
+    'ctr':['ctr','taxadeclique'],
+    'cpm':['cpm'],
+    'cpc':['cpc'],
+    'conversoes':['conversoes','conversões','conv','conversions'],
+    'cpa':['cpa','custoporconversao'],
+    'receita':['receita','revenue','valor'],
+    'roas':['roas'],
+    'alcance':['alcance','reach'],
+    'frequencia':['frequencia','frequency','freq'],
+    'views_video':['visualizacoes','visualizações','views','visuais'],
+    'vtr':['vtr','taxadevisualizacao'],
+    'viewability':['viewability','visibilidade']
+  };
+  p.data = {};
+  Object.entries(map).forEach(([field, aliases]) => {
+    for (let alias of aliases) {
+      const idx = headers.findIndex(h => h.includes(alias));
+      if (idx >= 0 && values[idx]) {
+        const v = parseFloat(values[idx]);
+        if (!isNaN(v)) { p.data[field] = v; break; }
+      }
+    }
+  });
+  autoCalc(id);
+}
+
+function getActiveData() {
+  return panels.map(p => {
+    autoCalc(p.id);
+    const d = p.data;
+    const n = k => parseFloat(d[k]) || 0;
+    return {
+      id: p.id, name: p.name, platform: p.platform,
+      color: PLATFORM_COLORS[p.platform] || '#607D8B',
+      impressoes: n('impressoes'), cliques: n('cliques'), ctr: n('ctr'),
+      investimento: n('investimento'), cpm: n('cpm'), cpc: n('cpc'),
+      conversoes: n('conversoes'), cpa: n('cpa'),
+      receita: n('receita'), roas: n('roas'),
+      alcance: n('alcance'), frequencia: n('frequencia'),
+      views_video: n('views_video'), vtr: n('vtr'), viewability: n('viewability')
+    };
+  }).filter(d => d.investimento > 0 || d.impressoes > 0);
+}
+
+function consolidate() {
+  const data = getActiveData();
+  if (data.length === 0) { alert('Preencha pelo menos uma plataforma com dados.'); return; }
+  consolidatedData = data;
+
+  // Recalculate derived metrics per platform
+  data.forEach(d => {
+    if (d.impressoes && !d.ctr && d.cliques) d.ctr = d.cliques/d.impressoes*100;
+    if (d.impressoes && !d.cpm && d.investimento) d.cpm = d.investimento/d.impressoes*1000;
+    if (d.cliques && !d.cpc && d.investimento) d.cpc = d.investimento/d.cliques;
+    if (d.conversoes && !d.cpa && d.investimento) d.cpa = d.investimento/d.conversoes;
+    if (d.receita && !d.roas && d.investimento) d.roas = d.receita/d.investimento;
+  });
+
+  renderSummary(data);
+  renderComparisonTable(data);
+  renderCharts(data);
+  renderRanking();
+  renderInsights(data);
+  renderReportTable(data);
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function sum(data, key) { return data.reduce((a,d) => a + (d[key]||0), 0); }
+function wavg(data, valKey, weightKey) {
+  const tw = sum(data, weightKey);
+  if (!tw) return 0;
+  return data.reduce((a,d) => a + (d[valKey]||0)*(d[weightKey]||0), 0) / tw;
+}
+
+function fmtN(n, dec=0) {
+  if (!n || isNaN(n)) return '—';
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function fmtR(n) {
+  if (!n || isNaN(n) || n === 0) return '—';
+  return 'R$ ' + n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtP(n) {
+  if (!n || isNaN(n)) return '—';
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
+}
+
+function renderSummary(data) {
+  const totalInv = sum(data,'investimento');
+  const totalImp = sum(data,'impressoes');
+  const totalClk = sum(data,'cliques');
+  const totalConv = sum(data,'conversoes');
+  const totalRec = sum(data,'receita');
+  const totalAlc = sum(data,'alcance');
+  const cpmWavg = wavg(data,'cpm','impressoes') || (totalImp ? totalInv/totalImp*1000 : 0);
+  const cpcWavg = totalClk ? totalInv/totalClk : 0;
+  const cpaWavg = totalConv ? totalInv/totalConv : 0;
+  const ctrWavg = totalImp ? totalClk/totalImp*100 : 0;
+  const roasTotal = totalInv ? totalRec/totalInv : 0;
+
+  const cards = [
+    {label:'Total Impressões', value:fmtN(totalImp), sub:''},
+    {label:'Total Investimento', value:fmtR(totalInv), sub:''},
+    {label:'CPM Médio (pond.)', value:fmtR(cpmWavg), sub:'ponderado por impressões'},
+    {label:'Total Cliques', value:fmtN(totalClk), sub:''},
+    {label:'CTR Médio (pond.)', value:fmtP(ctrWavg), sub:'ponderado por impressões'},
+    {label:'CPC Médio', value:fmtR(cpcWavg), sub:''},
+    {label:'Total Conversões', value:fmtN(totalConv), sub:''},
+    {label:'CPA Médio', value:fmtR(cpaWavg), sub:''},
+    {label:'ROAS Consolidado', value:roasTotal ? fmtN(roasTotal,2)+'x' : '—', sub:'receita total / investimento'},
+    {label:'Alcance Total', value:fmtN(totalAlc), sub:'⚠️ sem deduplicação'},
+  ];
+  document.getElementById('summary-cards').innerHTML = cards.map(c =>
+    `<div class="card"><div class="card-label">${c.label}</div><div class="card-value">${c.value}</div>${c.sub?`<div class="card-sub">${c.sub}</div>`:''}</div>`
+  ).join('');
+}
+
+function renderComparisonTable(data) {
+  const totalInv = sum(data,'investimento') || 1;
+  const cols = [
+    {key:'name', label:'Plataforma', fmt: d=>`<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${d.color};display:inline-block"></span>${escHtml(d.name)}</span>`},
+    {key:'investimento', label:'Investimento', fmt:d=>fmtR(d.investimento), num:true},
+    {key:'pct_budget', label:'% Budget', fmt:d=>fmtP(d.investimento/totalInv*100), num:true, val:d=>d.investimento/totalInv*100},
+    {key:'impressoes', label:'Impressões', fmt:d=>fmtN(d.impressoes), num:true},
+    {key:'cpm', label:'CPM', fmt:d=>fmtR(d.cpm||d.investimento/d.impressoes*1000), num:true, lowerBetter:true},
+    {key:'cliques', label:'Cliques', fmt:d=>fmtN(d.cliques), num:true},
+    {key:'ctr', label:'CTR', fmt:d=>fmtP(d.ctr||d.cliques/d.impressoes*100), num:true},
+    {key:'conversoes', label:'Conversões', fmt:d=>fmtN(d.conversoes), num:true},
+    {key:'cpa', label:'CPA', fmt:d=>fmtR(d.cpa||d.investimento/d.conversoes), num:true, lowerBetter:true},
+    {key:'roas', label:'ROAS', fmt:d=>d.roas?fmtN(d.roas,2)+'x':'—', num:true},
+    {key:'viewability', label:'Viewability', fmt:d=>d.viewability?fmtP(d.viewability):'—', num:true},
+  ];
+
+  // Find best values
+  const bestVals = {};
+  cols.filter(c => c.num && c.key !== 'name').forEach(col => {
+    const vals = data.map(d => col.val ? col.val(d) : d[col.key]).filter(v => v && v > 0);
+    if (vals.length) bestVals[col.key] = col.lowerBetter ? Math.min(...vals) : Math.max(...vals);
+  });
+
+  document.getElementById('comparison-thead').innerHTML =
+    `<tr>${cols.map(c => `<th onclick="sortTable('${c.key}')">${c.label} <span class="sort-icon">${sortCol===c.key?(sortDir>0?'↑':'↓'):'↕'}</span></th>`).join('')}</tr>`;
+
+  let sorted = [...data];
+  if (sortCol) {
+    sorted.sort((a,b) => {
+      const av = sortCol==='pct_budget' ? a.investimento/totalInv : a[sortCol];
+      const bv = sortCol==='pct_budget' ? b.investimento/totalInv : b[sortCol];
+      return sortDir * ((av||0)-(bv||0));
+    });
+  }
+
+  document.getElementById('comparison-tbody').innerHTML = sorted.map(d =>
+    `<tr>${cols.map(col => {
+      const rawVal = col.val ? col.val(d) : d[col.key];
+      const isBest = col.num && bestVals[col.key] !== undefined && rawVal === bestVals[col.key];
+      return `<td class="${isBest?'best':''}">${col.fmt(d)}</td>`;
+    }).join('')}</tr>`
+  ).join('');
+}
+
+function sortTable(key) {
+  if (sortCol === key) sortDir *= -1; else { sortCol = key; sortDir = 1; }
+  renderComparisonTable(consolidatedData);
+}
+
+function renderCharts(data) {
+  const maxInv = Math.max(...data.map(d => d.investimento||0));
+  const maxConv = Math.max(...data.map(d => d.conversoes||0));
+  document.getElementById('budget-chart').innerHTML = data.map(d =>
+    `<div class="bar-row">
+      <div class="bar-label" title="${escHtml(d.name)}">${escHtml(d.name)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${maxInv?d.investimento/maxInv*100:0}%;background:${d.color}"></div></div>
+      <div class="bar-val">${fmtR(d.investimento)}</div>
+    </div>`).join('');
+  document.getElementById('conv-chart').innerHTML = data.map(d =>
+    `<div class="bar-row">
+      <div class="bar-label" title="${escHtml(d.name)}">${escHtml(d.name)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${maxConv?d.conversoes/maxConv*100:0}%;background:${d.color}"></div></div>
+      <div class="bar-val">${fmtN(d.conversoes)}</div>
+    </div>`).join('');
+}
+
+function renderRanking() {
+  if (!consolidatedData) return;
+  const metric = document.getElementById('rank-metric').value;
+  const data = consolidatedData.filter(d => {
+    if (metric==='cpa') return d.cpa > 0 || (d.conversoes > 0 && d.investimento > 0);
+    if (metric==='roas') return d.roas > 0 || (d.receita > 0 && d.investimento > 0);
+    if (metric==='ctr') return d.ctr > 0 || (d.cliques > 0 && d.impressoes > 0);
+    if (metric==='cpm') return d.cpm > 0 || (d.impressoes > 0 && d.investimento > 0);
+    return true;
+  });
+  const getVal = d => {
+    if (metric==='cpa') return d.cpa || (d.conversoes ? d.investimento/d.conversoes : null);
+    if (metric==='roas') return d.roas || (d.receita ? d.receita/d.investimento : null);
+    if (metric==='ctr') return d.ctr || (d.impressoes ? d.cliques/d.impressoes*100 : null);
+    if (metric==='cpm') return d.cpm || (d.impressoes ? d.investimento/d.impressoes*1000 : null);
+  };
+  const lowerBetter = metric === 'cpa' || metric === 'cpm';
+  const sorted = [...data].filter(d => getVal(d) !== null).sort((a,b) => {
+    const av = getVal(a)||0, bv = getVal(b)||0;
+    return lowerBetter ? av-bv : bv-av;
+  });
+  const labels = {cpa:'CPA', roas:'ROAS', ctr:'CTR', cpm:'CPM'};
+  const fmtVal = (d,m) => {
+    const v = getVal(d);
+    if (m==='roas') return v ? fmtN(v,2)+'x' : '—';
+    if (m==='ctr') return v ? fmtP(v) : '—';
+    return v ? fmtR(v) : '—';
+  };
+  document.getElementById('ranking-list').innerHTML = sorted.map((d,i) =>
+    `<div class="rank-item">
+      <div class="rank-medal">${MEDALS[i]||`${i+1}`}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex:1">
+        <span style="width:12px;height:12px;border-radius:50%;background:${d.color};display:inline-block;flex-shrink:0"></span>
+        <span class="rank-name">${escHtml(d.name)}</span>
+      </div>
+      <div>
+        <div class="rank-score">${fmtVal(d, metric)}</div>
+        <div class="rank-label">${labels[metric]}</div>
+      </div>
+    </div>`).join('') || '<div class="empty-state">Sem dados suficientes para ranking nesta métrica.</div>';
+}
+
+function renderInsights(data) {
+  const totalInv = sum(data,'investimento') || 1;
+  const totalConv = sum(data,'conversoes') || 1;
+  const totalRec = sum(data,'receita') || 0;
+  const consolidatedROAS = totalRec / totalInv;
+
+  const insights = [];
+
+  // Budget concentration
+  const topBudget = [...data].sort((a,b) => b.investimento-a.investimento)[0];
+  if (topBudget && topBudget.investimento/totalInv > 0.5) {
+    insights.push({icon:'💰', text:`${fmtP(topBudget.investimento/totalInv*100)} do budget está concentrado em <strong>${escHtml(topBudget.name)}</strong>${topBudget.cpa?' com CPA de '+fmtR(topBudget.cpa):''}.`});
+  }
+
+  // Redistribution opportunity
+  const withCPA = data.filter(d => d.cpa > 0 || (d.conversoes && d.investimento));
+  if (withCPA.length >= 2) {
+    const sorted = [...withCPA].sort((a,b) => {
+      const ca = a.cpa || a.investimento/a.conversoes;
+      const cb = b.cpa || b.investimento/b.conversoes;
+      return ca-cb;
+    });
+    const best = sorted[0], worst = sorted[sorted.length-1];
+    const bestCPA = best.cpa || best.investimento/best.conversoes;
+    const worstCPA = worst.cpa || worst.investimento/worst.conversoes;
+    if (worstCPA/bestCPA > 1.5) {
+      insights.push({icon:'📊', text:`Oportunidade: <strong>${escHtml(best.name)}</strong> entrega CPA ${fmtR(bestCPA)} vs ${fmtR(worstCPA)} de <strong>${escHtml(worst.name)}</strong> — considere realocar budget.`});
+    }
+  }
+
+  // ROAS
+  if (consolidatedROAS > 0) {
+    const benchmark = 2;
+    const status = consolidatedROAS >= benchmark ? 'acima do benchmark (2x)' : 'abaixo do benchmark (2x)';
+    insights.push({icon:'💹', text:`ROAS consolidado de <strong>${fmtN(consolidatedROAS,2)}x</strong> — ${status} para campanhas de performance.`});
+  }
+
+  // High CPM
+  const highCPM = data.filter(d => (d.cpm || d.investimento/d.impressoes*1000) > 30);
+  if (highCPM.length) {
+    insights.push({icon:'⚠️', text:`<strong>${highCPM.map(d=>escHtml(d.name)).join(', ')}</strong> com CPM acima de R$ 30 — avaliar eficiência de segmentação.`});
+  }
+
+  // CTR comparison
+  const withCTR = data.filter(d => d.ctr > 0 || (d.cliques && d.impressoes));
+  if (withCTR.length >= 2) {
+    const best = [...withCTR].sort((a,b) => {
+      return (b.ctr||b.cliques/b.impressoes*100) - (a.ctr||a.cliques/a.impressoes*100);
+    })[0];
+    const bestCTR = best.ctr || best.cliques/best.impressoes*100;
+    if (bestCTR > 0.5) {
+      insights.push({icon:'🎯', text:`Melhor CTR: <strong>${escHtml(best.name)}</strong> com ${fmtP(bestCTR)} — criativo/segmentação de referência para a campanha.`});
+    }
+  }
+
+  if (!insights.length) insights.push({icon:'ℹ️', text:'Preencha mais plataformas com dados de conversão e receita para análise de mix completa.'});
+
+  document.getElementById('insights-box').innerHTML = insights.map(i =>
+    `<div class="insight-item"><span class="insight-icon">${i.icon}</span><span>${i.text}</span></div>`
+  ).join('');
+}
+
+function renderReportTable(data) {
+  const totalInv = sum(data,'investimento');
+  const totalImp = sum(data,'impressoes');
+  const totalClk = sum(data,'cliques');
+  const totalConv = sum(data,'conversoes');
+  const totalRec = sum(data,'receita');
+  const headers = ['Plataforma','Investimento','% Budget','Impressões','CPM','Cliques','CTR','Conversões','CPA','ROAS'];
+  const rows = [...data, {
+    name:'TOTAL', color:'#333', investimento:totalInv, impressoes:totalImp,
+    cliques:totalClk, conversoes:totalConv, receita:totalRec,
+    cpm:totalImp?totalInv/totalImp*1000:0, ctr:totalImp?totalClk/totalImp*100:0,
+    cpa:totalConv?totalInv/totalConv:0, roas:totalRec?totalRec/totalInv:0, _total:true
+  }];
+  const fmtRow = (d) => [
+    escHtml(d.name), fmtR(d.investimento), d._total ? '100%' : fmtP(d.investimento/totalInv*100),
+    fmtN(d.impressoes), fmtR(d.cpm||d.investimento/d.impressoes*1000),
+    fmtN(d.cliques), fmtP(d.ctr||d.cliques/d.impressoes*100),
+    fmtN(d.conversoes), fmtR(d.cpa||d.investimento/d.conversoes),
+    d.roas ? fmtN(d.roas,2)+'x' : '—'
+  ];
+  document.getElementById('report-table').innerHTML =
+    `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map(d => `<tr style="${d._total?'font-weight:700;background:#e8ecfd':''}">${fmtRow(d).map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+function copyTable() {
+  if (!consolidatedData) return;
+  const totalInv = sum(consolidatedData,'investimento');
+  const totalImp = sum(consolidatedData,'impressoes');
+  const totalClk = sum(consolidatedData,'cliques');
+  const totalConv = sum(consolidatedData,'conversoes');
+  const totalRec = sum(consolidatedData,'receita');
+  const headers = ['Plataforma','Investimento','% Budget','Impressões','CPM','Cliques','CTR','Conversões','CPA','ROAS'];
+  const fmtRow = (d, isTotal) => [
+    d.name, fmtR(d.investimento), isTotal ? '100%' : fmtP(d.investimento/totalInv*100),
+    fmtN(d.impressoes), fmtR(d.cpm||d.investimento/d.impressoes*1000),
+    fmtN(d.cliques), fmtP(d.ctr||d.cliques/d.impressoes*100),
+    fmtN(d.conversoes), fmtR(d.cpa||d.investimento/d.conversoes),
+    d.roas ? fmtN(d.roas,2)+'x' : '—'
+  ];
+  const lines = [headers.join('\t')];
+  consolidatedData.forEach(d => lines.push(fmtRow(d,false).join('\t')));
+  lines.push(fmtRow({name:'TOTAL',investimento:totalInv,impressoes:totalImp,cliques:totalClk,conversoes:totalConv,receita:totalRec,
+    cpm:totalImp?totalInv/totalImp*1000:0,ctr:totalImp?totalClk/totalImp*100:0,
+    cpa:totalConv?totalInv/totalConv:0,roas:totalRec?totalRec/totalInv:0},true).join('\t'));
+  navigator.clipboard.writeText(lines.join('\n')).then(() => showToast('Tabela copiada!'));
+}
+
+function copyInsights() {
+  const box = document.getElementById('insights-box');
+  const text = Array.from(box.querySelectorAll('.insight-item')).map(el => el.textContent.trim()).join('\n');
+  navigator.clipboard.writeText(text).then(() => showToast('Insights copiados!'));
+}
+
+function downloadCSV() {
+  if (!consolidatedData) return;
+  const totalInv = sum(consolidatedData,'investimento');
+  const headers = ['Plataforma','Investimento','Pct_Budget','Impressoes','CPM','Cliques','CTR','Conversoes','CPA','ROAS'];
+  const rows = consolidatedData.map(d => [
+    d.name, d.investimento||0, totalInv ? +(d.investimento/totalInv*100).toFixed(2) : 0,
+    d.impressoes||0, +(d.cpm||0).toFixed(2), d.cliques||0,
+    +(d.ctr||0).toFixed(4), d.conversoes||0,
+    +(d.cpa||0).toFixed(2), +(d.roas||0).toFixed(2)
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+  a.download = `consolidado_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a237e;color:#fff;padding:12px 20px;border-radius:10px;font-size:.88rem;font-weight:600;z-index:9999;animation:fadeIn .2s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+function loadDemo() {
+  panels = [];
+  panelId = 0;
+  const demo = [
+    {name:'Meta Ads', platform:'Meta Ads', data:{impressoes:4500000,cliques:67500,investimento:36000,conversoes:720,receita:144000,alcance:1800000,viewability:0}},
+    {name:'Google Ads', platform:'Google Ads', data:{impressoes:1200000,cliques:48000,investimento:28800,conversoes:960,receita:230400,alcance:0}},
+    {name:'DV360', platform:'DV360', data:{impressoes:8000000,cliques:32000,investimento:40000,conversoes:280,receita:56000,alcance:3200000,viewability:68}},
+    {name:'LinkedIn', platform:'LinkedIn', data:{impressoes:600000,cliques:4800,investimento:14400,conversoes:120,receita:72000,alcance:400000}},
+  ];
+  demo.forEach(d => { addPanel(d); const p = panels[panels.length-1]; p.open = false; });
+  renderPanels();
+  consolidate();
+}
+
+function clearAll() {
+  panels = [];
+  panelId = 0;
+  consolidatedData = null;
+  renderPanels();
+  document.getElementById('results').classList.remove('show');
+  for(let i=1;i<=3;i++) addPanel();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+for(let i=0;i<3;i++) addPanel();
+
+const style = document.createElement('style');
+style.textContent = '@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}';
+document.head.appendChild(style);
+</script>
+</body>
+</html>
