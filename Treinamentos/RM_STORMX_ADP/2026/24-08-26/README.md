@@ -8,8 +8,8 @@
 
 | Arquivo | Link |
 |---|---|
-| Treinamento Completo (HTML) | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
-| Regras de Taxonomia (HTML) | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/24-08-26/regras-taxonomia.html) |
+| Treinamento Completo (HTML) | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/2026/24-08-26/RM_STORMX_ADP_Treinamento_Completo.html) |
+| Regras de Taxonomia (HTML) | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/2026/24-08-26/regras-taxonomia.html) |
 
 ## Arquivos
 
