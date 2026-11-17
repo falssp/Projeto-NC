@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Similarity Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:320px 1fr;gap:14px;align-items:start;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+input[type="text"],select{height:30px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;width:100%;}
+input[type="text"]:focus,select:focus{border-color:var(--accent);}
+input[type="range"]{width:100%;accent-color:var(--accent);}
+/* Pair cards */
+.pair-card{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:default;}
+.pair-card:hover{border-color:var(--accent);}
+.pair-score{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:800;flex-shrink:0;}
+.term-mono{font-family:var(--mono);font-size:12px;font-weight:600;}
+.diff-char{background:rgba(124,58,237,.2);border-radius:2px;color:var(--accent);padding:0 1px;}
+/* KPI chips */
+.kpi-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.kpi{padding:4px 12px;border-radius:14px;font-size:11px;font-weight:700;background:var(--divider);}
+/* Filter */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+.fc{padding:3px 9px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--card);}
+.fc.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:700px){.page{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🔍</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Similarity Checker</div>
+      <div style="font-size:11px;color:var(--faint)">Detecta termos quasi-duplicados em dicionários de clientes</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="run()">🔍 Analisar</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Left: config -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Fonte de dados</div>
+      <div style="font-size:12px;color:var(--faint);margin-bottom:8px">Lê automaticamente o dicionário do Taxonomy Builder (localStorage)</div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Cliente</label>
+        <select id="clientSel" onchange="onClientChange()">
+          <option value="">— selecionar —</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Segmento</label>
+        <select id="segSel">
+          <option value="">Todos os segmentos</option>
+        </select>
+      </div>
+      <div style="margin-bottom:4px">
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:2px">Ou cole termos manualmente</label>
+        <textarea id="manualInput" rows="6" placeholder="Um termo por linha&#10;&#10;ex:&#10;dove&#10;Dove&#10;dov3&#10;hidratação&#10;hidratacao" style="width:100%;resize:vertical;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;outline:none;margin-top:4px"></textarea>
+        <div style="font-size:10px;color:var(--faint);margin-top:3px">Se preenchido, substitui os dados do cliente</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Configurações</div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between">
+          <span>Threshold de similaridade</span>
+          <span id="threshVal" style="color:var(--accent)">70%</span>
+        </label>
+        <input type="range" id="threshRange" min="50" max="99" value="70" oninput="document.getElementById('threshVal').textContent=this.value+'%'" style="margin-top:6px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:2px"><span>50% (permissivo)</span><span>99% (estrito)</span></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Comparar por</label>
+        <select id="compareMode">
+          <option value="value">Valor do termo</option>
+          <option value="label">Label do termo</option>
+          <option value="both">Valor e Label</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer">
+          <input type="checkbox" id="optCase" style="accent-color:var(--accent)" checked> Ignorar capitalização
+        </label>
+      </div>
+      <div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer">
+          <input type="checkbox" id="optAccent" style="accent-color:var(--accent)" checked> Ignorar acentos
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: results -->
+  <div id="resultsPanel">
+    <div class="card" style="text-align:center;padding:40px;color:var(--faint)">
+      <div style="font-size:36px;margin-bottom:10px">🔍</div>
+      <div>Selecione um cliente (ou cole termos) e clique em <strong>Analisar</strong></div>
+      <div style="font-size:11px;margin-top:6px;opacity:.7">Detecta pares com alta similaridade (Levenshtein)</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TAXO_KEY='taxo_clients_v1';
+const SIM_THEME_KEY='similarity_theme';
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem(SIM_THEME_KEY);}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem(SIM_THEME_KEY,_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Load clients
+function loadClients(){
+  try{return JSON.parse(localStorage.getItem(TAXO_KEY)||'[]').filter(c=>!c.archived);}catch(e){return [];}
+}
+
+function populateClients(){
+  const sel=document.getElementById('clientSel');
+  const clients=loadClients();
+  sel.innerHTML='<option value="">— selecionar —</option>'+
+    clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+}
+
+function onClientChange(){
+  const idA=document.getElementById('clientSel').value;
+  const clients=loadClients();
+  const c=clients.find(x=>x.id===idA);
+  const segSel=document.getElementById('segSel');
+  if(!c){segSel.innerHTML='<option value="">Todos os segmentos</option>';return;}
+  segSel.innerHTML='<option value="">Todos os segmentos</option>'+
+    c.segments.map(s=>`<option value="${esc(s.id)}">${esc(s.label)} (${(c.dictionary[s.id]||[]).length})</option>`).join('');
+}
+
+populateClients();
+
+// ── Levenshtein distance ──────────────────────────────────────────────────
+function levenshtein(a, b) {
+  if(a===b) return 0;
+  const m=a.length, n=b.length;
+  if(!m) return n; if(!n) return m;
+  const dp=Array.from({length:m+1},(_,i)=>i===0?Array.from({length:n+1},(_,j)=>j):[i,...new Array(n).fill(0)]);
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) {
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  }
+  return dp[m][n];
+}
+
+function similarity(a,b){
+  const dist=levenshtein(a,b);
+  const maxLen=Math.max(a.length,b.length);
+  if(!maxLen) return 100;
+  return Math.round((1-dist/maxLen)*100);
+}
+
+function normalize(s, ignoreCase, ignoreAccent){
+  if(ignoreCase) s=s.toLowerCase();
+  if(ignoreAccent) s=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return s;
+}
+
+// Diff characters highlight
+function diffHL(a,b){
+  // Find changed character positions
+  const short=a.length<=b.length?a:b;
+  const long=a.length<=b.length?b:a;
+  let res='';
+  for(let i=0;i<long.length;i++){
+    if(i<short.length&&short[i]===long[i]) res+=esc(long[i]);
+    else res+=`<span class="diff-char">${esc(long[i]||'')}</span>`;
+  }
+  return res;
+}
+
+// ── Main analysis ─────────────────────────────────────────────────────────
+let _pairs=[];
+let _filter='all';
+
+function getTerms(){
+  const manual=document.getElementById('manualInput').value.trim();
+  if(manual){
+    return manual.split('\n').map(l=>l.trim()).filter(l=>l).map(v=>({value:v,label:'',seg:'Manual',client:'Manual',raw:v}));
+  }
+  const idA=document.getElementById('clientSel').value;
+  if(!idA){return [];}
+  const clients=loadClients();
+  const c=clients.find(x=>x.id===idA);
+  if(!c) return [];
+  const segId=document.getElementById('segSel').value;
+  const mode=document.getElementById('compareMode').value;
+  const segs=segId?c.segments.filter(s=>s.id===segId):c.segments;
+  const terms=[];
+  for(const s of segs){
+    for(const t of (c.dictionary[s.id]||[])){
+      const primary=mode==='label'?(t.label||t.value):t.value;
+      const secondary=mode==='both'?(t.label||''):null;
+      terms.push({value:t.value,label:t.label||'',seg:s.label,client:c.name,raw:primary,raw2:secondary});
+    }
+  }
+  return terms;
+}
+
+function run(){
+  const terms=getTerms();
+  if(terms.length<2){showToast('Precisam de pelo menos 2 termos');return;}
+  if(terms.length>2000){showToast('Muitos termos — limite 2000');return;}
+
+  const thresh=parseInt(document.getElementById('threshRange').value)||70;
+  const ignCase=document.getElementById('optCase').checked;
+  const ignAcc=document.getElementById('optAccent').checked;
+
+  // Build pairs O(n²) — OK up to 2000 terms (~2M ops, runs in <1s)
+  const pairs=[];
+  for(let i=0;i<terms.length-1;i++){
+    for(let j=i+1;j<terms.length;j++){
+      const a=normalize(terms[i].raw,ignCase,ignAcc);
+      const b=normalize(terms[j].raw,ignCase,ignAcc);
+      if(a===b&&ignCase) {
+        // Exact match after normalization = capital variant
+        pairs.push({a:terms[i],b:terms[j],score:100,type:'case'});
+        continue;
+      }
+      const sc=similarity(a,b);
+      if(sc>=thresh&&a!==b) {
+        const len=Math.min(a.length,b.length);
+        const type=sc>=95?'near-exact':sc>=80?'high':sc>=65?'medium':'low';
+        pairs.push({a:terms[i],b:terms[j],score:sc,type,len});
+      }
+      // Also check raw2 (label) if mode=both
+      if(terms[i].raw2!==null&&terms[j].raw2!==null){
+        const c2=normalize(terms[i].raw2,ignCase,ignAcc);
+        const d2=normalize(terms[j].raw2,ignCase,ignAcc);
+        if(c2&&d2&&c2!==d2){
+          const sc2=similarity(c2,d2);
+          if(sc2>=thresh){
+            pairs.push({a:terms[i],b:terms[j],score:Math.round((sc+sc2)/2),type:'label',labelSim:sc2});
+          }
+        }
+      }
+    }
+  }
+
+  // Deduplicate pairs (same a+b, keep highest score)
+  const seen=new Map();
+  for(const p of pairs){
+    const key=[p.a.value,p.b.value].sort().join('|||');
+    if(!seen.has(key)||seen.get(key).score<p.score) seen.set(key,p);
+  }
+  _pairs=[...seen.values()].sort((a,b)=>b.score-a.score);
+  _filter='all';
+  renderResults();
+  showToast(`✓ ${_pairs.length} par(es) encontrado(s) em ${terms.length} termos`);
+}
+
+function renderResults(){
+  const filtered=_pairs.filter(p=>{
+    if(_filter==='near-exact') return p.score>=95;
+    if(_filter==='high') return p.score>=80&&p.score<95;
+    if(_filter==='case') return p.type==='case';
+    return true;
+  });
+
+  const nearExact=_pairs.filter(p=>p.score>=95).length;
+  const high=_pairs.filter(p=>p.score>=80&&p.score<95).length;
+  const caseV=_pairs.filter(p=>p.type==='case').length;
+
+  const p=document.getElementById('resultsPanel');
+  if(!_pairs.length){
+    p.innerHTML=`<div class="card" style="text-align:center;padding:36px;color:var(--faint)">
+      <div style="font-size:32px;margin-bottom:8px">✅</div>
+      <div style="font-weight:600">Nenhum par similar encontrado</div>
+      <div style="font-size:11px;margin-top:6px">Tente baixar o threshold ou verificar a fonte de dados</div>
+    </div>`;
+    return;
+  }
+
+  p.innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div class="kpi-row">
+        <span class="kpi" style="background:var(--err-bg);color:var(--err)">⚠ ${nearExact} quase-exatos (≥95%)</span>
+        <span class="kpi" style="background:var(--warn-bg);color:var(--warn)">${high} alta sim. (80–94%)</span>
+        ${caseV?`<span class="kpi" style="background:var(--accent-soft);color:var(--accent)">Aa ${caseV} capitalização</span>`:''}
+        <span class="kpi">${_pairs.length} pares total</span>
+      </div>
+      <div class="filter-row">
+        <span class="fc ${_filter==='all'?'active':''}" onclick="setFilter('all')">Todos (${_pairs.length})</span>
+        <span class="fc ${_filter==='near-exact'?'active':''}" onclick="setFilter('near-exact')">⚠ Quase-exatos (${nearExact})</span>
+        <span class="fc ${_filter==='high'?'active':''}" onclick="setFilter('high')">Alta sim. (${high})</span>
+        ${caseV?`<span class="fc ${_filter==='case'?'active':''}" onclick="setFilter('case')">Aa Capital. (${caseV})</span>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--faint)">${filtered.length} de ${_pairs.length} par(es) exibido(s)</div>
+    </div>
+    <div>
+      ${filtered.map(pair=>{
+        const scoreColor=pair.score>=95?'var(--err)':pair.score>=80?'var(--warn)':'var(--faint)';
+        const scoreBg=pair.score>=95?'var(--err-bg)':pair.score>=80?'var(--warn-bg)':'var(--divider)';
+        const aHL=diffHL(pair.a.value,pair.b.value);
+        const bHL=diffHL(pair.b.value,pair.a.value);
+        const sameSeg=pair.a.seg===pair.b.seg;
+        const sameClient=pair.a.client===pair.b.client;
+        return `<div class="pair-card">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="pair-score" style="background:${scoreBg};color:${scoreColor}">${pair.score}%</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+                <span class="term-mono">${aHL}</span>
+                <span style="font-size:12px;color:var(--faint)">vs</span>
+                <span class="term-mono">${bHL}</span>
+              </div>
+              <div style="font-size:11px;color:var(--faint);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+                ${pair.a.label?`<span>A: ${esc(pair.a.label)}</span>`:''}
+                ${pair.b.label?`<span>B: ${esc(pair.b.label)}</span>`:''}
+                ${!sameSeg?`<span style="color:var(--warn)">⚠ segs diferentes: ${esc(pair.a.seg)} vs ${esc(pair.b.seg)}</span>`:`<span>${esc(pair.a.seg)}</span>`}
+                ${!sameClient?`<span style="color:var(--err)">clientes: ${esc(pair.a.client)} vs ${esc(pair.b.client)}</span>`:''}
+                ${pair.type==='case'?`<span style="color:var(--accent)">Aa capitalização diferente</span>`:''}
+              </div>
+            </div>
+            <button class="btn" style="height:26px;font-size:11px;flex-shrink:0" onclick="copyPair('${esc(pair.a.value.replace(/'/g,"\\'"))}','${esc(pair.b.value.replace(/'/g,"\\'"))}')">📋</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function setFilter(f){_filter=f;renderResults();}
+
+function copyPair(a,b){
+  navigator.clipboard.writeText(`${a}\t${b}`).then(()=>showToast('✓ Copiado')).catch(()=>{});
+}
+
+function exportCSV(){
+  if(!_pairs.length){showToast('Analise primeiro');return;}
+  const rows=[['valor_a','label_a','segmento_a','valor_b','label_b','segmento_b','similaridade','tipo']];
+  _pairs.forEach(p=>rows.push([p.a.value,p.a.label,p.a.seg,p.b.value,p.b.label,p.b.seg,p.score+'%',p.type]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='similarity_pairs.csv';a.click();
+  showToast(`⬇ ${rows.length-1} pares exportados`);
+}
+</script>
+</body>
+</html>

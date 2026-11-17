@@ -1720,11 +1720,15 @@ body {
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Valor <span style="color:var(--erro)">*</span></label>
-        <input id="tdValue" class="form-input" style="margin-top:4px;width:100%;font-family:monospace" autocomplete="off">
+        <input id="tdValue" class="form-input" style="margin-top:4px;width:100%;font-family:monospace" autocomplete="off" oninput="tdAutoLabel(this.value)">
       </div>
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Label <span style="color:var(--erro)">*</span></label>
-        <input id="tdLabel" class="form-input" style="margin-top:4px;width:100%" autocomplete="off">
+        <div style="display:flex;gap:5px;align-items:flex-start;margin-top:4px">
+          <input id="tdLabel" class="form-input" style="flex:1" autocomplete="off">
+          <button type="button" id="tdLabelSuggestBtn" onclick="tdApplySuggestion()" title="Aplicar sugestão de label gerado do valor" style="display:none;height:32px;padding:0 8px;border:1px dashed var(--accent);border-radius:7px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap" id="tdLabelSuggestBtn">✨ <span id="tdLabelSuggestText"></span></button>
+        </div>
+      </div>
       </div>
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Descrição</label>
@@ -3613,6 +3617,42 @@ function gfCopy(val, btn) {
   }).catch(()=>showToast('Não foi possível copiar'));
 }
 
+// ── Term Detail: auto-label suggestion ───────────────────────────────────
+function tdAutoLabel(val) {
+  const labelEl=document.getElementById('tdLabel');
+  const btn=document.getElementById('tdLabelSuggestBtn');
+  const txt=document.getElementById('tdLabelSuggestText');
+  if(!labelEl||!btn||!txt) return;
+  if(!val.trim()) { btn.style.display='none'; return; }
+  // Only suggest when label is empty or still matches last suggestion
+  const existing=labelEl.value.trim();
+  const suggestion=labelFromValue(val.trim());
+  if(!suggestion) { btn.style.display='none'; return; }
+  if(!existing || existing===labelFromValue(labelEl.dataset.lastSuggestedFrom||'')) {
+    txt.textContent=suggestion;
+    btn.style.display='inline-flex';
+    btn.dataset.suggestion=suggestion;
+    labelEl.dataset.lastSuggestedFrom=val.trim();
+  } else {
+    btn.style.display='none';
+  }
+}
+
+function tdApplySuggestion() {
+  const btn=document.getElementById('tdLabelSuggestBtn');
+  const labelEl=document.getElementById('tdLabel');
+  if(!btn||!labelEl) return;
+  const s=btn.dataset.suggestion||'';
+  if(s) { labelEl.value=s; labelEl.focus(); btn.style.display='none'; }
+}
+
+function labelFromValue(val) {
+  if(!val) return '';
+  // Split on common separators, capitalize each word
+  return val.replace(/[_\-|./]+/g,' ').replace(/\s+/g,' ').trim()
+    .split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+}
+
 // ── Compare Clients Modal ─────────────────────────────────────────────────
 let _cmpData=null;
 
@@ -3895,6 +3935,8 @@ function openTermDetailModal(i) {
   document.getElementById('tdLabel').value=t.label||'';
   document.getElementById('tdDesc').value=t.desc||'';
   document.getElementById('tdNotes').value=t.notes||'';
+  // Hide suggestion btn on open (term already exists)
+  const sb=document.getElementById('tdLabelSuggestBtn'); if(sb) sb.style.display='none';
   document.getElementById('tdFav').checked=!!t.fav;
   const meta=[];
   if(t.uses) meta.push(`${t.uses} uso(s) no builder`);
