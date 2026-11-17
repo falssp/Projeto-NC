@@ -1124,6 +1124,7 @@ body {
           <button class="btn secondary btn-sm" onclick="openFindReplaceModal()" title="Localizar e substituir valor/label em todos os segmentos">🔎 Localizar…</button>
           <button class="btn secondary btn-sm" onclick="openDictOverview()" title="Visão geral de todos os segmentos em tabela" id="btnDictOverview">👁 Visão Geral</button>
           <button class="btn secondary btn-sm" onclick="openMergeSegModal()" title="Mesclar o segmento ativo com outro (une os termos)" id="btnMergeSeg">⇄ Mesclar</button>
+          <button class="btn secondary btn-sm" onclick="openMoveSegModal()" title="Mover segmento ativo (com termos) para outro cliente" id="btnMoveSeg">📤 Mover para…</button>
         </div>
       </div>
       <div style="padding:4px 0 6px;display:flex;gap:8px;align-items:center">
@@ -1453,6 +1454,34 @@ body {
       <button class="btn secondary" onclick="closeMergeSegModal()">Cancelar</button>
       <button class="btn primary" onclick="previewMerge()" id="btnPreviewMerge">👁 Prévia</button>
       <button class="btn primary" onclick="confirmMerge()" id="btnConfirmMerge" style="display:none">✅ Confirmar Mesclagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- Move Segment to Another Client Modal (batch 48) -->
+<div id="moveSegModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;display:none;align-items:center;justify-content:center" onclick="if(event.target===this)closeMoveSegModal()">
+  <div style="background:var(--card);border-radius:14px;width:min(440px,96vw);padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:800">📤 Mover Segmento</div>
+      <button onclick="closeMoveSegModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--faint);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:14px">
+      Move <strong id="moveSegLabel">—</strong> e todos os seus termos para outro cliente.<br>
+      Se já existir um segmento com o mesmo ID no destino, os termos são adicionados (sem duplicatas).
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Cliente destino</label>
+      <select id="moveTargetClient" style="width:100%;height:34px;padding:0 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:13px;outline:none" onchange="updateMovePreview()"></select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="moveKeepSrc" style="accent-color:var(--accent)"> Manter cópia no cliente original (não remover)
+      </label>
+    </div>
+    <div id="movePreviewBox" style="background:var(--divider,var(--pill));border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:14px;display:none"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn secondary" onclick="closeMoveSegModal()">Cancelar</button>
+      <button class="btn primary" onclick="confirmMoveSeg()">📤 Mover</button>
     </div>
   </div>
 </div>
@@ -6516,8 +6545,80 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){
     const mm=document.getElementById('mergeSegModal');
     if(mm&&mm.style.display==='flex') closeMergeSegModal();
+    const mv=document.getElementById('moveSegModal');
+    if(mv&&mv.style.display==='flex') closeMoveSegModal();
   }
 });
+
+/* BATCH 48: Move Segment to Another Client */
+function openMoveSegModal(){
+  const c=active(); if(!c||!activeSeg){showToast('Selecione um segmento no dicionário');return;}
+  const srcSeg=c.segments.find(s=>s.id===activeSeg); if(!srcSeg) return;
+  const allClients=getClients().filter(cl=>cl.id!==c.id);
+  if(!allClients.length){showToast('Sem outros clientes');return;}
+  document.getElementById('moveSegLabel').textContent=srcSeg.label||srcSeg.id;
+  const sel=document.getElementById('moveTargetClient');
+  sel.innerHTML=allClients.map(cl=>`<option value="${cl.id}">${cl.name}</option>`).join('');
+  document.getElementById('moveKeepSrc').checked=false;
+  document.getElementById('movePreviewBox').style.display='none';
+  const m=document.getElementById('moveSegModal');
+  m.style.display='flex';
+  document.body.style.overflow='hidden';
+  updateMovePreview();
+}
+function closeMoveSegModal(){
+  document.getElementById('moveSegModal').style.display='none';
+  document.body.style.overflow='';
+}
+function updateMovePreview(){
+  const tgtId=document.getElementById('moveTargetClient').value;
+  if(!tgtId) return;
+  const c=active(); if(!c||!activeSeg) return;
+  const srcSeg=c.segments.find(s=>s.id===activeSeg); if(!srcSeg) return;
+  const allClients=getClients();
+  const tgt=allClients.find(cl=>cl.id===tgtId); if(!tgt) return;
+  const srcTerms=(c.dictionary[activeSeg]||[]).length;
+  const existing=tgt.segments.find(s=>s.id===activeSeg);
+  const existingTerms=existing?(tgt.dictionary[activeSeg]||[]).length:0;
+  const box=document.getElementById('movePreviewBox');
+  box.innerHTML=`<strong>Destino: ${tgt.name}</strong><br>
+    ${existing?`Segmento <em>${srcSeg.label}</em> já existe lá (${existingTerms} termos) — ${srcTerms} serão adicionados (dedup)`:
+    `Novo segmento <em>${srcSeg.label}</em> será criado com ${srcTerms} termos`}`;
+  box.style.display='block';
+}
+function confirmMoveSeg(){
+  const c=active(); if(!c||!activeSeg) return;
+  const srcSeg=c.segments.find(s=>s.id===activeSeg); if(!srcSeg) return;
+  const tgtClientId=document.getElementById('moveTargetClient').value;
+  if(!tgtClientId) return;
+  const keepSrc=document.getElementById('moveKeepSrc').checked;
+  const allClients=getClients();
+  const tgt=allClients.find(cl=>cl.id===tgtClientId); if(!tgt) return;
+  const srcTerms=JSON.parse(JSON.stringify(c.dictionary[activeSeg]||[]));
+
+  // Add or merge into target
+  if(!tgt.segments.find(s=>s.id===activeSeg)){
+    tgt.segments.push(JSON.parse(JSON.stringify(srcSeg)));
+  }
+  const tgtTerms=tgt.dictionary[activeSeg]||[];
+  const tgtVals=new Set(tgtTerms.map(t=>(t.value||t).toLowerCase()));
+  for(const t of srcTerms){
+    if(!tgtVals.has((t.value||t).toLowerCase())){tgtTerms.push(t);}
+  }
+  tgt.dictionary[activeSeg]=tgtTerms;
+  tgt.lastModified=Date.now();
+
+  if(!keepSrc){
+    c.segments=c.segments.filter(s=>s.id!==activeSeg);
+    delete c.dictionary[activeSeg];
+    activeSeg=c.segments[0]?.id||null;
+  }
+  c.lastModified=Date.now();
+  saveData();
+  closeMoveSegModal();
+  renderDicionario();
+  showToast(`📤 "${srcSeg.label||activeSeg}" movido para "${tgt.name}"${keepSrc?' (cópia mantida)':''}`);
+}
 
 /* BATCH 46: Merge Segments */
 function openMergeSegModal(){
