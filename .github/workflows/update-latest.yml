@@ -1,4 +1,4 @@
-name: Atualiza latest.json e index das pastas de ano (RM e ADP)
+name: Atualiza releases e gh-pages (RM e ADP)
 
 on:
   push:
@@ -11,175 +11,187 @@ permissions:
   contents: write
 
 jobs:
-  update-latest:
+  update-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Atualiza latest.json, years.json e index.html das pastas de ano
+      - name: Detecta xlsx, cria Release e atualiza latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python3 - <<'PYEOF'
-          import os, json, re
+          python3 << 'PYEOF'
+          import os, json, re, subprocess
           from pathlib import Path
+          from datetime import date
 
-          today = __import__('datetime').date.today().isoformat()
+          REPO = os.environ['GITHUB_REPOSITORY']
 
-          STYLE = """
-          :root {
-            --bg: #f5f7fa; --surface: #ffffff; --brand: #1A4775;
-            --brand-light: #e8f0f9; --text: #1a1d23; --muted: #6b7280;
-            --border: #e5e7eb; --radius: 12px;
-          }
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg); color: var(--text); min-height: 100vh; padding: 32px 24px;
-          }
-          .container { max-width: 760px; margin: 0 auto; }
-          .breadcrumb {
-            font-size: 13px; color: var(--muted); margin-bottom: 24px;
-            display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
-          }
-          .breadcrumb a { color: var(--brand); text-decoration: none; }
-          .breadcrumb a:hover { text-decoration: underline; }
-          h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-          .sub { font-size: 15px; color: var(--muted); margin-bottom: 28px; }
-          .sub a { color: var(--brand); text-decoration: none; }
-          .card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius); overflow: hidden;
-          }
-          .card-header {
-            padding: 14px 20px; background: var(--brand-light);
-            border-bottom: 1px solid var(--border);
-            font-size: 12px; font-weight: 600; text-transform: uppercase;
-            letter-spacing: .08em; color: var(--brand);
-          }
-          .file-list { list-style: none; }
-          .file-list li { border-bottom: 1px solid var(--border); }
-          .file-list li:last-child { border-bottom: none; }
-          .file-list a {
-            display: flex; align-items: center; gap: 10px; width: 100%;
-            padding: 12px 20px; color: var(--text); text-decoration: none;
-            font-size: 14px; transition: background .12s;
-          }
-          .file-list a:hover { background: var(--brand-light); }
-          .file-list .ico { font-size: 16px; flex-shrink: 0; }
-          .file-list .name { flex: 1; word-break: break-word; }
-          .file-list .badge {
-            font-size: 11px; font-weight: 600; padding: 2px 7px;
-            border-radius: 4px; background: #e8f0f9; color: var(--brand); flex-shrink: 0;
-          }
-          .empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 15px; }
-          """
+          def parse_adp(name):
+              """UNCC_..._Merge_5_7.xlsx → (5, 7)"""
+              m = re.search(r'Merge_(\d+)_(\d+)\.xlsx$', name, re.IGNORECASE)
+              return (int(m.group(1)), int(m.group(2))) if m else None
 
-          def make_year_index(tipo, year, files):
-            icon = '📊' if tipo == 'ADP' else '📋'
-            label = 'ADP String Tool Merge' if tipo == 'ADP' else 'Relationship Matrix'
-            items = ''
-            for name in sorted(files, reverse=True):
-              items += f'''<li><a href="{name}" download>
-              <span class="ico">{icon}</span>
-              <span class="name">{name}</span>
-              <span class="badge">xlsx</span>
-              </a></li>'''
-            file_block = (
-              f'<div class="card">'
-              f'<div class="card-header">{len(files)} versões {year}</div>'
-              f'<ul class="file-list">{items}</ul></div>'
-            ) if files else '<div class="card"><div class="empty">Nenhum arquivo disponível.</div></div>'
+          def parse_rm(name):
+              """RM_STORMX_2026_v6.1.xlsx → (6, 1)"""
+              m = re.search(r'v(\d+)\.(\d+)\.xlsx$', name, re.IGNORECASE)
+              return (int(m.group(1)), int(m.group(2))) if m else None
 
-            return f"""<!DOCTYPE html>
-          <html lang="pt-BR">
-          <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>{tipo} {year} · Arquivos</title>
-          <style>{STYLE}</style>
-          </head>
-          <body>
-          <div class="container">
-          <nav class="breadcrumb">
-            <a href="../../">Arquivos</a> <span>›</span>
-            <a href="../">{tipo}</a> <span>›</span>
-            <strong>{year}</strong>
-          </nav>
-          <h1>{icon} {tipo} · {year}</h1>
-          <p class="sub">{label} — {len(files)} versões · <a href="../">← Baixar versão mais recente</a></p>
-          {file_block}
-          </div>
-          </body>
-          </html>
-          """
+          PARSERS = {'ADP': parse_adp, 'RM': parse_rm}
 
-          def version_key_rm(name):
-            m = re.search(r'_(\d{4})_v(\d+)[._](\d+)', name)
-            return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0, 0, 0)
+          for tipo in ['ADP', 'RM']:
+              base = Path(f'Arquivos/{tipo}')
+              if not base.exists():
+                  continue
 
-          def version_key_adp(name):
-            m = re.search(r'_(\d+)_(\d+)\.xlsx$', name)
-            return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+              parse_ver = PARSERS[tipo]
 
-          for tipo, key_fn in [('RM', version_key_rm), ('ADP', version_key_adp)]:
-            base = Path(f'Arquivos/{tipo}')
-            if not base.exists():
-              continue
+              # Pastas de ano (somente numéricas)
+              year_dirs = sorted(
+                  [d for d in base.iterdir() if d.is_dir() and d.name.isdigit()],
+                  key=lambda d: int(d.name),
+                  reverse=True
+              )
+              years = [d.name for d in year_dirs]
 
-            all_files = []
-            year_names = []
+              # Atualiza years.json
+              (base / 'years.json').write_text(json.dumps(years) + '\n')
 
-            for year_dir in sorted(base.iterdir()):
-              if not (year_dir.is_dir() and year_dir.name.isdigit()):
-                continue
-              year_files = [f.name for f in year_dir.glob('*.xlsx')]
+              # Encontra o xlsx mais recente
+              best = None
+              best_ver = (-1, -1)
+              best_year = -1
 
-              # Regera index.html da pasta de ano
-              idx = make_year_index(tipo, year_dir.name, year_files)
-              (year_dir / 'index.html').write_text(idx)
-              print(f"[idx] {year_dir}/index.html ({len(year_files)} arquivos)")
+              for year_dir in year_dirs:
+                  for f in sorted(year_dir.glob('*.xlsx')):
+                      ver = parse_ver(f.name)
+                      if ver is None:
+                          continue
+                      yr = int(year_dir.name)
+                      if yr > best_year or (yr == best_year and ver > best_ver):
+                          best, best_ver, best_year = f, ver, yr
 
-              year_names.append(year_dir.name)
+              if best is None:
+                  print(f'[{tipo}] Nenhum arquivo .xlsx encontrado')
+                  continue
 
-              for fname in year_files:
-                all_files.append((year_dir.name, fname))
+              version_str = f'{best_ver[0]}.{best_ver[1]}'
+              tag         = f'{tipo.lower()}-v{version_str}'
+              filename    = best.name
+              rel_path    = f'{best_year}/{filename}'
+              download_url = f'https://github.com/{REPO}/releases/download/{tag}/{filename}'
 
-            # Escreve years.json com todos os anos detectados
-            years_path = base / 'years.json'
-            years_data = sorted(year_names)
-            years_path.write_text(json.dumps(years_data, indent=2, ensure_ascii=False) + "\n")
-            print(f"[ok years] {years_path} → {years_data}")
+              print(f'[{tipo}] Versão mais recente: {filename}  →  tag: {tag}')
 
-            if not all_files:
-              continue
-
-            # Atualiza latest.json
-            all_files.sort(key=lambda x: (int(x[0]), key_fn(x[1])))
-            year, filename = all_files[-1]
-            k = key_fn(filename)
-            version_str = f"{k[1]}.{k[2]}" if tipo == 'RM' else f"{k[0]}.{k[1]}"
-            rel_path = f"{year}/{filename}"
-
-            out_path = base / 'latest.json'
-            new_data = {"filename": filename, "path": rel_path, "version": version_str, "updated": today}
-
-            if out_path.exists():
-              old = json.loads(out_path.read_text())
-              if old.get('path') == rel_path:
-                print(f"[skip latest] {out_path} — sem mudança")
+              # Cria Release (ou faz upload do asset se já existir sem ele)
+              exists = subprocess.run(['gh', 'release', 'view', tag], capture_output=True)
+              if exists.returncode != 0:
+                  print(f'[{tipo}] Criando release {tag}...')
+                  subprocess.run([
+                      'gh', 'release', 'create', tag,
+                      '--title', f'{tipo} v{version_str}',
+                      '--notes', f'Versão {version_str} do {tipo} StormX — {date.today().isoformat()}',
+                      str(best)
+                  ], check=True)
               else:
-                out_path.write_text(json.dumps(new_data, indent=2, ensure_ascii=False) + "\n")
-                print(f"[ok latest] {out_path} → {rel_path} (v{version_str})")
-            else:
-              out_path.write_text(json.dumps(new_data, indent=2, ensure_ascii=False) + "\n")
-              print(f"[ok latest] {out_path} criado → {rel_path}")
+                  assets_out = subprocess.run(
+                      ['gh', 'release', 'view', tag, '--json', 'assets', '-q', '.assets[].name'],
+                      capture_output=True, text=True
+                  ).stdout.strip().split('\n')
+                  if filename not in assets_out:
+                      print(f'[{tipo}] Fazendo upload do asset {filename}...')
+                      subprocess.run(
+                          ['gh', 'release', 'upload', tag, str(best), '--clobber'],
+                          check=True
+                      )
+                  else:
+                      print(f'[{tipo}] Asset já existe no release {tag}')
+
+              # Escreve latest.json com download_url
+              latest = {
+                  'filename':     filename,
+                  'path':         rel_path,
+                  'version':      version_str,
+                  'updated':      date.today().isoformat(),
+                  'download_url': download_url
+              }
+              (base / 'latest.json').write_text(json.dumps(latest, indent=2) + '\n')
+              print(f'[{tipo}] latest.json → {download_url}')
+
+              # Regenera index.html de cada pasta de ano
+              tipo_label = 'ADP StormX' if tipo == 'ADP' else 'RM Camphouse'
+              for year_dir in year_dirs:
+                  xlsx_files = sorted(
+                      [f for f in year_dir.glob('*.xlsx') if parse_ver(f.name)],
+                      key=lambda f: parse_ver(f.name),
+                      reverse=True
+                  )
+                  if not xlsx_files:
+                      continue
+                  rows = ''
+                  for f in xlsx_files:
+                      v = parse_ver(f.name)
+                      rows += (
+                          f'<li>'
+                          f'<a href="{f.name}" download>{f.name}</a>'
+                          f'<span class="ver">v{v[0]}.{v[1]}</span>'
+                          f'</li>\n'
+                      )
+                  html = f'''<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{tipo_label} — {year_dir.name}</title>
+<style>
+  body{{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem}}
+  h1{{font-size:1.25rem}}
+  ul{{list-style:none;padding:0}}
+  li{{padding:.5rem 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}}
+  a{{text-decoration:none;color:#2563eb}}
+  a:hover{{text-decoration:underline}}
+  .ver{{font-size:.8em;color:#888}}
+  .back{{display:inline-block;margin-bottom:1rem;font-size:.9rem;color:#666;text-decoration:none}}
+</style>
+</head>
+<body>
+<a class="back" href="../">← {tipo_label}</a>
+<h1>{tipo_label} — {year_dir.name}</h1>
+<ul>
+{rows}</ul>
+</body>
+</html>'''
+                  (year_dir / 'index.html').write_text(html)
+              print(f'[{tipo}] index.html das pastas de ano atualizados')
 
           PYEOF
 
-      - name: Commit mudanças
+      - name: Commit arquivos JSON e HTML de volta ao main
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Arquivos/RM/ Arquivos/ADP/
-          git diff --cached --quiet && echo "nada a commitar" && exit 0
-          git commit -m "chore: atualiza latest.json, years.json e index de pastas de ano [skip ci]"
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Arquivos/ADP/ Arquivos/RM/
+          git diff --cached --quiet && echo "Nada a commitar." && exit 0
+          git commit -m "chore: atualiza latest.json, years.json e index [skip ci]"
           git push
+
+      - name: Deploy para gh-pages (sem xlsx)
+        run: |
+          rsync -av \
+            --exclude='*.xlsx' \
+            --exclude='*.xlsm' \
+            --exclude='.git' \
+            . /tmp/pages-build/
+          cd /tmp/pages-build
+          git init
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "deploy: gh-pages com releases [skip ci]"
+          git push --force \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            HEAD:gh-pages
