@@ -1,17 +1,5 @@
-# Gerador de Relatório
+# Relatório de Performance
 
-Gerador de relatório de performance de campanha — consolida métricas de entrega, viewability, engajamento e conversão em um layout padronizado para apresentação.
+Gerador de relatórios de performance semanal/diário/mensal — comparação período a período, alertas automáticos, exporta PDF/HTML/texto.
 
-## Acesso
-
-🔗 **[Abrir ferramenta](https://falssp.github.io/Projeto-NC/ferramentas/relatorio-performance/)**
-
-## Categoria
-
-Ferramenta · AdOps
-
-## Arquivos
-
-| Arquivo | Descrição |
-|---------|---------- |
-| `index.html` | Página web / ferramenta interativa |
+**URL:** https://falssp.github.io/Projeto-NC/ferramentas/relatorio-performance/
