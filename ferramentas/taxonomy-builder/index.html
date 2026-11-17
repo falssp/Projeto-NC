@@ -838,6 +838,8 @@ body {
 /* ==================== TERM USES BADGE ==================== */
 .term-uses-badge{font-size:10px;color:var(--accent);background:rgba(37,99,235,.1);
   border-radius:8px;padding:1px 5px;white-space:nowrap;font-weight:600;}
+.term-notes-badge{font-size:12px;cursor:pointer;opacity:.6;transition:opacity .15s;flex-shrink:0;}
+.term-notes-badge:hover{opacity:1;}
 
 /* ==================== BUILDER REQUIRED WARN ==================== */
 .builder-required-warn{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.2)!important;}
@@ -1652,7 +1654,11 @@ body {
       </div>
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Descrição</label>
-        <input id="tdDesc" class="form-input" style="margin-top:4px;width:100%" placeholder="Opcional — contexto de uso" autocomplete="off">
+        <input id="tdDesc" class="form-input" style="margin-top:4px;width:100%" placeholder="Opcional — contexto curto (exibido na linha)" autocomplete="off">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Notas</label>
+        <textarea id="tdNotes" class="form-input" style="margin-top:4px;width:100%;min-height:72px;resize:vertical;font-family:inherit;line-height:1.5" placeholder="Notas expandidas — exemplos de uso, regras, contexto, links internos…"></textarea>
       </div>
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em">Tag</label>
@@ -3123,6 +3129,7 @@ function renderTermArea(c) {
         <span class="term-row-value" title="${esc(t.label+(t.desc?'\n'+t.desc:'')+(t.uses?'\n'+t.uses+'× usado':'')+( t.createdAt?'\nCriado: '+new Date(t.createdAt).toLocaleDateString('pt-BR'):'')+'\nDuplo clique para editar')}" ondblclick="editTerm(${i})">${esc(t.value)}</span>
         <span class="term-row-label" ondblclick="editTerm(${i})">${esc(t.label)}</span>
         ${t.desc?`<span class="term-row-desc" title="${esc(t.desc)}">${esc(t.desc)}</span>`:''}
+        ${t.notes?`<span class="term-notes-badge" title="📝 Notas:\n${esc(t.notes)}" onclick="openTermDetailModal(${i});event.stopPropagation()">📝</span>`:''}
         ${t.uses?`<span class="term-uses-badge" title="${t.uses} uso(s) no builder${(()=>{try{const h=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');const matches=h.filter(x=>x.includes(t.value)).slice(0,3);return matches.length?'\nRecentes:\n'+matches.join('\n'):''}catch(e){return ''}})()}">${t.uses}×</span>`:''}
         ${t.createdAt&&(Date.now()-t.createdAt<86400000)?`<span class="term-new-badge" title="Adicionado há menos de 24h">novo</span>`:''}
         ${(()=>{if(!t.tag)return '';const col=getTagColors(t.tag);return `<span class="term-tag" style="background:${col.bg};color:${col.fg};border-color:${col.fg}40" onclick="openTermTagPick(${i},this,event)" title="Tag: ${t.tag} · Clique para trocar">${t.tag}</span>`})()}
@@ -3546,6 +3553,7 @@ function openTermDetailModal(i) {
   document.getElementById('tdValue').value=t.value||'';
   document.getElementById('tdLabel').value=t.label||'';
   document.getElementById('tdDesc').value=t.desc||'';
+  document.getElementById('tdNotes').value=t.notes||'';
   document.getElementById('tdFav').checked=!!t.fav;
   const meta=[];
   if(t.uses) meta.push(`${t.uses} uso(s) no builder`);
@@ -3580,6 +3588,7 @@ function saveTermDetail() {
   const label=document.getElementById('tdLabel').value.trim();
   if(!val||!label) { showToast('Valor e label são obrigatórios'); return; }
   const desc=document.getElementById('tdDesc').value.trim();
+  const notes=document.getElementById('tdNotes').value.trim();
   const fav=document.getElementById('tdFav').checked;
   const tagEl=document.getElementById('termDetailModal');
   const tagId=tagEl.dataset.tag!==undefined ? tagEl.dataset.tag : (c.dictionary[activeSeg][_tdIdx]?.tag||'');
@@ -3587,6 +3596,7 @@ function saveTermDetail() {
   c.dictionary[activeSeg][_tdIdx]={
     value:val, label,
     ...(desc?{desc}:{}),
+    ...(notes?{notes}:{}),
     ...(fav?{fav:true}:{}),
     ...(tagId?{tag:tagId}:{}),
     ...(prev.uses?{uses:prev.uses}:{}),
@@ -3616,7 +3626,7 @@ function exportSegCSV() {
   const seg=c.segments.find(s=>s.id===activeSeg); if(!seg) return;
   const terms=c.dictionary[activeSeg]||[];
   if(!terms.length){ showToast('Segmento vazio'); return; }
-  const rows=[['valor','label','descricao','favorito','usos','tag'],...terms.map(t=>[t.value,t.label||'',t.desc||'',t.fav?'sim':'nao',t.uses||0,t.tag||''])];
+  const rows=[['valor','label','descricao','notas','favorito','usos','tag'],...terms.map(t=>[t.value,t.label||'',t.desc||'',t.notes||'',t.fav?'sim':'nao',t.uses||0,t.tag||''])];
   const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
