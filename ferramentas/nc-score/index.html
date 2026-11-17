@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Score — Qualidade de Nomenclatura</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --mono:'JetBrains Mono',monospace;--shadow:0 1px 4px rgba(0,0,0,.08);
+  --score-a:#16a34a;--score-b:#22c55e;--score-c:#d97706;--score-d:#f97316;--score-f:#dc2626;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1200px;margin:0 auto;padding:18px;display:grid;grid-template-columns:380px 1fr;gap:14px;align-items:start;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+textarea,input[type="text"],input[type="number"],select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;outline:none;width:100%;}
+textarea{resize:vertical;line-height:1.6;}
+textarea:focus,input:focus,select:focus{border-color:var(--accent);}
+/* Score badges */
+.score-badge{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;font-size:18px;font-weight:800;flex-shrink:0;}
+.grade-A{background:rgba(22,163,74,.12);color:var(--score-a);}
+.grade-B{background:rgba(34,197,94,.12);color:var(--score-b);}
+.grade-C{background:rgba(217,119,6,.12);color:var(--score-c);}
+.grade-D{background:rgba(249,115,22,.12);color:var(--score-d);}
+.grade-F{background:rgba(220,38,38,.12);color:var(--score-f);}
+/* Score bar */
+.score-bar-wrap{height:6px;background:var(--divider);border-radius:3px;overflow:hidden;margin-top:4px;}
+.score-bar{height:100%;border-radius:3px;transition:width .4s;}
+/* Issue pill */
+.issue-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.issue-err{background:var(--err-bg);color:var(--err);}
+.issue-warn{background:var(--warn-bg);color:var(--warn);}
+.issue-ok{background:var(--ok-bg);color:var(--ok);}
+/* NC result row */
+.nc-result-row{padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;}
+.nc-result-row:hover{border-color:var(--accent);}
+.nc-text{font-family:var(--mono);font-size:12px;word-break:break-all;flex:1;min-width:0;line-height:1.6;}
+.nc-issues{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+/* Aggregate */
+.agg-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--divider);font-size:12px;}
+.agg-row:last-child{border:none;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Tabs */
+.tab-row{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+.tab{padding:5px 12px;border-radius:7px 7px 0 0;cursor:pointer;font-size:12px;font-weight:600;color:var(--faint);border:none;background:none;}
+.tab.active{background:var(--accent);color:#fff;}
+@media(max-width:700px){.page{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🎯</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">NC Score</div>
+      <div style="font-size:11px;color:var(--faint)">Pontuação de qualidade de nomenclatura por critério</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="scoreAll()">🎯 Pontuar</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Left: config -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">Lista de NCs</div>
+      <textarea id="ncInput" rows="10" placeholder="Cole as NCs aqui, uma por linha"></textarea>
+      <div style="font-size:10px;color:var(--faint);margin-top:4px" id="inputCount">0 NCs</div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Regras de qualidade</div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Separador esperado</label>
+        <input type="text" id="cfgSep" placeholder="auto" style="width:80px">
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Número de segmentos</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="cfgSegsMin" min="1" max="20" placeholder="min" style="width:60px">
+          <span style="color:var(--faint);font-size:12px">–</span>
+          <input type="number" id="cfgSegsMax" min="1" max="20" placeholder="max" style="width:60px">
+          <span style="font-size:11px;color:var(--faint)">deixe vazio = qualquer</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Comprimento máximo (chars)</label>
+        <input type="number" id="cfgMaxLen" min="10" max="500" placeholder="ex: 100" style="width:80px">
+      </div>
+
+      <div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Restrições adicionais</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoSpaces" checked style="accent-color:var(--accent)"> Sem espaços
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoUpper" style="accent-color:var(--accent)"> Sem letras maiúsculas
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoSpecial" checked style="accent-color:var(--accent)"> Sem caracteres especiais (<code>!@#$%^&*()</code> etc.)
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoDup" checked style="accent-color:var(--accent)"> Alertar duplicatas na lista
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoEmpty" checked style="accent-color:var(--accent)"> Sem segmento vazio (valor "")
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: results -->
+  <div>
+    <div class="card" id="resultsPanel">
+      <div style="text-align:center;padding:40px;color:var(--faint)">
+        <div style="font-size:36px;margin-bottom:10px">🎯</div>
+        <div>Configure as regras e clique em <strong>Pontuar</strong></div>
+        <div style="font-size:11px;margin-top:6px;opacity:.7">Ctrl+Enter para pontuar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('ncscore_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('ncscore_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+document.getElementById('ncInput').addEventListener('input',function(){
+  const c=this.value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('inputCount').textContent=c+' NC'+(c!==1?'s':'');
+});
+
+function detectSep(lines){
+  const counts={};
+  for(const l of lines.slice(0,20)) for(const s of ['_','-','|','.','/']) counts[s]=(counts[s]||0)+(l.split(s).length-1);
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'_';
+}
+
+function getGrade(score){
+  if(score>=95) return 'A';
+  if(score>=80) return 'B';
+  if(score>=65) return 'C';
+  if(score>=50) return 'D';
+  return 'F';
+}
+
+function getBarColor(score){
+  if(score>=95) return 'var(--score-a)';
+  if(score>=80) return 'var(--score-b)';
+  if(score>=65) return 'var(--score-c)';
+  if(score>=50) return 'var(--score-d)';
+  return 'var(--score-f)';
+}
+
+function scoreNC(nc, cfg, seen){
+  const issues=[];
+  let deductions=0;
+
+  // Separator consistency
+  if(cfg.sep && nc.includes(cfg.sep)===false){
+    // might not contain sep if only 1 segment, so check if another sep is present
+    const otherSeps=['_','-','|','.','/'].filter(s=>s!==cfg.sep);
+    const hasOther=otherSeps.some(s=>nc.includes(s));
+    if(hasOther){issues.push({type:'err',msg:'Separador errado'});deductions+=30;}
+    else if(nc.split(cfg.sep).length===1){
+      // Single segment — probably still valid, just 1 segment
+    }
+  }
+
+  const parts=nc.split(cfg.sep||detectSep([nc]));
+  const nSegs=parts.length;
+
+  // Segment count
+  if(cfg.segsMin!==null && nSegs < cfg.segsMin){
+    issues.push({type:'err',msg:`Poucos segmentos (${nSegs}<${cfg.segsMin})`});deductions+=25;
+  }
+  if(cfg.segsMax!==null && nSegs > cfg.segsMax){
+    issues.push({type:'err',msg:`Muitos segmentos (${nSegs}>${cfg.segsMax})`});deductions+=25;
+  }
+
+  // Max length
+  if(cfg.maxLen!==null && nc.length > cfg.maxLen){
+    const over=nc.length-cfg.maxLen;
+    issues.push({type:'err',msg:`Muito longo (+${over} chars)`});deductions+=20;
+  }
+
+  // No spaces
+  if(cfg.noSpaces && nc.includes(' ')){
+    issues.push({type:'err',msg:'Contém espaços'});deductions+=25;
+  }
+
+  // No uppercase
+  if(cfg.noUpper && /[A-Z]/.test(nc)){
+    issues.push({type:'warn',msg:'Contém maiúsculas'});deductions+=15;
+  }
+
+  // No special chars (excluding the separator and alphanumeric/hyphen/underscore)
+  if(cfg.noSpecial){
+    const allowRe=new RegExp(`[^a-zA-Z0-9\\-_${cfg.sep?cfg.sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):''}]`,'g');
+    const matches=nc.match(allowRe)||[];
+    const special=matches.filter(c=>c!==' '); // spaces handled separately
+    if(special.length){
+      const uniq=[...new Set(special)].slice(0,5).join(' ');
+      issues.push({type:'warn',msg:`Chars especiais: ${uniq}`});deductions+=10;
+    }
+  }
+
+  // Empty segment
+  if(cfg.noEmpty && parts.some(p=>p==='')) {
+    issues.push({type:'err',msg:'Segmento vazio'});deductions+=20;
+  }
+
+  // Duplicate in list
+  if(cfg.noDup){
+    const key=nc.toLowerCase();
+    if(seen.has(key)){issues.push({type:'warn',msg:'Duplicata na lista'});deductions+=10;}
+    seen.add(key);
+  }
+
+  const score=Math.max(0,100-deductions);
+  return {score,grade:getGrade(score),issues,parts};
+}
+
+let _results=[];
+let _resultFilter='all';
+
+function scoreAll(){
+  const raw=document.getElementById('ncInput').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length){showToast('Cole as NCs primeiro');return;}
+
+  const sepRaw=document.getElementById('cfgSep').value.trim();
+  const sep=sepRaw||detectSep(lines);
+  const segsMinRaw=document.getElementById('cfgSegsMin').value.trim();
+  const segsMaxRaw=document.getElementById('cfgSegsMax').value.trim();
+  const maxLenRaw=document.getElementById('cfgMaxLen').value.trim();
+
+  const cfg={
+    sep,
+    segsMin:segsMinRaw?parseInt(segsMinRaw):null,
+    segsMax:segsMaxRaw?parseInt(segsMaxRaw):null,
+    maxLen:maxLenRaw?parseInt(maxLenRaw):null,
+    noSpaces:document.getElementById('cfgNoSpaces').checked,
+    noUpper:document.getElementById('cfgNoUpper').checked,
+    noSpecial:document.getElementById('cfgNoSpecial').checked,
+    noDup:document.getElementById('cfgNoDup').checked,
+    noEmpty:document.getElementById('cfgNoEmpty').checked,
+  };
+
+  const seen=new Set();
+  _results=lines.map(nc=>({nc,...scoreNC(nc,cfg,seen)}));
+  _resultFilter='all';
+  renderResults();
+}
+
+function renderResults(){
+  const filtered=_results.filter(r=>{
+    if(_resultFilter==='ok') return r.issues.length===0;
+    if(_resultFilter==='warn') return r.issues.some(i=>i.type==='warn')&&!r.issues.some(i=>i.type==='err');
+    if(_resultFilter==='err') return r.issues.some(i=>i.type==='err');
+    return true;
+  });
+
+  const total=_results.length;
+  const perfect=_results.filter(r=>r.issues.length===0).length;
+  const withErr=_results.filter(r=>r.issues.some(i=>i.type==='err')).length;
+  const avgScore=total?Math.round(_results.reduce((s,r)=>s+r.score,0)/total):0;
+  const avgGrade=getGrade(avgScore);
+
+  // Grade distribution
+  const gradeCount={A:0,B:0,C:0,D:0,F:0};
+  _results.forEach(r=>gradeCount[r.grade]++);
+
+  const p=document.getElementById('resultsPanel');
+  p.innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <div class="score-badge grade-${avgGrade}" style="width:56px;height:56px;font-size:22px">${avgGrade}</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">${avgScore}<span style="font-size:14px;font-weight:500;color:var(--faint)">/100</span></div>
+        <div style="font-size:11px;color:var(--faint)">Score médio · ${total} NC${total!==1?'s':''}</div>
+        <div class="score-bar-wrap" style="width:160px"><div class="score-bar" style="width:${avgScore}%;background:${getBarColor(avgScore)}"></div></div>
+      </div>
+      <div style="flex:1;min-width:140px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${Object.entries(gradeCount).map(([g,n])=>n?`<span class="issue-pill ${n&&g==='A'||g==='B'?'issue-ok':g==='C'||g==='D'?'issue-warn':'issue-err'}" style="font-size:11px">${g}: ${n}</span>`:'').join('')}
+          <span class="issue-pill issue-ok">✓ ${perfect} perfeita${perfect!==1?'s':''}</span>
+          ${withErr?`<span class="issue-pill issue-err">✗ ${withErr} com erro${withErr!==1?'s':''}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+      <span class="btn ${_resultFilter==='all'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('all')">Todos (${_results.length})</span>
+      <span class="btn ${_resultFilter==='ok'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('ok')">✓ Perfeitas (${perfect})</span>
+      <span class="btn ${_resultFilter==='warn'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('warn')">⚠ Avisos</span>
+      <span class="btn ${_resultFilter==='err'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('err')">✗ Erros (${withErr})</span>
+    </div>
+    <div style="max-height:65vh;overflow-y:auto">
+      ${filtered.map(r=>`
+        <div class="nc-result-row">
+          <div class="score-badge grade-${r.grade}" style="width:36px;height:36px;font-size:14px">${r.score}</div>
+          <div style="flex:1;min-width:0">
+            <div class="nc-text" onclick="navigator.clipboard.writeText('${esc(r.nc.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado')).catch(()=>{})" style="cursor:pointer" title="Clique para copiar">${esc(r.nc)}</div>
+            ${r.issues.length?`<div class="nc-issues">${r.issues.map(i=>`<span class="issue-pill issue-${i.type}">${i.type==='err'?'✗':'⚠'} ${esc(i.msg)}</span>`).join('')}</div>`:'<div style="font-size:10px;color:var(--ok);margin-top:3px">✓ Sem problemas</div>'}
+          </div>
+        </div>`).join('')}
+    </div>
+    ${filtered.length<_results.length?`<div style="font-size:11px;color:var(--faint);margin-top:6px">Mostrando ${filtered.length} de ${_results.length}</div>`:''}
+    <div style="font-size:11px;color:var(--faint);margin-top:4px">Clique em uma NC para copiar</div>
+  `;
+}
+
+function setFilter(f){_resultFilter=f;renderResults();}
+
+function exportCSV(){
+  if(!_results.length){showToast('Pontue primeiro');return;}
+  const rows=[['nc','score','grade','issues']];
+  _results.forEach(r=>rows.push([r.nc,r.score,r.grade,r.issues.map(i=>i.msg).join('; ')]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nc_score.csv';a.click();
+  showToast(`⬇ ${rows.length-1} linhas exportadas`);
+}
+
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')scoreAll();});
+</script>
+</body>
+</html>
