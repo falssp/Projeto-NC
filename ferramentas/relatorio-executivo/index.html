@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Executivo — NC Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1a237e;--accent:#1F36C7;--hl-bg:#e8ecfd;--border:#d6dbf2;--page:#f4f5fb;--green:#2e7d32;--yellow:#f9a825;--red:#c62828;--gray:#6b7280}
+body{font-family:'Space Grotesk',sans-serif;background:var(--page);color:#1e1e2e;min-height:100vh}
+header{background:var(--blue);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:12px}
+header h1{font-size:1.1rem;font-weight:600}
+header span{opacity:.6;font-size:.85rem}
+.app{display:flex;height:calc(100vh - 52px);overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:40%;min-width:360px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.steps-nav{display:flex;border-bottom:1px solid var(--border);background:var(--hl-bg)}
+.step-btn{flex:1;padding:10px 4px;font-size:.75rem;font-weight:600;color:var(--gray);background:none;border:none;cursor:pointer;border-bottom:3px solid transparent;transition:.15s}
+.step-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:#fff}
+.step-btn:hover:not(.active){color:var(--blue)}
+.step-content{flex:1;overflow-y:auto;padding:20px}
+.step-pane{display:none}
+.step-pane.active{display:block}
+
+/* FORM */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--blue);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem;background:#fff;color:#1e1e2e;outline:none;transition:.15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,54,199,.1)}
+.field textarea{resize:vertical;min-height:70px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* CHANNEL TABLE */
+.ch-table{width:100%;border-collapse:collapse;font-size:.75rem;margin-bottom:12px}
+.ch-table th{background:var(--hl-bg);color:var(--blue);font-weight:600;padding:6px 6px;text-align:left;border:1px solid var(--border)}
+.ch-table td{padding:4px 4px;border:1px solid var(--border);vertical-align:middle}
+.ch-table input,.ch-table select{width:100%;border:none;background:none;font-size:.75rem;font-family:inherit;padding:2px 3px;outline:none;color:#1e1e2e}
+.ch-table input:focus{background:var(--hl-bg);border-radius:3px}
+.ch-table tr:hover td{background:#fafbff}
+.btn-add{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--hl-bg);border:1px solid var(--border);border-radius:6px;font-size:.8rem;font-weight:600;color:var(--accent);cursor:pointer;margin-bottom:14px}
+.btn-add:hover{background:var(--border)}
+.btn-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:2px 4px}
+.btn-del:hover{color:#b91c1c}
+
+/* ACTIONS */
+.action-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:8px;padding:8px;background:var(--hl-bg);border-radius:6px}
+.action-row input,.action-row select{padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:.78rem;font-family:inherit;background:#fff}
+
+/* PREVIEW */
+.preview{flex:1;min-width:0;background:#fff;overflow-y:auto;padding:0}
+.preview-toolbar{display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--hl-bg);position:sticky;top:0;z-index:10}
+.btn-action{padding:7px 14px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--blue);display:flex;align-items:center;gap:5px}
+.btn-action:hover{background:var(--hl-bg)}
+.btn-action.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-action.primary:hover{background:var(--blue)}
+.report-body{padding:32px 40px;max-width:860px;margin:0 auto}
+
+/* REPORT STYLES */
+.rep-header{border-bottom:3px solid var(--blue);padding-bottom:16px;margin-bottom:24px}
+.rep-title{font-size:1.3rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em}
+.rep-sub{font-size:1rem;font-weight:600;color:#1e1e2e;margin-top:4px}
+.rep-meta{font-size:.78rem;color:var(--gray);margin-top:6px}
+.rep-section{margin-bottom:28px}
+.rep-section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.rep-summary{background:var(--hl-bg);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 6px 6px 0;font-size:.88rem;line-height:1.6;color:#1e1e2e}
+.rep-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:4px}
+.rep-table th{background:var(--blue);color:#fff;padding:8px 10px;text-align:left;font-weight:600}
+.rep-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
+.rep-table tr:hover td{background:var(--hl-bg)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:12px;font-size:.72rem;font-weight:700}
+.badge.green{background:#e8f5e9;color:var(--green)}
+.badge.yellow{background:#fff8e1;color:var(--yellow)}
+.badge.red{background:#ffebee;color:var(--red)}
+.ul-list{list-style:none;padding:0}
+.ul-list li{padding:5px 0;padding-left:16px;position:relative;font-size:.85rem;line-height:1.5;border-bottom:1px solid var(--border)}
+.ul-list li:last-child{border-bottom:none}
+.ul-list li::before{content:"→";position:absolute;left:0;color:var(--accent);font-weight:700}
+.rep-footer{margin-top:32px;padding-top:12px;border-top:1px solid var(--border);font-size:.72rem;color:var(--gray);text-align:center}
+
+/* Budget bars */
+.budget-bars{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.bbar-row{display:grid;grid-template-columns:120px 1fr 80px;gap:8px;align-items:center;font-size:.78rem}
+.bbar-track{background:#eee;border-radius:4px;height:10px;overflow:hidden}
+.bbar-fill{height:100%;background:var(--accent);border-radius:4px;transition:.3s}
+
+/* Donut */
+.donut-wrap{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.donut{width:70px;height:70px;border-radius:50%;background:conic-gradient(var(--accent) 0deg, var(--accent) var(--pct), #e0e0e0 var(--pct));display:flex;align-items:center;justify-content:center;position:relative}
+.donut-inner{width:46px;height:46px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--blue)}
+.donut-label{font-size:.82rem}
+.donut-label strong{display:block;font-size:1rem;color:var(--blue)}
+
+/* PRINT */
+@media print{
+  header,.sidebar,.preview-toolbar{display:none!important}
+  .app{display:block;height:auto}
+  .preview{overflow:visible}
+  .report-body{max-width:100%;padding:16px}
+  .rep-table th{background:var(--blue)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>📊</div>
+  <h1>Gerador de Relatório Executivo</h1>
+  <span>NC Tool — AdOps Suite</span>
+</header>
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="steps-nav">
+      <button class="step-btn active" data-step="1">1. Dados</button>
+      <button class="step-btn" data-step="2">2. Canais</button>
+      <button class="step-btn" data-step="3">3. Análise</button>
+      <button class="step-btn" data-step="4">4. Próximos</button>
+    </div>
+    <div class="step-content">
+
+      <!-- STEP 1 -->
+      <div class="step-pane active" id="pane-1">
+        <div class="field">
+          <label>Cliente / Anunciante</label>
+          <input type="text" id="f-cliente" placeholder="Ex: Unilever Brasil" oninput="save();render()">
+        </div>
+        <div class="field">
+          <label>Produto / Campanha</label>
+          <input type="text" id="f-campanha" placeholder="Ex: Dove — Lançamento Q4" oninput="save();render()">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Data início</label>
+            <input type="date" id="f-inicio" oninput="save();render()">
+          </div>
+          <div class="field">
+            <label>Data fim</label>
+            <input type="date" id="f-fim" oninput="save();render()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Objetivo principal</label>
+            <select id="f-objetivo" onchange="save();render()">
+              <option>Awareness</option>
+              <option>Consideração</option>
+              <option>Conversão</option>
+              <option>Full-funnel</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>KPI principal</label>
+            <select id="f-kpi" onchange="save();render()">
+              <option>Impressões</option>
+              <option>Alcance</option>
+              <option>Cliques</option>
+              <option>Leads</option>
+              <option>Vendas</option>
+              <option>ROAS</option>
+              <option>Visualizações</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Meta do KPI</label>
+            <input type="number" id="f-meta" placeholder="Ex: 5000000" oninput="save();render()">
+          </div>
+          <div class="field">
+            <label>KPI realizado</label>
+            <input type="number" id="f-kpi-real" placeholder="Ex: 4750000" oninput="save();render()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Budget total (R$)</label>
+            <input type="number" id="f-budget" placeholder="50000" oninput="save();render()">
+          </div>
+          <div class="field">
+            <label>Budget realizado (R$)</label>
+            <input type="number" id="f-budget-real" placeholder="47800" oninput="save();render()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Responsável</label>
+            <input type="text" id="f-resp" placeholder="Seu nome" oninput="save();render()">
+          </div>
+          <div class="field">
+            <label>Data do relatório</label>
+            <input type="date" id="f-data-rel" oninput="save();render()">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-pane" id="pane-2">
+        <p style="font-size:.78rem;color:var(--gray);margin-bottom:12px">Adicione um canal por linha. Preencha os campos disponíveis — os vazios serão omitidos do relatório.</p>
+        <div id="ch-wrap">
+          <table class="ch-table" id="ch-table">
+            <thead>
+              <tr>
+                <th>Canal</th>
+                <th>Budg. Plan.</th>
+                <th>Budg. Real.</th>
+                <th>Imp. Plan.</th>
+                <th>Imp. Real.</th>
+                <th>CPM Plan.</th>
+                <th>CPM Real.</th>
+                <th>Cliques</th>
+                <th>CTR%</th>
+                <th>Conv.</th>
+                <th>CPA</th>
+                <th>ROAS</th>
+                <th>Destaque</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ch-body"></tbody>
+          </table>
+        </div>
+        <button class="btn-add" onclick="addChannel()">+ Adicionar canal</button>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-pane" id="pane-3">
+        <div class="field">
+          <label>O que funcionou bem</label>
+          <textarea id="f-bem" placeholder="Ex: Meta Ads com CPM abaixo do benchmark, criativos de vídeo curto superaram expectativas" oninput="save();render()"></textarea>
+        </div>
+        <div class="field">
+          <label>O que não performou como esperado</label>
+          <textarea id="f-nao" placeholder="Ex: Display desktop com CTR abaixo de 0,05%, LinkedIn com CPA acima do target" oninput="save();render()"></textarea>
+        </div>
+        <div class="field">
+          <label>Principais aprendizados</label>
+          <textarea id="f-aprendizados" placeholder="Ex: Audiência 25-34 anos respondeu melhor aos formatos verticais" oninput="save();render()"></textarea>
+        </div>
+        <div class="field">
+          <label>Criativos de melhor desempenho</label>
+          <textarea id="f-criativos" placeholder="Ex: Vídeo 15s — versão B (produto em destaque) — CTR 1,8% vs média de 0,9%" oninput="save();render()"></textarea>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-pane" id="pane-4">
+        <p style="font-size:.78rem;color:var(--gray);margin-bottom:12px">Adicione ações, responsáveis e prazos para a próxima etapa.</p>
+        <div id="actions-wrap"></div>
+        <button class="btn-add" onclick="addAction()">+ Adicionar ação</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview">
+    <div class="preview-toolbar">
+      <button class="btn-action primary" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn-action" onclick="copyHTML()">📋 Copiar HTML</button>
+      <button class="btn-action" onclick="copyText()">📄 Copiar como texto</button>
+      <button class="btn-action" style="margin-left:auto;color:#ef4444" onclick="clearAll()">🗑 Limpar</button>
+    </div>
+    <div class="report-body" id="report-output">
+      <div style="text-align:center;padding:60px 20px;color:var(--gray)">
+        <div style="font-size:2.5rem;margin-bottom:12px">📊</div>
+        <div style="font-weight:600;color:var(--blue);margin-bottom:6px">Preencha o formulário à esquerda</div>
+        <div style="font-size:.85rem">O relatório será gerado automaticamente aqui</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- CHANNEL ROWS ----
+let channels = [];
+let actions = [];
+
+function addChannel(data={}) {
+  const id = Date.now();
+  channels.push({id, ...{canal:'',bp:'',br:'',ip:'',ir:'',cpmp:'',cpmr:'',cliques:'',ctr:'',conv:'',cpa:'',roas:'',destaque:'', ...data}});
+  renderChannelTable();
+  save();
+}
+
+function renderChannelTable() {
+  const tbody = document.getElementById('ch-body');
+  tbody.innerHTML = channels.map((c,i) => `
+    <tr>
+      <td><input value="${esc(c.canal)}" oninput="channels[${i}].canal=this.value;save();render()" placeholder="Meta Ads"></td>
+      <td><input type="number" value="${c.bp}" oninput="channels[${i}].bp=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.br}" oninput="channels[${i}].br=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.ip}" oninput="channels[${i}].ip=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.ir}" oninput="channels[${i}].ir=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.cpmp}" oninput="channels[${i}].cpmp=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.cpmr}" oninput="channels[${i}].cpmr=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.cliques}" oninput="channels[${i}].cliques=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.ctr}" oninput="channels[${i}].ctr=this.value;save();render()" placeholder="0.00"></td>
+      <td><input type="number" value="${c.conv}" oninput="channels[${i}].conv=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.cpa}" oninput="channels[${i}].cpa=this.value;save();render()" placeholder="0"></td>
+      <td><input type="number" value="${c.roas}" oninput="channels[${i}].roas=this.value;save();render()" placeholder="0"></td>
+      <td><input value="${esc(c.destaque)}" oninput="channels[${i}].destaque=this.value;save();render()" placeholder="Destaque"></td>
+      <td><button class="btn-del" onclick="delChannel(${i})">×</button></td>
+    </tr>`).join('');
+}
+
+function delChannel(i) { channels.splice(i,1); renderChannelTable(); save(); render(); }
+
+function addAction(data={}) {
+  const id = Date.now();
+  actions.push({id, ...{acao:'',resp:'',prazo:'',prio:'Alta', ...data}});
+  renderActions();
+  save();
+}
+
+function renderActions() {
+  const wrap = document.getElementById('actions-wrap');
+  wrap.innerHTML = actions.map((a,i) => `
+    <div class="action-row">
+      <input value="${esc(a.acao)}" oninput="actions[${i}].acao=this.value;save();render()" placeholder="Ação">
+      <input value="${esc(a.resp)}" oninput="actions[${i}].resp=this.value;save();render()" placeholder="Responsável">
+      <input type="date" value="${a.prazo}" oninput="actions[${i}].prazo=this.value;save();render()">
+      <select onchange="actions[${i}].prio=this.value;save();render()">
+        <option ${a.prio==='Alta'?'selected':''}>Alta</option>
+        <option ${a.prio==='Média'?'selected':''}>Média</option>
+        <option ${a.prio==='Baixa'?'selected':''}>Baixa</option>
+      </select>
+      <button class="btn-del" onclick="delAction(${i})">×</button>
+    </div>`).join('');
+}
+
+function delAction(i) { actions.splice(i,1); renderActions(); save(); render(); }
+
+// ---- STEPS ----
+document.querySelectorAll('.step-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.step-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.step-pane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-'+btn.dataset.step).classList.add('active');
+  });
+});
+
+// ---- HELPERS ----
+function g(id){ return document.getElementById(id)?.value||''; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtN(n){ if(!n&&n!==0) return '—'; return Number(n).toLocaleString('pt-BR'); }
+function fmtR(n){ if(!n&&n!==0) return '—'; return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pct(a,b){ if(!a||!b||b==0) return null; return Math.round(a/b*100); }
+function badge(p){ if(p===null) return ''; const cl=p>=95?'green':p>=80?'yellow':'red'; return `<span class="badge ${cl}">${p}%</span>`; }
+function fmtDate(d){ if(!d) return '—'; const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; }
+function lines(txt){ return (txt||'').split('\n').filter(l=>l.trim()); }
+
+// ---- RENDER ----
+function render(){
+  const cliente=g('f-cliente'), campanha=g('f-campanha');
+  const inicio=g('f-inicio'), fim=g('f-fim');
+  const objetivo=g('f-objetivo'), kpi=g('f-kpi');
+  const metaKPI=parseFloat(g('f-meta'))||0, realKPI=parseFloat(g('f-kpi-real'))||0;
+  const budget=parseFloat(g('f-budget'))||0, budgetReal=parseFloat(g('f-budget-real'))||0;
+  const resp=g('f-resp'), dataRel=g('f-data-rel');
+
+  if(!cliente && !campanha) {
+    document.getElementById('report-output').innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--gray)"><div style="font-size:2.5rem;margin-bottom:12px">📊</div><div style="font-weight:600;color:var(--blue);margin-bottom:6px">Preencha o formulário à esquerda</div><div style="font-size:.85rem">O relatório será gerado automaticamente aqui</div></div>`;
+    return;
+  }
+
+  const kpiPct = pct(realKPI, metaKPI);
+  const budgetPct = pct(budgetReal, budget);
+  const donutDeg = budget>0 ? Math.round(Math.min(budgetReal/budget,1)*360) : 0;
+
+  // Auto-summary
+  let summary = '';
+  if(cliente||campanha){
+    const nome = campanha||cliente;
+    const pctStr = kpiPct!==null ? `atingiu <strong>${kpiPct}%</strong> da meta de ${kpi}` : 'foi executada';
+    const budStr = budgetPct!==null ? `, com investimento de ${fmtR(budgetReal)} (${budgetPct}% do planejado)` : '';
+    const per = (inicio&&fim) ? ` no período de ${fmtDate(inicio)} a ${fmtDate(fim)}` : '';
+    summary = `A campanha <strong>${esc(nome)}</strong> ${pctStr}${per}${budStr}.`;
+
+    // Best performing channel
+    const withConv = channels.filter(c=>parseFloat(c.conv)>0 && parseFloat(c.cpa)>0);
+    if(withConv.length>0){
+      const best = withConv.sort((a,b)=>parseFloat(a.cpa)-parseFloat(b.cpa))[0];
+      summary += ` <strong>${esc(best.canal)}</strong> apresentou o melhor CPA: ${fmtR(best.cpa)}.`;
+    }
+    if(g('f-criativos')){
+      summary += ` Destaque criativo: ${esc(lines(g('f-criativos'))[0]||'')}`;
+    }
+  }
+
+  // Channel totals
+  const totBP = channels.reduce((s,c)=>s+parseFloat(c.bp||0),0);
+  const totBR = channels.reduce((s,c)=>s+parseFloat(c.br||0),0);
+  const totIP = channels.reduce((s,c)=>s+parseFloat(c.ip||0),0);
+  const totIR = channels.reduce((s,c)=>s+parseFloat(c.ir||0),0);
+  const totCliques = channels.reduce((s,c)=>s+parseFloat(c.cliques||0),0);
+  const totConv = channels.reduce((s,c)=>s+parseFloat(c.conv||0),0);
+  const avgCPMP = totIP>0?totBP/totIP*1000:0;
+  const avgCPMR = totIR>0?totBR/totIR*1000:0;
+  const totCPA = totConv>0?totBR/totConv:0;
+
+  // Consolidated table rows
+  const consolidados = [
+    ['Budget','R$',budget,budgetReal],
+    ['Impressões','n',totIP,totIR],
+    ['CPM médio','R$',avgCPMP,avgCPMR],
+    ['Cliques','n',totCliques,0],
+    ['Conversões','n',metaKPI&&kpi==='Leads'?metaKPI:totConv, totConv],
+    ['CPA','R$',0,totCPA],
+  ];
+
+  const consolidadoHTML = consolidados.map(([label,type,plan,real])=>{
+    if(!plan&&!real) return '';
+    const p2 = pct(real,plan);
+    const pLabel = plan ? (type==='R$'?fmtR(plan):fmtN(plan)) : '—';
+    const rLabel = real ? (type==='R$'?fmtR(real):fmtN(real)) : '—';
+    return `<tr><td><strong>${label}</strong></td><td>${pLabel}</td><td>${rLabel}</td><td>${badge(p2)}</td></tr>`;
+  }).join('');
+
+  // Channel analysis auto text
+  const chAnalysis = channels.map(c=>{
+    if(!c.canal) return '';
+    const bPct = totBR>0&&c.br ? Math.round(c.br/totBR*100) : null;
+    const convPct = totConv>0&&c.conv ? Math.round(c.conv/totConv*100) : null;
+    let txt = `<strong>${esc(c.canal)}</strong>`;
+    if(bPct!==null) txt += ` representou ${bPct}% do budget investido`;
+    if(convPct!==null) txt += ` e entregou ${convPct}% das conversões`;
+    if(c.cpa) txt += `, com CPA de ${fmtR(c.cpa)}`;
+    if(c.roas) txt += ` e ROAS de ${Number(c.roas).toFixed(2)}x`;
+    if(c.destaque) txt += `. <em>${esc(c.destaque)}</em>`;
+    return `<li>${txt}.</li>`;
+  }).filter(Boolean).join('');
+
+  // Per-channel table
+  const hasConv = channels.some(c=>c.conv);
+  const hasCPA = channels.some(c=>c.cpa);
+  const hasROAS = channels.some(c=>c.roas);
+  const chTableHTML = channels.length ? `
+    <table class="rep-table">
+      <thead><tr>
+        <th>Canal</th><th>Budget Plan.</th><th>Budget Real.</th><th>vs</th>
+        <th>Impressões</th><th>Imp. Real</th><th>vs</th>
+        <th>CPM Plan.</th><th>CPM Real.</th>
+        ${hasConv?'<th>Conv.</th>':''}
+        ${hasCPA?'<th>CPA</th>':''}
+        ${hasROAS?'<th>ROAS</th>':''}
+      </tr></thead>
+      <tbody>
+        ${channels.map(c=>{
+          const bPct2=pct(c.br,c.bp); const iPct=pct(c.ir,c.ip);
+          return `<tr>
+            <td><strong>${esc(c.canal||'—')}</strong></td>
+            <td>${c.bp?fmtR(c.bp):'—'}</td>
+            <td>${c.br?fmtR(c.br):'—'}</td>
+            <td>${badge(bPct2)}</td>
+            <td>${c.ip?fmtN(c.ip):'—'}</td>
+            <td>${c.ir?fmtN(c.ir):'—'}</td>
+            <td>${badge(iPct)}</td>
+            <td>${c.cpmp?fmtR(c.cpmp):'—'}</td>
+            <td>${c.cpmr?fmtR(c.cpmr):'—'}</td>
+            ${hasConv?`<td>${c.conv?fmtN(c.conv):'—'}</td>`:''}
+            ${hasCPA?`<td>${c.cpa?fmtR(c.cpa):'—'}</td>`:''}
+            ${hasROAS?`<td>${c.roas?Number(c.roas).toFixed(2)+'x':'—'}</td>`:''}
+          </tr>`;
+        }).join('')}
+        ${channels.length>1?`<tr style="background:var(--hl-bg);font-weight:700">
+          <td>TOTAL</td>
+          <td>${fmtR(totBP)}</td><td>${fmtR(totBR)}</td><td>${badge(pct(totBR,totBP))}</td>
+          <td>${fmtN(totIP)}</td><td>${fmtN(totIR)}</td><td>${badge(pct(totIR,totIP))}</td>
+          <td>—</td><td>—</td>
+          ${hasConv?`<td>${fmtN(totConv)}</td>`:''}
+          ${hasCPA?`<td>${totCPA?fmtR(totCPA):'—'}</td>`:''}
+          ${hasROAS?`<td>—</td>`:''}
+        </tr>`:''}
+      </tbody>
+    </table>` : '<p style="color:var(--gray);font-size:.85rem">Nenhum canal adicionado.</p>';
+
+  // Budget distribution bars
+  const budgetBarsHTML = channels.length && totBR > 0 ? `
+    <div class="budget-bars">
+      ${channels.map(c=>{
+        const w = totBR>0?Math.round(c.br/totBR*100):0;
+        return `<div class="bbar-row"><span>${esc(c.canal||'—')}</span><div class="bbar-track"><div class="bbar-fill" style="width:${w}%"></div></div><span>${fmtR(c.br)}</span></div>`;
+      }).join('')}
+    </div>` : '';
+
+  // Next steps table
+  const actionsHTML = actions.length ? `
+    <table class="rep-table">
+      <thead><tr><th>Ação</th><th>Responsável</th><th>Prazo</th><th>Prioridade</th></tr></thead>
+      <tbody>
+        ${actions.map(a=>{
+          const prioCl = a.prio==='Alta'?'red':a.prio==='Média'?'yellow':'green';
+          return `<tr><td>${esc(a.acao||'—')}</td><td>${esc(a.resp||'—')}</td><td>${fmtDate(a.prazo)}</td><td><span class="badge ${prioCl}">${a.prio}</span></td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : '';
+
+  // Bem / Nao / Aprendizados
+  const toList = txt => lines(txt).map(l=>`<li>${esc(l)}</li>`).join('');
+
+  document.getElementById('report-output').innerHTML = `
+    <div class="rep-header">
+      <div class="rep-title">Relatório de Performance</div>
+      <div class="rep-sub">${esc(cliente||'—')} ${campanha?'— '+esc(campanha):''}</div>
+      <div class="rep-meta">
+        ${inicio&&fim?`Período: ${fmtDate(inicio)} a ${fmtDate(fim)} &nbsp;|&nbsp; `:''}
+        Emitido em: ${fmtDate(dataRel)||'—'} &nbsp;|&nbsp;
+        Por: ${esc(resp)||'—'}
+      </div>
+    </div>
+
+    ${summary?`<div class="rep-section">
+      <div class="rep-section-title">Resumo Executivo</div>
+      <div class="rep-summary">${summary}</div>
+    </div>`:''}
+
+    <div class="rep-section">
+      <div class="rep-section-title">Budget & KPI Principal</div>
+      <div class="donut-wrap">
+        <div class="donut" style="--pct:${donutDeg}deg">
+          <div class="donut-inner">${budgetPct!==null?budgetPct+'%':'—'}</div>
+        </div>
+        <div class="donut-label">
+          <strong>${fmtR(budgetReal)}</strong>
+          de ${fmtR(budget)} planejados
+          ${budgetPct!==null?`<br><span class="badge ${budgetPct>=95?'green':budgetPct>=80?'yellow':'red'}">${budgetPct}% entregue</span>`:''}
+        </div>
+        ${metaKPI&&realKPI?`<div class="donut-label" style="margin-left:16px">
+          <strong>${kpi}: ${fmtN(realKPI)}</strong>
+          de ${fmtN(metaKPI)} planejados
+          ${kpiPct!==null?`<br><span class="badge ${kpiPct>=95?'green':kpiPct>=80?'yellow':'red'}">${kpiPct}% da meta</span>`:''}
+        </div>`:''}
+      </div>
+    </div>
+
+    ${consolidadoHTML?`<div class="rep-section">
+      <div class="rep-section-title">Performance Consolidada</div>
+      <table class="rep-table">
+        <thead><tr><th>KPI</th><th>Planejado</th><th>Realizado</th><th>vs Meta</th></tr></thead>
+        <tbody>${consolidadoHTML}</tbody>
+      </table>
+    </div>`:''}
+
+    ${channels.length?`<div class="rep-section">
+      <div class="rep-section-title">Performance por Canal</div>
+      ${chTableHTML}
+    </div>`:''}
+
+    ${budgetBarsHTML?`<div class="rep-section">
+      <div class="rep-section-title">Distribuição de Budget</div>
+      ${budgetBarsHTML}
+    </div>`:''}
+
+    ${chAnalysis?`<div class="rep-section">
+      <div class="rep-section-title">Análise por Canal</div>
+      <ul class="ul-list">${chAnalysis}</ul>
+    </div>`:''}
+
+    ${g('f-bem')?`<div class="rep-section">
+      <div class="rep-section-title">O Que Funcionou</div>
+      <ul class="ul-list">${toList(g('f-bem'))}</ul>
+    </div>`:''}
+
+    ${g('f-nao')?`<div class="rep-section">
+      <div class="rep-section-title">Pontos de Atenção</div>
+      <ul class="ul-list">${toList(g('f-nao'))}</ul>
+    </div>`:''}
+
+    ${g('f-aprendizados')?`<div class="rep-section">
+      <div class="rep-section-title">Aprendizados</div>
+      <ul class="ul-list">${toList(g('f-aprendizados'))}</ul>
+    </div>`:''}
+
+    ${g('f-criativos')?`<div class="rep-section">
+      <div class="rep-section-title">Criativos de Destaque</div>
+      <ul class="ul-list">${toList(g('f-criativos'))}</ul>
+    </div>`:''}
+
+    ${actions.length?`<div class="rep-section">
+      <div class="rep-section-title">Próximos Passos</div>
+      ${actionsHTML}
+    </div>`:''}
+
+    <div class="rep-footer">gerado por NC Tool — AdOps Suite &nbsp;|&nbsp; ${new Date().toLocaleDateString('pt-BR')}</div>
+  `;
+}
+
+// ---- COPY ----
+function copyHTML(){
+  const html = document.getElementById('report-output').innerHTML;
+  navigator.clipboard.writeText(html).then(()=>alert('HTML copiado!')).catch(()=>{});
+}
+function copyText(){
+  const el = document.getElementById('report-output');
+  const txt = el.innerText || el.textContent;
+  navigator.clipboard.writeText(txt).then(()=>alert('Texto copiado!')).catch(()=>{});
+}
+
+// ---- PERSIST ----
+function save(){
+  try {
+    const data = {
+      f:{},
+      channels,
+      actions
+    };
+    ['f-cliente','f-campanha','f-inicio','f-fim','f-objetivo','f-kpi','f-meta','f-kpi-real','f-budget','f-budget-real','f-resp','f-data-rel','f-bem','f-nao','f-aprendizados','f-criativos'].forEach(id=>{
+      const el=document.getElementById(id); if(el) data.f[id]=el.value;
+    });
+    localStorage.setItem('relatorio-exec',JSON.stringify(data));
+  } catch(e){}
+}
+
+function load(){
+  try {
+    const raw = localStorage.getItem('relatorio-exec');
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(data.f) Object.entries(data.f).forEach(([id,v])=>{ const el=document.getElementById(id); if(el) el.value=v; });
+    if(data.channels) { channels=data.channels; renderChannelTable(); }
+    if(data.actions) { actions=data.actions; renderActions(); }
+  } catch(e){}
+}
+
+function clearAll(){
+  if(!confirm('Limpar todos os dados do relatório?')) return;
+  channels=[]; actions=[];
+  ['f-cliente','f-campanha','f-inicio','f-fim','f-meta','f-kpi-real','f-budget','f-budget-real','f-resp','f-data-rel','f-bem','f-nao','f-aprendizados','f-criativos'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderChannelTable(); renderActions(); save(); render();
+}
+
+// ---- INIT ----
+document.getElementById('f-data-rel').value = new Date().toISOString().slice(0,10);
+load();
+render();
+</script>
+</body>
+</html>
