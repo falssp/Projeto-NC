@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor de Trafficking em Lote — NC Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --hdr:#1a237e;--acc:#1F36C7;--hi:#e8ecfd;--brd:#d6dbf2;--bg:#f4f5fb;
+  --white:#fff;--txt:#1a1a2e;--muted:#6b7280;--ok:#16a34a;--warn:#d97706;--err:#dc2626;
+  --rad:10px;--shad:0 2px 8px rgba(26,35,126,.10);
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+header{background:var(--hdr);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+header .logo{font-size:1.1rem;font-weight:700;letter-spacing:.02em}
+header .subtitle{font-size:.8rem;opacity:.7}
+header .hdr-right{display:flex;align-items:center;gap:10px}
+.btn-ghost{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-family:inherit;font-weight:500;transition:.15s}
+.btn-ghost:hover{background:rgba(255,255,255,.22)}
+
+/* MAIN SHELL */
+.shell{display:flex;flex:1;min-height:0;min-width:0}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--white);border-right:1px solid var(--brd);padding:20px 0;display:flex;flex-direction:column;gap:4px}
+.step-btn{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;border:none;background:none;font-family:inherit;font-size:.88rem;font-weight:500;color:var(--muted);width:100%;text-align:left;transition:.15s;border-left:3px solid transparent}
+.step-btn .num{width:24px;height:24px;border-radius:50%;background:var(--brd);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;transition:.15s}
+.step-btn.active{color:var(--acc);border-left-color:var(--acc)}
+.step-btn.active .num{background:var(--acc);color:#fff}
+.step-btn.done .num{background:var(--ok);color:#fff}
+.step-btn.done{color:var(--txt)}
+.step-btn:hover:not(.active){background:var(--hi)}
+.sidebar-footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--brd)}
+.btn-clear{width:100%;background:none;border:1px solid var(--err);color:var(--err);padding:8px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:500;transition:.15s}
+.btn-clear:hover{background:#fef2f2}
+
+/* MAIN CONTENT */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.step-area{flex:1;overflow-y:auto;padding:28px 32px}
+.step-header{margin-bottom:24px}
+.step-header h2{font-size:1.25rem;font-weight:700;color:var(--hdr)}
+.step-header p{color:var(--muted);font-size:.88rem;margin-top:4px}
+
+/* PROGRESS BAR */
+.progress-bar{height:4px;background:var(--brd);flex-shrink:0}
+.progress-fill{height:100%;background:var(--acc);transition:.4s}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.cols1{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.span2{grid-column:span 2}
+.field.span3{grid-column:span 3}
+label{font-size:.82rem;font-weight:600;color:var(--txt)}
+label .req{color:var(--err);margin-left:2px}
+input,select,textarea{font-family:inherit;font-size:.88rem;padding:8px 12px;border:1px solid var(--brd);border-radius:7px;background:var(--white);color:var(--txt);transition:.15s;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(31,54,199,.12)}
+input[readonly]{background:var(--hi);color:var(--muted)}
+.hint{font-size:.78rem;color:var(--muted)}
+.badge-info{display:inline-flex;align-items:center;gap:5px;background:var(--hi);color:var(--acc);border:1px solid var(--brd);border-radius:6px;padding:5px 11px;font-size:.82rem;font-weight:600;margin-bottom:12px}
+
+/* NAMING PREVIEW */
+.naming-preview{background:var(--hi);border:1px solid var(--brd);border-radius:8px;padding:14px 18px;margin-top:14px}
+.naming-preview .label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.naming-preview .value{font-size:.92rem;font-weight:600;color:var(--acc);word-break:break-all}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--brd);border-radius:var(--rad);padding:20px;box-shadow:var(--shad);margin-bottom:16px}
+.card-title{font-size:.95rem;font-weight:700;color:var(--hdr);margin-bottom:14px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--brd);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--hi);padding:9px 10px;text-align:left;font-weight:600;color:var(--acc);white-space:nowrap;border-bottom:1px solid var(--brd)}
+td{padding:7px 8px;border-bottom:1px solid #f0f0f8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.totals-row td{background:var(--hi);font-weight:700;border-top:2px solid var(--brd)}
+table input,table select{padding:5px 8px;font-size:.82rem;border-radius:5px}
+table input[type=number]{width:110px}
+table .url-input{width:160px}
+.btn-del{background:none;border:none;color:var(--err);cursor:pointer;font-size:1rem;padding:3px;border-radius:4px;transition:.15s}
+.btn-del:hover{background:#fef2f2}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:.88rem;font-weight:600;border:none;transition:.15s}
+.btn-primary{background:var(--acc);color:#fff}
+.btn-primary:hover{background:#1629a0}
+.btn-secondary{background:var(--hi);color:var(--acc);border:1px solid var(--brd)}
+.btn-secondary:hover{background:var(--brd)}
+.btn-sm{padding:5px 12px;font-size:.8rem}
+.btn-add{background:none;border:1px dashed var(--acc);color:var(--acc);padding:8px 16px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:600;transition:.15s;margin-top:10px;width:100%}
+.btn-add:hover{background:var(--hi)}
+
+/* NAV FOOTER */
+.nav-footer{padding:16px 32px;border-top:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center;background:var(--white);flex-shrink:0}
+
+/* STEP 5 OUTPUT */
+.output-section{margin-bottom:24px}
+.output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.output-header h3{font-size:.95rem;font-weight:700;color:var(--hdr)}
+.copy-row{display:flex;gap:8px;flex-wrap:wrap}
+.code-block{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:14px 16px;font-size:.8rem;font-family:monospace;white-space:pre-wrap;word-break:break-all;max-height:180px;overflow-y:auto;border:1px solid var(--brd)}
+.output-table-wrap{overflow-x:auto;border:1px solid var(--brd);border-radius:8px;max-height:280px;overflow-y:auto}
+.empty-state{text-align:center;padding:32px;color:var(--muted);font-size:.88rem}
+.status-badge{display:inline-flex;padding:3px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.status-pendente{background:#fef3c7;color:#92400e}
+.status-aprovado{background:#d1fae5;color:#065f46}
+.status-producao{background:#dbeafe;color:#1e40af}
+
+/* IMPORT AREA */
+.import-box{background:var(--hi);border:1px dashed var(--brd);border-radius:8px;padding:14px;margin-bottom:14px}
+.import-box textarea{background:var(--white);height:70px;font-size:.8rem;font-family:monospace;resize:vertical}
+.import-hint{font-size:.78rem;color:var(--muted);margin-top:5px}
+
+/* U-VARS */
+.uvar-row{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px}
+
+/* FLOODLIGHT TAG */
+.fl-tag{color:#a6e3a1}
+.fl-param{color:#cba6f7}
+.fl-val{color:#fab387}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:#1a237e;color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:9999;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid .span2,.form-grid .span3{grid-column:span 1}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">📋 Editor de Trafficking em Lote</div>
+    <div class="subtitle">CM360 Bulk Trafficking Editor — NC Tool AdOps Suite</div>
+  </div>
+  <div class="hdr-right">
+    <span id="save-indicator" style="font-size:.78rem;opacity:.7"></span>
+    <button class="btn-ghost" onclick="exportAll()">⬇ Exportar tudo</button>
+  </div>
+</header>
+
+<div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:20%"></div></div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <button class="step-btn active" data-step="1" onclick="goStep(1)">
+      <span class="num" id="num1">1</span> Configuração base
+    </button>
+    <button class="step-btn" data-step="2" onclick="goStep(2)">
+      <span class="num" id="num2">2</span> Placements
+    </button>
+    <button class="step-btn" data-step="3" onclick="goStep(3)">
+      <span class="num" id="num3">3</span> Criativos
+    </button>
+    <button class="step-btn" data-step="4" onclick="goStep(4)">
+      <span class="num" id="num4">4</span> Floodlight
+    </button>
+    <button class="step-btn" data-step="5" onclick="goStep(5)">
+      <span class="num" id="num5">5</span> Gerar Assets
+    </button>
+    <div class="sidebar-footer">
+      <button class="btn-clear" onclick="clearAll()">🗑 Limpar tudo</button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="step-area" id="step-area">
+      <!-- Steps rendered by JS -->
+    </div>
+
+    <div class="nav-footer">
+      <button class="btn btn-secondary" id="btn-prev" onclick="prevStep()">← Anterior</button>
+      <span style="font-size:.82rem;color:var(--muted)" id="step-label">Passo 1 de 5</span>
+      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Próximo →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== STATE ==========
+let state = {
+  step: 1,
+  base: { anunciante:'', campanha:'', inicio:'', fim:'', networkId:'' },
+  placements: [],
+  creatives: [],
+  floodlight: { advertiserId:'', activityGroup:'', activityGroupTag:'', activityTag:'', tipo:'Counter', postClick:30, postView:1, uvars:[] }
+};
+
+const FORMAT_DIMS = {
+  'Billboard 970x250':'970x250','Half Page 300x600':'300x600','Medium Rectangle 300x250':'300x250',
+  'Leaderboard 728x90':'728x90','Interstitial 320x480':'320x480','Pre-roll 15s':'16x9 vídeo',
+  'Pre-roll 30s':'16x9 vídeo','Bumper 6s':'16x9 vídeo','Native Feed':'native',
+  'Stories 9x16':'9x16','Reels 9x16':'9x16','Custom':''
+};
+
+// ========== LOCALSTORAGE ==========
+function saveState(){
+  try{localStorage.setItem('bulk-trafficking-v1',JSON.stringify(state));
+  document.getElementById('save-indicator').textContent='✓ Salvo';}catch(e){}
+}
+function loadState(){
+  try{const s=localStorage.getItem('bulk-trafficking-v1');if(s){const p=JSON.parse(s);Object.assign(state,p);}}catch(e){}
+}
+
+// ========== STEP RENDERING ==========
+function renderStep(){
+  const area = document.getElementById('step-area');
+  const fns = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5];
+  area.innerHTML = '';
+  fns[state.step]();
+  updateNav();
+  updateSidebar();
+  document.getElementById('progress-fill').style.width=(state.step/5*100)+'%';
+}
+
+function updateNav(){
+  document.getElementById('btn-prev').style.visibility = state.step===1?'hidden':'visible';
+  document.getElementById('btn-next').textContent = state.step===5?'✓ Concluído':'Próximo →';
+  document.getElementById('step-label').textContent = `Passo ${state.step} de 5`;
+}
+
+function updateSidebar(){
+  for(let i=1;i<=5;i++){
+    const btn=document.querySelector(`.step-btn[data-step="${i}"]`);
+    btn.classList.remove('active','done');
+    if(i===state.step) btn.classList.add('active');
+    else if(i<state.step) btn.classList.add('done');
+    document.getElementById(`num${i}`).textContent = i<state.step?'✓':i;
+  }
+}
+
+function goStep(n){state.step=n;renderStep();}
+function prevStep(){if(state.step>1){state.step--;renderStep();}}
+function nextStep(){if(state.step<5){readCurrentStep();state.step++;renderStep();}else{readCurrentStep();toast('Assets gerados! Veja o Step 5.');}}
+
+function readCurrentStep(){
+  if(state.step===1) readStep1();
+  if(state.step===2) readStep2();
+  if(state.step===3) readStep3();
+  if(state.step===4) readStep4();
+  saveState();
+}
+
+// ========== STEP 1 ==========
+function renderStep1(){
+  const b=state.base;
+  const preview = buildNamingPreview();
+  document.getElementById('step-area').innerHTML=`
+  <div class="step-header"><h2>⚙️ Configuração base</h2><p>Dados gerais da campanha e convenção de nomenclatura.</p></div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="field">
+        <label>Anunciante / Marca<span class="req">*</span></label>
+        <input id="f-anunciante" value="${esc(b.anunciante)}" placeholder="ex: BrandX" oninput="updateNamingPreview()">
+      </div>
+      <div class="field">
+        <label>Campanha<span class="req">*</span></label>
+        <input id="f-campanha" value="${esc(b.campanha)}" placeholder="ex: Lancamento_Produto_Nov26" oninput="updateNamingPreview()">
+      </div>
+      <div class="field">
+        <label>Data início<span class="req">*</span></label>
+        <input type="date" id="f-inicio" value="${b.inicio}" oninput="updateNamingPreview()">
+      </div>
+      <div class="field">
+        <label>Data fim<span class="req">*</span></label>
+        <input type="date" id="f-fim" value="${b.fim}" oninput="updateNamingPreview()">
+      </div>
+      <div class="field">
+        <label>Moeda</label>
+        <input value="BRL — Real Brasileiro" readonly>
+      </div>
+      <div class="field">
+        <label>Ad Server</label>
+        <input value="CM360 — Campaign Manager 360" readonly>
+      </div>
+      <div class="field">
+        <label>Network ID <span class="hint">(opcional)</span></label>
+        <input id="f-networkId" value="${esc(b.networkId)}" placeholder="ex: 1234567">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📐 Convenção de nomenclatura</div>
+    <div class="badge-info">🔖 Padrão CM360</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      Os Ad Names seguem a estrutura: <strong>ANUNCIANTE_CAMPANHA_SITE_FORMATO_DIMS_PERIODO</strong>
+    </div>
+    <div class="naming-preview">
+      <div class="label">Preview do Ad Name</div>
+      <div class="value" id="naming-preview-val">${preview}</div>
+    </div>
+  </div>`;
+}
+
+function buildNamingPreview(){
+  const a=document.getElementById('f-anunciante')?.value||state.base.anunciante||'ANUNCIANTE';
+  const c=document.getElementById('f-campanha')?.value||state.base.campanha||'CAMPANHA';
+  const ini=document.getElementById('f-inicio')?.value||state.base.inicio;
+  const fim=document.getElementById('f-fim')?.value||state.base.fim;
+  const per=ini&&fim?`${fmtDateShort(ini)}-${fmtDateShort(fim)}`:'PERIODO';
+  return `${slugify(a)}_${slugify(c)}_SITE_FORMATO_DIMS_${per}`;
+}
+
+function updateNamingPreview(){
+  const el=document.getElementById('naming-preview-val');
+  if(el) el.textContent=buildNamingPreview();
+}
+
+function readStep1(){
+  state.base.anunciante=document.getElementById('f-anunciante')?.value||'';
+  state.base.campanha=document.getElementById('f-campanha')?.value||'';
+  state.base.inicio=document.getElementById('f-inicio')?.value||'';
+  state.base.fim=document.getElementById('f-fim')?.value||'';
+  state.base.networkId=document.getElementById('f-networkId')?.value||'';
+}
+
+// ========== STEP 2 ==========
+let placementRows=[];
+function renderStep2(){
+  if(state.placements.length===0) state.placements=[newPlacement()];
+  document.getElementById('step-area').innerHTML=`
+  <div class="step-header"><h2>📌 Placements</h2><p>Adicione os placements da campanha. CPM e impressões se calculam mutuamente.</p></div>
+  <div class="import-box">
+    <div style="font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:6px">📋 Importar de planilha (Cole abaixo)</div>
+    <textarea id="import-paste" placeholder="Cole dados tabulados: Site&#9;Formato&#9;Tipo&#9;Impressões&#9;CPM&#9;URL&#9;Período" oninput="importPaste()"></textarea>
+    <div class="import-hint">Colunas esperadas (separadas por tab): Site | Formato | Tipo | Impressões | CPM | URL | Período</div>
+  </div>
+  <div class="tbl-wrap" id="pl-table-wrap">
+    ${renderPlTable()}
+  </div>
+  <button class="btn-add" onclick="addPlacement()">+ Adicionar placement</button>`;
+}
+
+function newPlacement(){return{id:Date.now()+Math.random(),site:'',formato:'Medium Rectangle 300x250',dims:'300x250',tipo:'Display',impressoes:'',cpm:'',budget:'',periodo:'',url:''};}
+
+function renderPlTable(){
+  const rows=state.placements.map((p,i)=>`
+  <tr>
+    <td style="color:var(--muted);font-size:.78rem">${i+1}</td>
+    <td><input value="${esc(p.site)}" placeholder="ex: G1" onchange="updatePl(${i},'site',this.value)"></td>
+    <td><select onchange="updatePl(${i},'formato',this.value);updatePlDims(${i},this.value)">
+      ${Object.keys(FORMAT_DIMS).map(f=>`<option${p.formato===f?' selected':''}>${f}</option>`).join('')}
+    </select></td>
+    <td><input value="${esc(p.dims)}" placeholder="300x250" style="width:95px" onchange="updatePl(${i},'dims',this.value)"></td>
+    <td><select onchange="updatePl(${i},'tipo',this.value)">
+      ${['Display','Vídeo','Social','Native','OOH'].map(t=>`<option${p.tipo===t?' selected':''}>${t}</option>`).join('')}
+    </select></td>
+    <td><input type="number" value="${p.impressoes}" placeholder="1000000" onchange="updatePl(${i},'impressoes',this.value);calcPlBudget(${i},'imp')"></td>
+    <td><input type="number" value="${p.cpm}" placeholder="12.00" step="0.01" onchange="updatePl(${i},'cpm',this.value);calcPlBudget(${i},'cpm')"></td>
+    <td><input type="number" value="${p.budget}" placeholder="12000" step="0.01" onchange="updatePl(${i},'budget',this.value);calcPlBudget(${i},'budget')"></td>
+    <td><input value="${esc(p.periodo)}" placeholder="1–15 Nov" style="width:90px" onchange="updatePl(${i},'periodo',this.value)"></td>
+    <td><input class="url-input" value="${esc(p.url)}" placeholder="https://..." onchange="updatePl(${i},'url',this.value)"></td>
+    <td><button class="btn-del" onclick="delPl(${i})">🗑</button></td>
+  </tr>`).join('');
+
+  const totImp=state.placements.reduce((s,p)=>s+(parseFloat(p.impressoes)||0),0);
+  const totBudget=state.placements.reduce((s,p)=>s+(parseFloat(p.budget)||0),0);
+
+  return`<table>
+    <thead><tr>
+      <th>#</th><th>Site/Veículo</th><th>Formato</th><th>Dims</th><th>Tipo</th>
+      <th>Impressões</th><th>CPM (R$)</th><th>Budget (R$)</th><th>Período</th><th>Landing Page</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr class="totals-row">
+      <td colspan="5" style="text-align:right">TOTAL</td>
+      <td>${fmtNum(totImp)}</td><td>—</td><td>${fmtBRL(totBudget)}</td><td colspan="3"></td>
+    </tr></tfoot>
+  </table>`;
+}
+
+function reRenderPlTable(){
+  const w=document.getElementById('pl-table-wrap');
+  if(w) w.innerHTML=renderPlTable();
+}
+
+function updatePl(i,k,v){if(state.placements[i]) state.placements[i][k]=v;}
+
+function updatePlDims(i,fmt){
+  const d=FORMAT_DIMS[fmt]||'';
+  state.placements[i].dims=d;
+  reRenderPlTable();
+}
+
+function calcPlBudget(i,changed){
+  const p=state.placements[i];
+  const imp=parseFloat(p.impressoes)||0;
+  const cpm=parseFloat(p.cpm)||0;
+  const bud=parseFloat(p.budget)||0;
+  if(changed==='imp'||changed==='cpm'){
+    if(imp&&cpm){p.budget=(imp/1000*cpm).toFixed(2);reRenderPlTable();}
+  } else if(changed==='budget'){
+    if(bud&&cpm){p.impressoes=Math.round(bud/cpm*1000);reRenderPlTable();}
+    else if(bud&&imp){p.cpm=(bud/imp*1000).toFixed(2);reRenderPlTable();}
+  }
+}
+
+function addPlacement(){readStep2();state.placements.push(newPlacement());reRenderPlTable();}
+
+function delPl(i){
+  if(state.placements.length===1){toast('Deve haver ao menos 1 placement.');return;}
+  state.placements.splice(i,1);reRenderPlTable();
+}
+
+function importPaste(){
+  const raw=document.getElementById('import-paste').value.trim();
+  if(!raw) return;
+  const lines=raw.split('\n').filter(l=>l.trim());
+  lines.forEach(line=>{
+    const cols=line.split('\t');
+    const p=newPlacement();
+    p.site=cols[0]||'';p.formato=cols[1]||p.formato;
+    p.dims=FORMAT_DIMS[p.formato]||cols[1]||'';
+    p.tipo=cols[2]||p.tipo;p.impressoes=cols[3]||'';
+    p.cpm=cols[4]||'';p.url=cols[5]||'';p.periodo=cols[6]||'';
+    if(p.impressoes&&p.cpm) p.budget=(parseFloat(p.impressoes)/1000*parseFloat(p.cpm)).toFixed(2);
+    state.placements.push(p);
+  });
+  reRenderPlTable();
+  toast(`${lines.length} placement(s) importado(s)`);
+}
+
+function readStep2(){
+  // values already updated via onchange
+}
+
+// ========== STEP 3 ==========
+function renderStep3(){
+  if(state.creatives.length===0) state.creatives=[newCreative()];
+  const dims=[...new Set(state.placements.map(p=>p.dims).filter(Boolean))];
+  document.getElementById('step-area').innerHTML=`
+  <div class="step-header"><h2>🎨 Criativos</h2><p>Cadastre os criativos que serão veiculados. Cada criativo será combinado com os placements compatíveis.</p></div>
+  <div class="tbl-wrap" id="cr-table-wrap">
+    ${renderCrTable(dims)}
+  </div>
+  <button class="btn-add" onclick="addCreative()">+ Adicionar criativo</button>`;
+}
+
+function newCreative(){return{id:Date.now()+Math.random(),nome:'',dims:'',formato:'Image',versao:'v1',variante:'A',status:'Pendente'};}
+
+function renderCrTable(dims){
+  if(!dims) dims=[...new Set(state.placements.map(p=>p.dims).filter(Boolean))];
+  const fmts=['Image','HTML5','Video','VAST','Third Party'];
+  const statuses=['Pendente','Aprovado','Em produção'];
+  const rows=state.creatives.map((c,i)=>`
+  <tr>
+    <td style="color:var(--muted);font-size:.78rem">${i+1}</td>
+    <td><input value="${esc(c.nome)}" placeholder="ex: Banner_Header_Blue" onchange="updateCr(${i},'nome',this.value)"></td>
+    <td><select onchange="updateCr(${i},'dims',this.value)">
+      <option value="">— Selecione —</option>
+      ${dims.map(d=>`<option${c.dims===d?' selected':''}>${d}</option>`).join('')}
+    </select></td>
+    <td><select onchange="updateCr(${i},'formato',this.value)">
+      ${fmts.map(f=>`<option${c.formato===f?' selected':''}>${f}</option>`).join('')}
+    </select></td>
+    <td><input value="${esc(c.versao)}" placeholder="v1" style="width:60px" onchange="updateCr(${i},'versao',this.value)"></td>
+    <td><input value="${esc(c.variante)}" placeholder="A" style="width:55px" onchange="updateCr(${i},'variante',this.value)"></td>
+    <td><select onchange="updateCr(${i},'status',this.value)">
+      ${statuses.map(s=>`<option${c.status===s?' selected':''}>${s}</option>`).join('')}
+    </select></td>
+    <td><span class="status-badge status-${slugStatus(c.status)}">${c.status}</span></td>
+    <td><button class="btn-del" onclick="delCr(${i})">🗑</button></td>
+  </tr>`).join('');
+
+  return`<table>
+    <thead><tr>
+      <th>#</th><th>Nome do criativo</th><th>Dimensões</th><th>Formato</th>
+      <th>Versão</th><th>Variante</th><th>Status</th><th></th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function reRenderCrTable(){
+  const w=document.getElementById('cr-table-wrap');
+  if(w) w.innerHTML=renderCrTable();
+}
+
+function updateCr(i,k,v){if(state.creatives[i]) state.creatives[i][k]=v;}
+function addCreative(){state.creatives.push(newCreative());reRenderCrTable();}
+function delCr(i){if(state.creatives.length===1){toast('Deve haver ao menos 1 criativo.');return;}state.creatives.splice(i,1);reRenderCrTable();}
+function slugStatus(s){return s==='Em produção'?'producao':s.toLowerCase();}
+function readStep3(){}
+
+// ========== STEP 4 ==========
+function renderStep4(){
+  const f=state.floodlight;
+  document.getElementById('step-area').innerHTML=`
+  <div class="step-header"><h2>🔦 Configuração Floodlight</h2><p>Parâmetros para geração das tags de conversão CM360.</p></div>
+  <div class="card">
+    <div class="card-title">Dados do Floodlight</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Advertiser ID<span class="req">*</span></label>
+        <input id="fl-advertiserId" value="${esc(f.advertiserId)}" placeholder="ex: 1234567" onchange="updateFL('advertiserId',this.value)">
+      </div>
+      <div class="field">
+        <label>Tipo de contador</label>
+        <select id="fl-tipo" onchange="updateFL('tipo',this.value)">
+          <option${f.tipo==='Counter'?' selected':''}>Counter</option>
+          <option${f.tipo==='Sales'?' selected':''}>Sales</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Activity Group (nome)</label>
+        <input id="fl-actGroup" value="${esc(f.activityGroup)}" placeholder="ex: Conversoes" onchange="updateFL('activityGroup',this.value)">
+      </div>
+      <div class="field">
+        <label>Activity Group Tag String (cat)</label>
+        <input id="fl-actGroupTag" value="${esc(f.activityGroupTag)}" placeholder="ex: conve0" onchange="updateFL('activityGroupTag',this.value)">
+      </div>
+      <div class="field">
+        <label>Activity Tag String (type)</label>
+        <input id="fl-actTag" value="${esc(f.activityTag)}" placeholder="ex: compra0" onchange="updateFL('activityTag',this.value)">
+      </div>
+      <div class="field">
+        <label>Post-click (dias)</label>
+        <input type="number" id="fl-pc" value="${f.postClick}" min="1" max="90" onchange="updateFL('postClick',this.value)">
+      </div>
+      <div class="field">
+        <label>Post-view (dias)</label>
+        <input type="number" id="fl-pv" value="${f.postView}" min="0" max="30" onchange="updateFL('postView',this.value)">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">U-Variables (parâmetros customizados)</div>
+    <div id="uvar-container">
+      ${renderUvars()}
+    </div>
+    <button class="btn-add" style="margin-top:0" onclick="addUvar()">+ Adicionar U-Variable</button>
+  </div>`;
+}
+
+function renderUvars(){
+  return state.floodlight.uvars.map((u,i)=>`
+  <div class="uvar-row">
+    <span style="font-weight:600;color:var(--acc)">u${i+1}=</span>
+    <input value="${esc(u.param)}" placeholder="nome do parâmetro" onchange="updateUvar(${i},'param',this.value)">
+    <input value="${esc(u.desc)}" placeholder="descrição / exemplo" onchange="updateUvar(${i},'desc',this.value)">
+    <button class="btn-del" onclick="delUvar(${i})">🗑</button>
+  </div>`).join('');
+}
+
+function updateFL(k,v){state.floodlight[k]=v;}
+function addUvar(){state.floodlight.uvars.push({param:'',desc:''});document.getElementById('uvar-container').innerHTML=renderUvars();}
+function delUvar(i){state.floodlight.uvars.splice(i,1);document.getElementById('uvar-container').innerHTML=renderUvars();}
+function updateUvar(i,k,v){state.floodlight.uvars[i][k]=v;}
+function readStep4(){}
+
+// ========== STEP 5 ==========
+function renderStep5(){
+  const adNames=buildAdNames();
+  const sheet=buildTraffickingSheet();
+  const flTag=buildFloodlightTag();
+
+  document.getElementById('step-area').innerHTML=`
+  <div class="step-header"><h2>🚀 Assets Gerados</h2><p>${adNames.length} combinações placement × criativo geradas.</p></div>
+
+  <!-- A: AD NAMES -->
+  <div class="output-section">
+    <div class="output-header">
+      <h3>A) Ad Names (${adNames.length})</h3>
+      <div class="copy-row">
+        <button class="btn btn-secondary btn-sm" onclick="copyAdNames()">📋 Copiar lista</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadAdNames()">⬇ CSV</button>
+      </div>
+    </div>
+    <div class="output-table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Ad Name</th><th>Placement</th><th>Criativo</th><th>Formato</th></tr></thead>
+        <tbody>
+          ${adNames.map((r,i)=>`<tr>
+            <td style="color:var(--muted)">${i+1}</td>
+            <td><code style="font-size:.78rem">${esc(r.adName)}</code></td>
+            <td>${esc(r.site)}</td>
+            <td>${esc(r.creative)}</td>
+            <td>${esc(r.formato)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- B: TRAFFICKING SHEET -->
+  <div class="output-section">
+    <div class="output-header">
+      <h3>B) Trafficking Sheet</h3>
+      <div class="copy-row">
+        <button class="btn btn-secondary btn-sm" onclick="copySheet()">📋 Copiar tabela</button>
+        <button class="btn btn-primary btn-sm" onclick="downloadCSV()">⬇ Download CSV</button>
+      </div>
+    </div>
+    <div class="output-table-wrap">
+      <table>
+        <thead><tr>
+          <th>Placement Name</th><th>Site</th><th>Size</th><th>Start Date</th><th>End Date</th>
+          <th>Impressions</th><th>CPM</th><th>Budget (R$)</th><th>Creative</th><th>Click URL</th>
+        </tr></thead>
+        <tbody>
+          ${sheet.map(r=>`<tr>
+            <td><code style="font-size:.75rem">${esc(r.name)}</code></td>
+            <td>${esc(r.site)}</td><td>${esc(r.size)}</td>
+            <td>${r.start}</td><td>${r.end}</td>
+            <td>${fmtNum(r.impressions)}</td>
+            <td>${r.cpm?'R$ '+r.cpm:''}</td>
+            <td>${r.budget?fmtBRL(parseFloat(r.budget)):''}</td>
+            <td>${esc(r.creative)}</td>
+            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${esc(r.url)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- C: FLOODLIGHT TAG -->
+  <div class="output-section">
+    <div class="output-header">
+      <h3>C) Floodlight Tag</h3>
+      <div class="copy-row">
+        <button class="btn btn-secondary btn-sm" onclick="copyTag()">📋 Copiar tag</button>
+      </div>
+    </div>
+    <div class="code-block" id="fl-tag-preview">${syntaxHighlight(flTag)}</div>
+    ${state.floodlight.advertiserId?'':'<p style="color:var(--warn);font-size:.82rem;margin-top:6px">⚠️ Preencha o Advertiser ID no Step 4 para gerar a tag completa.</p>'}
+  </div>
+
+  <!-- D: PLACEMENTS LIST -->
+  <div class="output-section">
+    <div class="output-header">
+      <h3>D) Lista de Placement Names</h3>
+      <div class="copy-row">
+        <button class="btn btn-secondary btn-sm" onclick="copyPlacements()">📋 Copiar lista</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadPlacements()">⬇ TXT</button>
+      </div>
+    </div>
+    <div class="code-block" style="color:#cdd6f4">${buildPlacementNames().map(n=>`<div>${esc(n)}</div>`).join('')}</div>
+  </div>`;
+}
+
+function buildAdNames(){
+  const b=state.base;
+  const per=b.inicio&&b.fim?`${fmtDateShort(b.inicio)}-${fmtDateShort(b.fim)}`:'PERIODO';
+  const rows=[];
+  state.placements.forEach(p=>{
+    state.creatives.forEach(c=>{
+      const adName=`${slugify(b.anunciante||'MARCA')}_${slugify(b.campanha||'CAMP')}_${slugify(p.site||'SITE')}_${slugify(p.formato.split(' ')[0])}_${p.dims.replace(/x/g,'x')||'DIMS'}_${slugify(c.variante||'A')}_${per}`;
+      rows.push({adName,site:p.site,creative:c.nome||c.variante,formato:p.formato,dims:p.dims,placement:p,creative_obj:c});
+    });
+  });
+  return rows;
+}
+
+function buildTraffickingSheet(){
+  const b=state.base;
+  const per=b.inicio&&b.fim?`${fmtDateShort(b.inicio)}-${fmtDateShort(b.fim)}`:'PERIODO';
+  const rows=[];
+  state.placements.forEach(p=>{
+    state.creatives.forEach(c=>{
+      const name=`${slugify(b.anunciante||'MARCA')}_${slugify(b.campanha||'CAMP')}_${slugify(p.site||'SITE')}_${slugify(p.formato.split(' ')[0])}_${p.dims||'DIMS'}_${per}`;
+      rows.push({name,site:p.site,size:p.dims,start:b.inicio,end:b.fim,impressions:p.impressoes,cpm:p.cpm,budget:p.budget,creative:c.nome||c.variante,url:p.url});
+    });
+  });
+  return rows;
+}
+
+function buildFloodlightTag(){
+  const f=state.floodlight;
+  const src=f.advertiserId||'[ADVERTISER_ID]';
+  const type_str=f.activityGroupTag||'[cat]';
+  const cat_str=f.activityTag||'[type]';
+  const uvars=f.uvars.map((u,i)=>`u${i+1}=${esc(u.param)||'[valor]'};`).join('');
+  return `<!-- CM360 Floodlight Tag - ${state.base.anunciante||'[ADVERTISER]'} -->
+<!-- Tipo: ${f.tipo} | Post-click: ${f.postClick}d | Post-view: ${f.postView}d -->
+<img src="https://ad.doubleclick.net/ddm/activity/src=${src};type=${type_str};cat=${cat_str};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=\${GDPR};gdpr_consent=\${GDPR_CONSENT_755};${uvars}ord=1?" width="1" height="1" alt=""/>`;
+}
+
+function buildPlacementNames(){
+  const b=state.base;
+  const per=b.inicio&&b.fim?`${fmtDateShort(b.inicio)}-${fmtDateShort(b.fim)}`:'PERIODO';
+  return state.placements.map(p=>`${slugify(b.anunciante||'MARCA')}_${slugify(b.campanha||'CAMP')}_${slugify(p.site||'SITE')}_${slugify(p.formato.split(' ')[0])}_${p.dims||'DIMS'}_${per}`);
+}
+
+// ========== COPY / DOWNLOAD ==========
+function copyAdNames(){
+  const names=buildAdNames().map(r=>r.adName).join('\n');
+  navigator.clipboard.writeText(names).then(()=>toast('Ad Names copiados!'));
+}
+
+function copySheet(){
+  const rows=buildTraffickingSheet();
+  const header='Placement Name\tSite\tSize\tStart Date\tEnd Date\tImpressions\tCPM\tBudget\tCreative\tClick URL';
+  const lines=rows.map(r=>[r.name,r.site,r.size,r.start,r.end,r.impressions,r.cpm,r.budget,r.creative,r.url].join('\t'));
+  navigator.clipboard.writeText([header,...lines].join('\n')).then(()=>toast('Trafficking sheet copiada!'));
+}
+
+function copyTag(){
+  navigator.clipboard.writeText(buildFloodlightTag()).then(()=>toast('Tag copiada!'));
+}
+
+function copyPlacements(){
+  navigator.clipboard.writeText(buildPlacementNames().join('\n')).then(()=>toast('Placements copiados!'));
+}
+
+function downloadAdNames(){
+  const header='Ad Name,Site,Formato,Dims,Criativo\n';
+  const rows=buildAdNames().map(r=>`"${r.adName}","${r.site}","${r.formato}","${r.dims}","${r.creative}"`).join('\n');
+  download(`adnames_${slugify(state.base.anunciante||'camp')}_${today()}.csv`,header+rows,'text/csv');
+}
+
+function downloadCSV(){
+  const rows=buildTraffickingSheet();
+  const header='Placement Name,Site,Size,Start Date,End Date,Impressions,CPM,Budget,Creative,Click URL\n';
+  const lines=rows.map(r=>[`"${r.name}"`,`"${r.site}"`,`"${r.size}"`,r.start,r.end,r.impressions,r.cpm,r.budget,`"${r.creative}"`,`"${r.url}"`].join(',')).join('\n');
+  download(`trafficking_${slugify(state.base.anunciante||'camp')}_${today()}.csv`,header+lines,'text/csv');
+}
+
+function downloadPlacements(){
+  download(`placements_${slugify(state.base.anunciante||'camp')}_${today()}.txt`,buildPlacementNames().join('\n'),'text/plain');
+}
+
+function exportAll(){
+  readCurrentStep();
+  downloadCSV();
+  setTimeout(()=>downloadAdNames(),400);
+  setTimeout(()=>downloadPlacements(),800);
+  toast('Exportando todos os arquivos...');
+}
+
+function download(name,content,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;a.click();
+}
+
+// ========== UTILS ==========
+function slugify(s){return(s||'').toUpperCase().trim().replace(/\s+/g,'_').replace(/[^A-Z0-9_\-]/g,'');}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtNum(n){const v=parseFloat(n)||0;return v.toLocaleString('pt-BR');}
+function fmtBRL(n){return 'R$ '+(parseFloat(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDateShort(d){if(!d)return'';const[y,m,dy]=d.split('-');return`${dy}${m}${y.slice(2)}`;}
+function today(){const d=new Date();return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;}
+
+function syntaxHighlight(tag){
+  return tag
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(https?:\/\/[^\s"]+)/g,'<span class="fl-tag">$1</span>')
+    .replace(/([a-z_]+)=(\[[^\]]+\])/g,'<span class="fl-param">$1</span>=<span class="fl-val">$2</span>')
+    .replace(/(\$\{[^}]+\})/g,'<span style="color:#89dceb">$1</span>');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function clearAll(){
+  if(!confirm('Limpar todos os dados? Esta ação não pode ser desfeita.')) return;
+  localStorage.removeItem('bulk-trafficking-v1');
+  state={step:1,base:{anunciante:'',campanha:'',inicio:'',fim:'',networkId:''},placements:[],creatives:[],floodlight:{advertiserId:'',activityGroup:'',activityGroupTag:'',activityTag:'',tipo:'Counter',postClick:30,postView:1,uvars:[]}};
+  renderStep();
+  toast('Dados limpos.');
+}
+
+// ========== INIT ==========
+loadState();
+state.step=state.step||1;
+renderStep();
+
+// Auto-save every 30s
+setInterval(()=>{readCurrentStep();saveState();},30000);
+</script>
+</body>
+</html>
