@@ -343,9 +343,9 @@ body {
 }
 /* flat row item */
 .trule2 {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: flex-start; gap: 8px;
   background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
-  padding: 6px 12px; min-height: 0;
+  padding: 7px 12px; min-height: 0;
 }
 .trule2-cat-badge {
   flex-shrink: 0;
@@ -1264,17 +1264,13 @@ body {
      SLIDE 19 — REGRAS DE TAXONOMIA (INTERATIVO — FLAT)
 ════════════════════════════════════════════════════════════ -->
 <div class="slide" id="s19">
-  <div class="s-body" style="padding:28px 56px 24px;display:flex;flex-direction:column;justify-content:flex-start;height:100%;">
-    <!-- header row -->
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;flex-shrink:0;" class="reveal">
-      <div class="s-tag" style="margin-bottom:0;">Referência</div>
-      <div class="s-head" style="margin-bottom:0;font-size:22px;">Regras de <span class="accent">Taxonomia</span></div>
-      <input type="text" id="taxSearch2" placeholder="Buscar…" style="margin-left:auto;width:180px;">
+  <div class="s-body" style="padding:32px 56px 28px;display:flex;flex-direction:column;justify-content:flex-start;height:100%;">
+    <div style="flex-shrink:0;margin-bottom:4px;" class="reveal">
+      <div class="s-tag">Referência</div>
+      <div class="s-head">Regras de <span class="accent">Taxonomia</span></div>
+      <p style="font-size:11px;color:var(--dim);margin-top:2px;">Esta seção é interativa na versão HTML. Consulte as 18 regras abaixo em formato resumido.</p>
     </div>
-    <!-- category chips -->
-    <div class="tax2-chips reveal" id="taxChips2" style="flex-shrink:0;margin-bottom:8px;"></div>
-    <!-- rules grid — takes all remaining height -->
-    <div id="taxRules2" style="flex:1;min-height:0;"></div>
+    <div id="taxRules2" style="flex:1;min-height:0;margin-top:10px;"></div>
     <div id="taxEmpty2">Nenhuma regra encontrada para essa busca.</div>
   </div>
   <div class="slide-footer">
@@ -1586,52 +1582,25 @@ function shortTitle(rule){
   return sep > -1 ? rule.title.slice(sep + 3) : rule.title;
 }
 
+function ruleSnippet(rule){
+  // Short summary: title part + first sentence of solucao/motivo
+  const name = shortTitle(rule);
+  const detail = (rule.solucao || rule.motivo || '').split(/[.;]/)[0].trim();
+  return detail ? `${name} — ${detail}` : name;
+}
+
 function renderList(list){
   const wrap = document.getElementById('taxRules2');
   wrap.innerHTML = list.map(rule => `
     <div class="trule2" data-id="${rule.id}" data-cat="${rule.category}">
       <span class="trule2-cat-badge ${CAT_CSS[rule.category]||'cat-geral'}">${rule.category}</span>
-      <span class="trule2-title">${shortTitle(rule)}</span>
+      <span class="trule2-title">${ruleSnippet(rule)}</span>
     </div>
   `).join('');
 }
 
 function initTax(){
-  const cats = ['Todos', ...new Set(TAX_RULES.map(r => r.category))];
-  let activeCategory = 'Todos';
-  const chipsEl  = document.getElementById('taxChips2');
-  const searchEl = document.getElementById('taxSearch2');
-  const emptyEl  = document.getElementById('taxEmpty2');
-
-  function renderChips(){
-    chipsEl.innerHTML = cats.map(c =>
-      `<button class="tax2-chip ${c===activeCategory?'active':''}" data-cat="${c}">${c}</button>`
-    ).join('');
-    chipsEl.querySelectorAll('.tax2-chip').forEach(chip => {
-      chip.addEventListener('click', e => {
-        e.stopPropagation();
-        activeCategory = chip.dataset.cat;
-        renderChips(); filter();
-      });
-    });
-  }
-
-  function filter(){
-    const q = searchEl.value.trim().toLowerCase();
-    const filtered = TAX_RULES.filter(r => {
-      const matchCat = activeCategory === 'Todos' || r.category === activeCategory;
-      const hay = [r.title, r.category, r.motivo, r.solucao||'', r.observacao||'',
-        (r.important||[]).join(' '), (r.notUse||[]).join(' '), (r.casos||[]).join(' ')
-      ].join(' ').toLowerCase();
-      return matchCat && (q==='' || hay.includes(q));
-    });
-    renderList(filtered);
-    emptyEl.classList.toggle('show', filtered.length === 0);
-  }
-
-  searchEl.addEventListener('input', filter);
-  searchEl.addEventListener('click', e => e.stopPropagation());
-  renderChips(); filter();
+  renderList(TAX_RULES);
 }
 
 if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initTax); }
