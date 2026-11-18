@@ -33,7 +33,7 @@ RM_STORMX_ADP/
 
 - Estrutura da RM (Resource Management) e sua relação com o ADP
 - Fluxo de preenchimento: export Camphouse → Colar Especial → aba do veículo
-- Status e versionamento (Solicitado / Alterar / Cancelar / Prorrogado)
+- Código de cores de preenchimento (Dropdown / Manual / Automático / StormX)
 - Boas práticas e erros recorrentes
 - Regras de taxonomia por plataforma (Google, Meta, TikTok, DV360, Amazon DSP etc.)
 - Uso do NC Tool para geração e validação de IDs
