@@ -65,7 +65,7 @@ Treinamentos/
 | UL Agência × StormX × Flashtalking | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/UL_Agencia/2026/index.html) |
 | Custo de Produtos em Pacote | Out/2026 | Apresentação interativa | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Custo_Produtos_Pacote/index.html) |
 | Ad Server | v15 — atual | PPTX + PDF | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/AdServer/index.html) |
-| RM StormX ADP | Nov/2026 | Treinamento completo | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/2026/24-11-26/RM_STORMX_ADP_Treinamento_Completo.html) |
+| RM StormX ADP | Nov/2026 | Treinamento completo | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/RM_STORMX_ADP/2026/24-11-26/v2/RM_STORMX_ADP_Treinamento_Completo_v2.html) |
 | VAST vs VPAID | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/VAST_VPAID/index.html) |
 | Programático & Vídeo | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Programatico_Video/index.html) |
 | Brand Safety & Viewability | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Brand_Safety_Viewability/index.html) |
