@@ -21,7 +21,7 @@ Versão mais recente do treinamento RM → ADP na plataforma StormX — Unilever
 4. O que é RM × ADP
 5. Importando do Camphouse
 6. Abas por Veículo
-7. Cores e Status
+7. Código de Cores — o que editar (Dropdown / Manual / Automático / StormX)
 8. Coluna G — String de Trafficking
 9. Dropdowns Obrigatórios
 10. Validando a String
@@ -29,7 +29,7 @@ Versão mais recente do treinamento RM → ADP na plataforma StormX — Unilever
 12. Regras Gerais
 13. Responsabilidades
 14. BRD / INF / UGC
-15. Datas de Vigência
+15. Datas e Alterações
 16. SLAs RM
 17. SLAs Flashtalking
 18. Checklist Final
