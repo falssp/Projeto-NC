@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custo de Produtos em Pacote — StormX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#494C67;
+    --navy-deep:#3B3D54;
+    --navy-soft:#5B5E78;
+    --cyan:#14D7FF;
+    --amber:#FFAB40;
+    --red:#D9534F;
+    --green:#34C759;
+    --ink:#2B2D3D;
+    --muted:#83869A;
+    --line:#E4E6EE;
+    --paper:#FFFFFF;
+    --paper-tint:#F7F8FB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:#1B1C27;}
+  body{font-family:'Inter',sans-serif;color:var(--ink);overflow:hidden;}
+
+  .viewer{position:fixed;inset:0;display:flex;flex-direction:column;}
+  .progress{height:3px;background:rgba(255,255,255,0.08);position:relative;z-index:20;flex:0 0 auto;}
+  .progress-fill{height:100%;width:4%;background:linear-gradient(90deg,var(--cyan),var(--amber));transition:width .5s cubic-bezier(.65,0,.35,1);}
+  .deck{flex:1 1 auto;position:relative;overflow:hidden;}
+
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:5.5vh 7vw;
+    opacity:0;pointer-events:none;
+    transform:translateX(28px) scale(.99);
+    transition:opacity .55s cubic-bezier(.16,1,.3,1),transform .55s cubic-bezier(.16,1,.3,1);
+  }
+  .slide.prevslide{transform:translateX(-28px) scale(.99);}
+  .slide.active{opacity:1;pointer-events:auto;transform:translateX(0) scale(1);z-index:5;}
+  .slide.dark{background:radial-gradient(120% 140% at 15% 10%,var(--navy-soft) 0%,var(--navy) 45%,var(--navy-deep) 100%);color:#fff;}
+  .slide.light{background:var(--paper);color:var(--ink);}
+
+  .amb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.12;background:var(--cyan);pointer-events:none;}
+  .slide.dark .amb1{width:340px;height:340px;top:-90px;right:8%;animation:float1 14s ease-in-out infinite;}
+  .slide.dark .amb2{width:180px;height:180px;bottom:-40px;left:6%;background:var(--amber);animation:float2 11s ease-in-out infinite;}
+  @keyframes float1{0%,100%{transform:translateY(0px)} 50%{transform:translateY(26px)}}
+  @keyframes float2{0%,100%{transform:translateY(0px)} 50%{transform:translateY(-20px)}}
+
+  .mark{display:inline-flex;flex-direction:column;gap:3px;width:26px;}
+  .mark span{display:block;height:4px;border-radius:3px;background:currentColor;}
+  .mark span:nth-child(1){width:100%;}
+  .mark span:nth-child(2){width:70%;}
+  .mark span:nth-child(3){width:45%;}
+  .light .mark{color:var(--navy);}
+  .dark .mark{color:#fff;}
+
+  .wordmark{position:absolute;top:4.5vh;right:6vw;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.15rem;letter-spacing:.5px;z-index:6;}
+  .wordmark span{color:var(--cyan);}
+  .dark .wordmark{color:#fff;}
+  .light .wordmark{color:var(--navy);opacity:.55;}
+
+  .pill{display:inline-flex;align-items:center;gap:.55rem;background:var(--navy-soft);color:#fff;padding:.5rem 1.1rem .5rem 1.5rem;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.2px;position:relative;width:max-content;}
+  .light .pill{background:var(--navy);}
+  .pill::before{content:'';position:absolute;left:-7px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 3px rgba(20,215,255,.15);}
+
+  .eyebrow-row{display:flex;align-items:center;gap:.8rem;margin-bottom:.9rem;}
+  h1.headline{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(1.9rem,3.4vw,3.1rem);line-height:1.08;margin:0 0 .5rem 0;color:var(--cyan);}
+  .dark h1.headline{font-size:clamp(2.1rem,4vw,3.6rem);}
+  .subtitle{font-size:clamp(.95rem,1.25vw,1.25rem);color:var(--muted);max-width:52ch;line-height:1.5;}
+  .dark .subtitle{color:#D7DBE8;}
+
+  .section-title{display:flex;align-items:center;gap:.7rem;margin-bottom:1.7vh;}
+  .section-title h1{margin:0;}
+
+  .content-cols{display:flex;gap:3.5vw;margin-top:1vh;}
+  .col{flex:1;}
+  .col+.col{border-left:1px solid var(--line);padding-left:3.5vw;}
+  .dark .col+.col{border-color:rgba(255,255,255,.12);}
+
+  .item-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:1.02rem;color:var(--navy);margin:0 0 .35rem 0;}
+  .item-label.cyan{color:#0C93A6;}
+  .item-label.amber{color:#8A5A17;}
+  .item-label.red{color:var(--red);}
+  .item-text{font-size:.95rem;color:var(--ink);opacity:.85;line-height:1.5;margin:0 0 1.3rem 0;}
+  .dark .item-text{color:#D7DBE8;opacity:1;}
+
+  ul.plain{list-style:none;margin:0;padding:0;}
+  ul.plain li{position:relative;padding-left:1.1rem;margin-bottom:.65rem;font-size:.93rem;line-height:1.45;color:var(--ink);}
+  ul.plain li::before{content:'–';position:absolute;left:0;color:#0C93A6;font-weight:700;}
+  .dark ul.plain li{color:#E4E7F2;}
+  .dark ul.plain li::before{color:var(--cyan);}
+
+  ul.check{list-style:none;margin:0;padding:0;}
+  ul.check li{position:relative;padding-left:1.3rem;margin-bottom:.6rem;font-size:.92rem;line-height:1.45;color:var(--ink);}
+  ul.check li::before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700;}
+
+  ul.cross{list-style:none;margin:0;padding:0;}
+  ul.cross li{position:relative;padding-left:1.3rem;margin-bottom:.55rem;font-size:.88rem;line-height:1.4;color:var(--ink);}
+  ul.cross li::before{content:'✕';position:absolute;left:0;color:var(--red);font-weight:700;}
+
+  .reveal{opacity:0;transform:translateY(16px);}
+  .slide.active .reveal{animation:riseIn .65s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0)*90ms + 150ms);}
+  @keyframes riseIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+  .footer{position:absolute;bottom:2.2vh;left:7vw;right:7vw;display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);z-index:6;}
+  .dark .footer{color:#8286A0;}
+  .footer b{color:var(--navy);font-weight:700;}
+  .dark .footer b{color:#fff;}
+
+  .controls{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:1.4rem;padding:1.1rem 0;background:#14151E;}
+  .navbtn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s;}
+  .navbtn:hover{background:rgba(20,215,255,.16);border-color:var(--cyan);}
+  .navbtn:active{transform:scale(.92);}
+  .dots{display:flex;gap:.4rem;flex-wrap:wrap;max-width:300px;justify-content:center;}
+  .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer;transition:background .2s,transform .2s;}
+  .dot:hover{background:rgba(255,255,255,.5);}
+  .dot.active{background:var(--cyan);transform:scale(1.35);}
+  .counter{font-family:'Space Grotesk',sans-serif;color:#8286A0;font-size:.78rem;letter-spacing:.5px;min-width:64px;text-align:center;}
+  .fsbtn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;}
+  .fsbtn:hover{background:rgba(255,171,64,.18);border-color:var(--amber);}
+
+  /* flow steps */
+  .flow{display:flex;align-items:stretch;gap:1vw;margin-top:2vh;}
+  .flow-step{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:1.4rem .9rem 1.1rem;position:relative;text-align:center;color:var(--ink);}
+  .flow-step.hi{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .flow-num{width:34px;height:34px;border-radius:50%;border:2px solid #0C93A6;color:#0C93A6;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:-2.5rem auto .7rem;position:relative;z-index:2;}
+  .flow-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.88rem;margin-bottom:.4rem;}
+  .flow-desc{font-size:.76rem;color:var(--muted);line-height:1.35;}
+  .flow-step.hi .flow-desc{color:#CADCFC;}
+  .flow-arrow{align-self:center;color:#0C93A6;font-size:1.2rem;}
+
+  /* grid cards */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5vh;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.9vw 1vw;margin-top:1.5vh;}
+  .vcard{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;}
+  .vcard.dark-card{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#fff;}
+  .vcard-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.93rem;color:var(--navy);}
+  .dark .vcard-title{color:#fff;}
+  .vcard-desc{font-size:.78rem;color:var(--muted);margin-top:.3rem;line-height:1.4;}
+  .dark .vcard-desc{color:#B0B4C8;}
+
+  /* tables */
+  table.dt{border-collapse:collapse;width:100%;font-size:.82rem;}
+  table.dt th,table.dt td{border:1px solid var(--line);padding:.4rem .55rem;text-align:left;}
+  table.dt th{background:#EFF1F6;color:var(--navy);font-family:'Space Grotesk',sans-serif;font-weight:700;}
+  table.dt tr:nth-child(even) td{background:var(--paper-tint);}
+  table.dt td.center{text-align:center;}
+
+  /* callouts */
+  .callout{border-radius:9px;padding:.85rem 1.1rem;margin-top:1.2vh;}
+  .callout-warn{background:#FDF3E7;border:1px solid var(--amber);}
+  .callout-warn b{color:#8A5A17;font-family:'Space Grotesk',sans-serif;display:block;margin-bottom:.3rem;}
+  .callout-red{background:#FDF0EF;border:1px solid var(--red);}
+  .callout-red b{color:var(--red);font-family:'Space Grotesk',sans-serif;display:block;margin-bottom:.3rem;}
+  .callout-blue{background:#EBF8FF;border:1px solid #0C93A6;}
+  .callout-blue b{color:#0C73A6;font-family:'Space Grotesk',sans-serif;display:block;margin-bottom:.3rem;}
+
+  .step-row{display:flex;align-items:flex-start;gap:.9rem;margin-bottom:.9rem;}
+  .badge-num{width:28px;height:28px;border-radius:8px;background:#0C93A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:.82rem;flex:0 0 auto;}
+  .step-row .txt b{font-family:'Space Grotesk',sans-serif;display:block;margin-bottom:.12rem;font-size:.9rem;}
+  .step-row .txt span{font-size:.83rem;color:var(--muted);}
+
+  .sla-row{display:flex;gap:1rem;margin-top:1.5vh;}
+  .sla-card{flex:1;border:1px solid var(--line);border-radius:10px;padding:1rem;text-align:center;background:var(--paper);}
+  .sla-card .sla-n{font-family:'Space Grotesk',sans-serif;font-size:1.6rem;font-weight:700;color:var(--cyan);}
+  .sla-card .sla-lbl{font-size:.72rem;color:var(--muted);margin-top:.2rem;}
+  .sla-card .sla-sub{font-size:.78rem;font-weight:600;color:var(--navy);margin-top:.3rem;}
+
+  .tag-chip{display:inline-block;padding:.2rem .6rem;border-radius:6px;font-size:.72rem;font-weight:700;font-family:'Space Grotesk',sans-serif;margin:.15rem .15rem 0 0;}
+  .chip-cyan{background:rgba(20,215,255,.15);color:#0C93A6;}
+  .chip-amber{background:rgba(255,171,64,.15);color:#8A5A17;}
+  .chip-red{background:rgba(217,83,79,.12);color:var(--red);}
+  .chip-green{background:rgba(52,199,89,.12);color:#1A7A35;}
+
+  .org-row{display:flex;gap:1.2rem;margin-top:2vh;align-items:stretch;}
+  .org-card{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:1.1rem 1rem;text-align:center;}
+  .org-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.95rem;color:var(--cyan);}
+  .org-role{font-size:.75rem;color:#B0B4C8;margin-top:.25rem;}
+  .org-email{font-size:.68rem;color:#8286A0;margin-top:.15rem;}
+
+  kbd{background:rgba(255,255,255,.1);border-radius:4px;padding:1px 6px;font-family:inherit;}
+  .hint{position:absolute;top:4.5vh;left:7vw;font-size:.7rem;color:rgba(255,255,255,.35);}
+  .light .hint{color:rgba(43,45,61,.35);}
+
+  @media(max-width:820px){
+    .content-cols{flex-direction:column;}
+    .col+.col{border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:1.1rem;margin-top:1.1rem;}
+    .grid3{grid-template-columns:1fr 1fr;}
+    .flow{flex-direction:column;}
+    .sla-row{flex-wrap:wrap;}
+  }
+  /* ajuste de legibilidade (deck Custo de Produtos em Pacote) */
+  .item-label{font-size:clamp(1.1rem,1.5vw,1.4rem);}
+  .item-text{font-size:clamp(1.02rem,1.45vw,1.3rem);line-height:1.55;}
+  ul.plain li,ul.check li{font-size:clamp(1rem,1.4vw,1.25rem);margin-bottom:.8rem;}
+  table.dt{font-size:clamp(.9rem,1.2vw,1.1rem);}
+  table.dt th,table.dt td{padding:.65rem .85rem;}
+</style>
+</head>
+<body>
+<div class="viewer">
+  <div class="progress"><div class="progress-fill" id="pbar"></div></div>
+  <div class="deck" id="deck">
+
+    <!-- slides -->
+    <div class="slide dark active" id="s0">
+      <div class="amb amb1"></div><div class="amb amb2"></div><div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="eyebrow-row reveal" style="--i:0"><div class="pill">ADP × BI</div></div>
+      <h1 class="headline reveal" style="--i:1">Custo de produtos<br>vendidos em pacote</h1>
+      <p class="subtitle reveal" style="--i:2">Masthead CPH, TikTok Branded Mission, Branded Buzz e os próximos: como medir sem criar exceção no ADP.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s1">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">O problema: custo aparecendo como R$0</h1></div>
+      <div class="content-cols">
+        <div class="col reveal" style="--i:1">
+          <p class="item-label red">O que acontece</p>
+          <p class="item-text">Ao quebrar o relatório do YouTube por <b>Ad</b>, <b>Ad Group</b> ou <b>Ad ID</b>, o custo/revenue do <b>Masthead CPH</b> volta como <b>R$0</b>.</p>
+          <p class="item-label cyan">Não é falta de dado</p>
+          <p class="item-text">A medição existe na plataforma. O custo só não consegue ser distribuído nessa granularidade.</p>
+        </div>
+        <div class="col reveal" style="--i:2">
+          <p class="item-label amber">Por que importa</p>
+          <ul class="plain">
+            <li>O BI interpreta R$0 como investimento zero.</li>
+            <li>O mesmo padrão já apareceu no TikTok (Branded Mission) e volta com o Branded Buzz.</li>
+            <li>A reação padrão é mexer no ADP a cada produto novo.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s2">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">Leilão vs. pacote: a causa raiz</h1></div>
+      <div class="content-cols">
+        <div class="col reveal" style="--i:1">
+          <p class="item-label cyan">Leilão (mídia tradicional)</p>
+          <p class="item-text">Comprado <b>por peça</b>: cada impressão/anúncio tem custo próprio. Dá para atribuir custo ao Ad ID.</p>
+        </div>
+        <div class="col reveal" style="--i:2">
+          <p class="item-label amber">Pacote / flat fee</p>
+          <p class="item-text">Comprado <b>por bloco de tempo ou iniciativa</b>. É como alugar um outdoor por um dia: o valor é do período inteiro, não de cada cartaz que passou por ele.</p>
+        </div>
+      </div>
+      <p class="item-text reveal" style="--i:3;margin-top:1.4rem"><b>Regra:</b> a granularidade do custo deve respeitar o modelo comercial do produto.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s3">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">Onde o custo mora, por produto</h1></div>
+      <table class="dt reveal" style="--i:1">
+        <tr><th>Produto</th><th>Modelo de custo</th><th>Granularidade do custo</th><th>Granularidade das métricas de entrega</th></tr>
+        <tr><td>YouTube tradicional</td><td>Leilão</td><td>Ad Group / Ad ID</td><td>Ad / Creative</td></tr>
+        <tr><td>YouTube Masthead CPH</td><td>Flat fee por hora</td><td>Insertion Order (flight)</td><td>Ad / Creative</td></tr>
+        <tr><td>TikTok Branded Mission</td><td>Híbrido (creators + paid + earned)</td><td>Missão / flight</td><td>Paid, earned e creator separados</td></tr>
+        <tr><td>TikTok Branded Buzz</td><td>A definir</td><td>A definir</td><td>A definir</td></tr>
+      </table>
+      <p class="item-text reveal" style="--i:2;margin-top:1rem">O custo sobe de nível. As métricas de entrega (impressões, views, alcance) continuam no nível de anúncio.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s4">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">O ADP já resolve: não precisa mudar</h1></div>
+      <ul class="check reveal" style="--i:1">
+        <li><b>Coluna D — "Masthead ou Youtube?"</b>: já sinaliza o produto na linha.</li>
+        <li><b>Insertion Order / IO - Reduzido</b>: já representa o nível de deal/flight (Line ups, masthead, first position, YT Select).</li>
+        <li><b>Line Item Motor</b>: já carrega o identificador de flight na string (ex.: <code>flight-5</code>).</li>
+      </ul>
+      <p class="item-text reveal" style="--i:2;margin-top:1.2rem">A estrutura de naming continua igual para toda mídia. O que muda é como o BI lê essa estrutura.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s5">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">O ajuste é no BI: trocar a chave do join</h1></div>
+      <div class="content-cols">
+        <div class="col reveal" style="--i:1">
+          <p class="item-label red">Hoje</p>
+          <p class="item-text"><code>Custo → YouTube Ad ID</code></p>
+          <p class="item-text">Resultado: R$0 para o Masthead CPH.</p>
+        </div>
+        <div class="col reveal" style="--i:2">
+          <p class="item-label cyan">Correto</p>
+          <p class="item-text">Se <b>Masthead ou Youtube? = Masthead</b>:<br><code>Custo → Insertion Order</code></p>
+          <p class="item-text">Delivery continua em Ad/Creative, em camada separada. O BI calcula os KPIs derivados (CPM efetivo, custo por view).</p>
+        </div>
+      </div>
+      <p class="item-text reveal" style="--i:3;margin-top:1.2rem">Documentar uma vez como regra (Produto → granularidade de custo) evita virar exceção.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s6">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">Cada produto monta a string de um jeito</h1></div>
+      <table class="dt reveal" style="--i:1">
+        <tr><th>Produto</th><th>Aba</th><th>Como identifica a linha</th><th>Montagem</th><th>Regra de tamanho</th></tr>
+        <tr><td>Masthead CPH</td><td>Youtube</td><td>Masthead/Reserva + YouTube-Masthead-CPH</td><td>2 campos, sem delimitador, minúsculo</td><td>IO com no mínimo 120 caracteres</td></tr>
+        <tr><td>Branded Mission</td><td>Meta e Tiktok</td><td>Tiktok + Branded-Mission</td><td>2 campos, sem delimitador, minúsculo</td><td>Sem validação</td></tr>
+        <tr><td>Mercado Livre</td><td>Programmatic</td><td>Mercado Livre</td><td>2 campos, sem delimitador, minúsculo</td><td>Sem validação</td></tr>
+      </table>
+      <p class="item-text reveal" style="--i:2;margin-top:1rem">O que varia: quais campos entram, delimitador, transformação de texto e limites de caractere. Hoje isso vive em fórmulas hardcoded por produto.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s7">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">Config_Produtos + motor de montagem</h1></div>
+      <div class="content-cols">
+        <div class="col reveal" style="--i:1">
+          <p class="item-label cyan">Aba Config_Produtos</p>
+          <ul class="plain">
+            <li>Uma linha por produto.</li>
+            <li>Colunas: Produto, Plataforma, Coluna Trigger, Valor Trigger, Colunas Fonte, Delimitador, Transformacao, Min Chars, Msg Erro.</li>
+            <li>Produto novo = nova linha, sem reescrever fórmula.</li>
+          </ul>
+        </div>
+        <div class="col reveal" style="--i:2">
+          <p class="item-label amber">Módulo VBA</p>
+          <ul class="plain">
+            <li><code>MotorTaxonomiaGenerico.bas</code> lê a config e monta a string.</li>
+            <li>Uso: <code>=MontarStringTaxonomia("Masthead CPH"; LIN(); "Youtube")</code></li>
+            <li>Salvar o arquivo como <b>.xlsm</b>.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="item-text reveal" style="--i:3;margin-top:1.2rem"><b>Limite:</b> se o produto novo precisar de um VLOOKUP contra uma tabela que ainda não existe, essa parte continua manual. O motor elimina só a reescrita da fórmula final.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide light" id="s8">
+      <div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <div class="section-title reveal" style="--i:0"><div class="mark"><span></span><span></span><span></span></div><h1 class="headline">Checklist: novo posicionamento</h1></div>
+      <p class="item-text reveal" style="--i:1">Antes de criar coluna no ADP ou planilha paralela, o time que trouxe o produto responde:</p>
+      <ul class="check reveal" style="--i:2">
+        <li>Qual o modelo de custo? (leilão / flat fee / híbrido / revenue share)</li>
+        <li>Em que granularidade o custo pode ser atribuído?</li>
+        <li>Já existe campo no ADP para isso, ou precisa de coluna nova?</li>
+        <li>Quem mais vai registrar esse dado, para não duplicar?</li>
+        <li>A regra de montagem da string é igual a algum produto já em Config_Produtos?</li>
+      </ul>
+      <p class="item-text reveal" style="--i:3;margin-top:1rem">Fonte única de dado: nada de planilha de mídia paralela contando o mesmo posicionamento duas vezes.</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+    <div class="slide dark" id="s9">
+      <div class="amb amb1"></div><div class="amb amb2"></div><div class="wordmark"><div class="mark"><span></span><span></span><span></span></div> Storm<span>X</span></div>
+      <h1 class="headline reveal" style="--i:0;font-size:clamp(2.2rem,5vw,4.5rem)">Think.<br>Think.<br>Think.<br><span style="color:#fff;opacity:.6">and then automate.</span></h1>
+      <p class="subtitle reveal" style="--i:1;margin-top:1rem">Custo de produtos em pacote | ADP × BI</p>
+      <div class="footer"><span>Custo de Produtos em Pacote | ADP × BI</span><span>All rights reserved to Stormx @2026 // Digital Forward</span></div>
+    </div>
+
+  </div><!-- /deck -->
+
+  <div class="controls">
+    <button class="navbtn" id="btnPrev" aria-label="Anterior">&#8592;</button>
+    <div class="dots" id="dots"></div>
+    <button class="navbtn" id="btnNext" aria-label="Próximo">&#8594;</button>
+    <span class="counter" id="counter">1 / 10</span>
+    <button class="fsbtn" id="btnFs" title="Tela cheia">&#x26F6;</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  const dotsEl = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const pbar = document.getElementById('pbar');
+  let cur = 0;
+
+  // build dots
+  slides.forEach((_,i)=>{
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.addEventListener('click',()=>go(i));
+    dotsEl.appendChild(d);
+  });
+
+  function go(n){
+    if(n<0||n>=N) return;
+    const prev = slides[cur];
+    prev.classList.remove('active');
+    if(n>cur) prev.classList.add('prevslide');
+    // clear prevslide on incoming
+    slides[n].classList.remove('prevslide');
+    slides[n].classList.add('active');
+    // reset animations
+    slides[n].querySelectorAll('.reveal').forEach(el=>{
+      el.style.animation='none';
+      el.offsetHeight; // reflow
+      el.style.animation='';
+    });
+    // update prev marker
+    slides.forEach((s,i)=>{
+      s.classList.remove('prevslide');
+      if(i===cur && n!==cur) s.classList.add('prevslide');
+    });
+    cur = n;
+    update();
+  }
+
+  function update(){
+    dotsEl.querySelectorAll('.dot').forEach((d,i)=>{
+      d.classList.toggle('active',i===cur);
+    });
+    counter.textContent = (cur+1)+' / '+N;
+    pbar.style.width = ((cur+1)/N*100)+'%';
+  }
+
+  document.getElementById('btnNext').addEventListener('click',()=>go(cur+1));
+  document.getElementById('btnPrev').addEventListener('click',()=>go(cur-1));
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown') go(cur+1);
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp') go(cur-1);
+  });
+
+  document.getElementById('btnFs').addEventListener('click',()=>{
+    if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

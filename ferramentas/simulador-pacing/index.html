@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Pacing</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--accent2:#3d52d5;
+  --hi:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--surface:#fff;
+  --muted:#9fa8da;--text:#1a237e;--body:#3d4a8a;
+  --ok:#059669;--warn:#d97706;--err:#dc2626;--ok-bg:#ecfdf5;--warn-bg:#fffbeb;--err-bg:#fef2f2;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px}
+header .ico{font-size:1.5rem}
+header h1{font-size:1.1rem;font-weight:700}
+header p{font-size:.78rem;opacity:.7;margin-top:2px}
+.main{padding:24px 28px;min-width:0}
+/* Form grid */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:20px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.wide{grid-column:1/-1}
+label{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=number],input[type=date]{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font:600 .92rem 'Space Grotesk',sans-serif;color:var(--text);background:var(--bg);outline:none;transition:.15s}
+input:focus{border-color:var(--accent);background:#fff}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.btn{padding:9px 20px;border-radius:8px;font:700 .84rem 'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--surface);border:1.5px solid var(--border);color:var(--body)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+/* Status card */
+.status-card{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-box{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px}
+.stat-box.ok{border-color:var(--ok);background:var(--ok-bg)}
+.stat-box.warn{border-color:var(--warn);background:var(--warn-bg)}
+.stat-box.err{border-color:var(--err);background:var(--err-bg)}
+.stat-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px}
+.stat-box.ok .stat-label{color:var(--ok)}
+.stat-box.warn .stat-label{color:var(--warn)}
+.stat-box.err .stat-label{color:var(--err)}
+.stat-value{font-size:1.3rem;font-weight:700;color:var(--text)}
+.stat-box.ok .stat-value{color:var(--ok)}
+.stat-box.warn .stat-value{color:var(--warn)}
+.stat-box.err .stat-value{color:var(--err)}
+.stat-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+/* Pacing bar */
+.pacing-bar-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:20px}
+.pacing-bar-label{font-size:.78rem;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;justify-content:space-between}
+.bar-track{height:18px;border-radius:9px;background:#e5e7eb;position:relative;overflow:hidden}
+.bar-ideal{position:absolute;top:0;bottom:0;left:0;background:#c7d2fe;border-radius:9px;transition:.5s}
+.bar-actual{position:absolute;top:0;bottom:0;left:0;background:var(--accent);border-radius:9px;transition:.5s}
+.bar-markers{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-top:4px}
+/* Forecast table */
+.table-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.table-head{background:var(--hi);padding:12px 16px;font-size:.82rem;font-weight:700;color:var(--navy);border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-scroll{overflow-x:auto;max-height:420px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead th{position:sticky;top:0;background:var(--hi);padding:8px 10px;text-align:right;font-weight:700;color:var(--navy);border-bottom:1.5px solid var(--border);white-space:nowrap}
+thead th:first-child{text-align:left}
+tbody tr{transition:.1s}
+tbody tr:hover{background:#f0f4ff}
+tbody tr.today-row{background:#eff1ff;font-weight:600}
+tbody tr.past-row td{color:var(--muted)}
+tbody td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+tbody td:first-child{text-align:left}
+.pace-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;font-weight:700}
+.pace-pill.on{background:#d1fae5;color:#065f46}
+.pace-pill.under{background:#fef3c7;color:#78350f}
+.pace-pill.over{background:#fee2e2;color:#991b1b}
+.pace-pill.future{background:var(--hi);color:var(--navy)}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:.88rem}
+/* Alert */
+.alert{border-radius:10px;padding:12px 16px;font-size:.82rem;font-weight:500;margin-bottom:16px;display:none}
+.alert.show{display:block}
+.alert.warn{background:var(--warn-bg);border:1px solid #fde68a;color:#78350f}
+.alert.err{background:var(--err-bg);border:1px solid #fecaca;color:#991b1b}
+.alert.ok{background:var(--ok-bg);border:1px solid #a7f3d0;color:#065f46}
+</style>
+</head>
+<body>
+<header>
+  <div class="ico">📈</div>
+  <div>
+    <h1>Simulador de Pacing</h1>
+    <p>Projete a entrega diária e detecte sub/overpacing antes que aconteça</p>
+  </div>
+</header>
+
+<div class="main">
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Budget total (R$)</label>
+      <input type="number" id="budget" placeholder="10000" min="1" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>CPM (R$)</label>
+      <input type="number" id="cpm" placeholder="12.50" min="0.01" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Data início</label>
+      <input type="date" id="startDate">
+    </div>
+    <div class="form-group">
+      <label>Data fim</label>
+      <input type="date" id="endDate">
+    </div>
+    <div class="form-group">
+      <label>Gasto até hoje (R$)</label>
+      <input type="number" id="spent" placeholder="0" min="0" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Impressões entregues</label>
+      <input type="number" id="impDelivered" placeholder="0" min="0">
+    </div>
+    <div class="form-group">
+      <label>Tolerância pacing (%)</label>
+      <input type="number" id="tolerance" placeholder="10" min="1" max="50" value="10">
+    </div>
+    <div class="form-group">
+      <label>Variação diária (%)</label>
+      <input type="number" id="dailyVariation" placeholder="0" min="0" max="50" value="0" title="Simulação de variação aleatória dia a dia">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btnSimulate">▶ Simular</button>
+    <button class="btn btn-ghost" id="btnClear">✕ Limpar</button>
+  </div>
+
+  <div class="alert" id="alertBox"></div>
+
+  <div class="status-card" id="statusCards" style="display:none"></div>
+
+  <div class="pacing-bar-wrap" id="pacingBarWrap" style="display:none">
+    <div class="pacing-bar-label">
+      <span>Progresso da campanha</span>
+      <span id="barPct">—</span>
+    </div>
+    <div class="bar-track">
+      <div class="bar-ideal" id="barIdeal"></div>
+      <div class="bar-actual" id="barActual"></div>
+    </div>
+    <div class="bar-markers">
+      <span>Início</span>
+      <span>Hoje</span>
+      <span>Fim</span>
+    </div>
+  </div>
+
+  <div class="table-wrap" id="forecastWrap" style="display:none">
+    <div class="table-head">
+      📅 Projeção diária
+      <span id="tableSubtitle" style="font-weight:400;color:var(--muted);font-size:.75rem"></span>
+    </div>
+    <div class="table-scroll">
+      <table id="forecastTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">Data</th>
+            <th>Impr. do dia</th>
+            <th>Impr. acum.</th>
+            <th>Gasto do dia</th>
+            <th>Gasto acum.</th>
+            <th>% Budget</th>
+            <th>Pacing</th>
+          </tr>
+        </thead>
+        <tbody id="forecastBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = (n, dec=0) => n.toLocaleString('pt-BR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+const fmtBRL = (n) => 'R$ ' + fmt(n, 2);
+const fmtDate = (d) => d.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',weekday:'short'});
+
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+function daysBetween(a, b) {
+  return Math.round((b - a) / 86400000);
+}
+
+document.getElementById('btnSimulate').addEventListener('click', simulate);
+document.getElementById('btnClear').addEventListener('click', () => {
+  ['budget','cpm','startDate','endDate','spent','impDelivered'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tolerance').value = '10';
+  document.getElementById('dailyVariation').value = '0';
+  document.getElementById('statusCards').style.display = 'none';
+  document.getElementById('pacingBarWrap').style.display = 'none';
+  document.getElementById('forecastWrap').style.display = 'none';
+  document.getElementById('alertBox').className = 'alert';
+});
+
+function simulate() {
+  const budget = parseFloat(document.getElementById('budget').value);
+  const cpm = parseFloat(document.getElementById('cpm').value);
+  const startDate = new Date(document.getElementById('startDate').value + 'T00:00:00');
+  const endDate = new Date(document.getElementById('endDate').value + 'T00:00:00');
+  const spent = parseFloat(document.getElementById('spent').value) || 0;
+  const impDelivered = parseFloat(document.getElementById('impDelivered').value) || 0;
+  const tol = parseFloat(document.getElementById('tolerance').value) || 10;
+  const dailyVar = parseFloat(document.getElementById('dailyVariation').value) || 0;
+
+  if (!budget || !cpm || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    showAlert('Por favor, preencha budget, CPM e datas de início/fim.', 'warn');
+    return;
+  }
+  if (endDate <= startDate) {
+    showAlert('A data fim deve ser posterior ao início.', 'err');
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const totalDays = daysBetween(startDate, endDate) + 1;
+  const totalImpressions = (budget / cpm) * 1000;
+  const dailyImpressions = totalImpressions / totalDays;
+  const dailyBudget = budget / totalDays;
+
+  // Days elapsed and remaining
+  const daysElapsed = Math.max(0, Math.min(daysBetween(startDate, today), totalDays));
+  const daysRemaining = totalDays - daysElapsed;
+
+  // Ideal spend and impressions by today
+  const idealSpent = dailyBudget * daysElapsed;
+  const idealImpressions = dailyImpressions * daysElapsed;
+
+  // Actual pacing ratio
+  const pacingRatio = idealSpent > 0 ? spent / idealSpent : null;
+  const pacingPct = pacingRatio !== null ? (pacingRatio * 100) : null;
+
+  // Determine pace status
+  let paceStatus = 'on';
+  if (pacingPct !== null) {
+    if (pacingPct < (100 - tol)) paceStatus = 'under';
+    else if (pacingPct > (100 + tol)) paceStatus = 'over';
+  }
+
+  // Projected remaining budget (if pace continues)
+  const remainingBudget = budget - spent;
+  const projectedTotalSpend = daysElapsed > 0 ? (spent / daysElapsed) * totalDays : budget;
+  const projectedShortfall = projectedTotalSpend - budget;
+
+  // Render status cards
+  const statusEl = document.getElementById('statusCards');
+  statusEl.style.display = 'grid';
+
+  const paceLabel = {on:'On Pace ✅', under:'Underpacing ⚠️', over:'Overpacing 🔴'}[paceStatus];
+  const paceClass = {on:'ok', under:'warn', over:'err'}[paceStatus];
+
+  statusEl.innerHTML = `
+    <div class="stat-box ${paceClass}">
+      <div class="stat-label">Status</div>
+      <div class="stat-value">${paceLabel}</div>
+      <div class="stat-sub">${pacingPct !== null ? fmt(pacingPct,1)+'% do ideal' : 'Campanha futura'}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Total de dias</div>
+      <div class="stat-value">${totalDays}</div>
+      <div class="stat-sub">${daysElapsed} decorrido(s) · ${daysRemaining} restante(s)</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Impressões totais</div>
+      <div class="stat-value">${fmt(Math.round(totalImpressions))}</div>
+      <div class="stat-sub">${fmt(Math.round(dailyImpressions))}/dia (ideal)</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Gasto ideal até hoje</div>
+      <div class="stat-value">${fmtBRL(idealSpent)}</div>
+      <div class="stat-sub">Real: ${fmtBRL(spent)}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Budget restante</div>
+      <div class="stat-value">${fmtBRL(remainingBudget)}</div>
+      <div class="stat-sub">${daysRemaining} dias restantes</div>
+    </div>
+    <div class="stat-box ${projectedShortfall > budget*0.05 ? 'err' : projectedShortfall < -budget*0.05 ? 'warn' : 'ok'}">
+      <div class="stat-label">Projeção de entrega</div>
+      <div class="stat-value">${fmtBRL(projectedTotalSpend)}</div>
+      <div class="stat-sub">${projectedShortfall > 0 ? '⚠️ +'+fmtBRL(projectedShortfall)+' acima' : projectedShortfall < 0 ? '⚠️ '+fmtBRL(Math.abs(projectedShortfall))+' abaixo' : '✅ No budget'}</div>
+    </div>
+  `;
+
+  // Pacing bar
+  const barWrap = document.getElementById('pacingBarWrap');
+  barWrap.style.display = 'block';
+  const campaignProgress = daysElapsed / totalDays;
+  const spendProgress = budget > 0 ? spent / budget : 0;
+  document.getElementById('barIdeal').style.width = (campaignProgress * 100) + '%';
+  document.getElementById('barActual').style.width = (Math.min(spendProgress, 1) * 100) + '%';
+  document.getElementById('barActual').style.background = paceStatus === 'over' ? 'var(--err)' : paceStatus === 'under' ? 'var(--warn)' : 'var(--accent)';
+  document.getElementById('barPct').textContent = `${fmt(campaignProgress*100,0)}% tempo · ${fmt(spendProgress*100,0)}% budget`;
+
+  // Forecast table
+  document.getElementById('forecastWrap').style.display = 'block';
+  document.getElementById('tableSubtitle').textContent = `${totalDays} dias · CPM R$ ${fmt(cpm,2)}`;
+
+  let accumImpr = 0;
+  let accumBudget = 0;
+  const rows = [];
+
+  for (let i = 0; i < totalDays; i++) {
+    const date = addDays(startDate, i);
+    date.setHours(0,0,0,0);
+    const isToday = date.getTime() === today.getTime();
+    const isPast = date < today;
+    const isFuture = date > today;
+
+    // Daily impressions with optional variation
+    let dayImpr;
+    if (isPast || isToday) {
+      // Real or estimated from actual delivered
+      if (impDelivered > 0 && daysElapsed > 0) {
+        const variation = dailyVar > 0 ? (1 + (Math.random() - 0.5) * 2 * (dailyVar/100)) : 1;
+        dayImpr = (impDelivered / daysElapsed) * variation;
+      } else {
+        const variation = dailyVar > 0 ? (1 + (Math.random() - 0.5) * 2 * (dailyVar/100)) : 1;
+        dayImpr = dailyImpressions * variation;
+      }
+    } else {
+      const variation = dailyVar > 0 ? (1 + (Math.random() - 0.5) * 2 * (dailyVar/100)) : 1;
+      dayImpr = dailyImpressions * variation;
+    }
+
+    const dayBudget = dayImpr * cpm / 1000;
+    accumImpr += dayImpr;
+    accumBudget += dayBudget;
+
+    // Pacing vs ideal
+    const idealAccum = dailyBudget * (i + 1);
+    const ratio = idealAccum > 0 ? accumBudget / idealAccum : 1;
+    let dayPace = 'future';
+    if (!isFuture) {
+      if (ratio < (1 - tol/100)) dayPace = 'under';
+      else if (ratio > (1 + tol/100)) dayPace = 'over';
+      else dayPace = 'on';
+    }
+
+    const paceLabels = {on:'On Pace', under:'Underpace', over:'Overpace', future:'Projeção'};
+    const paceClasses = {on:'on', under:'under', over:'over', future:'future'};
+
+    rows.push(`
+      <tr class="${isToday?'today-row':''} ${isPast&&!isToday?'past-row':''}">
+        <td>${isToday?'📍 ':''}<strong>${fmtDate(date)}</strong></td>
+        <td>${fmt(Math.round(dayImpr))}</td>
+        <td>${fmt(Math.round(accumImpr))}</td>
+        <td>${fmtBRL(dayBudget)}</td>
+        <td>${fmtBRL(accumBudget)}</td>
+        <td>${fmt(Math.min(accumBudget/budget*100, 999),1)}%</td>
+        <td><span class="pace-pill ${paceClasses[dayPace]}">${paceLabels[dayPace]}</span></td>
+      </tr>`);
+  }
+
+  document.getElementById('forecastBody').innerHTML = rows.join('');
+
+  // Alert
+  if (paceStatus === 'under' && daysRemaining > 0) {
+    const neededDaily = remainingBudget / daysRemaining;
+    showAlert(`⚠️ Underpacing detectado. Para gastar o budget restante (${fmtBRL(remainingBudget)}) em ${daysRemaining} dia(s), seria necessário ${fmtBRL(neededDaily)}/dia vs. o atual ${fmtBRL(dailyBudget)}/dia.`, 'warn');
+  } else if (paceStatus === 'over') {
+    showAlert(`🔴 Overpacing detectado — a campanha pode esgotar o budget antes do fim do voo. Verifique caps de frequência ou reduza o CPM.`, 'err');
+  } else if (paceStatus === 'on') {
+    showAlert(`✅ Campanha no pacing esperado (tolerância ±${tol}%).`, 'ok');
+  } else {
+    document.getElementById('alertBox').className = 'alert';
+  }
+
+  // Scroll to table
+  document.getElementById('statusCards').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function showAlert(msg, type) {
+  const el = document.getElementById('alertBox');
+  el.textContent = msg;
+  el.className = 'alert show ' + type;
+}
+
+// Set default dates
+const today = new Date();
+const endDefault = new Date(today);
+endDefault.setDate(endDefault.getDate() + 29);
+document.getElementById('startDate').value = today.toISOString().slice(0,10);
+document.getElementById('endDate').value = endDefault.toISOString().slice(0,10);
+</script>
+</body>
+</html>

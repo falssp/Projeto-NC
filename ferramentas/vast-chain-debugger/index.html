@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VAST Chain Debugger | NC Tool</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;--mono:'JetBrains Mono',monospace;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;--ok-border:#a5d6a7;
+  --err:#c62828;--err-bg:#fff5f5;--err-border:#ef9a9a;
+  --warn:#e65100;--warn-bg:#fff3e0;--warn-border:#ffcc80;
+  --info:#0277bd;--info-bg:#e1f5fe;--info-border:#81d4fa;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+  --ok:#a5d6a7;--ok-bg:#0a2010;--ok-border:#2e7d32;
+  --err:#ef9a9a;--err-bg:#2a1010;--err-border:#c62828;
+  --warn:#ffcc80;--warn-bg:#2a1800;--warn-border:#e65100;
+  --info:#81d4fa;--info-bg:#0a1e2a;--info-border:#0277bd;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+input,textarea{width:100%;font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,textarea:focus{border-color:var(--azul)}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+
+/* chain nodes */
+.chain-timeline{display:flex;flex-direction:column;gap:0}
+.chain-hop{display:flex;gap:12px;position:relative}
+.chain-hop::before{content:'';position:absolute;left:17px;top:38px;bottom:-1px;width:2px;background:var(--border);z-index:0}
+.chain-hop:last-child::before{display:none}
+.hop-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;position:relative;z-index:1;border:2px solid;margin-top:1px}
+.hop-icon.pending{background:var(--light);border-color:var(--azul);color:var(--azul)}
+.hop-icon.loading{background:var(--info-bg);border-color:var(--info-border);animation:spin 1s linear infinite}
+.hop-icon.wrapper{background:var(--light);border-color:var(--azul);color:var(--azul)}
+.hop-icon.inline{background:var(--ok-bg);border-color:var(--ok-border);color:var(--ok)}
+.hop-icon.error{background:var(--err-bg);border-color:var(--err-border);color:var(--err)}
+.hop-icon.cors{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn)}
+.hop-body{flex:1;padding-bottom:16px}
+.hop-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.hop-label{font-size:12px;font-weight:700;color:var(--escuro)}
+.hop-type-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;border:1px solid}
+.badge-wrapper{background:var(--light);color:var(--azul);border-color:var(--azul)}
+.badge-inline{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-border)}
+.badge-error{background:var(--err-bg);color:var(--err);border-color:var(--err-border)}
+.badge-cors{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-border)}
+.hop-url{font-family:var(--mono);font-size:10px;color:var(--body);word-break:break-all;margin-bottom:4px;padding:4px 8px;background:var(--bg);border-radius:5px;border:1px solid var(--border)}
+.hop-detail{font-size:11px;color:var(--muted)}
+.hop-xml-preview{margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--body);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;max-height:120px;overflow:auto;white-space:pre}
+.hop-time{font-size:10px;color:var(--muted)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* summary bar */
+.summary-bar{display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);font-size:12px}
+.sum-item{display:flex;align-items:center;gap:5px;color:var(--body)}
+.sum-num{font-weight:700;font-size:14px;color:var(--escuro)}
+
+.empty-state{text-align:center;padding:36px;color:var(--muted)}
+.empty-icon{font-size:38px;margin-bottom:8px}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--azul);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+
+/* ── Como usar modal ─────────────────────────────── */
+.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.qa-overlay.open{display:flex}
+.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.qa-header h2{font-size:15px;font-weight:800;color:#1a237e}
+.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
+.qa-body{padding:20px 24px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--azul,#1F36C7);margin-bottom:10px}
+.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
+.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
+.help-num{min-width:22px;height:22px;border-radius:50%;background:var(--azul,#1F36C7);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-txt{font-size:12px;color:#475569;line-height:1.55}
+.help-txt b{color:#1e293b}
+.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
+.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
+.btn-qa{background:transparent;border:1.5px solid rgba(255,255,255,.7);color:rgba(255,255,255,.9);font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn-qa:hover{background:rgba(255,255,255,.2)}
+</style>
+</head>
+<body>
+<div class="fixed-btns">
+  <button class="icon-btn" onclick="toggleDark()" id="theme-btn" title="Tema">🌙</button>
+</div>
+<div id="toast" class="toast"></div>
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+<div class="header">
+  <h1>VAST Chain Debugger</h1>
+  <p class="subtitle">Segue a cadeia de wrappers VAST ao vivo — faz fetch de cada hop, identifica o tipo (Wrapper/Inline), extrai URLs, detecta erros e mostra o XML de cada nó.</p>
+
+  <button class="btn-qa" onclick="abrirAjuda()">❓ Como usar</button></div>
+<div class="main">
+
+<div class="card">
+  <div class="section-title">URL da VAST Tag</div>
+  <input id="vast-url" placeholder="https://ad.doubleclick.net/ddm/pfadx/N123456.0/B987654321.1;sz=640x360;ord=[timestamp];dcmt=text/xml?" style="font-family:var(--mono);font-size:11px">
+  <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+    <button class="btn-primary" id="btn-run" onclick="startChase()">🔗 Seguir cadeia</button>
+    <button class="btn-sm" onclick="pasteUrl()">📋 Colar</button>
+    <button class="btn-sm" onclick="loadSample()">Exemplo</button>
+    <button class="btn-sm" onclick="clearAll()">✕ Limpar</button>
+  </div>
+  <div class="hint" style="margin-top:6px">⚠️ Muitos ad servers bloqueiam CORS — hops com CORS bloqueado são marcados e a cadeia para naquele ponto. Para rastrear com autenticação, abra a tag diretamente no browser.</div>
+</div>
+
+<div id="summary" style="display:none" class="card">
+  <div class="section-title">Resumo</div>
+  <div id="sum-bar" class="summary-bar"></div>
+</div>
+
+<div id="chain-card" class="card">
+  <div class="section-title">Cadeia de Wrappers</div>
+  <div id="chain-out">
+    <div class="empty-state">
+      <div class="empty-icon">🔗</div>
+      <div style="font-size:14px;font-weight:600;color:var(--body)">Cole uma VAST URL acima</div>
+      <div style="font-size:12px;margin-top:4px">A ferramenta segue automaticamente os VASTAdTagURIs até chegar ao Inline Ad</div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+const MAX_HOPS=8;
+let _aborted=false;
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),dur);}
+function toggleDark(){const dark=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',dark?'light':'dark');document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';try{localStorage.setItem('vastcd_theme',dark?'light':'dark');}catch(e){}}
+function loadTheme(){try{if(localStorage.getItem('vastcd_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('theme-btn').textContent='☀️';}}catch(e){}}
+
+async function pasteUrl(){
+  try{const t=await navigator.clipboard.readText();document.getElementById('vast-url').value=t.trim();}
+  catch(e){toast('Permissão negada — cole manualmente.');}
+}
+
+function loadSample(){
+  document.getElementById('vast-url').value='https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=';
+}
+
+function clearAll(){
+  document.getElementById('vast-url').value='';
+  document.getElementById('chain-out').innerHTML=`<div class="empty-state"><div class="empty-icon">🔗</div><div style="font-size:14px;font-weight:600;color:var(--body)">Cole uma VAST URL acima</div></div>`;
+  document.getElementById('summary').style.display='none';
+}
+
+function detectAdServer(url){
+  if(!url)return'';
+  if(url.includes('doubleclick.net/ddm/pfadx'))return'CM360 pfadx';
+  if(url.includes('doubleclick.net/ddm'))return'CM360';
+  if(url.includes('pubads.g.doubleclick.net'))return'GAM';
+  if(url.includes('adnxs.com'))return'Xandr';
+  if(url.includes('teads.tv'))return'Teads';
+  if(url.includes('innovid'))return'Innovid';
+  if(url.includes('adform'))return'Adform';
+  if(url.includes('smartadserver'))return'Smart';
+  if(url.includes('spotx'))return'SpotX';
+  return'';
+}
+
+function parseVastXml(text){
+  try{
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(text,'text/xml');
+    const err=doc.querySelector('parsererror');
+    if(err)return{type:'parse_error',error:err.textContent.substring(0,120)};
+
+    const wrapper=doc.querySelector('Wrapper');
+    const inline=doc.querySelector('InLine');
+
+    if(wrapper){
+      const tagUri=doc.querySelector('VASTAdTagURI');
+      const nextUrl=tagUri?tagUri.textContent.trim():'';
+      const adSystem=doc.querySelector('AdSystem');
+      const errors=[...doc.querySelectorAll('Error')].map(e=>e.textContent.trim());
+      const impressions=[...doc.querySelectorAll('Impression')].map(e=>e.textContent.trim());
+      return{type:'wrapper',nextUrl,adSystem:adSystem?.textContent?.trim()||'',errors,impressions,raw:text.substring(0,800)};
+    }
+    if(inline){
+      const adSystem=doc.querySelector('AdSystem');
+      const title=doc.querySelector('AdTitle');
+      const dur=doc.querySelector('Duration');
+      const mediaFiles=[...doc.querySelectorAll('MediaFile')].map(m=>({
+        type:m.getAttribute('type'),
+        delivery:m.getAttribute('delivery'),
+        url:m.textContent.trim().substring(0,80)
+      }));
+      const errors=[...doc.querySelectorAll('Error')].map(e=>e.textContent.trim());
+      return{type:'inline',adSystem:adSystem?.textContent?.trim()||'',title:title?.textContent?.trim()||'',duration:dur?.textContent?.trim()||'',mediaFiles,errors,raw:text.substring(0,800)};
+    }
+    // Check for VAST 4 error
+    const vastErr=doc.querySelector('VAST Error');
+    if(vastErr)return{type:'vast_error',error:vastErr.textContent.trim()};
+    // No Ad
+    const noAd=doc.querySelector('NoAd');
+    if(noAd)return{type:'no_ad'};
+    return{type:'unknown',raw:text.substring(0,200)};
+  }catch(e){return{type:'parse_error',error:String(e)};}
+}
+
+function renderHop(hop,index,total){
+  const icons={pending:'⏳',loading:'🔄',wrapper:'📦',inline:'✅',error:'❌',cors:'⚠️'};
+  const labels={wrapper:`Wrapper #${index}`,inline:'Inline Ad',error:'Erro',cors:'CORS bloqueado'};
+  const icon=icons[hop.state]||'❓';
+  const label=labels[hop.state]||`Hop #${index}`;
+  const badgeCls={wrapper:'badge-wrapper',inline:'badge-inline',error:'badge-error',cors:'badge-cors'}[hop.state]||'';
+  const badgeLabel={wrapper:'VAST Wrapper',inline:'VAST Inline',error:'Erro',cors:'CORS'}[hop.state]||hop.state;
+  const adServer=detectAdServer(hop.url);
+
+  let detail='';
+  if(hop.parsed){
+    if(hop.parsed.type==='wrapper'){
+      detail=`<div class="hop-detail">AdSystem: <strong>${esc(hop.parsed.adSystem||'—')}</strong>${hop.parsed.impressions?.length?` · ${hop.parsed.impressions.length} impression(s)`:''}${hop.parsed.errors?.length?` · ${hop.parsed.errors.length} error URL(s)`:''}</div>`;
+    } else if(hop.parsed.type==='inline'){
+      detail=`<div class="hop-detail">AdSystem: <strong>${esc(hop.parsed.adSystem||'—')}</strong>${hop.parsed.title?` · "${esc(hop.parsed.title)}"`:''} · Duração: ${esc(hop.parsed.duration||'—')} · ${hop.parsed.mediaFiles?.length||0} MediaFile(s)</div>`;
+    } else if(hop.parsed.type==='no_ad'){
+      detail=`<div class="hop-detail" style="color:var(--warn)">⚠️ &lt;NoAd&gt; — nenhum anúncio disponível</div>`;
+    } else if(hop.parsed.type==='vast_error'){
+      detail=`<div class="hop-detail" style="color:var(--err)">Erro VAST: ${esc(hop.parsed.error)}</div>`;
+    } else if(hop.parsed.error){
+      detail=`<div class="hop-detail" style="color:var(--err)">${esc(hop.parsed.error.substring(0,120))}</div>`;
+    }
+  }
+  if(hop.error){
+    detail+=`<div class="hop-detail" style="color:var(--err);margin-top:2px">${esc(hop.error.substring(0,160))}</div>`;
+  }
+
+  const xmlPreview=hop.parsed?.raw?`<details style="margin-top:6px"><summary style="font-size:11px;color:var(--azul);cursor:pointer">Ver XML (início)</summary><div class="hop-xml-preview">${esc(hop.parsed.raw)}</div></details>`:'';
+  const timeStr=hop.ms!==undefined?`<span class="hop-time">${hop.ms}ms</span>`:'';
+
+  return `<div class="chain-hop">
+    <div class="hop-icon ${hop.state}">${hop.state==='loading'?'🔄':icon}</div>
+    <div class="hop-body">
+      <div class="hop-header">
+        <span class="hop-label">${esc(label)}</span>
+        ${hop.state!=='pending'?`<span class="hop-type-badge ${badgeCls}">${badgeLabel}</span>`:''}
+        ${adServer?`<span class="hop-type-badge badge-wrapper" style="background:var(--bg)">${esc(adServer)}</span>`:''}
+        ${timeStr}
+      </div>
+      <div class="hop-url">${esc(hop.url.substring(0,180))}${hop.url.length>180?'…':''}</div>
+      ${detail}
+      ${xmlPreview}
+    </div>
+  </div>`;
+}
+
+function renderChain(hops){
+  document.getElementById('chain-out').innerHTML=hops.map((h,i)=>renderHop(h,i+1,hops.length)).join('');
+}
+
+function renderSummary(hops){
+  const wrappers=hops.filter(h=>h.state==='wrapper').length;
+  const inline=hops.some(h=>h.state==='inline');
+  const errors=hops.filter(h=>h.state==='error').length;
+  const cors=hops.filter(h=>h.state==='cors').length;
+  const totalMs=hops.reduce((s,h)=>s+(h.ms||0),0);
+  document.getElementById('sum-bar').innerHTML=`
+    <div class="sum-item"><span class="sum-num">${hops.length}</span> hops</div>
+    <div class="sum-item"><span class="sum-num">${wrappers}</span> wrapper(s)</div>
+    <div class="sum-item"><span class="sum-num" style="color:${inline?'var(--ok)':'var(--muted)'}">${inline?'✓':'—'}</span> inline</div>
+    ${errors?`<div class="sum-item"><span class="sum-num" style="color:var(--err)">${errors}</span> erro(s)</div>`:''}
+    ${cors?`<div class="sum-item"><span class="sum-num" style="color:var(--warn)">${cors}</span> CORS bloqueado</div>`:''}
+    <div class="sum-item"><span class="sum-num">${totalMs}</span>ms total</div>`;
+  document.getElementById('summary').style.display='block';
+}
+
+async function fetchVast(url){
+  const t0=Date.now();
+  try{
+    const res=await fetch(url,{
+      method:'GET',
+      headers:{'Accept':'text/xml,application/xml,*/*'},
+      signal:AbortSignal.timeout(10000)
+    });
+    const ms=Date.now()-t0;
+    if(!res.ok)return{ok:false,ms,error:`HTTP ${res.status} ${res.statusText}`};
+    const text=await res.text();
+    return{ok:true,ms,text};
+  }catch(e){
+    const ms=Date.now()-t0;
+    const isCors=e.name==='TypeError'&&(e.message.includes('CORS')||e.message.includes('fetch')||e.message.includes('Failed'));
+    return{ok:false,ms,cors:isCors||e.name==='TypeError',error:String(e.message||e)};
+  }
+}
+
+async function startChase(){
+  const url=document.getElementById('vast-url').value.trim();
+  if(!url){toast('Cole uma URL VAST');return;}
+  _aborted=false;
+  const btn=document.getElementById('btn-run');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Rastreando…';
+
+  const hops=[];
+  let nextUrl=url;
+
+  while(nextUrl&&hops.length<MAX_HOPS&&!_aborted){
+    const hop={url:nextUrl,state:'loading',parsed:null,ms:undefined,error:null};
+    hops.push(hop);
+    renderChain(hops);
+
+    const res=await fetchVast(nextUrl);
+    hop.ms=res.ms;
+
+    if(!res.ok){
+      if(res.cors){
+        hop.state='cors';
+        hop.error='CORS bloqueado — o ad server não permite requests cross-origin. Abra a URL diretamente no browser.';
+      } else {
+        hop.state='error';
+        hop.error=res.error;
+      }
+      renderChain(hops);
+      break;
+    }
+
+    const parsed=parseVastXml(res.text);
+    hop.parsed=parsed;
+
+    if(parsed.type==='wrapper'){
+      hop.state='wrapper';
+      nextUrl=parsed.nextUrl||'';
+      if(!nextUrl){hop.state='error';hop.error='Wrapper sem VASTAdTagURI';}
+    } else if(parsed.type==='inline'){
+      hop.state='inline';
+      nextUrl='';
+    } else if(parsed.type==='no_ad'){
+      hop.state='error';
+      hop.error='NoAd — servidor não retornou anúncio';
+      nextUrl='';
+    } else if(parsed.type==='vast_error'){
+      hop.state='error';
+      hop.error='Erro VAST: '+parsed.error;
+      nextUrl='';
+    } else {
+      hop.state='error';
+      hop.error=parsed.error||'Resposta não reconhecida como VAST';
+      nextUrl='';
+    }
+    renderChain(hops);
+  }
+
+  if(hops.length>=MAX_HOPS&&nextUrl){
+    hops.push({url:nextUrl,state:'error',error:`Limite de ${MAX_HOPS} hops atingido`,parsed:null,ms:undefined});
+    renderChain(hops);
+  }
+
+  renderSummary(hops);
+  btn.disabled=false;btn.innerHTML='🔗 Seguir cadeia';
+}
+
+loadTheme();
+
+
+function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
+function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+</script>
+
+<!-- ── Como usar modal ─────────────────────────────── -->
+<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
+  <div class="qa-modal">
+    <div class="qa-header">
+      <h2>🔍 Como usar · VAST Chain Debugger</h2>
+      <button class="qa-close" onclick="fecharAjuda()">✕</button>
+    </div>
+    <div class="qa-body">
+      <div class="help-section">
+        <h3>Visão geral</h3>
+        <p>Use o <b>VAST Chain Debugger</b> para inspecionar e diagnosticar dados de tracking e tags.</p>
+      </div>
+      <div class="help-section">
+        <h3>Passo a passo</h3>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-txt"><b>Cole a URL ou tag</b><br>Insira a URL, tag ou string que deseja inspecionar no campo de entrada.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-txt"><b>Execute a análise</b><br>Clique em <b>Analisar</b> ou <b>Inspecionar</b> para processar os dados.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-txt"><b>Revise os parâmetros</b><br>Os campos são exibidos de forma legível com seus respectivos valores.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-txt"><b>Identifique problemas</b><br>Erros e alertas são destacados em vermelho ou amarelo.</div>
+      </div>
+      </div>
+      <div class="help-tip">
+        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

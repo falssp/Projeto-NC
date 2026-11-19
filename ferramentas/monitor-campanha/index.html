@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Saúde de Campanha</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+header h1{font-size:1.3rem;font-weight:700;letter-spacing:-.3px}
+header .subtitle{font-size:.85rem;opacity:.75}
+.main{padding:28px 32px;min-width:0}
+.section{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:24px;margin-bottom:20px}
+.section-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:200px}
+label{display:block;font-size:.8rem;font-weight:600;color:#555;margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px 12px;border:1.5px solid #d6dbf2;border-radius:8px;font-family:inherit;font-size:.9rem;background:#fff;color:#1a1a2e;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1F36C7}
+.btn{padding:9px 20px;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:#1F36C7;color:#fff}
+.btn-primary:hover{background:#1a2fa8}
+.btn-sm{padding:5px 12px;font-size:.8rem}
+.btn-ghost{background:transparent;border:1.5px solid #d6dbf2;color:#555}
+.btn-ghost:hover{border-color:#1F36C7;color:#1F36C7}
+.btn-danger{background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5}
+.btn-danger:hover{background:#fca5a5}
+/* Health Score */
+.health-panel{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+.score-circle{width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;position:relative}
+.score-circle .score-num{font-size:2.2rem;line-height:1}
+.score-circle .score-label{font-size:.75rem;margin-top:4px;opacity:.85}
+.score-excellent{background:#dcfce7;color:#15803d;border:3px solid #86efac}
+.score-warning{background:#fef9c3;color:#a16207;border:3px solid #fde047}
+.score-problem{background:#ffedd5;color:#c2410c;border:3px solid #fdba74}
+.score-critical{background:#fee2e2;color:#dc2626;border:3px solid #fca5a5}
+.sub-scores{display:flex;gap:16px;flex-wrap:wrap;flex:1}
+.sub-score{background:#f4f5fb;border-radius:10px;padding:12px 16px;min-width:130px;flex:1}
+.sub-score .ss-label{font-size:.75rem;color:#666;margin-bottom:6px}
+.sub-score .ss-bar{height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;margin-bottom:6px}
+.sub-score .ss-fill{height:100%;border-radius:3px;transition:width .4s}
+.ss-fill.g{background:#22c55e}
+.ss-fill.y{background:#eab308}
+.ss-fill.o{background:#f97316}
+.ss-fill.r{background:#ef4444}
+.sub-score .ss-val{font-size:.85rem;font-weight:700;color:#1a237e}
+/* Alerts */
+.alert-list{display:flex;flex-direction:column;gap:8px}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;font-size:.88rem}
+.alert-item.crit{background:#fee2e2;border-left:3px solid #dc2626}
+.alert-item.high{background:#ffedd5;border-left:3px solid #f97316}
+.alert-item.med{background:#fef9c3;border-left:3px solid #eab308}
+.alert-item.info{background:#e8ecfd;border-left:3px solid #1F36C7}
+.alert-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.alert-text{flex:1}
+.alert-action{font-size:.8rem;color:#555;margin-top:3px}
+.no-alerts{color:#666;font-style:italic;padding:12px 0}
+/* Placements table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:#f4f5fb;padding:8px 10px;text-align:left;font-weight:600;color:#444;border-bottom:2px solid #d6dbf2;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #f0f0f8;vertical-align:middle}
+tr:hover td{background:#f9faff}
+.cell-g{background:#dcfce7;color:#15803d;font-weight:600;border-radius:4px;padding:2px 6px}
+.cell-y{background:#fef9c3;color:#a16207;font-weight:600;border-radius:4px;padding:2px 6px}
+.cell-r{background:#fee2e2;color:#dc2626;font-weight:600;border-radius:4px;padding:2px 6px}
+.cell-n{background:#f1f5f9;color:#94a3b8;border-radius:4px;padding:2px 6px}
+.mini-bar-wrap{background:#e2e8f0;height:8px;border-radius:4px;width:60px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px}
+.mini-bar{height:100%;border-radius:4px}
+/* Pacing */
+.pacing-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.pacing-card{background:#f4f5fb;border-radius:10px;padding:14px;text-align:center}
+.pacing-card .pc-label{font-size:.75rem;color:#666;margin-bottom:4px}
+.pacing-card .pc-val{font-size:1.3rem;font-weight:700;color:#1a237e}
+.pacing-card .pc-sub{font-size:.75rem;color:#888;margin-top:2px}
+.pace-bar-wrap{background:#e2e8f0;height:12px;border-radius:6px;overflow:hidden;margin:8px 0}
+.pace-fill{height:100%;border-radius:6px;transition:width .4s}
+.pacing-status{display:inline-block;padding:4px 14px;border-radius:20px;font-size:.85rem;font-weight:600;margin-top:8px}
+.ps-ok{background:#dcfce7;color:#15803d}
+.ps-under{background:#fef9c3;color:#a16207}
+.ps-over{background:#fee2e2;color:#dc2626}
+/* Placement form rows */
+.placement-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f8}
+.placement-header{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr auto;gap:6px;padding:6px 0;border-bottom:2px solid #d6dbf2}
+.placement-header span{font-size:.75rem;font-weight:600;color:#666}
+.placement-row input,.placement-row select{padding:5px 7px;font-size:.8rem}
+/* Sparklines */
+.sparklines{display:flex;gap:24px;flex-wrap:wrap}
+.sparkline{flex:1;min-width:140px}
+.sparkline .sp-label{font-size:.75rem;color:#666;margin-bottom:4px}
+.spark-bars{display:flex;gap:2px;align-items:flex-end;height:40px}
+.spark-bar{flex:1;background:#1F36C7;border-radius:2px 2px 0 0;min-height:2px;transition:height .3s}
+.spark-bar.today{background:#1a237e}
+/* Targets row */
+.targets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+/* Campaign selector */
+.campaign-selector{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600}
+.badge-g{background:#dcfce7;color:#15803d}
+.badge-y{background:#fef9c3;color:#a16207}
+.badge-r{background:#fee2e2;color:#dc2626}
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid #d6dbf2;margin-bottom:20px}
+.tab{padding:8px 18px;border-radius:8px 8px 0 0;font-size:.88rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:#666;transition:all .15s}
+.tab.active{background:#1F36C7;color:#fff}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.empty-state{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+@media(max-width:768px){.main{padding:16px};.row{flex-direction:column};.pacing-cards{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🩺 Monitor de Saúde de Campanha</h1>
+    <div class="subtitle">Dashboard de monitoramento diário · AdOps Suite</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select id="campaignSelect" style="width:200px;padding:7px 10px;font-size:.85rem" onchange="loadCampaign(this.value)">
+      <option value="">+ Nova campanha</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="saveCampaign()">💾 Salvar</button>
+    <button class="btn btn-ghost btn-sm" onclick="copiarRelatorio()">📋 Copiar relatório</button>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- Config section -->
+<div class="section">
+  <div class="section-title">⚙️ Configuração da Campanha</div>
+  <div class="row" style="margin-bottom:16px">
+    <div class="col"><label>Nome da campanha</label><input id="campNome" type="text" placeholder="Ex: Lançamento Produto A — Nov/2026" oninput="calcular()"></div>
+    <div class="col"><label>Data início</label><input id="campInicio" type="date" onchange="calcular()"></div>
+    <div class="col"><label>Data fim</label><input id="campFim" type="date" onchange="calcular()"></div>
+    <div class="col"><label>Budget total (R$)</label><input id="campBudget" type="number" placeholder="50000" oninput="calcular()"></div>
+    <div class="col"><label>Gasto até hoje (R$)</label><input id="campGasto" type="number" placeholder="23500" oninput="calcular()"></div>
+  </div>
+  <div class="row">
+    <div class="col" style="min-width:300px">
+      <label style="margin-bottom:8px">Metas</label>
+      <div class="targets-grid">
+        <div><label>CPM máx (R$)</label><input id="metaCPM" type="number" placeholder="15" oninput="calcular()"></div>
+        <div><label>CTR mín (%)</label><input id="metaCTR" type="number" step="0.01" placeholder="0.05" oninput="calcular()"></div>
+        <div><label>CPA máx (R$)</label><input id="metaCPA" type="number" placeholder="120" oninput="calcular()"></div>
+        <div><label>Viewability mín (%)</label><input id="metaView" type="number" placeholder="60" oninput="calcular()"></div>
+        <div><label>Freq máxima</label><input id="metaFreq" type="number" placeholder="7" oninput="calcular()"></div>
+        <div><label>ROAS mín</label><input id="metaROAS" type="number" step="0.1" placeholder="3" oninput="calcular()"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Placements section -->
+<div class="section">
+  <div class="section-title" style="justify-content:space-between">
+    <span>📍 Placements / Ad Sets</span>
+    <button class="btn btn-primary btn-sm" onclick="addPlacement()">+ Adicionar</button>
+  </div>
+  <div class="table-wrap">
+    <div class="placement-header">
+      <span>Nome</span><span>Plataforma</span><span>Gasto (R$)</span><span>Impressões</span><span>Cliques</span>
+      <span>Conversões</span><span>Viewability%</span><span>Frequência</span><span>VTR%</span><span>Receita (R$)</span><span>Status</span><span></span>
+    </div>
+    <div id="placementsContainer"></div>
+  </div>
+  <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="loadDemo()">📂 Carregar dados de demonstração</button>
+</div>
+
+<!-- Results -->
+<div id="resultsSection" style="display:none">
+
+  <!-- Health Score -->
+  <div class="section">
+    <div class="section-title">🩺 Saúde Geral da Campanha</div>
+    <div class="health-panel">
+      <div id="scoreCircle" class="score-circle score-excellent">
+        <div class="score-num" id="scoreNum">--</div>
+        <div class="score-label" id="scoreLabel">--</div>
+      </div>
+      <div class="sub-scores">
+        <div class="sub-score">
+          <div class="ss-label">📊 Pacing</div>
+          <div class="ss-bar"><div class="ss-fill" id="pacingFill" style="width:0%"></div></div>
+          <div class="ss-val" id="pacingVal">--</div>
+        </div>
+        <div class="sub-score">
+          <div class="ss-label">🎯 Performance</div>
+          <div class="ss-bar"><div class="ss-fill" id="perfFill" style="width:0%"></div></div>
+          <div class="ss-val" id="perfVal">--</div>
+        </div>
+        <div class="sub-score">
+          <div class="ss-label">✨ Qualidade</div>
+          <div class="ss-bar"><div class="ss-fill" id="qualFill" style="width:0%"></div></div>
+          <div class="ss-val" id="qualVal">--</div>
+        </div>
+        <div class="sub-score">
+          <div class="ss-label">💰 Budget</div>
+          <div class="ss-bar"><div class="ss-fill" id="budgetFill" style="width:0%"></div></div>
+          <div class="ss-val" id="budgetVal">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="section">
+    <div class="section-title">🚨 Alertas Ativos</div>
+    <div id="alertList" class="alert-list"><div class="no-alerts">Nenhum alerta. Campanha saudável! 🟢</div></div>
+  </div>
+
+  <!-- Pacing -->
+  <div class="section">
+    <div class="section-title">📈 Pacing de Budget</div>
+    <div class="pacing-cards" id="pacingCards"></div>
+    <div style="margin:16px 0 4px;font-size:.8rem;color:#666">Budget gasto vs esperado</div>
+    <div class="pace-bar-wrap"><div id="paceBarExpected" class="pace-fill" style="background:#d6dbf2;width:0%"></div></div>
+    <div class="pace-bar-wrap" style="margin-top:-8px"><div id="paceBarReal" class="pace-fill" style="width:0%"></div></div>
+    <div style="font-size:.75rem;color:#888;display:flex;gap:16px;margin-top:4px">
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:4px;background:#d6dbf2;border-radius:2px"></span>Esperado</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:12px;height:4px;background:#1F36C7;border-radius:2px"></span>Realizado</span>
+    </div>
+    <div id="pacingStatus" class="pacing-status" style="margin-top:12px"></div>
+  </div>
+
+  <!-- Health Matrix -->
+  <div class="section">
+    <div class="section-title">🔬 Matriz de Saúde por Placement</div>
+    <div class="table-wrap">
+      <table id="healthTable">
+        <thead>
+          <tr>
+            <th>Nome</th><th>Plataforma</th><th>Gasto</th><th>% Budget</th>
+            <th>CPM</th><th>CTR</th><th>CPA</th><th>View%</th><th>Freq</th><th>VTR%</th><th>Saúde</th>
+          </tr>
+        </thead>
+        <tbody id="healthTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recommended Actions -->
+  <div class="section">
+    <div class="section-title">💡 Ações Recomendadas</div>
+    <div id="actionsList"></div>
+  </div>
+
+</div>
+
+<!-- Trend section -->
+<div class="section">
+  <div class="section-title">📉 Tendência dos Últimos 7 Dias (opcional)</div>
+  <p style="font-size:.85rem;color:#666;margin-bottom:12px">Cole dados tab-separados: Data ⇥ Impressões ⇥ Cliques ⇥ Conversões ⇥ Gasto</p>
+  <textarea id="trendInput" rows="8" placeholder="2026-11-10&#9;1250000&#9;1500&#9;45&#9;8500&#10;2026-11-11&#9;1180000&#9;1420&#9;38&#9;8100&#10;..." oninput="renderTrend()" style="font-family:monospace;font-size:.82rem"></textarea>
+  <div id="trendCharts" class="sparklines" style="margin-top:16px"></div>
+</div>
+
+<button class="btn btn-primary" onclick="calcular()" style="margin-bottom:32px">🔄 Atualizar análise</button>
+
+</div>
+
+<script>
+let placements = [];
+let pCount = 0;
+
+const PLATFORMS = ['Meta Ads','Google Ads','DV360','LinkedIn','TikTok','CM360','YouTube','Programático','X Ads','Outro'];
+
+function fmt(n,decimals=0){
+  if(n===null||n===undefined||isNaN(n)||n==='')return '--';
+  return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:decimals,maximumFractionDigits:decimals}).format(n);
+}
+function fmtR(n){return 'R$ '+fmt(n,2)}
+function pct(a,b){return b&&b>0?a/b*100:0}
+
+function addPlacement(data={}){
+  pCount++;
+  const id=pCount;
+  const p={id,nome:data.nome||'',plataforma:data.plataforma||'Meta Ads',gasto:data.gasto||'',impressoes:data.impressoes||'',cliques:data.cliques||'',conversoes:data.conversoes||'',viewability:data.viewability||'',frequencia:data.frequencia||'',vtr:data.vtr||'',receita:data.receita||'',status:data.status||'Ativo'};
+  placements.push(p);
+  renderPlacements();
+  calcular();
+}
+
+function removePlacement(id){
+  placements=placements.filter(p=>p.id!==id);
+  renderPlacements();
+  calcular();
+}
+
+function getVal(id,field){
+  const el=document.querySelector(`[data-id="${id}"][data-field="${field}"]`);
+  return el?el.value:'';
+}
+
+function renderPlacements(){
+  const c=document.getElementById('placementsContainer');
+  c.innerHTML='';
+  placements.forEach(p=>{
+    const div=document.createElement('div');
+    div.className='placement-row';
+    div.innerHTML=`
+      <input type="text" data-id="${p.id}" data-field="nome" value="${p.nome}" placeholder="Nome do placement" oninput="updateP(${p.id},'nome',this.value);calcular()">
+      <select data-id="${p.id}" data-field="plataforma" onchange="updateP(${p.id},'plataforma',this.value);calcular()">
+        ${PLATFORMS.map(pl=>`<option value="${pl}" ${pl===p.plataforma?'selected':''}>${pl}</option>`).join('')}
+      </select>
+      <input type="number" data-id="${p.id}" data-field="gasto" value="${p.gasto}" placeholder="8500" oninput="updateP(${p.id},'gasto',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="impressoes" value="${p.impressoes}" placeholder="1250000" oninput="updateP(${p.id},'impressoes',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="cliques" value="${p.cliques}" placeholder="1500" oninput="updateP(${p.id},'cliques',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="conversoes" value="${p.conversoes}" placeholder="45" oninput="updateP(${p.id},'conversoes',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="viewability" value="${p.viewability}" placeholder="68" oninput="updateP(${p.id},'viewability',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="frequencia" value="${p.frequencia}" placeholder="4.5" step="0.1" oninput="updateP(${p.id},'frequencia',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="vtr" value="${p.vtr}" placeholder="35" oninput="updateP(${p.id},'vtr',this.value);calcular()">
+      <input type="number" data-id="${p.id}" data-field="receita" value="${p.receita}" placeholder="" oninput="updateP(${p.id},'receita',this.value);calcular()">
+      <select data-id="${p.id}" data-field="status" onchange="updateP(${p.id},'status',this.value);calcular()">
+        <option ${p.status==='Ativo'?'selected':''}>Ativo</option>
+        <option ${p.status==='Pausado'?'selected':''}>Pausado</option>
+        <option ${p.status==='Encerrado'?'selected':''}>Encerrado</option>
+        <option ${p.status==='Problema'?'selected':''}>Problema</option>
+      </select>
+      <button class="btn btn-danger btn-sm" onclick="removePlacement(${p.id})">✕</button>
+    `;
+    c.appendChild(div);
+  });
+}
+
+function updateP(id,field,value){
+  const p=placements.find(x=>x.id===id);
+  if(p)p[field]=value;
+}
+
+function calcular(){
+  if(placements.length===0){document.getElementById('resultsSection').style.display='none';return;}
+  document.getElementById('resultsSection').style.display='block';
+
+  const budget=parseFloat(document.getElementById('campBudget').value)||0;
+  const gasto=parseFloat(document.getElementById('campGasto').value)||0;
+  const inicio=document.getElementById('campInicio').value;
+  const fim=document.getElementById('campFim').value;
+  const metaCPM=parseFloat(document.getElementById('metaCPM').value)||null;
+  const metaCTR=parseFloat(document.getElementById('metaCTR').value)||null;
+  const metaCPA=parseFloat(document.getElementById('metaCPA').value)||null;
+  const metaView=parseFloat(document.getElementById('metaView').value)||null;
+  const metaFreq=parseFloat(document.getElementById('metaFreq').value)||null;
+  const metaROAS=parseFloat(document.getElementById('metaROAS').value)||null;
+
+  // Pacing
+  let diasTotais=0,diasDecorridos=0;
+  if(inicio&&fim){
+    const d1=new Date(inicio),d2=new Date(fim),dh=new Date();
+    diasTotais=Math.max(1,Math.ceil((d2-d1)/(86400000)));
+    diasDecorridos=Math.min(diasTotais,Math.max(0,Math.ceil((dh-d1)/(86400000))));
+  }
+  const gastoEsperado=diasTotais>0?budget*(diasDecorridos/diasTotais):0;
+  const pacingPct=gastoEsperado>0?pct(gasto,gastoEsperado):100;
+  const budgetPct=budget>0?pct(gasto,budget):0;
+  const diasRestantes=Math.max(0,diasTotais-diasDecorridos);
+  const budgetRestante=Math.max(0,budget-gasto);
+  const dailyNeed=diasRestantes>0?budgetRestante/diasRestantes:0;
+
+  // Render pacing
+  const pc=document.getElementById('pacingCards');
+  pc.innerHTML=`
+    <div class="pacing-card"><div class="pc-label">Budget Total</div><div class="pc-val">${fmtR(budget)}</div></div>
+    <div class="pacing-card"><div class="pc-label">Gasto Realizado</div><div class="pc-val">${fmtR(gasto)}</div><div class="pc-sub">${fmt(budgetPct,1)}% do total</div></div>
+    <div class="pacing-card"><div class="pc-label">Gasto Esperado</div><div class="pc-val">${fmtR(gastoEsperado)}</div></div>
+    <div class="pacing-card"><div class="pc-label">Variação de Pacing</div><div class="pc-val" style="color:${pacingPct>=90&&pacingPct<=110?'#15803d':pacingPct<80?'#dc2626':'#a16207'}">${pacingPct>0?fmt(pacingPct,1)+'%':'--'}</div></div>
+    <div class="pacing-card"><div class="pc-label">Dias Decorridos</div><div class="pc-val">${diasDecorridos}</div><div class="pc-sub">de ${diasTotais} dias</div></div>
+    <div class="pacing-card"><div class="pc-label">Dias Restantes</div><div class="pc-val">${diasRestantes}</div></div>
+    <div class="pacing-card"><div class="pc-label">Budget Restante</div><div class="pc-val">${fmtR(budgetRestante)}</div></div>
+    <div class="pacing-card"><div class="pc-label">Budget Diário Necessário</div><div class="pc-val">${diasRestantes>0?fmtR(dailyNeed):'--'}</div></div>
+  `;
+
+  document.getElementById('paceBarExpected').style.width=Math.min(100,gastoEsperado>0?pct(gastoEsperado,budget):0)+'%';
+  document.getElementById('paceBarReal').style.width=Math.min(100,budgetPct)+'%';
+  document.getElementById('paceBarReal').style.background=pacingPct>=90&&pacingPct<=110?'#22c55e':pacingPct<80?'#ef4444':'#eab308';
+
+  const ps=document.getElementById('pacingStatus');
+  if(pacingPct>=90&&pacingPct<=115){ps.textContent='✅ On Pace';ps.className='pacing-status ps-ok';}
+  else if(pacingPct<80){ps.textContent='⚠️ Underpacing';ps.className='pacing-status ps-under';}
+  else if(pacingPct>120){ps.textContent='🔴 Overpacing';ps.className='pacing-status ps-over';}
+  else{ps.textContent='🟡 Atenção';ps.className='pacing-status ps-under';}
+
+  // Per-placement analysis
+  const alerts=[];
+  const tbody=document.getElementById('healthTableBody');
+  tbody.innerHTML='';
+
+  let totalHealth=0,countActive=0;
+  let perfScores=[],qualScores=[];
+
+  placements.forEach(p=>{
+    if(p.status==='Encerrado')return;
+    const g=parseFloat(p.gasto)||0;
+    const imp=parseFloat(p.impressoes)||0;
+    const cli=parseFloat(p.cliques)||0;
+    const conv=parseFloat(p.conversoes)||0;
+    const view=parseFloat(p.viewability)||null;
+    const freq=parseFloat(p.frequencia)||null;
+    const vtr=parseFloat(p.vtr)||null;
+    const rec=parseFloat(p.receita)||0;
+
+    const cpm=imp>0?g/(imp/1000):null;
+    const ctr=imp>0?pct(cli,imp):null;
+    const cpa=conv>0?g/conv:null;
+    const roas=g>0&&rec>0?rec/g:null;
+    const budgetShare=budget>0?pct(g,budget):null;
+
+    // Cell scoring
+    function cellColor(val,target,higherIsBetter,tolerance=0.3){
+      if(val===null||target===null)return 'n';
+      const ratio=higherIsBetter?val/target:target/val;
+      if(ratio>=1)return 'g';
+      if(ratio>=(1-tolerance))return 'y';
+      return 'r';
+    }
+
+    const cpmColor=metaCPM&&cpm?cellColor(cpm,metaCPM,false):null;
+    const ctrColor=metaCTR&&ctr?cellColor(ctr,metaCTR,true):null;
+    const cpaColor=metaCPA&&cpa?cellColor(cpa,metaCPA,false):null;
+    const viewColor=metaView&&view?cellColor(view,metaView,true):null;
+    const freqColor=metaFreq&&freq?cellColor(freq,metaFreq,false):null;
+    const vtrColor=null; // no target for VTR by default
+
+    // Health score per placement
+    const scores=[];
+    if(cpmColor&&cpmColor!=='n')scores.push({g:100,y:70,r:30}[cpmColor]);
+    if(ctrColor&&ctrColor!=='n')scores.push({g:100,y:70,r:30}[ctrColor]);
+    if(cpaColor&&cpaColor!=='n')scores.push({g:100,y:70,r:30}[cpaColor]);
+    if(viewColor&&viewColor!=='n')scores.push({g:100,y:70,r:30}[viewColor]);
+    if(freqColor&&freqColor!=='n')scores.push({g:100,y:70,r:30}[freqColor]);
+    if(p.status==='Problema')scores.push(10);
+
+    const health=scores.length>0?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):75;
+    totalHealth+=health;
+    countActive++;
+    if(scores.length>0){
+      perfScores.push(cpaColor||ctrColor?health:null);
+      qualScores.push(viewColor||freqColor?health:null);
+    }
+
+    // Bar
+    const barColor=health>=80?'#22c55e':health>=60?'#eab308':'#ef4444';
+
+    function cellHTML(val,color,display){
+      const c=color||'n';
+      return `<td><span class="cell-${c}">${display||'--'}</span></td>`;
+    }
+
+    tbody.innerHTML+=`<tr>
+      <td><strong>${p.nome||'Sem nome'}</strong></td>
+      <td>${p.plataforma}</td>
+      <td>${g?fmtR(g):'--'}</td>
+      <td>${budgetShare!==null?fmt(budgetShare,1)+'%':'--'}</td>
+      ${cellHTML(cpm,cpmColor,cpm?fmtR(cpm):null)}
+      ${cellHTML(ctr,ctrColor,ctr?fmt(ctr,3)+'%':null)}
+      ${cellHTML(cpa,cpaColor,cpa?fmtR(cpa):null)}
+      ${cellHTML(view,viewColor,view?fmt(view,1)+'%':null)}
+      ${cellHTML(freq,freqColor,freq?fmt(freq,1):null)}
+      <td>${vtr?fmt(vtr,1)+'%':'--'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="mini-bar-wrap"><div class="mini-bar" style="width:${health}%;background:${barColor}"></div></div>
+          <span style="font-size:.8rem;font-weight:600;color:${barColor}">${health}</span>
+        </div>
+      </td>
+    </tr>`;
+
+    // Generate alerts
+    const nome=p.nome||p.plataforma;
+    if(p.status==='Problema'){alerts.push({sev:'crit',text:`${nome}: Status marcado como "Problema"`,action:'Verificar entrega, pixel e configuração do placement'});}
+    if(cpa&&metaCPA&&cpa>metaCPA*1.3){alerts.push({sev:'crit',text:`${nome}: CPA ${fmtR(cpa)} — ${fmt(pct(cpa-metaCPA,metaCPA),0)}% acima da meta de ${fmtR(metaCPA)}`,action:'Revisar targeting, pausar placements de baixa conversão, testar novos criativos'});}
+    else if(cpa&&metaCPA&&cpa>metaCPA){alerts.push({sev:'med',text:`${nome}: CPA ${fmtR(cpa)} — levemente acima da meta ${fmtR(metaCPA)}`,action:'Monitorar; otimizar lances se tendência de alta'});}
+    if(freq&&metaFreq&&freq>metaFreq){alerts.push({sev:'high',text:`${nome}: Frequência ${fmt(freq,1)} — acima do limite de ${metaFreq}`,action:'Adicionar frequency cap, ampliar audiência ou pausar temporariamente'});}
+    if(view&&metaView&&view<metaView*0.7){alerts.push({sev:'crit',text:`${nome}: Viewability ${fmt(view,1)}% — crítica (meta ${metaView}%)`,action:'Renegociar posicionamento, pausar placement ou migrar para compra vCPM'});}
+    else if(view&&metaView&&view<metaView){alerts.push({sev:'med',text:`${nome}: Viewability ${fmt(view,1)}% — abaixo da meta ${metaView}%`,action:'Verificar lazy-load, posição na página e segmentação'});}
+    if(ctr&&metaCTR&&ctr<metaCTR*0.5){alerts.push({sev:'high',text:`${nome}: CTR ${fmt(ctr,3)}% — muito abaixo da meta ${metaCTR}%`,action:'Revisar criativos, testar novos formatos ou ajustar segmentação'});}
+    if(cpm&&metaCPM&&cpm>metaCPM*1.5){alerts.push({sev:'high',text:`${nome}: CPM ${fmtR(cpm)} — ${fmt(pct(cpm-metaCPM,metaCPM),0)}% acima do máximo ${fmtR(metaCPM)}`,action:'Reduzir lance máximo ou revisar competição no leilão'});}
+    if(g>0&&imp===0){alerts.push({sev:'crit',text:`${nome}: Gasto de ${fmtR(g)} sem impressões registradas`,action:'Verificar pixel de impressão, datas do relatório e status da campanha'});}
+    if(g>0&&conv===0&&metaCPA){alerts.push({sev:'med',text:`${nome}: ${fmtR(g)} gasto sem conversões`,action:'Verificar Floodlight/pixel, landing page e janela de atribuição'});}
+  });
+
+  // Pacing alerts
+  if(pacingPct<75&&diasRestantes>0){alerts.push({sev:'high',text:`Underpacing: ${fmt(pacingPct,1)}% do ritmo esperado`,action:'Aumentar bid/budget, ampliar targeting, revisar aprovação de criativos'});}
+  if(pacingPct>130){alerts.push({sev:'high',text:`Overpacing: ${fmt(pacingPct,1)}% do ritmo esperado — risco de esgotar budget antes do fim`,action:'Reduzir bid ou adicionar frequency cap; revisar daily budget cap'});}
+
+  // Sort alerts
+  const sevOrder={crit:0,high:1,med:2,info:3};
+  alerts.sort((a,b)=>sevOrder[a.sev]-sevOrder[b.sev]);
+
+  const al=document.getElementById('alertList');
+  if(alerts.length===0){al.innerHTML='<div class="no-alerts">Nenhum alerta. Campanha saudável! 🟢</div>';}
+  else{
+    al.innerHTML=alerts.map(a=>{
+      const icons={crit:'🔴',high:'🟠',med:'🟡',info:'ℹ️'};
+      return `<div class="alert-item ${a.sev}"><div class="alert-icon">${icons[a.sev]}</div><div class="alert-text"><strong>${a.text}</strong><div class="alert-action">→ ${a.action}</div></div></div>`;
+    }).join('');
+  }
+
+  // Actions
+  const uniqActions=[...new Set(alerts.map(a=>a.action))];
+  document.getElementById('actionsList').innerHTML=uniqActions.length>0
+    ?'<ul style="padding-left:20px;display:flex;flex-direction:column;gap:8px">'+uniqActions.map(a=>`<li style="font-size:.88rem;color:#333">${a}</li>`).join('')+'</ul>'
+    :'<p style="color:#666;font-style:italic">Nenhuma ação necessária no momento.</p>';
+
+  // Overall health score
+  const overallHealth=countActive>0?Math.round(totalHealth/countActive):75;
+  const pacingScore=Math.round(Math.max(0,Math.min(100,100-(Math.abs(pacingPct-100)*1.5))));
+  const perfScore=Math.round(perfScores.filter(x=>x!==null).reduce((a,b,_,arr)=>a+b/arr.length,0)||75);
+  const qualScore=Math.round(qualScores.filter(x=>x!==null).reduce((a,b,_,arr)=>a+b/arr.length,0)||75);
+  const budgetScore=Math.round(budget>0?Math.max(0,Math.min(100,100-Math.abs(budgetPct-pct(diasDecorridos,diasTotais||1))*2)):75);
+  const finalScore=Math.round(pacingScore*0.25+perfScore*0.35+qualScore*0.25+budgetScore*0.15);
+
+  const sc=document.getElementById('scoreNum');
+  const sl=document.getElementById('scoreLabel');
+  const circle=document.getElementById('scoreCircle');
+  sc.textContent=finalScore;
+  if(finalScore>=90){sl.textContent='Excelente 🟢';circle.className='score-circle score-excellent';}
+  else if(finalScore>=70){sl.textContent='Atenção 🟡';circle.className='score-circle score-warning';}
+  else if(finalScore>=50){sl.textContent='Problemas 🟠';circle.className='score-circle score-problem';}
+  else{sl.textContent='Crítico 🔴';circle.className='score-circle score-critical';}
+
+  function setSubScore(fillId,valId,score){
+    const pf=document.getElementById(fillId);
+    const pv=document.getElementById(valId);
+    pf.style.width=score+'%';
+    pf.className='ss-fill '+(score>=80?'g':score>=60?'y':score>=40?'o':'r');
+    pv.textContent=score+'/100';
+  }
+  setSubScore('pacingFill','pacingVal',pacingScore);
+  setSubScore('perfFill','perfVal',perfScore);
+  setSubScore('qualFill','qualVal',qualScore);
+  setSubScore('budgetFill','budgetVal',budgetScore);
+}
+
+function renderTrend(){
+  const raw=document.getElementById('trendInput').value.trim();
+  if(!raw){document.getElementById('trendCharts').innerHTML='';return;}
+  const rows=raw.split('\n').map(r=>r.split('\t'));
+  const labels=['Impressões','Cliques','Conversões','Gasto (R$)'];
+  const cols=[1,2,3,4];
+  const data=cols.map(c=>rows.map(r=>parseFloat(r[c])||0));
+  const container=document.getElementById('trendCharts');
+  container.innerHTML=data.map((series,i)=>{
+    const max=Math.max(...series,1);
+    const bars=series.map((v,j)=>`<div class="spark-bar ${j===series.length-1?'today':''}" title="${fmt(v)}" style="height:${Math.round(v/max*38)+2}px"></div>`).join('');
+    const trend=series.length>1?((series[series.length-1]-series[series.length-2])/series[series.length-2]*100):0;
+    const trendTxt=trend>0?`↑ +${fmt(trend,1)}%`:`↓ ${fmt(trend,1)}%`;
+    const trendColor=trend>0?'#15803d':'#dc2626';
+    return `<div class="sparkline"><div class="sp-label">${labels[i]} <span style="color:${trendColor};font-weight:600">${trendTxt}</span></div><div class="spark-bars">${bars}</div></div>`;
+  }).join('');
+}
+
+function loadDemo(){
+  placements=[];pCount=0;
+  const demo=[
+    {nome:'Meta — Prospecting',plataforma:'Meta Ads',gasto:9800,impressoes:1250000,cliques:1500,conversoes:38,viewability:'',frequencia:4.2,vtr:'',receita:5700,status:'Ativo'},
+    {nome:'Meta — Remarketing',plataforma:'Meta Ads',gasto:4200,impressoes:380000,cliques:760,conversoes:52,viewability:'',frequencia:7.8,vtr:'',receita:7800,status:'Problema'},
+    {nome:'DV360 — Display Prospecting',plataforma:'DV360',gasto:8500,impressoes:1800000,cliques:900,conversoes:12,viewability:58,frequencia:3.1,vtr:'',receita:1800,status:'Ativo'},
+    {nome:'YouTube — Pre-roll 15s',plataforma:'YouTube',gasto:5200,impressoes:650000,cliques:325,conversoes:8,viewability:85,frequencia:2.8,vtr:38,receita:1200,status:'Ativo'},
+    {nome:'LinkedIn — Brand Awareness',plataforma:'LinkedIn',gasto:3800,impressoes:220000,cliques:264,conversoes:4,viewability:72,frequencia:2.2,vtr:'',receita:600,status:'Ativo'},
+  ];
+  demo.forEach(d=>addPlacement(d));
+  document.getElementById('campNome').value='Campanha Lançamento — Nov/2026';
+  document.getElementById('campBudget').value='45000';
+  document.getElementById('campGasto').value='31500';
+  document.getElementById('campInicio').value='2026-11-01';
+  document.getElementById('campFim').value='2026-11-30';
+  document.getElementById('metaCPM').value='15';
+  document.getElementById('metaCTR').value='0.07';
+  document.getElementById('metaCPA').value='100';
+  document.getElementById('metaView').value='65';
+  document.getElementById('metaFreq').value='7';
+  document.getElementById('metaROAS').value='2.5';
+  calcular();
+}
+
+function saveCampaign(){
+  const nome=document.getElementById('campNome').value||'Campanha sem nome';
+  const data={
+    nome,inicio:document.getElementById('campInicio').value,fim:document.getElementById('campFim').value,
+    budget:document.getElementById('campBudget').value,gasto:document.getElementById('campGasto').value,
+    metaCPM:document.getElementById('metaCPM').value,metaCTR:document.getElementById('metaCTR').value,
+    metaCPA:document.getElementById('metaCPA').value,metaView:document.getElementById('metaView').value,
+    metaFreq:document.getElementById('metaFreq').value,metaROAS:document.getElementById('metaROAS').value,
+    placements:JSON.parse(JSON.stringify(placements))
+  };
+  let campaigns=[];
+  try{campaigns=JSON.parse(localStorage.getItem('monitor_campaigns'))||[];}catch(e){}
+  const idx=campaigns.findIndex(c=>c.nome===nome);
+  if(idx>=0)campaigns[idx]=data;else campaigns.unshift(data);
+  if(campaigns.length>10)campaigns=campaigns.slice(0,10);
+  try{localStorage.setItem('monitor_campaigns',JSON.stringify(campaigns));}catch(e){}
+  loadCampaignList();
+  alert('Campanha salva!');
+}
+
+function loadCampaignList(){
+  let campaigns=[];
+  try{campaigns=JSON.parse(localStorage.getItem('monitor_campaigns'))||[];}catch(e){}
+  const sel=document.getElementById('campaignSelect');
+  sel.innerHTML='<option value="">+ Nova campanha</option>'+campaigns.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+}
+
+function loadCampaign(nome){
+  if(!nome)return;
+  let campaigns=[];
+  try{campaigns=JSON.parse(localStorage.getItem('monitor_campaigns'))||[];}catch(e){}
+  const data=campaigns.find(c=>c.nome===nome);
+  if(!data)return;
+  document.getElementById('campNome').value=data.nome||'';
+  document.getElementById('campInicio').value=data.inicio||'';
+  document.getElementById('campFim').value=data.fim||'';
+  document.getElementById('campBudget').value=data.budget||'';
+  document.getElementById('campGasto').value=data.gasto||'';
+  document.getElementById('metaCPM').value=data.metaCPM||'';
+  document.getElementById('metaCTR').value=data.metaCTR||'';
+  document.getElementById('metaCPA').value=data.metaCPA||'';
+  document.getElementById('metaView').value=data.metaView||'';
+  document.getElementById('metaFreq').value=data.metaFreq||'';
+  document.getElementById('metaROAS').value=data.metaROAS||'';
+  placements=[];pCount=0;
+  (data.placements||[]).forEach(p=>addPlacement(p));
+  calcular();
+}
+
+function copiarRelatorio(){
+  const nome=document.getElementById('campNome').value||'Campanha';
+  const score=document.getElementById('scoreNum').textContent;
+  const scoreLabel=document.getElementById('scoreLabel').textContent;
+  const alerts=[...document.querySelectorAll('.alert-item')].map(el=>el.querySelector('strong').textContent).join('\n  ');
+  const txt=`RELATÓRIO DE SAÚDE — ${nome}
+Data: ${new Date().toLocaleDateString('pt-BR')}
+Score de Saúde: ${score}/100 — ${scoreLabel}
+Budget: R$ ${document.getElementById('campBudget').value||'--'} | Gasto: R$ ${document.getElementById('campGasto').value||'--'}
+
+ALERTAS ATIVOS:
+  ${alerts||'Nenhum alerta'}
+
+Gerado por NC Tool — AdOps Suite`;
+  navigator.clipboard.writeText(txt).then(()=>alert('Relatório copiado!')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Copiado!');
+  });
+}
+
+loadCampaignList();
+// Add first empty placement
+addPlacement();
+</script>
+</body>
+</html>

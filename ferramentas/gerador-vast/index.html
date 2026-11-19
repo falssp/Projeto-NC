@@ -1,0 +1,1882 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de VAST Tag | NC Tool</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;
+  --bg:#f0f2ff;--surface:#fff;--border:#d6dbf2;--muted:#9fa8da;
+  --text:#1a237e;--body:#3d4a8a;
+  --mono:'JetBrains Mono',monospace;
+  --err:#c62828;--err-bg:#fff5f5;
+  --ok:#2e7d32;--ok-bg:#f1f8e9;
+  --warn:#e65100;--warn-bg:#fff3e0;
+}
+[data-theme="dark"]{
+  --azul:#7c8fff;--escuro:#c5cae9;--light:#1e2340;
+  --bg:#0f1117;--surface:#161b2a;--border:#263060;--muted:#5c6a9e;
+  --text:#c5cae9;--body:#9fa8da;
+  --err:#ef9a9a;--err-bg:#2a1010;
+  --ok:#a5d6a7;--ok-bg:#0a2010;
+  --warn:#ffcc80;--warn-bg:#2a1800;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0;transition:background .2s,color .2s}
+
+/* BASE */
+a.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--azul);text-decoration:none;opacity:.7;padding:16px 24px 0;transition:opacity .15s}
+a.back:hover{opacity:1}
+.header{padding:12px 24px 0;width:100%;box-sizing:border-box}
+h1{font-size:22px;font-weight:700;color:var(--escuro)}
+.subtitle{font-size:13px;color:var(--body);margin-top:4px;margin-bottom:12px}
+.main{width:100%;box-sizing:border-box;padding:0 24px 32px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px}
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+label{font-size:12px;font-weight:600;color:var(--body);display:block;margin-bottom:3px}
+input,select,textarea{width:100%;font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--escuro);outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--azul)}
+input.field-error{border-color:var(--err);background:var(--err-bg)}
+.field-msg{font-size:11px;color:var(--err);margin-top:2px;display:none}
+input.field-error+.field-msg{display:block}
+.hint{font-size:11px;color:var(--muted);margin-top:2px}
+button{padding:7px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-sm{padding:5px 12px;font-size:12px;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+.btn-sm:hover{background:var(--border)}
+.btn-danger{padding:5px 12px;font-size:12px;background:var(--surface);color:var(--err);border:1px solid var(--err-bg)}
+.btn-danger:hover{background:var(--err-bg)}
+.btn-primary{padding:5px 12px;font-size:12px;background:var(--azul);color:#fff;border:none}
+.btn-primary:hover{opacity:.85}
+.btn-xs{padding:3px 7px;font-size:10px;font-weight:600;background:var(--light);color:var(--azul);border:1px solid var(--border);border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:all .15s}
+.btn-xs:hover{background:var(--border)}
+.btn-xs:disabled{opacity:.4;cursor:default}
+
+/* FORM LAYOUT */
+.presets-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.presets-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+.preset-btn{padding:3px 10px;font-size:11px;font-weight:600;background:var(--surface);color:var(--body);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.preset-btn:hover{border-color:var(--azul);color:var(--azul);background:var(--light)}
+.form-top{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;margin-bottom:10px}
+.tabs-col{display:flex;flex-direction:column;gap:0;border-right:1px solid var(--border);padding-right:12px}
+.tab{padding:6px 14px;font-size:13px;font-weight:500;border:1px solid transparent;background:none;cursor:pointer;color:var(--muted);border-radius:7px;margin-bottom:4px;font-family:inherit;transition:all .15s;text-align:left;white-space:nowrap}
+.tab:hover{color:var(--azul);background:var(--light)}
+.tab.active{color:var(--azul);background:var(--light);border-color:var(--border)}
+.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 16px;align-items:start}
+.field{display:flex;flex-direction:column}
+.field-span2{grid-column:span 2}
+.divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+
+/* MEDIAFILES */
+.mf-row{display:grid;grid-template-columns:1fr 110px 60px 60px 65px 115px 28px;gap:5px;align-items:end;margin-bottom:5px}
+.mf-row .flabel{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px}
+
+/* EVENTS */
+.events-section{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;padding:8px 0}
+.events-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;padding-top:2px}
+.events-row{display:flex;flex-wrap:wrap;gap:7px}
+.event-check{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--body);cursor:pointer;white-space:nowrap}
+.event-check input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:var(--azul)}
+
+/* COLLAPSIBLE */
+.collapsible{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:10px}
+.collapsible-header{display:flex;align-items:center;gap:6px;padding:7px 12px;cursor:pointer;background:var(--bg);user-select:none;font-size:12px;font-weight:600;color:var(--body);transition:background .15s}
+.collapsible-header:hover{background:var(--light)}
+.coll-arrow{font-size:9px;transition:transform .2s;margin-left:auto;color:var(--muted)}
+.collapsible.open .coll-arrow{transform:rotate(180deg)}
+.collapsible-body{display:none;padding:12px}
+.collapsible.open .collapsible-body{display:block}
+
+/* EXTRA PIXELS */
+.ep-row{display:grid;grid-template-columns:150px 1fr 28px;gap:5px;align-items:end;margin-bottom:5px}
+.ep-row .flabel{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px}
+
+/* COMPANIONS */
+.comp-row{display:grid;grid-template-columns:60px 60px 115px 1fr 1fr 28px;gap:5px;align-items:end;margin-bottom:5px}
+.comp-row .flabel{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px}
+
+/* VERIFICATION */
+.verif-row{display:grid;grid-template-columns:120px 1fr 1fr 28px;gap:5px;align-items:end;margin-bottom:5px}
+.verif-row .flabel{font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px}
+
+/* EVENT TIMELINE */
+.timeline-wrap{padding:10px 0 4px}
+.timeline-bar{position:relative;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin:8px 0 4px}
+.timeline-track{position:absolute;top:50%;left:0;right:0;height:3px;background:var(--border);transform:translateY(-50%)}
+.timeline-fill{position:absolute;top:0;left:0;height:100%;background:var(--azul);opacity:.18;border-radius:6px}
+.timeline-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;border:2px solid var(--surface);cursor:default;z-index:2;transition:transform .15s}
+.timeline-marker:hover{transform:translate(-50%,-50%) scale(1.4)}
+.timeline-label{position:absolute;top:100%;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap;margin-top:2px;font-family:var(--mono)}
+.tl-pct{position:absolute;bottom:100%;font-size:9px;color:var(--muted);transform:translateX(-50%);margin-bottom:2px}
+.timeline-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px}
+.tl-leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--body)}
+.tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.timeline-user-actions{font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6}
+
+/* CM360 URL BUILDER */
+.cm360-out{font-family:var(--mono);font-size:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;word-break:break-all;line-height:1.6;color:var(--body);min-height:40px;margin-top:8px;white-space:pre-wrap}
+.cm360-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 14px;margin-bottom:10px}
+
+/* CHECKLIST */
+.checklist{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.chk-item{display:flex;align-items:flex-start;gap:7px;padding:5px 8px;border-radius:6px;font-size:12px}
+.chk-ok{background:var(--ok-bg);color:var(--ok)}
+.chk-err{background:var(--err-bg);color:var(--err)}
+.chk-warn{background:var(--warn-bg);color:var(--warn)}
+.chk-icon{font-size:13px;flex-shrink:0;line-height:1.3}
+.chk-score{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;margin-left:auto}
+.score-ok{background:var(--ok-bg);color:var(--ok)}
+.score-warn{background:var(--warn-bg);color:var(--warn)}
+.score-err{background:var(--err-bg);color:var(--err)}
+
+/* OUTPUT */
+.output-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.output-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1}
+.output-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.output-body{display:grid;grid-template-columns:1fr 300px;gap:12px;align-items:stretch}
+pre{background:#1a237e;color:#e8eeff;padding:14px;border-radius:8px;overflow-x:hidden;font-family:var(--mono);font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;tab-size:2;min-height:220px}
+[data-theme="dark"] pre{background:#0a1040}
+.tracking-list{overflow-y:auto;height:100%;display:flex;flex-direction:column;justify-content:space-between}
+.tracking-item{display:flex;flex-direction:column;gap:3px}
+.tracking-url-row{display:flex;align-items:flex-start;gap:4px}
+.tracking-url-text{font-size:10px;font-family:var(--mono);color:var(--body);word-break:break-all;background:var(--bg);padding:4px 6px;border-radius:4px;flex:1}
+.tracking-extra{opacity:.65;font-size:9px}
+
+/* PREVIEW PLAYER */
+.player-wrap{margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.player-toolbar{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.player-url-input{flex:1;min-width:200px;font-size:11px}
+#vast-player{width:100%;max-height:320px;background:#000;display:block}
+.player-log{font-family:var(--mono);font-size:10px;padding:8px 12px;color:var(--body);max-height:80px;overflow-y:auto;line-height:1.5}
+.log-line{padding:1px 0}
+.log-ev{color:var(--azul)}
+.log-time{color:var(--muted);margin-right:4px}
+
+/* HISTORY */
+.history-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px}
+.history-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.history-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1}
+.history-list{display:flex;flex-direction:column;gap:6px}
+.history-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;transition:border-color .15s}
+.history-item:hover{border-color:var(--azul)}
+.history-item-info{flex:1;min-width:0}
+.history-item-title{font-size:12px;font-weight:600;color:var(--escuro);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item-meta{font-size:10px;color:var(--muted);margin-top:1px}
+.history-item-actions{display:flex;gap:5px;flex-shrink:0}
+
+/* FIXED BUTTONS */
+.fixed-btns{position:fixed;top:14px;right:18px;z-index:900;display:flex;gap:6px}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--azul);background:var(--surface);color:var(--azul);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:all .15s;font-family:inherit}
+.icon-btn:hover{background:var(--azul);color:#fff}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;padding:28px 32px;max-width:600px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.22);position:relative}
+.modal h2{margin:0 0 4px;font-size:1.1rem;color:var(--escuro)}
+.modal-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;font-family:inherit}
+.modal h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--azul);margin:16px 0 5px}
+.modal p,.modal li{font-size:.88rem;color:var(--body);line-height:1.55;margin:0 0 5px}
+.modal ul{padding-left:18px;margin:0 0 8px}
+.htag{display:inline-block;background:var(--light);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:.78rem;color:var(--escuro)}
+.json-ta{width:100%;height:220px;resize:vertical;font-family:var(--mono);font-size:11px;line-height:1.5;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--body);margin-top:10px}
+.share-url-box{display:flex;gap:6px;margin-top:10px}
+.share-url-box input{font-family:var(--mono);font-size:11px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a237e;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;font-family:'Space Grotesk',sans-serif;z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+[data-theme="dark"] .toast{background:var(--azul)}
+
+/* XML SYNTAX HIGHLIGHT */
+pre .xml-tag{color:#7c8fff}
+pre .xml-attr{color:#ffcc80}
+pre .xml-val{color:#a5d6a7}
+pre .xml-cdata{color:#ef9a9a}
+pre .xml-pi{color:#ce93d8}
+pre .xml-comment{color:#5c6a9e;font-style:italic}
+[data-theme="light"] pre .xml-tag{color:#1F36C7}
+[data-theme="light"] pre .xml-attr{color:#e65100}
+[data-theme="light"] pre .xml-val{color:#2e7d32}
+[data-theme="light"] pre .xml-cdata{color:#c62828}
+[data-theme="light"] pre .xml-pi{color:#7b1fa2}
+[data-theme="light"] pre .xml-comment{color:#9fa8da}
+
+/* INSPECTOR */
+.insp-grid{display:grid;grid-template-columns:140px 1fr;gap:3px 10px;margin-top:8px}
+.insp-k{font-size:11px;font-weight:600;color:var(--muted);padding:4px 0;align-self:start}
+.insp-v{font-size:11px;font-family:var(--mono);color:var(--body);padding:4px 0;word-break:break-all}
+.insp-tag{display:inline-block;background:var(--light);border:1px solid var(--border);border-radius:3px;padding:0 5px;font-size:10px;font-family:var(--mono);color:var(--azul);margin:1px}
+.insp-ev-list{display:flex;flex-wrap:wrap;gap:3px}
+
+/* FL IMPORT */
+.fl-import-row{display:flex;gap:5px;margin-bottom:8px}
+.fl-import-row input{font-size:11px;font-family:var(--mono)}
+
+/* HEALTH CHECK */
+.hc-row{display:flex;align-items:center;gap:5px;margin:2px 0;font-size:11px}
+.hc-status{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.hc-ok{background:var(--ok)}
+.hc-err{background:var(--err)}
+.hc-warn{background:var(--warn)}
+.hc-spin{background:var(--muted);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hc-url{font-family:var(--mono);font-size:10px;color:var(--body);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hc-label{color:var(--muted);min-width:90px;font-weight:600}
+
+/* COUNTER TAG */
+.counter-out{font-family:var(--mono);font-size:10px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;word-break:break-all;line-height:1.6;color:var(--body);margin-top:8px;white-space:pre-wrap}
+.counter-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 14px;margin-bottom:10px}
+
+/* PRINT TRACKING */
+@media print{
+  body{background:#fff;color:#000}
+  .fixed-btns,.presets-bar,a.back,.header,.card:not(#print-target),.history-card,.output-actions,.collapsible:not(#checklist-section){display:none!important}
+  #print-target{border:none;box-shadow:none}
+  .tracking-url-text{background:#fff;border:1px solid #ddd}
+}
+
+/* FAVORITES */
+.fav-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;min-height:18px}
+.fav-pill{display:inline-flex;align-items:center;gap:0;background:var(--light);border:1px solid var(--border);border-radius:14px;overflow:hidden;font-size:11px}
+.fav-pill-load{padding:2px 8px;cursor:pointer;color:var(--body);font-weight:600;background:none;border:none;font-family:inherit;transition:color .15s}
+.fav-pill-load:hover{color:var(--azul)}
+.fav-pill-del{padding:2px 6px;cursor:pointer;color:var(--muted);background:none;border:none;font-family:inherit;border-left:1px solid var(--border);font-size:10px;transition:color .15s}
+.fav-pill-del:hover{color:var(--err)}
+.fav-save-row{display:flex;gap:5px;margin-top:6px}
+.fav-save-row input{font-size:12px;max-width:180px}
+
+/* ── Como usar modal ─────────────────────────────── */
+.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.qa-overlay.open{display:flex}
+.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.qa-header h2{font-size:15px;font-weight:800;color:#1a237e}
+.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
+.qa-body{padding:20px 24px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--azul,#1F36C7);margin-bottom:10px}
+.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
+.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
+.help-num{min-width:22px;height:22px;border-radius:50%;background:var(--azul,#1F36C7);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-txt{font-size:12px;color:#475569;line-height:1.55}
+.help-txt b{color:#1e293b}
+.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
+.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
+.btn-qa{background:transparent;border:1.5px solid rgba(255,255,255,.7);color:rgba(255,255,255,.9);font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn-qa:hover{background:rgba(255,255,255,.2)}
+</style>
+</head>
+<body>
+
+<div class="fixed-btns">
+  <button class="icon-btn" id="theme-btn" onclick="toggleDark()" title="Alternar tema">🌙</button>
+  <button class="icon-btn" onclick="openHelp()" title="Ajuda">?</button>
+</div>
+<div id="toast" class="toast"></div>
+
+<a class="back" href="/Projeto-NC/ferramentas/">← Ferramentas</a>
+
+<div class="header">
+  <h1>Gerador de VAST Tag</h1>
+  <p class="subtitle">Gera XML VAST 2.0 / 3.0 / 4.1 com tracking de Floodlight — suporte a múltiplos MediaFiles, skippable, companions, viewability e pixels de terceiros.</p>
+
+  <button class="btn-qa" onclick="abrirAjuda()">❓ Como usar</button></div>
+
+<div class="main">
+
+  <!-- FORM -->
+  <div class="card">
+
+    <!-- PRESETS -->
+    <div class="presets-bar">
+      <span class="presets-label">Presets</span>
+      <button class="preset-btn" onclick="loadPreset('std30')">▶ Standard 30s</button>
+      <button class="preset-btn" onclick="loadPreset('std15')">▶ Standard 15s</button>
+      <button class="preset-btn" onclick="loadPreset('skip5')">⏭ Skippable 5s</button>
+      <button class="preset-btn" onclick="loadPreset('skip15')">⏭ Skippable 15s</button>
+      <button class="preset-btn" onclick="loadPreset('wrapper')">🔗 Wrapper</button>
+    </div>
+
+    <div class="form-top">
+      <!-- MODE TABS -->
+      <div class="tabs-col">
+        <div class="section-title" style="white-space:nowrap">Modo</div>
+        <button class="tab active" onclick="switchMode('inline',this)">Inline Ad</button>
+        <button class="tab" onclick="switchMode('wrapper',this)">Wrapper</button>
+      </div>
+
+      <!-- FIELDS -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="section-title" style="margin-bottom:0">Parâmetros Floodlight</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-sm" onclick="openShareModal()">🔗 Compartilhar</button>
+            <button class="btn-sm" onclick="openJsonModal()">⇅ JSON</button>
+            <button class="btn-danger" onclick="resetForm()">↺ Limpar campos</button>
+          </div>
+        </div>
+
+        <!-- FL IMPORT URL -->
+        <div class="fl-import-row">
+          <input id="fl-import-input" type="text" placeholder="Cole uma Floodlight URL para importar src/type/cat automaticamente" style="font-size:11px;font-family:var(--mono)">
+          <button class="btn-xs" onclick="parseFloodlightUrl()">🔍 Importar</button>
+        </div>
+
+        <!-- FL FAVORITES -->
+        <div style="margin-bottom:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:7px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">⭐ Favoritos FL</span>
+            <span style="font-size:10px;color:var(--muted)">src/type/cat salvos</span>
+          </div>
+          <div class="fav-list" id="fav-list"><span style="font-size:11px;color:var(--muted)">Nenhum favorito salvo.</span></div>
+          <div class="fav-save-row">
+            <input id="fav-name-input" type="text" placeholder="Nome do favorito (ex: Branding Q1)" style="font-size:12px">
+            <button class="btn-xs" onclick="saveFLFav()">💾 Salvar atual</button>
+          </div>
+        </div>
+
+        <div class="fields-grid">
+          <div class="field">
+            <label>Advertiser ID (src=) *</label>
+            <input id="v-src" type="text" placeholder="123456789" oninput="gen()">
+            <span class="field-msg">Campo obrigatório</span>
+          </div>
+          <div class="field">
+            <label>Group Tag String (type=) *</label>
+            <input id="v-type" type="text" placeholder="brand0" oninput="gen()">
+            <span class="field-msg">Campo obrigatório</span>
+          </div>
+          <div class="field">
+            <label>Activity Tag String (cat=) *</label>
+            <input id="v-cat" type="text" placeholder="video0" oninput="gen()">
+            <span class="field-msg">Campo obrigatório</span>
+          </div>
+
+          <div class="field">
+            <label>Versão VAST</label>
+            <select id="v-version" onchange="gen()">
+              <option value="3.0">3.0</option>
+              <option value="2.0">2.0</option>
+              <option value="4.1">4.1</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Ad Title</label>
+            <input id="v-title" type="text" placeholder="Video Ad" value="Video Ad" oninput="gen()">
+          </div>
+          <div class="field">
+            <label>Ad ID</label>
+            <input id="v-adid" type="text" value="1" oninput="gen()">
+          </div>
+          <div class="field">
+            <label>Advertiser (opcional)</label>
+            <input id="v-advertiser" type="text" placeholder="Nome da Marca" oninput="gen()">
+          </div>
+          <div class="field">
+            <label>Descrição (opcional)</label>
+            <input id="v-desc" type="text" placeholder="Descrição do anúncio" oninput="gen()">
+          </div>
+          <div class="field field-span2">
+            <label>Error URL (opcional)</label>
+            <input id="v-error-url" type="text" placeholder="https://..." oninput="gen()">
+            <div class="hint">Disparada quando o player não consegue servir o anúncio</div>
+          </div>
+
+          <div id="wrapper-fields" style="display:none;grid-column:1/-1" class="field">
+            <label>URL do VAST a envolver (VASTAdTagURI)</label>
+            <input id="v-wrapper-url" type="text" placeholder="https://ad.doubleclick.net/ddm/pfadx/..." oninput="gen()">
+            <div class="hint">URL do tag VAST interno (fornecida pelo veículo ou DSP)</div>
+          </div>
+
+          <div id="inline-fields" style="display:contents">
+            <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px">
+                <div class="section-title" style="margin-bottom:0">Criativo</div>
+                <label class="event-check" style="margin-bottom:0">
+                  <input type="checkbox" id="v-skippable" onchange="toggleSkippable()">
+                  <span style="font-size:12px;font-weight:600;color:var(--body)">Pulável (skippable)</span>
+                </label>
+                <div id="skipoffset-wrap" style="display:none;align-items:center;gap:5px">
+                  <span style="font-size:11px;color:var(--muted)">Pular após</span>
+                  <input id="v-skipoffset" type="text" value="00:00:05" style="width:90px" oninput="gen()">
+                </div>
+              </div>
+            </div>
+
+            <div class="field" style="grid-column:1/-1">
+              <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;flex-wrap:wrap">
+                <label style="margin:0;flex-shrink:0">MediaFiles</label>
+                <span style="font-size:10px;color:var(--muted);margin-right:2px">Presets:</span>
+                <button class="btn-xs" onclick="setMFSize(0,'1920','1080')" title="Full HD">1920×1080</button>
+                <button class="btn-xs" onclick="setMFSize(0,'1280','720')" title="HD">1280×720</button>
+                <button class="btn-xs" onclick="setMFSize(0,'854','480')" title="SD">854×480</button>
+                <button class="btn-xs" onclick="setMFSize(0,'640','360')" title="Low">640×360</button>
+                <button class="btn-xs" onclick="checkAllUrls()" id="btn-hc" title="Verificar se as URLs respondem">🔗 Check URLs</button>
+                <button class="btn-xs" onclick="addMF()" style="margin-left:auto">+ Adicionar</button>
+              </div>
+              <div id="mf-list"></div>
+              <div class="hint">Adicione múltiplos formatos/bitrates para maior compatibilidade com diferentes players.</div>
+            </div>
+
+            <div class="field">
+              <label>Duração (HH:MM:SS)</label>
+              <input id="v-dur" type="text" value="00:00:30" oninput="gen()">
+            </div>
+            <div class="field field-span2">
+              <label>Click-Through URL</label>
+              <input id="v-click" type="text" placeholder="https://www.marca.com.br/" oninput="gen()">
+            </div>
+            <div class="field field-span2">
+              <label>Click Tracker URL (opcional)</label>
+              <input id="v-clicktrack" type="text" placeholder="https://ad.doubleclick.net/ddm/clk/..." oninput="gen()">
+              <div class="hint">Redirect de rastreio antes do destino final</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPANION ADS -->
+        <div class="collapsible" id="comp-section">
+          <div class="collapsible-header" onclick="toggleColl('comp-section')">
+            🖼 Companion Ads
+            <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px" id="comp-count"></span>
+            <span class="coll-arrow">▼</span>
+          </div>
+          <div class="collapsible-body">
+            <div id="comp-list"></div>
+            <button class="btn-xs" onclick="addCompanion()" style="margin-top:6px">+ Adicionar Companion</button>
+            <div class="hint" style="margin-top:5px">Banners exibidos junto ao player (300×250, 728×90, etc.). Requer suporte do ad server.</div>
+          </div>
+        </div>
+
+        <!-- EXTRA PIXELS -->
+        <div class="collapsible" id="ep-section">
+          <div class="collapsible-header" onclick="toggleColl('ep-section')">
+            📡 Pixels adicionais (3rd party)
+            <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px" id="ep-count"></span>
+            <span class="coll-arrow">▼</span>
+          </div>
+          <div class="collapsible-body">
+            <div id="ep-list"></div>
+            <button class="btn-xs" onclick="addEP()" style="margin-top:6px">+ Adicionar pixel</button>
+            <div class="hint" style="margin-top:5px">Pixels de terceiros adicionados como Tracking/Impression extra no XML.</div>
+          </div>
+        </div>
+
+        <!-- VERIFICATION -->
+        <div class="collapsible" id="verif-section">
+          <div class="collapsible-header" onclick="toggleColl('verif-section')">
+            👁 Verificação / Viewability (OMID)
+            <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:4px" id="verif-count"></span>
+            <span class="coll-arrow">▼</span>
+          </div>
+          <div class="collapsible-body">
+            <div id="verif-list"></div>
+            <div style="display:flex;align-items:center;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <button class="btn-xs" onclick="addVerif()">+ Adicionar vendor</button>
+              <span style="font-size:10px;color:var(--muted)">Presets:</span>
+              <button class="btn-xs" onclick="addVerifPreset('ias')">IAS</button>
+              <button class="btn-xs" onclick="addVerifPreset('moat')">Moat</button>
+              <button class="btn-xs" onclick="addVerifPreset('dv')">DV</button>
+            </div>
+            <div class="hint" style="margin-top:5px">
+              Gera <code style="font-family:var(--mono);font-size:10px">&lt;AdVerifications&gt;</code> (VAST 4.1) ou <code style="font-family:var(--mono);font-size:10px">&lt;Extension type="AdVerification"&gt;</code> (2.0/3.0).
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- EVENTS ROW -->
+    <div class="divider"></div>
+    <div class="events-section">
+      <span class="events-label">Eventos de Tracking</span>
+      <div>
+        <div class="events-row">
+          <label class="event-check"><input type="checkbox" id="ev-impression" checked onchange="gen()"> Impression</label>
+          <label class="event-check"><input type="checkbox" id="ev-start" checked onchange="gen()"> start</label>
+          <label class="event-check"><input type="checkbox" id="ev-firstQuartile" checked onchange="gen()"> firstQuartile</label>
+          <label class="event-check"><input type="checkbox" id="ev-midpoint" checked onchange="gen()"> midpoint</label>
+          <label class="event-check"><input type="checkbox" id="ev-thirdQuartile" checked onchange="gen()"> thirdQuartile</label>
+          <label class="event-check"><input type="checkbox" id="ev-complete" checked onchange="gen()"> complete</label>
+          <label class="event-check"><input type="checkbox" id="ev-mute" onchange="gen()"> mute</label>
+          <label class="event-check"><input type="checkbox" id="ev-unmute" onchange="gen()"> unmute</label>
+          <label class="event-check"><input type="checkbox" id="ev-pause" onchange="gen()"> pause</label>
+          <label class="event-check"><input type="checkbox" id="ev-resume" onchange="gen()"> resume</label>
+          <label class="event-check"><input type="checkbox" id="ev-skip" onchange="gen()"> skip</label>
+          <label class="event-check"><input type="checkbox" id="ev-fullscreen" onchange="gen()"> fullscreen</label>
+          <label class="event-check"><input type="checkbox" id="ev-creativeView" onchange="gen()"> creativeView</label>
+          <label class="event-check"><input type="checkbox" id="ev-acceptInvitation" onchange="gen()"> acceptInvitation</label>
+          <label class="event-check"><input type="checkbox" id="ev-collapse" onchange="gen()"> collapse</label>
+          <label class="event-check"><input type="checkbox" id="ev-expand" onchange="gen()"> expand</label>
+          <label class="event-check"><input type="checkbox" id="ev-closeLinear" onchange="gen()"> closeLinear</label>
+          <label class="event-check"><input type="checkbox" id="ev-progress" onchange="toggleProgress();gen()"> progress</label>
+        </div>
+        <div id="progress-offset-row" style="display:none;align-items:center;gap:6px;margin-top:6px">
+          <span class="hint">Offset do progress:</span>
+          <input id="v-progress-offset" type="text" value="00:00:15" style="width:90px" oninput="gen()">
+          <span class="hint">(HH:MM:SS)</span>
+        </div>
+        <div class="hint" style="margin-top:5px">Os 6 primeiros são o padrão mínimo recomendado. VAST 3.0+ suporta todos os eventos listados.</div>
+      </div>
+    </div>
+
+    <!-- EVENT TIMELINE -->
+    <div class="collapsible" id="timeline-section" style="margin-top:10px">
+      <div class="collapsible-header" onclick="toggleColl('timeline-section');renderTimeline()">
+        📊 Timeline de eventos
+        <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:4px">Visualiza quando cada evento dispara ao longo do vídeo</span>
+        <span class="coll-arrow">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div id="timeline-wrap" class="timeline-wrap"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CM360 VAST URL BUILDER -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1">🏷 CM360 VAST Tag URL Builder</div>
+      <span style="font-size:11px;color:var(--muted)">Gera a URL pfadx para servir o criativo de vídeo pelo CM360</span>
+    </div>
+    <div class="cm360-fields">
+      <div class="field">
+        <label>Network ID (N)</label>
+        <input id="cm-network" type="text" placeholder="1234567" oninput="genCM360()">
+        <div class="hint">Número do network no CM360 (sem o "N")</div>
+      </div>
+      <div class="field">
+        <label>Placement ID (B)</label>
+        <input id="cm-placement" type="text" placeholder="987654321" oninput="genCM360()">
+        <div class="hint">ID do placement de vídeo no CM360</div>
+      </div>
+      <div class="field">
+        <label>Tamanho (Largura x Altura)</label>
+        <input id="cm-size" type="text" placeholder="640x360" value="640x360" oninput="genCM360()">
+      </div>
+      <div class="field">
+        <label>Click URL macro</label>
+        <select id="cm-click-macro" onchange="genCM360()">
+          <option value="%%CLICK_URL_ESC%%">%%CLICK_URL_ESC%% (DFP/CM360)</option>
+          <option value="${CLICK_URL_ENC}">${CLICK_URL_ENC} (Xandr)</option>
+          <option value="%c">%c (genérico)</option>
+          <option value="">(nenhum)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Cachebuster macro</label>
+        <select id="cm-cb-macro" onchange="genCM360()">
+          <option value="%%CACHEBUSTER%%">%%CACHEBUSTER%% (CM360)</option>
+          <option value="${CACHEBUSTER}">${CACHEBUSTER} (Xandr)</option>
+          <option value="[timestamp]">[timestamp] (genérico)</option>
+          <option value="TIMESTAMP">TIMESTAMP (placeholder)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>GDPR macros</label>
+        <select id="cm-gdpr" onchange="genCM360()">
+          <option value="1">Incluir (${GDPR} / ${GDPR_CONSENT})</option>
+          <option value="0">Não incluir</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+      <label style="margin:0;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">URL gerada</label>
+      <button class="btn-xs" id="btn-copy-cm360" onclick="copyCM360()">📋 Copiar</button>
+      <button class="btn-xs" onclick="genCM360()">↺ Atualizar</button>
+    </div>
+    <div id="cm360-out" class="cm360-out">Preencha Network ID e Placement ID acima.</div>
+    <div class="hint" style="margin-top:6px">Esta URL serve o criativo de vídeo diretamente. Para usar como VAST wrapper, insira-a no campo "URL do VAST a envolver" no modo Wrapper.</div>
+  </div>
+
+  <!-- FLOODLIGHT COUNTER TAG -->
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1">🔖 Floodlight Counter Tag</div>
+      <button class="btn-xs" onclick="syncCounterFromFL()" title="Copiar src/type/cat do formulário VAST">⇅ Copiar do VAST</button>
+      <span style="font-size:11px;color:var(--muted)">Gera pixel <code style="font-family:var(--mono);font-size:10px">&lt;img&gt;</code> para contagem de conversão</span>
+    </div>
+    <div class="counter-fields">
+      <div class="field">
+        <label>Advertiser ID (src=) *</label>
+        <input id="ct-src" type="text" placeholder="123456789" oninput="genCounterTag()">
+      </div>
+      <div class="field">
+        <label>Group Tag String (type=) *</label>
+        <input id="ct-type" type="text" placeholder="brand0" oninput="genCounterTag()">
+      </div>
+      <div class="field">
+        <label>Activity Tag String (cat=) *</label>
+        <input id="ct-cat" type="text" placeholder="video0" oninput="genCounterTag()">
+      </div>
+      <div class="field">
+        <label>Formato</label>
+        <select id="ct-format" onchange="genCounterTag()">
+          <option value="img">HTML &lt;img&gt; tag</option>
+          <option value="url">URL pura</option>
+          <option value="iframe">iFrame</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+      <label style="margin:0;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em">Tag gerada</label>
+      <button class="btn-xs" onclick="copyCounterTag()">📋 Copiar</button>
+      <button class="btn-xs" onclick="genCounterTag()">↺ Atualizar</button>
+    </div>
+    <div id="counter-out" class="counter-out">Preencha os campos acima (ou clique em "Copiar do VAST").</div>
+    <div class="hint" style="margin-top:6px">Pixel de 1×1 pixel usado para rastrear conversões e ações pós-view. Cole no HTML da página de destino da campanha. Use o ord= como cachebuster dinâmico em produção.</div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="card" id="print-target">
+    <div class="output-header">
+      <div class="output-label">VAST XML gerado <span id="xml-size-badge" style="font-weight:400;font-size:10px;color:var(--muted)"></span></div>
+      <div class="output-actions">
+        <button class="btn-sm" id="btn-copy" onclick="copyXML()">📋 Copiar XML</button>
+        <button class="btn-sm" id="btn-download" onclick="downloadXML()">⬇ Download XML</button>
+        <button class="btn-sm" onclick="openValidator()">🔍 Validar (IAB)</button>
+        <button class="btn-sm" onclick="openImaTest()">▶ Teste IMA</button>
+        <button class="btn-sm" id="btn-save" onclick="saveToHistory()">💾 Salvar</button>
+        <button class="btn-sm" onclick="openInspector()">🔬 Inspetor VAST</button>
+        <button class="btn-sm" onclick="window.print()" title="Imprime lista de URLs de tracking (Ctrl+P)">🖨 Imprimir tracking</button>
+      </div>
+    </div>
+    <div class="output-body">
+      <pre id="vast-out"><!-- preencha os campos acima --></pre>
+      <div id="tracking-list" class="tracking-list"></div>
+    </div>
+
+    <!-- CHECKLIST -->
+    <div class="collapsible open" id="checklist-section" style="margin-top:12px">
+      <div class="collapsible-header" onclick="toggleColl('checklist-section')">
+        ✅ Checklist pré-tráfego
+        <span id="chk-score-badge" class="chk-score score-ok" style="margin-left:6px"></span>
+        <span class="coll-arrow">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div id="checklist" class="checklist"></div>
+      </div>
+    </div>
+
+    <!-- PREVIEW PLAYER -->
+    <div class="collapsible" id="player-section" style="margin-top:10px">
+      <div class="collapsible-header" onclick="toggleColl('player-section');initPlayer()">
+        🎬 Preview do vídeo
+        <span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:4px">Reproduz o arquivo de vídeo diretamente (não simula o VAST completo)</span>
+        <span class="coll-arrow">▼</span>
+      </div>
+      <div class="collapsible-body" style="padding:0">
+        <div class="player-wrap" style="margin-top:0;border:none;border-radius:0">
+          <div class="player-toolbar">
+            <input class="player-url-input" id="player-url" type="text" placeholder="URL do vídeo (preenchida automaticamente do primeiro MediaFile)">
+            <button class="btn-xs" onclick="playerLoad()">▶ Carregar</button>
+            <button class="btn-xs" onclick="document.getElementById('vast-player').pause()">⏸ Pausar</button>
+            <button class="btn-xs" onclick="playerStop()">⏹ Parar</button>
+            <button class="btn-xs" onclick="document.getElementById('player-log').innerHTML=''">🗑 Log</button>
+            <a href="https://googleads.github.io/googleads-ima-html5/vsi/" target="_blank" class="btn-xs" style="text-decoration:none">🔗 IMA SDK</a>
+          </div>
+          <video id="vast-player" controls style="width:100%;max-height:320px;background:#000;display:block"></video>
+          <div class="player-log" id="player-log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-card" id="history-card" style="display:none">
+    <div class="history-header">
+      <div class="history-label">📁 Histórico local (últimos 10)</div>
+      <button class="btn-danger" onclick="clearHistory()">🗑 Limpar tudo</button>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+</div>
+
+<!-- SHARE MODAL -->
+<div class="overlay" id="share-overlay" onclick="if(event.target===this)closeShareModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeShareModal()">×</button>
+    <h2>🔗 Compartilhar configuração</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:4px">Link direto com toda a configuração atual. Qualquer pessoa com o link abre o gerador já preenchido.</p>
+    <div class="share-url-box">
+      <input type="text" id="share-url-input" readonly style="font-size:10px">
+      <button class="btn-primary" onclick="copyShareUrl()">📋 Copiar</button>
+    </div>
+    <div class="hint" style="margin-top:8px">O link pode ser longo — use um encurtador se precisar compartilhar em mensagem.</div>
+  </div>
+</div>
+
+<!-- JSON MODAL -->
+<div class="overlay" id="json-overlay" onclick="if(event.target===this)closeJsonModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeJsonModal()">×</button>
+    <h2>Configuração JSON</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:4px">Copie para compartilhar com o time, ou cole uma configuração existente e clique em Importar.</p>
+    <textarea class="json-ta" id="json-ta"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+      <button class="btn-sm" onclick="copyJsonTA()">📋 Copiar</button>
+      <button class="btn-primary" onclick="doImportJson()">⇅ Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- INSPECTOR MODAL -->
+<div class="overlay" id="inspector-overlay" onclick="if(event.target===this)closeInspector()">
+  <div class="modal" style="max-width:680px">
+    <button class="modal-close" onclick="closeInspector()">×</button>
+    <h2>🔬 Inspetor de VAST Tag</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:4px">Cole um XML VAST aqui para extrair todos os parâmetros. Funciona com qualquer tag VAST 2.0 / 3.0 / 4.1.</p>
+    <textarea class="json-ta" id="inspector-ta" placeholder="Cole o XML VAST aqui..." style="height:160px;margin-top:10px"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="doInspect()">🔍 Analisar</button>
+      <button class="btn-sm" onclick="loadInspectedIntoForm()" id="btn-load-inspected" style="display:none">⇅ Carregar no formulário</button>
+      <button class="btn-sm" onclick="document.getElementById(\'inspector-ta\').value=\'\';document.getElementById(\'inspector-result\').innerHTML=\'\';document.getElementById(\'btn-load-inspected\').style.display=\'none\'">🗑 Limpar</button>
+    </div>
+    <div id="inspector-result" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div class="overlay" id="help-overlay" onclick="if(event.target===this)closeHelp()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeHelp()">×</button>
+    <h2>Gerador de VAST Tag</h2>
+    <h3>O que faz</h3>
+    <p>Cria o XML de uma tag VAST para vídeo — o formato padrão que players usam para carregar o anúncio e registrar eventos de tracking.</p>
+    <h3>Como usar</h3>
+    <ul>
+      <li><strong>Presets</strong>: carregue um modelo pré-configurado como ponto de partida.</li>
+      <li><strong>Inline Ad</strong>: o próprio XML carrega o vídeo. Adicione um ou mais MediaFiles.</li>
+      <li><strong>Wrapper</strong>: encadeia outro VAST. Informe a URL do VAST de destino.</li>
+      <li><strong>Pulável</strong>: marque "skippable" e defina o offset para gerar o atributo <span class="htag">skipoffset</span>.</li>
+      <li><strong>Companion Ads</strong>: banners exibidos junto ao player (StaticResource, IFrame ou HTML).</li>
+      <li><strong>Pixels 3rd party</strong>: pixels de terceiros por evento (DV360, Sizmek, viewability, etc.).</li>
+      <li><strong>Verificação / Viewability</strong>: vendors OMID (IAS, Moat, DV) — gera <span class="htag">&lt;AdVerifications&gt;</span> em VAST 4.1 ou <span class="htag">&lt;Extension&gt;</span> em 2.0/3.0.</li>
+      <li><strong>Timeline de eventos</strong>: visualiza em qual ponto do vídeo cada evento dispara.</li>
+    </ul>
+    <h3>CM360 VAST URL Builder</h3>
+    <p>Gera a URL <span class="htag">pfadx</span> do CM360 para servir o criativo de vídeo diretamente. Preencha Network ID e Placement ID — a URL é gerada com os macros de click e cachebuster prontos para uso. Para testar como Wrapper, cole a URL gerada no campo "URL do VAST a envolver".</p>
+    <h3>Checklist pré-tráfego</h3>
+    <p>Roda automaticamente a cada alteração e aponta erros críticos (❌) e avisos (⚠️) antes de enviar a tag para o veículo. Um score de 100% indica que nenhum erro crítico foi encontrado.</p>
+    <h3>Ações de output</h3>
+    <ul>
+      <li><strong>📋 Copiar XML</strong>: copia o XML completo.</li>
+      <li><strong>⬇ Download XML</strong>: baixa como arquivo <span class="htag">.xml</span>.</li>
+      <li><strong>🔍 Validar (IAB)</strong>: copia e abre o validador da IAB Tech Lab.</li>
+      <li><strong>▶ Teste IMA</strong>: abre o Video Suite Inspector do Google.</li>
+      <li><strong>🔗 Compartilhar</strong>: gera link com a config codificada — quem abre já vê tudo preenchido.</li>
+      <li><strong>⇅ JSON</strong>: exporta ou importa todos os campos como JSON.</li>
+      <li><strong>💾 Salvar</strong>: salva no histórico local do browser (últimos 10).</li>
+      <li><strong>🎬 Preview do vídeo</strong>: reproduz o arquivo de vídeo do primeiro MediaFile.</li>
+      <li><strong>🖨 Imprimir tracking</strong>: imprime a lista de URLs de tracking em formato limpo.</li>
+    </ul>
+    <h3>Atalhos de teclado</h3>
+    <ul>
+      <li><strong>Ctrl+Enter</strong>: regenera o XML (útil após editar campos manualmente).</li>
+      <li><strong>Ctrl+Shift+C</strong>: copia o XML para a área de transferência.</li>
+      <li><strong>Esc</strong>: fecha modais abertos.</li>
+    </ul>
+    <h3>Floodlight Counter Tag</h3>
+    <p>Gera o pixel de contagem de conversão (<span class="htag">&lt;img&gt;</span>, URL ou iFrame) para colar na página de destino da campanha. Clique em "Copiar do VAST" para sincronizar os parâmetros src/type/cat automaticamente.</p>
+    <h3>Verificação / Viewability</h3>
+    <p>Use os presets <strong>IAS</strong>, <strong>Moat</strong> e <strong>DV</strong> para adicionar um vendor de viewability rapidamente — atualize o ID do script com seu token real. O botão "🔗 Check URLs" verifica se as URLs dos MediaFiles e pixels estão alcançáveis.</p>
+    <h3>Atenção</h3>
+    <ul>
+      <li>Campos com * são obrigatórios — ficam vermelhos se vazios.</li>
+      <li>VAST 3.0 é o padrão recomendado para campanhas novas.</li>
+      <li>O histórico fica salvo apenas no browser local — use JSON ou link para compartilhar.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let mode='inline';
+let mediaFiles=[{url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'}];
+let companions=[];
+let extraPixels=[];
+let verifications=[];
+let _rawXml='';
+let _inspectedState=null;
+
+const EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','complete',
+              'mute','unmute','pause','resume','skip','fullscreen',
+              'creativeView','acceptInvitation','collapse','expand','closeLinear','progress'];
+const REQUIRED=['v-src','v-type','v-cat'];
+const HIST_KEY='vast_history_v3';
+const HIST_MAX=10;
+const FL_FAVS_KEY='vast_fl_favs';
+const MIME_OPTS=['video/mp4','video/webm','video/ogg','application/x-mpegURL','application/dash+xml'];
+const EP_EVENTS=['impression','start','firstQuartile','midpoint','thirdQuartile','complete',
+                 'mute','unmute','pause','resume','skip','fullscreen','creativeView','clickTracking'];
+
+// ─── HELPERS ───
+function v(id){return (document.getElementById(id)||{}).value||'';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function toast(msg,dur=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid=setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+function hhmmssToSec(s){
+  if(!s)return 0;
+  const p=s.split(':').map(Number);
+  if(p.length===3)return p[0]*3600+p[1]*60+p[2];
+  if(p.length===2)return p[0]*60+p[1];
+  return p[0]||0;
+}
+
+// ─── DARK MODE ───
+function toggleDark(){
+  const html=document.documentElement;
+  const dark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('theme-btn').textContent=dark?'🌙':'☀️';
+  try{localStorage.setItem('vast_theme',dark?'light':'dark');}catch(e){}
+}
+function loadDarkPref(){
+  try{
+    if(localStorage.getItem('vast_theme')==='dark'){
+      document.documentElement.setAttribute('data-theme','dark');
+      document.getElementById('theme-btn').textContent='☀️';
+    }
+  }catch(e){}
+}
+
+// ─── MODE ───
+function switchMode(m,btn){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('inline-fields').style.display=m==='inline'?'contents':'none';
+  document.getElementById('wrapper-fields').style.display=m==='inline'?'none':'';
+  document.getElementById('comp-section').style.display=m==='inline'?'':'none';
+  document.getElementById('verif-section').style.display=m==='inline'?'':'none';
+  gen();
+}
+
+// ─── COLLAPSIBLE ───
+function toggleColl(id){document.getElementById(id).classList.toggle('open');}
+
+// ─── SKIPPABLE ───
+function toggleSkippable(){
+  const on=document.getElementById('v-skippable').checked;
+  document.getElementById('skipoffset-wrap').style.display=on?'flex':'none';
+  gen();
+}
+
+// ─── PROGRESS OFFSET ───
+function toggleProgress(){
+  const on=document.getElementById('ev-progress').checked;
+  document.getElementById('progress-offset-row').style.display=on?'flex':'none';
+}
+
+// ─── VALIDATE ───
+function validate(){
+  let ok=true;
+  REQUIRED.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(!el.value.trim()){el.classList.add('field-error');ok=false;}
+    else el.classList.remove('field-error');
+  });
+  return ok;
+}
+
+// ─── MEDIAFILES ───
+function renderMFList(){
+  const list=document.getElementById('mf-list');
+  list.innerHTML=mediaFiles.map((mf,i)=>`
+    <div class="mf-row">
+      <div>${i===0?'<div class="flabel">URL do vídeo</div>':''}<input id="mf-url-${i}" type="text" placeholder="https://cdn.exemplo.com/video.mp4" value="${esc(mf.url)}" oninput="mfChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">MIME</div>':''}<select id="mf-mime-${i}" onchange="mfChange(${i})">${MIME_OPTS.map(m=>`<option${m===mf.mime?' selected':''}>${m}</option>`).join('')}</select></div>
+      <div>${i===0?'<div class="flabel">Largura</div>':''}<input id="mf-w-${i}" type="number" value="${mf.w||1280}" min="1" oninput="mfChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Altura</div>':''}<input id="mf-h-${i}" type="number" value="${mf.h||720}" min="1" oninput="mfChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Kbps</div>':''}<input id="mf-bitrate-${i}" type="number" value="${mf.bitrate}" placeholder="1500" min="1" oninput="mfChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Delivery</div>':''}<select id="mf-delivery-${i}" onchange="mfChange(${i})"><option${(mf.delivery||'progressive')==='progressive'?' selected':''}>progressive</option><option${mf.delivery==='streaming'?' selected':''}>streaming</option></select></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeMF(${i})" ${mediaFiles.length===1?'disabled':''}>🗑</button></div>
+    </div>`).join('');
+}
+function mfChange(i){
+  mediaFiles[i]={url:v('mf-url-'+i),mime:v('mf-mime-'+i)||'video/mp4',
+    w:v('mf-w-'+i)||'1280',h:v('mf-h-'+i)||'720',
+    bitrate:v('mf-bitrate-'+i),delivery:v('mf-delivery-'+i)||'progressive'};
+  gen();
+}
+function addMF(){mediaFiles.push({url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'});renderMFList();gen();}
+function removeMF(i){if(mediaFiles.length===1)return;mediaFiles.splice(i,1);renderMFList();gen();}
+function setMFSize(idx,w,h){
+  if(!mediaFiles[idx])return;
+  mediaFiles[idx].w=w;mediaFiles[idx].h=h;
+  renderMFList();gen();
+}
+async function checkAllUrls(){
+  const btn=document.getElementById('btn-hc');
+  btn.disabled=true;btn.textContent='⏳ Verificando...';
+  const urls=[];
+  mediaFiles.forEach((mf,i)=>{if(mf.url&&mf.url.trim())urls.push({label:`MF ${i+1}`,url:mf.url.trim()});});
+  extraPixels.forEach((ep,i)=>{if(ep.url&&ep.url.trim())urls.push({label:`Pixel ${ep.event}`,url:ep.url.trim()});});
+  verifications.forEach((vf,i)=>{if(vf.js&&vf.js.trim())urls.push({label:`OMID ${vf.vendor||i+1}`,url:vf.js.trim()});});
+  if(!urls.length){toast('Nenhuma URL preenchida para verificar.');btn.disabled=false;btn.textContent='🔗 Check URLs';return;}
+  let panel=document.getElementById('hc-panel');
+  if(!panel){panel=document.createElement('div');panel.id='hc-panel';panel.style.cssText='margin-top:6px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:7px';document.getElementById('mf-list').after(panel);}
+  panel.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px">🔗 URL Health Check <span style="font-weight:400;font-size:10px">(no-cors — ✅ alcançável, ❌ rede falhou)</span></div>'+
+    urls.map((u,i)=>`<div class="hc-row" id="hcr-${i}"><div class="hc-status hc-spin" id="hcd-${i}"></div><span class="hc-label">${esc(u.label)}</span><span class="hc-url" title="${esc(u.url)}">${esc(u.url)}</span></div>`).join('');
+  for(let i=0;i<urls.length;i++){
+    const dot=document.getElementById('hcd-'+i);
+    try{await fetch(urls[i].url,{method:'HEAD',mode:'no-cors',cache:'no-cache'});dot.className='hc-status hc-ok';}
+    catch(e){dot.className='hc-status hc-err';}
+  }
+  btn.disabled=false;btn.textContent='🔗 Check URLs';
+}
+
+// ─── COMPANIONS ───
+function renderCompList(){
+  const list=document.getElementById('comp-list');
+  const badge=document.getElementById('comp-count');
+  badge.textContent=companions.length?`(${companions.length})`:'';
+  if(!companions.length){list.innerHTML='<div class="hint">Nenhum companion adicionado.</div>';return;}
+  list.innerHTML=companions.map((c,i)=>`
+    <div class="comp-row">
+      <div>${i===0?'<div class="flabel">L (px)</div>':''}<input id="comp-w-${i}" type="number" value="${c.w||300}" placeholder="300" oninput="compChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">A (px)</div>':''}<input id="comp-h-${i}" type="number" value="${c.h||250}" placeholder="250" oninput="compChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Tipo</div>':''}<select id="comp-type-${i}" onchange="compChange(${i})">${['StaticResource','IFrameResource','HTMLResource'].map(t=>`<option${t===c.resourceType?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div>${i===0?'<div class="flabel">Resource URL</div>':''}<input id="comp-res-${i}" type="text" value="${esc(c.resource)}" placeholder="https://..." oninput="compChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Click URL</div>':''}<input id="comp-click-${i}" type="text" value="${esc(c.click)}" placeholder="https://..." oninput="compChange(${i})"></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeComp(${i})">🗑</button></div>
+    </div>`).join('');
+}
+function compChange(i){companions[i]={w:v('comp-w-'+i)||'300',h:v('comp-h-'+i)||'250',resourceType:v('comp-type-'+i)||'StaticResource',resource:v('comp-res-'+i),click:v('comp-click-'+i)};gen();}
+function addCompanion(){if(!document.getElementById('comp-section').classList.contains('open'))toggleColl('comp-section');companions.push({w:'300',h:'250',resourceType:'StaticResource',resource:'',click:''});renderCompList();gen();}
+function removeComp(i){companions.splice(i,1);renderCompList();gen();}
+
+// ─── EXTRA PIXELS ───
+function renderEPList(){
+  const list=document.getElementById('ep-list');
+  const badge=document.getElementById('ep-count');
+  badge.textContent=extraPixels.length?`(${extraPixels.length})`:'';
+  if(!extraPixels.length){list.innerHTML='<div class="hint">Nenhum pixel adicionado.</div>';return;}
+  list.innerHTML=extraPixels.map((ep,i)=>`
+    <div class="ep-row">
+      <div>${i===0?'<div class="flabel">Evento</div>':''}<select id="ep-event-${i}" onchange="epChange(${i})">${EP_EVENTS.map(e=>`<option${e===ep.event?' selected':''}>${e}</option>`).join('')}</select></div>
+      <div>${i===0?'<div class="flabel">Pixel URL</div>':''}<input id="ep-url-${i}" type="text" value="${esc(ep.url)}" placeholder="https://pixel.3rdparty.com/..." oninput="epChange(${i})"></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeEP(${i})">🗑</button></div>
+    </div>`).join('');
+}
+function epChange(i){extraPixels[i]={event:v('ep-event-'+i)||'impression',url:v('ep-url-'+i)};gen();}
+function addEP(){if(!document.getElementById('ep-section').classList.contains('open'))toggleColl('ep-section');extraPixels.push({event:'impression',url:''});renderEPList();gen();}
+function removeEP(i){extraPixels.splice(i,1);renderEPList();gen();}
+
+// ─── VERIFICATION ───
+function renderVerifList(){
+  const list=document.getElementById('verif-list');
+  const badge=document.getElementById('verif-count');
+  badge.textContent=verifications.length?`(${verifications.length})`:'';
+  if(!verifications.length){list.innerHTML='<div class="hint">Nenhum vendor adicionado.</div>';return;}
+  list.innerHTML=verifications.map((vf,i)=>`
+    <div class="verif-row">
+      <div>${i===0?'<div class="flabel">Vendor</div>':''}<input id="vf-vendor-${i}" type="text" value="${esc(vf.vendor)}" placeholder="ias.com" oninput="verifChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">JS Resource URL</div>':''}<input id="vf-js-${i}" type="text" value="${esc(vf.js)}" placeholder="https://cdn.ias.com/tags/..." oninput="verifChange(${i})"></div>
+      <div>${i===0?'<div class="flabel">Parâmetros (opcional)</div>':''}<input id="vf-params-${i}" type="text" value="${esc(vf.params)}" placeholder='{"publisherId":"123"}' oninput="verifChange(${i})"></div>
+      <div style="${i===0?'padding-top:17px':''}"><button class="btn-xs" style="color:var(--err);border-color:var(--err-bg);padding:4px 7px" onclick="removeVerif(${i})">🗑</button></div>
+    </div>`).join('');
+}
+function verifChange(i){verifications[i]={vendor:v('vf-vendor-'+i),js:v('vf-js-'+i),params:v('vf-params-'+i)};gen();}
+function addVerif(){if(!document.getElementById('verif-section').classList.contains('open'))toggleColl('verif-section');verifications.push({vendor:'',js:'',params:''});renderVerifList();gen();}
+function removeVerif(i){verifications.splice(i,1);renderVerifList();gen();}
+const VERIF_PRESETS={
+  ias:{vendor:'ias.com',js:'https://cdn.ias.com/tags/ias_analytics.js',params:'{"publisherId":"YOUR_PUB_ID"}'},
+  moat:{vendor:'moat.com',js:'https://z.moatads.com/YOUR_TAG/moatvideo.js',params:''},
+  dv:{vendor:'doubleverify.com',js:'https://cdn.doubleverify.com/dvtp_src.js',params:'{"ctx":"YOUR_CTX_ID","cmp":"YOUR_CMP_ID"}'},
+};
+function addVerifPreset(key){
+  const p=VERIF_PRESETS[key];if(!p)return;
+  if(!document.getElementById('verif-section').classList.contains('open'))toggleColl('verif-section');
+  verifications.push({vendor:p.vendor,js:p.js,params:p.params});
+  renderVerifList();gen();
+  toast(`Preset ${key.toUpperCase()} adicionado — atualize o ID do script.`);
+}
+
+// ─── EVENT TIMELINE ───
+// Position of each event on the 0-100% scale; user-action events are variable
+const TL_POSITIONS={
+  impression:0,creativeView:0,start:0,
+  firstQuartile:25,midpoint:50,thirdQuartile:75,complete:100
+};
+const TL_COLORS={
+  impression:'#1F36C7',creativeView:'#7c8fff',start:'#2e7d32',
+  firstQuartile:'#f9a825',midpoint:'#e65100',thirdQuartile:'#c62828',complete:'#4a148c',
+  progress:'#00796b',skip:'#ff6f00'
+};
+const TL_USER_ACTIONS=['mute','unmute','pause','resume','fullscreen','acceptInvitation','collapse','expand','closeLinear'];
+
+function renderTimeline(){
+  const wrap=document.getElementById('timeline-wrap');
+  if(!wrap)return;
+  const dur=hhmmssToSec(v('v-dur'))||30;
+  const checked=new Set(EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked));
+  const skippable=document.getElementById('v-skippable')?.checked;
+  const skipoffset=hhmmssToSec(v('v-skipoffset'));
+  const progressOn=checked.has('progress');
+  const progressOffset=hhmmssToSec(v('v-progress-offset'));
+
+  // Build markers
+  const markers=[];
+  Object.entries(TL_POSITIONS).forEach(([ev,pct])=>{
+    if(checked.has(ev))markers.push({ev,pct,color:TL_COLORS[ev]||'#1F36C7',label:ev,time:Math.round(dur*pct/100)+'s'});
+  });
+  if(progressOn&&progressOffset<=dur){
+    const pct=Math.round(progressOffset/dur*100);
+    markers.push({ev:'progress',pct,color:TL_COLORS.progress,label:'progress',time:v('v-progress-offset')});
+  }
+  if(skippable&&skipoffset<=dur){
+    const pct=Math.round(skipoffset/dur*100);
+    markers.push({ev:'skip',pct,color:TL_COLORS.skip,label:'skip ⏭',time:v('v-skipoffset')});
+  }
+
+  const userActive=TL_USER_ACTIONS.filter(e=>checked.has(e));
+
+  const markerHtml=markers.map(m=>`
+    <div class="timeline-marker" style="left:${m.pct}%;background:${m.color}" title="${m.label} @ ${m.time}">
+      <div class="timeline-label" style="color:${m.color}">${m.label}<br><span style="color:var(--muted)">${m.time}</span></div>
+    </div>`).join('');
+
+  const pctLabels=[0,25,50,75,100].map(p=>`<div class="tl-pct" style="left:${p}%">${p}%</div>`).join('');
+
+  const legendHtml=markers.map(m=>`<div class="tl-leg-item"><div class="tl-dot" style="background:${m.color}"></div>${m.label}</div>`).join('');
+
+  wrap.innerHTML=`
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Duração: <strong style="color:var(--escuro)">${v('v-dur')||'00:00:30'}</strong> — ${markers.length} evento(s) com posição definida</div>
+    <div class="timeline-bar">
+      <div class="timeline-track"></div>
+      <div class="timeline-fill" style="width:100%"></div>
+      ${pctLabels}
+      ${markerHtml}
+    </div>
+    <div class="timeline-legend" style="margin-top:28px">${legendHtml}</div>
+    ${userActive.length?`<div class="timeline-user-actions">⚡ Eventos por ação do usuário (posição variável): <strong style="color:var(--escuro)">${userActive.join(', ')}</strong></div>`:''}
+  `;
+}
+
+// ─── CM360 URL BUILDER ───
+function genCM360(){
+  const network=v('cm-network').trim();
+  const placement=v('cm-placement').trim();
+  if(!network||!placement){document.getElementById('cm360-out').textContent='Preencha Network ID e Placement ID acima.';return;}
+  const size=v('cm-size')||'640x360';
+  const clickMacro=v('cm-click-macro');
+  const cbMacro=v('cm-cb-macro')||'%%CACHEBUSTER%%';
+  const gdpr=v('cm-gdpr')==='1';
+  const [w,h]=(size.includes('x')?size:'640x360').split('x');
+
+  let url=`https://ad.doubleclick.net/ddm/pfadx/N${network}/B${placement}`;
+  url+=`;sz=${w}x${h}`;
+  if(clickMacro)url+=`;click=${clickMacro}`;
+  url+=`;ord=${cbMacro}`;
+  url+=`;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=`;
+  if(gdpr)url+=`;gdpr=\${GDPR};gdpr_consent=\${GDPR_CONSENT}`;
+  url+=';?';
+
+  document.getElementById('cm360-out').textContent=url;
+}
+function copyCM360(){
+  const url=document.getElementById('cm360-out').textContent;
+  if(!url||url.includes('Preencha')){toast('Preencha Network ID e Placement ID primeiro.');return;}
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn=document.getElementById('btn-copy-cm360');btn.textContent='✅ Copiada!';setTimeout(()=>btn.textContent='📋 Copiar',2000);
+  });
+}
+
+// ─── CHECKLIST ───
+function runChecklist(){
+  const src=v('v-src'),type=v('v-type'),cat=v('v-cat');
+  const dur=v('v-dur')||'00:00:00';
+  const click=v('v-click');
+  const wrapperUrl=v('v-wrapper-url');
+  const errUrl=v('v-error-url');
+  const version=v('v-version')||'3.0';
+  const skippable=document.getElementById('v-skippable')?.checked;
+  const skipEv=document.getElementById('ev-skip')?.checked;
+  const impEv=document.getElementById('ev-impression')?.checked;
+  const hasMFUrl=mediaFiles.some(mf=>mf.url&&mf.url.trim());
+  const hasBitrate=mediaFiles.every(mf=>mf.bitrate&&String(mf.bitrate).trim());
+  const totalEvs=EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked).length;
+
+  const items=[];
+  const E=(icon,cls,msg)=>({icon,cls,msg});
+
+  // Critical errors (cls: chk-err)
+  if(!src||!type||!cat)items.push(E('❌','chk-err','Parâmetros Floodlight incompletos — src, type e cat são obrigatórios.'));
+  else items.push(E('✅','chk-ok','Parâmetros Floodlight preenchidos (src, type, cat).'));
+
+  if(mode==='inline'){
+    if(!hasMFUrl)items.push(E('❌','chk-err','Nenhum MediaFile com URL preenchida.'));
+    else items.push(E('✅','chk-ok',`${mediaFiles.filter(mf=>mf.url&&mf.url.trim()).length} MediaFile(s) com URL preenchida.`));
+
+    if(dur==='00:00:00'||dur==='')items.push(E('❌','chk-err','Duração definida como 00:00:00 — verifique o campo Duração.'));
+    else items.push(E('✅','chk-ok',`Duração: ${dur}.`));
+
+    if(!click)items.push(E('❌','chk-err','Click-Through URL não preenchida — obrigatória para vídeo in-stream.'));
+    else items.push(E('✅','chk-ok','Click-Through URL preenchida.'));
+  } else {
+    if(!wrapperUrl)items.push(E('❌','chk-err','URL do VAST a envolver (VASTAdTagURI) não preenchida.'));
+    else items.push(E('✅','chk-ok','URL do VAST wrapper preenchida.'));
+  }
+
+  if(!impEv)items.push(E('❌','chk-err','Evento Impression não está rastreado — altamente recomendado.'));
+  else items.push(E('✅','chk-ok','Impression rastreada.'));
+
+  if(totalEvs<6)items.push(E('⚠️','chk-warn',`Apenas ${totalEvs} evento(s) ativo(s) — o padrão IAB recomenda no mínimo 6 (impression + quartis + complete).`));
+
+  // Warnings (cls: chk-warn)
+  if(!errUrl)items.push(E('⚠️','chk-warn','Error URL não configurada — recomendada em produção para diagnóstico de falhas.'));
+
+  if(mode==='inline'&&!hasBitrate)items.push(E('⚠️','chk-warn','Bitrate não definido em um ou mais MediaFiles — alguns players exigem esse atributo para seleção do melhor formato.'));
+
+  if(skippable&&!skipEv)items.push(E('⚠️','chk-warn','Criativo marcado como pulável mas o evento "skip" não está rastreado.'));
+
+  if(version==='4.1')items.push(E('⚠️','chk-warn','VAST 4.1 selecionado — verifique se o ad server e o player do veículo suportam essa versão.'));
+
+  if(mode==='inline'&&mediaFiles.length===1)items.push(E('⚠️','chk-warn','Apenas 1 MediaFile — adicione variações de formato/bitrate para maior compatibilidade (ex: MP4 1280×720 + 640×360).'));
+
+  // Score
+  const errors=items.filter(i=>i.cls==='chk-err').length;
+  const warns=items.filter(i=>i.cls==='chk-warn').length;
+  const score=errors===0?(warns===0?'100%':`${100-warns*5}%`):'Com erros';
+  const scoreClass=errors>0?'score-err':warns>0?'score-warn':'score-ok';
+  const badge=document.getElementById('chk-score-badge');
+  if(badge){badge.textContent=score;badge.className=`chk-score ${scoreClass}`;}
+
+  document.getElementById('checklist').innerHTML=items.map(i=>`
+    <div class="chk-item ${i.cls}">
+      <span class="chk-icon">${i.icon}</span>
+      <span>${i.msg}</span>
+    </div>`).join('');
+}
+
+// ─── GENERATION ───
+function buildTrackingUrl(src,type,cat){
+  return `https://ad.doubleclick.net/ddm/activity/src=${src||'SRC'};type=${type||'TYPE'};cat=${cat||'CAT'};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=1?`;
+}
+function getEPs(eventName){
+  return extraPixels.filter(ep=>ep.event===eventName&&ep.url.trim()).map(ep=>ep.url.trim());
+}
+
+function gen(){
+  validate();
+  const src=v('v-src'),type=v('v-type'),cat=v('v-cat'),
+    title=v('v-title')||'Video Ad',adv=v('v-advertiser'),
+    desc=v('v-desc'),adId=v('v-adid')||'1',errUrl=v('v-error-url'),
+    version=v('v-version')||'3.0';
+
+  const trackUrl=buildTrackingUrl(src,type,cat);
+  const checkedEvs=EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked);
+  const hasImp=document.getElementById('ev-impression').checked;
+  const trackEvs=checkedEvs.filter(e=>e!=='impression');
+  const skippable=document.getElementById('v-skippable')?.checked;
+  const skipoffset=v('v-skipoffset')||'00:00:05';
+  const progressOffset=v('v-progress-offset')||'00:00:15';
+
+  const impLines=[];
+  if(hasImp){
+    impLines.push(`      <Impression id="fl-impression"><![CDATA[${trackUrl}]]></Impression>`);
+    getEPs('impression').forEach((url,j)=>{impLines.push(`      <Impression id="ext-${j+1}"><![CDATA[${url}]]></Impression>`);});
+  }
+  const impBlock=impLines.length?impLines.join('\n')+'\n':'';
+
+  const tLines=[];
+  trackEvs.forEach(e=>{
+    const offset=e==='progress'?` offset="${progressOffset}"`:'';
+    tLines.push(`              <Tracking event="${e}"${offset}><![CDATA[${trackUrl}]]></Tracking>`);
+    getEPs(e).forEach(url=>{tLines.push(`              <Tracking event="${e}"${offset}><![CDATA[${url}]]></Tracking>`);});
+  });
+  const tBlock=tLines.join('\n');
+
+  const ctLines=getEPs('clickTracking').map(url=>`              <ClickTracking><![CDATA[${url}]]></ClickTracking>`);
+
+  const mfLines=mediaFiles.map(mf=>{
+    const attrs=[`type="${mf.mime||'video/mp4'}"`,`width="${mf.w||1280}"`,`height="${mf.h||720}"`,
+      mf.bitrate?`bitrate="${mf.bitrate}"`:null,`delivery="${mf.delivery||'progressive'}"`].filter(Boolean).join(' ');
+    return `              <MediaFile ${attrs}><![CDATA[${mf.url||'https://VIDEO_URL_AQUI.mp4'}]]></MediaFile>`;
+  }).join('\n');
+
+  let compXml='';
+  if(mode==='inline'&&companions.length){
+    const cItems=companions.map((c,i)=>{
+      let res='';
+      if(c.resourceType==='StaticResource'){
+        const ext=(c.resource||'').split('.').pop().toLowerCase();
+        const mime={'jpg':'image/jpeg','jpeg':'image/jpeg','gif':'image/gif','webp':'image/webp','svg':'image/svg+xml'}[ext]||'image/png';
+        res=`            <StaticResource creativeType="${mime}"><![CDATA[${c.resource||''}]]></StaticResource>`;
+      } else if(c.resourceType==='IFrameResource'){
+        res=`            <IFrameResource><![CDATA[${c.resource||''}]]></IFrameResource>`;
+      } else {
+        res=`            <HTMLResource><![CDATA[${c.resource||''}]]></HTMLResource>`;
+      }
+      return `          <Companion id="${i+1}" width="${c.w||300}" height="${c.h||250}">\n${res}\n${c.click?`            <CompanionClickThrough><![CDATA[${c.click}]]></CompanionClickThrough>\n`:''}          </Companion>`;
+    }).join('\n');
+    compXml=`\n        <Creative>\n          <CompanionAds required="any">\n${cItems}\n          </CompanionAds>\n        </Creative>`;
+  }
+
+  let verifBlock='';
+  const activeVerifs=verifications.filter(vf=>vf.js.trim());
+  if(mode==='inline'&&activeVerifs.length){
+    const vItems=activeVerifs.map(vf=>`    <Verification vendor="${esc(vf.vendor||'unknown')}">\n      <JavaScriptResource apiFramework="omid" browserOptional="true"><![CDATA[${vf.js}]]></JavaScriptResource>${vf.params?`\n      <VerificationParameters><![CDATA[${vf.params}]]></VerificationParameters>`:''}\n    </Verification>`).join('\n');
+    if(version==='4.1'){
+      verifBlock=`\n      <AdVerifications>\n${vItems}\n      </AdVerifications>`;
+    } else {
+      const extItems=activeVerifs.map(vf=>`        <Extension type="AdVerification" vendor="${esc(vf.vendor||'unknown')}">\n          <JavaScriptResource apiFramework="omid"><![CDATA[${vf.js}]]></JavaScriptResource>${vf.params?`\n          <VerificationParameters><![CDATA[${vf.params}]]></VerificationParameters>`:''}\n        </Extension>`).join('\n');
+      verifBlock=`\n      <Extensions>\n${extItems}\n      </Extensions>`;
+    }
+  }
+
+  const vastNS=version==='4.1'?' xmlns:xs="http://www.w3.org/2001/XMLSchema"':'';
+  const univAdId=version==='4.1'?`\n      <UniversalAdId idRegistry="Ad-ID">${adId}</UniversalAdId>`:'';
+
+  let xml='';
+  if(mode==='wrapper'){
+    const wUrl=v('v-wrapper-url')||'https://VAST_URL_AQUI';
+    xml=`<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="${version}"${vastNS}>
+  <Ad id="${adId}">
+    <Wrapper>
+      <AdSystem version="1.0">CM360 Floodlight</AdSystem>
+      <VASTAdTagURI><![CDATA[${wUrl}]]></VASTAdTagURI>
+${errUrl?`      <Error><![CDATA[${errUrl}]]></Error>\n`:''}${impBlock}      <Creatives>
+        <Creative>
+          <Linear>
+            <TrackingEvents>
+${tBlock}
+            </TrackingEvents>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </Wrapper>
+  </Ad>
+</VAST>`;
+  } else {
+    const dur=v('v-dur')||'00:00:30',click=v('v-click')||'https://DESTINO_AQUI',clicktrack=v('v-clicktrack');
+    xml=`<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="${version}"${vastNS}>
+  <Ad id="${adId}">
+    <InLine>
+      <AdSystem version="1.0">CM360 Floodlight</AdSystem>
+      <AdTitle>${esc(title)}</AdTitle>${univAdId}
+${adv?`      <Advertiser>${esc(adv)}</Advertiser>\n`:''}${desc?`      <Description>${esc(desc)}</Description>\n`:''}${errUrl?`      <Error><![CDATA[${errUrl}]]></Error>\n`:''}${impBlock}${verifBlock?verifBlock+'\n':''}      <Creatives>
+        <Creative>
+          <Linear${skippable?` skipoffset="${skipoffset}"`:''}>\
+            <Duration>${dur}</Duration>
+            <TrackingEvents>
+${tBlock}
+            </TrackingEvents>
+            <VideoClicks>
+              <ClickThrough><![CDATA[${click}]]></ClickThrough>
+${clicktrack?`              <ClickTracking><![CDATA[${clicktrack}]]></ClickTracking>\n`:''}${ctLines.length?ctLines.join('\n')+'\n':''}            </VideoClicks>
+            <MediaFiles>
+${mfLines}
+            </MediaFiles>
+          </Linear>
+        </Creative>${compXml}
+      </Creatives>${version!=='4.1'&&verifBlock&&verifBlock.includes('Extensions')?verifBlock:''}
+    </InLine>
+  </Ad>
+</VAST>`;
+  }
+
+  _rawXml=xml;
+  document.getElementById('vast-out').innerHTML=highlightXML(xml);
+  const bytes=new TextEncoder().encode(xml).length;
+  const szBadge=document.getElementById('xml-size-badge');
+  if(szBadge)szBadge.textContent=bytes<1024?'('+bytes+' B)':'('+(bytes/1024).toFixed(1)+' KB)';
+
+  const firstMF=mediaFiles[0]?.url;
+  if(firstMF&&firstMF.trim())document.getElementById('player-url').value=firstMF.trim();
+
+  // Tracking panel
+  const all=hasImp?['impression',...trackEvs]:trackEvs;
+  document.getElementById('tracking-list').innerHTML=`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;flex:1">URLs de tracking (${all.length})</div>
+      <button class="btn-xs" id="btn-copy-all" onclick="copyAllUrls(this)">📋 Copiar todas</button>
+      <button class="btn-xs" onclick="downloadTrackingCSV()">⬇ CSV</button>
+    </div>
+    ${all.map((e,i)=>{
+      const eps=getEPs(e);
+      return `<div class="tracking-item">
+        <div style="font-size:11px;font-weight:600;color:var(--azul)">${e}${e==='progress'?` <span style="font-size:9px;color:var(--muted)">(${progressOffset})</span>`:''}</div>
+        <div class="tracking-url-row">
+          <div class="tracking-url-text" id="turl-${i}">${buildTrackingUrl(src,type,cat)}</div>
+          <button class="btn-xs" onclick="copyUrl(${i},this)">📋</button>
+        </div>
+        ${eps.map((url,j)=>`<div class="tracking-url-row" style="margin-top:2px">
+          <div class="tracking-url-text tracking-extra" id="turl-ext-${i}-${j}">${url}</div>
+          <button class="btn-xs" onclick="copyUrlText(${JSON.stringify(url)},this)">📋</button>
+        </div>`).join('')}
+      </div>`;
+    }).join('')}`;
+
+  runChecklist();
+  if(document.getElementById('timeline-section').classList.contains('open'))renderTimeline();
+}
+
+// ─── CLIPBOARD / DOWNLOAD ───
+function copyXML(){
+  navigator.clipboard.writeText(_rawXml).then(()=>{
+    const btn=document.getElementById('btn-copy');btn.textContent='✅ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar XML',2000);
+  });
+}
+function downloadXML(){
+  const xml=_rawXml;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([xml],{type:'application/xml'}));
+  a.download=(v('v-title')||'vast').replace(/\s+/g,'_').toLowerCase()+'_vast.xml';
+  a.click();URL.revokeObjectURL(a.href);
+}
+function copyUrl(i,btn){
+  const el=document.getElementById('turl-'+i);if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);});
+}
+function copyUrlText(text,btn){
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋',2000);});
+}
+function copyAllUrls(btn){
+  const items=document.querySelectorAll('.tracking-url-text');if(!items.length)return;
+  const text=[...items].map(el=>el.textContent.trim()).join('\n');
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅ Copiadas!';setTimeout(()=>btn.textContent='📋 Copiar todas',2000);});
+}
+function openValidator(){
+  const xml=_rawXml;
+  navigator.clipboard.writeText(xml).then(()=>{
+    toast('XML copiado! Cole no validador para verificar.');
+    setTimeout(()=>window.open('https://vastcheck.iabtechlab.com/','_blank'),300);
+  }).catch(()=>window.open('https://vastcheck.iabtechlab.com/','_blank'));
+}
+function openImaTest(){
+  const xml=_rawXml;
+  navigator.clipboard.writeText(xml).then(()=>toast('XML copiado! Cole como "VAST XML" no IMA Video Suite Inspector.'));
+  window.open('https://googleads.github.io/googleads-ima-html5/vsi/','_blank');
+}
+
+// ─── SHARE VIA URL ───
+function buildShareUrl(){
+  try{
+    const state=getFormState();
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    return location.href.split('#')[0]+'#cfg='+encoded;
+  }catch(e){return location.href;}
+}
+function openShareModal(){
+  document.getElementById('share-url-input').value=buildShareUrl();
+  document.getElementById('share-overlay').classList.add('open');
+}
+function closeShareModal(){document.getElementById('share-overlay').classList.remove('open');}
+function copyShareUrl(){
+  navigator.clipboard.writeText(document.getElementById('share-url-input').value).then(()=>toast('Link copiado!'));
+}
+function loadFromHash(){
+  try{
+    const h=location.hash;
+    if(!h.startsWith('#cfg='))return;
+    const state=JSON.parse(decodeURIComponent(escape(atob(h.slice(5)))));
+    if(state&&typeof state==='object'){applyFormState(state);toast('Configuração carregada do link!');}
+  }catch(e){}
+}
+
+// ─── PREVIEW PLAYER ───
+let playerInited=false;
+function initPlayer(){
+  if(playerInited)return;playerInited=true;
+  const vid=document.getElementById('vast-player');
+  const log=document.getElementById('player-log');
+  function logEv(name){
+    const t=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const line=document.createElement('div');
+    line.className='log-line';
+    line.innerHTML=`<span class="log-time">${t}</span><span class="log-ev">${name}</span>`;
+    log.appendChild(line);log.scrollTop=log.scrollHeight;
+  }
+  ['play','pause','ended','canplay','error','waiting','stalled'].forEach(ev=>{
+    vid.addEventListener(ev,()=>logEv(ev));
+  });
+  const firstUrl=mediaFiles[0]?.url;
+  if(firstUrl&&firstUrl.trim())document.getElementById('player-url').value=firstUrl.trim();
+}
+function playerLoad(){
+  const url=document.getElementById('player-url').value.trim();
+  if(!url){toast('Informe a URL do vídeo');return;}
+  const vid=document.getElementById('vast-player');
+  vid.src=url;vid.load();vid.play();
+}
+function playerStop(){
+  const vid=document.getElementById('vast-player');
+  vid.pause();vid.currentTime=0;vid.src='';
+}
+
+// ─── PRESETS ───
+const PRESETS={
+  std30:{mode:'inline',title:'Video Ad',version:'3.0',dur:'00:00:30',skip:false,
+    events:['impression','start','firstQuartile','midpoint','thirdQuartile','complete']},
+  std15:{mode:'inline',title:'Video Ad 15s',version:'3.0',dur:'00:00:15',skip:false,
+    events:['impression','start','firstQuartile','midpoint','thirdQuartile','complete']},
+  skip5:{mode:'inline',title:'Video Ad Skippable',version:'3.0',dur:'00:00:30',skip:true,skipoffset:'00:00:05',
+    events:['impression','start','firstQuartile','midpoint','thirdQuartile','complete','skip']},
+  skip15:{mode:'inline',title:'Video Ad Skippable 15s',version:'3.0',dur:'00:01:00',skip:true,skipoffset:'00:00:15',
+    events:['impression','start','firstQuartile','midpoint','thirdQuartile','complete','skip']},
+  wrapper:{mode:'wrapper',title:'Wrapper Tag',version:'3.0',
+    events:['impression','start','firstQuartile','midpoint','thirdQuartile','complete']},
+};
+function loadPreset(key){
+  const p=PRESETS[key];if(!p)return;
+  if(p.mode!==mode){const btn=document.querySelector(`.tab[onclick*="'${p.mode}'"]`);if(btn)switchMode(p.mode,btn);}
+  if(p.title)document.getElementById('v-title').value=p.title;
+  if(p.version)document.getElementById('v-version').value=p.version;
+  if(p.dur)document.getElementById('v-dur').value=p.dur;
+  if(typeof p.skip!=='undefined'){document.getElementById('v-skippable').checked=p.skip;toggleSkippable();}
+  if(p.skipoffset)document.getElementById('v-skipoffset').value=p.skipoffset;
+  EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=p.events.includes(e);});
+  toggleProgress();gen();toast(`Preset "${key}" carregado`);
+}
+
+// ─── JSON EXPORT / IMPORT ───
+function getFormState(){
+  return {
+    mode,version:v('v-version'),title:v('v-title'),adId:v('v-adid'),
+    advertiser:v('v-advertiser'),desc:v('v-desc'),errorUrl:v('v-error-url'),
+    src:v('v-src'),type:v('v-type'),cat:v('v-cat'),
+    skippable:!!document.getElementById('v-skippable')?.checked,
+    skipoffset:v('v-skipoffset')||'00:00:05',
+    dur:v('v-dur'),click:v('v-click'),clicktrack:v('v-clicktrack'),
+    wrapperUrl:v('v-wrapper-url'),progressOffset:v('v-progress-offset')||'00:00:15',
+    mediaFiles:JSON.parse(JSON.stringify(mediaFiles)),
+    companions:JSON.parse(JSON.stringify(companions)),
+    extraPixels:JSON.parse(JSON.stringify(extraPixels)),
+    verifications:JSON.parse(JSON.stringify(verifications)),
+    events:EVENTS.filter(e=>document.getElementById('ev-'+e)?.checked),
+  };
+}
+function applyFormState(s){
+  if(!s)return;
+  if(s.mode&&s.mode!==mode){const btn=document.querySelector(`.tab[onclick*="'${s.mode}'"]`);if(btn)switchMode(s.mode,btn);}
+  const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!==undefined&&val!==null)el.value=val;};
+  set('v-version',s.version);set('v-title',s.title);set('v-adid',s.adId);
+  set('v-advertiser',s.advertiser);set('v-desc',s.desc);set('v-error-url',s.errorUrl);
+  set('v-src',s.src);set('v-type',s.type);set('v-cat',s.cat);
+  set('v-dur',s.dur);set('v-click',s.click);set('v-clicktrack',s.clicktrack);
+  set('v-wrapper-url',s.wrapperUrl);set('v-progress-offset',s.progressOffset);
+  if(typeof s.skippable!=='undefined'){
+    document.getElementById('v-skippable').checked=s.skippable;
+    if(s.skipoffset)set('v-skipoffset',s.skipoffset);toggleSkippable();
+  }
+  if(Array.isArray(s.mediaFiles)&&s.mediaFiles.length){mediaFiles=s.mediaFiles;renderMFList();}
+  if(Array.isArray(s.companions)){companions=s.companions;renderCompList();}
+  if(Array.isArray(s.extraPixels)){extraPixels=s.extraPixels;renderEPList();}
+  if(Array.isArray(s.verifications)){verifications=s.verifications;renderVerifList();}
+  if(Array.isArray(s.events)){
+    EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=s.events.includes(e);});toggleProgress();
+  }
+  gen();
+}
+function openJsonModal(){
+  document.getElementById('json-ta').value=JSON.stringify(getFormState(),null,2);
+  document.getElementById('json-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('json-ta').focus(),50);
+}
+function closeJsonModal(){document.getElementById('json-overlay').classList.remove('open');}
+function copyJsonTA(){navigator.clipboard.writeText(document.getElementById('json-ta').value).then(()=>toast('JSON copiado!'));}
+function doImportJson(){
+  try{applyFormState(JSON.parse(document.getElementById('json-ta').value));closeJsonModal();toast('Configuração importada!');}
+  catch(e){toast('JSON inválido — verifique o formato.');}
+}
+
+// ─── HISTORY ───
+function saveToHistory(){
+  const xml=_rawXml;
+  if(!xml)return;
+  const state=getFormState();
+  const entry={id:Date.now(),title:state.title||'Video Ad',mode:state.mode,version:state.version,
+    ts:new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),state,xml};
+  let hist=getHistory();
+  hist=hist.filter(h=>!(h.title===entry.title&&h.state.src===state.src&&h.state.type===state.type&&h.state.cat===state.cat&&h.mode===state.mode));
+  hist.unshift(entry);if(hist.length>HIST_MAX)hist=hist.slice(0,HIST_MAX);
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}
+  renderHistory();
+  const btn=document.getElementById('btn-save');btn.textContent='✅ Salvo!';setTimeout(()=>btn.textContent='💾 Salvar',2000);
+}
+function getHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return[];}}
+function renderHistory(){
+  const hist=getHistory();const card=document.getElementById('history-card');
+  if(!hist.length){card.style.display='none';return;}
+  card.style.display='';
+  document.getElementById('history-list').innerHTML=hist.map(h=>`
+    <div class="history-item" onclick="loadHistEntry(${h.id})">
+      <div class="history-item-info">
+        <div class="history-item-title">${esc(h.title)} <span style="font-weight:400;color:var(--muted)">(${h.mode}, VAST ${h.version})</span></div>
+        <div class="history-item-meta">${h.ts} · src=${esc(h.state?.src||'—')} · type=${esc(h.state?.type||'—')} · cat=${esc(h.state?.cat||'—')}</div>
+      </div>
+      <div class="history-item-actions" onclick="event.stopPropagation()">
+        <button class="btn-xs" onclick="copyHistXml(${h.id},this)">📋 XML</button>
+        <button class="btn-xs" onclick="shareHistEntry(${h.id})">🔗</button>
+        <button class="btn-xs" onclick="exportHistJson(${h.id})">⇅ JSON</button>
+        <button class="btn-xs" style="color:var(--err);border-color:var(--err-bg)" onclick="deleteHist(${h.id})">✕</button>
+      </div>
+    </div>`).join('');
+}
+function loadHistEntry(id){
+  const h=getHistory().find(x=>x.id===id);if(!h)return;
+  if(h.state)applyFormState(h.state);
+  window.scrollTo({top:0,behavior:'smooth'});toast('Configuração restaurada!');
+}
+function copyHistXml(id,btn){
+  const h=getHistory().find(x=>x.id===id);if(!h)return;
+  navigator.clipboard.writeText(h.xml).then(()=>{btn.textContent='✅';setTimeout(()=>btn.textContent='📋 XML',2000);});
+}
+function shareHistEntry(id){
+  const h=getHistory().find(x=>x.id===id);if(!h||!h.state)return;
+  try{
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(h.state))));
+    const url=location.href.split('#')[0]+'#cfg='+encoded;
+    navigator.clipboard.writeText(url).then(()=>toast('Link copiado!'));
+  }catch(e){toast('Erro ao gerar link.');}
+}
+function exportHistJson(id){
+  const h=getHistory().find(x=>x.id===id);if(!h)return;
+  document.getElementById('json-ta').value=JSON.stringify(h.state,null,2);
+  document.getElementById('json-overlay').classList.add('open');
+}
+function deleteHist(id){
+  let hist=getHistory().filter(h=>h.id!==id);
+  try{localStorage.setItem(HIST_KEY,JSON.stringify(hist));}catch(e){}renderHistory();
+}
+function clearHistory(){try{localStorage.removeItem(HIST_KEY);}catch(e){}renderHistory();}
+
+// ─── RESET ───
+function resetForm(){
+  mode='inline';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.tab').classList.add('active');
+  document.getElementById('inline-fields').style.display='contents';
+  document.getElementById('wrapper-fields').style.display='none';
+  document.getElementById('comp-section').style.display='';
+  document.getElementById('verif-section').style.display='';
+  ['v-src','v-type','v-cat','v-advertiser','v-desc','v-error-url','v-click','v-clicktrack','v-wrapper-url'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.value='';el.classList.remove('field-error');}
+  });
+  document.getElementById('v-title').value='Video Ad';
+  document.getElementById('v-adid').value='1';
+  document.getElementById('v-version').value='3.0';
+  document.getElementById('v-dur').value='00:00:30';
+  document.getElementById('v-skippable').checked=false;
+  document.getElementById('skipoffset-wrap').style.display='none';
+  document.getElementById('v-skipoffset').value='00:00:05';
+  document.getElementById('v-progress-offset').value='00:00:15';
+  EVENTS.forEach(e=>{const el=document.getElementById('ev-'+e);if(el)el.checked=['impression','start','firstQuartile','midpoint','thirdQuartile','complete'].includes(e);});
+  toggleProgress();
+  mediaFiles=[{url:'',mime:'video/mp4',w:'1280',h:'720',bitrate:'',delivery:'progressive'}];
+  companions=[];extraPixels=[];verifications=[];
+  renderMFList();renderCompList();renderEPList();renderVerifList();gen();genCM360();renderFLFavs();
+  history.replaceState(null,'',location.pathname+location.search);
+}
+
+// ─── XML SYNTAX HIGHLIGHT ───
+function highlightXML(xml){
+  const e=xml.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return e
+    // CDATA sections
+    .replace(/(&lt;!\[CDATA\[)([\s\S]*?)(\]\]&gt;)/g,'<span class="xml-cdata">$1$2$3</span>')
+    // XML comments
+    .replace(/(&lt;!--[\s\S]*?--&gt;)/g,'<span class="xml-comment">$1</span>')
+    // Processing instruction <?xml ...?>
+    .replace(/(&lt;\?xml)((?:\s+[^?]*)?)(\?&gt;)/g,'<span class="xml-pi">$1$2$3</span>')
+    // Tags with attributes
+    .replace(/(&lt;\/?[a-zA-Z][a-zA-Z0-9_:.-]*)((?:\s+[a-zA-Z][a-zA-Z0-9_:.-]*="[^"]*")*)\s*(\/?&gt;)/g,
+      (_,tag,attrs,close)=>{
+        const ca=attrs.replace(/([a-zA-Z][a-zA-Z0-9_:.-]*)="([^"]*)"/g,
+          '<span class="xml-attr">$1</span>="<span class="xml-val">$2</span>"');
+        return `<span class="xml-tag">${tag}</span>${ca}${close}`;
+      });
+}
+
+// ─── FLOODLIGHT URL IMPORT ───
+function parseFloodlightUrl(){
+  const raw=document.getElementById('fl-import-input').value.trim();
+  if(!raw){toast('Cole uma Floodlight URL no campo acima.');return;}
+  const params={};
+  // Try to parse ;param=value; format (Floodlight activity URL)
+  const semi=raw.match(/[?;]([^?;]+)=[^;?&]*/g)||[];
+  semi.forEach(pair=>{
+    const kv=pair.replace(/^[?;]/,'').split('=');
+    if(kv.length>=2)params[kv[0]]=kv.slice(1).join('=');
+  });
+  // Also try ?param=value& format
+  try{const u=new URL(raw.includes('://')?raw:'https://x.com/'+raw);u.searchParams.forEach((val,key)=>{params[key]=val;});}catch(e){}
+  const src=params.src||params.advertiserId;
+  const type=params.type||params.groupTagString;
+  const cat=params.cat||params.activityTagString;
+  if(!src&&!type&&!cat){toast('Não foi possível extrair src/type/cat dessa URL.');return;}
+  if(src)document.getElementById('v-src').value=src;
+  if(type)document.getElementById('v-type').value=type;
+  if(cat)document.getElementById('v-cat').value=cat;
+  document.getElementById('fl-import-input').value='';
+  gen();
+  toast(`Importado: src=${src||'—'} type=${type||'—'} cat=${cat||'—'}`);
+}
+
+// ─── FLOODLIGHT FAVORITES ───
+function getFLFavs(){try{return JSON.parse(localStorage.getItem(FL_FAVS_KEY)||'{}');}catch(e){return {};}}
+function saveFLFav(){
+  const name=document.getElementById('fav-name-input').value.trim();
+  if(!name){toast('Digite um nome para o favorito.');return;}
+  const src=v('v-src').trim(),type=v('v-type').trim(),cat=v('v-cat').trim();
+  if(!src&&!type&&!cat){toast('Preencha ao menos um parâmetro Floodlight primeiro.');return;}
+  const favs=getFLFavs();
+  favs[name]={src,type,cat};
+  try{localStorage.setItem(FL_FAVS_KEY,JSON.stringify(favs));}catch(e){}
+  document.getElementById('fav-name-input').value='';
+  renderFLFavs();
+  toast(`Favorito "${name}" salvo!`);
+}
+function applyFLFav(name){
+  const fav=getFLFavs()[name];if(!fav)return;
+  if(fav.src)document.getElementById('v-src').value=fav.src;
+  if(fav.type)document.getElementById('v-type').value=fav.type;
+  if(fav.cat)document.getElementById('v-cat').value=fav.cat;
+  gen();toast(`Favorito "${name}" carregado.`);
+}
+function deleteFLFav(name){
+  const favs=getFLFavs();delete favs[name];
+  try{localStorage.setItem(FL_FAVS_KEY,JSON.stringify(favs));}catch(e){}
+  renderFLFavs();
+}
+function renderFLFavs(){
+  const list=document.getElementById('fav-list');if(!list)return;
+  const favs=getFLFavs();const keys=Object.keys(favs);
+  if(!keys.length){list.innerHTML='<span style="font-size:11px;color:var(--muted)">Nenhum favorito salvo.</span>';return;}
+  list.innerHTML=keys.map(name=>`
+    <div class="fav-pill">
+      <button class="fav-pill-load" onclick="applyFLFav(${JSON.stringify(name)})" title="src=${esc(favs[name].src)} type=${esc(favs[name].type)} cat=${esc(favs[name].cat)}">⭐ ${esc(name)}</button>
+      <button class="fav-pill-del" onclick="deleteFLFav(${JSON.stringify(name)})" title="Remover">✕</button>
+    </div>`).join('');
+}
+
+// ─── TAG INSPECTOR ───
+function openInspector(){
+  // Pre-fill with current XML if available
+  if(_rawXml&&!document.getElementById('inspector-ta').value){
+    document.getElementById('inspector-ta').value=_rawXml;
+  }
+  document.getElementById('inspector-overlay').classList.add('open');
+}
+function closeInspector(){document.getElementById('inspector-overlay').classList.remove('open');}
+function doInspect(){
+  const raw=document.getElementById('inspector-ta').value.trim();
+  if(!raw){toast('Cole um VAST XML antes de analisar.');return;}
+  const result=document.getElementById('inspector-result');
+  try{
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(raw,'application/xml');
+    const parseErr=doc.querySelector('parsererror');
+    if(parseErr){result.innerHTML=`<div class="chk-item chk-err"><span class="chk-icon">❌</span><span>XML inválido: ${esc(parseErr.textContent.substring(0,120))}</span></div>`;return;}
+
+    const vast=doc.documentElement;
+    const version=vast.getAttribute('version')||'?';
+    const adEl=doc.querySelector('Ad');
+    const adId=adEl?.getAttribute('id')||'—';
+    const isWrapper=!!doc.querySelector('Wrapper');
+    const isInline=!!doc.querySelector('InLine');
+    const adType=isWrapper?'Wrapper':isInline?'InLine':'?';
+    const adTitle=doc.querySelector('AdTitle')?.textContent?.trim()||'—';
+    const advertiser=doc.querySelector('Advertiser')?.textContent?.trim()||'—';
+    const duration=doc.querySelector('Duration')?.textContent?.trim()||'—';
+    const skipoffset=doc.querySelector('Linear')?.getAttribute('skipoffset')||null;
+    const errorUrl=doc.querySelector('Error')?.textContent?.trim()||'—';
+    const clickThrough=doc.querySelector('ClickThrough')?.textContent?.trim()||'—';
+    const wrapperUrl=doc.querySelector('VASTAdTagURI')?.textContent?.trim()||null;
+
+    const mediaFiles=[...doc.querySelectorAll('MediaFile')].map(mf=>`${mf.getAttribute('type')||'?'} ${mf.getAttribute('width')||'?'}×${mf.getAttribute('height')||'?'} ${mf.getAttribute('bitrate')?mf.getAttribute('bitrate')+'kbps':''}`);
+
+    const trackingEvs=[...doc.querySelectorAll('Tracking')].map(t=>t.getAttribute('event')).filter(Boolean);
+    const evSet=[...new Set(trackingEvs)];
+    const impCount=doc.querySelectorAll('Impression').length;
+
+    const companionCount=doc.querySelectorAll('Companion').length;
+    const verifCount=doc.querySelectorAll('Verification,AdVerification').length;
+    const extEps=[...doc.querySelectorAll('Tracking')].filter(t=>t.textContent.includes('doubleclick')||t.textContent.includes('http')).length;
+
+    // Try to extract Floodlight params from impression URL
+    let flSrc='',flType='',flCat='';
+    const impUrl=doc.querySelector('Impression')?.textContent?.trim()||'';
+    const flMatch=impUrl.match(/src=([^;&]+).*?type=([^;&]+).*?cat=([^;&]+)/);
+    if(flMatch){flSrc=flMatch[1];flType=flMatch[2];flCat=flMatch[3];}
+
+    // Build result state for "load into form"
+    _inspectedState={
+      version,adType,flSrc,flType,flCat,
+      title:adTitle,duration,skipoffset,errorUrl,clickThrough,wrapperUrl,mediaFiles
+    };
+
+    const rows=[
+      ['Versão VAST',version],
+      ['Tipo de Ad',adType],
+      ['Ad ID',adId],
+      ['Título',adTitle],
+      advertiser!=='—'?['Anunciante',advertiser]:null,
+      isInline?['Duração',duration+(skipoffset?` <span class="insp-tag">skip ${skipoffset}</span>`:'')]:null,
+      isWrapper?['Wrapper URL',wrapperUrl||'—']:null,
+      flSrc?['FL src=',flSrc]:null,
+      flType?['FL type=',flType]:null,
+      flCat?['FL cat=',flCat]:null,
+      ['Impressions',impCount+' tag(s)'],
+      isInline&&mediaFiles.length?['MediaFiles',mediaFiles.map(m=>`<span class="insp-tag">${esc(m)}</span>`).join(' ')]:null,
+      isInline?['Eventos rastreados',`<div class="insp-ev-list">${evSet.map(e=>`<span class="insp-tag">${esc(e)}</span>`).join('')}</div>`]:null,
+      isInline&&errorUrl!=='—'?['Error URL',errorUrl]:null,
+      isInline?['Click-Through',clickThrough]:null,
+      companionCount?['Companions',companionCount]:null,
+      verifCount?['Verificação OMID',verifCount+' vendor(s)']:null,
+    ].filter(Boolean);
+
+    result.innerHTML=`
+      <div class="insp-grid">
+        ${rows.map(([k,v2])=>`<div class="insp-k">${k}</div><div class="insp-v">${v2}</div>`).join('')}
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--ok)">✅ XML válido — VAST ${version} ${adType}, ${evSet.length} evento(s) de tracking.</div>`;
+    document.getElementById('btn-load-inspected').style.display=(flSrc||flType||flCat||adTitle)?'':'none';
+  }catch(err){
+    result.innerHTML=`<div class="chk-item chk-err"><span class="chk-icon">❌</span><span>Erro ao analisar: ${esc(String(err))}</span></div>`;
+  }
+}
+function loadInspectedIntoForm(){
+  if(!_inspectedState)return;
+  const s=_inspectedState;
+  if(s.flSrc)document.getElementById('v-src').value=s.flSrc;
+  if(s.flType)document.getElementById('v-type').value=s.flType;
+  if(s.flCat)document.getElementById('v-cat').value=s.flCat;
+  if(s.title&&s.title!=='—')document.getElementById('v-title').value=s.title;
+  if(s.version&&['2.0','3.0','4.1'].includes(s.version))document.getElementById('v-version').value=s.version;
+  if(s.adType==='Wrapper'&&mode!=='wrapper'){const btn=document.querySelector('.tab[onclick*="\'wrapper\'"]');if(btn)switchMode('wrapper',btn);}
+  if(s.adType==='InLine'&&mode!=='inline'){const btn=document.querySelector('.tab[onclick*="\'inline\'"]');if(btn)switchMode('inline',btn);}
+  if(s.duration&&s.duration!=='—')document.getElementById('v-dur').value=s.duration;
+  if(s.wrapperUrl&&s.wrapperUrl!=='—')document.getElementById('v-wrapper-url').value=s.wrapperUrl;
+  if(s.clickThrough&&s.clickThrough!=='—')document.getElementById('v-click').value=s.clickThrough;
+  if(s.skipoffset){document.getElementById('v-skippable').checked=true;document.getElementById('v-skipoffset').value=s.skipoffset;toggleSkippable();}
+  gen();closeInspector();toast('Configuração carregada no formulário!');
+}
+
+// ─── EXPORT TRACKING CSV ───
+function downloadTrackingCSV(){
+  const items=document.querySelectorAll('.tracking-item');if(!items.length){toast('Sem URLs de tracking para exportar.');return;}
+  const lines=['evento,url'];
+  items.forEach(item=>{
+    const evEl=item.querySelector('[style*="font-weight:600"]');
+    const ev=(evEl?.textContent?.trim()||'').split(' ')[0];
+    item.querySelectorAll('.tracking-url-text').forEach(urlEl=>{
+      lines.push(`"${ev}","${urlEl.textContent.trim().replace(/"/g,'""')}"`);
+    });
+  });
+  const csv=lines.join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=(v('v-title')||'vast').replace(/\s+/g,'_').toLowerCase()+'_tracking.csv';
+  a.click();URL.revokeObjectURL(a.href);
+  toast('CSV exportado!');
+}
+
+// ─── COUNTER TAG GENERATOR ───
+function genCounterTag(){
+  const src=(v('ct-src')||'').trim();
+  const type=(v('ct-type')||'').trim();
+  const cat=(v('ct-cat')||'').trim();
+  const fmt=v('ct-format')||'img';
+  const out=document.getElementById('counter-out');
+  if(!src||!type||!cat){out.textContent='Preencha src, type e cat acima.';return;}
+  const url=`https://ad.doubleclick.net/ddm/activity/src=${src};type=${type};cat=${cat};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=\${GDPR};gdpr_consent=\${GDPR_CONSENT_755};ord=1?`;
+  if(fmt==='url'){out.textContent=url;return;}
+  if(fmt==='iframe'){
+    out.textContent=`<iframe src="${url}" width="1" height="1" frameborder="0" style="display:none" scrolling="no"></iframe>`;
+    return;
+  }
+  out.textContent=`<!-- Floodlight Counter Tag -- Do not edit -->\n<script language="JavaScript" type="text/javascript">\nvar axel = Math.random() + "";\nvar a = axel * 10000000000000;\ndocument.write('<img src="https://ad.doubleclick.net/ddm/activity/src=${src};type=${type};cat=${cat};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=\${GDPR};gdpr_consent=\${GDPR_CONSENT_755};ord=' + a + '?" width="1" height="1" alt=""/>');\n<\/script>\n<noscript>\n<img src="${url}" width="1" height="1" alt=""/>\n</noscript>\n<!-- End of Floodlight Counter Tag -->`;
+}
+function copyCounterTag(){
+  const content=document.getElementById('counter-out').textContent;
+  if(!content||content.includes('Preencha')){toast('Gere a tag primeiro.');return;}
+  navigator.clipboard.writeText(content).then(()=>toast('Counter tag copiada!'));
+}
+function syncCounterFromFL(){
+  const src=v('v-src'),type=v('v-type'),cat=v('v-cat');
+  if(!src&&!type&&!cat){toast('Preencha os parâmetros Floodlight no formulário VAST primeiro.');return;}
+  if(src)document.getElementById('ct-src').value=src;
+  if(type)document.getElementById('ct-type').value=type;
+  if(cat)document.getElementById('ct-cat').value=cat;
+  genCounterTag();toast('Parâmetros copiados do VAST!');
+}
+
+// ─── HELP ───
+function openHelp(){document.getElementById('help-overlay').classList.add('open');}
+function closeHelp(){document.getElementById('help-overlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeHelp();closeJsonModal();closeShareModal();closeInspector();}
+  if(e.ctrlKey&&!e.shiftKey&&e.key==='Enter'){e.preventDefault();gen();toast('XML atualizado ✓');}
+  if(e.ctrlKey&&e.shiftKey&&(e.key==='C'||e.key==='c')){e.preventDefault();copyXML();}
+});
+
+// ─── INIT ───
+renderMFList();renderCompList();renderEPList();renderVerifList();
+gen();genCM360();renderHistory();renderFLFavs();loadDarkPref();loadFromHash();
+
+
+function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
+function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+</script>
+
+<!-- ── Como usar modal ─────────────────────────────── -->
+<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
+  <div class="qa-modal">
+    <div class="qa-header">
+      <h2>⚙️ Como usar · Gerador de VAST Tag</h2>
+      <button class="qa-close" onclick="fecharAjuda()">✕</button>
+    </div>
+    <div class="qa-body">
+      <div class="help-section">
+        <h3>Visão geral</h3>
+        <p>Use o <b>Gerador de VAST Tag</b> para gerar estruturas padronizadas de forma rápida e consistente.</p>
+      </div>
+      <div class="help-section">
+        <h3>Passo a passo</h3>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-txt"><b>Configure as opções</b><br>Preencha os campos e selecione as opções desejadas no painel de configuração.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-txt"><b>Visualize a prévia</b><br>O resultado é gerado em tempo real conforme você preenche os campos.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-txt"><b>Copie ou exporte</b><br>Clique em <b>Copiar</b> para área de transferência ou use o botão de exportação.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-txt"><b>Valide o resultado</b><br>Verifique se a tag ou string gerada está correta antes de usar em produção.</div>
+      </div>
+      </div>
+      <div class="help-tip">
+        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+name: Sync location.json (v2)
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # diário às 06h UTC
+  workflow_dispatch:       # permite rodar manualmente
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Fetch location.json do Web App
+        run: |
+          STATUS=$(curl -s -o ferramentas/location/v2/location.json -w "%{http_code}" \
+            "${{ secrets.LOCATION_WEBAPP_URL }}?action=json")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Fetch falhou (HTTP $STATUS) — location.json não atualizado"
+            exit 1
+          fi
+          echo "✅ location.json obtido (HTTP $STATUS)"
+
+      - name: Validar JSON
+        run: |
+          python3 -c "
+          import json, sys
+          with open('ferramentas/location/v2/location.json') as f:
+              d = json.load(f)
+          for chave in ('nacional','região','estado','cidade'):
+              if chave not in d and chave.replace('ã','a') not in d:
+                  print(f'❌ Chave ausente: {chave}'); sys.exit(1)
+          total = len(d.get('cidade', d.get('cidade',[])))
+          print(f'✅ JSON válido — {total} cidades')
+          "
+
+      - name: Commit location.json no main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ferramentas/location/v2/location.json
+          git diff --staged --quiet && echo "Sem alterações." || \
+            git commit -m "chore: sync location.json [skip ci]" && git push

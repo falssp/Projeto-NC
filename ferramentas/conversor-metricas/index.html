@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conversor de Métricas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--surface:#fff;--text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;--ok:#16a34a;--warn:#d97706;--err:#dc2626;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--navy);color:#fff;padding:16px 28px;flex-shrink:0}
+header .logo{font-size:1.35rem;font-weight:700}
+header .sub{font-size:.8rem;opacity:.7;margin-top:2px}
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0;overflow-x:auto;flex-shrink:0}
+.tab{padding:14px 20px;font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover:not(.active){color:var(--navy)}
+.main{flex:1;padding:28px 32px;min-width:0}
+.tab-pane{display:none}.tab-pane.active{display:block}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.panel-head{background:var(--hl);padding:12px 20px;font-weight:600;font-size:.85rem;color:var(--navy);border-bottom:1px solid var(--border)}
+.panel-body{padding:20px}
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.calc-card{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:16px}
+.calc-card h4{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+label{font-size:.77rem;font-weight:600;color:var(--body)}
+input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;color:var(--navy);background:#fafbff;transition:border .2s}
+input:focus{outline:none;border-color:var(--accent)}
+input[readonly]{background:var(--hl);color:var(--accent);font-weight:700;cursor:default;border-color:var(--accent)}
+.result-label{font-size:.72rem;color:var(--muted);margin-top:2px}
+/* Benchmarks table */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-bar input{max-width:280px}
+.search-bar select{max-width:200px}
+table.bench{width:100%;border-collapse:collapse;font-size:.82rem}
+table.bench th{background:var(--hl);color:var(--navy);font-weight:600;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+table.bench td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--body)}
+table.bench tr:last-child td{border-bottom:none}
+table.bench .platform{font-weight:700;color:var(--navy)}
+/* Comparador */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+@media(max-width:800px){.comp-grid{grid-template-columns:1fr}}
+.comp-card{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:16px}
+.comp-card h4{font-size:.82rem;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+table.comp{width:100%;border-collapse:collapse;font-size:.8rem}
+table.comp th{background:var(--hl);color:var(--navy);font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+table.comp td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--body)}
+table.comp tr:last-child td{border-bottom:none}
+td.best{background:#f0fdf4;color:#14532d;font-weight:700}
+td.worst{background:#fef2f2;color:#7f1d1d}
+.btn{padding:9px 18px;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;border:none;background:var(--accent);color:#fff;transition:.15s}
+.btn:hover{background:#1a2ea0}
+.note{font-size:.75rem;color:var(--muted);background:var(--hl);border-radius:8px;padding:10px 14px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🔢 Conversor de Métricas</div>
+  <div class="sub">Calcule, compare e consulte benchmarks de mídia digital</div>
+</header>
+<div class="tabs-bar">
+  <div class="tab active" onclick="switchTab(0)">🧮 Calculadora</div>
+  <div class="tab" onclick="switchTab(1)">📊 Benchmarks</div>
+  <div class="tab" onclick="switchTab(2)">👁️ Viewability</div>
+  <div class="tab" onclick="switchTab(3)">⚖️ Comparador</div>
+</div>
+<div class="main">
+
+<!-- TAB 1: CALCULADORA -->
+<div class="tab-pane active" id="tab0">
+  <div class="calc-grid">
+    <!-- CTR -->
+    <div class="calc-card">
+      <h4>CTR — Cliques ÷ Impressões</h4>
+      <div class="field"><label>Impressões</label><input id="ctr_imp" type="number" placeholder="1000000" oninput="calcCTR()"></div>
+      <div class="field"><label>Cliques</label><input id="ctr_clk" type="number" placeholder="5000" oninput="calcCTR()"></div>
+      <div class="field"><label>CTR (%)</label><input id="ctr_res" type="number" placeholder="0,50" readonly><div class="result-label">Calculado automaticamente</div></div>
+    </div>
+    <!-- CVR -->
+    <div class="calc-card">
+      <h4>CVR — Conversões ÷ Cliques</h4>
+      <div class="field"><label>Cliques</label><input id="cvr_clk" type="number" placeholder="5000" oninput="calcCVR()"></div>
+      <div class="field"><label>Conversões</label><input id="cvr_conv" type="number" placeholder="250" oninput="calcCVR()"></div>
+      <div class="field"><label>CVR (%)</label><input id="cvr_res" type="number" placeholder="5,00" readonly><div class="result-label">Calculado automaticamente</div></div>
+    </div>
+    <!-- CPM / CPC / CPA -->
+    <div class="calc-card">
+      <h4>CPM / CPC / CPA</h4>
+      <div class="field"><label>Budget Total (R$)</label><input id="cost_budget" type="number" placeholder="10000" oninput="calcCosts()"></div>
+      <div class="field"><label>Impressões</label><input id="cost_imp" type="number" placeholder="1000000" oninput="calcCosts()"></div>
+      <div class="field"><label>Cliques</label><input id="cost_clk" type="number" placeholder="5000" oninput="calcCosts()"></div>
+      <div class="field"><label>Conversões</label><input id="cost_conv" type="number" placeholder="250" oninput="calcCosts()"></div>
+      <div class="field"><label>CPM (R$)</label><input id="cost_cpm" readonly></div>
+      <div class="field"><label>CPC (R$)</label><input id="cost_cpc" readonly></div>
+      <div class="field"><label>CPA (R$)</label><input id="cost_cpa" readonly></div>
+    </div>
+    <!-- Frequência -->
+    <div class="calc-card">
+      <h4>Frequência — Imp ÷ Alcance</h4>
+      <div class="field"><label>Impressões</label><input id="freq_imp" type="number" placeholder="1000000" oninput="calcFreq()"></div>
+      <div class="field"><label>Alcance (pessoas únicas)</label><input id="freq_alc" type="number" placeholder="400000" oninput="calcFreq()"></div>
+      <div class="field"><label>Frequência Média</label><input id="freq_res" readonly><div class="result-label">vezes que cada pessoa viu</div></div>
+    </div>
+    <!-- ROAS -->
+    <div class="calc-card">
+      <h4>ROAS — Retorno sobre Invest.</h4>
+      <div class="field"><label>Receita Gerada (R$)</label><input id="roas_rev" type="number" placeholder="50000" oninput="calcROAS()"></div>
+      <div class="field"><label>Investimento em Mídia (R$)</label><input id="roas_inv" type="number" placeholder="10000" oninput="calcROAS()"></div>
+      <div class="field"><label>ROAS (x)</label><input id="roas_res" readonly></div>
+      <div class="field"><label>ROI (%)</label><input id="roi_res" readonly></div>
+    </div>
+    <!-- CPL / CPV -->
+    <div class="calc-card">
+      <h4>CPL / CPV / CPVC</h4>
+      <div class="field"><label>Budget Total (R$)</label><input id="cpx_budget" type="number" placeholder="10000" oninput="calcCPX()"></div>
+      <div class="field"><label>Leads Gerados</label><input id="cpx_leads" type="number" placeholder="500" oninput="calcCPX()"></div>
+      <div class="field"><label>Visualizações de Vídeo</label><input id="cpx_views" type="number" placeholder="80000" oninput="calcCPX()"></div>
+      <div class="field"><label>Visualiz. Completas</label><input id="cpx_compl" type="number" placeholder="40000" oninput="calcCPX()"></div>
+      <div class="field"><label>CPL (R$)</label><input id="cpx_cpl" readonly></div>
+      <div class="field"><label>CPV (R$)</label><input id="cpx_cpv" readonly></div>
+      <div class="field"><label>CPVC (R$)</label><input id="cpx_cpvc" readonly></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: BENCHMARKS -->
+<div class="tab-pane" id="tab1">
+  <div class="panel">
+    <div class="panel-head">📊 Benchmarks de Mídia Digital — Brasil 2024/2025</div>
+    <div class="panel-body">
+      <div class="search-bar">
+        <input type="text" id="benchSearch" placeholder="Buscar plataforma ou formato..." oninput="filterBench()">
+        <select id="benchFilter" onchange="filterBench()">
+          <option value="">Todas as plataformas</option>
+          <option>Meta</option><option>Google</option><option>YouTube</option><option>TikTok</option><option>LinkedIn</option><option>Programático</option>
+        </select>
+      </div>
+      <div class="note" style="margin-bottom:16px">ℹ️ Valores de referência para o mercado brasileiro (estimativas médias de mercado). CPM em R$. Variações por segmento, sazonalidade e qualidade do criativo são esperadas.</div>
+      <div style="overflow-x:auto">
+      <table class="bench" id="benchTable">
+        <thead><tr><th>Plataforma</th><th>Formato</th><th>CTR médio</th><th>CPM médio</th><th>CPC médio</th><th>Notas</th></tr></thead>
+        <tbody id="benchBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: VIEWABILITY -->
+<div class="tab-pane" id="tab2">
+  <div class="calc-grid">
+    <div class="calc-card">
+      <h4>Viewability — Impressões Viewable</h4>
+      <div class="field"><label>Impressões Brutas</label><input id="view_imp" type="number" placeholder="1000000" oninput="calcView()"></div>
+      <div class="field"><label>Taxa de Viewability (%)</label><input id="view_rate" type="number" placeholder="65" oninput="calcView()"></div>
+      <div class="field"><label>CPM Bruto (R$)</label><input id="view_cpm" type="number" placeholder="8.50" oninput="calcView()"></div>
+      <div class="field"><label>Impressões Viewable</label><input id="view_imp_res" readonly></div>
+      <div class="field"><label>vCPM (CPM Viewable, R$)</label><input id="view_vcpm" readonly><div class="result-label">CPM baseado apenas em impressões viewable</div></div>
+    </div>
+    <div class="calc-card">
+      <h4>Vídeo — CPCV e VTR</h4>
+      <div class="field"><label>Impressões / Exibições</label><input id="vid_imp" type="number" placeholder="500000" oninput="calcVid()"></div>
+      <div class="field"><label>Visualizações Completas</label><input id="vid_compl" type="number" placeholder="200000" oninput="calcVid()"></div>
+      <div class="field"><label>Budget de Vídeo (R$)</label><input id="vid_budget" type="number" placeholder="10000" oninput="calcVid()"></div>
+      <div class="field"><label>VTR — View-Through Rate (%)</label><input id="vid_vtr" readonly></div>
+      <div class="field"><label>CPCV — Custo por View Completa (R$)</label><input id="vid_cpcv" readonly></div>
+      <div class="field"><label>CPM de Vídeo (R$)</label><input id="vid_cpm" readonly></div>
+    </div>
+    <div class="calc-card">
+      <h4>Metas → Budget Necessário</h4>
+      <div class="field"><label>CPM desejado (R$)</label><input id="rev_cpm" type="number" placeholder="8.00" oninput="calcRev()"></div>
+      <div class="field"><label>Meta de Impressões</label><input id="rev_imp" type="number" placeholder="1000000" oninput="calcRev()"></div>
+      <div class="field"><label>CPC desejado (R$)</label><input id="rev_cpc" type="number" placeholder="1.50" oninput="calcRev()"></div>
+      <div class="field"><label>Meta de Cliques</label><input id="rev_clk" type="number" placeholder="5000" oninput="calcRev()"></div>
+      <div class="field"><label>Budget p/ atingir impressões (R$)</label><input id="rev_bud1" readonly></div>
+      <div class="field"><label>Budget p/ atingir cliques (R$)</label><input id="rev_bud2" readonly></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 4: COMPARADOR -->
+<div class="tab-pane" id="tab3">
+  <div class="comp-grid" id="compCards"></div>
+  <div class="panel">
+    <div class="panel-head">📊 Comparativo de Eficiência</div>
+    <div class="panel-body">
+      <div style="overflow-x:auto"><table class="comp" id="compTable"><thead id="compHead"></thead><tbody id="compBody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// Tab switching
+function switchTab(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.tab-pane').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+
+// Formatters
+const fmtR = v => isNaN(v)||v===''||v===null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN = (v,d=2) => isNaN(v)||v===''||v===null?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtI = v => isNaN(v)||v===''||v===null?'—':Math.round(v).toLocaleString('pt-BR');
+const setV = (id,val) => { const el=document.getElementById(id); if(el) el.value = val; };
+const getN = id => { const el=document.getElementById(id); if(!el) return NaN; return parseFloat(el.value); };
+
+// Calculators
+function calcCTR(){ const i=getN('ctr_imp'),c=getN('ctr_clk'); setV('ctr_res',i>0&&!isNaN(c)?fmtN(c/i*100):''); }
+function calcCVR(){ const c=getN('cvr_clk'),v=getN('cvr_conv'); setV('cvr_res',c>0&&!isNaN(v)?fmtN(v/c*100):''); }
+function calcCosts(){
+  const b=getN('cost_budget'),i=getN('cost_imp'),c=getN('cost_clk'),v=getN('cost_conv');
+  setV('cost_cpm', b>0&&i>0 ? fmtN(b/i*1000) : '');
+  setV('cost_cpc', b>0&&c>0 ? fmtN(b/c) : '');
+  setV('cost_cpa', b>0&&v>0 ? fmtN(b/v) : '');
+}
+function calcFreq(){ const i=getN('freq_imp'),a=getN('freq_alc'); setV('freq_res',a>0&&!isNaN(i)?fmtN(i/a):''); }
+function calcROAS(){
+  const r=getN('roas_rev'),v=getN('roas_inv');
+  setV('roas_res',v>0&&!isNaN(r)?fmtN(r/v)+'x':'');
+  setV('roi_res',v>0&&!isNaN(r)?fmtN((r-v)/v*100)+'%':'');
+}
+function calcCPX(){
+  const b=getN('cpx_budget'),l=getN('cpx_leads'),v=getN('cpx_views'),c=getN('cpx_compl');
+  setV('cpx_cpl',b>0&&l>0?fmtN(b/l):'');
+  setV('cpx_cpv',b>0&&v>0?fmtN(b/v):'');
+  setV('cpx_cpvc',b>0&&c>0?fmtN(b/c):'');
+}
+function calcView(){
+  const i=getN('view_imp'),r=getN('view_rate'),c=getN('view_cpm');
+  const viewable = i*r/100;
+  setV('view_imp_res',!isNaN(viewable)?fmtI(viewable):'');
+  setV('view_vcpm',viewable>0&&!isNaN(c)?fmtN(c*i/viewable):'');
+}
+function calcVid(){
+  const i=getN('vid_imp'),c=getN('vid_compl'),b=getN('vid_budget');
+  setV('vid_vtr',i>0&&!isNaN(c)?fmtN(c/i*100)+'%':'');
+  setV('vid_cpcv',b>0&&c>0?fmtN(b/c):'');
+  setV('vid_cpm',b>0&&i>0?fmtN(b/i*1000):'');
+}
+function calcRev(){
+  const cpm=getN('rev_cpm'),imp=getN('rev_imp'),cpc=getN('rev_cpc'),clk=getN('rev_clk');
+  setV('rev_bud1',cpm>0&&imp>0?fmtN(cpm*imp/1000):'');
+  setV('rev_bud2',cpc>0&&clk>0?fmtN(cpc*clk):'');
+}
+
+// Benchmarks data
+const BENCHMARKS = [
+  {plat:'Meta',fmt:'Feed (Imagem/Vídeo)',ctr:'0,8–1,5%',cpm:'R$ 6–12',cpc:'R$ 0,80–1,80',note:'Varia muito por segmento e criativo'},
+  {plat:'Meta',fmt:'Stories',ctr:'0,3–0,8%',cpm:'R$ 4–9',cpc:'R$ 1,00–2,50',note:'Swipe-up direto; criativo vertical converte mais'},
+  {plat:'Meta',fmt:'Reels',ctr:'0,5–1,2%',cpm:'R$ 5–10',cpc:'R$ 0,90–2,00',note:'Formato em crescimento; boa eficiência de alcance'},
+  {plat:'Meta',fmt:'Carrossel',ctr:'1,0–2,0%',cpm:'R$ 7–13',cpc:'R$ 0,70–1,50',note:'Alta interação; ideal para e-commerce'},
+  {plat:'Google',fmt:'Search (texto)',ctr:'2,5–6,0%',cpm:'R$ 20–80',cpc:'R$ 1,50–8,00',note:'Depende da concorrência da palavra-chave'},
+  {plat:'Google',fmt:'Display (banner)',ctr:'0,1–0,3%',cpm:'R$ 3–8',cpc:'R$ 1,00–4,00',note:'Baixo CTR; usar para branding/retargeting'},
+  {plat:'Google',fmt:'Performance Max',ctr:'0,5–2,0%',cpm:'R$ 5–15',cpc:'R$ 1,20–4,00',note:'Multi-formato automatizado pelo Google'},
+  {plat:'YouTube',fmt:'TrueView In-Stream',ctr:'0,3–0,8%',cpm:'R$ 8–18',cpc:'R$ 2,00–6,00',note:'CPV médio R$ 0,10–0,30; view >= 30s'},
+  {plat:'YouTube',fmt:'Bumper Ads (6s)',ctr:'—',cpm:'R$ 10–20',cpc:'—',note:'Non-skippable; ideal para awareness de topo'},
+  {plat:'TikTok',fmt:'In-Feed Ads',ctr:'0,8–2,0%',cpm:'R$ 7–14',cpc:'R$ 0,80–2,00',note:'Formato nativo; menor CPM que Meta para jovens'},
+  {plat:'TikTok',fmt:'TopView',ctr:'1,5–3,0%',cpm:'R$ 25–60',cpc:'R$ 2,00–5,00',note:'Primeira impresso ao abrir o app; alto alcance'},
+  {plat:'LinkedIn',fmt:'Single Image Ad',ctr:'0,3–0,6%',cpm:'R$ 25–50',cpc:'R$ 5,00–15,00',note:'B2B; maior CPM mas alta qualificação'},
+  {plat:'LinkedIn',fmt:'Message Ad',ctr:'1,0–3,0%',cpm:'R$ 40–80',cpc:'R$ 8,00–20,00',note:'Envio no inbox; boa taxa de abertura'},
+  {plat:'Programático',fmt:'Display Standard',ctr:'0,05–0,15%',cpm:'R$ 2–6',cpc:'R$ 2,00–8,00',note:'Open Exchange; maior escala e menor custo'},
+  {plat:'Programático',fmt:'Vídeo Outstream',ctr:'0,2–0,5%',cpm:'R$ 10–22',cpc:'R$ 4,00–10,00',note:'Autoplay sem som; VTR ~40–60%'},
+  {plat:'Programático',fmt:'Vídeo Instream (OTT)',ctr:'0,3–0,8%',cpm:'R$ 15–35',cpc:'R$ 5,00–12,00',note:'Connected TV + streaming; alto completion rate'},
+  {plat:'Programático',fmt:'Native',ctr:'0,2–0,6%',cpm:'R$ 4–10',cpc:'R$ 1,50–5,00',note:'Integrado ao conteúdo; menor ad blindness'},
+];
+
+function renderBench(data){
+  document.getElementById('benchBody').innerHTML = data.map(r=>`
+    <tr><td class="platform">${r.plat}</td><td>${r.fmt}</td><td>${r.ctr}</td><td>${r.cpm}</td><td>${r.cpc}</td><td style="font-size:.75rem">${r.note}</td></tr>`).join('');
+}
+
+function filterBench(){
+  const q = document.getElementById('benchSearch').value.toLowerCase();
+  const pf = document.getElementById('benchFilter').value;
+  renderBench(BENCHMARKS.filter(r =>
+    (!pf || r.plat === pf) &&
+    (!q || r.plat.toLowerCase().includes(q) || r.fmt.toLowerCase().includes(q) || r.note.toLowerCase().includes(q))
+  ));
+}
+
+// Comparador
+let compData = [{},{},{}];
+function buildCompCards(){
+  const names = ['Campanha A','Campanha B','Campanha C'];
+  const fields = [{id:'name',label:'Nome',type:'text'},{id:'budget',label:'Budget (R$)',type:'number'},{id:'imp',label:'Impressões',type:'number'},{id:'clk',label:'Cliques',type:'number'},{id:'conv',label:'Conversões',type:'number'},{id:'revenue',label:'Receita (R$)',type:'number'}];
+  document.getElementById('compCards').innerHTML = [0,1,2].map(i=>`
+    <div class="comp-card">
+      <h4>Campanha ${i+1}</h4>
+      ${fields.map(f=>`<div class="field"><label>${f.label}</label><input type="${f.type}" placeholder="${f.type==='text'?names[i]:''}" id="comp_${i}_${f.id}" oninput="calcComp()" ${f.type==='text'?'':''}></div>`).join('')}
+    </div>`).join('');
+}
+
+function calcComp(){
+  const rows = [
+    {key:'CPM',fmt:(v)=>v?fmtN(v):null,calc:(d)=>d.budget&&d.imp?d.budget/d.imp*1000:null},
+    {key:'CPC',fmt:(v)=>v?fmtN(v):null,calc:(d)=>d.budget&&d.clk?d.budget/d.clk:null},
+    {key:'CPA',fmt:(v)=>v?fmtN(v):null,calc:(d)=>d.budget&&d.conv?d.budget/d.conv:null},
+    {key:'CTR',fmt:(v)=>v?fmtN(v)+'%':null,calc:(d)=>d.clk&&d.imp?d.clk/d.imp*100:null,lowerIsBetter:false},
+    {key:'CVR',fmt:(v)=>v?fmtN(v)+'%':null,calc:(d)=>d.conv&&d.clk?d.conv/d.clk*100:null,lowerIsBetter:false},
+    {key:'ROAS',fmt:(v)=>v?fmtN(v)+'x':null,calc:(d)=>d.revenue&&d.budget?d.revenue/d.budget:null,lowerIsBetter:false},
+  ];
+  const data = [0,1,2].map(i=>{
+    const f = id => { const el=document.getElementById(`comp_${i}_${id}`); return el?parseFloat(el.value)||0:0; };
+    return {budget:f('budget'),imp:f('imp'),clk:f('clk'),conv:f('conv'),revenue:f('revenue'),name:(document.getElementById(`comp_${i}_name`)||{}).value||`Campanha ${i+1}`};
+  });
+  const hasData = data.some(d=>d.budget>0||d.imp>0);
+  if(!hasData){ document.getElementById('compHead').innerHTML=''; document.getElementById('compBody').innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px">Preencha os campos acima para comparar</td></tr>'; return; }
+  document.getElementById('compHead').innerHTML = `<tr><th>Métrica</th>${data.map(d=>`<th>${d.name}</th>`).join('')}</tr>`;
+  document.getElementById('compBody').innerHTML = rows.map(r=>{
+    const vals = data.map(d=>r.calc(d));
+    const numeric = vals.filter(v=>v!==null);
+    const best = numeric.length ? (r.lowerIsBetter===false ? Math.max(...numeric) : Math.min(...numeric)) : null;
+    const worst = numeric.length>1 ? (r.lowerIsBetter===false ? Math.min(...numeric) : Math.max(...numeric)) : null;
+    return `<tr><td><strong>${r.key}</strong></td>${vals.map((v,i)=>{
+      const cls = v===null?'':(v===best&&numeric.length>1?'best':v===worst&&numeric.length>1?'worst':'');
+      return `<td class="${cls}">${v===null?'—':r.fmt(v)}</td>`;
+    }).join('')}</tr>`;
+  }).join('');
+}
+
+// Init
+renderBench(BENCHMARKS);
+buildCompCards();
+calcComp();
+</script>
+</body>
+</html>

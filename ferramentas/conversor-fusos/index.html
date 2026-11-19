@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conversor de Fusos — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text);transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-danger{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* Clock grid */
+.clock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.clock-card{background:var(--light);border-radius:10px;padding:14px;text-align:center;position:relative}
+.clock-card.local-tz{border:2px solid var(--azul)}
+.clock-city{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.clock-time{font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--azul);line-height:1}
+.clock-date{font-size:.75rem;color:var(--muted);margin-top:4px}
+.clock-offset{font-size:.72rem;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.clock-status{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-top:4px}
+.status-work{background:#dcfce7;color:var(--green)}
+.status-after{background:#fef9c3;color:var(--yellow)}
+.status-sleep{background:#fee2e2;color:var(--red)}
+.remove-tz{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.8rem;line-height:1}
+.remove-tz:hover{color:var(--red)}
+/* Converter */
+.conv-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end}
+@media(max-width:620px){.conv-row{grid-template-columns:1fr}}
+.result-row{background:var(--light);border-radius:8px;padding:12px 14px;margin-top:4px;font-size:.88rem}
+.result-row strong{font-family:var(--mono)}
+/* Schedule preview */
+.sched-table{width:100%;border-collapse:collapse;font-size:.84rem}
+.sched-table th{text-align:left;padding:7px 10px;background:var(--light);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.sched-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.sched-table tr:last-child td{border-bottom:none}
+.sched-table tr:hover td{background:var(--light)}
+.num{font-family:var(--mono);font-size:.83rem}
+.tz-pill{display:inline-block;padding:3px 8px;border-radius:8px;font-size:.7rem;font-weight:700;background:var(--light);color:var(--azul);border:1px solid var(--border)}
+/* Add TZ */
+.add-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.add-row>div{flex:1;min-width:200px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">🌍 Conversor de Fusos Horários</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<!-- Relógios ao vivo -->
+<div class="card">
+  <div class="card-title">Relógios ao Vivo</div>
+  <div class="add-row">
+    <div>
+      <label>Fuso horário</label>
+      <select id="tzSelect">
+        <option value="America/Sao_Paulo">São Paulo (BRT)</option>
+        <option value="America/New_York">New York (ET)</option>
+        <option value="America/Chicago">Chicago (CT)</option>
+        <option value="America/Denver">Denver (MT)</option>
+        <option value="America/Los_Angeles">Los Angeles (PT)</option>
+        <option value="America/Bogota">Bogotá (COT)</option>
+        <option value="America/Lima">Lima (PET)</option>
+        <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
+        <option value="America/Mexico_City">Cidade do México (CST)</option>
+        <option value="Europe/London">Londres (GMT/BST)</option>
+        <option value="Europe/Paris">Paris (CET)</option>
+        <option value="Europe/Berlin">Berlim (CET)</option>
+        <option value="Europe/Madrid">Madrid (CET)</option>
+        <option value="Asia/Dubai">Dubai (GST)</option>
+        <option value="Asia/Kolkata">Mumbai (IST)</option>
+        <option value="Asia/Singapore">Singapura (SGT)</option>
+        <option value="Asia/Tokyo">Tóquio (JST)</option>
+        <option value="Asia/Shanghai">Shanghai (CST)</option>
+        <option value="Asia/Seoul">Seul (KST)</option>
+        <option value="Australia/Sydney">Sydney (AEST)</option>
+        <option value="Pacific/Auckland">Auckland (NZST)</option>
+        <option value="UTC">UTC</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="addTz()">+ Adicionar</button>
+    <button class="btn btn-ghost btn-sm" onclick="addDefaults()">Padrão AdOps</button>
+  </div>
+  <div class="clock-grid" id="clockGrid"></div>
+</div>
+
+<!-- Conversor pontual -->
+<div class="card">
+  <div class="card-title">Converter Data/Hora</div>
+  <div class="conv-row">
+    <div>
+      <label>Data e hora</label>
+      <input id="convDt" type="datetime-local">
+    </div>
+    <div>
+      <label>Fuso de origem</label>
+      <select id="convFrom">
+        <option value="America/Sao_Paulo">São Paulo (BRT)</option>
+        <option value="America/New_York">New York (ET)</option>
+        <option value="America/Los_Angeles">Los Angeles (PT)</option>
+        <option value="Europe/London">Londres (GMT)</option>
+        <option value="Europe/Paris">Paris (CET)</option>
+        <option value="Asia/Tokyo">Tóquio (JST)</option>
+        <option value="UTC">UTC</option>
+      </select>
+    </div>
+    <div>
+      <label>Converter para</label>
+      <select id="convTo">
+        <option value="UTC">UTC</option>
+        <option value="America/New_York">New York (ET)</option>
+        <option value="America/Sao_Paulo">São Paulo (BRT)</option>
+        <option value="America/Los_Angeles">Los Angeles (PT)</option>
+        <option value="Europe/London">Londres (GMT)</option>
+        <option value="Europe/Paris">Paris (CET)</option>
+        <option value="Asia/Tokyo">Tóquio (JST)</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row" style="margin-top:10px">
+    <button class="btn btn-primary btn-sm" onclick="convert()">Converter</button>
+  </div>
+  <div id="convResult" class="result-row" style="display:none;margin-top:12px"></div>
+</div>
+
+<!-- Schedule de campanha -->
+<div class="card">
+  <div class="card-title">Preview de Schedule de Campanha</div>
+  <div class="conv-row" style="margin-bottom:12px">
+    <div>
+      <label>Início (horário local)</label>
+      <input id="schedStart" type="datetime-local">
+    </div>
+    <div>
+      <label>Fim (horário local)</label>
+      <input id="schedEnd" type="datetime-local">
+    </div>
+    <div>
+      <label>Fuso da campanha</label>
+      <select id="schedTz">
+        <option value="America/Sao_Paulo">São Paulo (BRT)</option>
+        <option value="America/New_York">New York (ET)</option>
+        <option value="America/Los_Angeles">Los Angeles (PT)</option>
+        <option value="Europe/London">Londres (GMT)</option>
+        <option value="UTC">UTC</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="calcSchedule()">Ver em todos os fusos</button>
+  <div id="schedResults" style="margin-top:12px"></div>
+</div>
+
+</main>
+<script>
+let activeTzs=JSON.parse(localStorage.getItem('tz_active')||'["America/Sao_Paulo","America/New_York","Europe/London","UTC"]');
+let clockInterval=null;
+
+const TZ_LABELS={
+  'America/Sao_Paulo':'São Paulo','America/New_York':'New York','America/Chicago':'Chicago',
+  'America/Denver':'Denver','America/Los_Angeles':'Los Angeles','America/Bogota':'Bogotá',
+  'America/Lima':'Lima','America/Buenos_Aires':'Buenos Aires','America/Mexico_City':'CDMX',
+  'Europe/London':'Londres','Europe/Paris':'Paris','Europe/Berlin':'Berlim',
+  'Europe/Madrid':'Madrid','Asia/Dubai':'Dubai','Asia/Kolkata':'Mumbai',
+  'Asia/Singapore':'Singapura','Asia/Tokyo':'Tóquio','Asia/Shanghai':'Shanghai',
+  'Asia/Seoul':'Seul','Australia/Sydney':'Sydney','Pacific/Auckland':'Auckland','UTC':'UTC',
+};
+
+function getLocalTz(){return Intl.DateTimeFormat().resolvedOptions().timeZone}
+
+function formatInTz(date,tz){
+  return new Intl.DateTimeFormat('pt-BR',{
+    timeZone:tz,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
+  }).format(date);
+}
+function formatDateInTz(date,tz){
+  return new Intl.DateTimeFormat('pt-BR',{
+    timeZone:tz,weekday:'short',day:'2-digit',month:'short'
+  }).format(date);
+}
+function getHourInTz(date,tz){
+  return parseInt(new Intl.DateTimeFormat('en-US',{
+    timeZone:tz,hour:'2-digit',hour12:false
+  }).format(date));
+}
+function getOffsetStr(tz){
+  const now=new Date();
+  const local=new Date(now.toLocaleString('en-US',{timeZone:tz}));
+  const utc=new Date(now.toLocaleString('en-US',{timeZone:'UTC'}));
+  const diff=Math.round((local-utc)/60000);
+  const h=Math.floor(Math.abs(diff)/60);
+  const m=Math.abs(diff)%60;
+  return`UTC${diff>=0?'+':'-'}${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+function statusLabel(h){
+  if(h>=9&&h<18)return{label:'Horário comercial',cls:'status-work'};
+  if(h>=18&&h<23)return{label:'Após expediente',cls:'status-after'};
+  return{label:'Fora do ar',cls:'status-sleep'};
+}
+
+function renderClocks(){
+  const now=new Date();
+  const localTz=getLocalTz();
+  document.getElementById('clockGrid').innerHTML=activeTzs.map(tz=>{
+    const time=formatInTz(now,tz);
+    const date=formatDateInTz(now,tz);
+    const hour=getHourInTz(now,tz);
+    const offset=getOffsetStr(tz);
+    const{label,cls}=statusLabel(hour);
+    const isLocal=tz===localTz;
+    return`<div class="clock-card${isLocal?' local-tz':''}">
+      <button class="remove-tz" onclick="removeTz('${tz}')">✕</button>
+      <div class="clock-city">${TZ_LABELS[tz]||tz}${isLocal?' ★':''}</div>
+      <div class="clock-time">${time}</div>
+      <div class="clock-date">${date}</div>
+      <div class="clock-offset">${offset}</div>
+      <div class="clock-status ${cls}">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+function addTz(){
+  const tz=document.getElementById('tzSelect').value;
+  if(!activeTzs.includes(tz)){
+    activeTzs.push(tz);
+    localStorage.setItem('tz_active',JSON.stringify(activeTzs));
+  }
+  renderClocks();
+}
+
+function removeTz(tz){
+  activeTzs=activeTzs.filter(t=>t!==tz);
+  localStorage.setItem('tz_active',JSON.stringify(activeTzs));
+  renderClocks();
+}
+
+function addDefaults(){
+  const defaults=['America/Sao_Paulo','America/New_York','Europe/London','Europe/Paris','Asia/Tokyo','UTC'];
+  defaults.forEach(tz=>{if(!activeTzs.includes(tz))activeTzs.push(tz);});
+  localStorage.setItem('tz_active',JSON.stringify(activeTzs));
+  renderClocks();
+}
+
+function convert(){
+  const dtVal=document.getElementById('convDt').value;
+  if(!dtVal)return;
+  const from=document.getElementById('convFrom').value;
+  const to=document.getElementById('convTo').value;
+
+  // Parse datetime-local as a date in source tz
+  const [date,time]=dtVal.split('T');
+  const [y,m,d]=date.split('-').map(Number);
+  const [hh,mm]=time.split(':').map(Number);
+
+  // Build date in UTC by converting from source tz
+  const srcStr=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`;
+  // Use Intl to find the UTC offset at that point for the source tz
+  const tmpDate=new Date(srcStr+'Z'); // assume UTC first
+  const localInSrc=new Date(tmpDate.toLocaleString('en-US',{timeZone:from}));
+  const utcFromSrc=new Date(tmpDate.getTime()+(tmpDate-localInSrc));
+
+  const resultStr=new Intl.DateTimeFormat('pt-BR',{
+    timeZone:to,
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
+  }).format(utcFromSrc);
+
+  const fromLabel=TZ_LABELS[from]||from;
+  const toLabel=TZ_LABELS[to]||to;
+  const fromOff=getOffsetStr(from);
+  const toOff=getOffsetStr(to);
+
+  document.getElementById('convResult').innerHTML=
+    `<b>${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}</b> em ${fromLabel} (${fromOff})
+     → <strong>${resultStr}</strong> em ${toLabel} (${toOff})`;
+  document.getElementById('convResult').style.display='block';
+}
+
+function calcSchedule(){
+  const start=document.getElementById('schedStart').value;
+  const end=document.getElementById('schedEnd').value;
+  const tz=document.getElementById('schedTz').value;
+  if(!start||!end)return;
+
+  const tzsList=[
+    'America/Sao_Paulo','America/New_York','America/Los_Angeles',
+    'Europe/London','Europe/Paris','Asia/Dubai','Asia/Tokyo','UTC'
+  ];
+
+  const startDate=new Date(start+'Z');
+  const endDate=new Date(end+'Z');
+
+  const rows=tzsList.map(t=>{
+    const s=new Intl.DateTimeFormat('pt-BR',{timeZone:t,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(startDate);
+    const e=new Intl.DateTimeFormat('pt-BR',{timeZone:t,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(endDate);
+    const off=getOffsetStr(t);
+    return`<tr>
+      <td>${TZ_LABELS[t]||t}</td>
+      <td class="num">${off}</td>
+      <td class="num">${s}</td>
+      <td class="num">${e}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('schedResults').innerHTML=`
+    <div class="hint" style="margin-bottom:8px">Datas em horário local de cada região. Campanha configurada em: <b>${TZ_LABELS[tz]||tz}</b></div>
+    <table class="sched-table">
+      <thead><tr><th>Região</th><th>Offset</th><th>Início</th><th>Fim</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  const nxt=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',nxt);
+  localStorage.setItem('tz_theme',nxt);
+}
+
+document.documentElement.setAttribute('data-theme',localStorage.getItem('tz_theme')||'light');
+// Set default datetime-local
+const now=new Date();
+const dtStr=now.toISOString().slice(0,16);
+document.getElementById('convDt').value=dtStr;
+document.getElementById('schedStart').value=dtStr;
+
+renderClocks();
+clockInterval=setInterval(renderClocks,1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmarks de Mercado Digital BR</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.3rem;font-weight:700}
+header p{font-size:.85rem;opacity:.8;margin-top:2px}
+.main{padding:28px 32px;min-width:0}
+.toolbar{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.9rem;background:#f4f5fb}
+.search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:.85rem}
+.filter-group{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter-label{font-size:.8rem;color:#666;font-weight:600;margin-right:4px}
+select{padding:7px 10px;border:1px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.85rem;background:#fff;cursor:pointer;color:#1a237e;font-weight:500}
+.btn-clear{padding:7px 14px;background:#e8ecfd;border:1px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.85rem;color:#1F36C7;cursor:pointer;font-weight:600}
+.btn-clear:hover{background:#d6dbf2}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:8px 16px;border:1px solid #d6dbf2;border-radius:7px;background:#fff;font-family:inherit;font-size:.85rem;cursor:pointer;color:#555;font-weight:500;transition:.15s}
+.tab.active{background:#1F36C7;color:#fff;border-color:#1F36C7}
+.tab:hover:not(.active){background:#e8ecfd}
+.section{margin-bottom:28px}
+.section-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.bm-card{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:14px 16px;transition:.15s}
+.bm-card:hover{border-color:#1F36C7;box-shadow:0 2px 8px rgba(31,54,199,.08)}
+.bm-card.hidden{display:none}
+.bm-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.bm-name{font-size:.9rem;font-weight:700;color:#1a1a2e}
+.bm-sub{font-size:.78rem;color:#888;margin-top:2px}
+.bm-badge{font-size:.72rem;padding:3px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.badge-ctr{background:#e3f2fd;color:#1565c0}
+.badge-cpm{background:#e8f5e9;color:#2e7d32}
+.badge-vtr{background:#fce4ec;color:#c62828}
+.badge-view{background:#f3e5f5;color:#6a1b9a}
+.badge-cvr{background:#fff3e0;color:#e65100}
+.badge-cpc{background:#e0f2f1;color:#00695c}
+.badge-saz{background:#fafafa;color:#424242}
+.range-bar{position:relative;height:8px;background:#e8ecfd;border-radius:4px;margin:8px 0 4px}
+.range-fill{position:absolute;height:100%;background:linear-gradient(90deg,#c5cae9,#1F36C7);border-radius:4px}
+.range-mid{position:absolute;width:3px;height:16px;background:#1a237e;border-radius:2px;top:-4px;transform:translateX(-50%);z-index:1}
+.range-user{position:absolute;width:4px;height:20px;top:-6px;transform:translateX(-50%);z-index:2;border-radius:2px}
+.range-user.good{background:#2e7d32}
+.range-user.ok{background:#f57f17}
+.range-user.bad{background:#c62828}
+.range-labels{display:flex;justify-content:space-between;font-size:.72rem;color:#888}
+.bm-mid{font-size:.78rem;color:#666;margin-top:4px}
+.bm-mid span{font-weight:700;color:#1a237e}
+.bm-source{font-size:.7rem;color:#aaa;margin-top:8px}
+.user-compare-row{margin-top:10px;padding-top:10px;border-top:1px dashed #e0e0e0;display:none}
+.user-compare-row.show{display:block}
+.user-input-wrap{display:flex;gap:8px;align-items:center}
+.user-input-wrap input{flex:1;padding:5px 8px;border:1px solid #d6dbf2;border-radius:5px;font-family:inherit;font-size:.82rem}
+.compare-result{margin-top:6px;font-size:.8rem;font-weight:600;padding:4px 8px;border-radius:5px}
+.compare-result.good{background:#e8f5e9;color:#2e7d32}
+.compare-result.ok{background:#fff8e1;color:#f57f17}
+.compare-result.bad{background:#fce4ec;color:#c62828}
+/* Right panel */
+.side-panel{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:20px;position:sticky;top:20px}
+.side-title{font-size:.95rem;font-weight:700;color:#1a237e;margin-bottom:14px}
+.side-section{margin-bottom:20px}
+.side-section-title{font-size:.82rem;font-weight:700;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+.saz-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.saz-row{background:#f4f5fb;border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;align-items:center}
+.saz-month{font-size:.78rem;font-weight:600;color:#333}
+.saz-idx{font-size:.78rem;font-weight:700}
+.saz-idx.high{color:#c62828}
+.saz-idx.med{color:#f57f17}
+.saz-idx.low{color:#2e7d32}
+.cpm-calc{display:flex;flex-direction:column;gap:8px}
+.cpm-calc input,.cpm-calc select{padding:7px 10px;border:1px solid #d6dbf2;border-radius:6px;font-family:inherit;font-size:.85rem}
+.cpm-result{background:#e8ecfd;border-radius:7px;padding:10px;font-size:.85rem;color:#1a237e;font-weight:600;text-align:center;display:none}
+.cpm-result.show{display:block}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid #d6dbf2;border-radius:8px;padding:12px;text-align:center}
+.stat-num{font-size:1.4rem;font-weight:700;color:#1F36C7}
+.stat-label{font-size:.75rem;color:#888;margin-top:2px}
+.empty-state{text-align:center;padding:40px;color:#888;font-size:.9rem}
+.toggle-compare{font-size:.75rem;color:#1F36C7;cursor:pointer;text-decoration:underline;margin-top:6px;display:inline-block}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 Benchmarks de Mercado Digital BR</h1>
+    <p>Referência de performance para publicidade digital no Brasil — IAB BR, Google, Meta, DoubleVerify 2024/2025</p>
+  </div>
+</header>
+<div class="main">
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="totalCards">0</div><div class="stat-label">Benchmarks</div></div>
+    <div class="stat-card"><div class="stat-num">7</div><div class="stat-label">Plataformas</div></div>
+    <div class="stat-card"><div class="stat-num">7</div><div class="stat-label">Verticais</div></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <input type="text" id="searchInput" placeholder="Buscar plataforma, formato, métrica..." oninput="filterCards()">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Plataforma</span>
+      <select id="filterPlat" onchange="filterCards()">
+        <option value="">Todas</option>
+        <option>Meta Ads</option>
+        <option>Google Search</option>
+        <option>Google Display</option>
+        <option>YouTube</option>
+        <option>DV360</option>
+        <option>LinkedIn</option>
+        <option>TikTok</option>
+        <option>X Ads</option>
+        <option>Programático</option>
+      </select>
+      <span class="filter-label">Métrica</span>
+      <select id="filterMetric" onchange="filterCards()">
+        <option value="">Todas</option>
+        <option>CTR</option>
+        <option>CPM</option>
+        <option>VTR</option>
+        <option>Viewability</option>
+        <option>CVR</option>
+        <option>CPC</option>
+      </select>
+      <button class="btn-clear" onclick="clearFilters()">Limpar filtros</button>
+    </div>
+  </div>
+  <div class="layout">
+    <div>
+      <div class="tabs" id="tabs">
+        <button class="tab active" onclick="switchTab('ctr',this)">CTR</button>
+        <button class="tab" onclick="switchTab('cpm',this)">CPM</button>
+        <button class="tab" onclick="switchTab('vtr',this)">VTR</button>
+        <button class="tab" onclick="switchTab('view',this)">Viewability</button>
+        <button class="tab" onclick="switchTab('cvr',this)">CVR por Vertical</button>
+        <button class="tab" onclick="switchTab('cpc',this)">CPC Search</button>
+        <button class="tab" onclick="switchTab('all',this)">Todos</button>
+      </div>
+      <div id="cardsContainer" class="bm-grid"></div>
+      <div id="emptyState" class="empty-state" style="display:none">Nenhum benchmark encontrado para os filtros selecionados.</div>
+    </div>
+    <div class="side-panel">
+      <div class="side-title">🗓️ Calculadora de CPM Sazonal</div>
+      <div class="side-section">
+        <div class="cpm-calc">
+          <input type="number" id="cpmBase" placeholder="CPM base (R$)" step="0.01" min="0" oninput="calcSazonal()">
+          <select id="mesSelect" onchange="calcSazonal()">
+            <option value="">Selecione o mês</option>
+            <option value="0.7">Janeiro (×0,7)</option>
+            <option value="0.8">Fevereiro (×0,8)</option>
+            <option value="0.9">Março (×0,9)</option>
+            <option value="1.0">Abril (×1,0)</option>
+            <option value="1.0">Maio (×1,0)</option>
+            <option value="0.95">Junho (×0,95)</option>
+            <option value="0.9">Julho (×0,9)</option>
+            <option value="1.0">Agosto (×1,0)</option>
+            <option value="1.1">Setembro (×1,1)</option>
+            <option value="1.2">Outubro (×1,2)</option>
+            <option value="1.5">Novembro — Black Friday (×1,5)</option>
+            <option value="1.4">Dezembro — Natal (×1,4)</option>
+          </select>
+          <div class="cpm-result" id="cpmResult"></div>
+        </div>
+      </div>
+      <div class="side-section">
+        <div class="side-section-title">Índice de Sazonalidade</div>
+        <div class="saz-grid">
+          <div class="saz-row"><span class="saz-month">Jan</span><span class="saz-idx low">×0,7</span></div>
+          <div class="saz-row"><span class="saz-month">Fev</span><span class="saz-idx low">×0,8</span></div>
+          <div class="saz-row"><span class="saz-month">Mar</span><span class="saz-idx low">×0,9</span></div>
+          <div class="saz-row"><span class="saz-month">Abr</span><span class="saz-idx">×1,0</span></div>
+          <div class="saz-row"><span class="saz-month">Mai</span><span class="saz-idx">×1,0</span></div>
+          <div class="saz-row"><span class="saz-month">Jun</span><span class="saz-idx">×0,95</span></div>
+          <div class="saz-row"><span class="saz-month">Jul</span><span class="saz-idx low">×0,9</span></div>
+          <div class="saz-row"><span class="saz-month">Ago</span><span class="saz-idx">×1,0</span></div>
+          <div class="saz-row"><span class="saz-month">Set</span><span class="saz-idx med">×1,1</span></div>
+          <div class="saz-row"><span class="saz-month">Out</span><span class="saz-idx med">×1,2</span></div>
+          <div class="saz-row"><span class="saz-month">Nov</span><span class="saz-idx high">×1,5 🔥</span></div>
+          <div class="saz-row"><span class="saz-month">Dez</span><span class="saz-idx high">×1,4</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:28px;padding:14px 18px;background:#fff;border:1px solid #d6dbf2;border-radius:8px;font-size:.78rem;color:#888;line-height:1.6">
+    ⚠️ <strong>Metodologia:</strong> Benchmarks baseados em dados públicos de IAB Brasil, Google Think, Meta Business Insights, DoubleVerify, Nielsen e Kantar — referência mercado BR 2024/2025. Valores variam por vertical, audiência, qualidade criativa e momento de campanha. Use como referência, não como garantia de performance.
+  </div>
+</div>
+
+<script>
+const DATA = [
+  // CTR
+  {cat:'ctr',plat:'Meta Ads',fmt:'Feed Imagem',metric:'CTR',unit:'%',min:0.5,max:2.0,mid:0.9,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Meta Ads',fmt:'Feed Vídeo',metric:'CTR',unit:'%',min:0.8,max:2.5,mid:1.2,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Meta Ads',fmt:'Stories',metric:'CTR',unit:'%',min:0.3,max:1.5,mid:0.7,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Meta Ads',fmt:'Reels',metric:'CTR',unit:'%',min:1.0,max:3.0,mid:1.8,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Google Search',fmt:'Branded',metric:'CTR',unit:'%',min:5,max:15,mid:8,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Google Search',fmt:'Non-branded',metric:'CTR',unit:'%',min:2,max:6,mid:3.5,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Google Display',fmt:'Banner',metric:'CTR',unit:'%',min:0.03,max:0.15,mid:0.07,badge:'badge-ctr'},
+  {cat:'ctr',plat:'Google Display',fmt:'Responsivo',metric:'CTR',unit:'%',min:0.05,max:0.20,mid:0.10,badge:'badge-ctr'},
+  {cat:'ctr',plat:'YouTube',fmt:'Pre-roll skip',metric:'CTR',unit:'%',min:0.5,max:2.0,mid:0.8,badge:'badge-ctr'},
+  {cat:'ctr',plat:'YouTube',fmt:'Bumper',metric:'CTR',unit:'%',min:0.2,max:0.8,mid:0.4,badge:'badge-ctr'},
+  {cat:'ctr',plat:'DV360',fmt:'Display',metric:'CTR',unit:'%',min:0.04,max:0.15,mid:0.08,badge:'badge-ctr'},
+  {cat:'ctr',plat:'DV360',fmt:'Vídeo',metric:'CTR',unit:'%',min:0.3,max:1.2,mid:0.6,badge:'badge-ctr'},
+  {cat:'ctr',plat:'LinkedIn',fmt:'Feed',metric:'CTR',unit:'%',min:0.3,max:0.8,mid:0.45,badge:'badge-ctr'},
+  {cat:'ctr',plat:'LinkedIn',fmt:'Message Ads',metric:'CTR',unit:'%',min:2,max:6,mid:3.5,badge:'badge-ctr'},
+  {cat:'ctr',plat:'TikTok',fmt:'In-Feed',metric:'CTR',unit:'%',min:0.5,max:2.0,mid:1.0,badge:'badge-ctr'},
+  {cat:'ctr',plat:'TikTok',fmt:'TopView',metric:'CTR',unit:'%',min:1.5,max:4.0,mid:2.5,badge:'badge-ctr'},
+  {cat:'ctr',plat:'X Ads',fmt:'Promoted Tweet',metric:'CTR',unit:'%',min:0.3,max:1.2,mid:0.6,badge:'badge-ctr'},
+  // CPM
+  {cat:'cpm',plat:'Meta Ads',fmt:'Feed',metric:'CPM',unit:'R$',min:8,max:25,mid:14,badge:'badge-cpm'},
+  {cat:'cpm',plat:'Meta Ads',fmt:'Stories',metric:'CPM',unit:'R$',min:5,max:18,mid:10,badge:'badge-cpm'},
+  {cat:'cpm',plat:'Meta Ads',fmt:'Reels',metric:'CPM',unit:'R$',min:10,max:30,mid:18,badge:'badge-cpm'},
+  {cat:'cpm',plat:'Google Display',fmt:'Display',metric:'CPM',unit:'R$',min:3,max:12,mid:6,badge:'badge-cpm'},
+  {cat:'cpm',plat:'YouTube',fmt:'Pre-roll',metric:'CPM',unit:'R$',min:15,max:40,mid:22,badge:'badge-cpm'},
+  {cat:'cpm',plat:'YouTube',fmt:'Bumper',metric:'CPM',unit:'R$',min:8,max:20,mid:12,badge:'badge-cpm'},
+  {cat:'cpm',plat:'DV360',fmt:'Display',metric:'CPM',unit:'R$',min:4,max:15,mid:8,badge:'badge-cpm'},
+  {cat:'cpm',plat:'DV360',fmt:'Vídeo',metric:'CPM',unit:'R$',min:15,max:45,mid:25,badge:'badge-cpm'},
+  {cat:'cpm',plat:'LinkedIn',fmt:'Feed',metric:'CPM',unit:'R$',min:30,max:80,mid:50,badge:'badge-cpm'},
+  {cat:'cpm',plat:'TikTok',fmt:'In-Feed',metric:'CPM',unit:'R$',min:10,max:35,mid:20,badge:'badge-cpm'},
+  {cat:'cpm',plat:'Programático',fmt:'Open Market',metric:'CPM',unit:'R$',min:2,max:8,mid:4,badge:'badge-cpm'},
+  {cat:'cpm',plat:'Programático',fmt:'PMPs',metric:'CPM',unit:'R$',min:6,max:20,mid:12,badge:'badge-cpm'},
+  // VTR
+  {cat:'vtr',plat:'YouTube',fmt:'Pre-roll skip',metric:'VTR',unit:'%',min:25,max:45,mid:32,badge:'badge-vtr'},
+  {cat:'vtr',plat:'YouTube',fmt:'Pre-roll non-skip',metric:'VTR',unit:'%',min:95,max:100,mid:98,badge:'badge-vtr'},
+  {cat:'vtr',plat:'YouTube',fmt:'Bumper',metric:'VTR',unit:'%',min:95,max:100,mid:98,badge:'badge-vtr'},
+  {cat:'vtr',plat:'Meta Ads',fmt:'Feed Vídeo',metric:'VTR',unit:'%',min:10,max:25,mid:15,badge:'badge-vtr'},
+  {cat:'vtr',plat:'Meta Ads',fmt:'Reels',metric:'VTR',unit:'%',min:15,max:35,mid:22,badge:'badge-vtr'},
+  {cat:'vtr',plat:'TikTok',fmt:'In-Feed',metric:'VTR',unit:'%',min:25,max:50,mid:35,badge:'badge-vtr'},
+  {cat:'vtr',plat:'DV360',fmt:'Vídeo (3s)',metric:'VTR',unit:'%',min:60,max:80,mid:70,badge:'badge-vtr'},
+  {cat:'vtr',plat:'DV360',fmt:'Vídeo (complete)',metric:'VTR',unit:'%',min:20,max:45,mid:30,badge:'badge-vtr'},
+  // Viewability
+  {cat:'view',plat:'Display',fmt:'Desktop',metric:'Viewability',unit:'%',min:60,max:75,mid:68,badge:'badge-view'},
+  {cat:'view',plat:'Display',fmt:'Mobile',metric:'Viewability',unit:'%',min:50,max:65,mid:56,badge:'badge-view'},
+  {cat:'view',plat:'Vídeo',fmt:'Desktop',metric:'Viewability',unit:'%',min:65,max:80,mid:72,badge:'badge-view'},
+  {cat:'view',plat:'Vídeo',fmt:'Mobile',metric:'Viewability',unit:'%',min:60,max:75,mid:67,badge:'badge-view'},
+  {cat:'view',plat:'Native',fmt:'Feed',metric:'Viewability',unit:'%',min:70,max:85,mid:76,badge:'badge-view'},
+  // CVR by vertical
+  {cat:'cvr',plat:'E-commerce',fmt:'Vertical',metric:'CVR',unit:'%',min:1.5,max:4,mid:2.5,badge:'badge-cvr'},
+  {cat:'cvr',plat:'Lead Gen B2C',fmt:'Vertical',metric:'CVR',unit:'%',min:2,max:8,mid:4,badge:'badge-cvr'},
+  {cat:'cvr',plat:'Lead Gen B2B',fmt:'Vertical',metric:'CVR',unit:'%',min:0.5,max:2,mid:1,badge:'badge-cvr'},
+  {cat:'cvr',plat:'Aplicativos',fmt:'Install',metric:'CVR',unit:'%',min:5,max:15,mid:8,badge:'badge-cvr'},
+  {cat:'cvr',plat:'Financeiro',fmt:'Vertical',metric:'CVR',unit:'%',min:1,max:3,mid:1.8,badge:'badge-cvr'},
+  {cat:'cvr',plat:'Educação',fmt:'Vertical',metric:'CVR',unit:'%',min:2,max:6,mid:3.5,badge:'badge-cvr'},
+  {cat:'cvr',plat:'Automotivo',fmt:'Vertical',metric:'CVR',unit:'%',min:0.3,max:1.5,mid:0.7,badge:'badge-cvr'},
+  // CPC
+  {cat:'cpc',plat:'Google Search',fmt:'E-commerce',metric:'CPC',unit:'R$',min:0.5,max:2.0,mid:1.0,badge:'badge-cpc'},
+  {cat:'cpc',plat:'Google Search',fmt:'Financeiro',metric:'CPC',unit:'R$',min:3.0,max:15.0,mid:7.0,badge:'badge-cpc'},
+  {cat:'cpc',plat:'Google Search',fmt:'Educação',metric:'CPC',unit:'R$',min:1.0,max:5.0,mid:2.5,badge:'badge-cpc'},
+  {cat:'cpc',plat:'Google Search',fmt:'Saúde',metric:'CPC',unit:'R$',min:1.5,max:8.0,mid:3.5,badge:'badge-cpc'},
+  {cat:'cpc',plat:'Google Search',fmt:'Automotivo',metric:'CPC',unit:'R$',min:2.0,max:10.0,mid:5.0,badge:'badge-cpc'},
+  {cat:'cpc',plat:'Google Search',fmt:'Imobiliário',metric:'CPC',unit:'R$',min:2.0,max:12.0,mid:5.0,badge:'badge-cpc'},
+];
+
+let activeTab = 'ctr';
+let userValues = {};
+
+function fmt(v, unit) {
+  if(unit==='R$') return 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return v.toString().replace('.',',') + '%';
+}
+
+function buildCard(d, idx) {
+  const range = d.max - d.min;
+  const midPct = range>0 ? ((d.mid-d.min)/range*100) : 50;
+  const uid = 'bm_'+idx;
+  return `<div class="bm-card" data-cat="${d.cat}" data-plat="${d.plat}" data-metric="${d.metric}" data-fmt="${d.fmt}">
+    <div class="bm-head">
+      <div>
+        <div class="bm-name">${d.plat}</div>
+        <div class="bm-sub">${d.fmt}</div>
+      </div>
+      <span class="bm-badge ${d.badge}">${d.metric}</span>
+    </div>
+    <div class="range-bar">
+      <div class="range-fill" style="left:0;width:100%"></div>
+      <div class="range-mid" style="left:${midPct}%" title="Mediana: ${fmt(d.mid,d.unit)}"></div>
+      <div class="range-user ${uid}-marker" id="marker_${uid}" style="display:none;background:#2e7d32"></div>
+    </div>
+    <div class="range-labels"><span>${fmt(d.min,d.unit)}</span><span>${fmt(d.max,d.unit)}</span></div>
+    <div class="bm-mid">Mediana: <span>${fmt(d.mid,d.unit)}</span></div>
+    <div class="bm-source">IAB BR, Google, Meta Business, DoubleVerify — ref. 2024/2025</div>
+    <span class="toggle-compare" onclick="toggleCompare('${uid}',this)">▸ Comparar com minha performance</span>
+    <div class="user-compare-row" id="cmp_${uid}">
+      <div class="user-input-wrap">
+        <input type="number" placeholder="Meu valor (${d.unit==='R$'?'R$':'%'})" step="any" id="inp_${uid}"
+          oninput="compareValue('${uid}',${d.min},${d.max},${d.mid},'${d.unit}')">
+        <small>${d.unit}</small>
+      </div>
+      <div class="compare-result" id="res_${uid}"></div>
+    </div>
+  </div>`;
+}
+
+function renderCards() {
+  const container = document.getElementById('cardsContainer');
+  container.innerHTML = DATA.map((d,i) => buildCard(d,i)).join('');
+  document.getElementById('totalCards').textContent = DATA.length;
+  filterCards();
+}
+
+function filterCards() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const plat = document.getElementById('filterPlat').value;
+  const metric = document.getElementById('filterMetric').value;
+  const cards = document.querySelectorAll('.bm-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const cp = card.dataset.plat.toLowerCase();
+    const cm = card.dataset.metric;
+    const cf = card.dataset.fmt.toLowerCase();
+    const cc = card.dataset.cat;
+    const tabMatch = activeTab==='all' || cc===activeTab;
+    const searchMatch = !q || cp.includes(q) || cm.toLowerCase().includes(q) || cf.includes(q);
+    const platMatch = !plat || cp.includes(plat.toLowerCase());
+    const metricMatch = !metric || cm===metric;
+    if(tabMatch && searchMatch && platMatch && metricMatch) {
+      card.classList.remove('hidden'); visible++;
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+  document.getElementById('emptyState').style.display = visible===0?'block':'none';
+}
+
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  filterCards();
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value='';
+  document.getElementById('filterPlat').value='';
+  document.getElementById('filterMetric').value='';
+  filterCards();
+}
+
+function toggleCompare(uid, el) {
+  const box = document.getElementById('cmp_'+uid);
+  box.classList.toggle('show');
+  el.textContent = box.classList.contains('show') ? '▾ Fechar comparação' : '▸ Comparar com minha performance';
+}
+
+function compareValue(uid, min, max, mid, unit) {
+  const val = parseFloat(document.getElementById('inp_'+uid).value);
+  const res = document.getElementById('res_'+uid);
+  const marker = document.getElementById('marker_'+uid);
+  if(isNaN(val)) { res.style.display='none'; marker.style.display='none'; return; }
+  const range = max - min;
+  let pct = range>0 ? ((val-min)/range*100) : 50;
+  pct = Math.max(0, Math.min(100, pct));
+  marker.style.left = pct+'%';
+  marker.style.display = 'block';
+  let cls, msg;
+  if(unit==='%') {
+    // For CTR/VTR/etc higher is better (except for CPM/CPC lower is better)
+  }
+  const fv = unit==='R$' ? 'R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : val.toString().replace('.',',')+'%';
+  const fm = unit==='R$' ? 'R$ '+mid.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : mid.toString().replace('.',',')+'%';
+  if(unit==='R$') {
+    // Lower CPM/CPC is better
+    if(val <= mid) { cls='good'; msg=`✅ ${fv} — abaixo da mediana (${fm}). Eficiente.`; }
+    else if(val <= max) { cls='ok'; msg=`⚠️ ${fv} — acima da mediana (${fm}).`; }
+    else { cls='bad'; msg=`❌ ${fv} — acima do máximo de referência (${fmt(max,unit)}).`; }
+  } else {
+    // Higher % is better for CTR/VTR/viewability/CVR
+    if(val >= mid) { cls='good'; msg=`✅ ${fv} — acima da mediana (${fm}). Boa performance.`; }
+    else if(val >= min) { cls='ok'; msg=`⚠️ ${fv} — abaixo da mediana (${fm}), mas dentro do range.`; }
+    else { cls='bad'; msg=`❌ ${fv} — abaixo do mínimo de referência (${fmt(min,unit)}).`; }
+  }
+  marker.className = 'range-user '+cls;
+  res.className = 'compare-result '+cls;
+  res.textContent = msg;
+  res.style.display='block';
+}
+
+function calcSazonal() {
+  const base = parseFloat(document.getElementById('cpmBase').value);
+  const idx = parseFloat(document.getElementById('mesSelect').value);
+  const res = document.getElementById('cpmResult');
+  if(!isNaN(base) && !isNaN(idx) && base>0) {
+    const adj = base * idx;
+    const mesName = document.getElementById('mesSelect').options[document.getElementById('mesSelect').selectedIndex].text;
+    res.textContent = `${mesName}: R$ ${adj.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} (base R$ ${base.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} × ${idx.toLocaleString('pt-BR')})`;
+    res.classList.add('show');
+  } else {
+    res.classList.remove('show');
+  }
+}
+
+renderCards();
+</script>
+</body>
+</html>

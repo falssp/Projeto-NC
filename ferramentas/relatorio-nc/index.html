@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório de Taxonomia</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--erro:#dc2626;--erro-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--erro:#f87171;--erro-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--erro:#f87171;--erro-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:960px;margin:0 auto;padding:18px;}
+/* Summary cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);}
+.kpi-val{font-size:22px;font-weight:800;color:var(--accent);}
+.kpi-label{font-size:11px;color:var(--faint);margin-top:2px;}
+/* Section */
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px;}
+.section-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+/* Seg row */
+.seg-row{padding:10px 0;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.seg-row:last-child{border-bottom:none;}
+.seg-name{font-weight:600;min-width:110px;font-size:13px;}
+.seg-tag{font-size:9.5px;padding:1px 6px;border-radius:7px;font-weight:700;}
+.seg-tag.req{background:#dbeafe;color:#1d4ed8;}
+.seg-tag.opt{background:#dcfce7;color:#15803d;}
+[data-theme="dark"] .seg-tag.req{background:rgba(29,78,216,.2);color:#93c5fd;}
+[data-theme="dark"] .seg-tag.opt{background:rgba(21,128,61,.2);color:#86efac;}
+.seg-bar-track{flex:1;height:10px;background:var(--divider);border-radius:5px;overflow:hidden;min-width:60px;}
+.seg-bar-fill{height:100%;border-radius:5px;transition:width .5s;}
+.seg-count{font-size:12px;font-weight:600;min-width:50px;text-align:right;}
+/* Term chips */
+.term-cloud{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.term-chip{font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--border);background:var(--divider);cursor:default;}
+.term-chip.top{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+/* Health indicator */
+.health-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.health-ok{background:var(--ok);}
+.health-warn{background:var(--warn);}
+.health-err{background:var(--erro);}
+/* Select */
+select{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:13px;outline:none;cursor:pointer;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Print */
+@media print{
+  .header,.no-print{display:none!important;}
+  .page{max-width:100%;padding:0;}
+  body{background:#fff;color:#000;}
+  .section{box-shadow:none;border:1px solid #ddd;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📄</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Relatório de Taxonomia</div>
+      <div style="font-size:11px;color:var(--faint)">Resumo completo de um cliente do Taxonomy Builder</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+    <select id="clientSel" onchange="generate()">
+      <option value="">— Selecione um cliente —</option>
+    </select>
+    <button class="btn no-print" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn no-print" onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+
+<div class="page" id="report">
+  <div style="text-align:center;padding:60px 20px;color:var(--faint)">
+    <div style="font-size:40px;margin-bottom:12px">📄</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">Nenhum cliente selecionado</div>
+    <div style="font-size:13px">Selecione um cliente no cabeçalho para gerar o relatório</div>
+    <div style="margin-top:16px;font-size:12px;opacity:.7">Os dados são carregados diretamente do Taxonomy Builder (localStorage)</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('rel_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('rel_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Load clients
+function loadClients(){
+  let clients=[];
+  try{clients=JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');}catch(e){}
+  const sel=document.getElementById('clientSel');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">— Selecione um cliente —</option>'+
+    clients.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  if(prev) sel.value=prev;
+  if(clients.length===0){
+    document.getElementById('report').innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--faint)"><div style="font-size:36px;margin-bottom:10px">⚠️</div><div style="font-weight:600">Nenhum cliente encontrado</div><div style="font-size:12px;margin-top:6px">Abra o <a href="../taxonomy-builder/" target="_blank" style="color:var(--accent)">Taxonomy Builder</a> e crie um cliente primeiro.</div></div>`;
+  }
+}
+
+function getClient(id){
+  let clients=[];
+  try{clients=JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');}catch(e){}
+  return clients.find(c=>c.id===id)||null;
+}
+
+function generate(){
+  const id=document.getElementById('clientSel').value;
+  if(!id){return;}
+  const c=getClient(id);
+  if(!c){showToast('Cliente não encontrado');return;}
+  renderReport(c);
+}
+
+function getBuilderHistory(clientName){
+  let hist=[];
+  try{hist=JSON.parse(localStorage.getItem('taxo_builder_hist_v1')||'[]');}catch(e){}
+  hist=hist.map(h=>typeof h==='string'?{name:h,client:''}:h);
+  return clientName?hist.filter(h=>h.client===clientName):hist;
+}
+
+function renderReport(c){
+  const dict=c.dictionary||{};
+  const segs=c.segments||[];
+  const totalTerms=Object.values(dict).reduce((a,b)=>a+b.length,0);
+  const segsWithTerms=segs.filter(s=>(dict[s.id]||[]).length>0).length;
+  const reqSegs=segs.filter(s=>s.required);
+  const reqFilled=reqSegs.filter(s=>(dict[s.id]||[]).length>0).length;
+  const completePct=segs.length?Math.round(100*segsWithTerms/segs.length):0;
+  const reqPct=reqSegs.length?Math.round(100*reqFilled/reqSegs.length):100;
+
+  // Cartesian possible NCs
+  let possibleNCs=1;
+  segs.forEach(s=>{const cnt=(dict[s.id]||[]).length||1;possibleNCs*=cnt;});
+
+  // Builder history for this client
+  const hist=getBuilderHistory(c.name);
+  const histNCs=[...new Set(hist.map(h=>h.name))];
+
+  // Top terms across all segs (by uses field)
+  const allTerms=[];
+  segs.forEach(s=>(dict[s.id]||[]).forEach(t=>allTerms.push({...t,seg:s.label})));
+  const topTerms=[...allTerms].sort((a,b)=>(b.uses||0)-(a.uses||0)).slice(0,20);
+
+  // Health status
+  const issueCount=reqSegs.filter(s=>!(dict[s.id]||[]).length).length;
+  const health=issueCount===0?'ok':issueCount<=2?'warn':'err';
+  const healthLabel=health==='ok'?'✅ Pronto':'⚠️ Incompleto';
+
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+
+  document.getElementById('report').innerHTML=`
+    <!-- Header -->
+    <div class="section" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:20px;font-weight:800">${esc(c.name)}</div>
+          <div style="font-size:12px;color:var(--faint);margin-top:3px">Relatório gerado em ${dateStr}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="health-dot health-${health}"></span>
+          <span style="font-size:13px;font-weight:600">${healthLabel}</span>
+          ${c.color?`<span style="width:14px;height:14px;border-radius:50%;background:${esc(c.color)};display:inline-block"></span>`:''}
+        </div>
+      </div>
+      ${c.notes?`<div style="margin-top:8px;font-size:12px;color:var(--faint);padding:8px 10px;background:var(--divider);border-radius:7px">📝 ${esc(c.notes)}</div>`:''}
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row no-print" style="margin-bottom:14px">
+      <div class="kpi"><div class="kpi-val">${segs.length}</div><div class="kpi-label">Segmentos</div></div>
+      <div class="kpi"><div class="kpi-val">${totalTerms}</div><div class="kpi-label">Termos totais</div></div>
+      <div class="kpi"><div class="kpi-val">${completePct}%</div><div class="kpi-label">Cobertura</div></div>
+      <div class="kpi"><div class="kpi-val">${reqPct}%</div><div class="kpi-label">Obrig. preenchidos</div></div>
+      <div class="kpi"><div class="kpi-val">${possibleNCs.toLocaleString('pt-BR')}</div><div class="kpi-label">NCs possíveis</div></div>
+      <div class="kpi"><div class="kpi-val">${histNCs.length}</div><div class="kpi-label">NCs no histórico</div></div>
+    </div>
+
+    <!-- Separador -->
+    <div class="section">
+      <div class="section-title">⚙️ Configuração</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
+        <div><span style="color:var(--faint)">Separador padrão:</span> <code style="font-family:'JetBrains Mono',monospace;background:var(--divider);padding:1px 6px;border-radius:4px">${esc(c.separator||'(nenhum)')}</code></div>
+        ${c.charLimit?`<div><span style="color:var(--faint)">Limite de chars:</span> <strong>${c.charLimit}</strong></div>`:''}
+        <div><span style="color:var(--faint)">Segs obrigatórios:</span> <strong>${reqSegs.length}</strong></div>
+        <div><span style="color:var(--faint)">Segs opcionais:</span> <strong>${segs.length-reqSegs.length}</strong></div>
+      </div>
+    </div>
+
+    <!-- Cobertura por segmento -->
+    <div class="section">
+      <div class="section-title">📊 Cobertura por segmento</div>
+      ${segs.map(s=>{
+        const terms=dict[s.id]||[];
+        const pct=segs.length?Math.round(100*terms.length/Math.max(1,...segs.map(x=>(dict[x.id]||[]).length))):0;
+        const topSeg=[...terms].sort((a,b)=>(b.uses||0)-(a.uses||0)).slice(0,5);
+        const hasIssue=s.required&&!terms.length;
+        return `
+          <div class="seg-row">
+            <div class="seg-name">${esc(s.label)}</div>
+            <span class="seg-tag ${s.required?'req':'opt'}">${s.required?'req':'opt'}</span>
+            ${hasIssue?`<span style="font-size:11px;color:var(--erro);font-weight:600">⚠ sem termos</span>`:''}
+            <div class="seg-bar-track" style="flex:1">
+              <div class="seg-bar-fill" style="width:${pct}%;background:${hasIssue?'var(--erro)':'var(--ok)'}"></div>
+            </div>
+            <span class="seg-count">${terms.length} termo${terms.length!==1?'s':''}</span>
+          </div>
+          ${topSeg.length?`<div style="padding:0 0 8px 118px;display:flex;flex-wrap:wrap;gap:4px">
+            ${topSeg.map((t,i)=>`<span class="term-chip ${i<3?'top':''}" title="${t.uses?t.uses+'× usado':''}">${esc(t.value)}${t.uses?` <span style="font-size:9px;opacity:.6">${t.uses}×</span>`:''}</span>`).join('')}
+            ${terms.length>5?`<span style="font-size:11px;color:var(--faint);align-self:center">+${terms.length-5} mais</span>`:''}
+          </div>`:''}
+        `;
+      }).join('')}
+    </div>
+
+    <!-- Top termos -->
+    ${topTerms.length?`
+    <div class="section">
+      <div class="section-title">🏆 Termos mais usados no builder</div>
+      <div class="term-cloud">
+        ${topTerms.map((t,i)=>`<span class="term-chip ${i<5?'top':''}" title="${esc(t.seg)} · ${t.uses||0}× usado">${esc(t.value)} <span style="font-size:9px;opacity:.6">${esc(t.seg.length>12?t.seg.slice(0,10)+'…':t.seg)}</span>${t.uses?` <span style="font-size:9px;color:var(--accent)">${t.uses}×</span>`:''}</span>`).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- Builder history -->
+    ${histNCs.length?`
+    <div class="section">
+      <div class="section-title">🕑 Histórico de NCs geradas <span style="font-size:12px;font-weight:400;color:var(--faint)">(${histNCs.length} únicas)</span></div>
+      <div class="term-cloud">
+        ${histNCs.slice(0,50).map(nc=>`<span class="term-chip" title="Clique para copiar" onclick="navigator.clipboard.writeText('${esc(nc.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado')).catch(()=>{})" style="cursor:pointer">${esc(nc)}</span>`).join('')}
+        ${histNCs.length>50?`<span style="font-size:11px;color:var(--faint)">${histNCs.length-50} mais no histórico…</span>`:''}
+      </div>
+    </div>`:''}
+
+    <!-- Issues -->
+    ${issueCount?`
+    <div class="section" style="border-color:rgba(220,38,38,.25)">
+      <div class="section-title" style="color:var(--erro)">❌ Problemas encontrados</div>
+      ${reqSegs.filter(s=>!(dict[s.id]||[]).length).map(s=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--divider);font-size:13px">
+          <span class="health-dot health-err"></span>
+          <strong>${esc(s.label)}</strong>
+          <span style="color:var(--faint)">— segmento obrigatório sem nenhum termo cadastrado</span>
+        </div>`).join('')}
+    </div>`:''}
+  `;
+}
+
+loadClients();
+</script>
+</body>
+</html>

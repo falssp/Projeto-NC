@@ -1,0 +1,53 @@
+name: Atualiza releases e gh-pages (RM e ADP)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Arquivos/RM/**/*.xlsx'
+      - 'Arquivos/ADP/**/*.xlsx'
+
+permissions:
+  contents: write
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detecta xlsx, cria Release e atualiza latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 .github/scripts/update_latest.py
+
+      - name: Commit arquivos JSON e HTML de volta ao main
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Arquivos/ADP/ Arquivos/RM/
+          git diff --cached --quiet && echo "Nada a commitar." && exit 0
+          git commit -m "chore: atualiza latest.json, years.json e index [skip ci]"
+          git push
+
+      - name: Deploy para gh-pages (sem xlsx)
+        run: |
+          rsync -av \
+            --exclude='*.xlsx' \
+            --exclude='*.xlsm' \
+            --exclude='.git' \
+            . /tmp/pages-build/
+          cd /tmp/pages-build
+          git init
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "deploy: gh-pages com releases [skip ci]"
+          git push --force \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            HEAD:gh-pages

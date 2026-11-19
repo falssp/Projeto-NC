@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparador de Janelas de Atribuição — NC Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px}
+header h1{font-size:1.3rem;font-weight:700}
+header p{font-size:.82rem;opacity:.7;margin-top:2px}
+.main{padding:28px 32px;min-width:0}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:20px;margin-bottom:20px}
+.card-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:14px}
+label{font-size:.82rem;font-weight:600;color:#444;display:block;margin-bottom:3px}
+input,select{width:100%;padding:8px 11px;border:1.5px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.88rem;color:#1a1a2e;background:#fff}
+input:focus,select:focus{outline:none;border-color:#1F36C7}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:#1F36C7;color:#fff}.btn-primary:hover{background:#1a2ea8}
+.btn-secondary{background:#e8ecfd;color:#1F36C7}.btn-secondary:hover{background:#d6dbf2}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:#f4f5fb;padding:9px 10px;text-align:left;font-weight:600;color:#444;border-bottom:2px solid #d6dbf2}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f8;vertical-align:middle}
+tr:hover td{background:#f8f9ff}
+.tbl-wrap{border:1px solid #d6dbf2;border-radius:8px;overflow:hidden}
+.metric-box{background:#f4f5fb;border-radius:10px;padding:14px;text-align:center}
+.metric-val{font-size:1.3rem;font-weight:700;color:#1F36C7}
+.metric-lbl{font-size:.75rem;color:#555;margin-top:3px}
+.conv-row{display:grid;grid-template-columns:150px 150px 1fr 1fr 36px;gap:10px;align-items:end;margin-bottom:8px}
+.del-btn{background:#fee2e2;border:none;border-radius:6px;width:34px;height:36px;cursor:pointer;color:#dc2626}
+.timeline{position:relative;padding:20px 0;overflow-x:auto}
+.tl-line{position:relative;height:4px;background:#d6dbf2;border-radius:2px;margin:60px 20px 20px}
+.tl-event{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:14px;height:14px;border-radius:50%;border:3px solid #fff;position:relative;top:0}
+.tl-label{font-size:.72rem;white-space:nowrap;margin-top:6px;font-weight:600}
+.tl-label-top{font-size:.72rem;white-space:nowrap;margin-bottom:6px;font-weight:600;position:absolute;bottom:14px}
+.window-bar{position:absolute;height:8px;border-radius:4px;top:50%;transform:translateY(-50%);opacity:.5}
+.credit-bar{height:18px;border-radius:3px;display:inline-block;min-width:4px}
+.bar-wrap{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.info{background:#e8ecfd;border:1px solid #d6dbf2;border-radius:7px;padding:10px 14px;font-size:.83rem;color:#1a237e;margin-bottom:14px}
+.diff-pos{color:#15803d;font-weight:600}
+.diff-neg{color:#dc2626;font-weight:600}
+footer{text-align:center;padding:20px;color:#999;font-size:.78rem;border-top:1px solid #d6dbf2;margin-top:40px}
+@media(max-width:768px){.grid2,.grid3{grid-template-columns:1fr}.conv-row{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⏱️ Comparador de Janelas de Atribuição</h1>
+  <p>Compare modelos e janelas de atribuição e veja o impacto nas conversões reportadas — NC Tool AdOps Suite</p>
+</header>
+
+<div class="main">
+  <div class="card">
+    <div class="card-title">📋 Touchpoints do usuário</div>
+    <div class="info">ℹ️ Adicione os touchpoints da jornada do usuário com data/hora e canal. A conversão é o último evento.</div>
+    <div style="display:grid;grid-template-columns:150px 150px 1fr 1fr 36px;gap:10px;font-size:.78rem;font-weight:700;color:#666;padding-bottom:4px">
+      <span>Data</span><span>Hora</span><span>Canal</span><span>Tipo</span><span></span>
+    </div>
+    <div id="touchpointList"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addTouchpoint()" style="margin-top:10px">+ Adicionar touchpoint</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ Configuração das janelas</div>
+    <div class="grid3">
+      <div>
+        <label>Janela de clique</label>
+        <select id="clickWindow" onchange="compare()">
+          <option value="1">1 dia</option>
+          <option value="7" selected>7 dias</option>
+          <option value="14">14 dias</option>
+          <option value="28">28 dias</option>
+          <option value="30">30 dias</option>
+          <option value="60">60 dias</option>
+          <option value="90">90 dias</option>
+        </select>
+      </div>
+      <div>
+        <label>Janela de view-through</label>
+        <select id="viewWindow" onchange="compare()">
+          <option value="0">Desativado</option>
+          <option value="1" selected>1 dia</option>
+          <option value="7">7 dias</option>
+          <option value="14">14 dias</option>
+          <option value="30">30 dias</option>
+        </select>
+      </div>
+      <div>
+        <label>Modelo de atribuição</label>
+        <select id="attModel" onchange="compare()">
+          <option value="last">Last click</option>
+          <option value="first">First click</option>
+          <option value="linear">Linear</option>
+          <option value="position">Baseado em posição (40/20/40)</option>
+          <option value="decay">Decaimento temporal</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsSection" style="display:none">
+    <div class="card">
+      <div class="card-title">📊 Resultado por canal</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Canal</th><th>Crédito</th><th>Conversões atribuídas</th><th>% do total</th><th>Distribuição</th></tr></thead>
+          <tbody id="attrTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔀 Comparação de modelos</div>
+      <div class="tbl-wrap">
+        <table id="modelCompTable">
+          <thead><tr><th>Canal</th><th>Last Click</th><th>First Click</th><th>Linear</th><th>Posição</th><th>Decaimento</th></tr></thead>
+          <tbody id="modelCompBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:.82rem;color:#666">As diferenças entre modelos indicam quais canais são mais ou menos valorizados dependendo da metodologia usada.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Insights</div>
+      <div id="insightsList"></div>
+    </div>
+  </div>
+</div>
+
+<footer>NC Tool — AdOps Suite · Comparador de Atribuição · Offline · v1.0</footer>
+
+<script>
+let touchpoints = [
+  {date:'2024-11-01',time:'09:00',channel:'Display (DV360)',type:'impression'},
+  {date:'2024-11-05',time:'14:30',channel:'Google Search',type:'click'},
+  {date:'2024-11-07',time:'18:00',channel:'Meta (Remarketing)',type:'click'},
+  {date:'2024-11-07',time:'19:45',channel:'Google Search',type:'conversion'},
+];
+
+function renderTouchpoints(){
+  const channels = ['Display (DV360)','Meta','Google Search','YouTube','LinkedIn','Email','Direto','Outros'];
+  document.getElementById('touchpointList').innerHTML = touchpoints.map((t,i)=>`
+    <div class="conv-row">
+      <input type="date" value="${t.date}" onchange="touchpoints[${i}].date=this.value;compare()">
+      <input type="time" value="${t.time}" onchange="touchpoints[${i}].time=this.value;compare()">
+      <select onchange="touchpoints[${i}].channel=this.value;compare()">
+        ${channels.map(c=>`<option ${c===t.channel?'selected':''}>${c}</option>`).join('')}
+        <option ${!channels.includes(t.channel)?'selected':''} value="${t.channel}">Personalizado</option>
+      </select>
+      <select onchange="touchpoints[${i}].type=this.value;compare()">
+        <option value="impression" ${t.type==='impression'?'selected':''}>Impressão</option>
+        <option value="click" ${t.type==='click'?'selected':''}>Clique</option>
+        <option value="conversion" ${t.type==='conversion'?'selected':''}>Conversão ★</option>
+      </select>
+      <button class="del-btn" onclick="touchpoints.splice(${i},1);renderTouchpoints();compare()">✕</button>
+    </div>
+  `).join('');
+}
+
+function addTouchpoint(){
+  touchpoints.push({date:new Date().toISOString().slice(0,10),time:'12:00',channel:'Display (DV360)',type:'click'});
+  renderTouchpoints();
+  compare();
+}
+
+function tsMs(t){ return new Date(t.date+'T'+t.time).getTime(); }
+
+function getCredits(model, eligible){
+  if(!eligible.length) return {};
+  const total = 1;
+  const credits = {};
+  if(model==='last'){
+    const last = eligible[eligible.length-1];
+    credits[last.channel] = (credits[last.channel]||0)+1;
+  } else if(model==='first'){
+    const first = eligible[0];
+    credits[first.channel] = (credits[first.channel]||0)+1;
+  } else if(model==='linear'){
+    eligible.forEach(t=>{ credits[t.channel]=(credits[t.channel]||0)+1/eligible.length; });
+  } else if(model==='position'){
+    if(eligible.length===1){ credits[eligible[0].channel]=(credits[eligible[0].channel]||0)+1; }
+    else if(eligible.length===2){ [0.4,0.6].forEach((w,i)=>{ credits[eligible[i].channel]=(credits[eligible[i].channel]||0)+w; }); }
+    else {
+      eligible.forEach((t,i)=>{
+        let w = 0.2/(eligible.length-2);
+        if(i===0) w=0.4;
+        if(i===eligible.length-1) w=0.4;
+        credits[t.channel]=(credits[t.channel]||0)+w;
+      });
+    }
+  } else if(model==='decay'){
+    const halfLife = 7*24*60*60*1000;
+    const convTime = tsMs(touchpoints.find(t=>t.type==='conversion')||eligible[eligible.length-1]);
+    const weights = eligible.map(t=>Math.pow(0.5,(convTime-tsMs(t))/halfLife));
+    const sumW = weights.reduce((a,b)=>a+b,0);
+    eligible.forEach((t,i)=>{ credits[t.channel]=(credits[t.channel]||0)+weights[i]/sumW; });
+  }
+  return credits;
+}
+
+function getEligible(){
+  const conversion = touchpoints.find(t=>t.type==='conversion');
+  if(!conversion) return [];
+  const convMs = tsMs(conversion);
+  const clickWin = parseInt(document.getElementById('clickWindow').value)*24*60*60*1000;
+  const viewWin = parseInt(document.getElementById('viewWindow').value)*24*60*60*1000;
+  return touchpoints.filter(t=>{
+    if(t.type==='conversion') return false;
+    const diff = convMs - tsMs(t);
+    if(diff<0) return false;
+    if(t.type==='click') return diff<=clickWin;
+    if(t.type==='impression') return viewWin>0 && diff<=viewWin;
+    return false;
+  });
+}
+
+function compare(){
+  const eligible = getEligible();
+  const model = document.getElementById('attModel').value;
+  const credits = getCredits(model, eligible);
+  const total = Object.values(credits).reduce((a,b)=>a+b,0)||1;
+  const channels = [...new Set(touchpoints.map(t=>t.channel).filter(c=>c))];
+  const colors = ['#1a237e','#1F36C7','#5c6bc0','#7986cb','#283593','#303f9f','#9fa8da','#c5cae9'];
+
+  const rows = channels.map((ch,ci)=>{
+    const c = credits[ch]||0;
+    const pct = (c/total*100).toFixed(1);
+    const barW = (c/total*100).toFixed(0);
+    return `<tr><td><strong>${ch}</strong></td><td>${c.toFixed(2)}</td><td>${(c).toFixed(2)}</td><td>${pct}%</td>
+      <td><div class="bar-wrap"><div class="credit-bar" style="width:${barW*1.5}px;background:${colors[ci%colors.length]}"></div><span style="font-size:.78rem">${pct}%</span></div></td></tr>`;
+  });
+
+  document.getElementById('resultsSection').style.display='';
+  document.getElementById('attrTableBody').innerHTML = rows.join('');
+
+  // Model comparison
+  const models = ['last','first','linear','position','decay'];
+  const compData = channels.map(ch=>{
+    const vals = models.map(m=>{
+      const c = getCredits(m,eligible);
+      return c[ch]||0;
+    });
+    return {ch,vals};
+  });
+
+  document.getElementById('modelCompBody').innerHTML = compData.map(({ch,vals})=>`
+    <tr><td><strong>${ch}</strong></td>${vals.map((v,i)=>{
+      const best = i===models.indexOf(model);
+      return `<td style="${best?'background:#e8ecfd;font-weight:700':''}">${v.toFixed(2)}</td>`;
+    }).join('')}</tr>
+  `).join('');
+
+  // Insights
+  const insights = [];
+  if(eligible.length===0) insights.push('⚠️ Nenhum touchpoint elegível dentro das janelas configuradas.');
+  else {
+    const topCh = Object.entries(credits).sort((a,b)=>b[1]-a[1])[0];
+    if(topCh) insights.push(`🏆 Canal com maior crédito (${model}): <strong>${topCh[0]}</strong> (${(topCh[1]/total*100).toFixed(1)}%)`);
+    const imprs = eligible.filter(t=>t.type==='impression');
+    if(imprs.length>0 && parseInt(document.getElementById('viewWindow').value)>0){
+      insights.push(`👁️ ${imprs.length} impressão(ões) elegível(eis) no view-through. Modelos que ignoram view-through subestimam display/vídeo.`);
+    }
+    if(model==='last') insights.push('💡 Last Click tende a supervalorizar canais de fundo de funil (SEM, remarketing) e ignorar canais de topo.');
+    if(model==='linear') insights.push('💡 Atribuição Linear distribui o crédito igualmente — útil para entender o papel de cada canal na jornada.');
+  }
+  document.getElementById('insightsList').innerHTML = insights.map(ins=>`<div style="padding:8px 0;border-bottom:1px solid #f0f0f8;font-size:.88rem">${ins}</div>`).join('');
+}
+
+renderTouchpoints();
+compare();
+</script>
+</body>
+</html>

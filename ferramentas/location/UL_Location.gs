@@ -1,0 +1,143 @@
+// ============================================================
+// UL_Location.gs
+// Projeto: [UL] Taxonomia_Location
+// Apps Script: cole junto com UL_Location.html
+// Planilha: UL_Location_Taxonomy (Gmail)
+// ============================================================
+
+// Estrutura da planilha UL_Location_Taxonomy:
+//   Nacional:  A=sigla  B=label
+//   Regiões:   A=sigla  B=label   D=status
+//   Estados:   A=sigla  B=UF      C=label(nome)  D=região  E=status
+//   Cidades:   A=sigla  B=label   C=UF           H=status
+// STATUS vazio = ativo; preenchido = marcado para alteração → excluído
+const CFG = {
+  NACIONAL: { nome: 'Nacional', SIGLA: 0, LABEL: 1, STATUS: -1 },
+  REGIAO:   { nome: 'Regiões',  SIGLA: 0, LABEL: 1, STATUS:  3 },
+  ESTADO:   { nome: 'Estados',  SIGLA: 0, LABEL: 2, STATUS:  4 },
+  CIDADE:   { nome: 'Cidades',  SIGLA: 0, LABEL: 1, STATUS:  7, UF: 2 },
+};
+
+// ------------------------------------------------------------
+// HUB de logs
+// ------------------------------------------------------------
+const HUB_ID  = '1LSsbKWvRxidKm84NC2x7ekd7GzGW01nk6EenTO3-kYA';
+const HUB_ABA = 'Location';
+
+function logHub_(status, alteracoes, execucoes) {
+  try {
+    const hub  = SpreadsheetApp.openById(HUB_ID);
+    const aba  = hub.getSheetByName(HUB_ABA);
+    if (!aba) return;
+    const url  = ScriptApp.getService().getUrl();
+    const agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
+    // Mantém só as 10 últimas execuções (além do cabeçalho)
+    const linhas = aba.getLastRow();
+    if (linhas >= 11) aba.deleteRow(2);
+    aba.insertRowAfter(1);
+    aba.getRange(2, 1, 1, 7).setValues([[
+      'Location (Taxonomy)',
+      agora,
+      status,
+      url,
+      'GitHub → location.json',
+      alteracoes,
+      execucoes
+    ]]);
+  } catch(err) {
+    console.warn('logHub_ falhou: ' + err);
+  }
+}
+
+// ------------------------------------------------------------
+// Web App
+// ------------------------------------------------------------
+function doGet(e) {
+  const action = (e && e.parameter && e.parameter.action) || '';
+
+  if (action === 'json') {
+    let dados, status = '✅ OK — SINCRONIZADA', total = 0;
+    try {
+      dados = getDados_();
+      total = (dados.nacional||[]).length + (dados.região||[]).length +
+              (dados.estado||[]).length  + (dados.cidade||[]).length;
+    } catch(err) {
+      status = '❌ Erro ao ler planilha: ' + err;
+      logHub_(status, 0, 1);
+      return ContentService.createTextOutput(JSON.stringify({erro: String(err)}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    logHub_(status, total, 1);
+    return ContentService
+      .createTextOutput(JSON.stringify(dados))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return HtmlService
+    .createHtmlOutputFromFile('Index')
+    .setTitle('UL · Taxonomia Location')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ------------------------------------------------------------
+// Leitura
+// ------------------------------------------------------------
+function getDados_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return {
+    geradoEm: new Date().toISOString(),
+    nacional: lerAba_(ss, CFG.NACIONAL),
+    região:   lerAba_(ss, CFG.REGIAO),
+    estado:   lerAba_(ss, CFG.ESTADO),
+    cidade:   lerAba_(ss, CFG.CIDADE),
+  };
+}
+
+function lerAba_(ss, cfg) {
+  try {
+    const aba = ss.getSheetByName(cfg.nome);
+    if (!aba) { console.warn(`Aba não encontrada: ${cfg.nome}`); return []; }
+    const rows = aba.getDataRange().getValues().slice(1);
+    return rows
+      .filter(r => r[cfg.SIGLA] && (cfg.STATUS < 0 || !r[cfg.STATUS]))
+      .map(r => {
+        const sigla = String(r[cfg.SIGLA]).trim().toLowerCase();
+        const obj   = { sigla, label: String(r[cfg.LABEL]).trim() };
+        // Estado: deriva UF da sigla (est-sp → SP)
+        if (sigla.startsWith('est-')) obj.uf = sigla.slice(4).toUpperCase();
+        // Cidade: lê UF da coluna C
+        else if (sigla.startsWith('cid-') && cfg.UF >= 0 && r[cfg.UF])
+          obj.uf = String(r[cfg.UF]).trim().toUpperCase();
+        return obj;
+      });
+  } catch(e) {
+    console.error(`Erro ao ler "${cfg.nome}": ${e}`);
+    return [];
+  }
+}
+
+// Chamado pelo HTML via google.script.run
+function getDados() { return getDados_(); }
+
+// ------------------------------------------------------------
+// Menu
+// ------------------------------------------------------------
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('📍 UL Location')
+    .addItem('Abrir ferramenta', 'abrirApp_')
+    .addItem('Ver URL do Web App', 'verUrl_')
+    .addToUi();
+}
+
+function abrirApp_() {
+  const url = ScriptApp.getService().getUrl();
+  SpreadsheetApp.getUi().showModalDialog(
+    HtmlService.createHtmlOutput(`<script>window.open('${url}','_blank');google.script.host.close();<\/script>`),
+    'Abrindo...'
+  );
+}
+
+function verUrl_() {
+  SpreadsheetApp.getUi().alert('URL do Web App:\n\n' + ScriptApp.getService().getUrl());
+}

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador de Plano de Mídia — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+/* Line item rows */
+.li-header{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 36px;gap:6px;margin-bottom:4px}
+.li-header span{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.li-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 36px;gap:6px;margin-bottom:8px;align-items:end}
+.li-row input,.li-row select{font-size:.82rem;padding:7px 10px}
+.del-btn{background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:1rem;height:36px;display:flex;align-items:center;justify-content:center}
+.del-btn:hover{border-color:var(--red);color:var(--red)}
+/* Summary */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.kpi-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+.kpi-val{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--azul)}
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{text-align:left;padding:7px 10px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.total-row td{font-weight:700;border-top:2px solid var(--border);background:var(--light)}
+/* Preview */
+#previewArea{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;font-size:.85rem;line-height:1.8;white-space:pre-wrap;font-family:'Space Grotesk',sans-serif;display:none;margin-bottom:16px}
+@media(max-width:600px){.li-row,.li-header{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📋 Gerador de Plano de Mídia</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<!-- Header info -->
+<div class="card">
+  <div class="card-title">Dados do Plano</div>
+  <div class="grid3" style="margin-bottom:12px">
+    <div><label>Cliente / Anunciante</label><input id="cliente" placeholder="Nome do cliente"></div>
+    <div><label>Produto / Campanha</label><input id="campanha" placeholder="Nome da campanha"></div>
+    <div><label>Responsável</label><input id="responsavel" placeholder="AdOps / Planner"></div>
+  </div>
+  <div class="grid3">
+    <div><label>Data de Início</label><input id="dtInicio" type="date"></div>
+    <div><label>Data de Fim</label><input id="dtFim" type="date"></div>
+    <div><label>Objetivo Principal</label>
+      <select id="objetivo">
+        <option>Awareness / Alcance</option>
+        <option>Branding / Consideração</option>
+        <option>Tráfego / Cliques</option>
+        <option>Leads / Conversão</option>
+        <option>Vendas / ROAS</option>
+        <option>Retenção / Engajamento</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Line items -->
+<div class="card">
+  <div class="card-title">Linha de Mídia</div>
+  <div class="li-header">
+    <span>Plataforma / Formato</span><span>Tipo Compra</span><span>Budget (R$)</span><span>CPM/CPC/CPV</span><span>Período</span><span>Target KPI</span><span></span>
+  </div>
+  <div id="lineItems"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="addLine()">+ Adicionar Linha</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Exemplo</button>
+    <button class="btn btn-primary" onclick="generate()">Gerar Plano</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="resultsArea" style="display:none">
+<div class="kpi-row" id="kpiRow"></div>
+
+<div class="card">
+  <div class="card-title">Sumário do Plano</div>
+  <table id="summaryTable"></table>
+</div>
+
+<div id="previewArea"></div>
+
+<div class="btn-row">
+  <button class="btn btn-primary" onclick="exportTxt()">⬇ Exportar .txt</button>
+  <button class="btn btn-ghost" onclick="copyToClipboard()">📋 Copiar</button>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('plano_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('plano_theme')||'light');
+
+const BUYTYPES=['CPM','CPC','CPV','CPCV','Fixo','GRP','Patrocínio'];
+let lines=[];let lid=0;
+
+function addLine(pl='',buy='CPM',budget=0,cost=0,period='',kpi=''){
+  const id=lid++;
+  lines.push({id,pl,buy,budget,cost,period,kpi});
+  renderLines();
+}
+
+function removeLine(id){lines=lines.filter(l=>l.id!==id);renderLines();}
+
+function renderLines(){
+  document.getElementById('lineItems').innerHTML=lines.map((l,i)=>`
+    <div class="li-row">
+      <input value="${l.pl}" placeholder="ex: DV360 Display 300x250" oninput="lines[${i}].pl=this.value">
+      <select onchange="lines[${i}].buy=this.value">${BUYTYPES.map(b=>`<option${b===l.buy?' selected':''}>${b}</option>`).join('')}</select>
+      <input type="number" value="${l.budget||''}" placeholder="20000" min="0" oninput="lines[${i}].budget=parseFloat(this.value)||0">
+      <input type="number" value="${l.cost||''}" placeholder="12.50" min="0" step="0.01" oninput="lines[${i}].cost=parseFloat(this.value)||0">
+      <input value="${l.period}" placeholder="Sem 1–4" oninput="lines[${i}].period=this.value">
+      <input value="${l.kpi}" placeholder="ex: 70% view" oninput="lines[${i}].kpi=this.value">
+      <button class="del-btn" onclick="removeLine(${l.id})">×</button>
+    </div>`).join('');
+}
+
+function fmt(n){if(n>=1e6)return (n/1e6).toFixed(2)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'k';return n.toFixed(0);}
+function fmtR(n){return 'R$'+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDate(s){if(!s)return '—';const[y,m,d]=s.split('-');return `${d}/${m}/${y}`;}
+
+function computeDeliverable(l){
+  if(!l.budget||!l.cost)return 0;
+  if(l.buy==='CPM')return l.budget/l.cost*1000;
+  if(l.buy==='CPC'||l.buy==='CPV'||l.buy==='CPCV')return l.budget/l.cost;
+  return 0;
+}
+function delivLabel(l){
+  if(l.buy==='CPM')return 'Impressões';
+  if(l.buy==='CPC')return 'Cliques';
+  if(l.buy==='CPV'||l.buy==='CPCV')return 'Views';
+  return 'Verba fixa';
+}
+
+let _planTxt='';
+
+function generate(){
+  if(!lines.length){alert('Adicione ao menos uma linha de mídia.');return;}
+  const total=lines.reduce((s,l)=>s+l.budget,0);
+  const totalImps=lines.filter(l=>l.buy==='CPM').reduce((s,l)=>s+computeDeliverable(l),0);
+  const totalClicks=lines.filter(l=>l.buy==='CPC').reduce((s,l)=>s+computeDeliverable(l),0);
+  const nLines=lines.length;
+
+  document.getElementById('resultsArea').style.display='block';
+  document.getElementById('kpiRow').innerHTML=[
+    {label:'Budget Total',val:fmtR(total)},
+    {label:'Linhas',val:nLines},
+    {label:'Total Impressões',val:totalImps>0?fmt(totalImps):'—'},
+    {label:'Total Cliques',val:totalClicks>0?fmt(totalClicks):'—'},
+    {label:'Período',val:fmtDate(document.getElementById('dtInicio').value)+' – '+fmtDate(document.getElementById('dtFim').value)},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div></div>`).join('');
+
+  document.getElementById('summaryTable').innerHTML=`
+    <thead><tr><th>Plataforma / Formato</th><th>Tipo</th><th>Budget</th><th>% Mix</th><th>Custo Unit.</th><th>Entrega Est.</th><th>Período</th><th>KPI Meta</th></tr></thead>
+    <tbody>
+      ${lines.map(l=>{
+        const pct=total>0?l.budget/total*100:0;
+        const del=computeDeliverable(l);
+        const lab=delivLabel(l);
+        return `<tr>
+          <td style="font-weight:600">${l.pl||'—'}</td>
+          <td>${l.buy}</td>
+          <td style="font-family:var(--mono)">${fmtR(l.budget)}</td>
+          <td style="font-family:var(--mono)">${pct.toFixed(1)}%</td>
+          <td style="font-family:var(--mono)">${l.cost?fmtR(l.cost):'—'}</td>
+          <td style="font-family:var(--mono)">${del>0?fmt(del)+' '+lab:'—'}</td>
+          <td>${l.period||'—'}</td>
+          <td>${l.kpi||'—'}</td>
+        </tr>`;
+      }).join('')}
+      <tr class="total-row">
+        <td colspan="2">TOTAL</td>
+        <td style="font-family:var(--mono)">${fmtR(total)}</td>
+        <td>100%</td>
+        <td>—</td>
+        <td>${totalImps>0?fmt(totalImps)+' imps':'—'}</td>
+        <td colspan="2">—</td>
+      </tr>
+    </tbody>`;
+
+  // Build text plan
+  const cl=document.getElementById('cliente').value||'Cliente';
+  const camp=document.getElementById('campanha').value||'Campanha';
+  const resp=document.getElementById('responsavel').value||'—';
+  const obj=document.getElementById('objetivo').value;
+  const ini=fmtDate(document.getElementById('dtInicio').value);
+  const fim=fmtDate(document.getElementById('dtFim').value);
+  const now=new Date().toLocaleDateString('pt-BR');
+
+  const header=`${'═'.repeat(70)}
+PLANO DE MÍDIA — ${cl.toUpperCase()}
+${'═'.repeat(70)}
+Campanha  : ${camp}
+Cliente   : ${cl}
+Responsável: ${resp}
+Período   : ${ini} – ${fim}
+Objetivo  : ${obj}
+Emitido   : ${now}
+${'─'.repeat(70)}
+`;
+  const lineRows=lines.map((l,i)=>{
+    const del=computeDeliverable(l);
+    const lab=delivLabel(l);
+    return `${String(i+1).padStart(2,'0')}. ${(l.pl||'—').padEnd(30)} | ${l.buy.padEnd(6)} | ${fmtR(l.budget).padStart(14)} | ${(del>0?fmt(del)+' '+lab:'—').padEnd(20)} | ${(l.period||'—').padEnd(10)} | KPI: ${l.kpi||'—'}`;
+  }).join('\n');
+  const footer=`${'─'.repeat(70)}
+BUDGET TOTAL  : ${fmtR(total)}
+IMPRESSÕES    : ${totalImps>0?fmt(totalImps):'—'}
+${'═'.repeat(70)}`;
+
+  _planTxt=header+lineRows+'\n'+footer;
+  document.getElementById('previewArea').style.display='block';
+  document.getElementById('previewArea').textContent=_planTxt;
+  document.getElementById('resultsArea').scrollIntoView({behavior:'smooth'});
+}
+
+function exportTxt(){
+  if(!_planTxt){generate();return;}
+  const cl=document.getElementById('cliente').value||'plano';
+  const blob=new Blob([_planTxt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`plano-midia-${cl.toLowerCase().replace(/\s+/g,'-')}.txt`;a.click();
+}
+
+function copyToClipboard(){
+  if(!_planTxt){generate();return;}
+  navigator.clipboard.writeText(_planTxt).then(()=>showToast('Plano copiado!'));
+}
+
+function showToast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;bottom:24px;right:24px;background:#1F36C7;color:#fff;padding:10px 20px;border-radius:8px;font-weight:600;z-index:9999;transition:opacity .3s';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2000);
+}
+
+function loadExample(){
+  document.getElementById('cliente').value='Marca Exemplo';
+  document.getElementById('campanha').value='Lançamento Produto Q1 2026';
+  document.getElementById('responsavel').value='Felipe Lima';
+  document.getElementById('objetivo').value='Awareness / Alcance';
+  const d=new Date();
+  const ini=new Date(d.getFullYear(),d.getMonth(),1).toISOString().slice(0,10);
+  const fim=new Date(d.getFullYear(),d.getMonth()+2,0).toISOString().slice(0,10);
+  document.getElementById('dtInicio').value=ini;
+  document.getElementById('dtFim').value=fim;
+  lines=[];lid=0;
+  [
+    {pl:'DV360 Display 300x250',buy:'CPM',budget:40000,cost:12.5,period:'Sem 1–8',kpi:'Reach ≥35%'},
+    {pl:'YouTube Pre-roll 15s',buy:'CPM',budget:35000,cost:22,period:'Sem 1–8',kpi:'VTR ≥20%'},
+    {pl:'Meta Feed / Stories',buy:'CPM',budget:30000,cost:9.8,period:'Sem 1–8',kpi:'CTR ≥1,2%'},
+    {pl:'Google Search Brand',buy:'CPC',budget:20000,cost:1.8,period:'Sem 1–8',kpi:'IS ≥85%'},
+    {pl:'Native (Taboola/Outbrain)',buy:'CPM',budget:15000,cost:7.5,period:'Sem 3–8',kpi:'Viewab ≥65%'},
+    {pl:'Patrocínio Portal X',buy:'Fixo',budget:10000,cost:0,period:'Mês 2',kpi:'Exposição homepage'},
+  ].forEach(d=>addLine(d.pl,d.buy,d.budget,d.cost,d.period,d.kpi));
+  generate();
+}
+
+addLine();addLine();
+renderLines();
+</script>
+</body>
+</html>

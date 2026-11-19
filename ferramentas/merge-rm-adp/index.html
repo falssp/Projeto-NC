@@ -1,0 +1,1523 @@
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merge RM → ADP · NC Tools</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBEMjEzNyIvPjx0ZXh0IHg9IjE2IiB5PSIyMiIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmb250LXdlaWdodD0iODAwIiBmaWxsPSIjMzhCREY4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5OQzwvdGV4dD48L3N2Zz4=">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root{
+  --ul:#0040CE;--ul-b:#E5ECFF;--ul-m:#1a56d6;--ul-l:#f0f4ff;
+  --ok:#0D7A4E;--ok-b:#E6F4EE;
+  --err:#C0392B;--err-b:#FDECEA;
+  --warn:#B45309;--warn-b:#FEF3C7;
+  --g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;
+  --g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;
+  --sa:'DM Sans',system-ui,sans-serif;--mo:'DM Mono',monospace
+}
+[data-theme="dark"]{
+  --g50:#0f1225;--g100:#1a1f3a;--g200:#2a3060;--g300:#3a4080;
+  --g400:#4a5494;--g500:#6870a8;--g600:#8891c8;--g700:#c5ccf5;--g800:#e8ecff;
+}
+[data-theme="dark"] body{background:#0f1225;color:#c5ccf5;}
+[data-theme="dark"] .tool-card,[data-theme="dark"] .card-wrap,[data-theme="dark"] .panel{background:#1a1f3a;border-color:#2a3060;}
+[data-theme="dark"] a{color:#7986d8;}
+#theme-btn{position:fixed;top:10px;right:14px;z-index:9000;background:rgba(255,255,255,.92);border:1px solid #c8c8d8;color:#666;border-radius:8px;padding:5px 11px;font-size:.72rem;cursor:pointer;font-family:inherit;transition:all .15s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+#theme-btn:hover{border-color:#1F36C7;color:#1F36C7;}
+[data-theme="dark"] #theme-btn{background:rgba(26,31,58,.92);border-color:#2a3060;color:#8891c8;}
+[data-theme="dark"] #theme-btn:hover{border-color:#7986d8;color:#c5ccf5;}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sa);background:var(--g50);color:var(--g800);min-height:100vh}
+.page-wrap{width:100%;box-sizing:border-box;padding:20px 16px 32px}
+
+.page-header{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+.page-header .ico{width:42px;height:42px;border-radius:10px;background:var(--ul-b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.page-header h1{font-size:22px;font-weight:700;color:var(--g800)}
+.page-header p{font-size:12px;color:var(--g500);margin-top:2px}
+.back-link{margin-left:auto;font-size:12px;color:var(--ul);text-decoration:none;font-weight:500}
+.back-link:hover{text-decoration:underline}
+
+.tool-card{background:#fff;border:1px solid var(--g200);border-radius:11px;overflow:hidden}
+.tool-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--g200)}
+.tool-title{font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:1px}
+.tool-desc{font-size:11px;color:var(--g500)}
+.tool-actions{margin-left:auto;display:flex;gap:8px}
+.tool-body{padding:18px}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:7px;font-family:var(--sa);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--ul);color:#fff}.btn-p:hover{background:var(--ul-m)}
+.btn-g{background:#fff;border:1px solid var(--g300);color:var(--g700)}.btn-g:hover{background:var(--g100)}
+.btn-ok{background:var(--ok);color:#fff}.btn-ok:hover{opacity:.9}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+.ib{background:var(--ul-b);border:1px solid #C5CEEE;border-radius:7px;padding:9px 13px;font-size:12px;color:var(--ul);margin-bottom:14px;line-height:1.55}
+.ib strong{font-weight:600}
+.ib.warn{background:var(--warn-b);border-color:#e0c070;color:var(--warn)}
+.ib.ok{background:var(--ok-b);border-color:#a3d9bf;color:var(--ok)}
+code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;font-family:var(--mo);font-size:11px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.uz{border:2px dashed var(--g300);border-radius:11px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--g50)}
+.uz:hover,.uz.drag{border-color:var(--ul);background:var(--ul-b)}
+.uz-label{display:block;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ul);margin-bottom:8px}
+.uz .icon{font-size:22px;margin-bottom:6px}
+.uz h3{font-size:12.5px;font-weight:600;margin-bottom:3px}
+.uz p{font-size:11px;color:var(--g500)}
+.uz input[type=file]{display:none}
+.uz.loaded{border-color:var(--ok);background:var(--ok-b)}
+.uz.loaded h3{color:var(--ok)}
+.uz.loaded p{color:#1a6040}
+
+.mrg-step{margin-bottom:16px}
+.mrg-step-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.mrg-step-num{width:22px;height:22px;border-radius:50%;background:var(--ul);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mrg-step-num.done{background:var(--ok)}
+.mrg-step-title{font-size:12.5px;font-weight:600}
+
+.sc{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chip{padding:4px 12px;border-radius:16px;font-size:11.5px;font-weight:500;border:1px solid var(--g300);background:#fff;cursor:pointer;transition:all .15s;font-family:var(--sa)}
+.chip.active{background:var(--ul);color:#fff;border-color:var(--ul)}
+.chip.na{background:var(--g100);color:var(--g500);border-color:var(--g200);cursor:default;opacity:.55}
+
+.range-configs{margin-bottom:14px}
+.range-row{display:flex;align-items:center;gap:10px;padding:9px 13px;background:var(--g50);border:1px solid var(--g200);border-radius:8px;margin-bottom:7px;flex-wrap:wrap}
+.range-label{font-size:12px;font-weight:600;color:var(--g700);min-width:180px}
+.range-sep{font-size:12px;color:var(--g500)}
+.range-inp{width:68px;padding:5px 9px;border:1px solid var(--g300);border-radius:6px;font-family:var(--mo);font-size:12px;outline:none;background:#fff;color:var(--g900);transition:border-color .15s}
+.range-inp:focus{border-color:var(--ul)}
+.range-hint{font-size:10.5px;color:var(--g500)}
+
+.pb-wrap{height:6px;background:var(--g200);border-radius:3px;margin-top:12px;margin-bottom:14px;display:none}
+.pb-wrap.on{display:block}
+.pb-fill{height:100%;background:var(--ul);border-radius:3px;transition:width .4s ease}
+
+.sc2{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card{flex:1;min-width:100px;background:#fff;border:2px solid var(--g200);border-radius:9px;padding:12px 14px;user-select:none}
+.card .num{font-size:22px;font-weight:700;margin-bottom:2px}
+.card .lbl{font-size:10.5px;color:var(--g500);font-weight:500}
+.card.cn .num{color:var(--ok)}.card.cu .num{color:var(--ul)}.card.ce .num{color:var(--err)}.card.cs .num{color:var(--g500)}.card.cw .num{color:var(--warn)}
+
+.bok{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--ok-b);color:var(--ok);font-size:10.5px;font-weight:600}
+.bupd{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--ul-b);color:var(--ul);font-size:10.5px;font-weight:600}
+.bskip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--g100);color:var(--g500);font-size:10.5px;font-weight:600}
+.bdif{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--err-b);color:var(--err);font-size:10.5px;font-weight:600}
+.bmis{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--warn-b);color:var(--warn);font-size:10.5px;font-weight:600}
+.brej{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;background:var(--g100);color:var(--g500);font-size:10.5px;font-weight:600;text-decoration:line-through}
+.blk{margin-bottom:10px;border-radius:9px;border:1px solid var(--g200);background:#fff;overflow:hidden}
+.blk-hdr{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:11px;flex-wrap:wrap}
+.blk-id{font-family:var(--mo);font-size:11px;font-weight:600;color:var(--ul);background:var(--ul-b);padding:2px 8px;border-radius:4px}
+.lt{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;background:var(--g100);color:var(--g700)}
+.cm{font-family:var(--mo);font-size:11px;word-break:break-all;max-width:320px;line-height:1.5}
+.rtw{overflow-x:auto}
+.rtw table{width:100%;border-collapse:collapse;font-size:12px}
+.rtw th{padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--g200);white-space:nowrap}
+.rtw td{padding:8px 10px;border-bottom:1px solid var(--g100)}
+.rtw tr:last-child td{border-bottom:none}
+.rtw tr.rejected td{opacity:.4}
+.es{text-align:center;padding:48px 20px;color:var(--g500)}
+
+/* ── Review Step ─────────────────────────────────── */
+.rev-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.rev-filter-chips{display:flex;gap:6px}
+.rev-chip{padding:4px 11px;border-radius:14px;font-size:11px;font-weight:500;border:1px solid var(--g200);background:#fff;cursor:pointer;font-family:var(--sa);transition:all .15s}
+.rev-chip.on{background:var(--ul);border-color:var(--ul);color:#fff}
+.rev-chip:hover:not(.on){border-color:var(--ul);color:var(--ul)}
+.rev-sumbar{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;margin-bottom:14px}
+.rev-sumbar span{display:flex;align-items:center;gap:5px}
+.rev-sumbar .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.rev-group{margin-bottom:12px;border-radius:9px;border:1px solid var(--g200);background:#fff;overflow:hidden}
+.rev-group-hdr{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:11px;cursor:pointer;user-select:none;flex-wrap:wrap}
+.rev-group-hdr:hover{background:var(--g100)}
+.rev-group-body{display:block}
+.rev-change{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--g100);transition:background .15s}
+.rev-change:last-child{border-bottom:none}
+.rev-change.rejected{background:var(--g50)}
+.rev-change-toggle{width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:10px 0;cursor:pointer;color:var(--g400);transition:color .15s}
+.rev-change-toggle:hover{color:var(--ul)}
+.rev-change.rejected .rev-change-toggle{color:var(--err)}
+.rev-change-body{flex:1;padding:8px 10px;min-width:0}
+.rev-change-title{font-size:11.5px;font-weight:600;color:var(--g700);margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rev-change-fields{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.rev-field{font-size:10.5px;background:var(--g50);border:1px solid var(--g200);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:4px;max-width:320px;overflow:hidden}
+.rev-field .fc{font-family:var(--mo);font-weight:600;color:var(--ul);flex-shrink:0}
+.rev-field .fv-old{color:var(--g500);text-decoration:line-through;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rev-field .farr{color:var(--g400);flex-shrink:0}
+.rev-field .fv-new{color:var(--g700);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.rev-field.rev-field-new{background:var(--ok-b);border-color:#a3d9bf}
+.rev-field.rev-field-new .fc{color:var(--ok)}
+.rev-field.rev-field-new .fv-new{color:var(--ok)}
+.rev-field-copy{background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:3px;color:var(--g400);font-size:10px;flex-shrink:0;transition:color .15s}
+.rev-field-copy:hover{color:var(--ul)}
+.rev-field-copy.copied{color:var(--ok)}
+.rev-confirm-bar{position:sticky;bottom:0;background:#fff;border-top:2px solid var(--g200);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;z-index:10;box-shadow:0 -4px 16px rgba(0,0,0,.07)}
+.rev-confirm-bar .sum{font-size:12px;color:var(--g600);flex:1}
+.rev-confirm-bar .sum strong{color:var(--g800)}
+
+@media(max-width:600px){
+  .two-col{grid-template-columns:1fr}
+  .range-row{flex-wrap:wrap;gap:6px}
+  .cm{max-width:120px}
+  .rev-change-fields{gap:4px}
+}
+
+/* ── Nav Tabs ──────────────────────────── */
+.nav-tabs{display:flex;gap:0;border-bottom:2px solid var(--g200);margin-bottom:24px;overflow-x:auto;scrollbar-width:none}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:9px 16px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.nav-tab.on{color:var(--ul);border-bottom-color:var(--ul);font-weight:600}
+.nav-tab:hover:not(.on){color:var(--g700);background:var(--g50)}
+.nav-pane{display:none}.nav-pane.on{display:block}
+/* ── Histórico ─────────────────────────── */
+.hist-empty{text-align:center;padding:32px;color:var(--g400);font-size:13px}
+.hist-item{background:#fff;border:1px solid var(--g200);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
+.hist-ico{font-size:20px;flex-shrink:0;margin-top:2px}
+.hist-info{flex:1;min-width:0}
+.hist-ts{font-size:10.5px;color:var(--g400);font-family:var(--mo);margin-bottom:3px}
+.hist-title{font-size:13px;font-weight:600;color:var(--g700);margin-bottom:4px}
+.hist-stats{display:flex;flex-wrap:wrap;gap:6px}
+.hist-stat{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500}
+.hist-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+/* ── FAQ ───────────────────────────────── */
+.faq-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.faq-search-wrap{flex:1;min-width:180px;position:relative}
+.faq-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none}
+.faq-search{width:100%;background:var(--g50);border:1px solid var(--g200);border-radius:6px;padding:8px 10px 8px 32px;font:13px 'DM Sans',sans-serif;color:var(--g700);outline:none;transition:border-color .15s}
+.faq-search:focus{border-color:var(--ul)}
+.faq-count{font-size:11px;color:var(--g400);white-space:nowrap}
+.faq-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.faq-chip{padding:5px 13px;border-radius:20px;border:1px solid var(--g200);background:#fff;font:500 12px 'DM Sans',sans-serif;color:var(--g500);cursor:pointer;transition:all .15s}
+.faq-chip:hover{border-color:var(--ul);color:var(--ul)}
+.faq-chip.on{background:var(--ul);border-color:var(--ul);color:#fff}
+.faq-item{background:#fff;border:1px solid var(--g200);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.faq-q{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-size:13px;font-weight:500}
+.faq-q:hover{background:var(--g50)}
+.faq-q-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0}
+.faq-q-text{flex:1}
+.faq-q-arr{color:var(--g400);transition:transform .2s}
+.faq-item.open .faq-q-arr{transform:rotate(90deg)}
+.faq-a{display:none;padding:0 14px 14px;font-size:13px;color:var(--g500);line-height:1.6;border-top:1px solid var(--g100)}
+.faq-item.open .faq-a{display:block}
+.faq-empty{text-align:center;padding:32px;color:var(--g400);font-size:13px}
+/* ── IA ────────────────────────────────── */
+.ia-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ia-head h2{font-size:15px;font-weight:700}
+.btn-cfg-open{background:var(--g50);border:1px solid var(--g200);border-radius:6px;padding:6px 12px;font:500 12px 'DM Sans',sans-serif;color:var(--g500);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s}
+.btn-cfg-open:hover{border-color:var(--ul);color:var(--ul)}
+.cfg-dot{width:7px;height:7px;border-radius:50%;background:var(--g300);flex-shrink:0}
+.cfg-dot.ok{background:#22c55e}
+.ia-no-key{background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:28px 24px;text-align:center;margin-bottom:16px}
+.ia-no-key p{font-size:13px;color:var(--g500);margin:8px 0 16px}
+.btn-cfg-cta{background:var(--ul);color:#fff;border:none;border-radius:6px;padding:10px 20px;font:600 13px 'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ia-ready{display:none}.ia-ready.show{display:block}
+.ia-result{background:var(--g50);border:1px solid var(--g200);border-radius:10px;padding:16px;font-size:13px;color:var(--g700);line-height:1.7;min-height:80px}
+.ia-result h3{font-size:14px;font-weight:700;margin:14px 0 6px}
+.ia-result ul{padding-left:20px;margin:6px 0}
+.ia-result strong{font-weight:600}
+.ia-actions{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+/* ── Config Modal ──────────────────────── */
+.cfg-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;align-items:center;justify-content:center;padding:16px}
+.cfg-overlay.open{display:flex}
+.cfg-modal{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:calc(100dvh - 32px);overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.25);display:flex;flex-direction:column}
+.cfg-modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--g200)}
+.cfg-modal-hdr h3{font-size:15px;font-weight:700}
+.cfg-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--g500);padding:2px 6px;border-radius:4px}
+.cfg-modal-body{padding:20px;overflow-y:auto}
+.cfg-tabs{display:flex;gap:6px;margin-bottom:16px}
+.cfg-tab{flex:1;padding:8px;border:1px solid var(--g200);border-radius:7px;background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--g500);cursor:pointer;text-align:center;transition:all .15s}
+.cfg-tab.on{background:var(--ul);border-color:var(--ul);color:#fff}
+.cfg-panel{display:none}.cfg-panel.on{display:block}
+.cfg-lbl{font-size:11px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.cfg-inp{width:100%;padding:9px 12px;border:1px solid var(--g200);border-radius:7px;font-family:monospace;font-size:13px;background:var(--g50);outline:none;margin-bottom:8px;transition:border-color .15s}
+.cfg-inp:focus{border-color:var(--ul)}
+.cfg-link{font-size:12px;color:var(--ul);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px}
+.btn-cfg-save{background:var(--ul);color:#fff;border:none;border-radius:7px;padding:9px 18px;font:600 13px 'DM Sans',sans-serif;cursor:pointer;width:100%}
+
+
+/* ── Como usar modal ─────────────────────────────── */
+.qa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.qa-overlay.open{display:flex}
+.qa-modal{background:#fff;border-radius:14px;width:min(560px,92vw);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.qa-header{padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
+.qa-header h2{font-size:15px;font-weight:800;color:#0f172a}
+.qa-close{background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1}
+.qa-body{padding:20px 24px}
+.help-section{margin-bottom:20px}
+.help-section h3{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#3b82f6;margin-bottom:10px}
+.help-section p{font-size:13px;color:#475569;line-height:1.65;margin-bottom:8px}
+.help-step{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #e2e8f0}
+.help-num{min-width:22px;height:22px;border-radius:50%;background:#1e3a5f;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.help-txt{font-size:12px;color:#475569;line-height:1.55}
+.help-txt b{color:#1e293b}
+.help-txt code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px}
+.help-tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;font-size:12px;color:#1E40AF;line-height:1.55;margin-top:4px}
+.btn-qa{background:transparent;border:1.5px solid currentColor;color:inherit;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;cursor:pointer;letter-spacing:.04em;transition:all .15s;opacity:.8}
+.btn-qa:hover{opacity:1}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="ico">📥
+  <button class="btn-qa" onclick="abrirAjuda()" style="margin-left:auto">❓ Como usar</button></div>
+    <div>
+      <h1>Merge RM → ADP</h1>
+      <p>Preenche o ADP a partir do RM — novas linhas e atualizações, por intervalo de linhas</p>
+    </div>
+    <a class="back-link" href="https://falssp.github.io/Projeto-NC/">← NC Tools</a>
+  </div>
+
+  <div class="tool-card">
+  <div class="nav-tabs">
+    <button class="nav-tab on" onclick="mgTabSwitch('main')">📥 Ferramenta</button>
+    <button class="nav-tab" onclick="mgTabSwitch('hist')">🕓 Histórico</button>
+    <button class="nav-tab" onclick="mgTabSwitch('faq')">❓ Dúvidas</button>
+    <button class="nav-tab" onclick="mgTabSwitch('ia')">🤖 Análise IA</button>
+  </div>
+
+  <div class="nav-pane on" id="mg-pane-main">
+    <div class="tool-hdr">
+      <div style="flex:1">
+        <div class="tool-title">Merge RM → ADP</div>
+        <div class="tool-desc">Processa novas linhas (Solicitado para StormX), alterações e cancelamentos do RM para o ADP</div>
+      </div>
+      <div class="tool-actions">
+        <button class="btn btn-g" onclick="mrgReset()">Limpar</button>
+        <button class="btn btn-p" id="mrg-btn-run" disabled onclick="mrgRun()">▶ Analisar</button>
+      </div>
+    </div>
+    <div class="tool-body">
+
+      <!-- STEP 1 -->
+      <div class="mrg-step" id="mrg-s1">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num1">1</div>
+          <div class="mrg-step-title">Carregar arquivos</div>
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="uz" id="mrg-drop-rm" onclick="document.getElementById('mrg-file-rm').click()"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="mrgDrop(event,'rm')">
+              <span class="uz-label">RM — Fonte</span>
+              <div class="icon" id="mrg-icon-rm">📋</div>
+              <h3 id="mrg-h3-rm">Arraste o RM aqui</h3>
+              <p id="mrg-p-rm">ou clique · .xlsx</p>
+              <input type="file" id="mrg-file-rm" accept=".xlsx,.xlsm,.xls" onchange="mrgLoad(this,'rm')">
+            </div>
+          </div>
+          <div>
+            <div class="uz" id="mrg-drop-adp" onclick="document.getElementById('mrg-file-adp').click()"
+              ondragover="event.preventDefault();this.classList.add('drag')"
+              ondragleave="this.classList.remove('drag')"
+              ondrop="mrgDrop(event,'adp')">
+              <span class="uz-label">ADP — Destino</span>
+              <div class="icon" id="mrg-icon-adp">🔧</div>
+              <h3 id="mrg-h3-adp">Arraste o ADP aqui</h3>
+              <p id="mrg-p-adp">ou clique · .xlsx</p>
+              <input type="file" id="mrg-file-adp" accept=".xlsx,.xlsm,.xls" onchange="mrgLoad(this,'adp')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="mrg-step" id="mrg-s2" style="display:none">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num2">2</div>
+          <div class="mrg-step-title">Selecionar abas e intervalo de linhas</div>
+        </div>
+        <div class="ib">Clique para incluir/excluir abas. Informe o intervalo de linhas a processar em cada aba (ex: <strong>2 até 61</strong>). Deixe em branco para ler tudo.</div>
+        <div class="sc" id="mrg-chips"></div>
+        <div class="range-configs" id="mrg-ranges"></div>
+        <div class="ib warn">
+          <strong>Regra:</strong> Status "Solicitado para StormX" = nova linha · "Alterar" = atualizar existente · "Cancelar" = marcar como cancelado<br>
+          Colunas <code>REVISAR</code> → fundo amarelo no ADP · Colunas <code>AGÊNCIA</code> e <code>GERADO</code> → nunca sobrescritas
+        </div>
+      </div>
+
+      <!-- STEP 3 — Progress -->
+      <div class="mrg-step" id="mrg-s3" style="display:none">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num3">3</div>
+          <div class="mrg-step-title">Analisando…</div>
+        </div>
+        <div class="pb-wrap on" id="mrg-pb-wrap">
+          <div class="pb-fill" id="mrg-pb-fill" style="width:0%"></div>
+        </div>
+        <div id="mrg-pb-status-wrap" style="min-height:18px"></div>
+      </div>
+
+      <!-- STEP 4 — Revisão -->
+      <div class="mrg-step" id="mrg-s4" style="display:none">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num" id="mrg-num4">3</div>
+          <div class="mrg-step-title">Revisar mudanças</div>
+        </div>
+        <div id="mrg-rev-content"></div>
+        <div class="rev-confirm-bar" id="mrg-rev-bar">
+          <div class="sum" id="mrg-rev-sum"></div>
+          <button class="btn btn-g" onclick="mrgRevVoltarEdit()">← Editar seleção</button>
+          <button class="btn btn-ok" id="mrg-btn-confirm" onclick="mrgConfirm()">✓ Confirmar e exportar</button>
+        </div>
+      </div>
+
+      <!-- STEP 5 — Resultado final -->
+      <div class="mrg-step" id="mrg-s5" style="display:none">
+        <div class="mrg-step-hdr">
+          <div class="mrg-step-num done" id="mrg-num5">✓</div>
+          <div class="mrg-step-title">Exportado</div>
+        </div>
+        <div id="mrg-final-content"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+var ADPRM_ADP=/^UNCC/i,ADPRM_RM=/^RM/i;
+
+function mrgC(l){
+  if(!l||l.trim()===''||l==='-')return null;
+  l=l.trim().toUpperCase();var n=0;
+  for(var i=0;i<l.length;i++)n=n*26+(l.charCodeAt(i)-64);
+  return n-1;
+}
+
+// Alias: sheet names in RM that differ from ADP/MRG_MAPS keys (RM v6.0 uses same names, kept for compatibility)
+var MRG_RM_TO_ADP={};
+
+// MRG_COLS updated for RM v6.0 + ADP v5.2
+var MRG_COLS={
+  'Google':                        {rmKey:'AZ', adpKey:'BF', adpSpc:'BG'},
+  'Programmatic':                  {rmKey:'BD', adpKey:'BI', adpSpc:'BJ'},
+  'Youtube':                       {rmKey:'AW', adpKey:'BG', adpSpc:'BH'},
+  'Meta e Tiktok':                 {rmKey:'AX', adpKey:'BH', adpSpc:'BI'},
+  'Pinterest, Snapchat e Twitter': {rmKey:'BC', adpKey:'BD', adpSpc:'BE'},
+  'Flashtalking':                  {rmKey:'AX', adpKey:'AY', adpSpc:'BB'},
+};
+
+// MRG_MAPS updated for RM v6.0 + ADP v5.2
+var MRG_MAPS={
+  'Google':[
+    {rm:'M',adp:'K',t:'C'},{rm:'N',adp:'L',t:'C'},{rm:'O',adp:'M',t:'C'},{rm:'P',adp:'N',t:'C'},{rm:'Q',adp:'O',t:'C'},
+    {rm:'R',adp:'P',t:'C'},{rm:'S',adp:'Q',t:'C'},{rm:'T',adp:'R',t:'C'},{rm:'W',adp:'V',t:'C'},{rm:'X',adp:'W',t:'C'},
+    {rm:'Y',adp:'X',t:'C'},{rm:'Z',adp:'Y',t:'C'},{rm:'AA',adp:'Z',t:'C'},{rm:'AB',adp:'AA',t:'C'},{rm:'AC',adp:'AI',t:'C'},
+    {rm:'AD',adp:'AJ',t:'C'},{rm:'AE',adp:'AN',t:'C'},{rm:'AF',adp:'AP',t:'C'},{rm:'AG',adp:'AQ',t:'C'},{rm:'AH',adp:'AR',t:'C'},
+    {rm:'AJ',adp:'AT',t:'C'},{rm:'AL',adp:'AV',t:'C'},{rm:'AM',adp:'AG',t:'C'},{rm:'AV',adp:'BZ',t:'C'},{rm:'AW',adp:'CA',t:'C'},
+    {rm:'BB',adp:'DP',t:'C'},
+    {rm:'AX',adp:'CX',t:'R'},{rm:'AY',adp:'CY',t:'R'},{rm:'AZ',adp:'BF',t:'R'},
+  ],
+  'Programmatic':[
+    {rm:'L',adp:'J',t:'C'},{rm:'M',adp:'U',t:'C'},{rm:'N',adp:'K',t:'C'},{rm:'O',adp:'L',t:'C'},{rm:'P',adp:'M',t:'C'},
+    {rm:'Q',adp:'N',t:'C'},{rm:'R',adp:'O',t:'C'},{rm:'S',adp:'P',t:'C'},{rm:'V',adp:'V',t:'C'},{rm:'W',adp:'W',t:'C'},
+    {rm:'X',adp:'X',t:'C'},{rm:'Y',adp:'Y',t:'C'},{rm:'Z',adp:'Z',t:'C'},{rm:'AA',adp:'AH',t:'C'},{rm:'AB',adp:'AI',t:'C'},
+    {rm:'AC',adp:'AP',t:'C'},{rm:'AD',adp:'AL',t:'C'},{rm:'AE',adp:'AK',t:'C'},{rm:'AF',adp:'AM',t:'C'},{rm:'AG',adp:'AN',t:'C'},
+    {rm:'AH',adp:'AO',t:'C'},{rm:'AI',adp:'AQ',t:'C'},{rm:'AK',adp:'AT',t:'C'},{rm:'AM',adp:'AU',t:'C'},{rm:'AN',adp:'AF',t:'C'},
+    {rm:'AY',adp:'CD',t:'C'},{rm:'AZ',adp:'CE',t:'C'},{rm:'BI',adp:'EB',t:'C'},
+    {rm:'BA',adp:'DE',t:'R'},{rm:'BB',adp:'DF',t:'R'},{rm:'BC',adp:'DG',t:'R'},{rm:'BD',adp:'DH',t:'R'},
+  ],
+  'Youtube':[
+    {rm:'L',adp:'J',t:'C'},{rm:'M',adp:'K',t:'C'},{rm:'N',adp:'L',t:'C'},{rm:'O',adp:'M',t:'C'},{rm:'P',adp:'N',t:'C'},
+    {rm:'Q',adp:'O',t:'C'},{rm:'R',adp:'P',t:'C'},{rm:'U',adp:'V',t:'C'},{rm:'V',adp:'W',t:'C'},{rm:'W',adp:'X',t:'C'},
+    {rm:'X',adp:'Y',t:'C'},{rm:'Y',adp:'AG',t:'C'},{rm:'Z',adp:'AH',t:'C'},{rm:'AA',adp:'AO',t:'C'},{rm:'AB',adp:'AK',t:'C'},
+    {rm:'AC',adp:'AJ',t:'C'},{rm:'AD',adp:'AL',t:'C'},{rm:'AE',adp:'AM',t:'C'},{rm:'AF',adp:'AN',t:'C'},{rm:'AH',adp:'AR',t:'C'},
+    {rm:'AJ',adp:'AS',t:'C'},{rm:'AK',adp:'AE',t:'C'},{rm:'BB',adp:'EA',t:'C'},
+    {rm:'AS',adp:'DC',t:'R'},{rm:'AT',adp:'DD',t:'R'},{rm:'AU',adp:'DE',t:'R'},{rm:'AV',adp:'DF',t:'R'},{rm:'AW',adp:'DG',t:'R'},
+  ],
+  'Meta e Tiktok':[
+    {rm:'L',adp:'V',t:'C'},{rm:'M',adp:'I',t:'C'},{rm:'N',adp:'J',t:'C'},{rm:'O',adp:'L',t:'C'},{rm:'P',adp:'Z',t:'C'},
+    {rm:'Q',adp:'M',t:'C'},{rm:'R',adp:'N',t:'C'},{rm:'S',adp:'O',t:'C'},{rm:'T',adp:'P',t:'C'},{rm:'U',adp:'Q',t:'C'},
+    {rm:'V',adp:'R',t:'C'},{rm:'Y',adp:'W',t:'C'},{rm:'Z',adp:'AA',t:'C'},{rm:'AA',adp:'AB',t:'C'},{rm:'AB',adp:'AP',t:'C'},
+    {rm:'AC',adp:'Y',t:'C'},{rm:'AD',adp:'X',t:'C'},{rm:'AE',adp:'AD',t:'C'},{rm:'AF',adp:'AL',t:'C'},{rm:'AG',adp:'AM',t:'C'},
+    {rm:'AH',adp:'AO',t:'C'},{rm:'AI',adp:'AQ',t:'C'},{rm:'AJ',adp:'AR',t:'C'},{rm:'AK',adp:'AS',t:'C'},{rm:'AL',adp:'AT',t:'C'},
+    {rm:'AM',adp:'AX',t:'C'},{rm:'AO',adp:'AY',t:'C'},{rm:'AP',adp:'AJ',t:'C'},{rm:'BC',adp:'DX',t:'C'},
+    {rm:'AV',adp:'DC',t:'R'},{rm:'AW',adp:'DD',t:'R'},{rm:'AX',adp:'BH',t:'R'},
+  ],
+  'Pinterest, Snapchat e Twitter':[
+    {rm:'M',adp:'U',t:'C'},{rm:'N',adp:'I',t:'C'},{rm:'O',adp:'J',t:'C'},{rm:'Q',adp:'L',t:'C'},{rm:'R',adp:'M',t:'C'},
+    {rm:'S',adp:'N',t:'C'},{rm:'T',adp:'O',t:'C'},{rm:'U',adp:'P',t:'C'},{rm:'V',adp:'Q',t:'C'},{rm:'Y',adp:'V',t:'C'},
+    {rm:'Z',adp:'Y',t:'C'},{rm:'AA',adp:'Z',t:'C'},{rm:'AB',adp:'X',t:'C'},{rm:'AC',adp:'W',t:'C'},{rm:'AD',adp:'AI',t:'C'},
+    {rm:'AE',adp:'AJ',t:'C'},{rm:'AF',adp:'AL',t:'C'},{rm:'AG',adp:'AM',t:'C'},{rm:'AH',adp:'AN',t:'C'},{rm:'AI',adp:'AO',t:'C'},
+    {rm:'AJ',adp:'AP',t:'C'},{rm:'AK',adp:'AQ',t:'C'},{rm:'AL',adp:'AT',t:'C'},{rm:'AN',adp:'AU',t:'C'},{rm:'AO',adp:'AG',t:'C'},
+    {rm:'AY',adp:'BY',t:'C'},{rm:'AZ',adp:'BZ',t:'C'},{rm:'BG',adp:'DS',t:'C'},
+    {rm:'BA',adp:'CY',t:'R'},{rm:'BB',adp:'CZ',t:'R'},{rm:'BC',adp:'BD',t:'R'},
+  ],
+  'Flashtalking':[
+    {rm:'K',adp:'J',t:'C'},{rm:'L',adp:'K',t:'C'},{rm:'M',adp:'L',t:'C'},{rm:'N',adp:'M',t:'C'},{rm:'O',adp:'N',t:'C'},
+    {rm:'P',adp:'O',t:'C'},{rm:'T',adp:'T',t:'C'},{rm:'U',adp:'U',t:'C'},{rm:'V',adp:'S',t:'C'},{rm:'W',adp:'AB',t:'C'},
+    {rm:'X',adp:'AC',t:'C'},{rm:'Y',adp:'AE',t:'C'},{rm:'Z',adp:'AG',t:'C'},{rm:'AA',adp:'Q',t:'C'},{rm:'AB',adp:'AI',t:'C'},
+    {rm:'AC',adp:'AJ',t:'C'},{rm:'AD',adp:'AK',t:'C'},{rm:'AG',adp:'AN',t:'C'},{rm:'AI',adp:'AO',t:'C'},{rm:'AJ',adp:'Z',t:'C'},
+    {rm:'AT',adp:'BV',t:'C'},{rm:'AU',adp:'BW',t:'C'},{rm:'BB',adp:'DT',t:'C'},
+    {rm:'AV',adp:'CZ',t:'R'},{rm:'AW',adp:'DA',t:'R'},{rm:'AX',adp:'AY',t:'R'},
+  ],
+};
+
+var MRG_IDX={};
+Object.keys(MRG_MAPS).forEach(function(s){
+  MRG_IDX[s]=MRG_MAPS[s].map(function(r){return{ri:mrgC(r.rm),ai:r.adp?mrgC(r.adp):null,rmCol:r.rm,adpCol:r.adp,t:r.t};});
+});
+
+var MRG_FILL_G={type:'pattern',patternType:'solid',fgColor:{rgb:'FFE6F4EE'}};
+var MRG_FILL_U={type:'pattern',patternType:'solid',fgColor:{rgb:'FFE8ECFB'}};
+var MRG_FILL_C={type:'pattern',patternType:'solid',fgColor:{rgb:'FFFDECEA'}};
+var MRG_FILL_Y={type:'pattern',patternType:'solid',fgColor:{rgb:'FFFEF3C7'}};
+
+var mrgRmWb=null,mrgAdpWb=null,mrgAdpName='',mrgRmName='';
+var mrgAdpBytes=null,mrgRmBytes=null;
+var mrgSel=new Set();
+var mrgProcessando=false;
+
+// ── Pending changes list ──────────────────────────────────────────────────
+// Each item: {id, sht, shtAdp, act:'new'|'upd'|'can', rmRow, adpRow, chave,
+//             fields:[{rmCol,adpCol,oldVal,newVal,type:'C'|'R'}], approved:true}
+var mrgPending=[];
+var mrgRevFilter='all'; // 'all'|'new'|'upd'|'can'
+
+window.addEventListener('beforeunload',function(e){
+  if(mrgProcessando){e.preventDefault();e.returnValue='O Merge ainda está processando. Tem certeza que quer sair?';return e.returnValue;}
+});
+
+function adpRmVerificar(filename,esperado){
+  if(!filename)return null;
+  var isAdp=ADPRM_ADP.test(filename),isRm=ADPRM_RM.test(filename);
+  if(!isAdp&&!isRm)return null;
+  if(esperado==='adp'&&isRm)return 'rm';
+  if(esperado==='rm'&&isAdp)return 'adp';
+  return null;
+}
+
+function mrgDrop(e,w){e.preventDefault();document.getElementById('mrg-drop-'+w).classList.remove('drag');if(e.dataTransfer.files[0])mrgReadFile(e.dataTransfer.files[0],w);}
+function mrgLoad(inp,w){if(inp.files[0])mrgReadFile(inp.files[0],w);}
+function mrgReadFile(file,w){
+  var errado=adpRmVerificar(file.name,w);
+  if(errado){
+    var nomes={adp:'ADP (UNCC…)',rm:'RM (RM…)'};
+    if(confirm('⚠️ Arquivo detectado como '+nomes[errado]+', mas este slot espera '+nomes[w]+'.\n\nDeseja trocar de slot automaticamente?')){mrgReadFile(file,errado);return;}
+  }
+  var r=new FileReader();
+  r.onload=function(e){
+    var arr=new Uint8Array(e.target.result);
+    var wb=XLSX.read(arr,{type:'array',cellStyles:true});
+    if(w==='rm'){mrgRmWb=wb;mrgRmName=file.name;mrgRmBytes=arr;}
+    else{mrgAdpWb=wb;mrgAdpName=file.name;mrgAdpBytes=arr;}
+    var z=document.getElementById('mrg-drop-'+w);z.classList.add('loaded');
+    document.getElementById('mrg-icon-'+w).textContent='✅';
+    document.getElementById('mrg-h3-'+w).textContent=file.name;
+    document.getElementById('mrg-p-'+w).textContent='Carregado · clique para trocar';
+    if(mrgRmWb&&mrgAdpWb){document.getElementById('mrg-s2').style.display='block';mrgBuildChips();}
+    mrgUpdBtn();
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function mrgBuildChips(){
+  var chips=document.getElementById('mrg-chips'),ranges=document.getElementById('mrg-ranges');
+  chips.innerHTML='';ranges.innerHTML='';mrgSel=new Set();
+
+  var availableNames=Object.keys(MRG_MAPS).filter(function(name){
+    return mrgRmWb&&mrgRmWb.SheetNames.indexOf(name)!==-1;
+  });
+
+  var btnTodas=document.createElement('button');
+  btnTodas.className='chip';btnTodas.textContent='Todas';
+  btnTodas.onclick=function(){
+    var allSel=availableNames.every(function(n){return mrgSel.has(n);});
+    if(allSel){
+      availableNames.forEach(function(name){
+        mrgSel.delete(name);
+        var b=document.getElementById('mrg-btn-'+name.replace(/[^a-z0-9]/gi,'_'));if(b)b.classList.remove('active');
+        var r=document.getElementById('mrg-rr-'+name.replace(/[^a-z0-9]/gi,'_'));if(r)r.style.display='none';
+      });
+      btnTodas.classList.remove('active');
+      document.getElementById('mrg-range-global').style.display='none';
+    }else{
+      availableNames.forEach(function(name){
+        mrgSel.add(name);
+        var b=document.getElementById('mrg-btn-'+name.replace(/[^a-z0-9]/gi,'_'));if(b)b.classList.add('active');
+        var r=document.getElementById('mrg-rr-'+name.replace(/[^a-z0-9]/gi,'_'));if(r)r.style.display='flex';
+      });
+      btnTodas.classList.add('active');
+      document.getElementById('mrg-range-global').style.display='flex';
+      mrgAplicarRangeGlobal();
+    }
+    mrgUpdBtn();
+  };
+  chips.appendChild(btnTodas);
+
+  var divGlobal=document.createElement('div');
+  divGlobal.id='mrg-range-global';
+  divGlobal.style.cssText='display:none;align-items:center;gap:8px;padding:6px 10px;background:var(--ul-l);border:1px solid #C5CEEE;border-radius:8px;margin-bottom:8px;flex-wrap:wrap';
+  divGlobal.innerHTML=
+    '<span style="font-size:11px;font-weight:600;color:var(--ul)">Aplicar em todas:</span>'+
+    '<span class="range-sep">linhas</span>'+
+    '<input type="number" class="range-inp" id="mrg-rf-global" placeholder="2" min="1" oninput="mrgAplicarRangeGlobal()">'+
+    '<span class="range-sep">até</span>'+
+    '<input type="number" class="range-inp" id="mrg-rt-global" placeholder="(fim)" min="1" oninput="mrgAplicarRangeGlobal()">'+
+    '<span style="font-size:10.5px;color:var(--g500)">deixe em branco para ler tudo</span>';
+  ranges.appendChild(divGlobal);
+
+  Object.keys(MRG_MAPS).forEach(function(name){
+    var inRM=mrgRmWb&&mrgRmWb.SheetNames.indexOf(name)!==-1;
+    var btn=document.createElement('button');
+    var sid=name.replace(/[^a-z0-9]/gi,'_');
+    btn.className='chip'+(inRM?'':' na');
+    btn.id='mrg-btn-'+sid;
+    btn.textContent=name+(inRM?'':' (n/a)');
+    if(inRM){
+      btn.onclick=function(){
+        if(mrgSel.has(name)){
+          mrgSel.delete(name);btn.classList.remove('active');
+          document.getElementById('mrg-rr-'+sid).style.display='none';
+        }else{
+          mrgSel.add(name);btn.classList.add('active');
+          document.getElementById('mrg-rr-'+sid).style.display='flex';
+        }
+        var allSel=availableNames.every(function(n){return mrgSel.has(n);});
+        btnTodas.classList.toggle('active',allSel);
+        document.getElementById('mrg-range-global').style.display=allSel?'flex':'none';
+        mrgUpdBtn();
+      };
+      var div=document.createElement('div');
+      div.className='range-row';div.id='mrg-rr-'+sid;div.style.display='none';
+      div.innerHTML='<span class="range-label">'+esc(name)+'</span>'+
+        '<span class="range-sep">linhas</span>'+
+        '<input type="number" class="range-inp" id="mrg-rf-'+sid+'" placeholder="2" min="1">'+
+        '<span class="range-sep">até</span>'+
+        '<input type="number" class="range-inp" id="mrg-rt-'+sid+'" placeholder="(fim)" min="1">'+
+        '<span class="range-hint">deixe em branco para ler tudo</span>';
+      ranges.appendChild(div);
+    }
+    chips.appendChild(btn);
+  });
+  mrgUpdBtn();
+}
+
+function mrgAplicarRangeGlobal(){
+  var rfG=document.getElementById('mrg-rf-global'),rtG=document.getElementById('mrg-rt-global');
+  if(!rfG||!rtG)return;
+  mrgSel.forEach(function(name){
+    var sid=name.replace(/[^a-z0-9]/gi,'_');
+    var rf=document.getElementById('mrg-rf-'+sid),rt=document.getElementById('mrg-rt-'+sid);
+    if(rf)rf.value=rfG.value;if(rt)rt.value=rtG.value;
+  });
+}
+
+function mrgUpdBtn(){
+  document.getElementById('mrg-btn-run').disabled=!(mrgRmWb&&mrgAdpWb&&mrgSel.size>0)||mrgProcessando;
+}
+
+function mrgGetRange(name){
+  var sid=name.replace(/[^a-z0-9]/gi,'_');
+  var rfEl=document.getElementById('mrg-rf-'+sid),rtEl=document.getElementById('mrg-rt-'+sid);
+  var from=rfEl&&rfEl.value?parseInt(rfEl.value):null,to=rtEl&&rtEl.value?parseInt(rtEl.value):null;
+  return{from:from?from-1:1,to:to?to-1:null};
+}
+
+// ── ANALYSE (dry run — build mrgPending) ─────────────────────────────────
+function mrgRun(){
+  mrgPending=[];mrgRevFilter='all';mrgNoMatch=[];
+  // validação prévia
+  var avisos=mrgValidarArquivos();
+  if(avisos.length){
+    if(!confirm('⚠️ Possível incompatibilidade de versão:\n\n'+avisos.join('\n')+'\n\nDeseja continuar mesmo assim?'))return;
+  }
+  mrgProcessando=true;
+  document.getElementById('mrg-btn-run').disabled=true;
+  document.getElementById('mrg-s3').style.display='block';
+  document.getElementById('mrg-s4').style.display='none';
+  document.getElementById('mrg-s5').style.display='none';
+  var fill=document.getElementById('mrg-pb-fill');
+  fill.style.width='0%';
+  var statusEl=document.getElementById('mrg-pb-status-wrap');
+  statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Preparando…</span>';
+
+  setTimeout(function(){
+    fill.style.width='20%';
+    var shts=[];mrgSel.forEach(function(s){shts.push(s);});
+    var idx=0;
+    function processNext(){
+      if(idx>=shts.length){
+        fill.style.width='100%';
+        statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Montando revisão…</span>';
+        setTimeout(function(){
+          document.getElementById('mrg-s3').style.display='none';
+          mrgRenderReview();
+          document.getElementById('mrg-s4').style.display='block';
+          mrgProcessando=false;mrgUpdBtn();
+        },50);
+        return;
+      }
+      var s=shts[idx];
+      fill.style.width=(20+Math.round((idx/shts.length)*78))+'%';
+      statusEl.innerHTML='<span style="font-size:11px;color:var(--g500)">Analisando: '+s+' ('+(idx+1)+'/'+shts.length+')…</span>';
+      setTimeout(function(){
+        try{mrgAnalyseSheet(s);}catch(e){console.error('Erro em '+s,e);}
+        idx++;processNext();
+      },0);
+    }
+    processNext();
+  },60);
+}
+
+function mrgAnalyseSheet(shtRm){
+  var shtAdp=MRG_RM_TO_ADP[shtRm]||shtRm;
+  var rmWs=mrgRmWb.Sheets[shtRm],adpWs=mrgAdpWb.Sheets[shtAdp];
+  if(!rmWs||!adpWs)return;
+  var rmD=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''});
+  var adpD=XLSX.utils.sheet_to_json(adpWs,{header:1,defval:''});
+  var mp=MRG_IDX[shtRm]||[];
+  var cols=MRG_COLS[shtAdp]||{};
+  var rmKeyI=cols.rmKey?mrgC(cols.rmKey):null;
+  var adpKeyI=cols.adpKey?mrgC(cols.adpKey):null;
+  var adpSpcI=cols.adpSpc?mrgC(cols.adpSpc):null;
+  var adpMap={};
+  if(adpKeyI!==null){
+    for(var ri=1;ri<adpD.length;ri++){
+      var kval=String(adpD[ri][adpKeyI]||'').trim();
+      if(kval)adpMap[kval]=ri;
+    }
+  }
+  var nextAdpRow=adpD.length;
+  var rng=mrgGetRange(shtRm),rowFrom=rng.from,rowTo=rng.to!==null?rng.to:rmD.length-1;
+
+  for(var i=rowFrom;i<=rowTo&&i<rmD.length;i++){
+    var row=rmD[i];
+    if(row.every(function(v){return v===''||v===null||v===undefined;}))continue;
+    var statusRaw=String(row[0]||'').trim().toLowerCase();
+    var chave=rmKeyI!==null?String(row[rmKeyI]||'').trim():'';
+
+    if(statusRaw==='solicitado para stormx'){
+      // nova linha
+      var fields=[];
+      mp.forEach(function(rule){
+        if(rule.ri===null)return;
+        var val=row[rule.ri];
+        if(val===undefined||val==='')return;
+        if(rule.t==='C'&&rule.ai!==null){
+          fields.push({rmCol:rule.rmCol,adpCol:rule.adpCol,oldVal:'',newVal:val,type:'C'});
+        }else if(rule.t==='R'&&rule.ai!==null){
+          fields.push({rmCol:rule.rmCol,adpCol:rule.adpCol,oldVal:'',newVal:val,type:'R'});
+        }
+      });
+      // add key field
+      if(rmKeyI!==null&&cols.adpKey&&chave){
+        var keyCol=cols.adpKey;
+        var already=fields.some(function(f){return f.adpCol===keyCol;});
+        if(!already)fields.unshift({rmCol:cols.rmKey,adpCol:keyCol,oldVal:'',newVal:chave,type:'KEY'});
+      }
+      mrgPending.push({id:mrgPending.length,sht:shtRm,shtAdp:shtAdp,act:'new',rmRow:i+1,adpRow:nextAdpRow+1,chave:chave,fields:fields,approved:true});
+      nextAdpRow++;
+    }else if(statusRaw==='alterar'){
+      if(!chave||adpMap[chave]===undefined){
+        if(chave)mrgNoMatch.push({sht:shtRm,rmRow:i+1,chave:chave,act:'alterar'});
+        continue;
+      }
+      var adpRowIdx=adpMap[chave];
+      var fields=[];
+      mp.forEach(function(rule){
+        if(rule.ri===null||rule.ai===null||rule.t!=='C')return;
+        var newVal=row[rule.ri];
+        if(newVal===undefined||newVal==='')return;
+        var oldVal=String(adpD[adpRowIdx][rule.ai]||'');
+        var nv=String(newVal);
+        if(nv!==oldVal){
+          fields.push({rmCol:rule.rmCol,adpCol:rule.adpCol,oldVal:oldVal,newVal:nv,type:'C'});
+        }
+      });
+      mrgPending.push({id:mrgPending.length,sht:shtRm,shtAdp:shtAdp,act:'upd',rmRow:i+1,adpRow:adpRowIdx+1,chave:chave,fields:fields,approved:true});
+    }else if(statusRaw==='cancelar'){
+      if(!chave||adpMap[chave]===undefined){
+        if(chave)mrgNoMatch.push({sht:shtRm,rmRow:i+1,chave:chave,act:'cancelar'});
+        continue;
+      }
+      var adpRowIdx=adpMap[chave];
+      mrgPending.push({id:mrgPending.length,sht:shtRm,shtAdp:shtAdp,act:'can',rmRow:i+1,adpRow:adpRowIdx+1,chave:chave,fields:[],approved:true});
+    }
+  }
+}
+
+// ── RENDER REVIEW UI ──────────────────────────────────────────────────────
+function mrgRevFilteredItems(){
+  return mrgPending.filter(function(c){
+    if(mrgRevFilter==='all')return true;
+    return c.act===mrgRevFilter;
+  });
+}
+
+function mrgRevToggle(id){
+  var c=mrgPending.find(function(x){return x.id===id;});
+  if(!c)return;
+  c.approved=!c.approved;
+  var row=document.getElementById('mrg-rev-row-'+id);
+  if(row)row.classList.toggle('rejected',!c.approved);
+  var tog=document.getElementById('mrg-rev-tog-'+id);
+  if(tog)tog.textContent=c.approved?'✓':'✕';
+  var badge=document.getElementById('mrg-rev-badge-'+id);
+  if(badge){
+    if(!c.approved){badge.className='brej';badge.textContent='Rejeitado';}
+    else if(c.act==='new'){badge.className='bok';badge.textContent='Nova linha';}
+    else if(c.act==='upd'){badge.className='bupd';badge.textContent='Atualizar';}
+    else{badge.className='bdif';badge.textContent='Cancelar';}
+  }
+  mrgRevUpdateSum();
+}
+
+function mrgRevApproveAll(act){
+  mrgPending.forEach(function(c){if(!act||c.act===act)c.approved=true;});
+  mrgRenderReview();
+}
+function mrgRevRejectAll(act){
+  mrgPending.forEach(function(c){if(!act||c.act===act)c.approved=false;});
+  mrgRenderReview();
+}
+
+function mrgRevUpdateSum(){
+  var appr=mrgPending.filter(function(c){return c.approved;}).length;
+  var total=mrgPending.length;
+  var nn=mrgPending.filter(function(c){return c.approved&&c.act==='new';}).length;
+  var nu=mrgPending.filter(function(c){return c.approved&&c.act==='upd';}).length;
+  var nc=mrgPending.filter(function(c){return c.approved&&c.act==='can';}).length;
+  var rej=total-appr;
+  var el=document.getElementById('mrg-rev-sum');
+  if(el)el.innerHTML='<strong>'+appr+' aprovadas</strong> de '+total+(rej?' · <span style="color:var(--err)">'+rej+' rejeitadas</span>':'')+
+    (nn?' · <span style="color:var(--ok)">'+nn+' novas</span>':'')+
+    (nu?' · <span style="color:var(--ul)">'+nu+' atualizações</span>':'')+
+    (nc?' · <span style="color:var(--err)">'+nc+' cancelamentos</span>':'');
+}
+
+function mrgRevSetFilter(f){
+  mrgRevFilter=f;
+  document.querySelectorAll('.rev-chip').forEach(function(c){c.classList.toggle('on',c.dataset.filter===f);});
+  mrgRenderRevList();
+}
+
+function mrgRenderReview(){
+  var nn=mrgPending.filter(function(c){return c.act==='new';}).length;
+  var nu=mrgPending.filter(function(c){return c.act==='upd';}).length;
+  var nc=mrgPending.filter(function(c){return c.act==='can';}).length;
+  var tot=mrgPending.length;
+
+  var html='';
+  if(tot===0){
+    html='<div class="es"><div style="font-size:26px">📭</div><p style="margin-top:8px">Nenhuma linha para processar.<br>Verifique os status no RM (Solicitado para StormX / Alterar / Cancelar).</p></div>';
+    document.getElementById('mrg-rev-content').innerHTML=html;
+    document.getElementById('mrg-rev-bar').style.display='none';
+    return;
+  }
+
+  // summary bar
+  html+='<div class="rev-sumbar">'+
+    (nn?'<span><span class="dot" style="background:var(--ok)"></span>'+nn+' nova'+(nn>1?'s línea':'')+'</span>':'')+
+    (nu?'<span><span class="dot" style="background:var(--ul)"></span>'+nu+' atualização'+(nu>1?'ões':'')+'</span>':'')+
+    (nc?'<span><span class="dot" style="background:var(--err)"></span>'+nc+' cancelamento'+(nc>1?'s':'')+'</span>':'')+
+    '</div>';
+
+  // filter chips + bulk actions
+  html+='<div class="rev-toolbar">'+
+    '<div class="rev-filter-chips">'+
+      '<button class="rev-chip'+(mrgRevFilter==='all'?' on':'')+'" data-filter="all" onclick="mrgRevSetFilter(\'all\')">Todos ('+tot+')</button>'+
+      (nn?'<button class="rev-chip'+(mrgRevFilter==='new'?' on':'')+'" data-filter="new" onclick="mrgRevSetFilter(\'new\')">Novas ('+nn+')</button>':'')+
+      (nu?'<button class="rev-chip'+(mrgRevFilter==='upd'?' on':'')+'" data-filter="upd" onclick="mrgRevSetFilter(\'upd\')">Atualizações ('+nu+')</button>':'')+
+      (nc?'<button class="rev-chip'+(mrgRevFilter==='can'?' on':'')+'" data-filter="can" onclick="mrgRevSetFilter(\'can\')">Cancelamentos ('+nc+')</button>':'')+
+    '</div>'+
+    '<div style="margin-left:auto;display:flex;gap:6px">'+
+      '<button class="btn btn-g" onclick="mrgRevApproveAll(mrgRevFilter===\'all\'?null:mrgRevFilter)" style="font-size:11px;padding:4px 10px">✓ Aprovar todos</button>'+
+      '<button class="btn btn-g" onclick="mrgRevRejectAll(mrgRevFilter===\'all\'?null:mrgRevFilter)" style="font-size:11px;padding:4px 10px;color:var(--err)">✕ Rejeitar todos</button>'+
+    '</div>'+
+  '</div>';
+
+  html+='<div id="mrg-rev-list"></div>';
+
+  // sem match warning
+  if(mrgNoMatch&&mrgNoMatch.length){
+    html+='<div class="ib warn" style="margin-top:10px">'+
+      '<strong>⚠ '+mrgNoMatch.length+' linha(s) sem correspondência no ADP</strong> — status Alterar/Cancelar cuja chave não foi encontrada:<br>'+
+      mrgNoMatch.slice(0,10).map(function(nm){return'<span style="font-family:var(--mo);font-size:10.5px">'+esc(nm.sht)+' L'+nm.rmRow+': '+esc(nm.chave)+'</span>';}).join(' · ')+
+      (mrgNoMatch.length>10?' · e mais '+(mrgNoMatch.length-10)+'…':'')+
+    '</div>';
+  }
+
+  document.getElementById('mrg-rev-content').innerHTML=html;
+  mrgRenderRevList();
+  mrgRevUpdateSum();
+}
+
+function mrgRenderRevList(){
+  var items=mrgRevFilteredItems();
+  var html='';
+  if(!items.length){
+    html='<div class="es" style="padding:28px">Nenhuma mudança neste filtro.</div>';
+    document.getElementById('mrg-rev-list').innerHTML=html;
+    return;
+  }
+
+  // group by sheet
+  var groups={},order=[];
+  items.forEach(function(c){
+    var g=c.sht;
+    if(!groups[g]){groups[g]=[];order.push(g);}
+    groups[g].push(c);
+  });
+
+  order.forEach(function(sht){
+    var grp=groups[sht];
+    var gnn=grp.filter(function(c){return c.act==='new';}).length;
+    var gnu=grp.filter(function(c){return c.act==='upd';}).length;
+    var gnc=grp.filter(function(c){return c.act==='can';}).length;
+    html+='<div class="rev-group">'+
+      '<div class="rev-group-hdr" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">'+
+        '<span class="blk-id">'+esc(sht)+'</span>'+
+        '<span class="lt">'+grp.length+' mudança'+(grp.length!==1?'s':'')+'</span>'+
+        (gnn?'<span class="bok">+'+gnn+'</span>':'')+
+        (gnu?'<span class="bupd">↺ '+gnu+'</span>':'')+
+        (gnc?'<span class="bdif">✕ '+gnc+'</span>':'')+
+        '<span style="margin-left:auto;color:var(--g400);font-size:11px">▾</span>'+
+      '</div>'+
+      '<div class="rev-group-body">';
+
+    grp.forEach(function(c){
+      var rejected=!c.approved;
+      var badgeCls=rejected?'brej':(c.act==='new'?'bok':c.act==='upd'?'bupd':'bdif');
+      var badgeTxt=rejected?'Rejeitado':(c.act==='new'?'Nova linha':c.act==='upd'?'Atualizar':'Cancelar');
+      var toggleIcon=c.approved?'✓':'✕';
+
+      html+='<div class="rev-change'+(rejected?' rejected':'')+'" id="mrg-rev-row-'+c.id+'">'+
+        '<div class="rev-change-toggle" id="mrg-rev-tog-wrap-'+c.id+'" onclick="mrgRevToggle('+c.id+')" title="'+(c.approved?'Clique para rejeitar':'Clique para aprovar')+'">'+
+          '<span id="mrg-rev-tog-'+c.id+'" style="font-size:14px;font-weight:700;'+(c.approved?'color:var(--ok)':'color:var(--err)')+'">'+(c.approved?'✓':'✕')+'</span>'+
+        '</div>'+
+        '<div class="rev-change-body">'+
+          '<div class="rev-change-title">'+
+            '<span id="mrg-rev-badge-'+c.id+'" class="'+badgeCls+'">'+badgeTxt+'</span>'+
+            '<span class="cm">'+esc(c.chave||'(sem chave)')+'</span>'+
+            '<span class="lt" style="font-weight:400">RM:'+c.rmRow+'</span>'+
+            (c.act!=='new'?'<span class="lt" style="font-weight:400">ADP:'+c.adpRow+'</span>':'')+
+          '</div>';
+
+      if(c.act==='can'){
+        html+='<div style="font-size:11px;color:var(--err);margin-top:3px">Esta linha será marcada como Cancelar no ADP</div>';
+      } else if(c.fields.length>0){
+        html+='<div class="rev-change-fields">';
+        c.fields.forEach(function(f){
+          var isnew=c.act==='new'||f.oldVal==='';
+          var isrev=f.type==='R';
+          html+='<div class="rev-field'+(isnew?' rev-field-new':'')+(isrev?' rev-field-rev':'')+'">'+
+            '<span class="fc">'+esc(f.adpCol||'?')+'</span>'+
+            (f.oldVal!==''&&f.oldVal!==undefined?'<span class="fv-old" title="'+esc(f.oldVal)+'">'+esc(String(f.oldVal).substring(0,30))+'</span><span class="farr">→</span>':'')+
+            '<span class="fv-new" title="'+esc(f.newVal)+'">'+esc(String(f.newVal).substring(0,40))+'</span>'+
+            (isrev?'<span style="font-size:9px;color:var(--warn);font-weight:700;margin-left:2px">REVISAR</span>':'')+
+            (isrev?'<button class="rev-field-copy" title="Copiar valor" onclick="mgCopyVal(this,\''+esc(f.newVal).replace(/'/g,"\\'")+'\')" >⧉</button>':'')+
+          '</div>';
+        });
+        html+='</div>';
+      } else if(c.act==='upd'){
+        html+='<div style="font-size:11px;color:var(--g500);margin-top:3px">Nenhum campo alterado (valores já coincidentes)</div>';
+      }
+
+      html+='</div></div>';
+    });
+
+    html+='</div></div>';
+  });
+
+  document.getElementById('mrg-rev-list').innerHTML=html;
+}
+
+function mrgRevVoltarEdit(){
+  document.getElementById('mrg-s4').style.display='none';
+  document.getElementById('mrg-s3').style.display='none';
+  mrgPending=[];
+  mrgUpdBtn();
+}
+
+// ── CONFIRM & APPLY ───────────────────────────────────────────────────────
+function mrgConfirm(){
+  var approved=mrgPending.filter(function(c){return c.approved;});
+  if(!approved.length){alert('Nenhuma mudança aprovada.');return;}
+
+  // deep copy workbooks
+  var adpWbCopy=JSON.parse(JSON.stringify(mrgAdpWb));
+  var rmWbCopy=JSON.parse(JSON.stringify(mrgRmWb));
+
+  // Track next adp row per sheet for new lines
+  var nextRow={};
+  Object.keys(adpWbCopy.Sheets).forEach(function(s){
+    var ws=adpWbCopy.Sheets[s];
+    var rng=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):{e:{r:0}};
+    nextRow[s]=rng.e.r+1;
+  });
+
+  var stats={n:0,u:0,can:0,err:0};
+
+  approved.forEach(function(c){
+    var rmWs=rmWbCopy.Sheets[c.sht];
+    var adpWs=adpWbCopy.Sheets[c.shtAdp];
+    if(!rmWs||!adpWs)return;
+
+    var adpD=XLSX.utils.sheet_to_json(adpWs,{header:1,defval:''});
+    var cols=MRG_COLS[c.shtAdp]||{};
+    var adpKeyI=cols.adpKey?mrgC(cols.adpKey):null;
+    var adpSpcI=cols.adpSpc?mrgC(cols.adpSpc):null;
+    var mp=MRG_IDX[c.sht]||[];
+
+    if(c.act==='new'){
+      var ri=nextRow[c.shtAdp]!==undefined?nextRow[c.shtAdp]:adpD.length;
+      var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
+      if(rmRow){
+        mrgApplyRow(adpWs,rmRow,ri,mp,MRG_FILL_G);
+        rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Concluído Stormx'};
+        nextRow[c.shtAdp]=(nextRow[c.shtAdp]||adpD.length)+1;
+        stats.n++;
+      }
+    }else if(c.act==='upd'){
+      var adpRowIdx=c.adpRow-1;
+      var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
+      if(rmRow){
+        mrgApplyRow(adpWs,rmRow,adpRowIdx,mp,MRG_FILL_U);
+        if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Alterar'};
+        rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Alterado'};
+        stats.u++;
+      }
+    }else if(c.act==='can'){
+      var adpRowIdx=c.adpRow-1;
+      if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
+      rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Cancelado'};
+      stats.can++;
+    }
+  });
+
+  // Download both files
+  var modAdp=[],modRm=[];
+  mrgSel.forEach(function(s){
+    modAdp.push(MRG_RM_TO_ADP[s]||s);
+    modRm.push(s);
+  });
+
+  var adpFilename=mrgAdpName.replace(/\.xlsx?$/i,'')+'_MERGED.xlsx';
+  var rmFilename=mrgRmName.replace(/\.xlsx?$/i,'')+'_ATUALIZADO.xlsx';
+
+  _mrgPatchAndDownload(mrgAdpBytes,adpWbCopy,modAdp,adpFilename,function(){
+    _mrgPatchAndDownload(mrgRmBytes,rmWbCopy,modRm,rmFilename,function(){
+      mrgRenderFinal(stats,adpFilename,rmFilename,approved.length);
+    });
+  });
+}
+
+function mrgRenderFinal(stats,adpFile,rmFile,total){
+  var rej=mrgPending.length-total;
+  // registrar no histórico
+  var sheets=[...mrgSel].join(', ');
+  var ts=new Date().toLocaleString('pt-BR');
+  mgHistAdd({
+    ico:'✅',ts:ts,
+    title:'Merge · '+mrgRmName+' → '+mrgAdpName,
+    sheets:sheets,
+    stats:[
+      {label:stats.n+' novas',bg:'var(--ok-b)',color:'var(--ok)'},
+      {label:stats.u+' alteradas',bg:'var(--ul-b)',color:'var(--ul)'},
+      {label:stats.can+' canceladas',bg:'var(--err-b)',color:'var(--err)'},
+      ...(rej?[{label:rej+' rejeitadas',bg:'var(--g100)',color:'var(--g500)'}]:[]),
+      ...(mrgNoMatch&&mrgNoMatch.length?[{label:mrgNoMatch.length+' sem match',bg:'var(--warn-b)',color:'var(--warn)'}]:[]),
+    ],
+    rawStats:{n:stats.n,u:stats.u,can:stats.can,rej:rej},
+    noMatch:mrgNoMatch?[...mrgNoMatch]:[],
+  });
+  document.getElementById('mrg-s4').style.display='none';
+  document.getElementById('mrg-s5').style.display='block';
+  document.getElementById('mrg-final-content').innerHTML=
+    '<div class="ib ok" style="margin-bottom:14px">'+
+      '<strong>✓ Exportado com sucesso!</strong> '+total+' mudanças aplicadas'+(rej?' · '+rej+' rejeitadas e ignoradas':'')+
+    '</div>'+
+    '<div class="sc2">'+
+      '<div class="card cn"><div class="num">'+stats.n+'</div><div class="lbl">Novas linhas</div></div>'+
+      '<div class="card cu"><div class="num">'+stats.u+'</div><div class="lbl">Alteradas</div></div>'+
+      '<div class="card ce"><div class="num">'+stats.can+'</div><div class="lbl">Canceladas</div></div>'+
+      (rej?'<div class="card cs"><div class="num">'+rej+'</div><div class="lbl">Rejeitadas</div></div>':'')+
+    '</div>'+
+    '<p style="font-size:12px;color:var(--g500);margin-top:10px">Os dois arquivos foram baixados automaticamente: <strong>'+esc(adpFile)+'</strong> e <strong>'+esc(rmFile)+'</strong>.</p>'+
+    mrgExportParcialUI()+
+    '<div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-g" onclick="mrgReset()">Novo merge</button></div>';
+}
+
+function mrgApplyRow(ws,row,ri,mp,fill){
+  var rng=XLSX.utils.decode_range(ws['!ref']||'A1');
+  mp.forEach(function(rule){
+    if(rule.ri===null||rule.ai===null)return;if(rule.t!=='C'&&rule.t!=='R')return;
+    var val=row[rule.ri];if(val===undefined||val==='')return;
+    var addr=XLSX.utils.encode_cell({r:ri,c:rule.ai});
+    var existingStyle=(ws[addr]&&ws[addr].s)?ws[addr].s:{};
+    var useFill=rule.t==='R'?MRG_FILL_Y:fill;
+    var s=Object.assign({},existingStyle);if(useFill)s.fill=useFill;
+    ws[addr]={t:typeof val==='number'?'n':'s',v:val,s:s};
+    if(rule.ai>rng.e.c)rng.e.c=rule.ai;if(ri>rng.e.r)rng.e.r=ri;
+  });
+  ws['!ref']=XLSX.utils.encode_range(rng);
+}
+
+function _mrgPatchAndDownload(origBytes,wb,modifiedSheetNames,filename,callback){
+  JSZip.loadAsync(origBytes).then(function(zip){
+    return zip.file('xl/sharedStrings.xml').async('string').then(function(ssXml){
+      var ssItems=[],ssMap={};
+      var ssRe=/<si>([\s\S]*?)<\/si>/g,m;
+      while((m=ssRe.exec(ssXml))!==null){
+        var idx=ssItems.length;ssItems.push(m[0]);
+        var tMatch=m[0].match(/<t[^>]*>([\s\S]*?)<\/t>/);
+        if(tMatch){var val=tMatch[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');if(ssMap[val]===undefined)ssMap[val]=idx;}
+      }
+      var ssModified=false;
+      function getOrAddSS(val){
+        if(val===null||val===undefined||val==='')return null;
+        var s=String(val);if(ssMap[s]!==undefined)return ssMap[s];
+        var newIdx=ssItems.length;
+        var e2=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        ssItems.push('<si><t>'+e2+'</t></si>');ssMap[s]=newIdx;ssModified=true;return newIdx;
+      }
+      return zip.file('xl/workbook.xml').async('string').then(function(wbXml){
+        return zip.file('xl/_rels/workbook.xml.rels').async('string').then(function(relsXml){
+          var relMap={};
+          var re=/<Relationship\s[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g;
+          while((m=re.exec(relsXml))!==null)relMap[m[1]]=m[2];
+          var sheetMap={};
+          var rs=/<sheet\s[^>]*name="([^"]*)"[^>]*r:id="([^"]+)"/g;
+          while((m=rs.exec(wbXml))!==null){
+            var name=m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+            sheetMap[name]='xl/'+relMap[m[2]];
+          }
+          var patchPromises=modifiedSheetNames.map(function(shName){
+            var path=sheetMap[shName];if(!path)return Promise.resolve();
+            var ws=wb.Sheets[shName];if(!ws)return Promise.resolve();
+            return zip.file(path).async('string').then(function(origXml){
+              var existingRows={};
+              var rowRe=/<row r="(\d+)"[\s\S]*?<\/row>/g;
+              while((m=rowRe.exec(origXml))!==null)existingRows[parseInt(m[1])]=m[0];
+              var origMaxRow=Object.keys(existingRows).reduce(function(mx,r){return Math.max(mx,parseInt(r));},0);
+              var wsRange=XLSX.utils.decode_range(ws['!ref']||'A1');
+              var wsMaxRow=wsRange.e.r+1;
+              var newRowsXml='';
+              for(var ri=origMaxRow+1;ri<=wsMaxRow;ri++){
+                var cells=[];
+                for(var ci=wsRange.s.c;ci<=wsRange.e.c;ci++){
+                  var addr=XLSX.utils.encode_cell({r:ri-1,c:ci});
+                  var cell=ws[addr];if(!cell||cell.v===undefined||cell.v===null||cell.v==='')continue;
+                  var cellXml='';
+                  if(cell.t==='s'||typeof cell.v==='string'){var ssIdx=getOrAddSS(cell.v);if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';}
+                  else if(cell.t==='n'||typeof cell.v==='number'){cellXml='<c r="'+addr+'"><v>'+cell.v+'</v></c>';}
+                  else if(cell.t==='b'){cellXml='<c r="'+addr+'" t="b"><v>'+(cell.v?1:0)+'</v></c>';}
+                  else if(cell.t==='d'){var ssIdx=getOrAddSS(cell.w||String(cell.v));if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';}
+                  if(cellXml)cells.push(cellXml);
+                }
+                if(cells.length>0)newRowsXml+='<row r="'+ri+'" spans="'+(wsRange.s.c+1)+':'+(wsRange.e.c+1)+'">'+cells.join('')+'</row>';
+              }
+              if(newRowsXml===''&&origMaxRow>=wsMaxRow){
+                for(var ri=1;ri<=wsMaxRow;ri++){
+                  var addr='A'+ri;var cell=ws[addr];
+                  if(!cell||!existingRows[ri])continue;
+                  if(cell.v!==undefined&&cell.v!==''){
+                    var ssIdx=getOrAddSS(cell.v);
+                    if(ssIdx!==null){
+                      var origRow=existingRows[ri];var newCellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';
+                      if(origRow.indexOf('r="'+addr+'"')!==-1){origRow=origRow.replace(/<c r="A\d+"[^>]*>[\s\S]*?<\/c>/,newCellXml);}
+                      else{origRow=origRow.replace(/^(<row[^>]*>)/,'$1'+newCellXml);}
+                      existingRows[ri]=origRow;
+                    }
+                  }
+                }
+              }
+              var allRowKeys=Object.keys(existingRows).map(Number).sort(function(a,b){return a-b;});
+              var allRowsXml=allRowKeys.map(function(r){return existingRows[r];}).join('')+newRowsXml;
+              var newMaxRow=Math.max(origMaxRow,wsMaxRow);
+              var newXml=origXml.replace(/<sheetData>[\s\S]*<\/sheetData>/,'<sheetData>'+allRowsXml+'</sheetData>');
+              if(newRowsXml){newXml=newXml.replace(/<dimension ref="[^"]*"/,'<dimension ref="'+XLSX.utils.encode_cell({r:wsRange.s.r,c:wsRange.s.c})+':'+XLSX.utils.encode_cell({r:newMaxRow-1,c:wsRange.e.c})+'"');}
+              zip.file(path,newXml);
+            });
+          });
+          return Promise.all(patchPromises).then(function(){
+            if(ssModified){
+              var header=ssXml.slice(0,ssXml.indexOf('<sst '));
+              var newSsXml=header+'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+ssItems.length+'" uniqueCount="'+ssItems.length+'">'+ssItems.join('')+'</sst>';
+              zip.file('xl/sharedStrings.xml',newSsXml);
+            }
+            return zip;
+          });
+        });
+      });
+    });
+  }).then(function(zip){
+    return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  }).then(function(blob){
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);if(callback)callback();},400);
+  }).catch(function(e){alert('Erro ao gerar arquivo: '+e.message);});
+}
+
+function mrgReset(){
+  mrgRmWb=null;mrgAdpWb=null;
+  mrgAdpName='';mrgRmName='';mrgAdpBytes=null;mrgRmBytes=null;mrgSel=new Set();
+  mrgPending=[];mrgRevFilter='all';mrgProcessando=false;
+  ['rm','adp'].forEach(function(w){
+    var z=document.getElementById('mrg-drop-'+w);z.classList.remove('loaded');
+    document.getElementById('mrg-icon-'+w).textContent=w==='rm'?'📋':'🔧';
+    document.getElementById('mrg-h3-'+w).textContent=w==='rm'?'Arraste o RM aqui':'Arraste o ADP aqui';
+    document.getElementById('mrg-p-'+w).textContent='ou clique · .xlsx';
+    document.getElementById('mrg-file-'+w).value='';
+  });
+  document.getElementById('mrg-s2').style.display='none';
+  document.getElementById('mrg-s3').style.display='none';
+  document.getElementById('mrg-s4').style.display='none';
+  document.getElementById('mrg-s5').style.display='none';
+  document.getElementById('mrg-chips').innerHTML='';
+  document.getElementById('mrg-ranges').innerHTML='';
+  document.getElementById('mrg-pb-fill').style.width='0%';
+  document.getElementById('mrg-pb-status-wrap').innerHTML='';
+  document.getElementById('mrg-btn-run').disabled=true;
+}
+
+// ── Nav Tabs ─────────────────────────────────────────────────────────────────
+function mgTabSwitch(name){
+  var tabs=['main','hist','faq','ia'];
+  document.querySelectorAll('.nav-tab').forEach(function(b,i){b.classList.toggle('on',tabs[i]===name);});
+  document.querySelectorAll('.nav-pane').forEach(function(q){q.classList.toggle('on',q.id==='mg-pane-'+name);});
+  if(name==='faq')mgInitFAQ();
+  if(name==='ia')mgUpdateIAState();
+  if(name==='hist')mgHistRender();
+}
+// ── FAQ ──────────────────────────────────────────────────────────────────────
+var MG_FAQ=[
+  {tag:'Arquivos',q:'Preciso de uma versão específica do RM ou ADP?',a:'Não. Qualquer exportação Excel (xlsx) do RM e ADP funciona. A ferramenta detecta automaticamente os cabeçalhos.'},
+  {tag:'Intervalo',q:'O que é "intervalo de linhas"?',a:'"2-100" processa linhas 2 a 100 (excluindo cabeçalho). Útil para processar campanhas em partes.'},
+  {tag:'Saída',q:'O arquivo gerado substitui o ADP original?',a:'Não. Um novo arquivo é gerado para download. O ADP original nunca é modificado.'},
+  {tag:'Revisão',q:'Posso rejeitar mudanças individuais antes de exportar?',a:'Sim — é o fluxo principal. Após clicar "Analisar", a ferramenta mostra todas as mudanças pendentes com os campos que serão alterados. Clique no ✓ de qualquer linha para rejeitar (vira ✕). Somente as aprovadas são aplicadas ao exportar.'},
+  {tag:'Revisão',q:'Como aprovar ou rejeitar em bloco?',a:'Use os botões "Aprovar todos" e "Rejeitar todos" na barra de filtros. Os filtros (Novas / Atualizações / Cancelamentos) permitem aplicar em bloco só para um tipo de mudança.'},
+  {tag:'Técnico',q:'O que fazer quando linhas do RM não têm correspondência no ADP?',a:'Linhas com status "Alterar" ou "Cancelar" sem chave correspondente no ADP são ignoradas silenciosamente. Verifique se a chave de cada aba está preenchida corretamente no RM.'},
+];
+var mgFaqDone=false,mgFaqChip='Todas';
+function mgInitFAQ(){
+  if(mgFaqDone){mgFilterFAQ();return;}mgFaqDone=true;
+  var tags=['Todas',...new Set(MG_FAQ.map(function(f){return f.tag;}))]
+  var cols={'Arquivos':'#1946E6','Intervalo':'#0D7A4E','Saída':'#B45309','Revisão':'#7C3AED','Técnico':'#6B7280'};
+  document.getElementById('mg-faq-chips').innerHTML=tags.map(function(t){return'<button class="faq-chip'+(t==='Todas'?' on':'')+'" onclick="mgSetFaqChip(\''+t+'\')">'+t+'</button>';}).join('');
+  document.getElementById('mg-faq-list').innerHTML=MG_FAQ.map(function(f,i){
+    var col=cols[f.tag]||'#555';
+    return'<div class="faq-item" data-tag="'+f.tag+'"><div class="faq-q" onclick="this.parentElement.classList.toggle(\'open\')"><span class="faq-q-tag" style="background:'+col+'20;color:'+col+'">'+f.tag+'</span><span class="faq-q-text">'+f.q+'</span><span class="faq-q-arr">▶</span></div><div class="faq-a">'+f.a+'</div></div>';
+  }).join('');
+  mgFilterFAQ();
+}
+function mgSetFaqChip(tag){mgFaqChip=tag;document.querySelectorAll('.faq-chip').forEach(function(c){c.classList.toggle('on',c.textContent===tag);});mgFilterFAQ();}
+function mgFilterFAQ(){
+  var q=(document.getElementById('mg-faq-search')?document.getElementById('mg-faq-search').value:'').toLowerCase();
+  var items=document.querySelectorAll('#mg-faq-list .faq-item'),vis=0;
+  items.forEach(function(el){var ok=(mgFaqChip==='Todas'||el.dataset.tag===mgFaqChip)&&(!q||el.textContent.toLowerCase().includes(q));el.style.display=ok?'':'none';if(ok)vis++;});
+  var cnt=document.getElementById('mg-faq-count');if(cnt)cnt.textContent=vis+' pergunta'+(vis!==1?'s':'');
+  var lst=document.getElementById('mg-faq-list');var emp=lst?lst.querySelector('.faq-empty'):null;
+  if(vis===0&&!emp&&lst)lst.insertAdjacentHTML('beforeend','<div class="faq-empty">Nenhuma dúvida encontrada.</div>');
+  if(vis>0&&emp)emp.remove();
+}
+// ── Export parcial ────────────────────────────────────────────────────────
+function mrgExportParcialUI(){
+  var shts=[...mrgSel];
+  if(shts.length<=1)return'';
+  var checks=shts.map(function(s){
+    var sid='mgexp_'+s.replace(/[^a-z0-9]/gi,'_');
+    return'<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">'+
+      '<input type="checkbox" id="'+sid+'" checked style="cursor:pointer"> '+esc(s)+'</label>';
+  }).join('');
+  return'<div style="margin-top:14px;padding:12px 14px;background:var(--g50);border:1px solid var(--g200);border-radius:8px">'+
+    '<div style="font-size:11px;font-weight:700;color:var(--g600);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Exportar plataformas específicas</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px">'+checks+'</div>'+
+    '<button class="btn btn-g" style="font-size:11px" onclick="mrgExportParcial()">⬇ Baixar seleção</button>'+
+  '</div>';
+}
+
+function mrgExportParcial(){
+  var shts=[...mrgSel].filter(function(s){
+    var sid='mgexp_'+s.replace(/[^a-z0-9]/gi,'_');
+    var el=document.getElementById(sid);return el&&el.checked;
+  });
+  if(!shts.length){alert('Selecione ao menos uma plataforma.');return;}
+
+  // deep copy workbooks com só as plataformas selecionadas
+  var adpWbCopy=JSON.parse(JSON.stringify(mrgAdpWb));
+  var rmWbCopy=JSON.parse(JSON.stringify(mrgRmWb));
+  var nextRow={};
+  Object.keys(adpWbCopy.Sheets).forEach(function(s){
+    var ws=adpWbCopy.Sheets[s];
+    var rng=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):{e:{r:0}};
+    nextRow[s]=rng.e.r+1;
+  });
+
+  var approved=mrgPending.filter(function(c){return c.approved&&shts.indexOf(c.sht)!==-1;});
+  approved.forEach(function(c){
+    var rmWs=rmWbCopy.Sheets[c.sht];var adpWs=adpWbCopy.Sheets[c.shtAdp];
+    if(!rmWs||!adpWs)return;
+    var adpD=XLSX.utils.sheet_to_json(adpWs,{header:1,defval:''});
+    var cols=MRG_COLS[c.shtAdp]||{};
+    var adpSpcI=cols.adpSpc?mrgC(cols.adpSpc):null;
+    var mp=MRG_IDX[c.sht]||[];
+    if(c.act==='new'){
+      var ri=nextRow[c.shtAdp]!==undefined?nextRow[c.shtAdp]:adpD.length;
+      var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
+      if(rmRow){mrgApplyRow(adpWs,rmRow,ri,mp,MRG_FILL_G);rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Concluído Stormx'};nextRow[c.shtAdp]=(nextRow[c.shtAdp]||adpD.length)+1;}
+    }else if(c.act==='upd'){
+      var adpRowIdx=c.adpRow-1;
+      var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
+      if(rmRow){mrgApplyRow(adpWs,rmRow,adpRowIdx,mp,MRG_FILL_U);if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Alterar'};rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Alterado'};}
+    }else if(c.act==='can'){
+      var adpRowIdx=c.adpRow-1;
+      if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
+      rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Cancelado'};
+    }
+  });
+
+  var adpShts=shts.map(function(s){return MRG_RM_TO_ADP[s]||s;});
+  var suffix='_PARCIAL_'+shts.map(function(s){return s.split(/[\s,]/)[0];}).join('-');
+  _mrgPatchAndDownload(mrgAdpBytes,adpWbCopy,adpShts,mrgAdpName.replace(/\.xlsx?$/i,'')+suffix+'.xlsx',null);
+}
+
+// ── Copiar valor ──────────────────────────────────────────────────────────
+function mgCopyVal(btn,val){
+  if(!navigator.clipboard){alert(val);return;}
+  navigator.clipboard.writeText(val).then(function(){
+    btn.textContent='✓';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='⧉';btn.classList.remove('copied');},1500);
+  });
+}
+
+// ── Histórico de sessão ───────────────────────────────────────────────────
+var mgHistoria=[];
+
+function mgHistAdd(entry){
+  mgHistoria.unshift(entry);
+  // atualiza badge na tab
+  var tabs=document.querySelectorAll('.nav-tab');
+  if(tabs[1])tabs[1].textContent='🕓 Histórico ('+mgHistoria.length+')';
+}
+
+function mgHistRender(){
+  var el=document.getElementById('mg-hist-list');
+  if(!el)return;
+  if(!mgHistoria.length){el.innerHTML='<div class="hist-empty">Nenhuma operação realizada nesta sessão.</div>';return;}
+  el.innerHTML=mgHistoria.map(function(h,i){
+    var statsHtml=h.stats.map(function(s){
+      return'<span class="hist-stat" style="background:'+s.bg+';color:'+s.color+'">'+s.label+'</span>';
+    }).join('');
+    var noMatchHtml=h.noMatch&&h.noMatch.length?
+      '<details style="margin-top:8px"><summary style="font-size:11px;color:var(--warn);cursor:pointer">⚠ '+h.noMatch.length+' linha(s) sem correspondência</summary>'+
+      '<div style="font-size:11px;color:var(--g600);margin-top:4px;line-height:1.7">'+
+      h.noMatch.map(function(nm){return'<div>RM <b>'+esc(nm.sht)+'</b> linha '+nm.rmRow+': chave <code>'+esc(nm.chave)+'</code> não encontrada no ADP</div>';}).join('')+
+      '</div></details>':'';
+    return'<div class="hist-item">'+
+      '<div class="hist-ico">'+h.ico+'</div>'+
+      '<div class="hist-info">'+
+        '<div class="hist-ts">'+h.ts+'</div>'+
+        '<div class="hist-title">'+esc(h.title)+'</div>'+
+        '<div class="hist-stats">'+statsHtml+'</div>'+
+        noMatchHtml+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function mgHistClear(){
+  if(!mgHistoria.length)return;
+  if(!confirm('Limpar histórico desta sessão?'))return;
+  mgHistoria=[];
+  var tabs=document.querySelectorAll('.nav-tab');
+  if(tabs[1])tabs[1].textContent='🕓 Histórico';
+  mgHistRender();
+}
+
+function mgHistExportLog(){
+  if(!mgHistoria.length){alert('Nenhum histórico para exportar.');return;}
+  var rows=[['Timestamp','Operação','Plataformas','Novas','Alteradas','Canceladas','Rejeitadas','Sem match']];
+  mgHistoria.forEach(function(h){
+    rows.push([
+      h.ts,h.title,h.sheets||'',
+      h.rawStats.n||0,h.rawStats.u||0,h.rawStats.can||0,h.rawStats.rej||0,
+      h.noMatch?h.noMatch.length:0
+    ]);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='merge_log_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+// ── Sem match tracker ─────────────────────────────────────────────────────
+var mrgNoMatch=[];
+
+// ── Validação de arquivo ──────────────────────────────────────────────────
+var MRG_EXPECTED={
+  'Google':{rmMin:52,adpMin:120},
+  'Programmatic':{rmMin:60,adpMin:130},
+  'Youtube':{rmMin:54,adpMin:120},
+  'Meta e Tiktok':{rmMin:55,adpMin:120},
+  'Pinterest, Snapchat e Twitter':{rmMin:55,adpMin:100},
+  'Flashtalking':{rmMin:48,adpMin:100},
+};
+
+function mrgValidarArquivos(){
+  var avisos=[];
+  Object.keys(MRG_EXPECTED).forEach(function(sht){
+    var exp=MRG_EXPECTED[sht];
+    if(mrgRmWb&&mrgRmWb.Sheets[sht]){
+      var ws=mrgRmWb.Sheets[sht];
+      var rng=XLSX.utils.decode_range(ws['!ref']||'A1');
+      var cols=rng.e.c+1;
+      if(cols<exp.rmMin)avisos.push('RM · '+sht+': '+cols+' colunas (esperado ≥'+exp.rmMin+') — versão desatualizada?');
+    }
+    if(mrgAdpWb&&mrgAdpWb.Sheets[sht]){
+      var ws=mrgAdpWb.Sheets[sht];
+      var rng=XLSX.utils.decode_range(ws['!ref']||'A1');
+      var cols=rng.e.c+1;
+      if(cols<exp.adpMin)avisos.push('ADP · '+sht+': '+cols+' colunas (esperado ≥'+exp.adpMin+') — versão desatualizada?');
+    }
+  });
+  return avisos;
+}
+
+var MG_IA={gemini:{name:'Gemini',ls:'mg_key_gemini'},claude:{name:'Claude',ls:'mg_key_claude'},openai:{name:'OpenAI',ls:'mg_key_openai'}};
+function mgGetKey(pid){try{return localStorage.getItem(MG_IA[pid].ls)||'';}catch(e){return '';}}
+function mgHasKey(){return Object.keys(MG_IA).some(function(q){return !!mgGetKey(q);});}
+function mgActiveProv(){return Object.keys(MG_IA).find(function(q){return !!mgGetKey(q);});}
+function mgUpdateIAState(){
+  var ok=mgHasKey(),pid=mgActiveProv();
+  var nk=document.getElementById('mg-ia-nokey'),rdy=document.getElementById('mg-ia-ready');
+  if(nk)nk.style.display=ok?'none':'';if(rdy)rdy.classList.toggle('show',ok);
+  var dot=document.getElementById('mg-cfg-dot'),lbl=document.getElementById('mg-cfg-lbl');
+  if(dot)dot.classList.toggle('ok',ok);if(lbl)lbl.textContent=ok?(MG_IA[pid].name+' configurado'):'Configurar IA';
+  Object.keys(MG_IA).forEach(function(q){var inp=document.getElementById('mg-key-'+q);if(inp)inp.value=mgGetKey(q);});
+}
+function mgOpenCfg(){document.getElementById('mg-cfg-overlay').classList.add('open');mgUpdateIAState();}
+function mgCloseCfg(){document.getElementById('mg-cfg-overlay').classList.remove('open');mgUpdateIAState();}
+function mgSetCfgTab(pid){Object.keys(MG_IA).forEach(function(q){document.getElementById('mg-ctab-'+q).classList.toggle('on',q===pid);document.getElementById('mg-cpanel-'+q).classList.toggle('on',q===pid);});}
+function mgSaveCfgKey(pid){var v=(document.getElementById('mg-key-'+pid).value||'').trim();try{if(v)localStorage.setItem(MG_IA[pid].ls,v);else localStorage.removeItem(MG_IA[pid].ls);}catch(e){}mgCloseCfg();}
+async function mgAnalisarIA(){
+  var pid=mgActiveProv();if(!pid){mgOpenCfg();return;}
+  var res=document.getElementById('mg-ia-result');if(!res)return;
+  res.innerHTML='<span style="color:var(--g400)">⏳ Analisando...</span>';
+  var promptText='Especialista em operações de mídia no Brasil. Sobre o Merge RM→ADP:\n\n1. Boas práticas ao mesclar RM e ADP\n2. O que validar após o merge\n3. Riscos comuns e como evitar\n4. Conclusão\n\nUse ## títulos.';
+  var key=mgGetKey(pid);
+  try{
+    var resp,text,d;var prompt=promptText;
+    if(pid==='gemini'){resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});d=await resp.json();if(!resp.ok)throw new Error(d.error?.message||'Erro Gemini');text=d.candidates?.[0]?.content?.parts?.[0]?.text||'';}
+    else if(pid==='claude'){resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:1024,messages:[{role:'user',content:prompt}]})});d=await resp.json();if(!resp.ok)throw new Error(d.error?.message||'Erro Claude');text=d.content?.[0]?.text||'';}
+    else{resp=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:prompt}]})});d=await resp.json();if(!resp.ok)throw new Error(d.error?.message||'Erro OpenAI');text=d.choices?.[0]?.message?.content||'';}
+    res.innerHTML=text.replace(/^## (.+)$/gm,'<h3>$1</h3>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/^[*-] (.+)$/gm,'<li>$1</li>').replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>');
+  }catch(e){res.innerHTML='<span style="color:red">❌ '+e.message+'</span>';}
+}
+
+
+function abrirAjuda(){document.getElementById('qa-overlay').classList.add('open')}
+function fecharAjuda(e){if(!e||e.target===document.getElementById('qa-overlay'))document.getElementById('qa-overlay').classList.remove('open')}
+
+</script>
+  </div><!-- /nav-pane-main -->
+  <div class="nav-pane" id="mg-pane-hist">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:14px;font-weight:700">Histórico da sessão</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-g" style="font-size:11px;padding:4px 10px" onclick="mgHistExportLog()">⬇ Exportar log CSV</button>
+        <button class="btn btn-g" style="font-size:11px;padding:4px 10px;color:var(--err)" onclick="mgHistClear()">🗑 Limpar</button>
+      </div>
+    </div>
+    <div id="mg-hist-list"><div class="hist-empty">Nenhuma operação realizada nesta sessão.</div></div>
+  </div>
+  <div class="nav-pane" id="mg-pane-faq">
+    <div class="faq-toolbar">
+      <div class="faq-search-wrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="faq-search" id="mg-faq-search" placeholder="Buscar dúvida..." oninput="mgFilterFAQ()"></div>
+      <span class="faq-count" id="mg-faq-count"></span>
+    </div>
+    <div class="faq-chips" id="mg-faq-chips"></div>
+    <div id="mg-faq-list"></div>
+  </div>
+  <div class="nav-pane" id="mg-pane-ia">
+    <div class="ia-head"><h2>🤖 Análise IA</h2><button class="btn-cfg-open" id="mg-btn-cfg" onclick="mgOpenCfg()"><span class="cfg-dot" id="mg-cfg-dot"></span><span id="mg-cfg-lbl">Configurar IA</span></button></div>
+    <div id="mg-ia-nokey"><div class="ia-no-key"><div style="font-size:32px;margin-bottom:8px">🔑</div><p>Configure uma chave de API para analisar resultados com IA.</p><button class="btn-cfg-cta" onclick="mgOpenCfg()">⚙️ Configurar IA gratuita</button></div></div>
+    <div class="ia-ready" id="mg-ia-ready"><div class="ia-actions"><button style="background:var(--ul);color:#fff;border:none;border-radius:7px;padding:9px 18px;font:600 13px 'DM Sans',sans-serif;cursor:pointer" onclick="mgAnalisarIA()">🤖 Analisar resultado atual</button></div><div class="ia-result" id="mg-ia-result" style="color:var(--g400);font-style:italic">Conclua uma operação e clique em "Analisar".</div></div>
+  </div>
+
+</div><!-- /wrap -->
+<div class="cfg-overlay" id="mg-cfg-overlay" onclick="if(event.target===this)mgCloseCfg()">
+  <div class="cfg-modal">
+    <div class="cfg-modal-hdr"><h3>⚙️ Configurar IA</h3><button class="cfg-close" onclick="mgCloseCfg()">✕</button></div>
+    <div class="cfg-modal-body">
+      <p style="font-size:13px;color:var(--g500);margin-bottom:16px">Chave salva <strong>apenas no seu navegador</strong>.</p>
+      <div class="cfg-tabs"><button class="cfg-tab on" id="mg-ctab-gemini" onclick="mgSetCfgTab('gemini')">🔷 Gemini</button><button class="cfg-tab" id="mg-ctab-claude" onclick="mgSetCfgTab('claude')">🟠 Claude</button><button class="cfg-tab" id="mg-ctab-openai" onclick="mgSetCfgTab('openai')">🟢 OpenAI</button></div>
+      <div class="cfg-panel on" id="mg-cpanel-gemini"><div class="cfg-lbl">Google Gemini API Key</div><input class="cfg-inp" id="mg-key-gemini" type="password" placeholder="AIza..."><a class="cfg-link" href="https://aistudio.google.com/app/apikey" target="_blank">↗ Google AI Studio (gratuito)</a><button class="btn-cfg-save" onclick="mgSaveCfgKey('gemini')">Salvar Gemini</button></div>
+      <div class="cfg-panel" id="mg-cpanel-claude"><div class="cfg-lbl">Anthropic Claude API Key</div><input class="cfg-inp" id="mg-key-claude" type="password" placeholder="sk-ant-..."><a class="cfg-link" href="https://console.anthropic.com/settings/keys" target="_blank">↗ console.anthropic.com</a><button class="btn-cfg-save" onclick="mgSaveCfgKey('claude')">Salvar Claude</button></div>
+      <div class="cfg-panel" id="mg-cpanel-openai"><div class="cfg-lbl">OpenAI API Key</div><input class="cfg-inp" id="mg-key-openai" type="password" placeholder="sk-proj-..."><a class="cfg-link" href="https://platform.openai.com/api-keys" target="_blank">↗ platform.openai.com</a><button class="btn-cfg-save" onclick="mgSaveCfgKey('openai')">Salvar OpenAI</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Como usar modal ─────────────────────────────── -->
+<div class="qa-overlay" id="qa-overlay" onclick="fecharAjuda(event)">
+  <div class="qa-modal">
+    <div class="qa-header">
+      <h2>🛠️ Como usar · Merge RM → ADP</h2>
+      <button class="qa-close" onclick="fecharAjuda()">✕</button>
+    </div>
+    <div class="qa-body">
+      <div class="help-section">
+        <h3>Visão geral</h3>
+        <p>Use o <b>Merge RM → ADP</b> para otimizar suas operações de mídia digital.</p>
+      </div>
+      <div class="help-section">
+        <h3>Passo a passo</h3>
+      <div class="help-step">
+        <div class="help-num">1</div>
+        <div class="help-txt"><b>Configure a entrada</b><br>Preencha os campos de entrada com os dados necessários.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">2</div>
+        <div class="help-txt"><b>Execute a operação</b><br>Clique no botão principal para processar os dados.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">3</div>
+        <div class="help-txt"><b>Revise o resultado</b><br>O resultado é exibido na área de saída com destaques relevantes.</div>
+      </div>
+      <div class="help-step">
+        <div class="help-num">4</div>
+        <div class="help-txt"><b>Exporte ou copie</b><br>Use as opções de exportação para usar o resultado em outras ferramentas.</div>
+      </div>
+      </div>
+      <div class="help-tip">
+        💡 <b>Dica:</b> Todos os cálculos e gerações acontecem localmente no seu browser — nenhum dado é enviado para servidores externos.
+      </div>
+    </div>
+  </div>
+</div>
+
+<button id="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙 Dark</button>
+<script>
+(function(){
+  function toggleTheme(){
+    var d=document.documentElement,dark=d.getAttribute('data-theme')==='dark';
+    d.setAttribute('data-theme',dark?'':'dark');
+    var b=document.getElementById('theme-btn');
+    if(b)b.textContent=dark?'🌙 Dark':'☀️ Light';
+    try{localStorage.setItem('nc-theme',dark?'':'dark');}catch(e){}
+  }
+  window.toggleTheme=toggleTheme;
+  try{
+    if(localStorage.getItem('nc-theme')==='dark'){
+      document.documentElement.setAttribute('data-theme','dark');
+      document.addEventListener('DOMContentLoaded',function(){
+        var b=document.getElementById('theme-btn');if(b)b.textContent='☀️ Light';
+      });
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

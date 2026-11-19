@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de Frequência — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--orange:#ea580c;--yellow:#ca8a04;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.info-box{background:var(--light);border-radius:10px;padding:14px}
+.info-label{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.info-val{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.info-val.ok{color:var(--green)}
+.info-val.warn{color:var(--yellow)}
+.info-val.err{color:var(--red)}
+/* Freq distribution chart */
+.freq-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;font-size:.82rem}
+.freq-label{min-width:36px;text-align:right;font-family:var(--mono);font-weight:600}
+.freq-bar-wrap{flex:1;height:20px;background:var(--border);border-radius:4px;overflow:hidden}
+.freq-bar{height:100%;background:var(--azul);border-radius:4px;transition:width .3s}
+.freq-pct{min-width:46px;font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.tab-btn{padding:8px 18px;border:none;background:transparent;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* Cap analysis */
+.cap-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📡 Simulador de Frequência</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('distribuicao')">Distribuição</button>
+  <button class="tab-btn" onclick="switchTab('cap')">Análise de Cap</button>
+  <button class="tab-btn" onclick="switchTab('ref')">Referência</button>
+</div>
+
+<!-- Tab 1: Distribuição -->
+<div class="tab-panel active" id="tab-distribuicao">
+<div class="card">
+  <div class="card-title">Parâmetros de Campanha</div>
+  <div class="grid3" style="margin-bottom:12px">
+    <div>
+      <label>Universo (pessoas únicas)</label>
+      <input type="number" id="universe" value="2000000" min="1000">
+    </div>
+    <div>
+      <label>Impressões totais</label>
+      <input type="number" id="impressions" value="6000000" min="0">
+    </div>
+    <div>
+      <label>Modelo de distribuição</label>
+      <select id="distModel">
+        <option value="poisson">Poisson (programático aberto)</option>
+        <option value="binomial">Binomial (social, targeting)</option>
+        <option value="geometric">Geométrica (tentativas independentes)</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <label>Frequency cap (máximo por pessoa)</label>
+      <input type="number" id="freqCap" value="10" min="1" max="100">
+    </div>
+    <div>
+      <label>OTS — Opportunity to See (mín. para impacto)</label>
+      <input type="number" id="otsMin" value="3" min="1">
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="simulate()">📊 Simular</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadExample('branding')">Exemplo Branding</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadExample('performance')">Exemplo Performance</button>
+  </div>
+</div>
+
+<div id="simResults" style="display:none">
+<div class="card">
+  <div class="card-title">Resultado da Simulação</div>
+  <div class="info-grid" id="simGrid"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">Distribuição de Frequência</div>
+  <div id="freqChart"></div>
+</div>
+</div>
+</div>
+
+<!-- Tab 2: Análise de Cap -->
+<div class="tab-panel" id="tab-cap">
+<div class="card">
+  <div class="card-title">Análise de Frequency Cap vs. Desperdício</div>
+  <p class="hint" style="margin-bottom:14px">Simule diferentes caps e veja o impacto em impressões desperdiçadas (acima do cap), alcance efetivo e custo de oportunidade.</p>
+  <div class="grid3" style="margin-bottom:12px">
+    <div>
+      <label>Universo</label>
+      <input type="number" id="capUniverse" value="2000000" min="1000">
+    </div>
+    <div>
+      <label>Impressões totais</label>
+      <input type="number" id="capImpressions" value="6000000">
+    </div>
+    <div>
+      <label>CPM (R$)</label>
+      <input type="number" id="capCpm" value="12.00" step="0.01">
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="simCaps()">📊 Analisar Caps</button>
+</div>
+
+<div id="capResults" style="display:none">
+<div class="card">
+  <div class="card-title">Comparativo de Caps</div>
+  <div style="overflow-x:auto">
+    <table id="capTable" style="width:100%;border-collapse:collapse;font-size:.84rem">
+      <thead><tr style="background:var(--light)">
+        <th style="padding:8px 10px;text-align:left;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted)">Cap</th>
+        <th style="padding:8px 10px;text-align:left;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted)">Alcance</th>
+        <th style="padding:8px 10px;text-align:left;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted)">Freq Média</th>
+        <th style="padding:8px 10px;text-align:left;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted)">Imps Acima Cap</th>
+        <th style="padding:8px 10px;text-align:left;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted)">Desperdício R$</th>
+        <th style="padding:8px 10px;text-align:left;font-size:.74rem;font-weight:700;text-transform:uppercase;color:var(--muted)">CPM Efetivo</th>
+      </tr></thead>
+      <tbody id="capTbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Tab 3: Reference -->
+<div class="tab-panel" id="tab-ref">
+<div class="card">
+  <div class="card-title">Referência de Frequência por Objetivo</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:.85rem;line-height:1.9">
+    <div>
+      <b style="color:var(--azul)">Branding / Awareness</b><br>
+      OTS mínimo: 3×<br>
+      OTS ideal: 7–9× (Recency Theory)<br>
+      Freq cap típica: 10–15/semana<br><br>
+      <b style="color:var(--azul)">Consideração</b><br>
+      OTS mínimo: 5×<br>
+      OTS ideal: 10–12×<br>
+      Freq cap típica: 15–20/semana<br><br>
+      <b style="color:var(--azul)">Performance / Conversão</b><br>
+      OTS mínimo: 1× (last-click)<br>
+      Cap menor = menos fadiga<br>
+      Freq cap típica: 3–7/semana
+    </div>
+    <div>
+      <b style="color:var(--azul)">Por Canal</b><br>
+      YouTube: 2–5×/semana (OTS video)<br>
+      Meta: 3–5×/semana (stories+feed)<br>
+      Display Programático: 7–12×/semana<br>
+      CTV/Streaming: 3–5×/semana<br>
+      DOOH: N/A (não personalizável)<br><br>
+      <b style="color:var(--azul)">Modelos de Distribuição</b><br>
+      Poisson: λ = imps/universo<br>
+      P(k) = e^-λ × λ^k / k!<br>
+      Binomial: n=imps, p=1/universo<br>
+      Geométrica: P(k) = (1-p)^(k-1) × p
+    </div>
+  </div>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('freq_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('freq_theme')||'light');
+
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{b.classList.toggle('active',b.onclick.toString().includes("'"+id+"'"));});
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
+}
+
+// --- Poisson ---
+function poissonPMF(lambda,k){
+  if(k<0)return 0;
+  let logP=-lambda+k*Math.log(lambda);
+  for(let i=1;i<=k;i++)logP-=Math.log(i);
+  return Math.exp(logP);
+}
+function binomialPMF(n,p,k){
+  // approx via log
+  let logP=0;
+  for(let i=0;i<k;i++)logP+=Math.log(n-i)-Math.log(i+1);
+  logP+=k*Math.log(p)+(n-k)*Math.log(1-p);
+  return Math.exp(logP);
+}
+function geometricPMF(p,k){return k<1?0:Math.pow(1-p,k-1)*p;}
+
+function getDistProbs(model,lambda,p_binom,n_binom,p_geo,maxK){
+  const probs=[];
+  for(let k=0;k<=maxK;k++){
+    if(model==='poisson')probs.push(poissonPMF(lambda,k));
+    else if(model==='binomial')probs.push(k<=n_binom?binomialPMF(n_binom,p_binom,k):0);
+    else probs.push(geometricPMF(p_geo,k));
+  }
+  return probs;
+}
+
+function simulate(){
+  const universe=parseFloat(document.getElementById('universe').value)||2e6;
+  const imps=parseFloat(document.getElementById('impressions').value)||6e6;
+  const cap=parseInt(document.getElementById('freqCap').value)||10;
+  const ots=parseInt(document.getElementById('otsMin').value)||3;
+  const model=document.getElementById('distModel').value;
+
+  const lambda=imps/universe;
+  const p_binom=1/universe;
+  const p_geo=universe/imps;
+  const maxK=Math.min(50,cap+10);
+
+  const probs=getDistProbs(model,lambda,p_binom,imps,p_geo,maxK);
+
+  // Normalize
+  const sum=probs.reduce((a,b)=>a+b,0);
+  const normProbs=probs.map(p=>p/sum);
+
+  // Metrics
+  const pZero=normProbs[0]||0;
+  const reach=universe*(1-pZero);
+  const freqDist=normProbs.slice(0,maxK+1).map((p,k)=>({k,people:universe*p}));
+  const impsBelowCap=freqDist.slice(0,cap+1).reduce((a,{k,people})=>a+k*people,0);
+  const impsAboveCap=freqDist.slice(cap+1).reduce((a,{k,people})=>a+k*people,0);
+  const otsPeople=universe*(normProbs.slice(ots).reduce((a,b)=>a+b,0));
+  const avgFreq=imps/Math.max(reach,1);
+  const effFreq=imps/(universe*(1-normProbs.slice(0,ots).reduce((a,b)=>a+b,0))||1);
+
+  document.getElementById('simGrid').innerHTML=[
+    {l:'Alcance (1+ imps)',v:fmt(reach)+' ('+((reach/universe)*100).toFixed(1)+'%)'},
+    {l:'Freq. média (alcançados)',v:avgFreq.toFixed(1)+'×'},
+    {l:'Pessoas '+ots+'+× (OTS)',v:fmt(otsPeople)+' ('+((otsPeople/universe)*100).toFixed(1)+'%)',cls:'ok'},
+    {l:'Imps abaixo do cap',v:fmt(impsBelowCap)},
+    {l:'Imps acima do cap',v:fmt(impsAboveCap),cls:impsAboveCap>imps*.2?'warn':''},
+    {l:'λ (Freq. esperada)',v:lambda.toFixed(2)+'×'},
+  ].map(r=>`<div class="info-box"><div class="info-label">${r.l}</div><div class="info-val ${r.cls||''}">${r.v}</div></div>`).join('');
+
+  // Chart
+  const maxPct=Math.max(...normProbs.slice(1,Math.min(cap+5,maxK+1)))*100;
+  const chartRows=[];
+  for(let k=1;k<=Math.min(cap+5,maxK);k++){
+    const pct=normProbs[k]*100;
+    const barW=maxPct>0?Math.round(pct/maxPct*100):0;
+    const isCap=k===cap;
+    chartRows.push(`<div class="freq-bar-row">
+      <span class="freq-label" style="${isCap?'color:var(--red)':''}">${k}×${isCap?' ⛔':''}</span>
+      <div class="freq-bar-wrap"><div class="freq-bar" style="width:${barW}%;background:${k>=ots?'var(--azul)':'var(--muted)'}"></div></div>
+      <span class="freq-pct">${pct.toFixed(2)}%</span>
+      <span style="font-size:.78rem;color:var(--muted)">${fmt(universe*normProbs[k])}</span>
+    </div>`);
+  }
+  document.getElementById('freqChart').innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:12px;font-size:.8rem;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:var(--muted);border-radius:3px;display:inline-block"></span>Abaixo do OTS (${ots}×)</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;background:var(--azul);border-radius:3px;display:inline-block"></span>Acima do OTS</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="color:var(--red);font-weight:700">⛔</span> Frequency cap (${cap}×)</span>
+    </div>
+    ${chartRows.join('')}`;
+
+  document.getElementById('simResults').style.display='block';
+}
+
+function simCaps(){
+  const universe=parseFloat(document.getElementById('capUniverse').value)||2e6;
+  const imps=parseFloat(document.getElementById('capImpressions').value)||6e6;
+  const cpm=parseFloat(document.getElementById('capCpm').value)||12;
+  const lambda=imps/universe;
+  const caps=[2,3,5,7,10,15,20,999];
+
+  const rows=caps.map(cap=>{
+    const maxK=Math.max(50,cap+5);
+    const probs=[];
+    for(let k=0;k<=maxK;k++)probs.push(poissonPMF(lambda,k));
+    const sum=probs.reduce((a,b)=>a+b,0);
+    const norm=probs.map(p=>p/sum);
+    const reach=universe*(1-norm[0]);
+    const impsAbove=Array.from({length:maxK+1},(_,k)=>k>cap?k*universe*norm[k]:0).reduce((a,b)=>a+b,0);
+    const waste=impsAbove/imps*100;
+    const wasteCost=impsAbove/1000*cpm;
+    const effCpm=cpm/(1-waste/100);
+    const freqMed=imps/Math.max(reach,1);
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 10px;font-family:var(--mono);font-weight:700">${cap===999?'Sem cap':cap+'×'}</td>
+      <td style="padding:8px 10px;font-family:var(--mono)">${fmt(reach)}</td>
+      <td style="padding:8px 10px;font-family:var(--mono)">${freqMed.toFixed(1)}×</td>
+      <td style="padding:8px 10px;font-family:var(--mono);color:${waste>20?'var(--red)':waste>10?'var(--yellow)':'var(--green)'}">${fmt(impsAbove)} (${waste.toFixed(1)}%)</td>
+      <td style="padding:8px 10px;font-family:var(--mono);color:${wasteCost>imps/1000*cpm*.3?'var(--red)':'var(--text)'}">${wasteCost>0?'R$'+fmtR(wasteCost):'—'}</td>
+      <td style="padding:8px 10px;font-family:var(--mono)">${effCpm>0?'R$'+effCpm.toFixed(2):'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('capTbody').innerHTML=rows;
+  document.getElementById('capResults').style.display='block';
+}
+
+function fmt(n){
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return (n/1e3).toFixed(1)+'k';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+function fmtR(n){
+  return n>=1000?(n/1000).toFixed(1)+'k':n.toFixed(2);
+}
+
+function loadExample(type){
+  if(type==='branding'){
+    document.getElementById('universe').value='5000000';
+    document.getElementById('impressions').value='20000000';
+    document.getElementById('freqCap').value='15';
+    document.getElementById('otsMin').value='7';
+    document.getElementById('distModel').value='poisson';
+  }else{
+    document.getElementById('universe').value='800000';
+    document.getElementById('impressions').value='2400000';
+    document.getElementById('freqCap').value='5';
+    document.getElementById('otsMin').value='2';
+    document.getElementById('distModel').value='binomial';
+  }
+  simulate();
+}
+</script>
+</body>
+</html>

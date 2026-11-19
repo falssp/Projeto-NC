@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador de Qualidade de Lead</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+:root{
+  --header:#1a237e;--accent:#1F36C7;--hl-bg:#e8ecfd;--border:#d6dbf2;--page-bg:#f4f5fb;
+  --green:#16a34a;--green-bg:#dcfce7;--yellow:#ca8a04;--yellow-bg:#fef9c3;
+  --red:#dc2626;--red-bg:#fee2e2;--orange:#ea580c;--orange-bg:#ffedd5;
+  --text:#1e293b;--muted:#64748b;--radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--page-bg);color:var(--text);min-height:100vh}
+header{background:var(--header);color:#fff;padding:18px 32px;display:flex;align-items:center;gap:14px}
+header .ico{font-size:1.6rem}
+header h1{font-size:1.25rem;font-weight:700}
+header p{font-size:.8rem;opacity:.75;margin-top:2px}
+.main{padding:28px 32px;min-width:0}
+.layout{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.panel-head{background:var(--hl-bg);padding:14px 20px;font-weight:600;font-size:.9rem;color:var(--accent);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.panel-body{padding:18px 20px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.8rem;font-weight:500;margin-bottom:4px;color:var(--text)}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem;color:var(--text);background:#fff;transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sec-title{font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;margin-top:16px}
+.analyze-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95rem;font-weight:600;cursor:pointer;margin-top:8px;transition:background .15s}
+.analyze-btn:hover{background:var(--header)}
+/* Score */
+.score-circle{display:flex;flex-direction:column;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:6px solid;margin:0 auto 16px}
+.score-circle .num{font-size:2rem;font-weight:700}
+.score-circle .lbl{font-size:.72rem;font-weight:500;text-transform:uppercase}
+.score-excellent{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.score-good{border-color:#2563eb;color:#2563eb;background:#dbeafe}
+.score-regular{border-color:var(--yellow);color:var(--yellow);background:var(--yellow-bg)}
+.score-critical{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+/* Metric rows */
+.metric-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-row .m-name{flex:1;font-size:.85rem;font-weight:500}
+.metric-row .m-val{font-size:.85rem;font-weight:700;min-width:70px;text-align:right}
+.metric-row .m-bar{flex:2;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.metric-row .m-fill{height:100%;border-radius:4px;transition:width .4s}
+.metric-row .m-badge{min-width:65px;text-align:center}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:600}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-blue{background:var(--hl-bg);color:var(--accent)}
+.badge-orange{background:var(--orange-bg);color:var(--orange)}
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:.83rem}
+.tbl th{background:var(--hl-bg);padding:9px 12px;text-align:left;font-weight:600;color:var(--accent);font-size:.78rem;border-bottom:1px solid var(--border)}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--page-bg)}
+/* Diagnosis */
+.diag-item{padding:12px 14px;border-radius:8px;border-left:4px solid;font-size:.84rem;line-height:1.5;margin-bottom:8px}
+.diag-item.ok{background:var(--green-bg);border-color:var(--green);color:#15803d}
+.diag-item.warn{background:var(--yellow-bg);border-color:var(--yellow);color:#92400e}
+.diag-item.bad{background:var(--red-bg);border-color:var(--red);color:#991b1b}
+.diag-item.info{background:var(--hl-bg);border-color:var(--accent);color:var(--accent)}
+.diag-item strong{display:block;margin-bottom:2px}
+/* Channels */
+.ch-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ch-row:last-child{border-bottom:none}
+.ch-num{font-size:.8rem;color:var(--muted);min-width:16px;text-align:center}
+.ch-name{flex:1;font-size:.85rem;font-weight:600}
+.ch-vol{font-size:.8rem;color:var(--muted);min-width:60px;text-align:right}
+.ch-score-bar{flex:2;height:10px;background:var(--border);border-radius:5px;overflow:hidden}
+.ch-score-fill{height:100%;border-radius:5px}
+.ch-score-val{font-size:.85rem;font-weight:700;min-width:36px;text-align:right}
+/* Projection */
+.proj-box{background:linear-gradient(135deg,var(--hl-bg),#dbeafe);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;font-size:.85rem;line-height:1.6}
+.proj-box strong{color:var(--accent)}
+/* Copy btn */
+.copy-btn{padding:9px 18px;background:#fff;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;font-weight:500;cursor:pointer;color:var(--text);transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .ico{font-size:3rem;margin-bottom:12px}
+footer{text-align:center;padding:20px;color:var(--muted);font-size:.78rem;border-top:1px solid var(--border);margin-top:32px}
+/* Channel builder */
+.ch-builder{display:flex;flex-direction:column;gap:8px}
+.ch-entry{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end}
+.ch-entry input,.ch-entry select{padding:7px 8px;border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:.8rem;color:var(--text)}
+.ch-entry input:focus,.ch-entry select:focus{outline:none;border-color:var(--accent)}
+.rm-btn{padding:7px 10px;background:var(--red-bg);border:none;border-radius:7px;cursor:pointer;color:var(--red);font-size:.85rem}
+.rm-btn:hover{background:var(--red);color:#fff}
+.add-ch-btn{padding:8px;background:var(--hl-bg);border:1px dashed var(--border);border-radius:7px;cursor:pointer;font-family:inherit;font-size:.82rem;color:var(--accent);transition:all .15s;width:100%}
+.add-ch-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <div class="ico">🎯</div>
+  <div>
+    <h1>Analisador de Qualidade de Lead</h1>
+    <p>Avalie a qualidade dos leads, compare por canal e identifique onde o funil de vendas quebra</p>
+  </div>
+</header>
+<div class="main">
+  <div class="layout">
+    <!-- Left: form -->
+    <div>
+      <div class="panel">
+        <div class="panel-head">📋 Dados Gerais</div>
+        <div class="panel-body">
+          <div class="field"><label>Campanha / Período</label><input type="text" id="campanha" placeholder="ex: Lead Gen Q4 2024"></div>
+          <div class="field-row">
+            <div class="field"><label>Vertical / Setor</label>
+              <select id="vertical">
+                <option>Geral</option><option>B2B Tech</option><option>Educação</option><option>Financeiro</option>
+                <option>Saúde</option><option>Imobiliário</option><option>Automotivo</option><option>Varejo</option>
+              </select>
+            </div>
+            <div class="field"><label>Período (dias)</label><input type="number" id="periodo" min="1" placeholder="30"></div>
+          </div>
+          <div class="sec-title">Volume e Qualificação</div>
+          <div class="field-row">
+            <div class="field"><label>Total de leads gerados</label><input type="number" id="total_leads" placeholder="ex: 1000" oninput="autoCalc()"></div>
+            <div class="field"><label>Leads qualificados</label><input type="number" id="leads_qual" placeholder="ex: 250" oninput="autoCalc()"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Leads → Oportunidade</label><input type="number" id="leads_opp" placeholder="ex: 100" oninput="autoCalc()"></div>
+            <div class="field"><label>Oportunidades → Cliente</label><input type="number" id="opp_cliente" placeholder="ex: 20" oninput="autoCalc()"></div>
+          </div>
+          <div class="sec-title">Financeiro</div>
+          <div class="field-row">
+            <div class="field"><label>Investimento total (R$)</label><input type="number" id="investimento" placeholder="ex: 10000" oninput="autoCalc()"></div>
+            <div class="field"><label>Receita gerada (R$)</label><input type="number" id="receita" placeholder="ex: 50000" oninput="autoCalc()"></div>
+          </div>
+          <div class="sec-title">Velocidade e Completude</div>
+          <div class="field-row">
+            <div class="field"><label>Tempo médio de resposta (h)</label><input type="number" id="tempo_resposta" placeholder="ex: 2" step="0.1" oninput="autoCalc()"></div>
+            <div class="field"><label>% formulário completo</label><input type="number" id="pct_completo" placeholder="ex: 85" min="0" max="100" oninput="autoCalc()"></div>
+          </div>
+          <div class="sec-title">🏷️ Canais de Origem (opcional)</div>
+          <div class="ch-builder" id="channels"></div>
+          <button class="add-ch-btn" onclick="addChannel()">+ Adicionar canal</button>
+          <button class="analyze-btn" onclick="analyze()" style="margin-top:16px">🔍 Analisar Qualidade</button>
+        </div>
+      </div>
+    </div>
+    <!-- Right: results -->
+    <div id="results">
+      <div class="empty-state"><div class="ico">🎯</div><p>Preencha os dados e clique em <strong>Analisar</strong>.</p></div>
+    </div>
+  </div>
+</div>
+<footer>NC Tool — AdOps Suite · Analisador de Qualidade de Lead</footer>
+<script>
+const BENCH = {
+  taxa_qual: [20,40], lead_opp: [10,25], fechamento: [5,15],
+  tempo_resp: [1,4], pct_completo: [80,95]
+};
+const BENCH_CPL = {
+  'Geral':[20,80],'B2B Tech':[50,200],'Educação':[10,40],
+  'Financeiro':[30,120],'Saúde':[20,80],'Imobiliário':[40,150],
+  'Automotivo':[30,100],'Varejo':[5,30]
+};
+
+let channels = [];
+
+function addChannel(d={}) {
+  channels.push({ name: d.name||'', volume: d.volume||'', qual: d.qual||'', cpl: d.cpl||'' });
+  renderChannels();
+}
+
+function removeChannel(i) { channels.splice(i,1); renderChannels(); }
+
+function renderChannels() {
+  const container = document.getElementById('channels');
+  container.innerHTML = channels.map((ch,i) => `
+    <div class="ch-entry">
+      <input type="text" placeholder="Canal (ex: Meta)" value="${ch.name}" oninput="channels[${i}].name=this.value">
+      <input type="number" placeholder="Volume" value="${ch.volume}" oninput="channels[${i}].volume=this.value">
+      <input type="number" placeholder="% qualif." value="${ch.qual}" oninput="channels[${i}].qual=this.value" step="0.1">
+      <button class="rm-btn" onclick="removeChannel(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function n(id) { return parseFloat(document.getElementById(id)?.value)||0; }
+function nv(v) { return parseFloat(v)||0; }
+
+function autoCalc() {} // could auto-derive %s but kept manual
+
+function scoreMetric(val, bench, lowerIsBetter=false) {
+  if (!val) return null;
+  const [mn,mx] = bench;
+  if (lowerIsBetter) {
+    if (val <= mn) return 100;
+    if (val <= mx) return Math.round(100 - ((val-mn)/(mx-mn))*40);
+    return Math.max(0, Math.round(60 - ((val-mx)/mx)*60));
+  } else {
+    if (val >= mx) return 100;
+    if (val >= mn) return Math.round(60 + ((val-mn)/(mx-mn))*40);
+    return Math.max(0, Math.round((val/mn)*60));
+  }
+}
+
+function scoreClass(s) {
+  if (s>=80) return {cls:'badge-green',lbl:'Excelente',fill:'#16a34a',circleCls:'score-excellent',nome:'Excelente'};
+  if (s>=60) return {cls:'badge-blue',lbl:'Bom',fill:'#2563eb',circleCls:'score-good',nome:'Bom'};
+  if (s>=40) return {cls:'badge-yellow',lbl:'Regular',fill:'#ca8a04',circleCls:'score-regular',nome:'Regular'};
+  return {cls:'badge-red',lbl:'Crítico',fill:'#dc2626',circleCls:'score-critical',nome:'Crítico'};
+}
+
+function fmt(v,d=0){return v||v===0?v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}):'—'}
+function fmtR(v){return v?'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}
+function fmtP(v,d=1){return v||v===0?v.toFixed(d)+'%':'—'}
+
+function analyze() {
+  const tl = n('total_leads'), lq = n('leads_qual'), lo = n('leads_opp');
+  const oc = n('opp_cliente'), inv = n('investimento'), rec = n('receita');
+  const tr = n('tempo_resposta'), pc = n('pct_completo');
+  const vert = document.getElementById('vertical').value;
+
+  const taxaQual = tl&&lq ? lq/tl*100 : 0;
+  const taxaOpp  = tl&&lo ? lo/tl*100 : (lq&&lo ? lo/lq*100 : 0);
+  const taxaFech = lo&&oc ? oc/lo*100 : 0;
+  const cpl      = inv&&tl ? inv/tl : 0;
+  const cplQual  = inv&&lq ? inv/lq : 0;
+  const cac      = inv&&oc ? inv/oc : 0;
+  const roas     = inv&&rec ? rec/inv : 0;
+  const ticket   = oc&&rec ? rec/oc : 0;
+  const ltv3     = ticket * 3;
+
+  const benchCPL = BENCH_CPL[vert]||BENCH_CPL['Geral'];
+  const sCPL = scoreMetric(cplQual, benchCPL, true);
+  const sQual = scoreMetric(taxaQual, BENCH.taxa_qual);
+  const sOpp  = scoreMetric(taxaOpp, BENCH.lead_opp);
+  const sFech = scoreMetric(taxaFech, BENCH.fechamento);
+  const sTR   = tr ? scoreMetric(tr, BENCH.tempo_resp, true) : null;
+  const sPC   = pc ? scoreMetric(pc, BENCH.pct_completo) : null;
+
+  const scores = [sQual,sOpp,sFech,sTR,sPC,sCPL].filter(s=>s!==null);
+  const overall = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : null;
+  const sc = overall !== null ? scoreClass(overall) : null;
+
+  // Metrics table
+  const metrics = [
+    { name:'Taxa de Qualificação', val:fmtP(taxaQual), bench:`${BENCH.taxa_qual[0]}–${BENCH.taxa_qual[1]}%`, score:sQual },
+    { name:'Lead → Oportunidade', val:fmtP(taxaOpp), bench:`${BENCH.lead_opp[0]}–${BENCH.lead_opp[1]}%`, score:sOpp },
+    { name:'Taxa de Fechamento', val:fmtP(taxaFech), bench:`${BENCH.fechamento[0]}–${BENCH.fechamento[1]}%`, score:sFech },
+    tr ? { name:'Tempo de Resposta', val:tr+'h', bench:`${BENCH.tempo_resp[0]}–${BENCH.tempo_resp[1]}h`, score:sTR } : null,
+    pc ? { name:'Formulário Completo', val:fmtP(pc), bench:`${BENCH.pct_completo[0]}–${BENCH.pct_completo[1]}%`, score:sPC } : null,
+    cplQual ? { name:'CPL Qualificado', val:fmtR(cplQual), bench:fmtR(benchCPL[0])+'–'+fmtR(benchCPL[1]), score:sCPL } : null,
+  ].filter(Boolean);
+
+  let metricsHtml = metrics.map(m => {
+    const sc = m.score !== null ? scoreClass(m.score) : null;
+    return `<div class="metric-row">
+      <div class="m-name">${m.name}</div>
+      <div class="m-bar"><div class="m-fill" style="width:${m.score||0}%;background:${sc?sc.fill:'#94a3b8'}"></div></div>
+      <div class="m-val">${m.val}</div>
+      <div class="m-badge">${sc?`<span class="badge ${sc.cls}">${sc.lbl}</span>`:'<span class="badge badge-blue">—</span>'}</div>
+    </div>`;
+  }).join('');
+
+  // KPI cards
+  const kpis = [
+    {l:'Total de Leads',v:fmt(tl)},{l:'Leads Qualificados',v:fmt(lq)},{l:'Oportunidades',v:fmt(lo)},
+    {l:'Clientes',v:fmt(oc)},{l:'CPL',v:fmtR(cpl)},{l:'CPL Qualificado',v:fmtR(cplQual)},
+    {l:'CAC',v:fmtR(cac)},{l:'ROAS',v:roas?roas.toFixed(2)+'x':'—'},{l:'Ticket Médio',v:fmtR(ticket)},
+  ].filter(k=>k.v!=='—'&&k.v!=='R$ 0,00');
+
+  let kpiHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">` +
+    kpis.map(k=>`<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:.7rem;color:var(--muted);font-weight:500;margin-bottom:4px">${k.l}</div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--accent)">${k.v}</div>
+    </div>`).join('') + `</div>`;
+
+  // Diagnosis
+  const diags = [];
+  if (taxaQual > 0) {
+    if (taxaQual >= BENCH.taxa_qual[0]) diags.push({t:'ok',title:'Taxa de qualificação boa',msg:`${fmtP(taxaQual)} dos leads são qualificados — dentro ou acima do benchmark BR de ${BENCH.taxa_qual[0]}–${BENCH.taxa_qual[1]}%.`});
+    else diags.push({t:'bad',title:'Taxa de qualificação crítica',msg:`Apenas ${fmtP(taxaQual)} dos leads são qualificados (benchmark: ${BENCH.taxa_qual[0]}–${BENCH.taxa_qual[1]}%). Revise segmentação, landing page e qualificação do formulário.`});
+  }
+  if (tr > 0) {
+    if (tr <= 1) diags.push({t:'ok',title:'Velocidade de resposta excelente',msg:`Tempo de resposta de ${tr}h é excelente. Leads respondidos em até 1h têm 7x mais chance de qualificação.`});
+    else if (tr > 4) diags.push({t:'bad',title:'Resposta lenta',msg:`Tempo de resposta de ${tr}h está acima do ideal de 1–4h. Cada hora a mais reduz a taxa de qualificação em ~10%.`});
+    else diags.push({t:'warn',title:'Tempo de resposta aceitável',msg:`Tempo de resposta de ${tr}h. Ideal seria abaixo de 1h para maximizar qualificação.`});
+  }
+  if (taxaFech > 0) {
+    if (taxaFech < BENCH.fechamento[0]) diags.push({t:'bad',title:'Taxa de fechamento baixa',msg:`${fmtP(taxaFech)} de oportunidades viram clientes (benchmark: ${BENCH.fechamento[0]}–${BENCH.fechamento[1]}%). Avalie qualidade dos leads passados para o comercial e alinhamento de proposta.`});
+  }
+  if (roas > 0) {
+    diags.push({t: roas>=3?'ok':roas>=1?'warn':'bad', title:`ROAS de ${roas.toFixed(2)}x`, msg:`Cada R$ investido retorna R$ ${roas.toFixed(2)} em receita.${roas<1?' Campanha em prejuízo — revisar urgente.':''}`});
+  }
+  if (!diags.length) diags.push({t:'info',title:'Preencha mais dados',msg:'Adicione mais métricas para gerar diagnóstico automático.'});
+
+  let diagHtml = diags.map(d=>`<div class="diag-item ${d.t}"><strong>${d.title}</strong>${d.msg}</div>`).join('');
+
+  // Channel ranking
+  let chHtml = '';
+  if (channels.filter(c=>c.name).length) {
+    const chData = channels.filter(c=>c.name).map(c => {
+      const q = nv(c.qual); const v = nv(c.volume);
+      const s = q ? scoreMetric(q, BENCH.taxa_qual) : null;
+      return { name:c.name, vol:v, qual:q, score:s };
+    }).sort((a,b)=>(b.score||0)-(a.score||0));
+
+    chHtml = `<div class="panel"><div class="panel-head">🏆 Ranking de Canais por Qualidade</div><div class="panel-body">` +
+      chData.map((ch,i) => {
+        const sc2 = ch.score!==null ? scoreClass(ch.score) : null;
+        const pct = ch.score||0;
+        const color = sc2 ? sc2.fill : '#94a3b8';
+        return `<div class="ch-row">
+          <div class="ch-num">#${i+1}</div>
+          <div class="ch-name">${ch.name}</div>
+          ${ch.vol?`<div class="ch-vol">${fmt(ch.vol)} leads</div>`:'<div class="ch-vol">—</div>'}
+          <div class="ch-score-bar"><div class="ch-score-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="ch-score-val" style="color:${color}">${pct}</div>
+          <div>${sc2?`<span class="badge ${sc2.cls}">${sc2.lbl}</span>`:''}</div>
+        </div>`;
+      }).join('') + `</div></div>`;
+  }
+
+  // Projection
+  let projHtml = '';
+  if (tl && taxaQual && taxaQual < BENCH.taxa_qual[0]) {
+    const targetQual = BENCH.taxa_qual[0];
+    const extraLeads = Math.round(tl * (targetQual - taxaQual) / 100);
+    const extraOpp = lo ? Math.round(extraLeads * (lo/lq||0)) : null;
+    const extraClientes = oc && lo ? Math.round(extraLeads * (oc/lo||0)) : null;
+    const extraRec = extraClientes && ticket ? extraClientes * ticket : null;
+    projHtml = `<div class="panel"><div class="panel-body"><div class="proj-box">
+      <strong>💡 Projeção de Melhoria:</strong><br>
+      Se a taxa de qualificação subir de <strong>${fmtP(taxaQual)}</strong> para o benchmark de <strong>${fmtP(targetQual)}</strong>,
+      isso representaria <strong>+${fmt(extraLeads)} leads qualificados</strong> adicionais com o mesmo volume.
+      ${extraClientes?`Com a taxa de fechamento atual, isso geraria <strong>+${fmt(extraClientes)} novos clientes</strong>.`:''}
+      ${extraRec?`<br>Impacto estimado em receita: <strong>${fmtR(extraRec)}</strong>.`:''}
+    </div></div></div>`;
+  }
+
+  document.getElementById('results').innerHTML = `
+    ${sc&&overall!==null?`<div class="panel"><div class="panel-head">🏅 Score Geral de Qualidade</div><div class="panel-body" style="text-align:center;padding:24px">
+      <div class="score-circle ${sc.circleCls}"><div class="num">${overall}</div><div class="lbl">/ 100</div></div>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px">${sc.nome}</div>
+      <div style="font-size:.82rem;color:var(--muted)">Média ponderada de ${scores.length} métricas avaliadas</div>
+    </div></div>`:''}
+    <div class="panel"><div class="panel-head">📊 KPIs do Funil</div><div class="panel-body">${kpiHtml}</div></div>
+    <div class="panel"><div class="panel-head">📈 Métricas vs Benchmarks BR</div><div class="panel-body">${metricsHtml}</div></div>
+    ${chHtml}
+    <div class="panel"><div class="panel-head">🩺 Diagnóstico</div><div class="panel-body">${diagHtml}</div></div>
+    ${projHtml}
+    <div><button class="copy-btn" onclick="copyReport()">📋 Copiar análise</button></div>
+  `;
+}
+
+function copyReport() {
+  const tl=n('total_leads'),lq=n('leads_qual'),oc=n('opp_cliente'),inv=n('investimento'),rec=n('receita');
+  const taxaQ=tl&&lq?lq/tl*100:0;
+  const lines=[`ANÁLISE DE QUALIDADE DE LEAD`,`Campanha: ${document.getElementById('campanha').value||'—'} | Vertical: ${document.getElementById('vertical').value}`,
+    ``,`Leads totais: ${fmt(tl)} | Qualificados: ${fmt(lq)} (${taxaQ.toFixed(1)}%)`,
+    inv?`Investimento: ${fmtR(inv)} | CPL Qualificado: ${fmtR(inv&&lq?inv/lq:0)}`:'',
+    rec&&oc?`Receita: ${fmtR(rec)} | ROAS: ${(rec/inv).toFixed(2)}x | Ticket Médio: ${fmtR(rec/oc)}`:'',
+    ``,`Gerado por NC Tool — AdOps Suite`].filter(Boolean).join('\n');
+  navigator.clipboard.writeText(lines).then(()=>{
+    const btn=document.querySelector('.copy-btn');
+    if(btn){btn.textContent='✅ Copiado!';setTimeout(()=>btn.innerHTML='📋 Copiar análise',2000);}
+  });
+}
+
+// Init with 1 channel example
+addChannel({name:'Meta Ads',volume:'',qual:''});
+addChannel({name:'Google Ads',volume:'',qual:''});
+</script>
+</body>
+</html>

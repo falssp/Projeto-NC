@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none';">
+<meta name="referrer" content="strict-origin-when-cross-origin"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisador de Discrepância — AdOps Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#1F36C7;--escuro:#1a237e;--light:#e8ecff;--bg:#f0f2ff;
+  --card:#fff;--border:#d0d6f7;--text:#111827;--muted:#6b7280;
+  --green:#16a34a;--red:#dc2626;--yellow:#d97706;
+  --radius:12px;--mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{--bg:#0d0f1a;--card:#141828;--border:#2a3060;--text:#e8ecff;--muted:#8892b0;--light:#1e2548;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--azul);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:1.1rem;font-weight:700}
+header a{color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none}
+.theme-btn{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;font-family:inherit}
+main{padding:24px 16px}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.tab{padding:10px 18px;font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--muted)}
+.tab.active{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px}
+label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+input,select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--card);color:var(--text)}
+input:focus,select:focus{outline:none;border-color:var(--azul)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--azul);color:#fff}
+.btn-primary:hover{background:var(--escuro)}
+.btn-ghost{background:transparent;color:var(--azul);border:1.5px solid var(--azul)}
+.btn-ghost:hover{background:var(--light)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;padding:7px 10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.78rem;font-weight:700}
+.badge-ok{background:#dcfce7;color:var(--green)}
+.badge-warn{background:#fef9c3;color:var(--yellow)}
+.badge-bad{background:#fee2e2;color:var(--red)}
+.metric-row{display:flex;gap:16px;margin-bottom:12px;align-items:flex-end}
+.metric-row>div{flex:1}
+.row-remove{background:var(--red);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:.8rem;align-self:flex-end;margin-bottom:2px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:4px}
+.cause-list{margin:0;padding-left:1.2em}
+.cause-list li{margin-bottom:4px;font-size:.88rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <a href="../">← Ferramentas</a>
+    <h1 style="margin-top:2px">📉 Analisador de Discrepância</h1>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">◐ Tema</button>
+</header>
+<main>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('anal')">Análise</div>
+  <div class="tab" onclick="switchTab('ref')">Causas & Referência</div>
+</div>
+
+<!-- Análise -->
+<div id="tab-anal" class="tab-panel active">
+<div class="card">
+  <div class="card-title">Configuração das Fontes</div>
+  <div class="grid2" style="margin-bottom:14px">
+    <div>
+      <label>Fonte A (Referência / Ad Server)</label>
+      <input id="srcA" placeholder="ex: CM360" value="CM360">
+    </div>
+    <div>
+      <label>Fonte B (Comparar / Plataforma)</label>
+      <input id="srcB" placeholder="ex: Meta Ads" value="Meta Ads">
+    </div>
+  </div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div>
+      <label>Tipo de Campanha</label>
+      <select id="campType">
+        <option value="display">Display</option>
+        <option value="video">Vídeo</option>
+        <option value="social" selected>Social</option>
+        <option value="search">Search</option>
+      </select>
+    </div>
+    <div>
+      <label>Tolerância MRC (%)</label>
+      <input id="tolerance" type="number" value="10" min="1" max="30">
+    </div>
+    <div>
+      <label>Período</label>
+      <input id="periodo" placeholder="ex: Out/2026">
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">Métricas — clique em + para adicionar</div>
+  <div id="metricRows"></div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="addMetric()">+ Métrica</button>
+    <button class="btn btn-primary" onclick="analyze()">Analisar</button>
+    <button class="btn btn-ghost" onclick="loadExample()">Exemplo</button>
+  </div>
+</div>
+
+<div id="resultsCard" class="card" style="display:none">
+  <div class="card-title">Resultado da Análise</div>
+  <div id="resultsContent"></div>
+</div>
+</div>
+
+<!-- Causas & Referência -->
+<div id="tab-ref" class="tab-panel">
+<div class="card">
+  <div class="card-title">Causas Comuns de Discrepância por Métrica</div>
+  <table>
+    <thead><tr><th>Métrica</th><th>Causas Mais Frequentes</th><th>Tolerância MRC</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Impressões</strong></td>
+        <td>Diferentes definições de "serving" (início vs. solicitação), cookies bloqueados, viewability filtering, discrepâncias de fuso horário, invalidação de impressões IVT</td>
+        <td>&lt; 10%</td>
+      </tr>
+      <tr>
+        <td><strong>Cliques</strong></td>
+        <td>Click deduplication, bots filtrados por apenas uma plataforma, macros não substituídas na URL de clique, redirect chains longas com timeout</td>
+        <td>&lt; 10%</td>
+      </tr>
+      <tr>
+        <td><strong>CTR</strong></td>
+        <td>Deriva das discrepâncias de impressões e cliques — resolver na fonte</td>
+        <td>Derivado</td>
+      </tr>
+      <tr>
+        <td><strong>Conversões</strong></td>
+        <td>Janela de atribuição diferente (1d vs 7d vs 30d), modelo de atribuição (last-click vs data-driven), Floodlight disparando múltiplas vezes (falta de dedup), cookie matching, Safari ITP</td>
+        <td>&lt; 20%</td>
+      </tr>
+      <tr>
+        <td><strong>Vídeo (views/quartis)</strong></td>
+        <td>VAST wrapper chain: tracking pixel em nível errado, timeout de impressão vs. visualização, autoplay mudo não contabilizado pelo ad server</td>
+        <td>&lt; 10%</td>
+      </tr>
+      <tr>
+        <td><strong>Budget / Spend</strong></td>
+        <td>Currency conversion, taxas de serviço incluídas/excluídas, datas de corte diferentes (D-1 vs D-0)</td>
+        <td>&lt; 5%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <div class="card-title">Padrão MRC — Tolerâncias</div>
+  <table>
+    <thead><tr><th>Situação</th><th>Tolerância</th><th>Ação</th></tr></thead>
+    <tbody>
+      <tr><td>Delta &lt; 10%</td><td class="badge badge-ok">OK</td><td>Dentro do padrão MRC — monitorar</td></tr>
+      <tr><td>Delta 10–20%</td><td class="badge badge-warn">INVESTIGAR</td><td>Verificar fonte de dados e datas</td></tr>
+      <tr><td>Delta &gt; 20%</td><td class="badge badge-bad">CRÍTICO</td><td>Acionar suporte do ad server e plataforma</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <div class="card-title">Checklist de Investigação</div>
+  <ul style="margin:0;padding-left:1.2em;font-size:.88rem;line-height:2">
+    <li>✅ Datas e fusos horários são os mesmos nas duas fontes?</li>
+    <li>✅ Floodlight / pixel está implementado corretamente em todas as páginas relevantes?</li>
+    <li>✅ Tag Floodlight não está disparando em duplicidade (checar relatório de atividades)?</li>
+    <li>✅ A tag está rodando via HTTPS?</li>
+    <li>✅ Macros de cache-buster estão sendo substituídas?</li>
+    <li>✅ A janela de atribuição é a mesma nas duas plataformas?</li>
+    <li>✅ O tracking pixel está colocado FORA do iframe (server-side vs client-side)?</li>
+    <li>✅ Há IVT filtering de um lado e não do outro?</li>
+  </ul>
+</div>
+</div>
+
+</main>
+<script>
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'light';
+  document.documentElement.setAttribute('data-theme',cur==='dark'?'light':'dark');
+  localStorage.setItem('disc_theme',cur==='dark'?'light':'dark');
+}
+document.documentElement.setAttribute('data-theme',localStorage.getItem('disc_theme')||'light');
+function switchTab(id){
+  document.querySelectorAll('.tab,.tab-panel').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${id}"]`).classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+let metrics=[];
+let metId=0;
+
+function addMetric(name='',valA='',valB=''){
+  const id=++metId;
+  metrics.push(id);
+  const div=document.createElement('div');
+  div.className='metric-row';
+  div.id='metric-'+id;
+  div.innerHTML=`
+    <div>
+      <label>Métrica</label>
+      <select id="mname-${id}">
+        <option value="Impressões" ${name==='Impressões'?'selected':''}>Impressões</option>
+        <option value="Cliques" ${name==='Cliques'?'selected':''}>Cliques</option>
+        <option value="CTR (%)" ${name==='CTR (%)'?'selected':''}>CTR (%)</option>
+        <option value="Conversões" ${name==='Conversões'?'selected':''}>Conversões</option>
+        <option value="Budget Gasto (R$)" ${name==='Budget Gasto (R$)'?'selected':''}>Budget Gasto (R$)</option>
+        <option value="Views (Vídeo)" ${name==='Views (Vídeo)'?'selected':''}>Views (Vídeo)</option>
+        <option value="VTR (%)" ${name==='VTR (%)'?'selected':''}>VTR (%)</option>
+        <option value="CPM (R$)" ${name==='CPM (R$)'?'selected':''}>CPM (R$)</option>
+        <option value="CPC (R$)" ${name==='CPC (R$)'?'selected':''}>CPC (R$)</option>
+      </select>
+    </div>
+    <div>
+      <label id="lblA-${id}">Fonte A</label>
+      <input id="valA-${id}" type="number" value="${valA}" placeholder="Valor">
+    </div>
+    <div>
+      <label id="lblB-${id}">Fonte B</label>
+      <input id="valB-${id}" type="number" value="${valB}" placeholder="Valor">
+    </div>
+    <button class="row-remove" onclick="removeMetric(${id})">✕</button>
+  `;
+  document.getElementById('metricRows').appendChild(div);
+  updateLabels();
+}
+
+function updateLabels(){
+  const a=document.getElementById('srcA').value||'Fonte A';
+  const b=document.getElementById('srcB').value||'Fonte B';
+  metrics.forEach(id=>{
+    const la=document.getElementById('lblA-'+id);
+    const lb=document.getElementById('lblB-'+id);
+    if(la)la.textContent=a;
+    if(lb)lb.textContent=b;
+  });
+}
+document.getElementById('srcA').addEventListener('input',updateLabels);
+document.getElementById('srcB').addEventListener('input',updateLabels);
+
+function removeMetric(id){
+  const el=document.getElementById('metric-'+id);
+  if(el)el.remove();
+  metrics=metrics.filter(m=>m!==id);
+}
+
+function analyze(){
+  const tolerance=parseFloat(document.getElementById('tolerance').value)||10;
+  const srcA=document.getElementById('srcA').value||'Fonte A';
+  const srcB=document.getElementById('srcB').value||'Fonte B';
+
+  const rows=metrics.map(id=>{
+    const name=document.getElementById('mname-'+id)?.value;
+    const a=parseFloat(document.getElementById('valA-'+id)?.value)||0;
+    const b=parseFloat(document.getElementById('valB-'+id)?.value)||0;
+    if(!name||(!a&&!b))return null;
+    const delta=a>0?((b-a)/a)*100:0;
+    const absDelta=Math.abs(delta);
+    const status=absDelta<=tolerance?'ok':absDelta<=20?'warn':'bad';
+    return{name,a,b,delta,absDelta,status};
+  }).filter(Boolean);
+
+  if(!rows.length){
+    document.getElementById('resultsCard').style.display='none';
+    return;
+  }
+
+  const badCount=rows.filter(r=>r.status==='bad').length;
+  const warnCount=rows.filter(r=>r.status==='warn').length;
+  const okCount=rows.filter(r=>r.status==='ok').length;
+
+  let html=`<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="background:#dcfce7;color:#15803d;border-radius:8px;padding:10px 18px;font-weight:700">${okCount} OK</div>
+    <div style="background:#fef9c3;color:#92400e;border-radius:8px;padding:10px 18px;font-weight:700">${warnCount} Investigar</div>
+    <div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 18px;font-weight:700">${badCount} Crítico</div>
+  </div>`;
+
+  html+=`<table><thead><tr><th>Métrica</th><th>${srcA}</th><th>${srcB}</th><th>Delta</th><th>Status</th><th>Tolerância</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const fmtV=v=>v>=1000?v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.'):v.toFixed(2);
+    const badgeClass=r.status==='ok'?'badge-ok':r.status==='warn'?'badge-warn':'badge-bad';
+    const badgeLbl=r.status==='ok'?'OK ✓':r.status==='warn'?'⚠ Verificar':'❌ Crítico';
+    html+=`<tr>
+      <td style="font-weight:600">${r.name}</td>
+      <td style="font-family:var(--mono)">${fmtV(r.a)}</td>
+      <td style="font-family:var(--mono)">${fmtV(r.b)}</td>
+      <td style="font-family:var(--mono);color:${r.delta>0?'var(--green)':'var(--red)'}">${r.delta>=0?'+':''}${r.delta.toFixed(1)}%</td>
+      <td><span class="badge ${badgeClass}">${badgeLbl}</span></td>
+      <td style="font-family:var(--mono);color:var(--muted)">≤ ${tolerance}%</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+
+  if(badCount>0){
+    html+=`<div style="margin-top:14px;padding:14px;background:#fee2e2;border-radius:8px;border:1px solid #fecaca">
+      <strong style="color:var(--red)">🔴 Ações recomendadas para métricas críticas:</strong>
+      <ul class="cause-list" style="margin-top:8px;color:#991b1b">
+        <li>Verificar se o período e fuso horário são idênticos nas duas plataformas</li>
+        <li>Confirmar se a tag/pixel está implementada corretamente e sem duplicidade</li>
+        <li>Checar se há filtering de IVT/fraude aplicado em apenas uma das fontes</li>
+        <li>Validar macros de cachebuster e parâmetros de tracking</li>
+        <li>Abrir ticket com suporte do ad server para investigação conjunta</li>
+      </ul>
+    </div>`;
+  }
+
+  document.getElementById('resultsCard').style.display='block';
+  document.getElementById('resultsContent').innerHTML=html;
+}
+
+function loadExample(){
+  document.getElementById('srcA').value='CM360';
+  document.getElementById('srcB').value='Meta Ads Manager';
+  document.getElementById('tolerance').value=10;
+  document.getElementById('campType').value='social';
+  document.getElementById('periodo').value='Out/2026';
+  document.getElementById('metricRows').innerHTML='';
+  metrics=[];metId=0;
+  addMetric('Impressões',1250000,1312500);
+  addMetric('Cliques',8750,8260);
+  addMetric('CTR (%)',0.70,0.63);
+  addMetric('Conversões',437,523);
+  addMetric('Budget Gasto (R$)',18500,18500);
+  updateLabels();
+  analyze();
+}
+
+// init com 3 linhas
+addMetric('Impressões','','');
+addMetric('Cliques','','');
+addMetric('Conversões','','');
+updateLabels();
+</script>
+</body>
+</html>

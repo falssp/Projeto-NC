@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#2563eb;--accent-soft:rgba(37,99,235,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--input-border:#e2e8f0;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--erro:#dc2626;--erro-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);
+  --mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#60a5fa;--accent-soft:rgba(96,165,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--input-border:#334155;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  --erro:#f87171;--erro-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#60a5fa;--accent-soft:rgba(96,165,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--input-border:#334155;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  --erro:#f87171;--erro-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-title{font-size:16px;font-weight:800;}
+.header-sub{font-size:11px;color:var(--faint);}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.btn.primary:hover{opacity:.9;}
+.page{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start;}
+@media(max-width:760px){.page{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow);}
+.card-title{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+textarea{width:100%;min-height:160px;padding:10px 12px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;resize:vertical;outline:none;}
+textarea:focus{border-color:var(--accent);}
+select,input[type=text],input[type=number]{padding:6px 10px;border:1px solid var(--input-border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;}
+select:focus,input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
+label{font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer;}
+input[type=checkbox]{width:14px;height:14px;cursor:pointer;}
+.sep-row{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap;}
+.sep-label{font-size:12px;color:var(--faint);min-width:80px;}
+.sep-input{width:60px;text-align:center;font-family:var(--mono);}
+.criteria-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+.criterion{background:var(--accent-soft);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.criterion-info{flex:1;}
+.criterion-name{font-size:12px;font-weight:600;}
+.criterion-desc{font-size:11px;color:var(--faint);}
+.criterion-weight{font-size:11px;font-weight:700;color:var(--accent);}
+/* Score rings */
+.score-ring{display:inline-flex;flex-direction:column;align-items:center;gap:4px;}
+.ring-wrap{position:relative;width:72px;height:72px;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;}
+/* Result table */
+.result-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;}
+.result-table th{padding:7px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);border-bottom:1px solid var(--border);}
+.result-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.result-table tr:last-child td{border-bottom:none;}
+.score-cell{font-weight:700;font-size:14px;}
+.nc-cell{font-family:var(--mono);font-size:11px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.issues-list{display:flex;flex-wrap:wrap;gap:3px;}
+.issue-chip{font-size:10px;padding:1px 6px;border-radius:5px;border:1px solid;}
+.issue-err{background:var(--erro-bg);color:var(--erro);border-color:var(--erro);}
+.issue-warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn);}
+.issue-ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok);}
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:14px;}
+.summary-stat{text-align:center;padding:12px 8px;background:var(--accent-soft);border-radius:8px;}
+.summary-stat .n{font-size:22px;font-weight:800;color:var(--accent);}
+.summary-stat .l{font-size:11px;color:var(--faint);margin-top:2px;}
+/* Grade badge */
+.grade{font-size:28px;font-weight:800;line-height:1;}
+.grade-A{color:var(--ok);}
+.grade-B{color:#15803d;}
+.grade-C{color:var(--warn);}
+.grade-D{color:var(--erro);}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#f1f5f9;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:500;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.overflow-x{overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span style="font-size:20px">📊</span>
+    <div>
+      <div class="header-title">NC Scorecard</div>
+      <div class="header-sub">Pontuação de qualidade para listas de naming conventions</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn" onclick="clearAll()">✕ Limpar</button>
+    <button class="btn" onclick="exportCSV()" title="Exportar resultado como CSV">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button class="btn primary" onclick="runScore()">▶ Analisar</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Left: config -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <!-- Input -->
+    <div class="card">
+      <div class="card-title">📥 Naming Conventions</div>
+      <textarea id="inputArea" placeholder="Cole suas NCs aqui, uma por linha…&#10;&#10;cliente_campanha_produto_br&#10;cliente_campanha_outro_br" spellcheck="false"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--faint)">Separador:</span>
+          <input class="sep-input" type="text" id="sepInput" value="_" maxlength="5">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--faint)">Segs esperados:</span>
+          <input type="number" id="minSegs" value="3" min="1" max="20" style="width:55px">
+          <span style="font-size:11px;color:var(--faint)">–</span>
+          <input type="number" id="maxSegs" value="8" min="1" max="20" style="width:55px">
+        </div>
+      </div>
+    </div>
+
+    <!-- Criteria -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚙ Critérios</span>
+        <button class="btn" style="font-size:11px;height:26px" onclick="resetCriteria()">Reset</button>
+      </div>
+      <div class="criteria-list" id="criteriaList"></div>
+      <div style="margin-top:12px">
+        <label><input type="checkbox" id="optAutoDetectSep" checked> Auto-detectar separador</label>
+      </div>
+      <div style="margin-top:8px">
+        <label><input type="checkbox" id="optCheckDups" checked> Detectar NCs duplicadas</label>
+      </div>
+      <div style="margin-top:8px">
+        <label><input type="checkbox" id="optCheckCase" checked> Detectar letras maiúsculas</label>
+      </div>
+      <div style="margin-top:8px">
+        <div style="font-size:12px;color:var(--faint);margin-bottom:4px">Limite de caracteres (0 = sem limite):</div>
+        <input type="number" id="charLimit" value="100" min="0" max="500" style="width:80px">
+      </div>
+    </div>
+
+    <!-- Client integration -->
+    <div class="card">
+      <div class="card-title">🗂 Cliente (opcional)</div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:8px">Lê o dicionário do Taxonomy Builder para validar termos por segmento.</div>
+      <select id="clientSelect" style="width:100%" onchange="onClientChange()">
+        <option value="">— Sem cliente —</option>
+      </select>
+      <div id="clientSegs" style="margin-top:8px;display:none">
+        <div style="font-size:11px;color:var(--faint);margin-bottom:4px">Validar segmento:</div>
+        <div id="segValidList" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: results -->
+  <div>
+    <div id="resultsPanel">
+      <div class="card" style="text-align:center;padding:40px;color:var(--faint)">
+        <div style="font-size:32px;margin-bottom:8px">📋</div>
+        <div style="font-size:13px">Cole NCs e clique em Analisar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;
+try{_theme=localStorage.getItem('ncscorecard_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('ncscorecard_theme',_theme);}catch(e){}
+  document.getElementById('themeBtn').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);document.getElementById('themeBtn').textContent=isDark?'☀️':'🌙';})();
+
+// Criteria
+const DEFAULT_CRITERIA = [
+  {id:'seg_count', name:'Número de segmentos', desc:'Dentro do min/max configurado', weight:25, enabled:true},
+  {id:'no_spaces', name:'Sem espaços', desc:'NC não contém espaços', weight:20, enabled:true},
+  {id:'no_special', name:'Sem caracteres especiais', desc:'Apenas letras, números e separador', weight:15, enabled:true},
+  {id:'lowercase', name:'Lowercase', desc:'Todos os caracteres em minúsculo', weight:15, enabled:true},
+  {id:'char_limit', name:'Limite de caracteres', desc:'Dentro do limite configurado', weight:15, enabled:true},
+  {id:'no_empty_seg', name:'Sem segmentos vazios', desc:'Nenhum segmento consecutivo vazio', weight:10, enabled:true},
+];
+let criteria = DEFAULT_CRITERIA.map(c=>({...c}));
+
+function resetCriteria(){criteria=DEFAULT_CRITERIA.map(c=>({...c}));renderCriteria();}
+function renderCriteria(){
+  const list=document.getElementById('criteriaList');
+  list.innerHTML=criteria.map((c,i)=>`
+    <div class="criterion">
+      <div class="criterion-info">
+        <div class="criterion-name">${esc(c.name)}</div>
+        <div class="criterion-desc">${esc(c.desc)}</div>
+      </div>
+      <span class="criterion-weight">${c.weight}pt</span>
+      <input type="checkbox" ${c.enabled?'checked':''} onchange="criteria[${i}].enabled=this.checked">
+    </div>
+  `).join('');
+}
+renderCriteria();
+
+// Load clients from taxo_clients_v1
+let _clients=[];
+function loadClients(){
+  try{_clients=JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');}catch(e){_clients=[];}
+  const sel=document.getElementById('clientSelect');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Sem cliente —</option>'+
+    _clients.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  if(cur) sel.value=cur;
+  onClientChange();
+}
+function onClientChange(){
+  const selId=document.getElementById('clientSelect')?.value;
+  const c=_clients.find(x=>x.id===selId);
+  const segsDiv=document.getElementById('clientSegs');
+  const segList=document.getElementById('segValidList');
+  if(!c){if(segsDiv)segsDiv.style.display='none';return;}
+  if(segsDiv)segsDiv.style.display='block';
+  if(segList) segList.innerHTML=c.segments.map((s,i)=>`
+    <label>
+      <input type="checkbox" checked id="segCheck_${esc(s.id)}">
+      <span style="font-size:12px">${esc(s.label)}</span>
+      <span style="font-size:10px;color:var(--faint)">(${(c.dictionary[s.id]||[]).length} termos)</span>
+    </label>
+  `).join('');
+}
+loadClients();
+window.addEventListener('storage',e=>{if(e.key==='taxo_clients_v1')loadClients();});
+
+// Auto detect sep
+function detectSep(lines){
+  const seps=['_','.','-','|','+'];
+  const counts={};seps.forEach(s=>counts[s]=0);
+  lines.forEach(l=>seps.forEach(s=>{counts[s]+=(l.split(s).length-1);}));
+  const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  return best&&best[1]>0?best[0]:null;
+}
+
+let _lastResults=[];
+
+function runScore(){
+  const raw=document.getElementById('inputArea').value.trim();
+  if(!raw){showToast('Cole pelo menos uma NC');return;}
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  if(!lines.length){showToast('Nenhuma linha válida');return;}
+
+  const autoDetect=document.getElementById('optAutoDetectSep').checked;
+  let sep=document.getElementById('sepInput').value||'_';
+  if(autoDetect){const d=detectSep(lines);if(d){sep=d;document.getElementById('sepInput').value=d;}}
+
+  const minSegs=parseInt(document.getElementById('minSegs').value)||1;
+  const maxSegs=parseInt(document.getElementById('maxSegs').value)||99;
+  const charLimit=parseInt(document.getElementById('charLimit').value)||0;
+  const checkDups=document.getElementById('optCheckDups').checked;
+  const checkCase=document.getElementById('optCheckCase').checked;
+
+  const selId=document.getElementById('clientSelect')?.value;
+  const client=_clients.find(c=>c.id===selId)||null;
+
+  const seen=new Set();
+  const results=lines.map(nc=>{
+    const segs=nc.split(sep);
+    const nSegs=segs.length;
+    const issues=[];
+    let score=0;
+    const totalWeight=criteria.filter(c=>c.enabled).reduce((s,c)=>s+c.weight,0)||100;
+
+    // Evaluate each criterion
+    criteria.filter(c=>c.enabled).forEach(cr=>{
+      let pass=true;
+      switch(cr.id){
+        case 'seg_count': pass=nSegs>=minSegs&&nSegs<=maxSegs; break;
+        case 'no_spaces': pass=!nc.includes(' '); break;
+        case 'no_special': pass=/^[a-z0-9_.\-|/+]+$/i.test(nc); break;
+        case 'lowercase': pass=nc===nc.toLowerCase(); break;
+        case 'char_limit': pass=!charLimit||nc.length<=charLimit; break;
+        case 'no_empty_seg': pass=!segs.some(s=>s===''); break;
+      }
+      if(pass) score+=cr.weight;
+      else issues.push({id:cr.id, name:cr.name, type: cr.id==='seg_count'||cr.id==='char_limit'?'err':'warn'});
+    });
+
+    // Uppercase flag
+    if(checkCase && nc!==nc.toLowerCase()) issues.push({id:'uppercase',name:'Tem maiúsculas',type:'warn'});
+
+    // Client dictionary validation
+    let clientIssues=[];
+    if(client){
+      client.segments.forEach((s,i)=>{
+        const chk=document.getElementById(`segCheck_${s.id}`);
+        if(!chk?.checked) return;
+        const val=segs[i]||'';
+        if(!val) return;
+        const terms=client.dictionary[s.id]||[];
+        if(terms.length>0 && !terms.some(t=>t.value===val)){
+          clientIssues.push({id:'dict_'+s.id, name:`${s.label}: "${val}" não reconhecido`, type:'warn'});
+        }
+      });
+    }
+
+    const pct=Math.round(score/totalWeight*100);
+    const grade=pct>=90?'A':pct>=75?'B':pct>=50?'C':'D';
+    const isDup=checkDups&&seen.has(nc);
+    seen.add(nc);
+    if(isDup) issues.push({id:'dup',name:'Duplicada',type:'err'});
+
+    return {nc, pct, grade, nSegs, len:nc.length, issues:[...issues,...clientIssues], isDup};
+  });
+
+  _lastResults=results;
+  renderResults(results, lines.length, sep);
+}
+
+function renderResults(results, total, sep){
+  const avgPct=results.length?Math.round(results.reduce((s,r)=>s+r.pct,0)/results.length):0;
+  const countA=results.filter(r=>r.grade==='A').length;
+  const countB=results.filter(r=>r.grade==='B').length;
+  const countC=results.filter(r=>r.grade==='C').length;
+  const countD=results.filter(r=>r.grade==='D').length;
+  const dups=results.filter(r=>r.isDup).length;
+  const totalIssues=results.reduce((s,r)=>s+r.issues.length,0);
+
+  const overallGrade=avgPct>=90?'A':avgPct>=75?'B':avgPct>=50?'C':'D';
+  const gradeColor={'A':'var(--ok)','B':'#15803d','C':'var(--warn)','D':'var(--erro)'};
+
+  const tableRows=results.map(r=>{
+    const scoreColor=r.pct>=90?'var(--ok)':r.pct>=75?'var(--accent)':r.pct>=50?'var(--warn)':'var(--erro)';
+    return `<tr>
+      <td class="nc-cell" title="${esc(r.nc)}">${esc(r.nc)}</td>
+      <td class="score-cell" style="color:${scoreColor}">${r.pct}%</td>
+      <td><span class="grade grade-${r.grade}">${r.grade}</span></td>
+      <td style="color:var(--faint)">${r.nSegs}</td>
+      <td style="color:var(--faint)">${r.len}</td>
+      <td><div class="issues-list">${r.issues.map(i=>`<span class="issue-chip issue-${i.type}" title="${esc(i.name)}">${esc(i.name)}</span>`).join('')||'<span style="color:var(--ok);font-size:11px">✓ OK</span>'}</div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('resultsPanel').innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em">Score médio</div>
+          <div style="font-size:36px;font-weight:800;color:${gradeColor[overallGrade]}">${avgPct}% <span style="font-size:22px;color:${gradeColor[overallGrade]}">${overallGrade}</span></div>
+        </div>
+        <div class="summary-bar" style="flex:1">
+          <div class="summary-stat"><div class="n">${total}</div><div class="l">NCs</div></div>
+          <div class="summary-stat"><div class="n" style="color:var(--ok)">${countA}</div><div class="l">Nota A</div></div>
+          <div class="summary-stat"><div class="n" style="color:var(--warn)">${countC+countD}</div><div class="l">Nota C/D</div></div>
+          <div class="summary-stat"><div class="n" style="color:var(--erro)">${dups}</div><div class="l">Dupl.</div></div>
+          <div class="summary-stat"><div class="n" style="color:var(--warn)">${totalIssues}</div><div class="l">Issues</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        ${[['A',countA,'var(--ok)'],['B',countB,'#15803d'],['C',countC,'var(--warn)'],['D',countD,'var(--erro)']].map(([g,n,color])=>`
+          <div style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;background:var(--accent-soft)">
+            <span style="font-weight:800;color:${color}">${g}</span>
+            <span style="font-size:12px;color:var(--faint)">${n} NC${n!==1?'s':''}</span>
+          </div>
+        `).join('')}
+        <span style="font-size:11px;color:var(--faint);align-self:center">Separador: <code>${esc(sep)}</code></span>
+      </div>
+    </div>
+    <div class="card overflow-x">
+      <table class="result-table">
+        <thead><tr>
+          <th>Naming Convention</th><th>Score</th><th>Nota</th><th>Segs</th><th>Chars</th><th>Issues</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function exportCSV(){
+  if(!_lastResults.length){showToast('Rode a análise primeiro');return;}
+  const rows=[['nc','score_pct','nota','n_segmentos','n_chars','issues']];
+  _lastResults.forEach(r=>rows.push([
+    r.nc, r.pct, r.grade, r.nSegs, r.len,
+    r.issues.map(i=>i.name).join('; ')
+  ]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`nc_scorecard_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();URL.revokeObjectURL(url);
+  showToast(`⬇ ${_lastResults.length} NCs exportadas`);
+}
+
+function clearAll(){
+  document.getElementById('inputArea').value='';
+  document.getElementById('resultsPanel').innerHTML=`<div class="card" style="text-align:center;padding:40px;color:var(--faint)"><div style="font-size:32px;margin-bottom:8px">📋</div><div style="font-size:13px">Cole NCs e clique em Analisar</div></div>`;
+  _lastResults=[];
+}
+</script>
+</body>
+</html>

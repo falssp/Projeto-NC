@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Leilão CPM — NC Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px}
+header h1{font-size:1.3rem;font-weight:700}
+header p{font-size:.82rem;opacity:.7;margin-top:2px}
+.main{padding:28px 32px;min-width:0}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:20px;margin-bottom:20px}
+.card-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+label{font-size:.82rem;font-weight:600;color:#444;display:block;margin-bottom:3px}
+input,select{width:100%;padding:8px 11px;border:1.5px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.88rem;color:#1a1a2e;background:#fff}
+input:focus,select:focus{outline:none;border-color:#1F36C7}
+input[type=range]{-webkit-appearance:none;height:6px;border-radius:3px;background:#d6dbf2;border:none;padding:0;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#1F36C7;cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 18px;border-radius:7px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:#1F36C7;color:#fff}.btn-primary:hover{background:#1a2ea8}
+.btn-secondary{background:#e8ecfd;color:#1F36C7}.btn-secondary:hover{background:#d6dbf2}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+.metric-box{background:#f4f5fb;border-radius:10px;padding:14px;text-align:center}
+.metric-val{font-size:1.4rem;font-weight:700;color:#1F36C7}
+.metric-lbl{font-size:.75rem;color:#555;margin-top:3px}
+.metric-sub{font-size:.8rem;color:#888;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:#f4f5fb;padding:9px 10px;text-align:left;font-weight:600;color:#444;border-bottom:2px solid #d6dbf2}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f8}
+tr:hover td{background:#f8f9ff}
+.tbl-wrap{max-height:380px;overflow-y:auto;border:1px solid #d6dbf2;border-radius:8px}
+.win-row td{background:#f0fdf4!important;font-weight:600}
+.bar-wrap{display:flex;align-items:center;gap:10px}
+.bar{height:14px;border-radius:4px;background:#1F36C7;transition:width .4s}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:12px;font-size:.75rem;font-weight:600}
+.badge-win{background:#dcfce7;color:#15803d}
+.badge-lose{background:#fee2e2;color:#dc2626}
+.range-wrap{display:flex;align-items:center;gap:10px}
+.range-wrap span{min-width:80px;font-weight:600;color:#1F36C7;font-size:.9rem}
+.info{background:#e8ecfd;border:1px solid #d6dbf2;border-radius:7px;padding:10px 14px;font-size:.83rem;color:#1a237e;margin-bottom:14px}
+.insight-box{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;font-size:.88rem;margin-bottom:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+footer{text-align:center;padding:20px;color:#999;font-size:.78rem;border-top:1px solid #d6dbf2;margin-top:40px}
+@media(max-width:768px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏆 Simulador de Leilão CPM</h1>
+  <p>Simule estratégias de lance, win rate e custo efetivo em leilões programáticos — NC Tool AdOps Suite</p>
+</header>
+
+<div class="main">
+  <div class="card">
+    <div class="card-title">⚙️ Configuração do leilão</div>
+    <div class="grid3">
+      <div>
+        <label>Tipo de leilão</label>
+        <select id="auctionType" onchange="simulate()">
+          <option value="second">2º preço (padrão programático)</option>
+          <option value="first">1º preço (SSP moderno)</option>
+        </select>
+      </div>
+      <div>
+        <label>Número de simulações</label>
+        <input type="number" id="simCount" value="10000" min="1000" max="100000" step="1000" onchange="simulate()">
+      </div>
+      <div>
+        <label>Floor price (R$ CPM)</label>
+        <input type="number" id="floorPrice" value="2.00" min="0" step="0.5" onchange="simulate()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 Meu lance</div>
+    <div class="grid2" style="margin-bottom:16px">
+      <div>
+        <label>Lance base (R$ CPM)</label>
+        <div class="range-wrap">
+          <input type="range" id="myBidSlider" min="1" max="50" step="0.5" value="10" oninput="document.getElementById('myBid').value=this.value;simulate()">
+          <span id="myBidLabel">R$ 10,00</span>
+        </div>
+        <input type="number" id="myBid" value="10" min="0.5" step="0.5" oninput="document.getElementById('myBidSlider').value=this.value;simulate()">
+      </div>
+      <div>
+        <label>Orçamento diário (R$)</label>
+        <input type="number" id="dailyBudget" value="500" min="1" step="50" oninput="simulate()">
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Estratégia de lance</label>
+        <select id="bidStrategy" onchange="simulate()">
+          <option value="fixed">Lance fixo</option>
+          <option value="dynamic">Lance dinâmico (±20%)</option>
+          <option value="aggressive">Agressivo (target CPA)</option>
+        </select>
+      </div>
+      <div>
+        <label>Meta de CPA (R$) <small style="color:#888;font-weight:400">para estratégia agressiva</small></label>
+        <input type="number" id="targetCPA" value="50" min="1" step="5" oninput="simulate()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🤖 Concorrentes</div>
+    <div class="info">ℹ️ Configure o CPM médio e desvio padrão de cada grupo de concorrentes para simular o mercado.</div>
+    <div id="competitorList"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addCompetitor()" style="margin-top:10px">+ Adicionar concorrente</button>
+  </div>
+
+  <div id="resultsSection" style="display:none">
+    <div class="card">
+      <div class="card-title">📈 Resultado da simulação</div>
+      <div class="grid4" id="mainMetrics" style="margin-bottom:16px"></div>
+      <div id="insightBox"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Curva de win rate por lance</div>
+      <div id="winCurveWrap">
+        <table>
+          <thead><tr><th>Lance (R$ CPM)</th><th>Win Rate estimado</th><th>CPM efetivo médio</th><th>Impressões/dia</th><th>Custo/dia</th></tr></thead>
+          <tbody id="winCurveBody"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary btn-sm" onclick="copySummary()">📋 Copiar resumo</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadCSV()">⬇️ Exportar CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>NC Tool — AdOps Suite · Simulador de Leilão CPM · Offline · v1.0</footer>
+
+<script>
+let competitors = [
+  {name:'Concorrente 1', mean:8, std:2},
+  {name:'Concorrente 2', mean:12, std:3},
+  {name:'Concorrente 3', mean:6, std:1.5},
+];
+let simResults = [];
+
+function renderCompetitors(){
+  document.getElementById('competitorList').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;margin-bottom:8px;font-size:.78rem;font-weight:700;color:#666">
+      <span>Nome</span><span>CPM médio (R$)</span><span>Desvio padrão</span><span></span>
+    </div>
+    ${competitors.map((c,i)=>`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:8px">
+        <input type="text" value="${c.name}" placeholder="Concorrente" oninput="competitors[${i}].name=this.value">
+        <input type="number" value="${c.mean}" min="0.5" step="0.5" oninput="competitors[${i}].mean=parseFloat(this.value)||0;simulate()">
+        <input type="number" value="${c.std}" min="0" step="0.5" oninput="competitors[${i}].std=parseFloat(this.value)||0;simulate()">
+        <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:6px 10px" onclick="competitors.splice(${i},1);renderCompetitors();simulate()">✕</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+function addCompetitor(){
+  if(competitors.length>=8){alert('Máximo de 8 concorrentes.');return;}
+  competitors.push({name:'Concorrente '+(competitors.length+1),mean:10,std:2});
+  renderCompetitors();
+  simulate();
+}
+
+function randn(mean,std){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return mean + std*Math.sqrt(-2*Math.LN2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function runAuction(myBid, floor, type, n){
+  let wins=0, totalCost=0;
+  for(let i=0;i<n;i++){
+    const bids = competitors.map(c=>Math.max(0,randn(c.mean,c.std)));
+    const floor2 = parseFloat(floor)||0;
+    const allBids = [...bids, myBid].filter(b=>b>=floor2);
+    if(!allBids.includes(myBid)&&myBid<floor2) continue;
+    const maxComp = Math.max(...bids);
+    if(myBid>maxComp && myBid>=floor2){
+      wins++;
+      let cost = type==='first'?myBid:Math.max(maxComp,floor2);
+      totalCost+=cost;
+    }
+  }
+  const winRate = wins/n;
+  const avgCPM = wins>0?totalCost/wins:0;
+  return {wins,winRate,avgCPM};
+}
+
+function simulate(){
+  const myBid = parseFloat(document.getElementById('myBid').value)||0;
+  const floor = parseFloat(document.getElementById('floorPrice').value)||0;
+  const type = document.getElementById('auctionType').value;
+  const n = parseInt(document.getElementById('simCount').value)||10000;
+  const budget = parseFloat(document.getElementById('dailyBudget').value)||500;
+  document.getElementById('myBidLabel').textContent = 'R$ '+myBid.toFixed(2).replace('.',',');
+
+  const res = runAuction(myBid,floor,type,n);
+  const impPerDay = res.avgCPM>0?Math.floor(budget/(res.avgCPM/1000)):0;
+
+  document.getElementById('resultsSection').style.display='';
+  document.getElementById('mainMetrics').innerHTML = `
+    <div class="metric-box"><div class="metric-val">${(res.winRate*100).toFixed(1)}%</div><div class="metric-lbl">Win Rate</div></div>
+    <div class="metric-box"><div class="metric-val">R$ ${res.avgCPM.toFixed(2).replace('.',',')}</div><div class="metric-lbl">CPM efetivo médio</div></div>
+    <div class="metric-box"><div class="metric-val">${impPerDay.toLocaleString('pt-BR')}</div><div class="metric-lbl">Impressões/dia</div></div>
+    <div class="metric-box"><div class="metric-val">R$ ${budget.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="metric-lbl">Orçamento diário</div></div>
+  `;
+
+  // Insight
+  let insight = '';
+  if(res.winRate<0.1) insight = `⚠️ Win rate muito baixo (${(res.winRate*100).toFixed(1)}%). Considere aumentar o lance acima de R$ ${(Math.max(...competitors.map(c=>c.mean))+2).toFixed(2).replace('.',',')} para melhorar a competitividade.`;
+  else if(res.winRate>0.8) insight = `💡 Win rate alto (${(res.winRate*100).toFixed(1)}%). Você pode reduzir o lance e economizar orçamento mantendo boa entrega.`;
+  else insight = `✅ Win rate saudável (${(res.winRate*100).toFixed(1)}%). Lance competitivo em relação ao mercado simulado.`;
+  document.getElementById('insightBox').innerHTML = `<div class="insight-box">${insight}</div>`;
+
+  // Curva de win rate
+  const bidPoints = [2,4,6,8,10,12,15,18,20,25,30,35,40];
+  simResults = bidPoints.map(bid=>{
+    const r = runAuction(bid,floor,type,Math.floor(n/5));
+    const imp = r.avgCPM>0?Math.floor(budget/(r.avgCPM/1000)):0;
+    return {bid,winRate:r.winRate,avgCPM:r.avgCPM,imp,cost:imp*(r.avgCPM/1000)};
+  });
+  const maxWR = Math.max(...simResults.map(r=>r.winRate));
+  document.getElementById('winCurveBody').innerHTML = simResults.map(r=>{
+    const isCur = r.bid===myBid;
+    const barW = maxWR>0?(r.winRate/maxWR*120).toFixed(0):0;
+    return `<tr ${isCur?'class="win-row"':''}><td>${isCur?'👉 ':''}<strong>R$ ${r.bid.toFixed(2).replace('.',',')}</strong></td>
+      <td><div class="bar-wrap"><div class="bar" style="width:${barW}px"></div><span>${(r.winRate*100).toFixed(1)}%</span></div></td>
+      <td>R$ ${r.avgCPM.toFixed(2).replace('.',',')}</td>
+      <td>${r.imp.toLocaleString('pt-BR')}</td>
+      <td>R$ ${r.cost.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`;
+  }).join('');
+}
+
+function copySummary(){
+  const myBid = document.getElementById('myBid').value;
+  const rows = simResults.map(r=>`Lance R$ ${r.bid.toFixed(2)} | Win Rate ${(r.winRate*100).toFixed(1)}% | CPM R$ ${r.avgCPM.toFixed(2)} | ${r.imp} imp/dia`);
+  navigator.clipboard.writeText(`Simulação de Leilão CPM\nMeu lance: R$ ${myBid}\n\n${rows.join('\n')}`).then(()=>alert('Resumo copiado!'));
+}
+
+function downloadCSV(){
+  const rows=['Lance (R$),Win Rate (%),CPM Efetivo (R$),Impressões/dia,Custo/dia (R$)',...simResults.map(r=>`${r.bid},${(r.winRate*100).toFixed(2)},${r.avgCPM.toFixed(2)},${r.imp},${r.cost.toFixed(2)}`)];
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(rows.join('\n'));a.download='simulacao_leilao_'+Date.now()+'.csv';a.click();
+}
+
+renderCompetitors();
+simulate();
+</script>
+</body>
+</html>

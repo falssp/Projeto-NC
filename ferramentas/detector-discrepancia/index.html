@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detector de Discrepância — AdOps Suite</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --header:#1a237e;
+  --accent:#1F36C7;
+  --hi-bg:#e8ecfd;
+  --border:#d6dbf2;
+  --pg-bg:#f4f5fb;
+  --white:#fff;
+  --text:#1a1a2e;
+  --muted:#6b7280;
+  --ok:#16a34a;
+  --ok-bg:#dcfce7;
+  --warn:#d97706;
+  --warn-bg:#fef3c7;
+  --high:#dc2626;
+  --high-bg:#fee2e2;
+  --crit:#7c1d1d;
+  --crit-bg:#fecaca;
+  --radius:10px;
+}
+
+body{font-family:'Space Grotesk',sans-serif;background:var(--pg-bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* HEADER */
+header{background:var(--header);color:#fff;padding:18px 32px;display:flex;align-items:center;gap:14px}
+header .ico{font-size:26px}
+header h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+header p{font-size:12px;opacity:.75;margin-top:2px}
+
+/* MAIN */
+.main{padding:28px 32px;min-width:0}
+
+/* MODE BAR */
+.mode-bar{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
+.mode-bar span{font-weight:600;font-size:13px;color:var(--muted);margin-right:4px}
+.mode-btn{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.mode-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.mode-btn:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+.tab-btn{padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--hi-bg);border-color:var(--accent);color:var(--accent)}
+
+/* PANELS */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+@media(max-width:700px){.panels{grid-template-columns:1fr}}
+
+.panel{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:20px}
+.panel-a{border-top:3px solid var(--accent)}
+.panel-b{border-top:3px solid #9c27b0}
+
+.panel-label-wrap{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.panel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-a{background:var(--accent)}
+.dot-b{background:#9c27b0}
+.panel-label-input{font-size:15px;font-weight:700;border:none;outline:none;background:transparent;font-family:inherit;color:var(--text);width:100%}
+.panel-label-input:focus{border-bottom:2px solid var(--accent)}
+
+.field-group{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.field input{padding:9px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:14px;color:var(--text);transition:border-color .15s}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* MULTI-LINE AREA */
+.ml-panel{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.ml-panel h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.ml-panel p{font-size:12px;color:var(--muted);margin-bottom:12px}
+.ml-panel textarea{width:100%;height:140px;padding:10px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Courier New',monospace;font-size:12px;resize:vertical;color:var(--text)}
+.ml-panel textarea:focus{outline:none;border-color:var(--accent)}
+
+/* ACTIONS */
+.actions{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.btn-primary{padding:11px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.88}
+.btn-secondary{padding:11px 20px;background:#fff;color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-secondary:hover{background:var(--hi-bg)}
+.btn-ghost{padding:11px 20px;background:#fff;color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+/* RESULTS */
+#results{display:none}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.results-header h2{font-size:17px;font-weight:700}
+.export-btns{display:flex;gap:10px}
+
+/* METRIC CARDS */
+.metric-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:24px}
+.mc{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden}
+.mc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mc-name{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+.badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.badge-ok{background:var(--ok-bg);color:var(--ok)}
+.badge-warn{background:var(--warn-bg);color:var(--warn)}
+.badge-high{background:var(--high-bg);color:var(--high)}
+.badge-crit{background:var(--crit-bg);color:var(--crit)}
+
+.mc-vals{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mv{background:var(--pg-bg);border-radius:6px;padding:8px 10px}
+.mv-label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.mv-val{font-size:16px;font-weight:700;color:var(--text)}
+.mv-val.accent{color:var(--accent)}
+.mv-val.purple{color:#7c3aed}
+
+.mc-disc{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.disc-pct{font-size:22px;font-weight:700}
+.disc-abs{font-size:12px;color:var(--muted)}
+
+/* GAUGE BAR */
+.gauge-wrap{margin-top:4px}
+.gauge-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+.gauge-track{background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden;position:relative}
+.gauge-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.fill-ok{background:var(--ok)}
+.fill-warn{background:var(--warn)}
+.fill-high{background:var(--high)}
+.fill-crit{background:var(--crit)}
+.gauge-markers{display:flex;position:relative;margin-top:2px;height:12px}
+.gauge-marker{position:absolute;font-size:9px;color:var(--muted);transform:translateX(-50%)}
+
+/* DIAGNOSIS */
+.diagnosis{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px}
+.diagnosis h3{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.diag-items{display:flex;flex-direction:column;gap:10px}
+.diag-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:8px;border-left:3px solid}
+.diag-ok{background:var(--ok-bg);border-color:var(--ok)}
+.diag-warn{background:var(--warn-bg);border-color:var(--warn)}
+.diag-high{background:var(--high-bg);border-color:var(--high)}
+.diag-crit{background:var(--crit-bg);border-color:var(--crit)}
+.diag-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.diag-text{font-size:13px;line-height:1.5}
+.diag-text strong{display:block;margin-bottom:2px}
+
+/* MULTI-LINE TABLE */
+.ml-results{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;overflow-x:auto}
+.ml-results h3{font-size:14px;font-weight:700;margin-bottom:14px}
+.ml-table{width:100%;border-collapse:collapse;font-size:13px}
+.ml-table th{background:var(--hi-bg);padding:9px 12px;text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;white-space:nowrap;user-select:none}
+.ml-table th:hover{color:var(--accent)}
+.ml-table th .sort-icon{margin-left:4px;opacity:.5}
+.ml-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.ml-table tr:last-child td{border-bottom:none}
+.ml-table tr.summary-row td{font-weight:700;background:var(--hi-bg)}
+.ml-table tr:hover:not(.summary-row) td{background:#f8f9ff}
+
+/* REFERENCE */
+.ref-section{background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:24px;overflow:hidden}
+.ref-toggle{padding:16px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:14px;user-select:none}
+.ref-toggle:hover{background:var(--hi-bg)}
+.ref-body{padding:0 20px 20px;display:none}
+.ref-body.open{display:block}
+.ref-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.ref-table th{background:var(--hi-bg);padding:8px 12px;text-align:left;font-weight:600;font-size:12px;color:var(--muted)}
+.ref-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.ref-table tr:last-child td{border-bottom:none}
+.ref-note{font-size:12px;color:var(--muted);margin-top:8px}
+
+footer{text-align:center;padding:24px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);margin-top:8px}
+
+.hidden{display:none!important}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--header);color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="ico">🔍</div>
+  <div>
+    <h1>Detector de Discrepância</h1>
+    <p>Comparação entre ad server e plataforma — diagnóstico automático de divergências</p>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- MODE BAR -->
+  <div class="mode-bar">
+    <span>Modo:</span>
+    <button class="tab-btn active" data-tab="manual" onclick="switchTab('manual',this)">Comparação Manual</button>
+    <button class="tab-btn" data-tab="multiline" onclick="switchTab('multiline',this)">Multi-linha (colar tabela)</button>
+    <span style="margin-left:12px;font-weight:600;font-size:13px;color:var(--muted)">Métricas:</span>
+    <button class="mode-btn active" data-mode="all" onclick="setMode('all',this)">Completo</button>
+    <button class="mode-btn" data-mode="imp" onclick="setMode('imp',this)">Impressões</button>
+    <button class="mode-btn" data-mode="clk" onclick="setMode('clk',this)">Cliques</button>
+    <button class="mode-btn" data-mode="conv" onclick="setMode('conv',this)">Conversões</button>
+  </div>
+
+  <!-- MANUAL TAB -->
+  <div id="tab-manual">
+    <div class="panels">
+      <!-- SOURCE A -->
+      <div class="panel panel-a">
+        <div class="panel-label-wrap">
+          <div class="panel-dot dot-a"></div>
+          <input class="panel-label-input" id="label-a" value="CM360 / Ad Server" placeholder="Nome da fonte A">
+        </div>
+        <div class="field-group">
+          <div class="field metric-imp">
+            <label>Impressões</label>
+            <input type="text" id="a-imp" placeholder="ex: 1.250.000" oninput="fmtInput(this)">
+          </div>
+          <div class="field metric-clk">
+            <label>Cliques</label>
+            <input type="text" id="a-clk" placeholder="ex: 3.750" oninput="fmtInput(this)">
+          </div>
+          <div class="field metric-conv">
+            <label>Conversões (Floodlight)</label>
+            <input type="text" id="a-conv" placeholder="ex: 142" oninput="fmtInput(this)">
+          </div>
+          <div class="field metric-rev">
+            <label>Receita / Valor (R$)</label>
+            <input type="text" id="a-rev" placeholder="ex: 48.500,00" oninput="fmtInput(this)">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Data início</label>
+              <input type="date" id="a-start">
+            </div>
+            <div class="field">
+              <label>Data fim</label>
+              <input type="date" id="a-end">
+            </div>
+          </div>
+          <div class="field">
+            <label>Placement / Campanha</label>
+            <input type="text" id="a-name" placeholder="Nome para identificação">
+          </div>
+        </div>
+      </div>
+
+      <!-- SOURCE B -->
+      <div class="panel panel-b">
+        <div class="panel-label-wrap">
+          <div class="panel-dot dot-b"></div>
+          <input class="panel-label-input" id="label-b" value="Meta Ads / Plataforma" placeholder="Nome da fonte B">
+        </div>
+        <div class="field-group">
+          <div class="field metric-imp">
+            <label>Impressões</label>
+            <input type="text" id="b-imp" placeholder="ex: 1.100.000" oninput="fmtInput(this)">
+          </div>
+          <div class="field metric-clk">
+            <label>Cliques</label>
+            <input type="text" id="b-clk" placeholder="ex: 3.200" oninput="fmtInput(this)">
+          </div>
+          <div class="field metric-conv">
+            <label>Conversões</label>
+            <input type="text" id="b-conv" placeholder="ex: 98" oninput="fmtInput(this)">
+          </div>
+          <div class="field metric-rev">
+            <label>Receita / Valor (R$)</label>
+            <input type="text" id="b-rev" placeholder="ex: 42.000,00" oninput="fmtInput(this)">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Data início</label>
+              <input type="date" id="b-start">
+            </div>
+            <div class="field">
+              <label>Data fim</label>
+              <input type="date" id="b-end">
+            </div>
+          </div>
+          <div class="field">
+            <label>Placement / Campanha</label>
+            <input type="text" id="b-name" placeholder="Nome para identificação">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="compare()">🔍 Comparar</button>
+      <button class="btn-ghost" onclick="clearAll()">Limpar</button>
+      <button class="btn-ghost" onclick="loadDemo()">Carregar demo</button>
+    </div>
+  </div>
+
+  <!-- MULTI-LINE TAB -->
+  <div id="tab-multiline" class="hidden">
+    <div class="ml-panel">
+      <h3>Cole uma tabela com múltiplos placements</h3>
+      <p>Formato esperado (separado por tab ou ponto-e-vírgula): <code>Nome | Imp_A | Imp_B | Clk_A | Clk_B | Conv_A | Conv_B</code> — a primeira linha pode ser cabeçalho.</p>
+      <textarea id="ml-paste" placeholder="Nome&#9;Impressões A&#9;Impressões B&#9;Cliques A&#9;Cliques B
+Campanha_Display_BR&#9;1250000&#9;1100000&#9;3750&#9;3200
+Campanha_Video_SP&#9;850000&#9;790000&#9;1200&#9;1150
+Campanha_Prospecting&#9;2100000&#9;1600000&#9;8900&#9;7200"></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" onclick="compareMultiline()">🔍 Analisar tabela</button>
+      <button class="btn-ghost" onclick="document.getElementById('ml-paste').value=''">Limpar</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="results-header">
+      <h2 id="results-title">Resultado da Comparação</h2>
+      <div class="export-btns">
+        <button class="btn-secondary" onclick="copyReport()">📋 Copiar relatório</button>
+        <button class="btn-secondary" onclick="downloadCSV()">⬇️ Baixar CSV</button>
+      </div>
+    </div>
+
+    <div id="metric-cards" class="metric-cards"></div>
+    <div id="diagnosis-section" class="diagnosis">
+      <h3>🩺 Diagnóstico Automático</h3>
+      <div id="diag-items" class="diag-items"></div>
+    </div>
+    <div id="ml-results-section" class="ml-results hidden">
+      <h3>Análise por Placement</h3>
+      <div id="ml-table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- REFERENCE -->
+  <div class="ref-section">
+    <div class="ref-toggle" onclick="toggleRef(this)">
+      <span>📏 Limiares aceitáveis (IAB / MRC)</span>
+      <span id="ref-arrow">▼</span>
+    </div>
+    <div class="ref-body" id="ref-body">
+      <table class="ref-table">
+        <thead><tr><th>Métrica</th><th>✅ Aceitável</th><th>⚠️ Atenção</th><th>❌ Alta</th><th>🔴 Crítica</th></tr></thead>
+        <tbody>
+          <tr><td>Impressões</td><td>&lt; 10%</td><td>10 – 20%</td><td>20 – 50%</td><td>&gt; 50%</td></tr>
+          <tr><td>Cliques</td><td>&lt; 10%</td><td>10 – 20%</td><td>20 – 50%</td><td>&gt; 50%</td></tr>
+          <tr><td>Conversões</td><td>&lt; 20%</td><td>20 – 30%</td><td>30 – 50%</td><td>&gt; 50%</td></tr>
+          <tr><td>Receita / Valor</td><td>&lt; 10%</td><td>10 – 20%</td><td>20 – 40%</td><td>&gt; 40%</td></tr>
+        </tbody>
+      </table>
+      <p class="ref-note">⚠️ Estes limiares são referências de mercado. Contratos podem estipular limites diferentes — sempre verifique o acordo com o veículo.</p>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<footer>NC Tool — AdOps Suite © 2026</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- UTILS ----
+function parseBR(str){
+  if(!str)return null;
+  str=String(str).trim().replace(/\s/g,'');
+  // remove thousand separators (dots) and replace decimal comma with dot
+  str=str.replace(/\./g,'').replace(',','.');
+  const n=parseFloat(str);
+  return isNaN(n)?null:n;
+}
+function fmtN(n,dec=0){
+  if(n===null||n===undefined||isNaN(n))return'—';
+  return n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtPct(n){
+  if(n===null||isNaN(n))return'—';
+  return(n>=0?'+':'')+n.toFixed(2).replace('.',',')+'%';
+}
+function fmtInput(el){
+  // allow user to type freely; we parse on compare
+}
+function getVal(id){return parseBR(document.getElementById(id).value)}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ---- MODE ----
+let currentMode='all';
+function setMode(mode,btn){
+  currentMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const show=['all','imp'].includes(mode)||mode==='all'?true:false;
+  updateFieldVisibility();
+}
+function updateFieldVisibility(){
+  const modes={all:true,imp:['imp'],clk:['clk'],conv:['conv']};
+  ['imp','clk','conv','rev'].forEach(m=>{
+    const els=document.querySelectorAll('.metric-'+m);
+    const visible=currentMode==='all'||currentMode===m;
+    els.forEach(el=>el.style.display=visible?'':'none');
+  });
+}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-manual').classList.toggle('hidden',tab!=='manual');
+  document.getElementById('tab-multiline').classList.toggle('hidden',tab!=='multiline');
+  document.getElementById('results').style.display='none';
+}
+
+// ---- SEVERITY ----
+function severity(pct,metricType){
+  const absP=Math.abs(pct);
+  const thresholds=metricType==='conv'
+    ?{ok:20,warn:30,high:50}
+    :{ok:10,warn:20,high:50};
+  if(absP<thresholds.ok)return'ok';
+  if(absP<thresholds.warn)return'warn';
+  if(absP<thresholds.high)return'high';
+  return'crit';
+}
+function badgeHTML(sev){
+  const labels={ok:'✅ Aceitável',warn:'⚠️ Atenção',high:'❌ Alta',crit:'🔴 Crítica'};
+  return`<span class="badge badge-${sev}">${labels[sev]}</span>`;
+}
+function gaugeClass(sev){return'fill-'+sev}
+
+function metricCard(name,aVal,bVal,metricType,labelA,labelB){
+  if(aVal===null&&bVal===null)return'';
+  const base=aVal!==null?aVal:(bVal||1);
+  const disc=base!==0?((aVal||0)-(bVal||0))/Math.abs(base)*100:0;
+  const absDisc=Math.abs(disc);
+  const sev=severity(disc,metricType);
+  const gaugeW=Math.min(absDisc*2,100);// scale: 50% disc = full bar
+  const isRev=metricType==='rev';
+  const dec=isRev?2:0;
+  const fmtA=isRev?'R$ '+fmtN(aVal,2):fmtN(aVal,dec);
+  const fmtB=isRev?'R$ '+fmtN(bVal,2):fmtN(bVal,dec);
+  const diff=aVal!==null&&bVal!==null?(aVal-bVal):null;
+  const fmtDiff=diff!==null?(isRev?'R$ '+fmtN(Math.abs(diff),2):fmtN(Math.abs(diff),dec)):null;
+  return`<div class="mc">
+  <div class="mc-top"><span class="mc-name">${name}</span>${badgeHTML(sev)}</div>
+  <div class="mc-vals">
+    <div class="mv"><div class="mv-label">${labelA}</div><div class="mv-val accent">${fmtA}</div></div>
+    <div class="mv"><div class="mv-label">${labelB}</div><div class="mv-val purple">${fmtB}</div></div>
+  </div>
+  <div class="mc-disc">
+    <span class="disc-pct" style="color:var(--${sev==='ok'?'ok':sev==='warn'?'warn':'high'})">${fmtPct(disc)}</span>
+    ${fmtDiff?`<span class="disc-abs">Δ ${fmtDiff}</span>`:''}
+  </div>
+  <div class="gauge-wrap">
+    <div class="gauge-label"><span>0%</span><span>10%</span><span>20%</span><span>50%+</span></div>
+    <div class="gauge-track"><div class="gauge-fill ${gaugeClass(sev)}" style="width:${gaugeW}%"></div></div>
+  </div>
+</div>`;
+}
+
+// ---- DIAGNOSIS ----
+function buildDiagnosis(metrics,labelA,labelB){
+  const items=[];
+  const {imp,clk,conv,rev}=metrics;
+
+  function add(sev,title,text){
+    items.push(`<div class="diag-item diag-${sev}">
+      <div class="diag-icon">${sev==='ok'?'✅':sev==='warn'?'⚠️':sev==='high'?'❌':'🔴'}</div>
+      <div class="diag-text"><strong>${title}</strong>${text}</div>
+    </div>`);
+  }
+
+  // Impressões
+  if(imp.aVal!==null&&imp.bVal!==null){
+    const p=Math.abs(imp.disc);
+    if(p<10)add('ok','Impressões — Dentro do esperado','Discrepância de '+fmtPct(imp.disc)+' está abaixo do limiar aceitável de 10%.');
+    else if(p<20)add('warn','Impressões — Verificar configurações de relatório','Possíveis causas: diferença de fuso horário no relatório, filtros de tráfego inválido divergentes entre plataformas, ou viewability threshold configurado de forma diferente no ad server.');
+    else if(p<50)add('high','Impressões — Discrepância alta','Discrepância de '+fmtPct(imp.disc)+'. Verificar se os períodos de relatório são idênticos (mesmo dia de início e fim, mesmo fuso), se há configuração de IVT (Invalid Traffic) diferente, e se a tag está implementada corretamente em todos os placements.');
+    else add('crit','Impressões — Discrepância crítica','Discrepância de '+fmtPct(imp.disc)+'. Verificar urgentemente: implementação da tag/pixel, possível duplicação de contagem, ou se os relatórios cobrem o mesmo escopo de campanha.');
+    if(imp.bVal>imp.aVal*1.1)add('warn','Fonte B reportando mais que o ad server','Verificar se há tags duplicadas no site, pixels disparando mais de uma vez por pageview, ou se a contagem inclui impressões de formatos não rastreados pelo CM360.');
+  }
+
+  // Cliques
+  if(clk.aVal!==null&&clk.bVal!==null){
+    const p=Math.abs(clk.disc);
+    if(p<10)add('ok','Cliques — Dentro do esperado','Discrepância de '+fmtPct(clk.disc)+' está dentro do limiar aceitável.');
+    else if(p<20)add('warn','Cliques — Metodologias de contagem diferentes','Plataformas contam cliques de forma diferente. '+labelA+' registra apenas cliques que redirecionam via click tracker. '+labelB+' pode incluir cliques em qualquer elemento interativo do anúncio.');
+    else add('high','Cliques — Discrepância alta','Verificar se o click tracker está ativo em todos os criativos e se não há redirecionamentos intermediários que possam quebrar o rastreamento. Checar também se há discrepância também nas impressões — se a taxa de impressão for consistente, o problema está no click tracking.');
+  }
+
+  // Conversões
+  if(conv.aVal!==null&&conv.bVal!==null){
+    const p=Math.abs(conv.disc);
+    if(p<20)add('ok','Conversões — Aceitável','Discrepância de '+fmtPct(conv.disc)+' dentro do limiar para conversões.');
+    else if(p<30)add('warn','Conversões — Janelas de atribuição divergentes','CM360 Floodlight usa a janela de atribuição configurada no ad server (geralmente 30d click / 1d view). Verificar se as janelas de lookback são iguais entre as fontes e se ambas usam o mesmo modelo de atribuição.');
+    else add('high','Conversões — Verificar implementação','Discrepância de '+fmtPct(conv.disc)+'. Causas comuns: Floodlight com parâmetros incorretos, pixel de conversão da plataforma sem correspondência com o evento Floodlight, ou uma das fontes contando micro-conversões e a outra apenas macro-conversões.');
+  }
+
+  if(items.length===0)add('ok','Sem dados suficientes','Preencha as métricas das duas fontes para ver o diagnóstico.');
+  return items.join('');
+}
+
+// ---- COMPARE (manual) ----
+let lastMetrics={};
+let lastLabels={a:'',b:''};
+let lastRows=[];
+
+function compare(){
+  const lA=document.getElementById('label-a').value||'Fonte A';
+  const lB=document.getElementById('label-b').value||'Fonte B';
+  lastLabels={a:lA,b:lB};
+
+  const metrics={
+    imp:{aVal:getVal('a-imp'),bVal:getVal('b-imp'),label:'Impressões',type:'imp'},
+    clk:{aVal:getVal('a-clk'),bVal:getVal('b-clk'),label:'Cliques',type:'clk'},
+    conv:{aVal:getVal('a-conv'),bVal:getVal('b-conv'),label:'Conversões',type:'conv'},
+    rev:{aVal:getVal('a-rev'),bVal:getVal('b-rev'),label:'Receita (R$)',type:'rev'},
+  };
+
+  // filter by mode
+  const active=currentMode==='all'?['imp','clk','conv','rev']:
+    currentMode==='imp'?['imp']:currentMode==='clk'?['clk']:['conv'];
+
+  // compute disc for each
+  for(const k in metrics){
+    const m=metrics[k];
+    const base=m.aVal!==null?m.aVal:(m.bVal||1);
+    m.disc=base!==0?((m.aVal||0)-(m.bVal||0))/Math.abs(base)*100:0;
+  }
+  lastMetrics=metrics;
+
+  let cards='';
+  active.forEach(k=>{
+    if(currentMode==='all'||k===currentMode){
+      cards+=metricCard(metrics[k].label,metrics[k].aVal,metrics[k].bVal,k,lA,lB);
+    }
+  });
+  if(!cards)cards='<p style="color:var(--muted);font-size:13px">Preencha pelo menos uma métrica nas duas fontes.</p>';
+
+  document.getElementById('metric-cards').innerHTML=cards;
+  document.getElementById('diag-items').innerHTML=buildDiagnosis(metrics,lA,lB);
+  document.getElementById('diagnosis-section').style.display='block';
+  document.getElementById('ml-results-section').classList.add('hidden');
+  const name=document.getElementById('a-name').value;
+  document.getElementById('results-title').textContent='Resultado — '+(name||lA+' × '+lB);
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ---- MULTI-LINE ----
+function compareMultiline(){
+  const raw=document.getElementById('ml-paste').value.trim();
+  if(!raw){showToast('Cole os dados primeiro.');return;}
+
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const sep=lines[0].includes('\t')?'\t':';';
+
+  // detect if first line is header
+  let startIdx=0;
+  const firstCols=lines[0].split(sep);
+  if(isNaN(parseBR(firstCols[1])))startIdx=1;
+
+  const rows=[];
+  for(let i=startIdx;i<lines.length;i++){
+    const cols=lines[i].split(sep).map(c=>c.trim());
+    if(cols.length<3)continue;
+    const r={
+      name:cols[0],
+      impA:parseBR(cols[1]),impB:parseBR(cols[2]),
+      clkA:parseBR(cols[3]),clkB:parseBR(cols[4]),
+      convA:parseBR(cols[5]),convB:parseBR(cols[6]),
+    };
+    // disc
+    const calcDisc=(a,b)=>a!==null&&b!==null&&a!==0?((a-b)/Math.abs(a)*100):null;
+    r.discImp=calcDisc(r.impA,r.impB);
+    r.discClk=calcDisc(r.clkA,r.clkB);
+    r.discConv=calcDisc(r.convA,r.convB);
+    r.worstDisc=Math.max(Math.abs(r.discImp||0),Math.abs(r.discClk||0),Math.abs(r.discConv||0));
+    r.sev=severity(r.worstDisc,'imp');
+    rows.push(r);
+  }
+  if(!rows.length){showToast('Não foi possível interpretar os dados. Verifique o formato.');return;}
+  lastRows=rows;
+
+  // Build table
+  const sevColor={ok:'var(--ok)',warn:'var(--warn)',high:'var(--high)',crit:'var(--crit)'};
+  const sevLabel={ok:'✅',warn:'⚠️',high:'❌',crit:'🔴'};
+
+  let totalImpA=0,totalImpB=0,totalClkA=0,totalClkB=0;
+  rows.forEach(r=>{totalImpA+=r.impA||0;totalImpB+=r.impB||0;totalClkA+=r.clkA||0;totalClkB+=r.clkB||0;});
+  const totalDiscImp=totalImpA?((totalImpA-totalImpB)/totalImpA*100):null;
+  const totalDiscClk=totalClkA?((totalClkA-totalClkB)/totalClkA*100):null;
+
+  let html=`<table class="ml-table" id="ml-sortable">
+  <thead><tr>
+    <th onclick="sortRows('name',this)">Placement / Campanha <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('impA',this)">Imp. A <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('impB',this)">Imp. B <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('discImp',this)">Disc. Imp. <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('clkA',this)">Clk. A <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('clkB',this)">Clk. B <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('discClk',this)">Disc. Clk. <span class="sort-icon">⇅</span></th>
+    <th onclick="sortRows('worstDisc',this)">Pior Disc. <span class="sort-icon">⇅</span></th>
+    <th>Status</th>
+  </tr></thead>
+  <tbody id="ml-tbody">${buildMLRows(rows)}</tbody>
+  <tfoot><tr class="summary-row">
+    <td>TOTAL / MÉDIA PONDERADA</td>
+    <td>${fmtN(totalImpA)}</td><td>${fmtN(totalImpB)}</td>
+    <td style="color:${sevColor[severity(totalDiscImp,'imp')]}">${totalDiscImp!==null?fmtPct(totalDiscImp):'—'}</td>
+    <td>${fmtN(totalClkA)}</td><td>${fmtN(totalClkB)}</td>
+    <td style="color:${sevColor[severity(totalDiscClk,'clk')]}">${totalDiscClk!==null?fmtPct(totalDiscClk):'—'}</td>
+    <td>—</td><td>—</td>
+  </tr></tfoot>
+</table>`;
+
+  document.getElementById('ml-table-wrap').innerHTML=html;
+  document.getElementById('ml-results-section').classList.remove('hidden');
+  document.getElementById('metric-cards').innerHTML='';
+  document.getElementById('diagnosis-section').style.display='none';
+  document.getElementById('results-title').textContent='Análise Multi-linha — '+rows.length+' placements';
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildMLRows(rows){
+  const sevColor={ok:'var(--ok)',warn:'var(--warn)',high:'var(--high)',crit:'var(--crit)'};
+  const sevLabel={ok:'✅ Aceitável',warn:'⚠️ Atenção',high:'❌ Alta',crit:'🔴 Crítica'};
+  return rows.map(r=>`<tr>
+    <td>${r.name}</td>
+    <td>${fmtN(r.impA)}</td><td>${fmtN(r.impB)}</td>
+    <td style="font-weight:600;color:${r.discImp!==null?sevColor[severity(r.discImp,'imp')]:'var(--muted)'}">${r.discImp!==null?fmtPct(r.discImp):'—'}</td>
+    <td>${fmtN(r.clkA)}</td><td>${fmtN(r.clkB)}</td>
+    <td style="font-weight:600;color:${r.discClk!==null?sevColor[severity(r.discClk,'clk')]:'var(--muted)'}">${r.discClk!==null?fmtPct(r.discClk):'—'}</td>
+    <td style="font-weight:700;color:${sevColor[r.sev]}">${r.worstDisc.toFixed(1).replace('.',',')}%</td>
+    <td><span class="badge badge-${r.sev}">${sevLabel[r.sev]}</span></td>
+  </tr>`).join('');
+}
+
+let sortDir={};
+function sortRows(key,th){
+  sortDir[key]=sortDir[key]==='asc'?'desc':'asc';
+  lastRows.sort((a,b)=>{
+    const va=a[key]??'';const vb=b[key]??'';
+    if(typeof va==='number')return sortDir[key]==='asc'?va-vb:vb-va;
+    return sortDir[key]==='asc'?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+  });
+  document.getElementById('ml-tbody').innerHTML=buildMLRows(lastRows);
+}
+
+// ---- EXPORT ----
+function copyReport(){
+  const title=document.getElementById('results-title').textContent;
+  let txt=`RELATÓRIO DE DISCREPÂNCIA\n${title}\nGerado em: ${new Date().toLocaleString('pt-BR')}\n\n`;
+  const cards=document.querySelectorAll('.mc');
+  if(cards.length){
+    txt+='MÉTRICAS\n'+'-'.repeat(50)+'\n';
+    cards.forEach(c=>{
+      const name=c.querySelector('.mc-name').textContent;
+      const badge=c.querySelector('.badge').textContent;
+      const disc=c.querySelector('.disc-pct').textContent;
+      txt+=`${name}: ${disc} — ${badge}\n`;
+    });
+  }
+  if(lastRows.length){
+    txt+='\nANÁLISE POR PLACEMENT\n'+'-'.repeat(50)+'\n';
+    txt+='Placement\tDisc. Imp.\tDisc. Clk.\tStatus\n';
+    lastRows.forEach(r=>{
+      txt+=`${r.name}\t${r.discImp!==null?r.discImp.toFixed(2)+'%':'—'}\t${r.discClk!==null?r.discClk.toFixed(2)+'%':'—'}\t${r.sev.toUpperCase()}\n`;
+    });
+  }
+  navigator.clipboard.writeText(txt).then(()=>showToast('Relatório copiado!'));
+}
+
+function downloadCSV(){
+  let csv='';
+  if(lastRows.length){
+    csv='Placement;Imp A;Imp B;Disc Imp%;Clk A;Clk B;Disc Clk%;Status\n';
+    lastRows.forEach(r=>{
+      csv+=`${r.name};${r.impA||''};${r.impB||''};${r.discImp!==null?r.discImp.toFixed(2).replace('.',','):''}%;${r.clkA||''};${r.clkB||''};${r.discClk!==null?r.discClk.toFixed(2).replace('.',','):''}%;${r.sev}\n`;
+    });
+  } else {
+    csv='Métrica;Fonte A;Fonte B;Discrepância%;Status\n';
+    for(const k in lastMetrics){
+      const m=lastMetrics[k];
+      if(m.aVal===null&&m.bVal===null)continue;
+      csv+=`${m.label};${m.aVal||''};${m.bVal||''};${m.disc.toFixed(2).replace('.',',')}%;${severity(m.disc,k)}\n`;
+    }
+  }
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='discrepancia.csv';a.click();URL.revokeObjectURL(url);
+}
+
+// ---- MISC ----
+function clearAll(){
+  ['a-imp','a-clk','a-conv','a-rev','b-imp','b-clk','b-conv','b-rev','a-name','b-name'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('results').style.display='none';
+}
+
+function loadDemo(){
+  document.getElementById('label-a').value='CM360 / Ad Server';
+  document.getElementById('label-b').value='Meta Ads';
+  document.getElementById('a-imp').value='1.250.000';
+  document.getElementById('b-imp').value='1.100.000';
+  document.getElementById('a-clk').value='3.750';
+  document.getElementById('b-clk').value='4.200';
+  document.getElementById('a-conv').value='142';
+  document.getElementById('b-conv').value='98';
+  document.getElementById('a-name').value='Campanha_Branding_Q4_2026';
+  compare();
+}
+
+function toggleRef(el){
+  const body=document.getElementById('ref-body');
+  const arrow=document.getElementById('ref-arrow');
+  body.classList.toggle('open');
+  arrow.textContent=body.classList.contains('open')?'▲':'▼';
+}
+
+updateFieldVisibility();
+</script>
+</body>
+</html>
