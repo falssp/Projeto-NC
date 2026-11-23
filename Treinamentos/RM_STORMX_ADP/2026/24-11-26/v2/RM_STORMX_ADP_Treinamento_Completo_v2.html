@@ -1629,16 +1629,23 @@ body {
 /* ─── DECK CONTROLLER ───────────────────────────────────── */
 /* Called by initTax() after category slides are injected   */
 window.__initDeck = function(){
-  const slides = Array.from(document.querySelectorAll('.slide'));
-  const total = slides.length;
-  let current = 0;
+  // Separate static slides (deck) from taxonomy slides (sub-nav)
+  const allSlides    = Array.from(document.querySelectorAll('.slide'));
+  const staticSlides = allSlides.filter(s => !s.dataset.catSlide);
+  const total  = staticSlides.length;
+  let current  = 0;
+
+  // Taxonomy slides: hidden from main deck, managed by taxController
+  allSlides.filter(s => s.dataset.catSlide).forEach(s => {
+    s.classList.remove('active','prevslide');
+  });
 
   const counter      = document.getElementById('counter');
   const progressFill = document.getElementById('progress-fill');
   const dotsWrap     = document.getElementById('dots');
-  dotsWrap.innerHTML = ''; // clear any previous dots
+  dotsWrap.innerHTML = '';
 
-  slides.forEach((_,i) => {
+  staticSlides.forEach((_,i) => {
     const d = document.createElement('div');
     d.className = 'dot' + (i===0?' active':'');
     d.addEventListener('click', () => goTo(i));
@@ -1659,11 +1666,11 @@ window.__initDeck = function(){
   function goTo(i){
     if(i < 0 || i >= total || i === current) return;
     const dir = i > current ? 1 : -1;
-    slides[current].classList.remove('active');
-    slides[current].classList.toggle('prevslide', dir === 1);
-    slides[i].classList.remove('prevslide');
-    slides[i].classList.add('active');
-    restartReveals(slides[i]);
+    staticSlides[current].classList.remove('active');
+    staticSlides[current].classList.toggle('prevslide', dir === 1);
+    staticSlides[i].classList.remove('prevslide');
+    staticSlides[i].classList.add('active');
+    restartReveals(staticSlides[i]);
     dots[current].classList.remove('active');
     dots[i].classList.add('active');
     current = i;
@@ -1671,23 +1678,87 @@ window.__initDeck = function(){
     progressFill.style.width = ((current+1)/total*100) + '%';
   }
 
-  // expose for taxonomy back-buttons and index cards
-  window.__taxGoTo = goTo;
+  // ── Taxonomy sub-controller ─────────────────────────────
+  // Manages navigation inside a category block (outside main deck)
+  let taxActive = false;      // true while viewing taxonomy slides
+  let taxSlides  = [];        // current category's slides in order
+  let taxCurrent = 0;         // index within taxSlides
 
-  // Helper: if on S19 and moving forward, jump to last slide (skip taxonomy block)
-  function nextFromCurrent(){
-    const isS19 = slides[current] && slides[current].id === 's19';
-    return isS19 ? total - 1 : current + 1;
+  function taxShow(slides, startIdx){
+    taxSlides  = slides;
+    taxCurrent = startIdx || 0;
+    taxActive  = true;
+    // Hide current static slide, show first tax slide
+    staticSlides[current].classList.remove('active');
+    taxSlides[taxCurrent].classList.add('active');
+    taxSlides[taxCurrent].classList.remove('prevslide');
   }
 
-  document.getElementById('prevBtn').addEventListener('click', () => goTo(current-1));
-  document.getElementById('nextBtn').addEventListener('click', () => goTo(nextFromCurrent()));
+  function taxGoToSlide(i){
+    if(i < 0){
+      // ← before first slide → back to index (S19)
+      taxClose();
+      return;
+    }
+    if(i >= taxSlides.length){
+      // → after last slide → back to index (S19)
+      taxClose();
+      return;
+    }
+    if(i === taxCurrent) return;
+    const dir = i > taxCurrent ? 1 : -1;
+    taxSlides[taxCurrent].classList.remove('active');
+    taxSlides[taxCurrent].classList.toggle('prevslide', dir === 1);
+    taxSlides[i].classList.remove('prevslide');
+    taxSlides[i].classList.add('active');
+    taxCurrent = i;
+  }
+
+  function taxClose(){
+    // Hide all tax slides, restore S19 static slide
+    taxSlides.forEach(s => { s.classList.remove('active','prevslide'); });
+    taxActive  = false;
+    taxSlides  = [];
+    taxCurrent = 0;
+    // Go back to S19 in main deck
+    const s19i = staticSlides.findIndex(s => s.id === 's19');
+    const target = s19i >= 0 ? s19i : current;
+    staticSlides[target].classList.add('active');
+    dots[current].classList.remove('active');
+    dots[target].classList.add('active');
+    current = target;
+    counter.textContent = pad(current+1) + ' / ' + pad(total);
+    progressFill.style.width = ((current+1)/total*100) + '%';
+  }
+
+  // Open a category: gather its slides and jump to first
+  window.__taxGoTo = function(cat){
+    const catSlides = allSlides.filter(s => s.dataset.catSlide === cat);
+    if(!catSlides.length) return;
+    taxShow(catSlides, 0);
+  };
+
+  // Back button (← Índice) calls taxClose
+  window.__taxClose = taxClose;
+
+  function handleNext(){
+    if(taxActive){ taxGoToSlide(taxCurrent + 1); }
+    else { goTo(current + 1); }
+  }
+  function handlePrev(){
+    if(taxActive){ taxGoToSlide(taxCurrent - 1); }
+    else { goTo(current - 1); }
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', handlePrev);
+  document.getElementById('nextBtn').addEventListener('click', handleNext);
 
   document.addEventListener('keydown', e => {
-    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); goTo(nextFromCurrent()); }
-    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); goTo(current-1); }
-    else if(e.key === 'Home'){ goTo(0); }
-    else if(e.key === 'End'){ goTo(total-1); }
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); handleNext(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); handlePrev(); }
+    else if(e.key === 'Escape' && taxActive){ taxClose(); }
+    else if(e.key === 'Home' && !taxActive){ goTo(0); }
+    else if(e.key === 'End'  && !taxActive){ goTo(total-1); }
     else if(e.key.toLowerCase() === 'f'){ toggleFullscreen(); }
   });
 
@@ -1696,7 +1767,7 @@ window.__initDeck = function(){
   document.addEventListener('touchend', e => {
     if(touchStartX === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if(Math.abs(dx) > 60){ dx < 0 ? goTo(current+1) : goTo(current-1); }
+    if(Math.abs(dx) > 60){ dx < 0 ? handleNext() : handlePrev(); }
     touchStartX = null;
   });
 
@@ -1708,7 +1779,7 @@ window.__initDeck = function(){
 
   counter.textContent = pad(1) + ' / ' + pad(total);
   progressFill.style.width = (1/total*100) + '%';
-  restartReveals(slides[0]);
+  restartReveals(staticSlides[0]);
 };
 </script>
 
@@ -1977,9 +2048,6 @@ function buildCatSlide(cat, pageRules, pageNum, totalPages, color, slideIdx){
 }
 
 /* ── S19 intro: category index cards ───────────────────── */
-// Map cat → first slide index (filled after slides are built)
-const catFirstSlide = {};
-
 function renderCatGrid(){
   const grid = document.getElementById('taxCatGrid');
   if(!grid) return;
@@ -1999,8 +2067,7 @@ function renderCatGrid(){
   grid.querySelectorAll('.tax-cat-card').forEach(card => {
     card.addEventListener('click', () => {
       const cat = card.dataset.catJump;
-      const idx = catFirstSlide[cat];
-      if(idx != null) window.__taxGoTo(idx);
+      if(window.__taxGoTo) window.__taxGoTo(cat); // pass category name string
     });
   });
 }
@@ -2030,28 +2097,19 @@ function buildCategorySlides(){
 }
 
 /* ── Wire up deck controller to know about injected slides  */
-// Called by deck controller after slides are known
-window.__taxGoTo = null; // set by deck init
+window.__taxGoTo  = null; // set by __initDeck: takes category name string
+window.__taxClose = null; // set by __initDeck: returns to S19
 
 function initTax(){
-  buildCategorySlides();   // inject category slides first
-  renderCatGrid();         // build index grid (counts available now)
-  if(window.__initDeck) window.__initDeck(); // init deck with ALL slides
+  buildCategorySlides();   // inject category slides into DOM first
+  renderCatGrid();         // build index grid
+  if(window.__initDeck) window.__initDeck(); // init deck (staticSlides only)
 
-  // After deck re-scans slides, fill catFirstSlide map
+  // Wire back buttons — they call __taxClose to return to S19
   setTimeout(() => {
-    const slides = Array.from(document.querySelectorAll('.slide'));
-    slides.forEach((el, i) => {
-      const cat = el.dataset.catSlide;
-      if(cat && catFirstSlide[cat] == null) catFirstSlide[cat] = i;
-      // wire back buttons
-      el.querySelectorAll('.tax-back-btn').forEach(btn => {
-        // find s19 index
-        const s19idx = slides.findIndex(s => s.id === 's19');
-        btn.dataset.backIdx = s19idx >= 0 ? s19idx : 0;
-        btn.addEventListener('click', () => {
-          if(window.__taxGoTo) window.__taxGoTo(parseInt(btn.dataset.backIdx));
-        });
+    document.querySelectorAll('.tax-back-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(window.__taxClose) window.__taxClose();
       });
     });
   }, 50);
