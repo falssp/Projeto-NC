@@ -1,76 +1,48 @@
-name: Sync Audit — F2 vs Planilha
+name: Sync Audit — F2 vs GAS
 
 # Roda toda segunda-feira às 09h (horário de Brasília = 12h UTC)
-# Pode ser disparado manualmente também pelo GitHub Actions UI
+# Pode ser disparado manualmente também
 on:
   schedule:
     - cron: '0 12 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   audit:
-    name: Verificar drift F2 ↔ Planilha
+    name: Verificar sync F2 ↔ GAS
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      issues: write   # necessário para criar issue em caso de drift
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: scripts/package.json
-
-      - name: Instalar dependências
-        run: npm install
-        working-directory: scripts
-
       - name: Rodar sync audit
         id: audit
-        env:
-          GOOGLE_SHEETS_SA_KEY: ${{ secrets.GOOGLE_SHEETS_SA_KEY }}
-        run: |
-          node scripts/sync-audit.js
-          echo "DRIFT=false" >> $GITHUB_ENV
+        run: python3 scripts/sync-audit.py
         continue-on-error: true
 
-      - name: Detectar resultado
-        run: |
-          EXIT=${{ steps.audit.outputs.exit_code }}
-          if [ -f /tmp/sync-drift-report.md ]; then
-            echo "DRIFT=true" >> $GITHUB_ENV
-          else
-            echo "DRIFT=false" >> $GITHUB_ENV
-          fi
-
-      - name: Criar issue se drift detectado
-        if: env.DRIFT == 'true'
+      - name: Criar issue se drift crítico detectado
+        if: steps.audit.outcome == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Garantir que a label existe (cria se não existir, ignora se existir)
           gh label create "sync-audit" \
             --color "#FF9800" \
             --description "Drift detectado pelo sync-audit semanal" \
             --force 2>/dev/null || true
 
-          # Criar issue com o relatório
-          BODY=$(cat /tmp/sync-drift-report.md)
+          BODY=$(cat /tmp/sync-drift-report.md 2>/dev/null || echo "Drift detectado — ver log da Action para detalhes.")
           DATE=$(date +%Y-%m-%d)
 
           gh issue create \
-            --title "⚠️ Sync Audit: Drift F2 ↔ Planilha detectado ($DATE)" \
+            --title "⚠️ Sync Audit: Drift F2 ↔ GAS detectado ($DATE)" \
             --body "$BODY" \
             --label "sync-audit"
 
-      - name: Falhar se drift detectado
-        if: env.DRIFT == 'true'
-        run: |
-          echo "::error::Drift detectado. Verifique o issue criado no repositório."
-          exit 1
+      - name: Falhar se drift crítico
+        if: steps.audit.outcome == 'failure'
+        run: exit 1
