@@ -1814,6 +1814,32 @@ body {
   </div>
 </div>
 
+<!-- Import Segment Modal -->
+<div id="importSegModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center" onclick="if(event.target===this)closeImportSegModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(520px,95vw);box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:15px;font-weight:800">📥 Importar segmento</span>
+      <button class="btn secondary btn-sm" onclick="closeImportSegModal()">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:10px">Copia termos de um segmento de outro cliente para o segmento ativo. Duplicatas são ignoradas.</div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Cliente origem</label>
+      <select id="importSegClientSel" onchange="populateImportSegList()" style="height:30px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;width:100%"></select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Segmento origem</label>
+      <select id="importSegSel" style="height:30px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;width:100%">
+        <option value="">— selecionar cliente primeiro —</option>
+      </select>
+    </div>
+    <div id="importSegPreview" style="font-size:11px;color:var(--faint);min-height:20px;margin-bottom:12px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn secondary btn-sm" onclick="closeImportSegModal()">Cancelar</button>
+      <button class="btn primary btn-sm" id="importSegConfirm" onclick="confirmImportSeg()" disabled>✓ Importar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Move Term Modal -->
 <div id="moveTermModal" class="move-term-modal" style="display:none" onclick="if(event.target===this)closeMoveTermModal()">
   <div class="modal-box">
@@ -3205,6 +3231,7 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Exportar segmento como CSV" onclick="exportSegCSV()" style="font-size:11px;padding:4px 8px">⬇ CSV seg</button>
       <button class="btn secondary btn-sm" title="Exportar TODOS os segmentos do cliente como CSV único" onclick="exportAllClientCSV()" style="font-size:11px;padding:4px 8px">⬇ CSV tudo</button>
       <button class="btn secondary btn-sm" title="Adicionar vários termos de uma vez (separados por vírgula)" onclick="openMultiAddModal()" style="font-size:11px;padding:4px 8px">⚡ Multi-add</button>
+      <button class="btn secondary btn-sm" title="Importar segmento de outro cliente" onclick="openImportSegModal()" style="font-size:11px;padding:4px 8px">📥 Importar seg.</button>
       <button class="btn secondary btn-sm" title="Detectar e mesclar termos com valor duplicado neste segmento" onclick="mergeDuplicateTerms()" style="font-size:11px;padding:4px 8px">🔀 Mesclar dupl.</button>
       <button class="btn secondary btn-sm" title="Zerar contadores de uso deste segmento" onclick="resetSegUsage()" style="font-size:11px;padding:4px 8px">🔄 Zerar uso</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
@@ -5629,7 +5656,87 @@ function confirmBulkPaste(){
   auditLog('bulk_paste',c.id,c.name,`${added} adicionado(s), ${skipped} ignorado(s) por duplicata — seg: ${activeSeg}`);
   closeBulkPasteModal();
   renderTerms();
-  showToast(`✓ ${added} termo(s) adicionado(s)${skipped?` (${skipped} duplicata(s) ignorada(s))`:''}`);;
+  showToast(`✓ ${added} termo(s) adicionado(s)${skipped?` (${skipped} duplicata(s) ignorada(s))`:''}`);
+}
+
+/* =============================================
+   IMPORT SEGMENT FROM ANOTHER CLIENT
+   ============================================= */
+function openImportSegModal(){
+  const c=active(); if(!c||!activeSeg){showToast('Selecione um segmento destino primeiro');return;}
+  const m=document.getElementById('importSegModal'); if(!m) return;
+  // Populate client list (all except current)
+  const clients=getClients().filter(cl=>!cl.archived&&cl.id!==c.id);
+  const sel=document.getElementById('importSegClientSel');
+  sel.innerHTML='<option value="">— selecionar —</option>'+
+    clients.map(cl=>`<option value="${esc(cl.id)}">${esc(cl.name)}</option>`).join('');
+  document.getElementById('importSegSel').innerHTML='<option value="">— selecionar cliente primeiro —</option>';
+  document.getElementById('importSegPreview').textContent='';
+  document.getElementById('importSegConfirm').disabled=true;
+  m.style.display='flex';
+}
+
+function closeImportSegModal(){
+  const m=document.getElementById('importSegModal'); if(m) m.style.display='none';
+}
+
+function populateImportSegList(){
+  const clientId=document.getElementById('importSegClientSel').value;
+  const clients=getClients();
+  const src=clients.find(cl=>cl.id===clientId);
+  const segSel=document.getElementById('importSegSel');
+  document.getElementById('importSegPreview').textContent='';
+  document.getElementById('importSegConfirm').disabled=true;
+  if(!src){segSel.innerHTML='<option value="">— selecionar cliente primeiro —</option>';return;}
+  segSel.innerHTML='<option value="">— selecionar —</option>'+
+    src.segments.map(s=>{
+      const count=(src.dictionary[s.id]||[]).length;
+      return `<option value="${esc(s.id)}">${esc(s.label)} (${count} termo(s))</option>`;
+    }).join('');
+  segSel.onchange=previewImportSeg;
+}
+
+function previewImportSeg(){
+  const clientId=document.getElementById('importSegClientSel').value;
+  const segId=document.getElementById('importSegSel').value;
+  const prev=document.getElementById('importSegPreview');
+  const btn=document.getElementById('importSegConfirm');
+  if(!clientId||!segId){prev.textContent='';btn.disabled=true;return;}
+  const src=getClients().find(cl=>cl.id===clientId);
+  if(!src){return;}
+  const terms=(src.dictionary[segId]||[]);
+  const c=active();
+  const existing=new Set((c.dictionary[activeSeg]||[]).map(t=>t.value.toLowerCase()));
+  const newTerms=terms.filter(t=>!existing.has(t.value.toLowerCase()));
+  const dupCount=terms.length-newTerms.length;
+  prev.innerHTML=`<span style="color:var(--ok)">${newTerms.length} termo(s) novos</span>${dupCount?` <span style="color:var(--warn)">(${dupCount} já existem — serão ignorados)</span>`:''}`;
+  btn.disabled=!newTerms.length;
+  btn.textContent=`✓ Importar ${newTerms.length} termo(s)`;
+}
+
+function confirmImportSeg(){
+  const clientId=document.getElementById('importSegClientSel').value;
+  const segId=document.getElementById('importSegSel').value;
+  if(!clientId||!segId) return;
+  const src=getClients().find(cl=>cl.id===clientId);
+  const c=active();
+  if(!src||!c||!activeSeg) return;
+  const terms=(src.dictionary[segId]||[]);
+  const existing=new Set((c.dictionary[activeSeg]||[]).map(t=>t.value.toLowerCase()));
+  if(!c.dictionary[activeSeg]) c.dictionary[activeSeg]=[];
+  let added=0,skipped=0;
+  for(const t of terms){
+    if(existing.has(t.value.toLowerCase())){skipped++;continue;}
+    c.dictionary[activeSeg].push({...JSON.parse(JSON.stringify(t)),createdAt:Date.now()});
+    existing.add(t.value.toLowerCase());
+    added++;
+  }
+  saveData();
+  const srcSeg=src.segments.find(s=>s.id===segId);
+  auditLog('import_segment',c.id,c.name,`${added} termo(s) importados de "${src.name} / ${srcSeg?.label||segId}", ${skipped} ignorados`);
+  closeImportSegModal();
+  renderTerms();
+  showToast(`✓ ${added} termo(s) importado(s)${skipped?` (${skipped} duplicata(s) ignorada(s))`:''}`);
 }
 
 function confirmMoveTerm(targetSegId) {
