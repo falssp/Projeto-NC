@@ -3234,8 +3234,10 @@ function renderTermArea(c) {
       <button class="btn secondary btn-sm" title="Importar segmento de outro cliente" onclick="openImportSegModal()" style="font-size:11px;padding:4px 8px">📥 Importar seg.</button>
       <button class="btn secondary btn-sm" title="Detectar e mesclar termos com valor duplicado neste segmento" onclick="mergeDuplicateTerms()" style="font-size:11px;padding:4px 8px">🔀 Mesclar dupl.</button>
       <button class="btn secondary btn-sm" title="Zerar contadores de uso deste segmento" onclick="resetSegUsage()" style="font-size:11px;padding:4px 8px">🔄 Zerar uso</button>
+      <button class="btn secondary btn-sm" title="Estatísticas do segmento" onclick="toggleSegStats()" id="segStatsBtn" style="font-size:11px;padding:4px 8px">📊 Stats</button>
       <button class="bulk-toggle-btn" onclick="toggleBulkMode()" id="bulkToggleBtn" title="Selecionar múltiplos">☑ Selecionar</button>
     </div>
+    <div id="segStatsPanel" style="display:none;margin-bottom:10px;background:var(--divider);border-radius:10px;padding:12px 14px;font-size:12px"></div>
     <div id="bulkBar" style="display:none"><div class="bulk-bar">
       <span id="bulkCount">0 selecionados</span>
       <button onclick="bulkDelete()">🗑 Excluir</button>
@@ -5737,6 +5739,71 @@ function confirmImportSeg(){
   closeImportSegModal();
   renderTerms();
   showToast(`✓ ${added} termo(s) importado(s)${skipped?` (${skipped} duplicata(s) ignorada(s))`:''}`);
+}
+
+/* =============================================
+   SEGMENT STATS PANEL
+   ============================================= */
+let _segStatsPanelOpen=false;
+
+function toggleSegStats(){
+  _segStatsPanelOpen=!_segStatsPanelOpen;
+  const panel=document.getElementById('segStatsPanel');
+  const btn=document.getElementById('segStatsBtn');
+  if(!_segStatsPanelOpen){if(panel)panel.style.display='none';return;}
+  if(panel){panel.style.display='block';renderSegStats();}
+}
+
+function renderSegStats(){
+  const panel=document.getElementById('segStatsPanel'); if(!panel) return;
+  const c=active(); if(!c||!activeSeg){panel.innerHTML='<em>Nenhum segmento ativo</em>';return;}
+  const terms=c.dictionary[activeSeg]||[];
+  if(!terms.length){panel.innerHTML='<em style="color:var(--faint)">Segmento vazio</em>';return;}
+
+  const total=terms.length;
+  const withLabel=terms.filter(t=>t.label&&t.label.trim()).length;
+  const withDesc=terms.filter(t=>t.desc&&t.desc.trim()).length;
+  const withNotes=terms.filter(t=>t.notes&&t.notes.trim()).length;
+  const favCount=terms.filter(t=>t.fav).length;
+  const withUse=terms.filter(t=>(t.uses||0)>0);
+  const totalUses=terms.reduce((s,t)=>s+(t.uses||0),0);
+
+  // Top 5 by usage
+  const topTerms=[...terms].sort((a,b)=>(b.uses||0)-(a.uses||0)).slice(0,5);
+  const maxUses=topTerms[0]?.uses||1;
+
+  // Tag distribution
+  const tagMap={};
+  terms.forEach(t=>{if(t.tag) tagMap[t.tag]=(tagMap[t.tag]||0)+1;});
+  const tagEntries=Object.entries(tagMap).sort((a,b)=>b[1]-a[1]);
+
+  panel.innerHTML=`
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+      <span><strong>${total}</strong> termos</span>
+      <span><strong>${withLabel}</strong> com label (${Math.round(withLabel/total*100)}%)</span>
+      <span><strong>${withDesc}</strong> com desc</span>
+      <span><strong>${withNotes}</strong> com notas</span>
+      <span>⭐ <strong>${favCount}</strong> favoritos</span>
+      <span>🔢 <strong>${totalUses}</strong> usos totais</span>
+    </div>
+    ${topTerms.some(t=>(t.uses||0)>0)?`
+    <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Top uso</div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+      ${topTerms.filter(t=>(t.uses||0)>0).map(t=>`
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--mono);font-size:11px;width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0">${esc(t.value)}</span>
+          <div style="flex:1;background:var(--card);border-radius:3px;overflow:hidden;height:10px">
+            <div style="width:${Math.round((t.uses||0)/maxUses*100)}%;background:var(--accent);height:100%;border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;color:var(--faint);flex-shrink:0;width:28px;text-align:right">${t.uses||0}×</span>
+        </div>`).join('')}
+    </div>`:''}
+    ${tagEntries.length?`
+    <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Tags</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${tagEntries.map(([tag,n])=>`<span style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:11px">${esc(tag)} <strong>${n}</strong></span>`).join('')}
+    </div>`:''}
+  `;
 }
 
 function confirmMoveTerm(targetSegId) {
