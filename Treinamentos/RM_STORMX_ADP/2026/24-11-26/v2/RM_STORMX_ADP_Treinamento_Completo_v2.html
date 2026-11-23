@@ -1674,11 +1674,17 @@ window.__initDeck = function(){
   // expose for taxonomy back-buttons and index cards
   window.__taxGoTo = goTo;
 
+  // Helper: if on S19 and moving forward, jump to last slide (skip taxonomy block)
+  function nextFromCurrent(){
+    const isS19 = slides[current] && slides[current].id === 's19';
+    return isS19 ? total - 1 : current + 1;
+  }
+
   document.getElementById('prevBtn').addEventListener('click', () => goTo(current-1));
-  document.getElementById('nextBtn').addEventListener('click', () => goTo(current+1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(nextFromCurrent()));
 
   document.addEventListener('keydown', e => {
-    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); goTo(current+1); }
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); goTo(nextFromCurrent()); }
     else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); goTo(current-1); }
     else if(e.key === 'Home'){ goTo(0); }
     else if(e.key === 'End'){ goTo(total-1); }
@@ -1932,25 +1938,13 @@ function renderRuleDetail(rule, color){
 
 /* Split rules of a category into pages (max weight per page = 28) */
 function paginateRules(rules){
-  const MAX_W = 28;
-  const pages = [];
-  let cur = [], w = 0;
-  rules.forEach(rule => {
-    const rw = ruleWeight(rule);
-    if(cur.length && w + rw > MAX_W){
-      pages.push(cur);
-      cur = [rule]; w = rw;
-    } else {
-      cur.push(rule); w += rw;
-    }
-  });
-  if(cur.length) pages.push(cur);
-  return pages;
+  // 1 rule per slide — keeps each card readable and matches the index count
+  return rules.map(r => [r]);
 }
 
 /* Build one slide element for a category page */
 function buildCatSlide(cat, pageRules, pageNum, totalPages, color, slideIdx){
-  const colsClass = pageRules.length === 1 ? 'cols-1' : 'cols-2';
+  const colsClass = 'cols-1'; // 1 rule per slide always
   const pageLabel = totalPages > 1 ? ` ${pageNum} / ${totalPages}` : '';
 
   const div = document.createElement('div');
