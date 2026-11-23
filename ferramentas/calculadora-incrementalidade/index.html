@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Incrementalidade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: #f4f5fb;
+  color: #1a1a2e;
+  min-height: 100vh;
+}
+
+header {
+  background: #1a237e;
+  color: #fff;
+  padding: 20px 32px;
+}
+header h1 { font-size: 1.5rem; font-weight: 700; }
+header p { font-size: 0.875rem; opacity: 0.8; margin-top: 4px; }
+
+.tabs-nav {
+  display: flex;
+  background: #fff;
+  border-bottom: 2px solid #d6dbf2;
+  padding: 0 32px;
+  gap: 0;
+}
+.tab-btn {
+  padding: 14px 24px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: #1F36C7; }
+.tab-btn.active { color: #1F36C7; border-bottom-color: #1F36C7; }
+
+.main { min-width: 0; padding: 32px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.card {
+  background: #fff;
+  border: 1px solid #d6dbf2;
+  border-radius: 10px;
+  padding: 24px;
+}
+.card h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8ecfd;
+}
+
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d6dbf2;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #1a1a2e;
+  transition: border-color 0.15s;
+}
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1F36C7;
+  box-shadow: 0 0 0 3px rgba(31,54,199,0.08);
+}
+.form-hint {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.btn-primary { background: #1F36C7; color: #fff; }
+.btn-primary:hover { background: #1a2fb0; }
+.btn-block { width: 100%; justify-content: center; margin-top: 8px; }
+
+.results-box {
+  background: #f4f5fb;
+  border: 1px solid #d6dbf2;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+}
+.results-box.hidden { display: none; }
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e8ecfd;
+  font-size: 0.875rem;
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-label { color: #555; }
+.metric-value { font-weight: 700; color: #1a237e; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.badge-green { background: #e6f9ed; color: #1b7a3e; }
+.badge-yellow { background: #fff8e1; color: #b7700a; }
+.badge-red { background: #ffeaea; color: #c0392b; }
+.badge-blue { background: #e8ecfd; color: #1F36C7; }
+
+.alert-box {
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.alert-warning { background: #fff8e1; border-left: 4px solid #f59e0b; color: #7c5000; }
+.alert-info { background: #e8ecfd; border-left: 4px solid #1F36C7; color: #1a237e; }
+.alert-success { background: #e6f9ed; border-left: 4px solid #22c55e; color: #14532d; }
+.alert-error { background: #ffeaea; border-left: 4px solid #ef4444; color: #7f1d1d; }
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  margin: 16px 0 8px;
+}
+
+.platform-checklist {
+  display: none;
+  margin-top: 16px;
+}
+.platform-checklist.active { display: block; }
+.checklist-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f4f5fb;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.checklist-icon { font-size: 1rem; flex-shrink: 0; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid #d6dbf2;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-card .stat-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1F36C7;
+  line-height: 1.2;
+}
+.stat-card .stat-lbl {
+  font-size: 0.72rem;
+  color: #888;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.significance-bar {
+  margin: 16px 0 8px;
+  background: #e8ecfd;
+  border-radius: 8px;
+  height: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.significance-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.4s ease;
+}
+
+.interpretation {
+  background: #e8ecfd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  border-left: 4px solid #1F36C7;
+}
+.interpretation.sig { background: #e6f9ed; border-left-color: #22c55e; }
+.interpretation.not-sig { background: #fff8e1; border-left-color: #f59e0b; }
+
+.rows-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .rows-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧪 Calculadora de Incrementalidade</h1>
+  <p>Planejamento e análise de testes de lift — quanto das suas conversões são realmente causadas pelos anúncios?</p>
+</header>
+
+<nav class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab('tab1',this)">1 · Dimensionamento</button>
+  <button class="tab-btn" onclick="switchTab('tab2',this)">2 · Configuração do Holdout</button>
+  <button class="tab-btn" onclick="switchTab('tab3',this)">3 · Análise de Resultados</button>
+</nav>
+
+<div class="main">
+
+  <!-- TAB 1 -->
+  <div id="tab1" class="tab-panel active">
+    <div class="grid-2">
+      <div class="card">
+        <h2>📐 Parâmetros do Teste</h2>
+
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Taxa de conversão base (%)</label>
+            <input type="number" id="t1_cvr" value="2" step="0.1" min="0.01" max="100" oninput="calcSize()">
+            <div class="form-hint">CVR orgânico sem anúncios</div>
+          </div>
+          <div class="form-group">
+            <label>Efeito mínimo detectável (%)</label>
+            <input type="number" id="t1_mde" value="10" step="1" min="1" max="200" oninput="calcSize()">
+            <div class="form-hint">Lift mínimo que você quer detectar</div>
+          </div>
+        </div>
+
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Significância estatística</label>
+            <select id="t1_sig" onchange="calcSize()">
+              <option value="1.645">90%</option>
+              <option value="1.96" selected>95%</option>
+              <option value="2.576">99%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Poder estatístico</label>
+            <select id="t1_power" onchange="calcSize()">
+              <option value="0.842" selected>80%</option>
+              <option value="1.282">90%</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Duração do teste (dias)</label>
+            <input type="number" id="t1_days" value="14" min="1" oninput="calcSize()">
+          </div>
+          <div class="form-group">
+            <label>Conversões diárias (baseline)</label>
+            <input type="number" id="t1_daily_conv" value="50" min="1" oninput="calcSize()">
+          </div>
+        </div>
+
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Audiência total alcançável</label>
+            <input type="number" id="t1_audience" value="100000" min="1000" oninput="calcSize()">
+          </div>
+          <div class="form-group">
+            <label>Budget diário (R$)</label>
+            <input type="number" id="t1_daily_budget" value="500" min="0" oninput="calcSize()">
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="calcSize()">Calcular Dimensionamento</button>
+      </div>
+
+      <div class="card">
+        <h2>📊 Resultado do Dimensionamento</h2>
+        <div id="t1_results">
+          <div class="alert-info">Preencha os parâmetros ao lado e clique em Calcular.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div id="tab2" class="tab-panel">
+    <div class="grid-2">
+      <div class="card">
+        <h2>⚙️ Configuração do Holdout</h2>
+
+        <div class="form-group">
+          <label>Plataforma</label>
+          <select id="t2_platform" onchange="showPlatformGuide(); calcHoldout()">
+            <option value="meta">Meta Ads</option>
+            <option value="google">Google Ads</option>
+            <option value="dv360">CM360 / DV360</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="tiktok">TikTok</option>
+            <option value="generic">Outra / Genérico</option>
+          </select>
+        </div>
+
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Audiência total</label>
+            <input type="number" id="t2_audience" value="100000" oninput="calcHoldout()">
+          </div>
+          <div class="form-group">
+            <label>% de Holdout</label>
+            <input type="number" id="t2_holdout_pct" value="20" min="1" max="50" step="1" oninput="calcHoldout()">
+            <div class="form-hint">Sugerido pelo dimensionamento (Tab 1)</div>
+          </div>
+        </div>
+
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Budget total do teste (R$)</label>
+            <input type="number" id="t2_budget" value="10000" oninput="calcHoldout()">
+          </div>
+          <div class="form-group">
+            <label>Duração (dias)</label>
+            <input type="number" id="t2_days" value="14" oninput="calcHoldout()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Ticket médio / valor por conversão (R$)</label>
+          <input type="number" id="t2_ticket" value="150" oninput="calcHoldout()">
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="calcHoldout()">Calcular Configuração</button>
+      </div>
+
+      <div class="card">
+        <h2>📋 Configuração e Guia</h2>
+        <div id="t2_results">
+          <div class="alert-info">Preencha os parâmetros e clique em Calcular.</div>
+        </div>
+        <div id="t2_guide" style="margin-top:20px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div id="tab3" class="tab-panel">
+    <div class="grid-2">
+      <div class="card">
+        <h2>🔬 Dados do Teste</h2>
+
+        <div class="section-title">Grupo de Teste (exposto aos anúncios)</div>
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Usuários expostos</label>
+            <input type="number" id="t3_test_users" value="80000" oninput="calcLift()">
+          </div>
+          <div class="form-group">
+            <label>Conversões (grupo teste)</label>
+            <input type="number" id="t3_test_conv" value="1800" oninput="calcLift()">
+          </div>
+        </div>
+
+        <div class="section-title">Grupo de Controle (holdout — sem anúncios)</div>
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Usuários holdout</label>
+            <input type="number" id="t3_ctrl_users" value="20000" oninput="calcLift()">
+          </div>
+          <div class="form-group">
+            <label>Conversões (grupo controle)</label>
+            <input type="number" id="t3_ctrl_conv" value="380" oninput="calcLift()">
+          </div>
+        </div>
+
+        <div class="section-title">Financeiro</div>
+        <div class="rows-2">
+          <div class="form-group">
+            <label>Budget gasto no teste (R$)</label>
+            <input type="number" id="t3_budget" value="10000" oninput="calcLift()">
+          </div>
+          <div class="form-group">
+            <label>Receita grupo exposto (R$)</label>
+            <input type="number" id="t3_revenue" value="270000" oninput="calcLift()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Ticket médio (R$) — para estimar receita incremental</label>
+          <input type="number" id="t3_ticket" value="150" oninput="calcLift()">
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="calcLift()">Analisar Resultados</button>
+      </div>
+
+      <div class="card">
+        <h2>📈 Análise de Incrementalidade</h2>
+        <div id="t3_results">
+          <div class="alert-info">Preencha os dados do teste e clique em Analisar.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function fmt(n, dec=0) {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function fmtR(n) {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPct(n, dec=2) {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + '%';
+}
+
+// ========== TAB 1 ==========
+function calcSize() {
+  const cvr = parseFloat(document.getElementById('t1_cvr').value) / 100;
+  const mde = parseFloat(document.getElementById('t1_mde').value) / 100;
+  const za = parseFloat(document.getElementById('t1_sig').value);
+  const zb = parseFloat(document.getElementById('t1_power').value);
+  const days = parseFloat(document.getElementById('t1_days').value);
+  const dailyConv = parseFloat(document.getElementById('t1_daily_conv').value);
+  const audience = parseFloat(document.getElementById('t1_audience').value);
+  const dailyBudget = parseFloat(document.getElementById('t1_daily_budget').value);
+
+  if (!cvr || !mde || !days || !dailyConv || !audience) return;
+
+  // Sample size formula: n = 2 × (za + zb)² × p(1-p) / (MDE²)
+  const p = cvr;
+  const delta = cvr * mde; // absolute MDE
+  const n = 2 * Math.pow(za + zb, 2) * p * (1 - p) / Math.pow(delta, 2);
+  const totalN = Math.ceil(n);
+  const holdoutPct = Math.min(50, (totalN / audience) * 100);
+  const totalConvAvailable = dailyConv * days;
+  const minConvNeeded = Math.ceil(n * cvr * 2);
+  const budgetAtRisk = dailyBudget * days * (holdoutPct / 100);
+
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${fmt(totalN)}</div><div class="stat-lbl">Usuários necessários</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtPct(holdoutPct, 1)}</div><div class="stat-lbl">Holdout recomendado</div></div>
+    <div class="stat-card"><div class="stat-num">${fmt(Math.ceil(totalN / 2))}</div><div class="stat-lbl">Por grupo (teste/ctrl)</div></div>
+    <div class="stat-card"><div class="stat-num">${fmt(minConvNeeded)}</div><div class="stat-lbl">Conversões mín. esperadas</div></div>
+  </div>`;
+
+  html += `<div class="section-title" style="margin-top:16px">Parâmetros calculados</div>`;
+  html += `<div class="results-box">
+    <div class="metric-row"><span class="metric-label">Delta absoluto (MDE)</span><span class="metric-value">${fmtPct(delta * 100, 3)}</span></div>
+    <div class="metric-row"><span class="metric-label">CVR basal</span><span class="metric-value">${fmtPct(cvr * 100, 2)}</span></div>
+    <div class="metric-row"><span class="metric-label">CVR esperado (com lift)</span><span class="metric-value">${fmtPct((cvr + delta) * 100, 2)}</span></div>
+    <div class="metric-row"><span class="metric-label">Budget "perdido" para holdout</span><span class="metric-value">${fmtR(budgetAtRisk)}</span></div>
+    <div class="metric-row"><span class="metric-label">Z crítico utilizado</span><span class="metric-value">${za} (sig) + ${zb} (poder)</span></div>
+  </div>`;
+
+  if (holdoutPct > 40) {
+    html += `<div class="alert-box alert-warning" style="margin-top:12px">⚠️ Holdout necessário (${fmtPct(holdoutPct, 1)}) é alto — considere aumentar a audiência alcançável ou elevar o MDE para reduzir o tamanho do teste.</div>`;
+  }
+  if (totalConvAvailable < minConvNeeded) {
+    html += `<div class="alert-box alert-warning" style="margin-top:8px">⚠️ Com ${fmt(totalConvAvailable)} conversões estimadas no período (${days} dias × ${dailyConv}/dia), pode ser insuficiente para ${fmt(minConvNeeded)} mín. necessárias. Considere ampliar a janela.</div>`;
+  } else {
+    html += `<div class="alert-box alert-success" style="margin-top:8px">✅ Volume de conversões estimado (${fmt(totalConvAvailable)}) é suficiente para detectar o efeito com os parâmetros escolhidos.</div>`;
+  }
+
+  // Suggest for tab 2
+  document.getElementById('t2_holdout_pct').value = Math.max(5, Math.min(50, Math.ceil(holdoutPct)));
+  document.getElementById('t2_audience').value = audience;
+  document.getElementById('t2_days').value = days;
+
+  document.getElementById('t1_results').innerHTML = html;
+}
+
+// ========== TAB 2 ==========
+const platformGuides = {
+  meta: [
+    { icon: '1️⃣', text: 'No Ads Manager, acesse <strong>Measure & Test → Conversion Lift</strong>' },
+    { icon: '2️⃣', text: 'Crie um estudo de lift, selecione as campanhas relevantes' },
+    { icon: '3️⃣', text: 'Defina o percentual de holdout (Meta sugere 10–20%)' },
+    { icon: '4️⃣', text: 'Meta cria automaticamente o grupo de controle de forma aleatória' },
+    { icon: '5️⃣', text: 'Aguarde o período mínimo (geralmente 7–14 dias) antes de ler os resultados' },
+    { icon: '⚠️', text: 'Os resultados só ficam disponíveis após encerramento do estudo — não pause campanhas antes' }
+  ],
+  google: [
+    { icon: '1️⃣', text: 'No Google Ads, acesse <strong>Ferramentas → Measurement → Experiments</strong> (ou Campaign Experiments)' },
+    { icon: '2️⃣', text: 'Para conversões: use <strong>Conversion Lift</strong> em Measurement' },
+    { icon: '3️⃣', text: 'Defina o tráfego de controle (holdout %) — Google recomenda 20–30%' },
+    { icon: '4️⃣', text: 'O split é feito a nível de cookie/usuário aleatoriamente' },
+    { icon: '5️⃣', text: 'Mínimo de 4 semanas para resultados significativos em Search/Display' }
+  ],
+  dv360: [
+    { icon: '1️⃣', text: 'No CM360, crie uma <strong>Floodlight Activity</strong> separada para o grupo controle' },
+    { icon: '2️⃣', text: 'Use <strong>Audience Suppression</strong> para excluir o holdout das campanhas ativas' },
+    { icon: '3️⃣', text: 'Separe geograficamente se não houver controle a nível de usuário disponível' },
+    { icon: '4️⃣', text: 'Monitore conversões via Floodlight nos dois grupos separadamente' },
+    { icon: '5️⃣', text: 'Exporte os dados por grupo ao final do período e calcule o lift manualmente' }
+  ],
+  linkedin: [
+    { icon: '1️⃣', text: 'No LinkedIn Campaign Manager, acesse <strong>Measure → Conversion Tracking</strong>' },
+    { icon: '2️⃣', text: 'LinkedIn oferece Conversion Lift Study nativo — disponível em contas elegíveis' },
+    { icon: '3️⃣', text: 'Caso não disponível: use segmentação geográfica para criar grupos separados' },
+    { icon: '4️⃣', text: 'Mínimo de 300 conversões por grupo para significância' }
+  ],
+  tiktok: [
+    { icon: '1️⃣', text: 'No TikTok Ads Manager, acesse <strong>Measure → Brand Lift Study</strong> (para awareness) ou Conversion Lift' },
+    { icon: '2️⃣', text: 'Defina o orçamento do estudo (TikTok exige mínimo de investimento)' },
+    { icon: '3️⃣', text: 'O split é automaticamente aleatório entre usuários elegíveis' },
+    { icon: '4️⃣', text: 'Resultados disponíveis em ~14 dias após encerramento' }
+  ],
+  generic: [
+    { icon: '📍', text: '<strong>Split geográfico:</strong> Separe regiões/estados em grupos de teste e controle. Ex: SP/RJ = teste, outros = controle' },
+    { icon: '📍', text: '<strong>Split temporal:</strong> Alterne semanas (ativa / pausa) — menos preciso, mas simples' },
+    { icon: '📍', text: '<strong>CRM split:</strong> Divida a base de clientes aleatoriamente antes de fazer upload para a plataforma' },
+    { icon: '📍', text: 'Monitore conversões separadamente nos dois grupos via analytics ou CRM' },
+    { icon: '⚠️', text: 'Splits geográficos têm viés — regiões são diferentes. Prefira splits aleatórios a nível de usuário quando possível' }
+  ]
+};
+
+function showPlatformGuide() {
+  const plat = document.getElementById('t2_platform').value;
+  const items = platformGuides[plat];
+  const labels = { meta: 'Meta Ads', google: 'Google Ads', dv360: 'CM360 / DV360', linkedin: 'LinkedIn', tiktok: 'TikTok', generic: 'Genérico' };
+  let html = `<div class="section-title">Guia de setup — ${labels[plat]}</div>`;
+  items.forEach(it => {
+    html += `<div class="checklist-item"><span class="checklist-icon">${it.icon}</span><span>${it.text}</span></div>`;
+  });
+  document.getElementById('t2_guide').innerHTML = html;
+}
+
+function calcHoldout() {
+  showPlatformGuide();
+  const audience = parseFloat(document.getElementById('t2_audience').value);
+  const holdoutPct = parseFloat(document.getElementById('t2_holdout_pct').value) / 100;
+  const budget = parseFloat(document.getElementById('t2_budget').value);
+  const days = parseFloat(document.getElementById('t2_days').value);
+  const ticket = parseFloat(document.getElementById('t2_ticket').value);
+
+  if (!audience || !holdoutPct || !budget) return;
+
+  const holdoutUsers = Math.round(audience * holdoutPct);
+  const testUsers = audience - holdoutUsers;
+  const budgetPerDay = budget / days;
+  const budgetHoldout = budget * holdoutPct;
+  const budgetTest = budget - budgetHoldout;
+  const convRateEst = 0.02; // placeholder
+  const revenueAtRisk = holdoutUsers * convRateEst * ticket;
+
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${fmt(testUsers)}</div><div class="stat-lbl">Grupo teste (expostos)</div></div>
+    <div class="stat-card"><div class="stat-num">${fmt(holdoutUsers)}</div><div class="stat-lbl">Grupo controle (holdout)</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtR(budgetTest)}</div><div class="stat-lbl">Budget para grupo teste</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtPct(holdoutPct * 100, 1)}</div><div class="stat-lbl">% holdout configurado</div></div>
+  </div>
+  <div class="results-box" style="margin-top:16px">
+    <div class="metric-row"><span class="metric-label">Budget diário</span><span class="metric-value">${fmtR(budgetPerDay)}</span></div>
+    <div class="metric-row"><span class="metric-label">Budget "perdido" para holdout</span><span class="metric-value">${fmtR(budgetHoldout)}</span></div>
+    <div class="metric-row"><span class="metric-label">Receita em risco (estimativa)</span><span class="metric-value">${fmtR(revenueAtRisk)}</span></div>
+  </div>`;
+
+  if (holdoutPct < 0.1) {
+    html += `<div class="alert-box alert-warning" style="margin-top:12px">⚠️ Holdout abaixo de 10% pode comprometer a significância estatística. Verifique o dimensionamento na Tab 1.</div>`;
+  }
+  if (holdoutPct > 0.35) {
+    html += `<div class="alert-box alert-warning" style="margin-top:12px">⚠️ Holdout acima de 35% representa custo de oportunidade alto. Considere reduzir se a audiência permitir.</div>`;
+  }
+
+  document.getElementById('t3_budget').value = budget;
+  document.getElementById('t2_results').innerHTML = html;
+}
+
+// ========== TAB 3 ==========
+function calcLift() {
+  const nTest = parseFloat(document.getElementById('t3_test_users').value);
+  const cTest = parseFloat(document.getElementById('t3_test_conv').value);
+  const nCtrl = parseFloat(document.getElementById('t3_ctrl_users').value);
+  const cCtrl = parseFloat(document.getElementById('t3_ctrl_conv').value);
+  const budget = parseFloat(document.getElementById('t3_budget').value);
+  const revenue = parseFloat(document.getElementById('t3_revenue').value);
+  const ticket = parseFloat(document.getElementById('t3_ticket').value);
+
+  if (!nTest || !nCtrl || cTest === undefined || cCtrl === undefined) return;
+
+  const cvrTest = cTest / nTest;
+  const cvrCtrl = cCtrl / nCtrl;
+
+  // Incremental
+  const incrConv = (cvrTest - cvrCtrl) * nTest;
+  const liftPct = cvrCtrl > 0 ? ((cvrTest / cvrCtrl) - 1) * 100 : null;
+  const organicPct = cvrCtrl > 0 ? (cvrCtrl / cvrTest) * 100 : null;
+
+  // Z-test
+  const pPool = (cTest + cCtrl) / (nTest + nCtrl);
+  const se = Math.sqrt(pPool * (1 - pPool) * (1 / nTest + 1 / nCtrl));
+  const zScore = se > 0 ? (cvrTest - cvrCtrl) / se : 0;
+  const pValue = 2 * (1 - normCDF(Math.abs(zScore)));
+
+  // Financial
+  const incrRevenue = incrConv * ticket;
+  const incrROAS = budget > 0 ? incrRevenue / budget : null;
+  const incrCPA = incrConv > 0 ? budget / incrConv : null;
+
+  // Significance
+  const significant = pValue < 0.05;
+  const marginal = pValue < 0.10 && pValue >= 0.05;
+
+  let sigLabel, sigClass, sigBadge;
+  if (pValue < 0.01) { sigLabel = 'Altamente Significativo ✅'; sigClass = 'badge-green'; }
+  else if (pValue < 0.05) { sigLabel = 'Significativo ✅'; sigClass = 'badge-green'; }
+  else if (pValue < 0.10) { sigLabel = 'Marginalmente Significativo ⚠️'; sigClass = 'badge-yellow'; }
+  else { sigLabel = 'Não Significativo ❌'; sigClass = 'badge-red'; }
+
+  const confPct = Math.min(99.9, (1 - pValue) * 100);
+  const barColor = pValue < 0.05 ? '#22c55e' : pValue < 0.10 ? '#f59e0b' : '#ef4444';
+  const barWidth = Math.min(100, confPct);
+
+  let html = `<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">${fmtPct(cvrTest * 100, 2)}</div><div class="stat-lbl">CVR grupo teste</div></div>
+    <div class="stat-card"><div class="stat-num">${fmtPct(cvrCtrl * 100, 2)}</div><div class="stat-lbl">CVR grupo controle</div></div>
+    <div class="stat-card"><div class="stat-num">${liftPct !== null ? fmtPct(liftPct, 1) : '—'}</div><div class="stat-lbl">Lift observado</div></div>
+    <div class="stat-card"><div class="stat-num">${fmt(Math.round(incrConv))}</div><div class="stat-lbl">Conversões incrementais</div></div>
+  </div>`;
+
+  html += `<div class="section-title" style="margin-top:16px">Significância estatística</div>
+  <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#888;margin-bottom:4px">
+    <span>Z-score: ${zScore.toFixed(3)}</span><span>p-value: ${pValue < 0.001 ? '<0.001' : pValue.toFixed(4)}</span>
+  </div>
+  <div class="significance-bar"><div class="significance-fill" style="width:${barWidth}%;background:${barColor}"></div></div>
+  <div style="text-align:center;margin-bottom:12px"><span class="badge ${sigClass}">${sigLabel}</span> <span style="font-size:0.8rem;color:#888">${fmtPct(confPct, 1)} confiança</span></div>`;
+
+  html += `<div class="results-box">
+    <div class="metric-row"><span class="metric-label">Receita incremental estimada</span><span class="metric-value">${fmtR(incrRevenue)}</span></div>
+    <div class="metric-row"><span class="metric-label">ROAS incremental</span><span class="metric-value">${incrROAS !== null ? incrROAS.toFixed(2) + ':1' : '—'}</span></div>
+    <div class="metric-row"><span class="metric-label">CPA incremental</span><span class="metric-value">${incrCPA !== null ? fmtR(incrCPA) : '—'}</span></div>
+    <div class="metric-row"><span class="metric-label">% conversões orgânicas (baseline)</span><span class="metric-value">${organicPct !== null ? fmtPct(organicPct, 1) : '—'}</span></div>
+    <div class="metric-row"><span class="metric-label">Budget analisado</span><span class="metric-value">${fmtR(budget)}</span></div>
+  </div>`;
+
+  // Interpretation
+  let interpClass, interpText;
+  if (significant) {
+    interpClass = 'sig';
+    interpText = `✅ <strong>Os anúncios geraram ${fmt(Math.round(incrConv))} conversões incrementais</strong> (lift de ${liftPct !== null ? fmtPct(liftPct, 1) : '—'}, p=${pValue < 0.001 ? '<0.001' : pValue.toFixed(4)}).
+    Sem os anúncios, estima-se que ${organicPct !== null ? fmtPct(organicPct, 1) : '—'} das conversões teriam ocorrido organicamente.
+    ROAS incremental de ${incrROAS !== null ? incrROAS.toFixed(2) + ':1' : '—'} — a campanha está gerando impacto real e mensurável.`;
+  } else if (marginal) {
+    interpClass = '';
+    interpText = `⚠️ <strong>Resultado marginalmente significativo</strong> (p=${pValue.toFixed(4)}). Há indícios de lift de ${liftPct !== null ? fmtPct(liftPct, 1) : '—'}, mas sem confiança suficiente para conclusões definitivas.
+    Sugestão: aumentar o período do teste, o tamanho do holdout, ou aguardar mais conversões antes de decidir.`;
+  } else {
+    interpClass = 'not-sig';
+    interpText = `❌ <strong>Não foi possível detectar lift significativo</strong> (p=${pValue.toFixed(4)}, Z=${zScore.toFixed(2)}).
+    Possíveis causas: amostra insuficiente para o MDE desejado, período curto, efeito real abaixo do MDE configurado, ou contaminação entre grupos.
+    Sugestão: revisar o dimensionamento (Tab 1), ampliar a janela, ou aceitar que o impacto incremental dos anúncios é menor do que o esperado.`;
+  }
+
+  html += `<div class="interpretation ${interpClass}" style="margin-top:16px">${interpText}</div>`;
+
+  document.getElementById('t3_results').innerHTML = html;
+}
+
+// Normal CDF approximation
+function normCDF(z) {
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const sign = z < 0 ? -1 : 1;
+  z = Math.abs(z) / Math.sqrt(2);
+  const t = 1 / (1 + p * z);
+  const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-z*z);
+  return 0.5 * (1 + sign * y);
+}
+
+// Init
+calcSize();
+calcHoldout();
+calcLift();
+</script>
+</body>
+</html>
