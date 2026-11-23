@@ -957,6 +957,7 @@ function mrgConfirm(){
   });
 
   var stats={n:0,u:0,can:0,err:0};
+  var adpPatchMap={},rmPatchMap={};
 
   approved.forEach(function(c){
     var rmWs=rmWbCopy.Sheets[c.sht];
@@ -968,13 +969,17 @@ function mrgConfirm(){
     var adpKeyI=cols.adpKey?mrgC(cols.adpKey):null;
     var adpSpcI=cols.adpSpc?mrgC(cols.adpSpc):null;
     var mp=MRG_IDX[c.sht]||[];
+    if(!adpPatchMap[c.shtAdp])adpPatchMap[c.shtAdp]={};
+    if(!rmPatchMap[c.sht])rmPatchMap[c.sht]={};
 
     if(c.act==='new'){
       var ri=nextRow[c.shtAdp]!==undefined?nextRow[c.shtAdp]:adpD.length;
       var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
       if(rmRow){
-        mrgApplyRow(adpWs,rmRow,ri,mp,MRG_FILL_G);
-        rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Concluído Stormx'};
+        mrgApplyRow(adpWs,rmRow,ri,mp,MRG_FILL_G,adpPatchMap[c.shtAdp]);
+        var rmA=XLSX.utils.encode_cell({r:c.rmRow-1,c:0});
+        var rmC={t:'s',v:'Concluído Stormx'};
+        rmWs[rmA]=rmC;rmPatchMap[c.sht][rmA]=rmC;
         nextRow[c.shtAdp]=(nextRow[c.shtAdp]||adpD.length)+1;
         stats.n++;
       }
@@ -982,15 +987,27 @@ function mrgConfirm(){
       var adpRowIdx=c.adpRow-1;
       var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
       if(rmRow){
-        mrgApplyRow(adpWs,rmRow,adpRowIdx,mp,MRG_FILL_U);
-        if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Alterar'};
-        rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Alterado'};
+        mrgApplyRow(adpWs,rmRow,adpRowIdx,mp,MRG_FILL_U,adpPatchMap[c.shtAdp]);
+        if(adpSpcI!==null){
+          var spcA=XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI});
+          var spcC={t:'s',v:'Alterar',s:{fill:MRG_FILL_U}};
+          adpWs[spcA]=spcC;adpPatchMap[c.shtAdp][spcA]=spcC;
+        }
+        var rmA=XLSX.utils.encode_cell({r:c.rmRow-1,c:0});
+        var rmC={t:'s',v:'Alterado'};
+        rmWs[rmA]=rmC;rmPatchMap[c.sht][rmA]=rmC;
         stats.u++;
       }
     }else if(c.act==='can'){
       var adpRowIdx=c.adpRow-1;
-      if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
-      rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Cancelado'};
+      if(adpSpcI!==null){
+        var spcA=XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI});
+        var spcC={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
+        adpWs[spcA]=spcC;adpPatchMap[c.shtAdp][spcA]=spcC;
+      }
+      var rmA=XLSX.utils.encode_cell({r:c.rmRow-1,c:0});
+      var rmC={t:'s',v:'Cancelado'};
+      rmWs[rmA]=rmC;rmPatchMap[c.sht][rmA]=rmC;
       stats.can++;
     }
   });
@@ -1005,8 +1022,8 @@ function mrgConfirm(){
   var adpFilename=mrgAdpName.replace(/\.xlsx?$/i,'')+'_MERGED.xlsx';
   var rmFilename=mrgRmName.replace(/\.xlsx?$/i,'')+'_ATUALIZADO.xlsx';
 
-  _mrgPatchAndDownload(mrgAdpBytes,adpWbCopy,modAdp,adpFilename,function(){
-    _mrgPatchAndDownload(mrgRmBytes,rmWbCopy,modRm,rmFilename,function(){
+  _mrgPatchAndDownload(mrgAdpBytes,adpPatchMap,modAdp,adpFilename,function(){
+    _mrgPatchAndDownload(mrgRmBytes,rmPatchMap,modRm,rmFilename,function(){
       mrgRenderFinal(stats,adpFilename,rmFilename,approved.length);
     });
   });
@@ -1048,7 +1065,7 @@ function mrgRenderFinal(stats,adpFile,rmFile,total){
     '<div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-g" onclick="mrgReset()">Novo merge</button></div>';
 }
 
-function mrgApplyRow(ws,row,ri,mp,fill){
+function mrgApplyRow(ws,row,ri,mp,fill,pmap){
   var rng=XLSX.utils.decode_range(ws['!ref']||'A1');
   mp.forEach(function(rule){
     if(rule.ri===null||rule.ai===null)return;if(rule.t!=='C'&&rule.t!=='R')return;
@@ -1057,96 +1074,157 @@ function mrgApplyRow(ws,row,ri,mp,fill){
     var existingStyle=(ws[addr]&&ws[addr].s)?ws[addr].s:{};
     var useFill=rule.t==='R'?MRG_FILL_Y:fill;
     var s=Object.assign({},existingStyle);if(useFill)s.fill=useFill;
-    ws[addr]={t:typeof val==='number'?'n':'s',v:val,s:s};
+    var cell={t:typeof val==='number'?'n':'s',v:val,s:s};
+    ws[addr]=cell;if(pmap)pmap[addr]=cell;
     if(rule.ai>rng.e.c)rng.e.c=rule.ai;if(ri>rng.e.r)rng.e.r=ri;
   });
   ws['!ref']=XLSX.utils.encode_range(rng);
 }
 
-function _mrgPatchAndDownload(origBytes,wb,modifiedSheetNames,filename,callback){
+function _mrgPatchAndDownload(origBytes,patchMap,modifiedSheetNames,filename,callback){
   JSZip.loadAsync(origBytes).then(function(zip){
-    return zip.file('xl/sharedStrings.xml').async('string').then(function(ssXml){
-      var ssItems=[],ssMap={};
-      var ssRe=/<si>([\s\S]*?)<\/si>/g,m;
-      while((m=ssRe.exec(ssXml))!==null){
-        var idx=ssItems.length;ssItems.push(m[0]);
-        var tMatch=m[0].match(/<t[^>]*>([\s\S]*?)<\/t>/);
-        if(tMatch){var val=tMatch[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');if(ssMap[val]===undefined)ssMap[val]=idx;}
+    // 1. Parse and extend xl/styles.xml with the 4 highlight fill colors
+    return zip.file('xl/styles.xml').async('string').then(function(stylesXml){
+      var fillsList=[],xfsList=[];
+      var fillsM=stylesXml.match(/<fills[^>]*>([\s\S]*?)<\/fills>/);
+      if(fillsM){var fr=/<fill>[\s\S]*?<\/fill>/g,fm;while((fm=fr.exec(fillsM[1]))!==null)fillsList.push(fm[0]);}
+      var xfsM=stylesXml.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/);
+      if(xfsM){var xr=/<xf\b[\s\S]*?(?:\/>|<\/xf>)/g,xm;while((xm=xr.exec(xfsM[1]))!==null)xfsList.push(xm[0]);}
+
+      function findOrAddFill(rgb){
+        var r=rgb.toUpperCase();
+        for(var i=0;i<fillsList.length;i++){if(fillsList[i].toUpperCase().indexOf('RGB="'+r+'"')!==-1)return i;}
+        fillsList.push('<fill><patternFill patternType="solid"><fgColor rgb="'+r+'"/><bgColor indexed="64"/></patternFill></fill>');
+        return fillsList.length-1;
       }
-      var ssModified=false;
-      function getOrAddSS(val){
-        if(val===null||val===undefined||val==='')return null;
-        var s=String(val);if(ssMap[s]!==undefined)return ssMap[s];
-        var newIdx=ssItems.length;
-        var e2=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        ssItems.push('<si><t>'+e2+'</t></si>');ssMap[s]=newIdx;ssModified=true;return newIdx;
+      var FILL_IDX={'FFE6F4EE':findOrAddFill('FFE6F4EE'),'FFE8ECFB':findOrAddFill('FFE8ECFB'),'FFFDECEA':findOrAddFill('FFFDECEA'),'FFFEF3C7':findOrAddFill('FFFEF3C7')};
+
+      var base=xfsList[0]||'';
+      var bNfmt=(base.match(/numFmtId="(\d+)"/))||['','0'];
+      var bFont=(base.match(/fontId="(\d+)"/))||['','0'];
+      var bBrd=(base.match(/borderId="(\d+)"/))||['','0'];
+      function findOrAddXf(fillId){
+        for(var i=0;i<xfsList.length;i++){var fm2=xfsList[i].match(/fillId="(\d+)"/);if(fm2&&parseInt(fm2[1])===fillId)return i;}
+        xfsList.push('<xf numFmtId="'+bNfmt[1]+'" fontId="'+bFont[1]+'" fillId="'+fillId+'" borderId="'+bBrd[1]+'" xfId="0" applyFill="1"/>');
+        return xfsList.length-1;
       }
-      return zip.file('xl/workbook.xml').async('string').then(function(wbXml){
-        return zip.file('xl/_rels/workbook.xml.rels').async('string').then(function(relsXml){
-          var relMap={};
-          var re=/<Relationship\s[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g;
-          while((m=re.exec(relsXml))!==null)relMap[m[1]]=m[2];
-          var sheetMap={};
-          var rs=/<sheet\s[^>]*name="([^"]*)"[^>]*r:id="([^"]+)"/g;
-          while((m=rs.exec(wbXml))!==null){
-            var name=m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-            sheetMap[name]='xl/'+relMap[m[2]];
-          }
-          var patchPromises=modifiedSheetNames.map(function(shName){
-            var path=sheetMap[shName];if(!path)return Promise.resolve();
-            var ws=wb.Sheets[shName];if(!ws)return Promise.resolve();
-            return zip.file(path).async('string').then(function(origXml){
-              var existingRows={};
-              var rowRe=/<row r="(\d+)"[\s\S]*?<\/row>/g;
-              while((m=rowRe.exec(origXml))!==null)existingRows[parseInt(m[1])]=m[0];
-              var origMaxRow=Object.keys(existingRows).reduce(function(mx,r){return Math.max(mx,parseInt(r));},0);
-              var wsRange=XLSX.utils.decode_range(ws['!ref']||'A1');
-              var wsMaxRow=wsRange.e.r+1;
-              var newRowsXml='';
-              for(var ri=origMaxRow+1;ri<=wsMaxRow;ri++){
-                var cells=[];
-                for(var ci=wsRange.s.c;ci<=wsRange.e.c;ci++){
-                  var addr=XLSX.utils.encode_cell({r:ri-1,c:ci});
-                  var cell=ws[addr];if(!cell||cell.v===undefined||cell.v===null||cell.v==='')continue;
-                  var cellXml='';
-                  if(cell.t==='s'||typeof cell.v==='string'){var ssIdx=getOrAddSS(cell.v);if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';}
-                  else if(cell.t==='n'||typeof cell.v==='number'){cellXml='<c r="'+addr+'"><v>'+cell.v+'</v></c>';}
-                  else if(cell.t==='b'){cellXml='<c r="'+addr+'" t="b"><v>'+(cell.v?1:0)+'</v></c>';}
-                  else if(cell.t==='d'){var ssIdx=getOrAddSS(cell.w||String(cell.v));if(ssIdx!==null)cellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';}
-                  if(cellXml)cells.push(cellXml);
+      var XF_IDX={};Object.keys(FILL_IDX).forEach(function(rgb){XF_IDX[rgb]=findOrAddXf(FILL_IDX[rgb]);});
+      function getXfIdx(fill){
+        if(!fill||!fill.fgColor||!fill.fgColor.rgb)return null;
+        var v=XF_IDX[fill.fgColor.rgb.toUpperCase()];return v!==undefined?v:null;
+      }
+
+      var newStyles=stylesXml;
+      if(fillsM)newStyles=newStyles.replace(/<fills[^>]*>[\s\S]*?<\/fills>/,'<fills count="'+fillsList.length+'">'+fillsList.join('')+'</fills>');
+      if(xfsM)newStyles=newStyles.replace(/<cellXfs[^>]*>[\s\S]*?<\/cellXfs>/,'<cellXfs count="'+xfsList.length+'">'+xfsList.join('')+'</cellXfs>');
+      zip.file('xl/styles.xml',newStyles);
+
+      // 2. SharedStrings
+      return zip.file('xl/sharedStrings.xml').async('string').then(function(ssXml){
+        var ssItems=[],ssMap={},ssModified=false,m;
+        var ssRe=/<si>([\s\S]*?)<\/si>/g;
+        while((m=ssRe.exec(ssXml))!==null){
+          var idx=ssItems.length;ssItems.push(m[0]);
+          var tM=m[0].match(/<t[^>]*>([\s\S]*?)<\/t>/);
+          if(tM){var val=tM[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');if(ssMap[val]===undefined)ssMap[val]=idx;}
+        }
+        function getOrAddSS(val){
+          if(val===null||val===undefined||val==='')return null;
+          var s=String(val);if(ssMap[s]!==undefined)return ssMap[s];
+          var ni=ssItems.length;
+          ssItems.push('<si><t>'+s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</t></si>');
+          ssMap[s]=ni;ssModified=true;return ni;
+        }
+
+        // 3. Workbook/rels → sheet paths
+        return zip.file('xl/workbook.xml').async('string').then(function(wbXml){
+          return zip.file('xl/_rels/workbook.xml.rels').async('string').then(function(relsXml){
+            var relMap={};
+            var re=/<Relationship\s[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/g;
+            while((m=re.exec(relsXml))!==null)relMap[m[1]]=m[2];
+            var sheetMap={};
+            var rs=/<sheet\s[^>]*name="([^"]*)"[^>]*r:id="([^"]+)"/g;
+            while((m=rs.exec(wbXml))!==null){
+              var nm=m[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+              sheetMap[nm]='xl/'+relMap[m[2]];
+            }
+
+            // 4. Patch each sheet using patchMap (only changed cells)
+            var patchPromises=modifiedSheetNames.map(function(shName){
+              var path=sheetMap[shName];if(!path)return Promise.resolve();
+              var cells=patchMap[shName];if(!cells||!Object.keys(cells).length)return Promise.resolve();
+              return zip.file(path).async('string').then(function(origXml){
+                function mkCell(addr,cell){
+                  var xf=(cell.s&&cell.s.fill)?getXfIdx(cell.s.fill):null;
+                  var sA=xf!==null?' s="'+xf+'"':'';
+                  var t=cell.t||(typeof cell.v==='number'?'n':'s');
+                  if(t==='s'||typeof cell.v==='string'){
+                    var si=getOrAddSS(cell.v);
+                    return si!==null?'<c r="'+addr+'" t="s"'+sA+'><v>'+si+'</v></c>':'';
+                  }else if(t==='n'||typeof cell.v==='number'){
+                    return'<c r="'+addr+'"'+sA+'><v>'+cell.v+'</v></c>';
+                  }else if(t==='b'){
+                    return'<c r="'+addr+'" t="b"'+sA+'><v>'+(cell.v?1:0)+'</v></c>';
+                  }
+                  return'';
                 }
-                if(cells.length>0)newRowsXml+='<row r="'+ri+'" spans="'+(wsRange.s.c+1)+':'+(wsRange.e.c+1)+'">'+cells.join('')+'</row>';
-              }
-              if(newRowsXml===''&&origMaxRow>=wsMaxRow){
-                for(var ri=1;ri<=wsMaxRow;ri++){
-                  var addr='A'+ri;var cell=ws[addr];
-                  if(!cell||!existingRows[ri])continue;
-                  if(cell.v!==undefined&&cell.v!==''){
-                    var ssIdx=getOrAddSS(cell.v);
-                    if(ssIdx!==null){
-                      var origRow=existingRows[ri];var newCellXml='<c r="'+addr+'" t="s"><v>'+ssIdx+'</v></c>';
-                      if(origRow.indexOf('r="'+addr+'"')!==-1){origRow=origRow.replace(/<c r="A\d+"[^>]*>[\s\S]*?<\/c>/,newCellXml);}
-                      else{origRow=origRow.replace(/^(<row[^>]*>)/,'$1'+newCellXml);}
-                      existingRows[ri]=origRow;
-                    }
+                function patchCell(rowXml,addr,cxml){
+                  var e=addr.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+                  var re2=new RegExp('<c r="'+e+'"(?:[^/"][^>]*)?>(?:[\\s\\S]*?)<\\/c>|<c r="'+e+'"[^>]*\\/>');
+                  if(re2.test(rowXml))return rowXml.replace(re2,cxml);
+                  return rowXml.replace(/<\/row>/,cxml+'</row>');
+                }
+
+                var existingRows={};
+                var rowRe=/<row r="(\d+)"[\s\S]*?<\/row>/g;
+                while((m=rowRe.exec(origXml))!==null)existingRows[parseInt(m[1])]=m[0];
+                var origMaxRow=Object.keys(existingRows).reduce(function(mx,r){return Math.max(mx,parseInt(r));},0);
+
+                // Max patched row (1-indexed)
+                var patchMaxRow=0;
+                Object.keys(cells).forEach(function(addr){var ri=XLSX.utils.decode_cell(addr).r+1;if(ri>patchMaxRow)patchMaxRow=ri;});
+
+                // Apply patches to existing rows
+                Object.keys(cells).forEach(function(addr){
+                  var ri=XLSX.utils.decode_cell(addr).r+1;
+                  if(ri>origMaxRow)return;
+                  var cxml=mkCell(addr,cells[addr]);if(!cxml)return;
+                  existingRows[ri]=patchCell(existingRows[ri]||'<row r="'+ri+'"></row>',addr,cxml);
+                });
+
+                // Build new rows (beyond origMaxRow)
+                var newRowsXml='';
+                for(var ri=origMaxRow+1;ri<=patchMaxRow;ri++){
+                  var rowCells=[];
+                  Object.keys(cells).forEach(function(addr){
+                    if(XLSX.utils.decode_cell(addr).r+1!==ri)return;
+                    var cxml=mkCell(addr,cells[addr]);if(cxml)rowCells.push({ci:XLSX.utils.decode_cell(addr).c,xml:cxml});
+                  });
+                  if(rowCells.length){
+                    rowCells.sort(function(a,b){return a.ci-b.ci;});
+                    newRowsXml+='<row r="'+ri+'">'+rowCells.map(function(x){return x.xml;}).join('')+'</row>';
                   }
                 }
-              }
-              var allRowKeys=Object.keys(existingRows).map(Number).sort(function(a,b){return a-b;});
-              var allRowsXml=allRowKeys.map(function(r){return existingRows[r];}).join('')+newRowsXml;
-              var newMaxRow=Math.max(origMaxRow,wsMaxRow);
-              var newXml=origXml.replace(/<sheetData>[\s\S]*<\/sheetData>/,'<sheetData>'+allRowsXml+'</sheetData>');
-              if(newRowsXml){newXml=newXml.replace(/<dimension ref="[^"]*"/,'<dimension ref="'+XLSX.utils.encode_cell({r:wsRange.s.r,c:wsRange.s.c})+':'+XLSX.utils.encode_cell({r:newMaxRow-1,c:wsRange.e.c})+'"');}
-              zip.file(path,newXml);
+
+                var allRowKeys=Object.keys(existingRows).map(Number).sort(function(a,b){return a-b;});
+                var allRowsXml=allRowKeys.map(function(r){return existingRows[r];}).join('')+newRowsXml;
+                var newXml=origXml.replace(/<sheetData>[\s\S]*<\/sheetData>/,'<sheetData>'+allRowsXml+'</sheetData>');
+                if(newRowsXml){
+                  newXml=newXml.replace(/<dimension ref="([^"]*)"/,function(full,ref){
+                    var r=XLSX.utils.decode_range(ref);if(patchMaxRow-1>r.e.r)r.e.r=patchMaxRow-1;
+                    return'<dimension ref="'+XLSX.utils.encode_range(r)+'"';
+                  });
+                }
+                zip.file(path,newXml);
+              });
             });
-          });
-          return Promise.all(patchPromises).then(function(){
-            if(ssModified){
-              var header=ssXml.slice(0,ssXml.indexOf('<sst '));
-              var newSsXml=header+'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+ssItems.length+'" uniqueCount="'+ssItems.length+'">'+ssItems.join('')+'</sst>';
-              zip.file('xl/sharedStrings.xml',newSsXml);
-            }
-            return zip;
+            return Promise.all(patchPromises).then(function(){
+              if(ssModified){
+                var header=ssXml.slice(0,ssXml.indexOf('<sst '));
+                zip.file('xl/sharedStrings.xml',header+'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+ssItems.length+'" uniqueCount="'+ssItems.length+'">'+ssItems.join('')+'</sst>');
+              }
+              return zip;
+            });
           });
         });
       });
@@ -1256,6 +1334,7 @@ function mrgExportParcial(){
   });
 
   var approved=mrgPending.filter(function(c){return c.approved&&shts.indexOf(c.sht)!==-1;});
+  var adpPatchMap={};
   approved.forEach(function(c){
     var rmWs=rmWbCopy.Sheets[c.sht];var adpWs=adpWbCopy.Sheets[c.shtAdp];
     if(!rmWs||!adpWs)return;
@@ -1263,24 +1342,35 @@ function mrgExportParcial(){
     var cols=MRG_COLS[c.shtAdp]||{};
     var adpSpcI=cols.adpSpc?mrgC(cols.adpSpc):null;
     var mp=MRG_IDX[c.sht]||[];
+    if(!adpPatchMap[c.shtAdp])adpPatchMap[c.shtAdp]={};
     if(c.act==='new'){
       var ri=nextRow[c.shtAdp]!==undefined?nextRow[c.shtAdp]:adpD.length;
       var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
-      if(rmRow){mrgApplyRow(adpWs,rmRow,ri,mp,MRG_FILL_G);rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Concluído Stormx'};nextRow[c.shtAdp]=(nextRow[c.shtAdp]||adpD.length)+1;}
+      if(rmRow){mrgApplyRow(adpWs,rmRow,ri,mp,MRG_FILL_G,adpPatchMap[c.shtAdp]);nextRow[c.shtAdp]=(nextRow[c.shtAdp]||adpD.length)+1;}
     }else if(c.act==='upd'){
       var adpRowIdx=c.adpRow-1;
       var rmRow=XLSX.utils.sheet_to_json(rmWs,{header:1,defval:''})[c.rmRow-1];
-      if(rmRow){mrgApplyRow(adpWs,rmRow,adpRowIdx,mp,MRG_FILL_U);if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Alterar'};rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Alterado'};}
+      if(rmRow){
+        mrgApplyRow(adpWs,rmRow,adpRowIdx,mp,MRG_FILL_U,adpPatchMap[c.shtAdp]);
+        if(adpSpcI!==null){
+          var spcA=XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI});
+          var spcC={t:'s',v:'Alterar',s:{fill:MRG_FILL_U}};
+          adpWs[spcA]=spcC;adpPatchMap[c.shtAdp][spcA]=spcC;
+        }
+      }
     }else if(c.act==='can'){
       var adpRowIdx=c.adpRow-1;
-      if(adpSpcI!==null)adpWs[XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI})]={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
-      rmWs[XLSX.utils.encode_cell({r:c.rmRow-1,c:0})]={t:'s',v:'Cancelado'};
+      if(adpSpcI!==null){
+        var spcA=XLSX.utils.encode_cell({r:adpRowIdx,c:adpSpcI});
+        var spcC={t:'s',v:'Cancelar',s:{fill:MRG_FILL_C}};
+        adpWs[spcA]=spcC;adpPatchMap[c.shtAdp][spcA]=spcC;
+      }
     }
   });
 
   var adpShts=shts.map(function(s){return MRG_RM_TO_ADP[s]||s;});
   var suffix='_PARCIAL_'+shts.map(function(s){return s.split(/[\s,]/)[0];}).join('-');
-  _mrgPatchAndDownload(mrgAdpBytes,adpWbCopy,adpShts,mrgAdpName.replace(/\.xlsx?$/i,'')+suffix+'.xlsx',null);
+  _mrgPatchAndDownload(mrgAdpBytes,adpPatchMap,adpShts,mrgAdpName.replace(/\.xlsx?$/i,'')+suffix+'.xlsx',null);
 }
 
 // ── Copiar valor ──────────────────────────────────────────────────────────
