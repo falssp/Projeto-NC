@@ -58,14 +58,18 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .legend{background:var(--surface);border-bottom:1px solid var(--border);padding:.6rem 1.5rem;display:flex;gap:.45rem;flex-wrap:wrap}
 .lchip{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:700;padding:.2rem .6rem;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
 .az-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 1.5rem;display:flex;gap:2px;flex-wrap:wrap}
-.az-btn{width:22px;height:22px;border:none;background:none;border-radius:4px;font-size:.7rem;font-weight:700;color:var(--subtle);cursor:pointer;transition:all .15s;font-family:inherit}
-.az-btn.has{color:var(--muted)}
-.az-btn.has:hover,.az-btn.active-az{background:var(--accent-bg);color:var(--accent)}
-.az-btn.active-az{font-weight:800}
+.az-btn{width:22px;height:22px;border:none;background:none;border-radius:4px;font-size:.7rem;font-weight:700;color:var(--accent);cursor:pointer;transition:all .15s;font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.az-btn:hover{background:var(--accent-bg)}
+.az-btn.disabled{color:var(--subtle);cursor:default;pointer-events:none}
 .stats-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:.45rem 1.5rem;font-size:.75rem;color:var(--subtle);display:flex;justify-content:space-between;align-items:center}
 .theme-btn{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.25rem .65rem;font-size:.72rem;cursor:pointer;color:var(--muted);font-family:inherit;transition:all .15s}
 .theme-btn:hover{color:var(--text);border-color:var(--accent)}
-.grid{padding:1.2rem 1.5rem 3rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.85rem}
+.grid{padding:1.2rem 1.5rem 3rem}
+.letter-section{margin-bottom:1.5rem}
+.letter-heading{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
+.letter-heading h2{font-size:1.1rem;font-weight:800;color:var(--accent);min-width:1.5rem}
+.letter-heading hr{flex:1;border:none;border-top:2px solid var(--border)}
+.terms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.85rem}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1rem;box-shadow:var(--shadow);transition:box-shadow .15s,border-color .15s;display:flex;flex-direction:column;gap:.6rem}
 .card:hover{box-shadow:var(--shadow-md);border-color:var(--accent)}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem}
@@ -100,7 +104,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 @media(max-width:600px){
   .hero{padding:1.2rem 1rem 1rem}.hero-title{font-size:1.25rem}
   .controls,.legend,.az-bar,.stats-bar,.grid{padding-left:1rem;padding-right:1rem}
-  .grid{grid-template-columns:1fr;padding-top:1rem}
+  .terms-grid{grid-template-columns:1fr}.grid{padding-top:1rem}
 }
 </style>
 </head>
@@ -652,6 +656,8 @@ var TERMS = {
      ex:'Total impressions can rise with no improvement in viewability, brand safety or conversion'}
   ]
 };
+TERMS.pt.sort(function(a,b){return a.name.localeCompare(b.name,'pt-BR');});
+TERMS.en.sort(function(a,b){return a.name.localeCompare(b.name,'en');});
 
 var UI = {
   pt: {
@@ -726,14 +732,13 @@ function normalize(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g
 var lang = 'pt';
 try{ var saved=localStorage.getItem('okr-ref-lang'); if(saved==='en') lang='en'; }catch(e){}
 
-var activeCat='all', activeAz=null, searchText='';
+var activeCat='all', searchText='';
 
 function getTerms(){ return TERMS[lang]; }
 
 function getFiltered(){
   return getTerms().filter(function(t){
     if(activeCat!=='all' && t.cat!==activeCat) return false;
-    if(activeAz && normalize(t.name)[0]!==activeAz) return false;
     if(searchText){
       var q=normalize(searchText);
       var hay=normalize([t.name,t.abbr||'',t.def,t.ex||''].join(' '));
@@ -772,16 +777,15 @@ function renderUI(){
   var btns=document.querySelectorAll('#filters .filter-btn');
   for(var i=0;i<btns.length;i++){
     btns[i].addEventListener('click',function(){
-      activeCat=this.dataset.cat; activeAz=null;
+      activeCat=this.dataset.cat;
       for(var j=0;j<btns.length;j++) btns[j].classList.remove('active');
       this.classList.add('active');
-      renderAzBar(); renderGrid();
+      renderGrid();
     });
   }
   // lang buttons
   $('btnPT').classList.toggle('active', lang==='pt');
   $('btnEN').classList.toggle('active', lang==='en');
-  renderAzBar();
   renderGrid();
 }
 
@@ -791,49 +795,55 @@ function renderGrid(){
   $('statsBar').textContent=f.length+' '+u.statsOf+' '+getTerms().length+' '+u.statsTerms;
   if(!f.length){
     $('grid').innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">'+u.empty+'</div><div>'+u.emptyHint+'</div></div>';
+    updateAZBar({});
     return;
   }
-  $('grid').innerHTML=f.map(function(t){
-    var label=UI[lang].catLabels[t.cat]||t.cat;
-    return '<div class="card">'
-      +'<div class="card-head"><div class="card-name">'+t.name+'</div>'
-      +(t.abbr?'<div class="card-abbr">'+t.abbr+'</div>':'')
-      +'</div>'
-      +'<span class="card-cat '+t.cl+'">'+label+'</span>'
-      +'<div class="card-def">'+t.def+'</div>'
-      +(t.ex?'<div class="card-ex">'+t.ex+'</div>':'')
-      +'</div>';
-  }).join('');
+  var byLetter={};
+  f.forEach(function(t){
+    var letter=t.name[0].toUpperCase();
+    if(!byLetter[letter]) byLetter[letter]=[];
+    byLetter[letter].push(t);
+  });
+  var html='';
+  Object.keys(byLetter).sort().forEach(function(letter){
+    html+='<div class="letter-section" id="letter-'+letter+'">'
+      +'<div class="letter-heading"><h2>'+letter+'</h2><hr></div>'
+      +'<div class="terms-grid">';
+    byLetter[letter].forEach(function(t){
+      var label=u.catLabels[t.cat]||t.cat;
+      html+='<div class="card">'
+        +'<div class="card-head"><div class="card-name">'+t.name+'</div>'
+        +(t.abbr?'<div class="card-abbr">'+t.abbr+'</div>':'')
+        +'</div>'
+        +'<span class="card-cat '+t.cl+'">'+label+'</span>'
+        +'<div class="card-def">'+t.def+'</div>'
+        +(t.ex?'<div class="card-ex">'+t.ex+'</div>':'')
+        +'</div>';
+    });
+    html+='</div></div>';
+  });
+  $('grid').innerHTML=html;
+  updateAZBar(byLetter);
 }
 
-function renderAzBar(){
-  var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  var terms=getTerms();
-  $('azBar').innerHTML=letters.map(function(l){
-    var lo=l.toLowerCase();
-    var has=terms.some(function(t){return normalize(t.name)[0]===lo});
-    var active=activeAz===lo;
-    return '<button class="az-btn'+(has?' has':'')+(active?' active-az':'')+'" data-l="'+lo+'"'
-      +(!has?' disabled':'')+'>'+l+'</button>';
+function updateAZBar(byLetter){
+  var bar=$('azBar');
+  var all='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  bar.innerHTML=all.map(function(l){
+    if(byLetter&&byLetter[l]) return '<a class="az-btn" href="#letter-'+l+'">'+l+'</a>';
+    return '<span class="az-btn disabled">'+l+'</span>';
   }).join('');
-  var azBtns=document.querySelectorAll('.az-btn.has');
-  for(var i=0;i<azBtns.length;i++){
-    azBtns[i].addEventListener('click',function(){
-      activeAz=activeAz===this.dataset.l?null:this.dataset.l;
-      renderAzBar(); renderGrid();
-    });
-  }
 }
 
 function setLang(l){
-  lang=l; activeCat='all'; activeAz=null; searchText=''; $('search').value='';
+  lang=l; activeCat='all'; searchText=''; $('search').value='';
   try{localStorage.setItem('okr-ref-lang',l);}catch(e){}
   renderUI();
 }
 
 $('search').addEventListener('input',function(){
-  searchText=this.value.trim(); activeAz=null;
-  renderAzBar(); renderGrid();
+  searchText=this.value.trim();
+  renderGrid();
 });
 
 var dark=false;
