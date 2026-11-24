@@ -77,11 +77,33 @@ textarea:focus,input:focus,select:focus{border-color:var(--accent);}
     </div>
   </div>
   <div style="display:flex;gap:7px">
+    <button class="btn" onclick="openWeightsModal()">⚖ Pesos</button>
     <button class="btn" onclick="openHistModal()">📜 Histórico</button>
     <button class="btn" onclick="shareAsText()">📋 Resumo</button>
     <button class="btn" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn" onclick="toggleTheme()">🌙</button>
     <button class="btn primary" onclick="scoreAll()">🎯 Pontuar</button>
+  </div>
+</div>
+
+<!-- Weights Modal -->
+<div id="weightsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center" onclick="if(event.target===this)closeWeightsModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(520px,95vw);max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:15px;font-weight:800">⚖ Pesos das penalizações</span>
+      <button onclick="closeWeightsModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--faint)">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-bottom:16px">Ajuste quanto cada problema desconta da nota. Valores de 0 (ignorar) a 50.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn" style="height:26px;font-size:11px" onclick="applyWeightPreset('padrao')">📐 Padrão</button>
+      <button class="btn" style="height:26px;font-size:11px" onclick="applyWeightPreset('rigoroso')">🔒 Rigoroso</button>
+      <button class="btn" style="height:26px;font-size:11px" onclick="applyWeightPreset('flexivel')">🌿 Flexível</button>
+    </div>
+    <div id="weightRows"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="closeWeightsModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveWeights()">✓ Salvar pesos</button>
+    </div>
   </div>
 </div>
 
@@ -212,16 +234,82 @@ function getBarColor(score){
   return 'var(--score-f)';
 }
 
+// ── Weights system ────────────────────────────────────────────────────────
+const W_KEY='ncscore_weights_v1';
+const W_DEFS=[
+  {id:'w_sep',label:'Separador errado',default:30,sev:'err'},
+  {id:'w_segs_min',label:'Poucos segmentos',default:25,sev:'err'},
+  {id:'w_segs_max',label:'Muitos segmentos',default:25,sev:'err'},
+  {id:'w_len',label:'Comprimento excedido',default:20,sev:'err'},
+  {id:'w_spaces',label:'Contém espaços',default:25,sev:'err'},
+  {id:'w_upper',label:'Letras maiúsculas',default:15,sev:'warn'},
+  {id:'w_special',label:'Chars especiais',default:10,sev:'warn'},
+  {id:'w_empty',label:'Segmento vazio',default:20,sev:'err'},
+  {id:'w_dup',label:'Duplicata na lista',default:10,sev:'warn'},
+];
+const W_PRESETS={
+  padrao:{w_sep:30,w_segs_min:25,w_segs_max:25,w_len:20,w_spaces:25,w_upper:15,w_special:10,w_empty:20,w_dup:10},
+  rigoroso:{w_sep:40,w_segs_min:30,w_segs_max:30,w_len:25,w_spaces:35,w_upper:25,w_special:20,w_empty:30,w_dup:20},
+  flexivel:{w_sep:15,w_segs_min:10,w_segs_max:10,w_len:10,w_spaces:20,w_upper:5,w_special:5,w_empty:10,w_dup:5},
+};
+let _weights={};
+function loadWeights(){
+  try{const s=localStorage.getItem(W_KEY);return s?JSON.parse(s):{};}catch(e){return {};}
+}
+function getW(id){return _weights[id]??W_DEFS.find(d=>d.id===id)?.default??10;}
+_weights=loadWeights();
+
+function openWeightsModal(){
+  document.getElementById('weightsModal').style.display='flex';
+  renderWeightRows();
+}
+function closeWeightsModal(){document.getElementById('weightsModal').style.display='none';}
+function renderWeightRows(){
+  document.getElementById('weightRows').innerHTML=W_DEFS.map(d=>{
+    const val=getW(d.id);
+    const sevColor=d.sev==='err'?'var(--err)':'var(--warn)';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600">${d.label}</div>
+        <div style="font-size:10px;color:${sevColor};font-weight:700">${d.sev==='err'?'ERRO':'AVISO'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" min="0" max="50" step="1" value="${val}" id="${d.id}_range"
+          oninput="document.getElementById('${d.id}_num').value=this.value" style="width:100px">
+        <input type="number" min="0" max="50" value="${val}" id="${d.id}_num" style="width:48px;font-family:var(--mono);font-size:12px;padding:4px 6px"
+          oninput="document.getElementById('${d.id}_range').value=this.value">
+      </div>
+    </div>`;
+  }).join('');
+}
+function applyWeightPreset(name){
+  const preset=W_PRESETS[name];if(!preset) return;
+  W_DEFS.forEach(d=>{
+    const r=document.getElementById(d.id+'_range');
+    const n=document.getElementById(d.id+'_num');
+    if(r&&n){r.value=preset[d.id]??d.default;n.value=preset[d.id]??d.default;}
+  });
+  showToast(`Preset "${name}" aplicado`);
+}
+function saveWeights(){
+  W_DEFS.forEach(d=>{
+    const val=parseInt(document.getElementById(d.id+'_num')?.value??d.default)||0;
+    _weights[d.id]=Math.max(0,Math.min(50,val));
+  });
+  try{localStorage.setItem(W_KEY,JSON.stringify(_weights));}catch(e){}
+  closeWeightsModal();
+  showToast('✓ Pesos salvos');
+}
+
 function scoreNC(nc, cfg, seen){
   const issues=[];
   let deductions=0;
 
   // Separator consistency
   if(cfg.sep && nc.includes(cfg.sep)===false){
-    // might not contain sep if only 1 segment, so check if another sep is present
     const otherSeps=['_','-','|','.','/'].filter(s=>s!==cfg.sep);
     const hasOther=otherSeps.some(s=>nc.includes(s));
-    if(hasOther){issues.push({type:'err',msg:'Separador errado'});deductions+=30;}
+    if(hasOther){issues.push({type:'err',msg:'Separador errado'});deductions+=getW('w_sep');}
     else if(nc.split(cfg.sep).length===1){
       // Single segment — probably still valid, just 1 segment
     }
@@ -232,48 +320,48 @@ function scoreNC(nc, cfg, seen){
 
   // Segment count
   if(cfg.segsMin!==null && nSegs < cfg.segsMin){
-    issues.push({type:'err',msg:`Poucos segmentos (${nSegs}<${cfg.segsMin})`});deductions+=25;
+    issues.push({type:'err',msg:`Poucos segmentos (${nSegs}<${cfg.segsMin})`});deductions+=getW('w_segs_min');
   }
   if(cfg.segsMax!==null && nSegs > cfg.segsMax){
-    issues.push({type:'err',msg:`Muitos segmentos (${nSegs}>${cfg.segsMax})`});deductions+=25;
+    issues.push({type:'err',msg:`Muitos segmentos (${nSegs}>${cfg.segsMax})`});deductions+=getW('w_segs_max');
   }
 
   // Max length
   if(cfg.maxLen!==null && nc.length > cfg.maxLen){
     const over=nc.length-cfg.maxLen;
-    issues.push({type:'err',msg:`Muito longo (+${over} chars)`});deductions+=20;
+    issues.push({type:'err',msg:`Muito longo (+${over} chars)`});deductions+=getW('w_len');
   }
 
   // No spaces
   if(cfg.noSpaces && nc.includes(' ')){
-    issues.push({type:'err',msg:'Contém espaços'});deductions+=25;
+    issues.push({type:'err',msg:'Contém espaços'});deductions+=getW('w_spaces');
   }
 
   // No uppercase
   if(cfg.noUpper && /[A-Z]/.test(nc)){
-    issues.push({type:'warn',msg:'Contém maiúsculas'});deductions+=15;
+    issues.push({type:'warn',msg:'Contém maiúsculas'});deductions+=getW('w_upper');
   }
 
   // No special chars (excluding the separator and alphanumeric/hyphen/underscore)
   if(cfg.noSpecial){
     const allowRe=new RegExp(`[^a-zA-Z0-9\\-_${cfg.sep?cfg.sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):''}]`,'g');
     const matches=nc.match(allowRe)||[];
-    const special=matches.filter(c=>c!==' '); // spaces handled separately
+    const special=matches.filter(c=>c!==' ');
     if(special.length){
       const uniq=[...new Set(special)].slice(0,5).join(' ');
-      issues.push({type:'warn',msg:`Chars especiais: ${uniq}`});deductions+=10;
+      issues.push({type:'warn',msg:`Chars especiais: ${uniq}`});deductions+=getW('w_special');
     }
   }
 
   // Empty segment
   if(cfg.noEmpty && parts.some(p=>p==='')) {
-    issues.push({type:'err',msg:'Segmento vazio'});deductions+=20;
+    issues.push({type:'err',msg:'Segmento vazio'});deductions+=getW('w_empty');
   }
 
   // Duplicate in list
   if(cfg.noDup){
     const key=nc.toLowerCase();
-    if(seen.has(key)){issues.push({type:'warn',msg:'Duplicata na lista'});deductions+=10;}
+    if(seen.has(key)){issues.push({type:'warn',msg:'Duplicata na lista'});deductions+=getW('w_dup');}
     seen.add(key);
   }
 
