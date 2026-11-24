@@ -1,0 +1,270 @@
+<title>NC Length Enforcer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --fg:#0f172a;--fg2:#475569;--fg3:#94a3b8;
+    --accent:#e11d48;--accent-bg:#fff1f2;--accent-border:#fecdd3;
+    --ok:#10b981;--ok-bg:#f0fdf4;--ok-border:#a7f3d0;
+    --warn:#f59e0b;--warn-bg:#fffbeb;--warn-border:#fde68a;
+    --radius:10px;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#fb7185;--accent-bg:#4c0519;--accent-border:#881337;
+    --ok:#34d399;--ok-bg:#022c22;--ok-border:#064e3b;
+    --warn:#fbbf24;--warn-bg:#451a03;--warn-border:#78350f;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#fb7185;--accent-bg:#4c0519;--accent-border:#881337;
+    --ok:#34d399;--ok-bg:#022c22;--ok-border:#064e3b;
+    --warn:#fbbf24;--warn-bg:#451a03;--warn-border:#78350f;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+  .workspace{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 73px)}
+  @media(max-width:800px){.workspace{grid-template-columns:1fr}}
+  .sidebar{padding:20px;border-right:1px solid var(--border)}
+  .content{padding:20px 24px}
+  .sec{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:16px}
+  .sec:first-child{margin-top:0}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],input[type=number]{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:200px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+  .row2{display:flex;gap:8px;margin-bottom:12px}
+  .row2>div{flex:1}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:80px}
+  .kpi-val{font-size:22px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:11px;color:var(--fg2);margin-top:2px}
+  .kpi.ok{border-color:var(--ok-border);background:var(--ok-bg)}
+  .kpi.ok .kpi-val{color:var(--ok)}
+  .kpi.err{border-color:var(--accent-border);background:var(--accent-bg)}
+  .kpi.err .kpi-val{color:var(--accent)}
+  /* length meter */
+  .nc-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .nc-row:last-child{border-bottom:none}
+  .nc-text{font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all;flex:1;min-width:0}
+  .len-wrap{display:flex;align-items:center;gap:6px;min-width:160px}
+  .len-meter{height:12px;border-radius:6px;background:var(--bg3);flex:1;min-width:60px;overflow:hidden;position:relative}
+  .len-fill{height:100%;border-radius:6px;transition:.3s}
+  .len-fill.ok{background:var(--ok)}
+  .len-fill.warn{background:var(--warn)}
+  .len-fill.err{background:var(--accent)}
+  .len-num{font-family:'JetBrains Mono',monospace;font-size:11px;min-width:28px;text-align:right}
+  .len-num.ok{color:var(--ok)}
+  .len-num.warn{color:var(--warn)}
+  .len-num.err{color:var(--accent)}
+  .limit-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,.3)}
+  /* histogram */
+  .hist-wrap{display:flex;gap:2px;align-items:flex-end;height:80px;margin-bottom:4px}
+  .hist-bar{flex:1;border-radius:3px 3px 0 0;min-width:6px;position:relative;cursor:default}
+  .hist-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);border-radius:4px;padding:3px 7px;font-size:10px;white-space:nowrap;z-index:10}
+  .hist-labels{display:flex;gap:2px;font-size:9px;color:var(--fg3);font-family:'JetBrains Mono',monospace}
+  .hist-labels span{flex:1;text-align:center;overflow:hidden;text-overflow:clip}
+  .threshold-row{display:flex;gap:8px;margin-bottom:12px;align-items:flex-end}
+  .threshold-row .badge{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:700}
+  .badge-ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-border)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border)}
+  .badge-err{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border)}
+  .filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .filter-btn{background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;font-family:inherit}
+  .filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">📏</div>
+    <div>
+      <div class="title">NC Length Enforcer</div>
+      <div class="subtitle">Visualiza e aplica limites de comprimento em NCs</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <div class="sidebar">
+    <div class="sec">Limites de comprimento</div>
+    <div class="row2">
+      <div>
+        <label>Aviso acima de (chars)</label>
+        <input id="cfgWarn" type="number" min="1" value="40">
+      </div>
+      <div>
+        <label>Erro acima de (chars)</label>
+        <input id="cfgErr" type="number" min="1" value="60">
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label>Separador</label>
+      <input id="cfgSep" type="text" value="_" maxlength="3" style="font-family:'JetBrains Mono',monospace;width:60px">
+    </div>
+    <div class="sec">NCs</div>
+    <textarea id="ncInput" placeholder="camp_perf_app_venda_q1_stories&#10;camp_brand_web_lancamento_novembro_2024_q4_desktop_banner_300x250&#10;..."></textarea>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyze()">📏 Analisar</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="results"><div style="color:var(--fg3);font-size:13px;padding:20px 0">Cole suas NCs e clique em Analisar.</div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let _results = [];
+let _filter = 'all';
+
+function analyze() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole suas NCs!'); return; }
+  const warnAt = parseInt(document.getElementById('cfgWarn').value) || 40;
+  const errAt = parseInt(document.getElementById('cfgErr').value) || 60;
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  _results = lines.map(nc => {
+    const len = nc.length;
+    const status = len > errAt ? 'err' : len > warnAt ? 'warn' : 'ok';
+    return { nc, len, status };
+  });
+
+  _filter = 'all';
+  renderResults(warnAt, errAt);
+}
+
+function renderResults(warnAt, errAt) {
+  const ok = _results.filter(r => r.status === 'ok').length;
+  const warn = _results.filter(r => r.status === 'warn').length;
+  const err = _results.filter(r => r.status === 'err').length;
+  const lengths = _results.map(r => r.len);
+  const avg = lengths.length ? Math.round(lengths.reduce((s,v)=>s+v,0)/lengths.length) : 0;
+  const maxLen = Math.max(...lengths, errAt + 10);
+
+  // histogram buckets of 5 chars
+  const bucketSize = 5;
+  const maxBucket = Math.ceil(maxLen / bucketSize) * bucketSize;
+  const buckets = {};
+  for (let i = 0; i < maxBucket; i += bucketSize) buckets[i] = 0;
+  lengths.forEach(l => {
+    const b = Math.floor(l / bucketSize) * bucketSize;
+    buckets[b] = (buckets[b] || 0) + 1;
+  });
+  const bucketKeys = Object.keys(buckets).map(Number).sort((a,b)=>a-b);
+  const maxBucketVal = Math.max(...Object.values(buckets), 1);
+
+  let html = `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-val">${_results.length}</div><div class="kpi-lbl">total</div></div>
+    <div class="kpi ok"><div class="kpi-val">${ok}</div><div class="kpi-lbl">OK (≤${warnAt})</div></div>
+    <div class="kpi warn"><div class="kpi-val">${warn}</div><div class="kpi-lbl">aviso (>${warnAt})</div></div>
+    <div class="kpi err"><div class="kpi-val">${err}</div><div class="kpi-lbl">erro (>${errAt})</div></div>
+  </div>`;
+
+  // histogram
+  html += `<div style="margin-bottom:16px">
+    <div style="font-size:11px;font-weight:600;color:var(--fg2);margin-bottom:6px">Distribuição de comprimento · média ${avg} chars</div>
+    <div class="hist-wrap">`;
+  for (const k of bucketKeys) {
+    const cnt = buckets[k] || 0;
+    const h = Math.round((cnt / maxBucketVal) * 100);
+    const color = k >= errAt ? 'var(--accent)' : k >= warnAt ? 'var(--warn)' : 'var(--ok)';
+    html += `<div class="hist-bar" style="height:${h}%;background:${color}" data-tip="${k}–${k+bucketSize-1} chars: ${cnt} NCs"></div>`;
+  }
+  html += `</div><div class="hist-labels">`;
+  for (const k of bucketKeys) {
+    html += `<span>${k}</span>`;
+  }
+  html += `</div></div>`;
+
+  // filter + list
+  html += `<div class="filter-row">
+    <button class="filter-btn ${_filter==='all'?'active':''}" onclick="setFilter('all')">Todas (${_results.length})</button>
+    <button class="filter-btn ${_filter==='err'?'active':''}" onclick="setFilter('err')">Erro (${err})</button>
+    <button class="filter-btn ${_filter==='warn'?'active':''}" onclick="setFilter('warn')">Aviso (${warn})</button>
+    <button class="filter-btn ${_filter==='ok'?'active':''}" onclick="setFilter('ok')">OK (${ok})</button>
+  </div><div>`;
+
+  const visible = _filter === 'all' ? _results : _results.filter(r => r.status === _filter);
+  const displayMax = Math.max(...visible.map(r=>r.len), errAt+10);
+
+  for (const r of visible) {
+    const w = Math.round(r.len / displayMax * 100);
+    const wPct = Math.round(warnAt / displayMax * 100);
+    const ePct = Math.round(errAt / displayMax * 100);
+    html += `<div class="nc-row">
+      <span class="nc-text">${esc(r.nc)}</span>
+      <div class="len-wrap">
+        <div class="len-meter">
+          <div class="len-fill ${r.status}" style="width:${w}%"></div>
+          <div class="limit-line" style="left:${wPct}%" title="aviso: ${warnAt}"></div>
+          <div class="limit-line" style="left:${ePct}%;background:rgba(239,68,68,.5)" title="erro: ${errAt}"></div>
+        </div>
+        <span class="len-num ${r.status}">${r.len}</span>
+      </div>
+    </div>`;
+  }
+
+  if (!visible.length) html += '<div style="color:var(--fg3);font-size:13px;padding:16px 0">Nenhuma NC neste filtro.</div>';
+
+  html += '</div>';
+  document.getElementById('results').innerHTML = html;
+}
+
+function setFilter(f) {
+  const warnAt = parseInt(document.getElementById('cfgWarn').value) || 40;
+  const errAt = parseInt(document.getElementById('cfgErr').value) || 60;
+  _filter = f;
+  renderResults(warnAt, errAt);
+}
+
+function exportCSV() {
+  if (!_results.length) { showToast('Analise primeiro!'); return; }
+  const rows = [['nc','comprimento','status']];
+  for (const r of _results) rows.push([r.nc, r.len, r.status]);
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nc-lengths.csv';
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('ncInput').value='';
+  _results=[];
+  document.getElementById('results').innerHTML='<div style="color:var(--fg3);font-size:13px;padding:20px 0">Cole suas NCs e clique em Analisar.</div>';
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function toggleTheme(){const r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');}
+</script>

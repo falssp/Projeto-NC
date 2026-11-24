@@ -1,0 +1,269 @@
+<title>NC Segment Counter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --fg:#0f172a;--fg2:#475569;--fg3:#94a3b8;
+    --accent:#7c3aed;--accent-bg:#faf5ff;--accent-border:#ddd6fe;
+    --ok:#10b981;--ok-bg:#f0fdf4;--ok-border:#a7f3d0;
+    --err:#ef4444;--err-bg:#fef2f2;--err-border:#fecaca;
+    --warn:#f59e0b;--warn-bg:#fffbeb;--warn-border:#fde68a;
+    --radius:10px;
+    --c0:#6366f1;--c1:#0ea5e9;--c2:#10b981;--c3:#f59e0b;--c4:#ef4444;--c5:#8b5cf6;--c6:#06b6d4;--c7:#84cc16;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#a78bfa;--accent-bg:#2e1065;--accent-border:#4c1d95;
+    --ok:#34d399;--ok-bg:#022c22;--ok-border:#064e3b;
+    --err:#f87171;--err-bg:#450a0a;--err-border:#7f1d1d;
+    --warn:#fbbf24;--warn-bg:#451a03;--warn-border:#78350f;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#a78bfa;--accent-bg:#2e1065;--accent-border:#4c1d95;
+    --ok:#34d399;--ok-bg:#022c22;--ok-border:#064e3b;
+    --err:#f87171;--err-bg:#450a0a;--err-border:#7f1d1d;
+    --warn:#fbbf24;--warn-bg:#451a03;--warn-border:#78350f;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+  .workspace{display:grid;grid-template-columns:300px 1fr;gap:0;min-height:calc(100vh - 73px)}
+  @media(max-width:800px){.workspace{grid-template-columns:1fr}}
+  .sidebar{padding:20px;border-right:1px solid var(--border)}
+  .content{padding:20px 24px}
+  .sec{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:16px}
+  .sec:first-child{margin-top:0}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],input[type=number]{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:200px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+  .row2{display:flex;gap:8px;margin-bottom:12px}
+  .row2>div{flex:1}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:80px}
+  .kpi-val{font-size:22px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:11px;color:var(--fg2);margin-top:2px}
+  .kpi.purple{border-color:var(--accent-border);background:var(--accent-bg)}
+  .kpi.purple .kpi-val{color:var(--accent)}
+  /* donut */
+  .donut-section{display:flex;gap:24px;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap}
+  .donut-wrap{flex-shrink:0}
+  .donut-wrap svg{display:block}
+  .legend{display:flex;flex-direction:column;gap:8px;padding-top:8px}
+  .leg-row{display:flex;align-items:center;gap:8px;cursor:pointer}
+  .leg-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+  .leg-label{font-size:12px;color:var(--fg)}
+  .leg-cnt{font-size:12px;color:var(--fg2);margin-left:auto}
+  .leg-pct{font-size:11px;color:var(--fg3);min-width:36px;text-align:right}
+  /* nc list by count */
+  .count-group{margin-bottom:16px}
+  .count-header{font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .count-ncs{display:flex;flex-wrap:wrap;gap:4px}
+  .nc-chip{background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 8px;cursor:pointer;word-break:break-all}
+  .nc-chip:hover{border-color:var(--accent)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🔢</div>
+    <div>
+      <div class="title">NC Segment Counter</div>
+      <div class="subtitle">Agrupa NCs pela quantidade de segmentos com gráfico de donut</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <div class="sidebar">
+    <div class="sec">Configuração</div>
+    <div class="row2">
+      <div>
+        <label>Separador</label>
+        <input id="cfgSep" type="text" value="_" maxlength="3" style="font-family:'JetBrains Mono',monospace;width:60px">
+      </div>
+      <div>
+        <label>Esperado</label>
+        <input id="cfgExpected" type="number" min="1" max="20" value="6" title="Número ideal de segmentos">
+      </div>
+    </div>
+    <div class="sec">NCs</div>
+    <textarea id="ncInput" placeholder="camp_perf_app_venda_q1_stories&#10;camp_brand_web&#10;camp_perf_app_venda_q1_feed_v2&#10;..."></textarea>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyze()">🔢 Analisar</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="results"><div style="color:var(--fg3);font-size:13px;padding:20px 0">Cole suas NCs e clique em Analisar.</div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const COLORS = ['--c0','--c1','--c2','--c3','--c4','--c5','--c6','--c7'];
+let _groups = [];
+let _total = 0;
+let _expected = 6;
+
+function getColor(i) {
+  return getComputedStyle(document.documentElement).getPropertyValue(COLORS[i % COLORS.length]).trim();
+}
+
+function analyze() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole suas NCs!'); return; }
+  const sep = document.getElementById('cfgSep').value || '_';
+  _expected = parseInt(document.getElementById('cfgExpected').value) || 6;
+
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  _total = lines.length;
+
+  const groups = {};
+  lines.forEach(nc => {
+    const cnt = nc.split(sep).length;
+    if (!groups[cnt]) groups[cnt] = [];
+    groups[cnt].push(nc);
+  });
+
+  _groups = Object.entries(groups)
+    .map(([cnt, ncs]) => ({ cnt: +cnt, ncs }))
+    .sort((a, b) => a.cnt - b.cnt);
+
+  renderResults();
+}
+
+function renderResults() {
+  const mode = document.getElementById('cfgExpected').value ? parseInt(document.getElementById('cfgExpected').value) : _expected;
+
+  const ok = _groups.find(g => g.cnt === mode);
+  const okCnt = ok ? ok.ncs.length : 0;
+  const wrongCnt = _total - okCnt;
+
+  let html = `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-val">${_total}</div><div class="kpi-lbl">NCs total</div></div>
+    <div class="kpi purple"><div class="kpi-val">${_groups.length}</div><div class="kpi-lbl">tamanhos distintos</div></div>
+    <div class="kpi ok"><div class="kpi-val">${okCnt}</div><div class="kpi-lbl">com ${mode} segmentos ✅</div></div>
+    <div class="kpi err"><div class="kpi-val">${wrongCnt}</div><div class="kpi-lbl">fora do padrão</div></div>
+  </div>`;
+
+  // donut SVG
+  const r = 70, cx = 90, cy = 90, strokeW = 28;
+  const circum = 2 * Math.PI * r;
+  let offset = 0;
+  const slices = _groups.map((g, i) => {
+    const pct = g.ncs.length / _total;
+    const dash = pct * circum;
+    const slice = { dash, offset, pct, color: getColor(i), cnt: g.cnt, ncs: g.ncs };
+    offset += dash;
+    return slice;
+  });
+
+  html += `<div class="donut-section">
+    <div class="donut-wrap">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="${strokeW}"/>
+        ${slices.map(s => `
+          <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+            stroke="${s.color}" stroke-width="${strokeW}"
+            stroke-dasharray="${s.dash} ${circum - s.dash}"
+            stroke-dashoffset="${circum - s.offset}"
+            transform="rotate(-90 ${cx} ${cy})"
+          />`).join('')}
+        <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="22" font-weight="700" fill="var(--fg)">${_total}</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="11" fill="var(--fg2)">NCs</text>
+      </svg>
+    </div>
+    <div class="legend">`;
+
+  _groups.forEach((g, i) => {
+    const pct = Math.round(g.ncs.length / _total * 100);
+    const isExpected = g.cnt === _expected;
+    html += `<div class="leg-row" onclick="scrollTo(${g.cnt})">
+      <div class="leg-swatch" style="background:${getColor(i)}"></div>
+      <span class="leg-label">${g.cnt} seg${isExpected?' ✅':''}</span>
+      <span class="leg-cnt">${g.ncs.length}</span>
+      <span class="leg-pct">${pct}%</span>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+
+  // lists by count
+  _groups.forEach((g, i) => {
+    const isExpected = g.cnt === _expected;
+    const color = getColor(i);
+    html += `<div class="count-group" id="grp-${g.cnt}">
+      <div class="count-header" style="background:${color}22;color:${color}">
+        <span>${g.cnt} segmentos</span>
+        <span style="font-weight:400;font-size:11px">${g.ncs.length} NCs · ${Math.round(g.ncs.length/_total*100)}%</span>
+        ${isExpected ? '<span style="margin-left:auto">✅ padrão</span>' : ''}
+      </div>
+      <div class="count-ncs">
+        ${g.ncs.map(nc=>`<span class="nc-chip" onclick="copyText('${esc(nc)}')" title="Clique para copiar">${esc(nc)}</span>`).join('')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('results').innerHTML = html;
+}
+
+function scrollTo(cnt) {
+  const el = document.getElementById('grp-'+cnt);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function exportCSV() {
+  if (!_groups.length) { showToast('Analise primeiro!'); return; }
+  const rows = [['nc','num_segmentos','status']];
+  _groups.forEach(g => {
+    g.ncs.forEach(nc => rows.push([nc, g.cnt, g.cnt === _expected ? 'ok' : 'fora_padrao']));
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nc-segment-counts.csv';
+  a.click();
+}
+
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(()=>showToast('Copiado!')).catch(()=>showToast('Erro'));
+}
+
+function clearAll() {
+  document.getElementById('ncInput').value='';
+  _groups=[];
+  document.getElementById('results').innerHTML='<div style="color:var(--fg3);font-size:13px;padding:20px 0">Cole suas NCs e clique em Analisar.</div>';
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function toggleTheme(){const r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');}
+</script>
