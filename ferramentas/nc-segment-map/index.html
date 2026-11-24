@@ -1,0 +1,278 @@
+<title>NC Segment Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --fg:#0f172a;--fg2:#475569;--fg3:#94a3b8;
+    --accent:#0369a1;--accent-bg:#f0f9ff;--accent-border:#bae6fd;
+    --radius:10px;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#38bdf8;--accent-bg:#0c1a2e;--accent-border:#075985;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#38bdf8;--accent-bg:#0c1a2e;--accent-border:#075985;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+  .workspace{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 73px)}
+  @media(max-width:800px){.workspace{grid-template-columns:1fr}}
+  .left{padding:20px 24px;border-right:1px solid var(--border)}
+  .right{padding:20px 24px;overflow:auto}
+  .sec{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:16px}
+  .sec:first-child{margin-top:0}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],input[type=number]{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  /* kpi */
+  .kpi-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex:1;min-width:70px}
+  .kpi-val{font-size:18px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:10px;color:var(--fg2);margin-top:2px}
+  .kpi.blue .kpi-val{color:var(--accent)}
+  /* map grid */
+  .map-wrap{overflow-x:auto}
+  .map-grid{display:inline-grid;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-width:100%}
+  .map-cell{padding:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-width:90px;position:relative}
+  .map-cell:last-child{border-right:none}
+  .map-row:last-child .map-cell{border-bottom:none}
+  .map-row{display:contents}
+  /* header cells */
+  .cell-head{background:var(--bg3);padding:6px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--fg2)}
+  .cell-label{background:var(--bg3);padding:6px 10px;font-size:11px;font-weight:700;color:var(--fg2);text-align:right;min-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* value cells */
+  .cell-val{padding:6px 10px;font-size:11px;text-align:center;cursor:default}
+  .cell-val .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
+  .cell-val .pill:hover{opacity:.75}
+  .cell-val .multi{font-size:10px;color:var(--fg3);font-style:italic}
+  .cell-empty{color:var(--fg3);font-size:10px}
+  /* tooltip */
+  .tip-panel{position:fixed;bottom:16px;right:16px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,.12);padding:12px;min-width:260px;max-width:340px;max-height:60vh;overflow-y:auto;z-index:100;display:none}
+  .tip-panel.open{display:block}
+  .tip-close{float:right;background:none;border:none;color:var(--fg3);cursor:pointer;font-size:16px}
+  .tip-close:hover{color:var(--fg)}
+  .chip-list{display:flex;flex-wrap:wrap;gap:3px;margin-top:8px}
+  .chip{background:var(--bg2);border:1px solid var(--border);border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;cursor:pointer}
+  .chip:hover{border-color:var(--accent)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🗺️</div>
+    <div>
+      <div class="title">NC Segment Map</div>
+      <div class="subtitle">Mapa de valores únicos por posição × NC — grade visual de quem usa o quê</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <div class="left">
+    <div class="sec">Configuração</div>
+    <div style="margin-bottom:8px">
+      <label>Separador</label>
+      <input id="cfgSep" type="text" value="_" maxlength="3" style="width:70px;font-family:'JetBrains Mono',monospace">
+    </div>
+    <div style="margin-bottom:8px">
+      <label>Posição de agrupamento (eixo Y, 1-based)</label>
+      <input id="cfgGroup" type="number" min="1" max="12" value="1" title="Qual posição vira as linhas do mapa?">
+    </div>
+    <div style="margin-bottom:8px">
+      <label>Posições no eixo X (separadas por vírgula; vazio = todas)</label>
+      <input id="cfgCols" type="text" placeholder="2,3,4,5" style="font-family:'JetBrains Mono',monospace">
+    </div>
+
+    <div class="sec">NCs</div>
+    <label>Cole NCs (uma por linha)</label>
+    <textarea id="ncInput" rows="12" placeholder="camp_perf_app_venda_q1&#10;camp_brand_web_lanc_q2&#10;camp_perf_web_venda_q1&#10;camp_brand_app_lanc_q3&#10;..."></textarea>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyze()">🗺️ Gerar Mapa</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <div class="right">
+    <div id="kpiRow" class="kpi-row" style="display:none"></div>
+    <div class="map-wrap" id="mapWrap"></div>
+  </div>
+</div>
+
+<div class="tip-panel" id="tipPanel">
+  <button class="tip-close" onclick="closeTip()">×</button>
+  <div id="tipContent"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+let mapData = null; // { groups, cols, cells: group -> col -> Set(values) }
+let allNCs = [];
+
+function analyze() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole NCs!'); return; }
+  const sep = document.getElementById('cfgSep').value || '_';
+  const posG = (parseInt(document.getElementById('cfgGroup').value) || 1) - 1;
+  const colsRaw = document.getElementById('cfgCols').value.trim();
+  allNCs = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  // Detect max segments
+  let maxSegs = 0;
+  allNCs.forEach(nc => { maxSegs = Math.max(maxSegs, nc.split(sep).length); });
+
+  let cols;
+  if (colsRaw) {
+    cols = colsRaw.split(',').map(s=>parseInt(s.trim())-1).filter(n=>!isNaN(n) && n >= 0 && n !== posG);
+  } else {
+    cols = [];
+    for (let i = 0; i < maxSegs; i++) { if (i !== posG) cols.push(i); }
+  }
+
+  const groupsSet = new Set();
+  const cells = {}; // groupVal -> colIdx -> Set
+
+  allNCs.forEach(nc => {
+    const segs = nc.split(sep);
+    const g = segs[posG] || '(sem grupo)';
+    groupsSet.add(g);
+    if (!cells[g]) cells[g] = {};
+    cols.forEach(c => {
+      const val = segs[c] || '';
+      if (!cells[g][c]) cells[g][c] = new Set();
+      if (val) cells[g][c].add(val);
+    });
+  });
+
+  const groups = [...groupsSet].sort();
+  mapData = { groups, cols, cells };
+
+  renderKPIs(allNCs.length, groups.length, cols.length);
+  renderMap();
+  document.getElementById('kpiRow').style.display = 'flex';
+}
+
+function renderKPIs(total, groups, cols) {
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi blue"><div class="kpi-val">${total}</div><div class="kpi-lbl">NCs</div></div>
+    <div class="kpi"><div class="kpi-val">${groups}</div><div class="kpi-lbl">grupos</div></div>
+    <div class="kpi"><div class="kpi-val">${cols}</div><div class="kpi-lbl">colunas</div></div>
+  `;
+}
+
+function renderMap() {
+  const { groups, cols, cells } = mapData;
+  const posG = (parseInt(document.getElementById('cfgGroup').value) || 1) - 1;
+
+  // Build grid
+  const totalCols = 1 + cols.length; // label col + data cols
+  const wrap = document.getElementById('mapWrap');
+
+  let html = `<div class="map-grid" style="grid-template-columns:120px ${cols.map(()=>'1fr').join(' ')}">`;
+
+  // Header row
+  html += `<div class="map-row">`;
+  html += `<div class="map-cell cell-head" style="text-align:left">P${posG+1} (grupo)</div>`;
+  cols.forEach(c => {
+    html += `<div class="map-cell cell-head">P${c+1}</div>`;
+  });
+  html += `</div>`;
+
+  // Data rows
+  groups.forEach(g => {
+    html += `<div class="map-row">`;
+    html += `<div class="map-cell cell-label" title="${esc(g)}">${esc(g)}</div>`;
+    cols.forEach(c => {
+      const vals = cells[g] && cells[g][c] ? [...cells[g][c]] : [];
+      html += `<div class="map-cell cell-val">`;
+      if (!vals.length) {
+        html += `<span class="cell-empty">—</span>`;
+      } else if (vals.length === 1) {
+        html += `<span class="pill" onclick="showTip('${esc(g)}','P${c+1}',${JSON.stringify(vals).replace(/</g,'\\u003c')})" title="${esc(vals[0])}">${esc(vals[0])}</span>`;
+      } else {
+        html += `<span class="pill multi" onclick="showTip('${esc(g)}','P${c+1}',${JSON.stringify(vals).replace(/</g,'\\u003c')})">${vals.length} valores</span>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+function showTip(group, col, vals) {
+  const panel = document.getElementById('tipPanel');
+  document.getElementById('tipContent').innerHTML = `
+    <div style="font-weight:700;padding-right:20px;margin-bottom:4px">${esc(group)} · ${esc(col)}</div>
+    <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">${vals.length} valor${vals.length>1?'es':''}</div>
+    <div class="chip-list">
+      ${vals.map(v=>`<span class="chip" onclick="copyVal('${esc(v)}')" title="Copiar">${esc(v)}</span>`).join('')}
+    </div>
+  `;
+  panel.classList.add('open');
+}
+
+function copyVal(v) {
+  navigator.clipboard.writeText(v).then(()=>showToast('Copiado!')).catch(()=>showToast(v));
+}
+
+function closeTip() {
+  document.getElementById('tipPanel').classList.remove('open');
+}
+
+function exportCSV() {
+  if (!mapData) { showToast('Gere o mapa primeiro!'); return; }
+  const { groups, cols, cells } = mapData;
+  const posG = (parseInt(document.getElementById('cfgGroup').value) || 1) - 1;
+  const rows = [['grupo', ...cols.map(c=>`P${c+1}`), 'num_valores_total']];
+  groups.forEach(g => {
+    const rowData = [g];
+    let total = 0;
+    cols.forEach(c => {
+      const vals = cells[g] && cells[g][c] ? [...cells[g][c]] : [];
+      rowData.push(vals.join(' | '));
+      total += vals.length;
+    });
+    rowData.push(total);
+    rows.push(rowData);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='nc-segment-map.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado!');
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function toggleTheme(){const r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');}
+</script>
