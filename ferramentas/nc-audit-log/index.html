@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Audit Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f7f7f8;--surface:#fff;--card:#fff;--border:#e4e4e7;
+  --fg:#18181b;--muted:#71717a;--mono:'JetBrains Mono',monospace;
+  --accent:#f97316;--accent-fg:#fff;--accent-light:#fff7ed;
+  --create:#16a34a;--create-bg:#f0fdf4;--create-border:#bbf7d0;
+  --modify:#2563eb;--modify-bg:#eff6ff;--modify-border:#bfdbfe;
+  --deprecate:#dc2626;--deprecate-bg:#fef2f2;--deprecate-border:#fecaca;
+  --restore:#8b5cf6;--restore-bg:#f5f3ff;--restore-border:#ddd6fe;
+  --review:#d97706;--review-bg:#fffbeb;--review-border:#fde68a;
+  --note:#71717a;--note-bg:#f4f4f5;--note-border:#e4e4e7;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#1c0a00;
+  --create-bg:#052e16;--create-border:#166534;
+  --modify-bg:#1e3a5f;--modify-border:#1d4ed8;
+  --deprecate-bg:#450a0a;--deprecate-border:#991b1b;
+  --restore-bg:#2e1065;--restore-border:#7c3aed;
+  --review-bg:#1c1407;--review-border:#92400e;
+  --note-bg:#27272a;--note-border:#3f3f46;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#1c0a00;
+  --create-bg:#052e16;--create-border:#166534;
+  --modify-bg:#1e3a5f;--modify-border:#1d4ed8;
+  --deprecate-bg:#450a0a;--deprecate-border:#991b1b;
+  --restore-bg:#2e1065;--restore-border:#7c3aed;
+  --review-bg:#1c1407;--review-border:#92400e;
+  --note-bg:#27272a;--note-border:#3f3f46;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0 0 60px}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700;flex:1}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{opacity:.88}
+.btn-sm{padding:5px 10px;font-size:11px}
+.wrap{max-width:1000px;margin:0 auto;padding:24px}
+
+/* KPI */
+.kpi-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;min-width:100px}
+.kpi-val{font-size:20px;font-weight:800;font-family:var(--mono)}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px}
+
+/* filters */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:700;cursor:pointer;background:var(--surface);transition:.12s}
+.chip.active-create{background:var(--create-bg);border-color:var(--create-border);color:var(--create)}
+.chip.active-modify{background:var(--modify-bg);border-color:var(--modify-border);color:var(--modify)}
+.chip.active-deprecate{background:var(--deprecate-bg);border-color:var(--deprecate-border);color:var(--deprecate)}
+.chip.active-restore{background:var(--restore-bg);border-color:var(--restore-border);color:var(--restore)}
+.chip.active-review{background:var(--review-bg);border-color:var(--review-border);color:var(--review)}
+.chip.active-note{background:var(--note-bg);border-color:var(--note-border);color:var(--note)}
+.chip.active-all{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* search */
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fg);font-size:12px;font-family:inherit;outline:none}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+
+/* timeline */
+.timeline{position:relative;padding-left:32px}
+.timeline::before{content:'';position:absolute;left:12px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-entry{position:relative;margin-bottom:12px}
+.tl-dot{position:absolute;left:-26px;top:12px;width:12px;height:12px;border-radius:50%;border:2px solid;background:var(--surface)}
+.dot-create{border-color:var(--create);background:var(--create)}
+.dot-modify{border-color:var(--modify);background:var(--modify)}
+.dot-deprecate{border-color:var(--deprecate);background:var(--deprecate)}
+.dot-restore{border-color:var(--restore);background:var(--restore)}
+.dot-review{border-color:var(--review);background:var(--review)}
+.dot-note{border-color:var(--note);background:var(--note)}
+.tl-card{border-radius:var(--radius);border:1px solid;padding:12px 14px}
+.tl-card.type-create{background:var(--create-bg);border-color:var(--create-border)}
+.tl-card.type-modify{background:var(--modify-bg);border-color:var(--modify-border)}
+.tl-card.type-deprecate{background:var(--deprecate-bg);border-color:var(--deprecate-border)}
+.tl-card.type-restore{background:var(--restore-bg);border-color:var(--restore-border)}
+.tl-card.type-review{background:var(--review-bg);border-color:var(--review-border)}
+.tl-card.type-note{background:var(--note-bg);border-color:var(--note-border)}
+.tl-head{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.action-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.05em;flex-shrink:0}
+.badge-create{background:var(--create);color:#fff}
+.badge-modify{background:var(--modify);color:#fff}
+.badge-deprecate{background:var(--deprecate);color:#fff}
+.badge-restore{background:var(--restore);color:#fff}
+.badge-review{background:var(--review);color:#fff}
+.badge-note{background:var(--note);color:#fff}
+.tl-nc{font-family:var(--mono);font-size:13px;font-weight:700;flex:1;word-break:break-all}
+.tl-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.tl-reason{font-size:12px;line-height:1.5;margin-top:6px;color:var(--fg)}
+.tl-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.tag{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.tl-actions{display:flex;gap:5px;margin-top:8px;justify-content:flex-end}
+.icon-btn{background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--muted);font-size:11px;padding:3px 8px;transition:.12s}
+.icon-btn:hover{background:var(--border);color:var(--fg)}
+.del-btn:hover{background:#fee2e2;border-color:#fca5a5;color:var(--deprecate)}
+
+.date-sep{text-align:center;font-size:11px;font-weight:800;color:var(--muted);margin:16px 0 10px;text-transform:uppercase;letter-spacing:.07em;position:relative}
+.date-sep::before,.date-sep::after{content:'';position:absolute;top:50%;height:1px;background:var(--border);width:calc(50% - 60px)}
+.date-sep::before{left:0}
+.date-sep::after{right:0}
+
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border-radius:14px;padding:22px 24px;width:min(500px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal h2{font-size:15px;font-weight:800;margin-bottom:16px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--fg);font-size:13px;font-family:inherit;outline:none;transition:.15s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group textarea{min-height:70px;resize:vertical;line-height:1.5}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#18181b;color:#fff;padding:9px 18px;border-radius:999px;font-size:12px;font-weight:600;transition:.25s;opacity:0;z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">🗂️</span>
+  <h1>NC Audit Log</h1>
+  <button class="btn" onclick="exportCSV()">↓ CSV</button>
+  <button class="btn btn-primary" onclick="openModal()">+ Registrar</button>
+  <button class="btn" id="themeBtn" onclick="toggleTheme()">◑</button>
+</header>
+
+<div class="wrap">
+  <!-- KPI -->
+  <div class="kpi-bar" id="kpiBar">
+    <div class="kpi"><div class="kpi-val" id="kTotal">0</div><div class="kpi-label">Total</div></div>
+    <div class="kpi" style="border-color:var(--create-border)"><div class="kpi-val" id="kCreate" style="color:var(--create)">0</div><div class="kpi-label">Criadas</div></div>
+    <div class="kpi" style="border-color:var(--modify-border)"><div class="kpi-val" id="kModify" style="color:var(--modify)">0</div><div class="kpi-label">Modificadas</div></div>
+    <div class="kpi" style="border-color:var(--deprecate-border)"><div class="kpi-val" id="kDeprec" style="color:var(--deprecate)">0</div><div class="kpi-label">Deprecadas</div></div>
+    <div class="kpi" style="border-color:var(--restore-border)"><div class="kpi-val" id="kRestore" style="color:var(--restore)">0</div><div class="kpi-label">Restauradas</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-row">
+    <div class="chip active-all" id="chip_all" onclick="setFilter('all')">Tudo</div>
+    <div class="chip" id="chip_create" onclick="setFilter('create')">✦ Criar</div>
+    <div class="chip" id="chip_modify" onclick="setFilter('modify')">✎ Modificar</div>
+    <div class="chip" id="chip_deprecate" onclick="setFilter('deprecate')">✕ Deprecar</div>
+    <div class="chip" id="chip_restore" onclick="setFilter('restore')">↩ Restaurar</div>
+    <div class="chip" id="chip_review" onclick="setFilter('review')">👁 Review</div>
+    <div class="chip" id="chip_note" onclick="setFilter('note')">✎ Nota</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInp" placeholder="Buscar NC, autor, motivo…" oninput="renderLog()">
+    </div>
+  </div>
+
+  <div class="timeline" id="logTimeline">
+    <div class="empty-state">
+      <div class="empty-icon">🗂️</div>
+      <p>Nenhum registro ainda.</p>
+      <p style="margin-top:4px;font-size:12px">Clique em <strong>+ Registrar</strong> para começar.</p>
+    </div>
+  </div>
+</div>
+
+<!-- New Entry Modal -->
+<div class="modal-bg" id="entryModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>Novo Registro de Auditoria</h2>
+    <div class="form-group">
+      <label>Ação</label>
+      <select id="fAction">
+        <option value="create">✦ Criar — NC criada pela primeira vez</option>
+        <option value="modify">✎ Modificar — NC atualizada/renomeada</option>
+        <option value="deprecate">✕ Deprecar — NC retirada de uso</option>
+        <option value="restore">↩ Restaurar — NC reativada</option>
+        <option value="review">👁 Review — NC revisada/aprovada</option>
+        <option value="note">✎ Nota — Observação geral</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>NC afetada</label>
+      <input id="fNc" type="text" placeholder="ex: camp_brand_q1_social" style="font-family:var(--mono);font-size:12px">
+    </div>
+    <div class="form-group" id="fNcNewWrap" style="display:none">
+      <label>NC anterior (para Modificar)</label>
+      <input id="fNcOld" type="text" placeholder="ex: camp_brand_q1_fb" style="font-family:var(--mono);font-size:12px">
+    </div>
+    <div class="form-group">
+      <label>Autor / Equipe</label>
+      <input id="fAuthor" type="text" placeholder="ex: João Silva · Analytics">
+    </div>
+    <div class="form-group">
+      <label>Motivo / Justificativa</label>
+      <textarea id="fReason" placeholder="Descreva o motivo da ação…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags (vírgula)</label>
+      <input id="fTags" type="text" placeholder="ex: pago, campanha-global">
+    </div>
+    <div class="form-group">
+      <label>Data</label>
+      <input id="fDate" type="date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='nc_audit_v1';
+const THEME_KEY='ncaudit_theme';
+let _entries=[];
+let _filter='all';
+
+const TYPE_ICONS={create:'✦',modify:'✎',deprecate:'✕',restore:'↩',review:'👁',note:'📝'};
+const TYPE_LABELS={create:'Criar',modify:'Modificar',deprecate:'Deprecar',restore:'Restaurar',review:'Review',note:'Nota'};
+
+// ── Theme ────────────────────────────────────────────────────────────────
+function initTheme(){
+  const t=localStorage.getItem(THEME_KEY)||'system';
+  if(t!=='system') document.documentElement.setAttribute('data-theme',t);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem(THEME_KEY,next);
+}
+
+// ── Storage ──────────────────────────────────────────────────────────────
+function load(){try{const s=localStorage.getItem(KEY);if(s)_entries=JSON.parse(s);}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(_entries));}catch(e){}}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────
+function updateKPIs(){
+  const c=t=>_entries.filter(e=>e.action===t).length;
+  document.getElementById('kTotal').textContent=_entries.length;
+  document.getElementById('kCreate').textContent=c('create');
+  document.getElementById('kModify').textContent=c('modify');
+  document.getElementById('kDeprec').textContent=c('deprecate');
+  document.getElementById('kRestore').textContent=c('restore');
+}
+
+// ── Filter ───────────────────────────────────────────────────────────────
+function setFilter(f){
+  _filter=f;
+  const chips=['all','create','modify','deprecate','restore','review','note'];
+  chips.forEach(c=>{
+    const el=document.getElementById('chip_'+c);
+    if(!el) return;
+    el.className='chip'+(c===f?' active-'+f:'');
+  });
+  renderLog();
+}
+
+// ── Render ───────────────────────────────────────────────────────────────
+function renderLog(){
+  const q=(document.getElementById('searchInp').value||'').toLowerCase();
+  let items=[..._entries].sort((a,b)=>b.ts-a.ts);
+  if(_filter!=='all') items=items.filter(e=>e.action===_filter);
+  if(q) items=items.filter(e=>(e.nc+e.ncOld+e.author+e.reason+e.tags).toLowerCase().includes(q));
+
+  const tl=document.getElementById('logTimeline');
+  if(!items.length){
+    tl.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum registro encontrado.</p></div>';
+    return;
+  }
+
+  let lastDate='';
+  tl.innerHTML=items.map(e=>{
+    const d=new Date(e.ts);
+    const dateStr=d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const timeStr=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const dateSep=dateStr!==lastDate?`<div class="date-sep">${dateStr}</div>`:'' ;
+    lastDate=dateStr;
+    const tags=(e.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
+    return `${dateSep}<div class="tl-entry">
+      <div class="tl-dot dot-${e.action}"></div>
+      <div class="tl-card type-${e.action}">
+        <div class="tl-head">
+          <span class="action-badge badge-${e.action}">${TYPE_ICONS[e.action]} ${TYPE_LABELS[e.action]}</span>
+          <span class="tl-nc">${esc(e.nc)||'—'}</span>
+        </div>
+        <div class="tl-meta">
+          <span>🕐 ${timeStr}</span>
+          <span>👤 ${esc(e.author||'—')}</span>
+          ${e.ncOld?`<span>← ${esc(e.ncOld)}</span>`:''}
+        </div>
+        ${e.reason?`<div class="tl-reason">${esc(e.reason)}</div>`:''}
+        ${tags.length?`<div class="tl-tags">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+        <div class="tl-actions">
+          <button class="icon-btn" onclick="copyEntry(${e.ts})">⎘ Copiar NC</button>
+          <button class="icon-btn del-btn" onclick="deleteEntry(${e.ts})">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CRUD ─────────────────────────────────────────────────────────────────
+function openModal(){
+  document.getElementById('fAction').value='create';
+  document.getElementById('fNc').value='';
+  document.getElementById('fNcOld').value='';
+  document.getElementById('fAuthor').value=localStorage.getItem('ncaudit_author')||'';
+  document.getElementById('fReason').value='';
+  document.getElementById('fTags').value='';
+  document.getElementById('fDate').value=new Date().toISOString().slice(0,10);
+  toggleNcOldField();
+  document.getElementById('entryModal').classList.add('open');
+  document.getElementById('fNc').focus();
+}
+function closeModal(){document.getElementById('entryModal').classList.remove('open');}
+
+document.getElementById('fAction').addEventListener('change',toggleNcOldField);
+function toggleNcOldField(){
+  const show=document.getElementById('fAction').value==='modify';
+  document.getElementById('fNcNewWrap').style.display=show?'block':'none';
+}
+
+function saveEntry(){
+  const nc=document.getElementById('fNc').value.trim();
+  if(!nc){showToast('NC é obrigatória');return;}
+  const author=document.getElementById('fAuthor').value.trim();
+  const dateVal=document.getElementById('fDate').value;
+  const ts=dateVal?new Date(dateVal+'T'+new Date().toTimeString().slice(0,8)).getTime():Date.now();
+  const entry={
+    action:document.getElementById('fAction').value,
+    nc,
+    ncOld:document.getElementById('fNcOld').value.trim(),
+    author,
+    reason:document.getElementById('fReason').value.trim(),
+    tags:document.getElementById('fTags').value.trim(),
+    ts,
+  };
+  _entries.push(entry);
+  persist();
+  if(author) localStorage.setItem('ncaudit_author',author);
+  closeModal();
+  updateKPIs();
+  renderLog();
+  showToast('✓ Registro salvo');
+}
+
+function deleteEntry(ts){
+  if(!confirm('Remover este registro?')) return;
+  _entries=_entries.filter(e=>e.ts!==ts);
+  persist();
+  updateKPIs();
+  renderLog();
+  showToast('Removido');
+}
+
+function copyEntry(ts){
+  const e=_entries.find(e=>e.ts===ts);
+  if(e) navigator.clipboard.writeText(e.nc).then(()=>showToast('✓ NC copiada')).catch(()=>showToast(e.nc));
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  if(!_entries.length){showToast('Nenhum registro');return;}
+  const rows=[['ts_iso','acao','nc','nc_anterior','autor','motivo','tags']];
+  [..._entries].sort((a,b)=>b.ts-a.ts).forEach(e=>{
+    rows.push([new Date(e.ts).toISOString(),e.action,e.nc,e.ncOld||'',e.author||'',e.reason||'',e.tags||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='nc-audit-log.csv';a.click();
+  showToast('✓ CSV exportado');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+initTheme();
+load();
+updateKPIs();
+renderLog();
+</script>
+</body>
+</html>
