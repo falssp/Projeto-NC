@@ -1,0 +1,366 @@
+<title>NC Convention Tester</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --fg:#0f172a;--fg2:#475569;--fg3:#94a3b8;
+    --accent:#f97316;--accent-bg:#fff7ed;--accent-border:#fed7aa;
+    --ok:#10b981;--ok-bg:#f0fdf4;--ok-border:#a7f3d0;
+    --err:#ef4444;--err-bg:#fef2f2;--err-border:#fecaca;
+    --warn:#f59e0b;--warn-bg:#fffbeb;--warn-border:#fde68a;
+    --radius:10px;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#fb923c;--accent-bg:#431407;--accent-border:#7c2d12;
+    --ok:#34d399;--ok-bg:#022c22;--ok-border:#064e3b;
+    --err:#f87171;--err-bg:#450a0a;--err-border:#7f1d1d;
+    --warn:#fbbf24;--warn-bg:#451a03;--warn-border:#78350f;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#fb923c;--accent-bg:#431407;--accent-border:#7c2d12;
+    --ok:#34d399;--ok-bg:#022c22;--ok-border:#064e3b;
+    --err:#f87171;--err-bg:#450a0a;--err-border:#7f1d1d;
+    --warn:#fbbf24;--warn-bg:#451a03;--warn-border:#78350f;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+  .workspace{display:grid;grid-template-columns:400px 1fr;gap:0;min-height:calc(100vh - 73px)}
+  @media(max-width:900px){.workspace{grid-template-columns:1fr}}
+  .sidebar{padding:20px;border-right:1px solid var(--border);overflow-y:auto}
+  .content{padding:20px 24px}
+  .sec{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:16px}
+  .sec:first-child{margin-top:0}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],input[type=number],select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,input[type=number]:focus,select:focus{border-color:var(--accent)}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:160px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  /* rule builder */
+  .rule-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px}
+  .rule-card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .rule-pos-label{font-size:12px;font-weight:700;color:var(--accent);min-width:60px}
+  .rule-controls{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+  .del-rule{background:none;border:none;color:var(--fg3);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;margin-left:auto}
+  .del-rule:hover{color:var(--err)}
+  .row2{display:flex;gap:8px}
+  .row2>div{flex:1}
+  /* results */
+  .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:80px}
+  .kpi-val{font-size:22px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:11px;color:var(--fg2);margin-top:2px}
+  .kpi.ok{border-color:var(--ok-border);background:var(--ok-bg)}
+  .kpi.ok .kpi-val{color:var(--ok)}
+  .kpi.err{border-color:var(--err-border);background:var(--err-bg)}
+  .kpi.err .kpi-val{color:var(--err)}
+  .kpi.warn{border-color:var(--warn-border);background:var(--warn-bg)}
+  .kpi.warn .kpi-val{color:var(--warn)}
+  /* nc result rows */
+  .nc-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+  .nc-row:last-child{border-bottom:none}
+  .nc-status{font-size:14px;flex-shrink:0;padding-top:1px}
+  .nc-body{flex:1;min-width:0}
+  .nc-text{font-family:'JetBrains Mono',monospace;font-size:12px;word-break:break-all}
+  .nc-errors{margin-top:4px;display:flex;flex-direction:column;gap:2px}
+  .nc-err-item{font-size:11px;color:var(--err)}
+  .nc-warn-item{font-size:11px;color:var(--warn)}
+  .nc-row.ok .nc-text{color:var(--ok)}
+  .nc-row.err .nc-text{color:var(--err)}
+  .nc-row.warn .nc-text{color:var(--warn)}
+  .filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .filter-btn{background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;font-family:inherit}
+  .filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🧪</div>
+    <div>
+      <div class="title">NC Convention Tester</div>
+      <div class="subtitle">Valida NCs contra regras de convenção customizáveis por posição</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <!-- SIDEBAR: rules -->
+  <div class="sidebar">
+    <div class="sec">Configuração</div>
+    <div class="row2" style="margin-bottom:12px">
+      <div>
+        <label>Separador</label>
+        <input id="cfgSep" type="text" value="_" maxlength="3" style="font-family:'JetBrains Mono',monospace">
+      </div>
+      <div>
+        <label>Segmentos obrigatórios</label>
+        <input id="cfgMin" type="number" min="1" max="20" value="3" placeholder="mín">
+      </div>
+      <div>
+        <label>Máx</label>
+        <input id="cfgMax" type="number" min="1" max="20" value="8" placeholder="máx" style="width:60px">
+      </div>
+    </div>
+
+    <div class="sec">Regras por Posição</div>
+    <div id="ruleCards"></div>
+    <button class="btn btn-secondary btn-sm" onclick="addRule()">+ Adicionar posição</button>
+
+    <div class="sec">NCs para Validar</div>
+    <textarea id="ncInput" placeholder="camp_perf_app_venda_q1_stories&#10;BRAND_web_lanc&#10;camp_perf_app_venda_q1_feed&#10;..."></textarea>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="validate()">🧪 Validar</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <!-- CONTENT: results -->
+  <div class="content">
+    <div class="sec" style="margin-top:0">Resultados</div>
+    <div id="results"><div style="color:var(--fg3);font-size:13px;padding:20px 0">Defina suas regras e cole as NCs.</div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const STORE_KEY = 'ncconv_rules_v1';
+let rules = [];
+let _results = [];
+let _filter = 'all';
+
+function defaultRules() {
+  return [
+    { pos: 1, name: 'Canal/Tipo', allowedVals: 'camp,brand,perf', case: 'lower', minLen: 2, maxLen: 10, regex: '' },
+    { pos: 2, name: 'Objetivo', allowedVals: '', case: 'lower', minLen: 2, maxLen: 15, regex: '' },
+    { pos: 3, name: 'Canal', allowedVals: 'app,web,social', case: 'lower', minLen: 2, maxLen: 10, regex: '' },
+  ];
+}
+
+function loadRules() {
+  try {
+    const saved = localStorage.getItem(STORE_KEY);
+    if (saved) rules = JSON.parse(saved);
+    else rules = defaultRules();
+  } catch(e) { rules = defaultRules(); }
+}
+
+function saveRules() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(rules)); } catch(e) {}
+}
+
+function addRule() {
+  const nextPos = rules.length ? Math.max(...rules.map(r=>r.pos)) + 1 : 1;
+  rules.push({ pos: nextPos, name: 'Posição '+nextPos, allowedVals: '', case: 'any', minLen: 1, maxLen: 30, regex: '' });
+  saveRules();
+  renderRules();
+}
+
+function delRule(i) {
+  rules.splice(i, 1);
+  saveRules();
+  renderRules();
+}
+
+function renderRules() {
+  const container = document.getElementById('ruleCards');
+  container.innerHTML = '';
+  rules.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'rule-card';
+    div.innerHTML = `
+      <div class="rule-card-top">
+        <span class="rule-pos-label">P${i+1}</span>
+        <input type="text" value="${esc(r.name)}" placeholder="Nome da posição" style="flex:1;font-size:12px" oninput="rules[${i}].name=this.value;saveRules()">
+        <button class="del-rule" onclick="delRule(${i})">×</button>
+      </div>
+      <div class="row2" style="margin-bottom:6px">
+        <div>
+          <label>Valores permitidos (vírgula)</label>
+          <input type="text" value="${esc(r.allowedVals)}" placeholder="camp,brand,perf (vazio = qualquer)" oninput="rules[${i}].allowedVals=this.value;saveRules()">
+        </div>
+        <div>
+          <label>Case</label>
+          <select onchange="rules[${i}].case=this.value;saveRules()">
+            <option value="any" ${r.case==='any'?'selected':''}>Qualquer</option>
+            <option value="lower" ${r.case==='lower'?'selected':''}>Minúsculas</option>
+            <option value="upper" ${r.case==='upper'?'selected':''}>Maiúsculas</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Comprimento mín</label>
+          <input type="number" min="1" max="100" value="${r.minLen}" oninput="rules[${i}].minLen=+this.value;saveRules()">
+        </div>
+        <div>
+          <label>Comprimento máx</label>
+          <input type="number" min="1" max="100" value="${r.maxLen}" oninput="rules[${i}].maxLen=+this.value;saveRules()">
+        </div>
+        <div>
+          <label>Regex (opcional)</label>
+          <input type="text" value="${esc(r.regex||'')}" placeholder="^[a-z]+$" oninput="rules[${i}].regex=this.value;saveRules()" style="font-family:'JetBrains Mono',monospace;font-size:11px">
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function validateNC(nc, sep, minSegs, maxSegs) {
+  const errors = [];
+  const warnings = [];
+  const segs = nc.split(sep);
+  const cnt = segs.length;
+
+  if (cnt < minSegs) errors.push(`Apenas ${cnt} segmento(s); mínimo é ${minSegs}`);
+  if (cnt > maxSegs) errors.push(`${cnt} segmentos; máximo é ${maxSegs}`);
+
+  rules.forEach((r, i) => {
+    const seg = segs[i];
+    if (seg === undefined) {
+      if (i < minSegs) errors.push(`P${i+1} (${r.name}): segmento ausente`);
+      return;
+    }
+
+    if (r.allowedVals.trim()) {
+      const allowed = r.allowedVals.split(',').map(v=>v.trim()).filter(Boolean);
+      if (!allowed.includes(seg)) {
+        errors.push(`P${i+1} (${r.name}): "${seg}" não está nos valores permitidos [${allowed.join(', ')}]`);
+      }
+    }
+
+    if (r.case === 'lower' && seg !== seg.toLowerCase()) errors.push(`P${i+1} (${r.name}): deve ser minúsculo`);
+    if (r.case === 'upper' && seg !== seg.toUpperCase()) errors.push(`P${i+1} (${r.name}): deve ser maiúsculo`);
+
+    if (seg.length < r.minLen) errors.push(`P${i+1} (${r.name}): comprimento ${seg.length} < mínimo ${r.minLen}`);
+    if (seg.length > r.maxLen) errors.push(`P${i+1} (${r.name}): comprimento ${seg.length} > máximo ${r.maxLen}`);
+
+    if (r.regex && r.regex.trim()) {
+      try {
+        const re = new RegExp(r.regex.trim());
+        if (!re.test(seg)) errors.push(`P${i+1} (${r.name}): "${seg}" não casa com regex /${r.regex}/`);
+      } catch(e) {
+        warnings.push(`P${i+1}: regex inválido: ${e.message}`);
+      }
+    }
+  });
+
+  return { nc, errors, warnings, status: errors.length ? 'err' : warnings.length ? 'warn' : 'ok' };
+}
+
+function validate() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole suas NCs!'); return; }
+  const sep = document.getElementById('cfgSep').value || '_';
+  const minSegs = parseInt(document.getElementById('cfgMin').value) || 1;
+  const maxSegs = parseInt(document.getElementById('cfgMax').value) || 20;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  _results = lines.map(nc => validateNC(nc, sep, minSegs, maxSegs));
+  _filter = 'all';
+  renderResults();
+}
+
+function renderResults() {
+  const ok = _results.filter(r=>r.status==='ok').length;
+  const err = _results.filter(r=>r.status==='err').length;
+  const warn = _results.filter(r=>r.status==='warn').length;
+  const total = _results.length;
+
+  let html = `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">total</div></div>
+    <div class="kpi ok"><div class="kpi-val">${ok}</div><div class="kpi-lbl">válidas ✅</div></div>
+    <div class="kpi err"><div class="kpi-val">${err}</div><div class="kpi-lbl">com erros ❌</div></div>
+    <div class="kpi warn"><div class="kpi-val">${warn}</div><div class="kpi-lbl">avisos ⚠️</div></div>
+  </div>
+  <div class="filter-row">
+    <button class="filter-btn ${_filter==='all'?'active':''}" onclick="setFilter('all')">Todas (${total})</button>
+    <button class="filter-btn ${_filter==='err'?'active':''}" onclick="setFilter('err')">Erros (${err})</button>
+    <button class="filter-btn ${_filter==='warn'?'active':''}" onclick="setFilter('warn')">Avisos (${warn})</button>
+    <button class="filter-btn ${_filter==='ok'?'active':''}" onclick="setFilter('ok')">Válidas (${ok})</button>
+  </div>
+  <div>`;
+
+  const visible = _filter === 'all' ? _results : _results.filter(r=>r.status===_filter);
+  if (!visible.length) {
+    html += '<div style="color:var(--fg3);font-size:13px;padding:16px 0">Nenhuma NC neste filtro.</div>';
+  }
+  for (const r of visible) {
+    const icon = r.status==='ok'?'✅':r.status==='err'?'❌':'⚠️';
+    const errHtml = r.errors.map(e=>`<div class="nc-err-item">• ${esc(e)}</div>`).join('');
+    const warnHtml = r.warnings.map(w=>`<div class="nc-warn-item">• ${esc(w)}</div>`).join('');
+    html += `<div class="nc-row ${r.status}">
+      <span class="nc-status">${icon}</span>
+      <div class="nc-body">
+        <div class="nc-text">${esc(r.nc)}</div>
+        ${errHtml||warnHtml ? `<div class="nc-errors">${errHtml}${warnHtml}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  html += '</div>';
+  document.getElementById('results').innerHTML = html;
+}
+
+function setFilter(f) {
+  _filter = f;
+  renderResults();
+}
+
+function exportCSV() {
+  if (!_results.length) { showToast('Valide primeiro!'); return; }
+  const rows = [['nc','status','erros','avisos']];
+  for (const r of _results) {
+    rows.push([r.nc, r.status, r.errors.join(' | '), r.warnings.join(' | ')]);
+  }
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nc-validation-results.csv';
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('ncInput').value='';
+  _results=[];
+  document.getElementById('results').innerHTML='<div style="color:var(--fg3);font-size:13px;padding:20px 0">Defina suas regras e cole as NCs.</div>';
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function toggleTheme(){const r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');}
+function saveRules(){try{localStorage.setItem(STORE_KEY,JSON.stringify(rules));}catch(e){}}
+
+// init
+loadRules();
+renderRules();
+</script>
