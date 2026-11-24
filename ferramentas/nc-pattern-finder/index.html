@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Pattern Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f7f7f8;--surface:#fff;--card:#fff;--border:#e4e4e7;
+  --fg:#18181b;--muted:#71717a;--mono:'JetBrains Mono',monospace;
+  --accent:#7c3aed;--accent-fg:#fff;--accent-light:#f5f3ff;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+  --c0:#6366f1;--c1:#8b5cf6;--c2:#ec4899;--c3:#14b8a6;--c4:#f59e0b;--c5:#ef4444;--c6:#06b6d4;--c7:#10b981;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#1e1b4b;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#1e1b4b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0 0 60px}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700;flex:1}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{opacity:.88}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
+.input-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;display:flex;align-items:center;gap:10px}
+textarea{width:100%;min-height:130px;padding:12px;border:none;background:transparent;color:var(--fg);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6}
+.cfg-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.cfg-row label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cfg-row select,.cfg-row input[type=number]{font-family:inherit;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--surface);color:var(--fg)}
+.cfg-row input[type=number]{width:72px;font-family:var(--mono)}
+
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.results-grid{grid-template-columns:1fr}}
+
+/* Section cards */
+.sec{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.sec-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.sec-full{grid-column:1/-1}
+
+/* Template rows */
+.tmpl-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:.12s}
+.tmpl-row:hover{border-color:var(--accent);background:var(--accent-light)}
+.tmpl-nc{font-family:var(--mono);font-size:11px;font-weight:700;flex:1;color:var(--fg);word-break:break-all}
+.tmpl-count{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--accent);flex-shrink:0;background:var(--accent-light);padding:2px 7px;border-radius:4px}
+.tmpl-seg{display:inline-block;padding:1px 6px;border-radius:4px;margin:0 1px;font-weight:700}
+
+/* Freq bars */
+.freq-item{margin-bottom:10px}
+.freq-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;font-size:11px}
+.freq-val{font-family:var(--mono);font-weight:700;color:var(--fg)}
+.freq-pct{color:var(--muted);font-weight:600}
+.freq-bar-wrap{height:7px;border-radius:4px;background:var(--border);overflow:hidden}
+.freq-bar{height:100%;border-radius:4px;transition:.3s}
+
+/* Co-occurrence matrix */
+.matrix-wrap{overflow-x:auto}
+table.matrix{border-collapse:collapse;font-size:10px;font-family:var(--mono);white-space:nowrap}
+table.matrix th,table.matrix td{border:1px solid var(--border);padding:4px 8px;text-align:center}
+table.matrix th{background:var(--accent-light);font-weight:800;color:var(--accent);position:sticky;top:0}
+table.matrix td.heat-0{background:transparent}
+table.matrix td.heat-1{background:rgba(124,58,237,.12)}
+table.matrix td.heat-2{background:rgba(124,58,237,.28)}
+table.matrix td.heat-3{background:rgba(124,58,237,.48);color:#fff}
+table.matrix td.heat-4{background:rgba(124,58,237,.72);color:#fff}
+
+/* Seg chips panel */
+.seg-panel{display:flex;flex-direction:column;gap:10px}
+.pos-row{}
+.pos-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
+.pos-chips{display:flex;flex-wrap:wrap;gap:4px}
+.pos-chip{padding:3px 9px;border-radius:14px;font-size:11px;font-weight:700;border:1px solid;cursor:default}
+
+.empty-state{text-align:center;padding:48px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#18181b;color:#fff;padding:9px 18px;border-radius:999px;font-size:12px;font-weight:600;transition:.25s;opacity:0;z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">🔎</span>
+  <h1>NC Pattern Finder</h1>
+  <button class="btn btn-primary" onclick="analyze()">▶ Analisar</button>
+  <button class="btn" onclick="exportCSV()">↓ CSV</button>
+  <button class="btn" id="themeBtn" onclick="toggleTheme()">◑</button>
+</header>
+
+<div class="wrap">
+  <div class="input-card">
+    <div class="input-header">
+      🔎 Cole suas NCs — uma por linha
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="lineCount">0 linhas</span>
+    </div>
+    <textarea id="ncInput" placeholder="camp_brand_q1_social&#10;camp_brand_q1_display&#10;camp_promo_q2_email&#10;…" oninput="countLines()"></textarea>
+    <div class="cfg-row">
+      <label>Separador</label>
+      <select id="cfgSep">
+        <option value="_">_ underscore</option>
+        <option value="-">- hífen</option>
+        <option value=".">. ponto</option>
+        <option value="|">| pipe</option>
+      </select>
+      <label>Top N por posição</label>
+      <input type="number" id="cfgTop" value="10" min="3" max="50">
+      <label>Mín. aparições para template</label>
+      <input type="number" id="cfgTmplMin" value="2" min="2" max="20">
+    </div>
+  </div>
+
+  <div id="resultsArea" style="display:none">
+    <div class="results-grid" id="resultsGrid"></div>
+  </div>
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">🔎</div>
+    <p>Cole suas NCs acima e clique em <strong>Analisar</strong>.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const THEME_KEY='ncpat_theme';
+const COLS=['var(--c0)','var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)','var(--c7)'];
+let _analysis=null;
+
+function initTheme(){
+  const t=localStorage.getItem(THEME_KEY)||'system';
+  if(t!=='system') document.documentElement.setAttribute('data-theme',t);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem(THEME_KEY,next);
+}
+
+function countLines(){
+  const n=document.getElementById('ncInput').value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('lineCount').textContent=n+' linha'+(n!==1?'s':'');
+}
+
+// ── Analysis ──────────────────────────────────────────────────────────────
+function analyze(){
+  const sep=document.getElementById('cfgSep').value;
+  const topN=parseInt(document.getElementById('cfgTop').value)||10;
+  const tmplMin=parseInt(document.getElementById('cfgTmplMin').value)||2;
+
+  const lines=document.getElementById('ncInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2){showToast('Cole ao menos 2 NCs');return;}
+
+  const parsed=lines.map(nc=>({nc,parts:nc.split(sep)}));
+  const maxPos=Math.max(...parsed.map(p=>p.parts.length));
+
+  // ── 1. Freq per position ─────────────────────────────────────────────
+  const posFreq=[];
+  for(let i=0;i<maxPos;i++){
+    const map=new Map();
+    parsed.forEach(({parts})=>{if(i<parts.length){const v=parts[i];map.set(v,(map.get(v)||0)+1);}});
+    const sorted=[...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,topN);
+    posFreq.push({pos:i+1,entries:sorted,total:parsed.filter(p=>i<p.parts.length).length});
+  }
+
+  // ── 2. Templates (grouping by NC structure) ──────────────────────────
+  const tmplMap=new Map();
+  parsed.forEach(({nc,parts})=>{
+    const key=parts.length+':'+parts.map(p=>p.length).join('-');
+    if(!tmplMap.has(key)) tmplMap.set(key,[]);
+    tmplMap.get(key).push(nc);
+  });
+  const templates=[...tmplMap.values()]
+    .filter(arr=>arr.length>=tmplMin)
+    .sort((a,b)=>b.length-a.length)
+    .slice(0,15);
+
+  // ── 3. Length distribution ───────────────────────────────────────────
+  const lenMap=new Map();
+  parsed.forEach(({nc})=>{const l=nc.length;lenMap.set(l,(lenMap.get(l)||0)+1);});
+  const lenEntries=[...lenMap.entries()].sort((a,b)=>a[0]-b[0]);
+
+  // ── 4. Segment count distribution ───────────────────────────────────
+  const segCntMap=new Map();
+  parsed.forEach(({parts})=>{const n=parts.length;segCntMap.set(n,(segCntMap.get(n)||0)+1);});
+  const segCntEntries=[...segCntMap.entries()].sort((a,b)=>a[0]-b[0]);
+
+  // ── 5. Co-occurrence (top vals from pos 0 × pos 1) ───────────────────
+  const coKeys0=[...new Map(parsed.map(p=>p.parts[0]).filter(Boolean).reduce((m,v)=>{m.set(v,(m.get(v)||0)+1);return m;},new Map())).entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>e[0]);
+  const coKeys1=[...new Map(parsed.map(p=>p.parts[1]).filter(Boolean).reduce((m,v)=>{m.set(v,(m.get(v)||0)+1);return m;},new Map())).entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>e[0]);
+  const coMatrix=coKeys0.map(v0=>coKeys1.map(v1=>parsed.filter(p=>p.parts[0]===v0&&p.parts[1]===v1).length));
+
+  _analysis={lines,posFreq,templates,lenEntries,segCntEntries,coKeys0,coKeys1,coMatrix,sep,total:lines.length};
+  renderResults();
+  document.getElementById('resultsArea').style.display='block';
+  document.getElementById('emptyState').style.display='none';
+  showToast(`✓ ${lines.length} NCs analisadas`);
+}
+
+function renderResults(){
+  const {posFreq,templates,lenEntries,segCntEntries,coKeys0,coKeys1,coMatrix,total,sep}=_analysis;
+  const grid=document.getElementById('resultsGrid');
+
+  // ── Freq per position ────────────────────────────────────────────────
+  const posHtml=posFreq.map((pf,i)=>{
+    const col=COLS[i%COLS.length];
+    const rows=pf.entries.map(([v,cnt])=>{
+      const pct=Math.round(cnt/pf.total*100);
+      const w=Math.round(cnt/pf.entries[0][1]*100);
+      return `<div class="freq-item">
+        <div class="freq-label"><span class="freq-val" style="color:${col}">${esc(v)}</span><span class="freq-pct">${cnt} (${pct}%)</span></div>
+        <div class="freq-bar-wrap"><div class="freq-bar" style="width:${w}%;background:${col}"></div></div>
+      </div>`;
+    }).join('');
+    return `<div class="sec">
+      <div class="sec-title" style="color:${col}">📌 Posição ${pf.pos}</div>
+      ${rows}
+      ${pf.total<total?`<div style="font-size:10px;color:var(--muted);margin-top:6px">${pf.total} de ${total} NCs têm este segmento</div>`:''}
+    </div>`;
+  }).join('');
+
+  // ── Templates ────────────────────────────────────────────────────────
+  const tmplHtml=templates.map((arr,i)=>{
+    const sample=arr[0].split(sep);
+    const cols=sample.map((_,j)=>COLS[j%COLS.length]);
+    const chips=sample.map((s,j)=>`<span class="tmpl-seg" style="background:${cols[j]}22;color:${cols[j]};border:1px solid ${cols[j]}44">${esc(s)}</span>`).join(`<span style="color:var(--muted);font-size:10px">${esc(sep)}</span>`);
+    return `<div class="tmpl-row">
+      <div class="tmpl-nc">${chips}</div>
+      <div class="tmpl-count">${arr.length}×</div>
+    </div>`;
+  }).join('');
+
+  // ── Seg count ────────────────────────────────────────────────────────
+  const maxCntVal=Math.max(...segCntEntries.map(e=>e[1]));
+  const segCntHtml=segCntEntries.map(([n,cnt])=>{
+    const pct=Math.round(cnt/total*100);
+    const w=Math.round(cnt/maxCntVal*100);
+    return `<div class="freq-item">
+      <div class="freq-label"><span class="freq-val">${n} segmento${n!==1?'s':''}</span><span class="freq-pct">${cnt} (${pct}%)</span></div>
+      <div class="freq-bar-wrap"><div class="freq-bar" style="width:${w}%;background:var(--accent)"></div></div>
+    </div>`;
+  }).join('');
+
+  // ── Length dist ───────────────────────────────────────────────────────
+  const maxLenVal=Math.max(...lenEntries.map(e=>e[1]));
+  const lens=lenEntries.map(([l,cnt])=>({l,cnt}));
+  const avgLen=Math.round(lens.reduce((s,e)=>s+e.l*e.cnt,0)/total);
+  const p25Idx=Math.floor(total*0.25);
+  const p75Idx=Math.floor(total*0.75);
+  let acc=0,p25=0,p75=0;
+  for(const {l,cnt} of lens){if(acc<p25Idx&&acc+cnt>=p25Idx) p25=l;if(acc<p75Idx&&acc+cnt>=p75Idx) p75=l;acc+=cnt;}
+  const lenHtml=lens.slice(0,20).map(({l,cnt})=>{
+    const pct=Math.round(cnt/total*100);
+    const w=Math.round(cnt/maxLenVal*100);
+    return `<div class="freq-item">
+      <div class="freq-label"><span class="freq-val" style="font-family:var(--mono)">${l} chars</span><span class="freq-pct">${cnt} (${pct}%)</span></div>
+      <div class="freq-bar-wrap"><div class="freq-bar" style="width:${w}%;background:var(--c3)"></div></div>
+    </div>`;
+  }).join('');
+
+  // ── Co-occurrence matrix ──────────────────────────────────────────────
+  const maxCo=Math.max(...coMatrix.flat());
+  const matHtml=`<div class="matrix-wrap"><table class="matrix">
+    <thead><tr><th>P1 ↓ P2 →</th>${coKeys1.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead>
+    <tbody>${coKeys0.map((k0,i)=>`<tr><th>${esc(k0)}</th>${coKeys1.map((_,j)=>{
+      const v=coMatrix[i][j];
+      const h=v===0?0:Math.ceil(v/maxCo*4);
+      return `<td class="heat-${h}">${v||''}</td>`;
+    }).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+
+  grid.innerHTML=`
+    ${posHtml}
+    <div class="sec sec-full">
+      <div class="sec-title">🗂 Templates Recorrentes <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(agrupados por nº de segmentos × tamanhos)</span></div>
+      ${tmplHtml||'<div style="color:var(--muted);font-size:12px">Nenhum template com 2+ aparições encontrado.</div>'}
+    </div>
+    <div class="sec">
+      <div class="sec-title">📊 Distribuição — Nº de segmentos</div>
+      ${segCntHtml}
+    </div>
+    <div class="sec">
+      <div class="sec-title">📏 Distribuição — Comprimento</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Média: <strong>${avgLen}</strong> chars · P25: <strong>${p25}</strong> · P75: <strong>${p75}</strong></div>
+      ${lenHtml}
+    </div>
+    <div class="sec sec-full">
+      <div class="sec-title">🔀 Co-ocorrência — Posição 1 × Posição 2</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Top 8 valores por posição. Intensidade = frequência de aparição conjunta.</div>
+      ${matHtml}
+    </div>`;
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  if(!_analysis){showToast('Rode a análise primeiro');return;}
+  const {posFreq,total}=_analysis;
+  const rows=[['posicao','valor','ocorrencias','frequencia_pct']];
+  posFreq.forEach(pf=>{
+    pf.entries.forEach(([v,cnt])=>{
+      rows.push([pf.pos,v,cnt,Math.round(cnt/pf.total*100)+'%']);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='nc-patterns.csv';a.click();
+  showToast('✓ CSV exportado');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+initTheme();
+countLines();
+</script>
+</body>
+</html>
