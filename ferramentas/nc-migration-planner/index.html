@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Migration Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f7f7f8;--surface:#fff;--card:#fff;--border:#e4e4e7;
+  --fg:#18181b;--muted:#71717a;--mono:'JetBrains Mono',monospace;
+  --accent:#f97316;--accent-fg:#fff;--accent-light:#fff7ed;
+  --ok:#10b981;--ok-bg:#f0fdf4;--err:#ef4444;--err-bg:#fef2f2;--warn:#f59e0b;--warn-bg:#fffbeb;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#1c1206;
+  --ok-bg:#052e16;--err-bg:#450a0a;--warn-bg:#1c1400;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#1c1206;
+  --ok-bg:#052e16;--err-bg:#450a0a;--warn-bg:#1c1400;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0 0 60px}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700;flex:1}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{opacity:.88}
+.btn-sm{padding:4px 10px;font-size:11px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:700px){.grid2{grid-template-columns:1fr}}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:11px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;display:flex;align-items:center;gap:8px}
+.card-body{padding:16px}
+textarea{width:100%;min-height:120px;padding:10px;border:none;background:transparent;color:var(--fg);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6}
+.cfg-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.cfg-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+select.cfg-sel{font-family:inherit;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--surface);color:var(--fg)}
+
+/* Map table */
+.map-wrap{overflow-x:auto;margin-bottom:12px}
+table.map-tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.map-tbl th{text-align:left;padding:7px 10px;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+table.map-tbl td{padding:6px 10px;border-bottom:1px solid var(--border)}
+table.map-tbl tr:last-child td{border-bottom:none}
+.map-input{width:100%;border:none;background:transparent;color:var(--fg);font-family:var(--mono);font-size:12px;outline:none}
+.map-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px}
+.map-del:hover{color:var(--err)}
+.map-arrow{color:var(--muted);text-align:center;font-size:14px;width:30px}
+
+/* KPIs */
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 16px;min-width:110px;box-shadow:var(--shadow)}
+.kpi-val{font-size:22px;font-weight:800;font-family:var(--mono)}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+
+/* Result list */
+.result-list{max-height:400px;overflow-y:auto}
+.res-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.res-row:last-child{border-bottom:none}
+.res-old{color:var(--muted);text-decoration:line-through;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res-new{color:var(--ok);font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res-arrow{color:var(--muted);flex-shrink:0}
+.res-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.badge-ok{background:var(--ok-bg);color:var(--ok)}
+.badge-warn{background:var(--warn-bg);color:var(--warn)}
+.badge-err{background:var(--err-bg);color:var(--err)}
+
+/* Find-replace export */
+.fr-list{max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg)}
+.fr-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
+.fr-row:last-child{border-bottom:none}
+.fr-find{color:var(--err);flex:1;word-break:break-all}
+.fr-repl{color:var(--ok);flex:1;word-break:break-all}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#18181b;color:#fff;padding:9px 18px;border-radius:999px;font-size:12px;font-weight:600;transition:.25s;opacity:0;z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">🗺</span>
+  <h1>NC Migration Planner</h1>
+  <button class="btn btn-primary" onclick="run()">▶ Planejar Migração</button>
+  <button class="btn" onclick="exportCSV()">↓ CSV de-para</button>
+  <button class="btn" onclick="copyFR()">⎘ Find-Replace</button>
+  <button class="btn" onclick="toggleTheme()">◑</button>
+</header>
+
+<div class="wrap">
+  <!-- Inputs -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header">📥 NCs Antigas (uma por linha)</div>
+      <textarea id="oldInput" placeholder="camp_brand_q1_social&#10;camp_brand_q1_display&#10;camp_promo_q2_email"></textarea>
+      <div class="cfg-row">
+        <span class="cfg-label">Sep. antigo</span>
+        <select class="cfg-sel" id="sepOld"><option value="_">_</option><option value="-">-</option><option value=".">.</option><option value="|">|</option></select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">📤 NCs Novas (mesma ordem ou mapa)</div>
+      <textarea id="newInput" placeholder="Coloque as NCs novas na mesma ordem&#10;OU deixe em branco e use o Mapa de-para abaixo"></textarea>
+      <div class="cfg-row">
+        <span class="cfg-label">Sep. novo</span>
+        <select class="cfg-sel" id="sepNew"><option value="-">-</option><option value="_">_</option><option value=".">.</option><option value="|">|</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Segment value map -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      🔄 Mapa de-para por Valor de Segmento
+      <span style="color:var(--muted);font-size:11px;font-weight:400">(usado quando lista nova está vazia)</span>
+      <button class="btn btn-sm" style="margin-left:auto" onclick="addMapRow()">+ Adicionar</button>
+      <button class="btn btn-sm" onclick="clearMap()">Limpar</button>
+    </div>
+    <div class="card-body">
+      <div class="map-wrap">
+        <table class="map-tbl">
+          <thead><tr><th>Valor Antigo</th><th class="map-arrow">→</th><th>Valor Novo</th><th></th></tr></thead>
+          <tbody id="mapBody"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">Substitui qualquer ocorrência do valor antigo em qualquer segmento.</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsArea" style="display:none">
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">✅ Resultado da Migração</div>
+      <div class="result-list" id="resultList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🔍 Pares Find-Replace</div>
+      <div class="fr-list" id="frList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const THEME_KEY='ncmig_theme';
+const STORE_KEY='ncmig_map_v1';
+let _mapRows=[];
+let _result=null;
+
+function initTheme(){
+  const t=localStorage.getItem(THEME_KEY)||'system';
+  if(t!=='system') document.documentElement.setAttribute('data-theme',t);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem(THEME_KEY,next);
+}
+
+function loadMap(){
+  try{_mapRows=JSON.parse(localStorage.getItem(STORE_KEY)||'[]');}catch{_mapRows=[];}
+  if(!_mapRows.length) _mapRows=[{from:'',to:''}];
+  renderMap();
+}
+function saveMap(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(_mapRows));}catch{}
+}
+function renderMap(){
+  document.getElementById('mapBody').innerHTML=_mapRows.map((r,i)=>`
+    <tr>
+      <td><input class="map-input" value="${esc(r.from)}" placeholder="antigo" oninput="onMapFrom(${i},this.value)"></td>
+      <td class="map-arrow">→</td>
+      <td><input class="map-input" value="${esc(r.to)}" placeholder="novo" oninput="onMapTo(${i},this.value)"></td>
+      <td><button class="map-del" onclick="delMapRow(${i})">✕</button></td>
+    </tr>`).join('');
+}
+function onMapFrom(i,v){_mapRows[i].from=v;saveMap();}
+function onMapTo(i,v){_mapRows[i].to=v;saveMap();}
+function addMapRow(){_mapRows.push({from:'',to:''});saveMap();renderMap();}
+function delMapRow(i){_mapRows.splice(i,1);if(!_mapRows.length)_mapRows=[{from:'',to:''}];saveMap();renderMap();}
+function clearMap(){_mapRows=[{from:'',to:''}];saveMap();renderMap();}
+
+// ── Run ───────────────────────────────────────────────────────────────────
+function run(){
+  const sepOld=document.getElementById('sepOld').value;
+  const sepNew=document.getElementById('sepNew').value;
+  const oldLines=document.getElementById('oldInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  const newLines=document.getElementById('newInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  if(!oldLines.length){showToast('Cole as NCs antigas');return;}
+
+  const useList=newLines.length>0;
+  const mapPairs=_mapRows.filter(r=>r.from.trim()&&r.to.trim());
+
+  const rows=oldLines.map((oldNc,i)=>{
+    let newNc;
+    if(useList){
+      newNc=newLines[i]||null;
+    } else {
+      // Apply map pairs to each segment
+      let parts=oldNc.split(sepOld);
+      parts=parts.map(seg=>{
+        const match=mapPairs.find(p=>p.from===seg);
+        return match?match.to:seg;
+      });
+      newNc=parts.join(sepNew);
+    }
+
+    if(!newNc) return {old:oldNc,new:null,status:'err',note:'sem correspondência'};
+    if(newNc===oldNc) return {old:oldNc,new:newNc,status:'warn',note:'sem mudança'};
+    return {old:oldNc,new:newNc,status:'ok',note:'migrado'};
+  });
+
+  // Find-replace unique pairs (old → new for distinct values)
+  const frMap=new Map();
+  rows.filter(r=>r.new&&r.old!==r.new).forEach(r=>frMap.set(r.old,r.new));
+  const frPairs=[...frMap.entries()];
+
+  _result={rows,frPairs};
+  renderResults();
+  document.getElementById('resultsArea').style.display='block';
+  showToast(`✓ ${rows.length} NCs processadas`);
+}
+
+function renderResults(){
+  const {rows,frPairs}=_result;
+  const ok=rows.filter(r=>r.status==='ok').length;
+  const warn=rows.filter(r=>r.status==='warn').length;
+  const err=rows.filter(r=>r.status==='err').length;
+
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="kpi-val" style="color:var(--ok)">${ok}</div><div class="kpi-label">Migradas</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--warn)">${warn}</div><div class="kpi-label">Sem mudança</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--err)">${err}</div><div class="kpi-label">Sem match</div></div>
+    <div class="kpi"><div class="kpi-val" style="color:var(--accent)">${frPairs.length}</div><div class="kpi-label">Pares find-replace</div></div>`;
+
+  document.getElementById('resultList').innerHTML=rows.map(r=>`
+    <div class="res-row">
+      <div class="res-old">${esc(r.old)}</div>
+      <div class="res-arrow">→</div>
+      <div class="res-new">${r.new?esc(r.new):'—'}</div>
+      <span class="res-badge badge-${r.status}">${r.note}</span>
+    </div>`).join('');
+
+  document.getElementById('frList').innerHTML=frPairs.map(([f,t])=>`
+    <div class="fr-row">
+      <div class="fr-find">${esc(f)}</div>
+      <div style="color:var(--muted);flex-shrink:0">→</div>
+      <div class="fr-repl">${esc(t)}</div>
+    </div>`).join('')||'<div style="padding:20px;color:var(--muted);text-align:center;font-size:12px">Nenhum par gerado.</div>';
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function exportCSV(){
+  if(!_result){showToast('Rode o planejador primeiro');return;}
+  const rows=[['nc_antiga','nc_nova','status','nota'],..._result.rows.map(r=>[r.old,r.new||'',r.status,r.note])];
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='nc-migration.csv';a.click();
+  showToast('✓ CSV exportado');
+}
+function copyFR(){
+  if(!_result||!_result.frPairs.length){showToast('Nenhum par find-replace');return;}
+  const text=_result.frPairs.map(([f,t])=>`${f}\t${t}`).join('\n');
+  navigator.clipboard.writeText(text).then(()=>showToast(`✓ ${_result.frPairs.length} pares copiados (TSV)`)).catch(()=>{});
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let _tt;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+initTheme();
+loadMap();
+</script>
+</body>
+</html>
