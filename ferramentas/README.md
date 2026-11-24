@@ -5,6 +5,28 @@ Cada ferramenta é um único arquivo HTML (CSS + JS inline) que roda direto no b
 
 ---
 
+## NC Naming Convention
+
+Suite de ferramentas offline para criação, validação, análise e migração de naming conventions.
+
+| Ferramenta | Descrição | Link |
+|---|---|---|
+| [**NC Score**](nc-score/) | Valida e pontua uma NC em tempo real — separador, segmentos, comprimento, case, chars especiais. Pesos configuráveis por regra | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-score/) |
+| [**NC Diff**](nc-diff/) | Compara duas listas de NCs (antes × depois de migração) com modo exato e fuzzy (Levenshtein). Diff por segmento, KPIs e export CSV | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-diff/) |
+| [**NC Glossary**](nc-glossary/) | Dicionário visual de termos NC por segmento — adicione, edite e consulte valores aceitos com exemplos e tags | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-glossary/) |
+| [**NC Rulebook**](nc-rulebook/) | Editor de documentação da naming convention — separador, case, segmentos ordenados, exemplos bons/ruins, export Markdown | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-rulebook/) |
+| [**NC Audit Log**](nc-audit-log/) | Timeline de ciclo de vida de NCs — criação, modificação, deprecação, restauração, review e notas. Filtros e export CSV | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-audit-log/) |
+| [**NC Bulk Validator**](nc-bulk-validator/) | Valida centenas de NCs de uma vez. Score + grade (pass/warn/fail) por NC. Exporta lista OK, lista de erros e CSV completo | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-bulk-validator/) |
+| [**NC Pattern Finder**](nc-pattern-finder/) | Descobre padrões em listas de NCs: frequência por posição, templates recorrentes, distribuição de segmentos e comprimento, matriz de co-ocorrência | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-pattern-finder/) |
+| [**NC Segment Heatmap**](nc-segment-heatmap/) | Heatmap de co-ocorrência entre dois segmentos escolhidos. Top combinações e export CSV | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-segment-heatmap/) |
+| [**NC Template Builder**](nc-template-builder/) | Templates com slots fixos e variáveis. Gera produto cartesiano de NCs, preview ao vivo, estimativa de combinações, export .txt | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-template-builder/) |
+| [**NC Migration Planner**](nc-migration-planner/) | Plano de migração de-para com dois modos: lista direta ou mapa por valor de segmento. Pares find-replace automáticos, export CSV e TSV | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-migration-planner/) |
+| [**NC Preview**](nc-preview/) | Preview visual de NCs com chips coloridos por posição | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-preview/) |
+| [**NC Changelog**](nc-changelog/) | Registro de mudanças na naming convention com versionamento | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-changelog/) |
+| [**NC Scorecard**](nc-scorecard/) | Scorecard comparativo de múltiplas NCs lado a lado | [🔗 Abrir](https://falssp.github.io/Projeto-NC/ferramentas/nc-scorecard/) |
+
+---
+
 ## Offline
 
 Rodam 100% no browser, sem configuração.
