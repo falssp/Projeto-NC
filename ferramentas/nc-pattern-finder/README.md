@@ -2,41 +2,26 @@
 
 Descobre padrões e estruturas recorrentes em listas de NCs.
 
-🔗 **https://falssp.github.io/Projeto-NC/ferramentas/nc-pattern-finder/**
+**URL:** https://falssp.github.io/Projeto-NC/ferramentas/nc-pattern-finder/
 
----
+## Funcionalidades
 
-## O que faz
+- **Frequência por posição** — top-N valores por segmento com barra de % e contagem
+- **Templates recorrentes** — agrupa NCs por estrutura (nº de segmentos × tamanho de cada um) com chips coloridos
+- **Distribuição de segmentos** — histograma de quantas NCs têm 2, 3, 4… segmentos
+- **Distribuição de comprimento** — histograma de chars com média, P25 e P75
+- **Matriz de co-ocorrência** — tabela posição 1 × posição 2 (top 8 cada) com intensidade de cor
+- Configuração: separador, top N por posição, mínimo de aparições para template
+- Export CSV com frequência por posição
 
-Cole uma lista de NCs (uma por linha) e obtenha:
+## Arquivos
 
-| Análise | Descrição |
-|---|---|
-| **Frequência por posição** | Top-N valores mais usados em cada posição, com barra de % |
-| **Templates recorrentes** | NCs agrupadas por estrutura (nº de segmentos × tamanho de cada um) |
-| **Distribuição de segmentos** | Quantas NCs têm 2, 3, 4… segmentos |
-| **Distribuição de comprimento** | Histograma de chars com média, P25 e P75 |
-| **Matriz de co-ocorrência** | Tabela posição 1 × posição 2 (top 8 cada), com intensidade de cor |
+```
+ferramentas/nc-pattern-finder/
+├── index.html   ← Ferramenta completa (HTML + CSS + JS em arquivo único)
+└── README.md
+```
 
-## Configuração
+## Stack
 
-| Campo | Descrição |
-|---|---|
-| Separador | `_` `-` `.` `\|` |
-| Top N por posição | Quantos valores mostrar por posição (3–50) |
-| Mín. para template | Mínimo de NCs para agrupar como template (2–20) |
-
-## Export
-
-- **CSV**: frequência por posição (posição, valor, ocorrências, %)
-
-## Uso
-
-1. Cole suas NCs no textarea
-2. Ajuste separador e parâmetros
-3. Clique **▶ Analisar**
-4. Explore as seções de resultado
-
-## Dados
-
-100% offline. Nenhum dado sai do browser.
+Vanilla JS + CSS — offline, sem dependências externas.

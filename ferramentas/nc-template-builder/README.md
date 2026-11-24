@@ -1,48 +1,28 @@
 # NC Template Builder
 
-Cria templates de NC com slots fixos e variáveis e gera todas as combinações possíveis.
+Cria templates de NC com slots fixos e variáveis e gera o produto cartesiano de combinações.
 
-🔗 **https://falssp.github.io/Projeto-NC/ferramentas/nc-template-builder/**
+**URL:** https://falssp.github.io/Projeto-NC/ferramentas/nc-template-builder/
 
----
+## Funcionalidades
 
-## O que faz
+- Adicione/remova segmentos e alterne entre **FIXO** (valor único) e **VAR** (lista de valores)
+- Segmentos FIXO: valor digitado diretamente na linha do segmento
+- Segmentos VAR: um valor por linha em campo expansível
+- Preview ao vivo com chips coloridos (roxo = fixo · âmbar = var)
+- Estimativa de combinações calculada em tempo real antes de gerar
+- Geração do produto cartesiano completo (limite: 5.000 NCs)
+- Cópia individual por NC · Copiar tudo · Export .txt
+- Template salvo automaticamente em localStorage
 
-Defina a estrutura da NC posição por posição, marque cada segmento como **FIXO** (valor único) ou **VAR** (lista de valores), e gere o produto cartesiano completo.
+## Arquivos
 
-Exemplo com 2 variáveis × 3 variáveis → 6 NCs geradas automaticamente.
+```
+ferramentas/nc-template-builder/
+├── index.html   ← Ferramenta completa (HTML + CSS + JS em arquivo único)
+└── README.md
+```
 
-## Fluxo
+## Stack
 
-1. **Estrutura do Template** (coluna esquerda)
-   - Adicione/remova segmentos com `+ Adicionar segmento`
-   - Clique em **FIXO** / **VAR** para alternar o tipo
-   - Segmentos FIXO: digite o valor diretamente na linha
-   - Preview ao vivo com chips coloridos (roxo = fixo, âmbar = var)
-   - Estimativa de combinações calculada em tempo real
-
-2. **Valores das Variáveis** (coluna direita)
-   - Um campo por segmento VAR
-   - Digite um valor por linha
-
-3. Clique **▶ Gerar NCs**
-
-## Configuração
-
-| Campo | Descrição |
-|---|---|
-| Separador | `_` `-` `.` `\|` |
-
-## Export
-
-- **⎘ Copiar tudo**: todas as NCs no clipboard
-- **↓ .txt**: arquivo de texto com uma NC por linha
-- Botão individual de cópia por NC
-
-## Limites
-
-- Máximo de 5.000 NCs por geração
-
-## Dados
-
-100% offline. Template salvo em localStorage.
+Vanilla JS + CSS — offline, sem dependências externas.
