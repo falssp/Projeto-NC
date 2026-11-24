@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Segment Heatmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f7f7f8;--surface:#fff;--card:#fff;--border:#e4e4e7;
+  --fg:#18181b;--muted:#71717a;--mono:'JetBrains Mono',monospace;
+  --accent:#0ea5e9;--accent-fg:#fff;--accent-light:#f0f9ff;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+  --heat0:transparent;
+  --heat1:rgba(14,165,233,.12);--heat2:rgba(14,165,233,.28);
+  --heat3:rgba(14,165,233,.50);--heat4:rgba(14,165,233,.72);
+  --heat5:rgba(14,165,233,.92);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#082f49;
+  --heat1:rgba(14,165,233,.18);--heat2:rgba(14,165,233,.36);
+  --heat3:rgba(14,165,233,.55);--heat4:rgba(14,165,233,.74);--heat5:rgba(14,165,233,.95);
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#082f49;
+  --heat1:rgba(14,165,233,.18);--heat2:rgba(14,165,233,.36);
+  --heat3:rgba(14,165,233,.55);--heat4:rgba(14,165,233,.74);--heat5:rgba(14,165,233,.95);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0 0 60px}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700;flex:1}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{opacity:.88}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
+.input-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;display:flex;align-items:center;gap:10px}
+textarea{width:100%;min-height:120px;padding:12px;border:none;background:transparent;color:var(--fg);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6}
+.cfg-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.cfg-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cfg-row select,.cfg-row input[type=number]{font-family:inherit;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--surface);color:var(--fg)}
+.cfg-row input[type=number]{width:72px;font-family:var(--mono)}
+
+/* Heatmap */
+.hmap-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);overflow-x:auto}
+.hmap-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin-bottom:16px}
+table.hmap{border-collapse:separate;border-spacing:3px;white-space:nowrap}
+table.hmap th{font-size:11px;font-family:var(--mono);font-weight:700;padding:5px 10px;text-align:center;background:var(--accent-light);border-radius:5px;color:var(--accent)}
+table.hmap th.row-head{text-align:right;background:transparent;color:var(--fg);max-width:120px;overflow:hidden;text-overflow:ellipsis}
+table.hmap td{text-align:center;font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;min-width:48px;cursor:default;transition:.12s}
+table.hmap td:hover{transform:scale(1.08);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.h0{background:var(--heat0);color:var(--muted)}
+.h1{background:var(--heat1);color:var(--fg)}
+.h2{background:var(--heat2);color:var(--fg)}
+.h3{background:var(--heat3);color:var(--fg)}
+.h4{background:var(--heat4);color:#fff}
+.h5{background:var(--heat5);color:#fff}
+
+/* Legend */
+.legend{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.legend-label{font-size:10px;color:var(--muted);font-weight:600}
+.legend-swatch{width:28px;height:16px;border-radius:3px}
+
+/* Info row */
+.info-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;box-shadow:var(--shadow);min-width:120px}
+.kpi-val{font-size:22px;font-weight:800;font-family:var(--mono);color:var(--accent)}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+
+/* Top pairs */
+.pairs-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);margin-top:16px}
+.pairs-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin-bottom:12px}
+.pair-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);margin-bottom:5px}
+.pair-vals{font-family:var(--mono);font-size:12px;font-weight:700;flex:1}
+.pair-sep{color:var(--muted);font-weight:400}
+.pair-cnt{font-family:var(--mono);font-size:12px;font-weight:800;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:4px}
+.pair-bar-wrap{width:100px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.pair-bar{height:100%;background:var(--accent);border-radius:3px}
+
+.empty-state{text-align:center;padding:60px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#18181b;color:#fff;padding:9px 18px;border-radius:999px;font-size:12px;font-weight:600;transition:.25s;opacity:0;z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">🌡</span>
+  <h1>NC Segment Heatmap</h1>
+  <button class="btn btn-primary" onclick="analyze()">▶ Gerar Heatmap</button>
+  <button class="btn" onclick="exportCSV()">↓ CSV</button>
+  <button class="btn" id="themeBtn" onclick="toggleTheme()">◑</button>
+</header>
+
+<div class="wrap">
+  <div class="input-card">
+    <div class="input-header">
+      🌡 Cole suas NCs — uma por linha
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="lineCount">0 linhas</span>
+    </div>
+    <textarea id="ncInput" placeholder="camp_brand_q1_social&#10;camp_brand_q1_display&#10;camp_promo_q2_email&#10;camp_brand_q2_social&#10;…" oninput="countLines()"></textarea>
+    <div class="cfg-row">
+      <span class="cfg-label">Separador</span>
+      <select id="cfgSep">
+        <option value="_">_ underscore</option>
+        <option value="-">- hífen</option>
+        <option value=".">. ponto</option>
+        <option value="|">| pipe</option>
+      </select>
+      <span class="cfg-label">Eixo X — Posição</span>
+      <select id="cfgX">
+        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+      </select>
+      <span class="cfg-label">Eixo Y — Posição</span>
+      <select id="cfgY">
+        <option value="2">2</option><option value="1">1</option><option value="3">3</option>
+        <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+      </select>
+      <span class="cfg-label">Top N por eixo</span>
+      <input type="number" id="cfgTop" value="10" min="3" max="30">
+    </div>
+  </div>
+
+  <div id="resultsArea" style="display:none">
+    <div class="info-row" id="kpiRow"></div>
+    <div class="hmap-wrap" id="hmapWrap"></div>
+    <div class="pairs-card" id="pairsCard"></div>
+  </div>
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">🌡</div>
+    <p>Cole suas NCs, escolha dois segmentos e clique em <strong>Gerar Heatmap</strong>.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const THEME_KEY='ncheatmap_theme';
+let _result=null;
+
+function initTheme(){
+  const t=localStorage.getItem(THEME_KEY)||'system';
+  if(t!=='system') document.documentElement.setAttribute('data-theme',t);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem(THEME_KEY,next);
+}
+function countLines(){
+  const n=document.getElementById('ncInput').value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('lineCount').textContent=n+' linha'+(n!==1?'s':'');
+}
+
+function analyze(){
+  const sep=document.getElementById('cfgSep').value;
+  const posX=parseInt(document.getElementById('cfgX').value)-1;
+  const posY=parseInt(document.getElementById('cfgY').value)-1;
+  const topN=parseInt(document.getElementById('cfgTop').value)||10;
+  if(posX===posY){showToast('Escolha posições diferentes para X e Y');return;}
+
+  const lines=document.getElementById('ncInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2){showToast('Cole ao menos 2 NCs');return;}
+
+  const parsed=lines.map(nc=>({nc,parts:nc.split(sep)}));
+
+  // Freq maps
+  const fX=new Map(),fY=new Map();
+  parsed.forEach(({parts})=>{
+    if(posX<parts.length){const v=parts[posX];fX.set(v,(fX.get(v)||0)+1);}
+    if(posY<parts.length){const v=parts[posY];fY.set(v,(fY.get(v)||0)+1);}
+  });
+
+  const keysX=[...fX.entries()].sort((a,b)=>b[1]-a[1]).slice(0,topN).map(e=>e[0]);
+  const keysY=[...fY.entries()].sort((a,b)=>b[1]-a[1]).slice(0,topN).map(e=>e[0]);
+
+  // Build co-occurrence matrix
+  const matrix=keysY.map(vy=>keysX.map(vx=>parsed.filter(p=>p.parts[posX]===vx&&p.parts[posY]===vy).length));
+  const maxVal=Math.max(1,...matrix.flat());
+
+  // Top pairs
+  const pairMap=new Map();
+  parsed.forEach(({parts})=>{
+    if(posX<parts.length&&posY<parts.length){
+      const k=parts[posX]+'||'+parts[posY];
+      pairMap.set(k,(pairMap.get(k)||0)+1);
+    }
+  });
+  const topPairs=[...pairMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15);
+
+  _result={lines,keysX,keysY,matrix,maxVal,topPairs,posX,posY,sep,total:lines.length};
+  renderResults();
+  document.getElementById('resultsArea').style.display='block';
+  document.getElementById('emptyState').style.display='none';
+  showToast(`✓ Heatmap gerado — ${keysX.length}×${keysY.length} células`);
+}
+
+function heatClass(val,maxVal){
+  if(val===0) return 'h0';
+  const r=val/maxVal;
+  if(r<=0.1) return 'h1';
+  if(r<=0.3) return 'h2';
+  if(r<=0.55) return 'h3';
+  if(r<=0.78) return 'h4';
+  return 'h5';
+}
+
+function renderResults(){
+  const {keysX,keysY,matrix,maxVal,topPairs,posX,posY,total,sep}=_result;
+
+  // KPIs
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-label">NCs analisadas</div></div>
+    <div class="kpi"><div class="kpi-val">${keysX.length}</div><div class="kpi-label">Valores únicos — Pos.${posX+1}</div></div>
+    <div class="kpi"><div class="kpi-val">${keysY.length}</div><div class="kpi-label">Valores únicos — Pos.${posY+1}</div></div>
+    <div class="kpi"><div class="kpi-val">${maxVal}</div><div class="kpi-label">Co-ocorrência máx.</div></div>`;
+
+  // Heatmap table (Y=rows, X=cols)
+  const colHeaders=keysX.map(v=>`<th title="${esc(v)}">${esc(v.length>12?v.slice(0,11)+'…':v)}</th>`).join('');
+  const rows=keysY.map((vy,i)=>{
+    const cells=keysX.map((_,j)=>{
+      const v=matrix[i][j];
+      const cl=heatClass(v,maxVal);
+      return `<td class="${cl}" title="${esc(keysX[j])} × ${esc(vy)} = ${v}">${v||''}</td>`;
+    }).join('');
+    return `<tr><th class="row-head" title="${esc(vy)}">${esc(vy.length>14?vy.slice(0,13)+'…':vy)}</th>${cells}</tr>`;
+  }).join('');
+
+  const legendSwatches=[0,1,2,3,4,5].map(i=>`<div class="legend-swatch h${i}" style="border:1px solid var(--border)"></div>`).join('');
+
+  document.getElementById('hmapWrap').innerHTML=`
+    <div class="hmap-title">🌡 Heatmap — Posição ${posX+1} (colunas) × Posição ${posY+1} (linhas)</div>
+    <table class="hmap">
+      <thead><tr><th></th>${colHeaders}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="legend">
+      <span class="legend-label">Baixo</span>${legendSwatches}<span class="legend-label">Alto</span>
+      <span class="legend-label" style="margin-left:12px">0 = sem co-ocorrência</span>
+    </div>`;
+
+  // Top pairs
+  const pairsHtml=topPairs.map(([k,cnt])=>{
+    const [vx,vy]=k.split('||');
+    const pct=Math.round(cnt/topPairs[0][1]*100);
+    return `<div class="pair-row">
+      <div class="pair-vals"><span style="color:var(--accent)">${esc(vx)}</span><span class="pair-sep"> × </span>${esc(vy)}</div>
+      <div class="pair-bar-wrap"><div class="pair-bar" style="width:${pct}%"></div></div>
+      <div class="pair-cnt">${cnt}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('pairsCard').innerHTML=`
+    <div class="pairs-title">🏆 Top ${topPairs.length} Combinações</div>
+    ${pairsHtml}`;
+}
+
+function exportCSV(){
+  if(!_result){showToast('Gere o heatmap primeiro');return;}
+  const {keysX,keysY,matrix,posX,posY}=_result;
+  const rows=[['pos_y_val','pos_x_val','ocorrencias']];
+  keysY.forEach((vy,i)=>keysX.forEach((vx,j)=>rows.push([vy,vx,matrix[i][j]])));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download=`nc-heatmap-p${posX+1}xp${posY+1}.csv`;a.click();
+  showToast('✓ CSV exportado');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let _tt;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+initTheme();
+countLines();
+</script>
+</body>
+</html>
