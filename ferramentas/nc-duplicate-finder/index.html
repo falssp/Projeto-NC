@@ -1,0 +1,396 @@
+<title>NC Duplicate Finder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:#ffffff; --bg2:#f8fafc; --bg3:#f1f5f9;
+    --border:#e2e8f0; --border2:#cbd5e1;
+    --fg:#0f172a; --fg2:#475569; --fg3:#94a3b8;
+    --accent:#ef4444; --accent-bg:#fef2f2; --accent-border:#fecaca;
+    --warn:#f59e0b; --warn-bg:#fffbeb; --warn-border:#fde68a;
+    --ok:#10b981; --ok-bg:#f0fdf4; --ok-border:#a7f3d0;
+    --radius:10px; --shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a; --bg2:#1e293b; --bg3:#334155;
+    --border:#334155; --border2:#475569;
+    --fg:#f1f5f9; --fg2:#94a3b8; --fg3:#64748b;
+    --accent:#f87171; --accent-bg:#450a0a; --accent-border:#7f1d1d;
+    --warn:#fbbf24; --warn-bg:#451a03; --warn-border:#78350f;
+    --ok:#34d399; --ok-bg:#022c22; --ok-border:#064e3b;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a; --bg2:#1e293b; --bg3:#334155;
+    --border:#334155; --border2:#475569;
+    --fg:#f1f5f9; --fg2:#94a3b8; --fg3:#64748b;
+    --accent:#f87171; --accent-bg:#450a0a; --accent-border:#7f1d1d;
+    --warn:#fbbf24; --warn-bg:#451a03; --warn-border:#78350f;
+    --ok:#34d399; --ok-bg:#022c22; --ok-border:#064e3b;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;padding:0}
+
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700;color:var(--fg)}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px;line-height:1}
+  .btn-theme:hover{background:var(--bg3)}
+
+  .main{display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:calc(100vh - 73px)}
+  @media(max-width:800px){.main{grid-template-columns:1fr}}
+
+  .panel{padding:20px 24px;border-right:1px solid var(--border)}
+  .panel:last-child{border-right:none}
+  .panel-title{font-size:12px;font-weight:600;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+
+  .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=number],select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=number]:focus,select:focus{border-color:var(--accent)}
+  .sep-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:16px}
+  .sep-row input{width:60px;text-align:center;font-family:'JetBrains Mono',monospace}
+
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:260px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+
+  .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:80px}
+  .kpi-val{font-size:22px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:11px;color:var(--fg2);margin-top:2px}
+  .kpi.red{border-color:var(--accent-border);background:var(--accent-bg)}
+  .kpi.red .kpi-val{color:var(--accent)}
+  .kpi.warn{border-color:var(--warn-border);background:var(--warn-bg)}
+  .kpi.warn .kpi-val{color:var(--warn)}
+  .kpi.ok{border-color:var(--ok-border);background:var(--ok-bg)}
+  .kpi.ok .kpi-val{color:var(--ok)}
+
+  .group-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+  .group-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);gap:8px}
+  .group-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .badge-exact{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border)}
+  .badge-fuzzy{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-border)}
+  .group-cnt{font-size:11px;color:var(--fg2);margin-left:auto}
+  .sim-score{font-size:11px;color:var(--fg3);font-family:'JetBrains Mono',monospace}
+
+  .nc-list{padding:8px 14px;display:flex;flex-direction:column;gap:4px}
+  .nc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 0}
+  .nc-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--fg);word-break:break-all;flex:1}
+  .nc-line{font-size:10px;color:var(--fg3)}
+  .nc-row.anchor .nc-text{color:var(--accent);font-weight:600}
+
+  .empty{color:var(--fg3);font-size:13px;text-align:center;padding:40px 0}
+
+  .tab-row{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
+  .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;text-transform:uppercase;letter-spacing:.05em;transition:.15s}
+  .tab.active{border-bottom-color:var(--accent);color:var(--accent)}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🔍</div>
+    <div>
+      <div class="title">NC Duplicate Finder</div>
+      <div class="subtitle">Detecta NCs duplicadas e similares (Levenshtein)</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="main">
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="panel-title">Entrada</div>
+
+    <div class="sep-row">
+      <div>
+        <label>Separador</label>
+        <input id="cfgSep" type="text" value="_" maxlength="3" style="width:60px;text-align:center;font-family:'JetBrains Mono',monospace">
+      </div>
+      <div style="flex:1">
+        <label>Similaridade mínima para fuzzy (%)</label>
+        <input id="cfgSim" type="number" min="50" max="99" value="80">
+      </div>
+      <div>
+        <label>Max por grupo</label>
+        <input id="cfgMax" type="number" min="2" max="50" value="20" style="width:70px">
+      </div>
+    </div>
+
+    <label>Lista de NCs (uma por linha)</label>
+    <textarea id="ncInput" placeholder="camp_perf_app_venda_q1_stories&#10;camp_perf_app_venda_q1_stories&#10;camp_perf_app_venda_q1_feed&#10;camp_perf_app_vendas_q1_stories&#10;camp_brand_web_lanc_q2_banner&#10;camp_brand_web_lanc_q2_banners&#10;..."></textarea>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyze()">🔍 Analisar</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div class="panel">
+    <div class="panel-title">Resultados</div>
+    <div id="results"><div class="empty">Cole suas NCs e clique em Analisar.</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ---- Levenshtein distance ----
+function lev(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_, i) => Array.from({length: n+1}, (_, j) => i===0 ? j : j===0 ? i : 0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function similarity(a, b) {
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 100;
+  return Math.round((1 - lev(a, b) / maxLen) * 100);
+}
+
+let _groups = [];
+
+function analyze() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole pelo menos uma NC!'); return; }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const minSim = parseInt(document.getElementById('cfgSim').value) || 80;
+  const maxPerGroup = parseInt(document.getElementById('cfgMax').value) || 20;
+
+  // --- exact duplicates ---
+  const countMap = {};
+  const lineMap = {};
+  lines.forEach((nc, idx) => {
+    countMap[nc] = (countMap[nc] || 0) + 1;
+    if (!lineMap[nc]) lineMap[nc] = [];
+    lineMap[nc].push(idx + 1);
+  });
+
+  const exactGroups = [];
+  const seenExact = new Set();
+  for (const [nc, cnt] of Object.entries(countMap)) {
+    if (cnt >= 2 && !seenExact.has(nc)) {
+      seenExact.add(nc);
+      exactGroups.push({ type: 'exact', anchor: nc, members: lineMap[nc].map(ln => ({nc, line: ln})), sim: 100 });
+    }
+  }
+
+  // unique NCs for fuzzy comparison
+  const uniq = [...new Set(lines)];
+  const usedInExact = new Set([...seenExact]);
+
+  // --- fuzzy duplicates (union-find clusters) ---
+  const parent = {};
+  uniq.forEach(nc => parent[nc] = nc);
+
+  function find(x) {
+    if (parent[x] !== x) parent[x] = find(parent[x]);
+    return parent[x];
+  }
+  function union(a, b) {
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent[ra] = rb;
+  }
+
+  const pairSims = {};
+  for (let i = 0; i < uniq.length; i++) {
+    for (let j = i+1; j < uniq.length; j++) {
+      const sim = similarity(uniq[i], uniq[j]);
+      if (sim >= minSim && sim < 100) {
+        union(uniq[i], uniq[j]);
+        const key = uniq[i]+'|||'+uniq[j];
+        pairSims[key] = sim;
+      }
+    }
+  }
+
+  // build fuzzy groups
+  const clusters = {};
+  uniq.forEach(nc => {
+    const root = find(nc);
+    if (!clusters[root]) clusters[root] = [];
+    clusters[root].push(nc);
+  });
+
+  const fuzzyGroups = [];
+  for (const members of Object.values(clusters)) {
+    if (members.length < 2) continue;
+    // skip groups that are only exact duplicates
+    const nonExact = members.filter(nc => !usedInExact.has(nc));
+    if (nonExact.length < 2 && members.every(nc => usedInExact.has(nc))) continue;
+
+    // compute avg pairwise sim
+    let simSum = 0, simCnt = 0;
+    for (let i = 0; i < members.length; i++) {
+      for (let j = i+1; j < members.length; j++) {
+        const k1 = members[i]+'|||'+members[j];
+        const k2 = members[j]+'|||'+members[i];
+        const s = pairSims[k1] || pairSims[k2] || similarity(members[i], members[j]);
+        simSum += s; simCnt++;
+      }
+    }
+    const avgSim = simCnt ? Math.round(simSum / simCnt) : minSim;
+
+    // anchor = most frequent member
+    const anchor = members.reduce((best, nc) => (countMap[nc]||1) >= (countMap[best]||1) ? nc : best, members[0]);
+    const memberRows = members.flatMap(nc => lineMap[nc] ? lineMap[nc].map(ln => ({nc, line: ln})) : [{nc, line: '—'}]);
+    memberRows.sort((a, b) => a.nc.localeCompare(b.nc));
+
+    fuzzyGroups.push({ type: 'fuzzy', anchor, members: memberRows.slice(0, maxPerGroup), sim: avgSim });
+  }
+
+  _groups = [...exactGroups, ...fuzzyGroups];
+
+  const totalDupeNCs = exactGroups.reduce((s, g) => s + g.members.length, 0);
+  const totalFuzzyNCs = fuzzyGroups.reduce((s, g) => s + g.members.length, 0);
+  const unique = uniq.length;
+
+  renderResults(lines.length, unique, exactGroups.length, fuzzyGroups.length, totalDupeNCs, totalFuzzyNCs);
+}
+
+function renderResults(total, unique, exactCnt, fuzzyCnt, totalDupe, totalFuzzy) {
+  const pct = total ? Math.round(((totalDupe + totalFuzzy) / total) * 100) : 0;
+  let html = `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">NCs total</div></div>
+      <div class="kpi"><div class="kpi-val">${unique}</div><div class="kpi-lbl">únicas</div></div>
+      <div class="kpi red"><div class="kpi-val">${exactCnt}</div><div class="kpi-lbl">grupos exatos</div></div>
+      <div class="kpi warn"><div class="kpi-val">${fuzzyCnt}</div><div class="kpi-lbl">grupos fuzzy</div></div>
+    </div>
+    <div class="tab-row">
+      <button class="tab active" onclick="switchTab('exact',this)">Exatas (${exactCnt})</button>
+      <button class="tab" onclick="switchTab('fuzzy',this)">Fuzzy (${fuzzyCnt})</button>
+    </div>
+    <div id="tab-exact" class="tab-panel active">
+  `;
+
+  if (_groups.filter(g => g.type==='exact').length === 0) {
+    html += '<div class="empty">Nenhuma duplicata exata encontrada. ✅</div>';
+  } else {
+    for (const g of _groups.filter(g => g.type==='exact')) {
+      html += renderGroup(g);
+    }
+  }
+
+  html += `</div><div id="tab-fuzzy" class="tab-panel">`;
+
+  if (_groups.filter(g => g.type==='fuzzy').length === 0) {
+    html += '<div class="empty">Nenhum grupo fuzzy encontrado.</div>';
+  } else {
+    for (const g of _groups.filter(g => g.type==='fuzzy')) {
+      html += renderGroup(g);
+    }
+  }
+
+  html += '</div>';
+  document.getElementById('results').innerHTML = html;
+}
+
+function renderGroup(g) {
+  const badge = g.type === 'exact'
+    ? '<span class="group-badge badge-exact">Exata</span>'
+    : `<span class="group-badge badge-fuzzy">Fuzzy</span>`;
+
+  const sim = g.type === 'fuzzy' ? `<span class="sim-score">~${g.sim}% similar</span>` : '';
+
+  let rows = '';
+  for (const m of g.members) {
+    const isAnchor = m.nc === g.anchor && g.type !== 'exact';
+    rows += `<div class="nc-row ${isAnchor?'anchor':''}">
+      <span class="nc-text">${esc(m.nc)}</span>
+      <span class="nc-line">L${m.line}</span>
+      <button class="btn btn-secondary btn-sm" onclick="copyText('${esc(m.nc)}')">Copiar</button>
+    </div>`;
+  }
+  if (g.members.length >= 20) {
+    rows += `<div style="font-size:11px;color:var(--fg3);padding:4px 0">… e mais (máx ${document.getElementById('cfgMax').value} exibidos)</div>`;
+  }
+
+  return `<div class="group-card">
+    <div class="group-header">
+      ${badge}
+      <span class="nc-text" style="font-size:12px">${esc(g.anchor)}</span>
+      <span class="group-cnt">${g.members.length} NCs</span>
+      ${sim}
+    </div>
+    <div class="nc-list">${rows}</div>
+  </div>`;
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById('tab-'+id);
+  if (panel) panel.classList.add('active');
+}
+
+function exportCSV() {
+  if (!_groups.length) { showToast('Analise primeiro!'); return; }
+  const rows = [['nc','tipo','grupo_ancora','similaridade','linha']];
+  for (const g of _groups) {
+    for (const m of g.members) {
+      rows.push([m.nc, g.type, g.anchor, g.sim, m.line]);
+    }
+  }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nc-duplicates.csv';
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('ncInput').value = '';
+  document.getElementById('results').innerHTML = '<div class="empty">Cole suas NCs e clique em Analisar.</div>';
+  _groups = [];
+}
+
+function copyText(t) {
+  navigator.clipboard.writeText(t).then(() => showToast('Copiado!')).catch(() => showToast('Erro ao copiar'));
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+</script>
