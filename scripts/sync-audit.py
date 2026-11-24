@@ -57,7 +57,8 @@ try:
     req      = urllib.request.urlopen(GAS_URL, timeout=20)
     gas_data = json.loads(req.read().decode('utf-8'))
     gas_keys = set(gas_data.keys())
-    print(f'   → {len(gas_keys)} chaves, {sum(len(v) for v in gas_data.values())} opções no total')
+    n_opcoes = sum(len(v) for v in gas_data.values() if isinstance(v, list))
+    print(f'   → {len(gas_keys)} chaves, {n_opcoes} opções no total')
 except urllib.error.URLError as e:
     print(f'❌ ERRO ao chamar o GAS listarOpcoes: {e}')
     sys.exit(2)
@@ -163,7 +164,7 @@ if abas_planilha and not abas_erro:
 # Resumo de tamanho das listas (sempre imprime, útil para acompanhar crescimento)
 print('\n📊 Tamanho atual das listas no GAS:')
 for k in sorted(gas_keys):
-    n = len(gas_data[k]) if isinstance(gas_data[k], list) else '?'
+    n = len(gas_data[k]) if isinstance(gas_data[k], list) else f'[{type(gas_data[k]).__name__}]'
     marker = ' ⚠️ (não usado pelo F2)' if k in extra_in_gas else ''
     print(f'   {k}: {n} opções{marker}')
 
