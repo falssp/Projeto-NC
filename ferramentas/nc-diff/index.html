@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Diff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f7f7f8;--surface:#fff;--card:#fff;--border:#e4e4e7;
+  --fg:#18181b;--muted:#71717a;--mono:'JetBrains Mono',monospace;
+  --accent:#6366f1;--accent-fg:#fff;
+  --add:#16a34a;--add-bg:#f0fdf4;--add-border:#bbf7d0;
+  --rem:#dc2626;--rem-bg:#fef2f2;--rem-border:#fecaca;
+  --mod:#d97706;--mod-bg:#fffbeb;--mod-border:#fde68a;
+  --same:#71717a;--same-bg:#f4f4f5;--same-border:#e4e4e7;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;
+  --add-bg:#052e16;--add-border:#166534;
+  --rem-bg:#450a0a;--rem-border:#991b1b;
+  --mod-bg:#1c1407;--mod-border:#92400e;
+  --same-bg:#27272a;--same-border:#3f3f46;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;
+  --add-bg:#052e16;--add-border:#166534;
+  --rem-bg:#450a0a;--rem-border:#991b1b;
+  --mod-bg:#1c1407;--mod-border:#92400e;
+  --same-bg:#27272a;--same-border:#3f3f46;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0 0 60px}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700;flex:1}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{opacity:.9}
+.wrap{max-width:1200px;margin:0 auto;padding:24px}
+.inputs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:700px){.inputs-grid{grid-template-columns:1fr}}
+.pane{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.pane-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.pane-label-a{color:var(--rem)}
+.pane-label-b{color:var(--add)}
+textarea{width:100%;min-height:160px;padding:12px;border:none;background:transparent;color:var(--fg);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6}
+.cfg-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.cfg-row label{font-size:12px;font-weight:600;color:var(--muted)}
+.cfg-row select,.cfg-row input[type=checkbox]{font-family:inherit;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--surface);color:var(--fg)}
+.cfg-row .chk-label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}
+
+/* KPI bar */
+.kpi-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:600px){.kpi-bar{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px}
+.kpi-val{font-size:22px;font-weight:800;font-family:var(--mono)}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+.kpi-add .kpi-val{color:var(--add)}
+.kpi-rem .kpi-val{color:var(--rem)}
+.kpi-mod .kpi-val{color:var(--mod)}
+.kpi-same .kpi-val{color:var(--same)}
+
+/* filter chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:700;cursor:pointer;transition:.12s;background:var(--surface)}
+.chip.active,.chip:hover{opacity:1}
+.chip-add.active{background:var(--add-bg);border-color:var(--add-border);color:var(--add)}
+.chip-rem.active{background:var(--rem-bg);border-color:var(--rem-border);color:var(--rem)}
+.chip-mod.active{background:var(--mod-bg);border-color:var(--mod-border);color:var(--mod)}
+.chip-same.active{background:var(--same-bg);border-color:var(--same-border);color:var(--same)}
+.chip-all.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* diff list */
+.diff-list{display:flex;flex-direction:column;gap:6px}
+.diff-item{border-radius:8px;border:1px solid;padding:10px 14px;display:flex;align-items:flex-start;gap:10px;font-family:var(--mono);font-size:12px;line-height:1.6}
+.diff-item.type-add{background:var(--add-bg);border-color:var(--add-border)}
+.diff-item.type-rem{background:var(--rem-bg);border-color:var(--rem-border)}
+.diff-item.type-mod{background:var(--mod-bg);border-color:var(--mod-border)}
+.diff-item.type-same{background:var(--same-bg);border-color:var(--same-border)}
+.diff-badge{font-size:11px;font-weight:800;min-width:28px;text-align:center;padding:1px 5px;border-radius:4px;flex-shrink:0;margin-top:1px}
+.type-add .diff-badge{background:var(--add);color:#fff}
+.type-rem .diff-badge{background:var(--rem);color:#fff}
+.type-mod .diff-badge{background:var(--mod);color:#fff}
+.type-same .diff-badge{background:var(--same-border);color:var(--muted)}
+.diff-nc{flex:1;min-width:0;word-break:break-all}
+.diff-nc-old{color:var(--rem);text-decoration:line-through;margin-bottom:2px}
+.diff-nc-new{color:var(--add)}
+.diff-segs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.seg{padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.seg-add{background:var(--add-bg);color:var(--add);border:1px solid var(--add-border)}
+.seg-rem{background:var(--rem-bg);color:var(--rem);border:1px solid var(--rem-border)}
+.seg-eq{background:var(--same-bg);color:var(--muted);border:1px solid var(--same-border)}
+.diff-copy{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;flex-shrink:0;padding:2px 4px;border-radius:4px;transition:.12s}
+.diff-copy:hover{color:var(--fg);background:var(--border)}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+.empty-state .icon{font-size:32px;margin-bottom:8px}
+
+/* search */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--fg);font-size:12px;font-family:inherit}
+.search-wrap .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#18181b;color:#fff;padding:9px 18px;border-radius:999px;font-size:12px;font-weight:600;transition:.25s;opacity:0;z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">🔀</span>
+  <h1>NC Diff</h1>
+  <button class="btn btn-primary" onclick="runDiff()">▶ Comparar</button>
+  <button class="btn" onclick="exportCSV()">↓ CSV</button>
+  <button class="btn" id="themeBtn" onclick="toggleTheme()">◑</button>
+</header>
+
+<div class="wrap">
+  <div class="inputs-grid">
+    <div class="pane">
+      <div class="pane-header pane-label-a">📌 Lista A — Antes</div>
+      <textarea id="listA" placeholder="Cole as NCs antigas aqui, uma por linha…"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-header pane-label-b">✦ Lista B — Depois</div>
+      <textarea id="listB" placeholder="Cole as NCs novas aqui, uma por linha…"></textarea>
+    </div>
+  </div>
+
+  <div class="cfg-row">
+    <label>Separador</label>
+    <select id="sepSel" onchange="saveCfg()">
+      <option value="_">_ underscore</option>
+      <option value="-">- hífen</option>
+      <option value=".">. ponto</option>
+      <option value="|">| pipe</option>
+    </select>
+    <label style="margin-left:4px">Comparação</label>
+    <select id="modeSel" onchange="saveCfg()">
+      <option value="exact">Exata (linha a linha)</option>
+      <option value="fuzzy">Fuzzy (Levenshtein ≤3)</option>
+    </select>
+    <label class="chk-label"><input type="checkbox" id="caseChk" onchange="saveCfg()"> Ignorar maiúsculas</label>
+    <label class="chk-label"><input type="checkbox" id="showSameChk" onchange="saveCfg()"> Mostrar iguais</label>
+  </div>
+
+  <!-- KPI bar -->
+  <div class="kpi-bar" id="kpiBar" style="display:none">
+    <div class="kpi kpi-add"><div class="kpi-val" id="kAdd">0</div><div class="kpi-label">Adicionadas</div></div>
+    <div class="kpi kpi-rem"><div class="kpi-val" id="kRem">0</div><div class="kpi-label">Removidas</div></div>
+    <div class="kpi kpi-mod"><div class="kpi-val" id="kMod">0</div><div class="kpi-label">Modificadas</div></div>
+    <div class="kpi kpi-same"><div class="kpi-val" id="kSame">0</div><div class="kpi-label">Iguais</div></div>
+  </div>
+
+  <!-- filter + search -->
+  <div id="filterArea" style="display:none">
+    <div class="chips">
+      <div class="chip chip-all active" data-f="all" onclick="setFilter('all')">Tudo</div>
+      <div class="chip chip-add" data-f="add" onclick="setFilter('add')">+ Adicionadas</div>
+      <div class="chip chip-rem" data-f="rem" onclick="setFilter('rem')">− Removidas</div>
+      <div class="chip chip-mod" data-f="mod" onclick="setFilter('mod')">↔ Modificadas</div>
+      <div class="chip chip-same" data-f="same" onclick="setFilter('same')">= Iguais</div>
+    </div>
+    <div class="search-wrap">
+      <span class="icon">🔍</span>
+      <input id="searchInp" type="text" placeholder="Filtrar resultado…" oninput="renderList()">
+    </div>
+  </div>
+
+  <div id="diffOut" class="diff-list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CFG_KEY='ncdiff_cfg_v1';
+let _results=[];
+let _filter='all';
+
+// ── Levenshtein ──────────────────────────────────────────────────────────
+function lev(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j-1],dp[i-1][j],dp[i][j-1]);
+  return dp[m][n];
+}
+
+// ── Segment diff (simple LCS) ────────────────────────────────────────────
+function segDiff(a,b){
+  // Returns array of {seg, type: 'eq'|'add'|'rem'}
+  const n=a.length,m=b.length;
+  const lcs=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++)
+    lcs[i][j]=a[i-1]===b[j-1]?lcs[i-1][j-1]+1:Math.max(lcs[i-1][j],lcs[i][j-1]);
+  const res=[];
+  let i=n,j=m;
+  while(i>0||j>0){
+    if(i>0&&j>0&&a[i-1]===b[j-1]){res.unshift({seg:a[i-1],type:'eq'});i--;j--;}
+    else if(j>0&&(i===0||lcs[i][j-1]>=lcs[i-1][j])){res.unshift({seg:b[j-1],type:'add'});j--;}
+    else{res.unshift({seg:a[i-1],type:'rem'});i--;}
+  }
+  return res;
+}
+
+// ── Config ───────────────────────────────────────────────────────────────
+function loadCfg(){
+  try{const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');
+    if(c.sep) document.getElementById('sepSel').value=c.sep;
+    if(c.mode) document.getElementById('modeSel').value=c.mode;
+    if(c.caseIgnore) document.getElementById('caseChk').checked=true;
+    if(c.showSame) document.getElementById('showSameChk').checked=true;
+    const t=c.theme||'system';
+    if(t!=='system') document.documentElement.setAttribute('data-theme',t);
+  }catch(e){}
+}
+function saveCfg(){
+  const cfg={
+    sep:document.getElementById('sepSel').value,
+    mode:document.getElementById('modeSel').value,
+    caseIgnore:document.getElementById('caseChk').checked,
+    showSame:document.getElementById('showSameChk').checked,
+    theme:document.documentElement.getAttribute('data-theme')||'system'
+  };
+  try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  saveCfg();
+}
+
+// ── Run diff ─────────────────────────────────────────────────────────────
+function runDiff(){
+  const sep=document.getElementById('sepSel').value;
+  const mode=document.getElementById('modeSel').value;
+  const caseIgnore=document.getElementById('caseChk').checked;
+  const showSame=document.getElementById('showSameChk').checked;
+
+  const norm=s=>caseIgnore?s.trim().toLowerCase():s.trim();
+
+  const rawA=document.getElementById('listA').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  const rawB=document.getElementById('listB').value.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  if(!rawA.length && !rawB.length){showToast('Cole ao menos uma lista');return;}
+
+  const mapA=new Map(); rawA.forEach(nc=>{const k=norm(nc);if(!mapA.has(k))mapA.set(k,nc);});
+  const mapB=new Map(); rawB.forEach(nc=>{const k=norm(nc);if(!mapB.has(k))mapB.set(k,nc);});
+
+  _results=[];
+
+  if(mode==='exact'){
+    // exact matching
+    const keysA=new Set(mapA.keys());
+    const keysB=new Set(mapB.keys());
+
+    keysA.forEach(k=>{
+      if(keysB.has(k)){
+        _results.push({type:'same',ncA:mapA.get(k),ncB:mapB.get(k),sep});
+      } else {
+        _results.push({type:'rem',ncA:mapA.get(k),ncB:null,sep});
+      }
+    });
+    keysB.forEach(k=>{
+      if(!keysA.has(k)){
+        _results.push({type:'add',ncA:null,ncB:mapB.get(k),sep});
+      }
+    });
+  } else {
+    // fuzzy matching using Levenshtein
+    const usedB=new Set();
+    mapA.forEach((ncA,kA)=>{
+      let bestK=null,bestD=Infinity;
+      mapB.forEach((ncB,kB)=>{
+        if(usedB.has(kB)) return;
+        const d=lev(kA,kB);
+        if(d<bestD){bestD=d;bestK=kB;}
+      });
+      if(bestK!==null && bestD===0){
+        _results.push({type:'same',ncA,ncB:mapB.get(bestK),sep});
+        usedB.add(bestK);
+      } else if(bestK!==null && bestD<=3){
+        _results.push({type:'mod',ncA,ncB:mapB.get(bestK),sep,dist:bestD});
+        usedB.add(bestK);
+      } else {
+        _results.push({type:'rem',ncA,ncB:null,sep});
+      }
+    });
+    mapB.forEach((ncB,kB)=>{
+      if(!usedB.has(kB)){
+        _results.push({type:'add',ncA:null,ncB,sep});
+      }
+    });
+  }
+
+  // sort: rem, mod, add, same
+  const ord={rem:0,mod:1,add:2,same:3};
+  _results.sort((a,b)=>ord[a.type]-ord[b.type]);
+
+  // update KPIs
+  const count=t=>_results.filter(r=>r.type===t).length;
+  document.getElementById('kAdd').textContent=count('add');
+  document.getElementById('kRem').textContent=count('rem');
+  document.getElementById('kMod').textContent=count('mod');
+  document.getElementById('kSame').textContent=count('same');
+  document.getElementById('kpiBar').style.display='grid';
+  document.getElementById('filterArea').style.display='block';
+
+  _filter='all';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.f==='all'));
+  renderList();
+  showToast(`✓ ${_results.length} NCs comparadas`);
+}
+
+function setFilter(f){
+  _filter=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.f===f));
+  renderList();
+}
+
+function renderList(){
+  const q=document.getElementById('searchInp').value.toLowerCase();
+  const showSame=document.getElementById('showSameChk').checked;
+  const out=document.getElementById('diffOut');
+
+  let items=_results;
+  if(_filter!=='all') items=items.filter(r=>r.type===_filter);
+  if(!showSame) items=items.filter(r=>r.type!=='same');
+  if(q) items=items.filter(r=>(r.ncA||'').toLowerCase().includes(q)||(r.ncB||'').toLowerCase().includes(q));
+
+  if(!items.length){
+    out.innerHTML='<div class="empty-state"><div class="icon">🔀</div>Nenhum resultado para o filtro selecionado.</div>';
+    return;
+  }
+
+  out.innerHTML=items.map((r,i)=>diffItemHtml(r,i)).join('');
+}
+
+function diffItemHtml(r,idx){
+  const badges={add:'+',rem:'−',mod:'↔',same:'='};
+  const badge=badges[r.type]||'?';
+
+  let content='';
+  if(r.type==='add'){
+    content=`<div class="diff-nc">${esc(r.ncB)}${segRow(null,r.ncB,r.sep)}</div>`;
+  } else if(r.type==='rem'){
+    content=`<div class="diff-nc">${esc(r.ncA)}${segRow(r.ncA,null,r.sep)}</div>`;
+  } else if(r.type==='mod'){
+    const segs=segDiff(r.ncA.split(r.sep),r.ncB.split(r.sep));
+    content=`<div class="diff-nc">
+      <div class="diff-nc-old">${esc(r.ncA)}</div>
+      <div class="diff-nc-new">${esc(r.ncB)}</div>
+      <div class="diff-segs">${segs.map(s=>`<span class="seg seg-${s.type}">${esc(s.seg)}</span>`).join('')}</div>
+    </div>`;
+  } else {
+    content=`<div class="diff-nc">${esc(r.ncA)}</div>`;
+  }
+
+  const copyVal=r.ncB||r.ncA||'';
+  return `<div class="diff-item type-${r.type}">
+    <div class="diff-badge">${badge}</div>
+    ${content}
+    <button class="diff-copy" title="Copiar" onclick="copyNC(${idx},'${esc(copyVal)}')">⎘</button>
+  </div>`;
+}
+
+function segRow(a,b,sep){
+  if(!a&&!b) return '';
+  if(!a) return `<div class="diff-segs">${(b||'').split(sep).map(s=>`<span class="seg seg-add">${esc(s)}</span>`).join('')}</div>`;
+  if(!b) return `<div class="diff-segs">${(a||'').split(sep).map(s=>`<span class="seg seg-rem">${esc(s)}</span>`).join('')}</div>`;
+  return '';
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function copyNC(idx,val){
+  navigator.clipboard.writeText(val).then(()=>showToast('✓ Copiado')).catch(()=>showToast(val));
+}
+
+function exportCSV(){
+  if(!_results.length){showToast('Rode a comparação primeiro');return;}
+  const rows=[['tipo','nc_antes','nc_depois']];
+  _results.forEach(r=>rows.push([r.type,r.ncA||'',r.ncB||'']));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='nc-diff.csv';
+  a.click();
+  showToast('✓ CSV exportado');
+}
+
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+loadCfg();
+</script>
+</body>
+</html>
