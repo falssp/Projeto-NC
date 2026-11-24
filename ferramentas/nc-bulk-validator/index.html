@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Bulk Validator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f7f7f8;--surface:#fff;--card:#fff;--border:#e4e4e7;
+  --fg:#18181b;--muted:#71717a;--mono:'JetBrains Mono',monospace;
+  --accent:#10b981;--accent-fg:#fff;--accent-light:#ecfdf5;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--ok-border:#bbf7d0;
+  --warn:#d97706;--warn-bg:#fffbeb;--warn-border:#fde68a;
+  --err:#dc2626;--err-bg:#fef2f2;--err-border:#fecaca;
+  --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#022c22;
+  --ok-bg:#052e16;--ok-border:#166534;
+  --warn-bg:#1c1407;--warn-border:#92400e;
+  --err-bg:#450a0a;--err-border:#991b1b;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f0f11;--surface:#18181b;--card:#1e1e21;--border:#27272a;
+  --fg:#fafafa;--muted:#a1a1aa;--accent-light:#022c22;
+  --ok-bg:#052e16;--ok-border:#166534;
+  --warn-bg:#1c1407;--warn-border:#92400e;
+  --err-bg:#450a0a;--err-border:#991b1b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;padding:0 0 60px}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:700;flex:1}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn:hover{background:var(--border)}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn-primary:hover{opacity:.88}
+.btn-sm{padding:5px 10px;font-size:11px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+
+/* Input area */
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
+.input-header{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;display:flex;align-items:center;gap:10px}
+textarea{width:100%;min-height:140px;padding:12px;border:none;background:transparent;color:var(--fg);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6}
+.cfg-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.cfg-row label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cfg-row select,.cfg-row input[type=number]{font-family:inherit;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--surface);color:var(--fg)}
+.cfg-row input[type=number]{width:72px;font-family:var(--mono)}
+.chk-label{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer}
+
+/* KPI bar */
+.kpi-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:600px){.kpi-bar{grid-template-columns:repeat(3,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;text-align:center}
+.kpi-val{font-size:22px;font-weight:800;font-family:var(--mono)}
+.kpi-label{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px}
+.kpi-pass .kpi-val{color:var(--ok)}
+.kpi-warn .kpi-val{color:var(--warn)}
+.kpi-fail .kpi-val{color:var(--err)}
+.kpi-score .kpi-val{color:var(--accent)}
+
+/* score gauge */
+.gauge-row{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.gauge-track{flex:1;height:10px;border-radius:5px;background:var(--border);overflow:hidden}
+.gauge-fill{height:100%;border-radius:5px;transition:.4s;background:linear-gradient(90deg,var(--err),var(--warn),var(--ok))}
+.gauge-label{font-size:12px;font-weight:700;font-family:var(--mono);min-width:60px;text-align:right}
+
+/* filter + export */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:11px;font-weight:700;cursor:pointer;background:var(--surface);transition:.12s}
+.chip.active-all{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.active-pass{background:var(--ok-bg);border-color:var(--ok-border);color:var(--ok)}
+.chip.active-warn{background:var(--warn-bg);border-color:var(--warn-border);color:var(--warn)}
+.chip.active-fail{background:var(--err-bg);border-color:var(--err-border);color:var(--err)}
+.spacer{flex:1}
+
+/* result rows */
+.result-list{display:flex;flex-direction:column;gap:6px}
+.result-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px;transition:.12s}
+.result-row:hover{border-color:var(--accent)}
+.result-row.has-err{border-color:var(--err-border);background:var(--err-bg)}
+.result-row.has-warn{border-color:var(--warn-border);background:var(--warn-bg)}
+.result-row.has-ok{border-color:var(--ok-border);background:var(--ok-bg)}
+.res-score{font-family:var(--mono);font-size:13px;font-weight:800;min-width:36px;text-align:center;padding:3px 6px;border-radius:6px;flex-shrink:0}
+.score-ok{background:var(--ok);color:#fff}
+.score-warn{background:var(--warn);color:#fff}
+.score-err{background:var(--err);color:#fff}
+.res-nc{font-family:var(--mono);font-size:12px;font-weight:600;flex:1;min-width:0;word-break:break-all;cursor:pointer}
+.res-issues{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.issue{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.issue-err{background:var(--err);color:#fff}
+.issue-warn{background:var(--warn);color:#fff}
+.res-copy{background:none;border:1px solid var(--border);border-radius:5px;cursor:pointer;color:var(--muted);font-size:11px;padding:2px 7px;flex-shrink:0}
+.res-copy:hover{background:var(--border);color:var(--fg)}
+
+.empty-state{text-align:center;padding:48px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#18181b;color:#fff;padding:9px 18px;border-radius:999px;font-size:12px;font-weight:600;transition:.25s;opacity:0;z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:18px">✅</span>
+  <h1>NC Bulk Validator</h1>
+  <button class="btn btn-primary" onclick="validate()">▶ Validar</button>
+  <button class="btn" id="themeBtn" onclick="toggleTheme()">◑</button>
+</header>
+
+<div class="wrap">
+  <div class="input-card">
+    <div class="input-header">
+      📋 Cole suas NCs — uma por linha
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="lineCount">0 linhas</span>
+    </div>
+    <textarea id="ncInput" placeholder="camp_brand_q1_social&#10;camp_brand_q1_display&#10;camp_brandX_q1_social&#10;…" oninput="countLines()"></textarea>
+    <div class="cfg-row">
+      <label>Separador</label>
+      <select id="cfgSep">
+        <option value="_">_ underscore</option>
+        <option value="-">- hífen</option>
+        <option value=".">. ponto</option>
+        <option value="|">| pipe</option>
+      </select>
+      <label>Mín. segmentos</label>
+      <input type="number" id="cfgMin" value="3" min="1" max="20">
+      <label>Máx. segmentos</label>
+      <input type="number" id="cfgMax" value="6" min="1" max="20">
+      <label>Comprimento máx.</label>
+      <input type="number" id="cfgLen" value="80" min="10" max="500">
+      <label class="chk-label"><input type="checkbox" id="cfgNoUpper" checked> Sem maiúsculas</label>
+      <label class="chk-label"><input type="checkbox" id="cfgNoSpecial" checked> Sem especiais</label>
+      <label class="chk-label"><input type="checkbox" id="cfgNoDup" checked> Detectar dups</label>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsArea" style="display:none">
+    <!-- KPI bar -->
+    <div class="kpi-bar">
+      <div class="kpi"><div class="kpi-val" id="kTotal">0</div><div class="kpi-label">Total</div></div>
+      <div class="kpi kpi-pass"><div class="kpi-val" id="kPass">0</div><div class="kpi-label">✅ OK</div></div>
+      <div class="kpi kpi-warn"><div class="kpi-val" id="kWarn">0</div><div class="kpi-label">⚠ Avisos</div></div>
+      <div class="kpi kpi-fail"><div class="kpi-val" id="kFail">0</div><div class="kpi-label">❌ Erros</div></div>
+      <div class="kpi kpi-score"><div class="kpi-val" id="kAvg">—</div><div class="kpi-label">Média</div></div>
+    </div>
+    <div class="gauge-row">
+      <div class="gauge-track"><div class="gauge-fill" id="gaugeFill" style="width:0%"></div></div>
+      <div class="gauge-label" id="gaugeLabel">0%</div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="chip active-all" id="chipAll" onclick="setFilter('all')">Tudo</div>
+      <div class="chip" id="chipPass" onclick="setFilter('pass')">✅ OK</div>
+      <div class="chip" id="chipWarn" onclick="setFilter('warn')">⚠ Avisos</div>
+      <div class="chip" id="chipFail" onclick="setFilter('fail')">❌ Erros</div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" onclick="exportFiltered('pass')">↓ Exportar OK</button>
+      <button class="btn btn-sm" onclick="exportFiltered('fail')">↓ Exportar Erros</button>
+      <button class="btn btn-sm" onclick="exportCSV()">↓ CSV Completo</button>
+    </div>
+
+    <div class="result-list" id="resultList"></div>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">✅</div>
+    <p>Cole suas NCs acima e clique em <strong>Validar</strong>.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CFG_KEY='ncbulk_cfg_v1';
+const THEME_KEY='ncbulk_theme';
+let _results=[];
+let _filter='all';
+
+// ── Theme ────────────────────────────────────────────────────────────────
+function initTheme(){
+  const t=localStorage.getItem(THEME_KEY)||'system';
+  if(t!=='system') document.documentElement.setAttribute('data-theme',t);
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem(THEME_KEY,next);
+}
+
+// ── Config ───────────────────────────────────────────────────────────────
+function loadCfg(){
+  try{
+    const c=JSON.parse(localStorage.getItem(CFG_KEY)||'{}');
+    if(c.sep) document.getElementById('cfgSep').value=c.sep;
+    if(c.min!==undefined) document.getElementById('cfgMin').value=c.min;
+    if(c.max!==undefined) document.getElementById('cfgMax').value=c.max;
+    if(c.len!==undefined) document.getElementById('cfgLen').value=c.len;
+    if(c.noUpper!==undefined) document.getElementById('cfgNoUpper').checked=c.noUpper;
+    if(c.noSpecial!==undefined) document.getElementById('cfgNoSpecial').checked=c.noSpecial;
+    if(c.noDup!==undefined) document.getElementById('cfgNoDup').checked=c.noDup;
+    if(c.theme) document.documentElement.setAttribute('data-theme',c.theme);
+  }catch(e){}
+}
+function saveCfg(){
+  const cfg={
+    sep:document.getElementById('cfgSep').value,
+    min:parseInt(document.getElementById('cfgMin').value),
+    max:parseInt(document.getElementById('cfgMax').value),
+    len:parseInt(document.getElementById('cfgLen').value),
+    noUpper:document.getElementById('cfgNoUpper').checked,
+    noSpecial:document.getElementById('cfgNoSpecial').checked,
+    noDup:document.getElementById('cfgNoDup').checked,
+    theme:document.documentElement.getAttribute('data-theme')||'system',
+  };
+  try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}
+}
+
+function countLines(){
+  const lines=document.getElementById('ncInput').value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('lineCount').textContent=lines+' linha'+(lines!==1?'s':'');
+}
+
+// ── Validate ─────────────────────────────────────────────────────────────
+function validate(){
+  saveCfg();
+  const sep=document.getElementById('cfgSep').value;
+  const min=parseInt(document.getElementById('cfgMin').value)||3;
+  const max=parseInt(document.getElementById('cfgMax').value)||6;
+  const maxLen=parseInt(document.getElementById('cfgLen').value)||80;
+  const noUpper=document.getElementById('cfgNoUpper').checked;
+  const noSpecial=document.getElementById('cfgNoSpecial').checked;
+  const noDup=document.getElementById('cfgNoDup').checked;
+
+  const lines=document.getElementById('ncInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){showToast('Cole ao menos uma NC');return;}
+
+  const seen=new Set();
+  _results=lines.map(nc=>{
+    const issues=[];
+    const parts=nc.split(sep);
+    const nSegs=parts.length;
+
+    if(nc.includes(' ')) issues.push({sev:'err',msg:'Contém espaços'});
+    if(nSegs<min) issues.push({sev:'err',msg:`Poucos segmentos (${nSegs}<${min})`});
+    if(nSegs>max) issues.push({sev:'err',msg:`Muitos segmentos (${nSegs}>${max})`});
+    if(nc.length>maxLen) issues.push({sev:'err',msg:`Muito longo (+${nc.length-maxLen} chars)`});
+    if(parts.some(p=>p==='')) issues.push({sev:'err',msg:'Segmento vazio'});
+
+    if(noUpper && /[A-Z]/.test(nc)) issues.push({sev:'warn',msg:'Contém maiúsculas'});
+    if(noSpecial){
+      const sepE=sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const bad=(nc.match(new RegExp(`[^a-zA-Z0-9\\-_${sepE}]`,'g'))||[]).filter(c=>c!==' ');
+      if(bad.length) issues.push({sev:'warn',msg:`Chars especiais: ${[...new Set(bad)].slice(0,4).join(' ')}`});
+    }
+    if(noDup){const k=nc.toLowerCase();if(seen.has(k))issues.push({sev:'warn',msg:'Duplicata'});seen.add(k);}
+
+    const errors=issues.filter(i=>i.sev==='err').length;
+    const warns=issues.filter(i=>i.sev==='warn').length;
+    const score=Math.max(0,100-errors*25-warns*10);
+    const grade=errors>0?'fail':warns>0?'warn':'pass';
+    return {nc,issues,score,grade};
+  });
+
+  updateKPIs();
+  setFilter('all');
+  document.getElementById('resultsArea').style.display='block';
+  document.getElementById('emptyState').style.display='none';
+  showToast(`✓ ${_results.length} NCs validadas`);
+}
+
+function updateKPIs(){
+  const pass=_results.filter(r=>r.grade==='pass').length;
+  const warn=_results.filter(r=>r.grade==='warn').length;
+  const fail=_results.filter(r=>r.grade==='fail').length;
+  const avg=_results.length?Math.round(_results.reduce((s,r)=>s+r.score,0)/_results.length):0;
+  document.getElementById('kTotal').textContent=_results.length;
+  document.getElementById('kPass').textContent=pass;
+  document.getElementById('kWarn').textContent=warn;
+  document.getElementById('kFail').textContent=fail;
+  document.getElementById('kAvg').textContent=avg;
+  document.getElementById('gaugeFill').style.width=avg+'%';
+  document.getElementById('gaugeLabel').textContent=avg+'%';
+}
+
+// ── Filter ───────────────────────────────────────────────────────────────
+function setFilter(f){
+  _filter=f;
+  ['all','pass','warn','fail'].forEach(c=>{
+    const el=document.getElementById('chip'+c.charAt(0).toUpperCase()+c.slice(1));
+    if(el) el.className='chip'+(c===f?' active-'+f:'');
+  });
+  renderList();
+}
+
+function renderList(){
+  let items=_results;
+  if(_filter!=='all') items=items.filter(r=>r.grade===_filter);
+  const list=document.getElementById('resultList');
+  if(!items.length){
+    list.innerHTML='<div class="empty-state" style="padding:32px"><p>Nenhum resultado para o filtro.</p></div>';
+    return;
+  }
+  list.innerHTML=items.map((r,i)=>{
+    const cls=r.grade==='pass'?'has-ok':r.grade==='warn'?'has-warn':'has-err';
+    const sCls=r.grade==='pass'?'score-ok':r.grade==='warn'?'score-warn':'score-err';
+    const issuesHtml=r.issues.map(iss=>`<span class="issue issue-${iss.sev}">${esc(iss.msg)}</span>`).join('');
+    return `<div class="result-row ${cls}">
+      <div class="res-score ${sCls}">${r.score}</div>
+      <div style="flex:1;min-width:0">
+        <div class="res-nc" onclick="navigator.clipboard.writeText('${esc(r.nc)}')">${esc(r.nc)}</div>
+        ${r.issues.length?`<div class="res-issues">${issuesHtml}</div>`:''}
+      </div>
+      <button class="res-copy" onclick="navigator.clipboard.writeText('${esc(r.nc)}').then(()=>showToast('✓ Copiado'))">⎘</button>
+    </div>`;
+  }).join('');
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function exportFiltered(grade){
+  const lines=_results.filter(r=>r.grade===grade).map(r=>r.nc);
+  if(!lines.length){showToast('Nenhuma NC nesta categoria');return;}
+  const a=document.createElement('a');
+  a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(lines.join('\n'));
+  a.download=`nc-${grade==='pass'?'ok':'erros'}.txt`;a.click();
+  showToast(`✓ ${lines.length} NCs exportadas`);
+}
+function exportCSV(){
+  if(!_results.length){showToast('Sem resultados');return;}
+  const rows=[['nc','status','score','problemas']];
+  _results.forEach(r=>rows.push([r.nc,r.grade,r.score,r.issues.map(i=>i.msg).join('; ')]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
+  a.download='nc-bulk-resultado.csv';a.click();
+  showToast('✓ CSV exportado');
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+let _toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+initTheme();
+loadCfg();
+countLines();
+</script>
+</body>
+</html>
