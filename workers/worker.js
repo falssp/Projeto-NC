@@ -99,12 +99,18 @@ export default {
       });
 
       const gasFullUrl = gasUrl + '?' + extraParams.toString();
-      const fetchOpts  = { redirect: 'follow' };
+      const fetchOpts  = {
+        redirect: 'follow',
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NCProxy/2.0)' },
+      };
 
       if (isPost) {
         const body = await request.text();
         fetchOpts.method  = 'POST';
-        fetchOpts.headers = { 'Content-Type': 'application/json' };
+        fetchOpts.headers = {
+          'Content-Type': 'text/plain',
+          'User-Agent': 'Mozilla/5.0 (compatible; NCProxy/2.0)',
+        };
         fetchOpts.body    = body;
       }
 
