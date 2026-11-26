@@ -1,34 +1,31 @@
-# Treinamentos · CM360 × Flashtalking/Innovid
+# Treinamento Interno · CM360 × Floodlight
 
-Materiais de posicionamento estratégico sobre CM360 vs Flashtalking/Innovid
-para Diretoria e Clientes. Tom comercial/boardroom — foco em decisão de negócio,
-não em operação técnica.
+Deck de treinamento interno StormX sobre Campaign Manager 360 e Floodlight —
+como o ad server do Google unifica dados, deduplicação e conecta o ecossistema GMP.
 
 ## Acesso
 
-🔗 **[https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/)**
+🔗 **[Abrir apresentação online](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.html)**
 
 ## Arquivos
 
-| Arquivo | Formato | Link | Obs |
+| Arquivo | Formato | Link | Uso |
 |---------|---------|------|-----|
-| `index.html` | HTML | [Abrir guia](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/index.html) | **Guia interativo — layout fullscreen** |
-| `StormX_-_CM360xFTIN_v01.html` | HTML | [▶ Abrir deck](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.html) | **Deck interativo standalone** |
-| `StormX_-_CM360xFTIN_v01.pdf` | PDF | [Visualizar](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.pdf) | Deck de apresentação v01 |
-| `StormX_-_CM360xFTIN_v01.pptx` | PPTX | [Download](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.pptx) | Deck de apresentação v01 |
+| `StormX_-_CM360xFTIN_v01.html` | HTML | [▶ Abrir deck](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.html) | Apresentação online (GitHub Pages) |
+| `StormX_-_CM360xFTIN_v01.pptx` | PPTX | — | Edição / armazenamento Git |
+| `StormX_-_CM360xFTIN_v01.pdf` | PDF | — | Distribuição por e-mail |
 
 ## Público-alvo
 
-Diretoria e Clientes — decisores de negócio, não operadores da plataforma.
+Equipe comercial, gestores de conta e profissionais de mídia interessados em ad tech e GMP.
 
-## Conteúdo
+## Conteúdo (25 slides · 6 módulos)
 
-- Por que a escolha do ad server é uma decisão de negócio
-- Três problemas que toda operação tem (e raramente admite)
-- CM360 vs Flashtalking/Innovid — comparativo prático
-- Ecossistema GMP (CM360 + DV360 + SA360)
-- Stacks por nível de operação
-- Modelo de conta: patrocinada vs independente
-- Perfis de operação ideais
-- Objeções executivas respondidas
-- Como a StormX viabiliza a implementação
+| # | Módulo | Tópicos |
+|---|--------|---------|
+| 01 | Contexto de mercado | A pergunta que ninguém faz · três problemas comuns |
+| 02 | O que é o CM360 | Floodlight · relatório unificado · dados do anunciante |
+| 03 | CM360 vs FT / Innovid | Comparativo prático · lacunas de rastreamento |
+| 04 | O ecossistema GMP | CM360 + DV360 + SA360 · modelo de conta |
+| 05 | Stacks e perfis de operação | Três níveis · perfis ideais de uso |
+| 06 | Como a StormX implementa | Timeline 30 dias · objeções executivas · próximos passos |
