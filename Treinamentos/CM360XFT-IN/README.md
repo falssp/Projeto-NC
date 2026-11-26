@@ -14,7 +14,7 @@ não em operação técnica.
 |---------|---------|------|-----|
 | `index.html` | HTML | [Abrir guia](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/index.html) | **Guia interativo** |
 | `StormX_-_CM360xFTIN_v01.pdf` | PDF | [Visualizar](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.pdf) | Deck de apresentação v01 |
-| `StormX_-_CM360xFTIN_v01.pptx` | PPTX | — | A adicionar |
+| `StormX_-_CM360xFTIN_v01.pptx` | PPTX | [Download](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/StormX_-_CM360xFTIN_v01.pptx) | Deck de apresentação v01 |
 
 ## Público-alvo
 
