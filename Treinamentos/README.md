@@ -55,6 +55,13 @@ Treinamentos/
 └── Audience_Type_Party/             ← Guia Audience Type × Audience Party
     ├── index.html
     └── audience-type-party.md
+│
+└── CM360XFT-IN/                     ← CM360 × Flashtalking/Innovid (Nov/26)
+    ├── index.html                   ← guia fullscreen (boardroom/executivos)
+    ├── StormX_-_CM360xFTIN_v01.html ← deck interativo standalone
+    ├── StormX_-_CM360xFTIN_v01.pdf
+    ├── StormX_-_CM360xFTIN_v01.pptx
+    └── README.md
 ```
 
 ## Treinamentos disponíveis
@@ -74,3 +81,4 @@ Treinamentos/
 | Influencer — Fórmulas e Cores | Out/2026 | Guia de referência | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Influencer_Dicionario/index.html) |
 | Jira → Dashboard: Unidades Pai/Filho | Out/2026 | Guia técnico | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Jira_Unidades_Dashboard/index.html) |
 | Audience Type × Audience Party | Out/2026 | Guia de referência | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/Audience_Type_Party/index.html) |
+| CM360 × Flashtalking/Innovid | Nov/2026 | Guia + Deck boardroom | [Abrir](https://falssp.github.io/Projeto-NC/Treinamentos/CM360XFT-IN/index.html) |
