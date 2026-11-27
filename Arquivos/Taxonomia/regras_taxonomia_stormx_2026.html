@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regras de Taxonomia — StormX</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0F1117;
+    --surface:  #181C27;
+    --surface2: #1F2435;
+    --border:   #2A3049;
+    --accent:   #4F6EF7;
+    --accent2:  #7B93FF;
+    --text:     #E2E8F8;
+    --muted:    #7A86A8;
+    --green:    #22c55e;
+    --amber:    #f97316;
+    --amber-bg: rgba(249,115,22,.1);
+    --amber-bd: rgba(249,115,22,.3);
+    --radius:   8px;
+    --radius-sm:4px;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    white-space: nowrap; letter-spacing: -.01em;
+  }
+  .topbar-brand span { color: var(--muted); font-weight: 400; }
+  .topbar-sep { width: 1px; height: 18px; background: var(--border); flex-shrink: 0; }
+
+  /* ── STICKY SEARCH + CHIPS BAR ── */
+  .search-bar {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    position: sticky; top: 53px; z-index: 99;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .search-wrap {
+    position: relative; flex: 1; min-width: 0;
+  }
+  .search-wrap svg {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; opacity: .4;
+  }
+  .search-wrap input {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 11px 16px 11px 42px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px;
+    width: 100%; outline: none; transition: border-color .15s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--muted); }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12px; font-weight: 500;
+    padding: 5px 14px; border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted);
+    cursor: pointer; transition: all .15s; user-select: none;
+    white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--accent2); color: var(--accent2); }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── CONTENT ── */
+  .content {
+    padding: 44px 40px 80px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 40px;
+    margin-bottom: 32px;
+  }
+  .hero .eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent2); margin-bottom: 10px;
+  }
+  .hero h1 { font-size: 40px; font-weight: 700; color: #fff; line-height: 1.15; margin-bottom: 12px; }
+  .hero p { color: var(--muted); font-size: 15px; }
+  .hero .meta {
+    display: flex; gap: 20px; margin-top: 16px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .hero .meta strong { color: var(--text); }
+
+  /* ── RULE CARDS ── */
+  .rule {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .rule[data-hidden="true"] { display: none; }
+  .rule:hover { border-color: rgba(79,110,247,.35); }
+  .rule.open { border-color: rgba(79,110,247,.5); }
+
+  .rule-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 18px; cursor: pointer; gap: 12px;
+  }
+  .rule-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .platform-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent2); flex-shrink: 0;
+  }
+  .rule-title {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rule-cat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted); white-space: nowrap;
+  }
+  .status {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 99px; flex-shrink: 0;
+    background: rgba(34,197,94,.1); color: var(--green);
+    border: 1px solid rgba(34,197,94,.2);
+  }
+  .chevron { transition: transform .2s; flex-shrink: 0; opacity: .4; }
+  .rule.open .chevron { transform: rotate(180deg); }
+
+  .rule-body { max-height: 0; overflow: hidden; transition: max-height .28s ease; }
+  .rule.open .rule-body { max-height: 5000px; }
+  .rule-body-inner {
+    padding: 20px 18px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── BODY CONTENT ── */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin: 20px 0 8px;
+  }
+  .section-label:first-child { margin-top: 0; }
+  .section-text { font-size: 13.5px; line-height: 1.65; color: var(--text); }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 4px; font-size: 12px;
+  }
+
+  /* Callout */
+  .callout {
+    border-radius: var(--radius); padding: 13px 16px; font-size: 13.5px; margin-top: 2px;
+  }
+  .callout.warn { background: var(--amber-bg); border: 1px solid var(--amber-bd); color: #fed7aa; }
+  .callout.info { background: rgba(79,110,247,.1); border: 1px solid rgba(79,110,247,.3); color: #c7d2fe; }
+  .callout ul { list-style: none; padding: 0; margin: 0; }
+  .callout li { padding: 3px 0 3px 18px; position: relative; line-height: 1.55; }
+  .callout.warn li::before { content: "!"; position: absolute; left: 0; font-weight: 700; font-size: 11px; color: var(--amber); }
+  .callout.info li::before { content: "→"; position: absolute; left: 0; color: var(--accent2); }
+  .callout li:only-child { padding-left: 0; }
+  .callout li:only-child::before { display: none; }
+
+  /* Plain list */
+  ul.list-plain { list-style: none; padding: 0; margin: 0; }
+  ul.list-plain li { font-size: 13.5px; line-height: 1.6; padding: 4px 0 4px 16px; position: relative; }
+  ul.list-plain li::before { content: "–"; position: absolute; left: 0; color: var(--muted); }
+
+  /* Checklist */
+  ul.checklist { list-style: none; padding: 0; margin: 0; }
+  ul.checklist li { font-size: 13.5px; line-height: 1.6; padding: 5px 0 5px 22px; position: relative; }
+  ul.checklist li::before {
+    content: ""; position: absolute; left: 0; top: 11px;
+    width: 6px; height: 6px; border-radius: 1px; background: var(--accent);
+  }
+
+  /* Definitions */
+  .definitions { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .def-row { display: flex; gap: 14px; padding: 10px 14px; align-items: baseline; background: var(--surface2); }
+  .def-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .def-code {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 500;
+    color: var(--accent2); background: rgba(79,110,247,.12);
+    padding: 2px 8px; border-radius: 4px; flex-shrink: 0; min-width: 46px; text-align: center;
+  }
+  .def-desc { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+  /* Taxonomy string */
+  .tax-string {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 2;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; word-break: break-all;
+  }
+  .seg-new  { background: rgba(34,197,94,.15); color: #4ade80; padding: 1px 5px; border-radius: 3px; font-weight: 500; }
+  .seg-remove { background: var(--amber-bg); color: var(--amber); padding: 1px 5px; border-radius: 3px; font-weight: 500; }
+
+  /* Diff toggle */
+  .diff-toggle {
+    display: inline-flex; background: var(--surface2); border-radius: 99px;
+    padding: 3px; margin: 10px 0; border: 1px solid var(--border);
+  }
+  .diff-toggle button {
+    font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600;
+    padding: 5px 14px; border-radius: 99px; border: none; background: none;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+  }
+  .diff-toggle button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .tax-view { display: none; }
+  .tax-view.active { display: block; }
+
+  /* Platform tabs */
+  .platform-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .ptab {
+    font-size: 11.5px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--muted); cursor: pointer; transition: all .15s;
+  }
+  .ptab:hover { border-color: var(--accent2); color: var(--accent2); }
+  .ptab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tax-platform-panel { display: none; }
+  .tax-platform-panel.active { display: block; }
+
+  /* Group select */
+  .platform-select {
+    font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600;
+    color: var(--text); background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 32px 8px 12px; margin-bottom: 12px; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237A86A8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    width: 100%; max-width: 400px;
+  }
+  .platform-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .tax-group-panel { display: none; }
+  .tax-group-panel.active { display: block; }
+  .tax-sublabel {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted);
+    margin: 14px 0 6px; letter-spacing: .04em;
+  }
+  .tax-sublabel:first-child { margin-top: 0; }
+
+  /* Simple diff */
+  .simple-diff {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .simple-diff .old { color: var(--muted); text-decoration: line-through; }
+  .simple-diff .arrow { color: var(--muted); }
+  .simple-diff .new { background: rgba(34,197,94,.15); color: #4ade80; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+
+  /* Mapping */
+  .mapping { display: flex; flex-direction: column; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .mapping-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 10px 14px; }
+  .mapping-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .mapping-row .cond { color: var(--muted); }
+  .mapping-row .result { background: rgba(34,197,94,.15); color: #4ade80; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+
+  /* Limits table */
+  .limits-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .limits-table th {
+    text-align: left; padding: 9px 12px; background: var(--surface2); color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border);
+  }
+  .limits-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .limits-table tr:last-child td { border-bottom: none; }
+  .limits-table tr:hover td { background: rgba(255,255,255,.02); }
+  .lt-platform { font-weight: 600; white-space: nowrap; }
+  .lt-limit { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; white-space: nowrap; }
+  .redux-badge { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+  .redux-sim { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bd); }
+  .redux-nao { background: rgba(34,197,94,.1); color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+  .redux-condicao { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Highlight */
+  .highlight-box {
+    border-left: 3px solid var(--accent); background: rgba(79,110,247,.08);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 12px 16px; font-size: 13.5px; line-height: 1.6;
+  }
+  .highlight-term {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13.5px;
+    background: var(--accent); color: #fff; padding: 1px 7px; border-radius: 4px;
+  }
+
+  /* Results count + empty */
+  .results-count { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+  .results-count strong { color: var(--text); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; display: none; }
+  .empty-state.show { display: block; }
+
+  @media (max-width: 600px) {
+    .topbar-brand, .topbar-sep { display: none; }
+    .search-wrap input { width: 100%; }
+    .search-bar { padding: 12px 16px; }
+    .content { padding: 28px 16px 60px; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <span class="topbar-brand">StormX <span>· AdOps</span></span>
+  <span class="topbar-sep"></span>
+  <span style="font-size:13px;color:var(--muted)">Regras de Taxonomia</span>
+</header>
+
+<!-- STICKY SEARCH + CHIPS -->
+<div class="search-bar">
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search" placeholder="Buscar regra, plataforma, campo...">
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+  <div class="hero">
+    <div class="eyebrow">StormX · AdOps · Taxonomia</div>
+    <h1>Regras de Taxonomia</h1>
+    <p>Exceções e quebras especiais por plataforma. Clique em uma regra para ver os detalhes completos.</p>
+    <div class="meta">
+      <span>Versão <strong>2026</strong></span>
+      <span>Atualizado <strong>Nov 2026</strong></span>
+      <span>Escopo <strong>Unilever BR</strong></span>
+    </div>
+  </div>
+
+  <div class="results-count" id="count"></div>
+  <div id="rules"></div>
+  <div class="empty-state" id="empty">Nenhuma regra encontrada para essa busca.</div>
+</div>
+
+<script>
+const RULES = [
+  {
+    id: "taxonomia-por-plataforma",
+    category: "Geral",
+    title: "Geral — Taxonomia por Plataforma",
+    statusLabel: "Regra vigente",
+    motivo: "Cada plataforma possui sua própria estrutura de quebra de taxonomia, e elas não são intercambiáveis.",
+    solucaoLabel: "Regra",
+    solucao: "Não é permitido, em nenhuma hipótese, utilizar a taxonomia de uma plataforma em outra, como aplicar a taxonomia do Meta em uma campanha de TikTok, ou vice-versa. Essa prática compromete a leitura dos dados e suja o banco de dados, exigindo retrabalho de correção.",
+    notaLabel: "Global x Local",
+    nota: "O Galileo é a parte Global da taxonomia, separada por _, e o freetext é a parte Local, separada por |. Tudo que é Local pode ser alterado sem passar pelo Global, precisando apenas da aprovação da UL Brasil.",
+    important: ["Proibido subir campanha sem a taxonomia criada pela StormX."],
+    exception: [
+      "Caso haja uma campanha urgente e não houver tempo para a criação da taxonomia, é obrigatório comunicar a StormX por e-mail, com a autorização do cliente, informando a maneira como a taxonomia será implementada.",
+      "Posteriormente, é necessário solicitar a taxonomia via Jira e corrigir a linha na plataforma. Prazo de até 24h."
+    ],
+    observacao: "Confirme sempre a estrutura de taxonomia específica da plataforma antes de implementar a campanha."
+  },
+  {
+    id: "ad-name-duplicado",
+    category: "Geral",
+    title: "Geral — Ad Name Duplicado entre Ad Groups",
+    statusLabel: "Regra vigente",
+    motivo: "Cada Ad Group deve ter seu próprio Ad Name, com um ID correspondente e exclusivo, mantendo a integridade dos dados.",
+    solucaoLabel: "Regra",
+    solucao: "Não é permitido, sob nenhuma circunstância, utilizar o mesmo Ad Name (mesmo ID) em mais de um Ad Group, mesmo quando o asset utilizado é idêntico. Cada Ad Name deve ser solicitado individualmente à StormX."
+  },
+  {
+    id: "copia-ad-group-name",
+    category: "Geral",
+    title: "Geral — Cópia de Ad Group ou Ad Name",
+    statusLabel: "Regra vigente",
+    motivo: "Duplicar Ad Groups ou Ad Names diretamente na plataforma descaracteriza a taxonomia criada pela StormX.",
+    solucaoLabel: "Regra",
+    solucao: "Alguns veículos adicionam automaticamente termos como \"cópia\" ou \"copy\" ao duplicar, o que gera inconsistências na base de dados. Mesmo quando a configuração é exatamente a mesma, é obrigatório solicitar uma nova taxonomia à StormX, já que cada Ad Name possui um ID único que precisa estar corretamente relacionado ao seu Ad Group.",
+    important: ["Não duplicar Ad Groups ou Ad Names.", "Sempre solicitar uma nova taxonomia à StormX."],
+    observacao: "A duplicação compromete a rastreabilidade das campanhas, a integridade dos dados e a qualidade dos relatórios."
+  },
+  {
+    id: "caracteres-especiais",
+    category: "Geral",
+    title: "Geral — Proibição de Caractere Especial",
+    statusLabel: "Regra vigente",
+    motivo: "Acentuação, caracteres especiais, apóstrofo, travessão, underscore e pipe comprometem a estrutura da taxonomia e geram inconsistências durante o QA.",
+    notUse: [
+      "Acentos (á, é, í, ó, ú, ã, ê, ç, etc.)", "Apóstrofo (')", "Travessão (—)",
+      "Caracteres especiais (@, #, %, &, /, ?, !, etc.)", "\"_\" (underscore)", "\"|\" (pipe)"
+    ],
+    important: [
+      "Para indicar duração em segundos, utilize \"s\". Exemplo: 10s é correto, 10' é incorreto.",
+      "Quando necessário, utilize hífen (-) e nunca travessão.",
+      "Utilize apenas letras sem acentuação, números e hífen (-), seguindo o padrão definido pela StormX."
+    ]
+  },
+  {
+    id: "limite-caracteres",
+    category: "Geral",
+    title: "Geral — Limite de Caracteres",
+    statusLabel: "Regra vigente",
+    motivo: "A taxonomia criada pela StormX não deve ser reduzida ou adaptada pelo mídia para atender limitações da plataforma.",
+    solucaoLabel: "Regra",
+    solucao: "Caso algum veículo possua restrição de caracteres ou qualquer limitação técnica que impeça a implementação da taxonomia padrão, a StormX deve ser comunicada antes da implementação para avaliar e definir a melhor solução. Somente a StormX está autorizada a definir adaptações na estrutura da taxonomia.",
+    limits: [
+      { platform: "Meta", field: "—", limit: "400 caracteres", reducao: "Não" },
+      { platform: "TikTok", field: "—", limit: "512 caracteres", reducao: "Não" },
+      { platform: "X (Twitter)", field: "—", limit: "255 caracteres", reducao: "Não" },
+      { platform: "X (Twitter)", field: "Ad Name — Amplify", limit: "Não existe", reducao: "Condição no banco" },
+      { platform: "Pinterest", field: "—", limit: "255 caracteres", reducao: "Não" },
+      { platform: "Globo", field: "Nome do criativo", limit: "200 caracteres", reducao: "Não" },
+      { platform: "Mercado Livre — Compra Direta", field: "IO, Ad Group e Ad Name (Brand Ads)", limit: "100 caracteres", reducao: "Sim" },
+      { platform: "Mercado Livre — Compra Direta", field: "IO, Ad Group (Product Ads)", limit: "100 caracteres", reducao: "Sim" },
+      { platform: "Mercado Livre — Compra Direta", field: "Ad Name (Product Ads)", limit: "Não existe", reducao: "Condição no banco" },
+      { platform: "Mercado Livre — Programática", field: "IO", limit: "200 caracteres", reducao: "Não" },
+      { platform: "Mercado Livre — Programática", field: "Line Item", limit: "200 caracteres", reducao: "Não" },
+      { platform: "Mercado Livre — Programática", field: "Ad Name", limit: "120 caracteres", reducao: "Não" },
+      { platform: "Kwai", field: "Campanha, conjunto e anúncio", limit: "100 caracteres", reducao: "Sim" },
+      { platform: "Amazon Sponsored", field: "Ad Name (alfanumérico, termina em H. Ex.: AMZN1346H)", limit: "12 caracteres", reducao: "Sim" },
+      { platform: "YouTube (Insertion Order)", field: "Deals do YT (Line ups, masthead, first position, YT Select)", limit: "120 caracteres", reducao: "Sim" },
+      { platform: "YouTube (Insertion Order)", field: "Compra sem reserva (VVC, VRC, TF, Shorts, Non-skip)", limit: "240 caracteres", reducao: "Não" },
+      { platform: "YouTube (Insertion Order)", field: "Display e vídeo", limit: "240 caracteres", reducao: "Não" },
+      { platform: "YouTube (Insertion Order)", field: "Nível dos ad groups", limit: "240 caracteres", reducao: "Não" },
+      { platform: "YouTube (Item de Linha)", field: "Grupo de anúncios", limit: "255 caracteres", reducao: "Não" },
+      { platform: "Google Ads", field: "Ad Name — Search", limit: "Não existe", reducao: "Condição no banco" },
+      { platform: "Google Ads", field: "Ad Group e Ad Name — PMax", limit: "Não é possível extrair", reducao: "Condição no banco" }
+    ],
+    taxonomyGroups: [
+      {
+        label: "Mercado Livre — Product Ads",
+        items: [
+          { sublabel: "Campaign (máximo 100 caracteres)", string: "CN-Code-Campaign-Name_Brand-Name_Market-Short-Name-(PCat)_Objective_CampaignLocal | Brandlift-YesorNo | Pilar-da-Campanha | MidiaCampaignLocal-Extra" },
+          { sublabel: "Ad Group (máximo 100 caracteres)", string: "Placement-Type_Creative-Name_Landing-Page-Type_Retailer_Influencer_CampaignLocal | ObjetivodeOtimização | Publisher | BuyingType | Location-Type | Location | AudienceType | MidiaGroup-Extra" },
+          { sublabel: "Ad Name", string: "Não customizável. Sem taxonomia aplicável." }
+        ]
+      },
+      {
+        label: "Mercado Livre — Brand Ads",
+        items: [
+          { sublabel: "Campaign (máximo 100 caracteres)", string: "CN-Code-Campaign-Name_Brand-Name_Market-Short-Name-(PCat)_Objective_CampaignLocal | Brandlift-YesorNo | Pilar-da-Campanha | MidiaCampaignLocal-Extra" },
+          { sublabel: "Ad Group (máximo 100 caracteres)", string: "Placement-Type_Creative-Name_Landing-Page-Type_Retailer_Influencer_CampaignLocal | ObjetivodeOtimização | Publisher | BuyingType | Location-Type | Location | AudienceType | MidiaGroup-Extra" },
+          { sublabel: "Ad Name (máximo 100 caracteres)", string: "Creative-Name_Format-Type(freetext) | Position | Influencer-or-Brand | Influencer-Name | Seconds | MidiaAdName-extra" }
+        ]
+      },
+      {
+        label: "Mercado Livre — Programática",
+        items: [
+          { sublabel: "IO (máximo 200 caracteres)", string: "CN-Code-Campaign-Name_Market-Short-Name-(PCat)_Brand-Name_Objective_CampaignLocal|Brandlift-YesorNo|Publisher|LocationType|Location|Pilar-da-Campanha|MidiaIO-Extra" },
+          { sublabel: "Line Item (máximo 200 caracteres)", string: "Buy-Model_Targeting-Strategy_Audience-Party_Audience-Name_Gender_Age-(lower-upper)_Device-Type_ObjetivodeOtimização|AudienceType|BuyingType|MidiaLineitem-Extra" },
+          { sublabel: "Ad Name (máximo 120 caracteres)", string: "Placement-Type_Creative-Name_Landing-Page-Type_Retailer_Influencer_FormatGroup|Position|InfluencerorBrand|InfluencerName|Seconds|TipodeTag|MidiaAdName-Extra" }
+        ]
+      },
+      {
+        label: "Flashtalking (redução de caracteres)",
+        items: [
+          { sublabel: "Campaign (remoção de Pilar da Campanha, Campaign Local e Brandlift)", string: "CN-Code-Campaign-Name_Brand-Name_Market-Short-Name-(PCat)_Objective_MidiaCampaignLocal-Extra" },
+          { sublabel: "Ad Group", string: "Placement-Type_Creative-Name_Landing-Page-Type_Retailer_Influencer_CampaignLocal | ObjetivodeOtimização | Publisher | BuyingType | Location-Type | Location | AudienceType | MidiaGroup-Extra" },
+          { sublabel: "Ad Name (inclusão de Pilar da Campanha, Campaign Local e Brandlift)", string: "Creative-Name_Format-Type(freetext) | Position | Brandlift-YesorNo | Influencer-or-Brand | Influencer-Name | Seconds | Pilar da Campanha | PI | MidiaAdName-extra" }
+        ]
+      },
+      {
+        label: "YouTube — DV360",
+        items: [
+          { sublabel: "IO — Deals do YT (remoção do Campaign Name, mantendo apenas o CN Code)", string: "CN-Code_Market-Short-Name-(PCat)_Brand-Name_Buy-Model_Objective_CampaignLocal|Brandlift-YesorNo|Publisher|Pilar-da-Campanha|MidiaIO-Extra" }
+        ]
+      },
+      {
+        label: "YouTube — Google Ads",
+        items: [
+          { sublabel: "Campaign — Deals do YT (remoção do Campaign Name, mantendo apenas o CN Code)", string: "CN-Code_Language_Market-Short-Name-(PCat)_Objective_Format-Type_Buy-Type_Placement-Type_CampaignLocal|BrandName|Brandlift-YesorNo|Pilar-da-Campanha|MidiaCampaignLocal-Extra" }
+        ]
+      }
+    ],
+    nota: "A redução de Flashtalking listada aqui é específica para contornar o limite de caracteres, e é diferente da limitação estrutural da API descrita na regra Flashtalking — Limitações de Taxonomia via API (essa remove Ad Group e usa \"na\" em campos que mudam entre linhas).",
+    important: [
+      "Não reduzir a taxonomia por conta própria.",
+      "Não remover campos para atender limitações da plataforma.",
+      "Sempre informar a StormX quando houver restrições técnicas de um novo veículo ou plataforma."
+    ]
+  },
+  {
+    id: "taxonomia-generica",
+    category: "Geral",
+    title: "Geral — Taxonomia Genérica",
+    statusLabel: "Regra vigente",
+    motivo: "Ad Names implementados sem taxonomia comprometem a qualidade do banco de dados. Por isso, a taxonomia genérica só é aceita em casos específicos.",
+    casos: [
+      "Quando a implementação da campanha ocorrer em feriado, final de semana ou fora do expediente, e o time de mídia ainda não tiver todas as informações necessárias para a taxonomia correta, já que nesse momento o time de AdOps já estará offline.",
+      "Quando se tratar de campanha urgente e o time de mídia ainda não tiver todas as informações, ou o criativo ainda não estiver disponível para confirmar formato e duração específicos."
+    ],
+    solucaoLabel: "Regra",
+    solucao: "Nesses casos, a taxonomia genérica segue o padrão de quebras estabelecido pela Unilever, com algumas informações genéricas em substituição às específicas, permitindo a implementação da campanha sem comprometer o banco de dados.",
+    observacao: "É obrigatório solicitar o ajuste da taxonomia genérica para a versão correta em até 24h úteis."
+  },
+  {
+    id: "campaign-name-local",
+    category: "Geral",
+    title: "Geral — Campaign Name e Campaign Local",
+    statusLabel: "Regra vigente",
+    motivo: "O Campaign Name é o nome da campanha global, definido diretamente pelo Global da Unilever. A StormX recebe a atualização das campanhas globais toda sexta-feira e inclui essas informações no ADP enviado aos mídias toda segunda-feira, em uma nova versão.",
+    important: [
+      "É proibido o uso de Campaign Name genérico, como Always On Non Search, autorizado apenas quando o Campaign Name solicitado pelo mídia ainda não tiver sido aprovado.",
+      "Assim que o Global enviar o Campaign Name oficial, todas as taxonomias devem ser ajustadas para refletir o novo nome."
+    ],
+    solucaoLabel: "Regra",
+    solucao: "Para criar um Campaign Name, os mídias devem solicitar diretamente à Unilever, que aprova e envia a atualização do Global à StormX às sextas-feiras. O Campaign Local (campanha local, Brasil) deve sempre ser igual ao Campaign Name (global). É permitido adicionar informações extras no Campaign Local Extra, que deve ser solicitado pelo mídia para que a StormX crie e cadastre no ADP.",
+    exception: [
+      "Caso o mídia queira que o Campaign Local seja diferente do Campaign Name, é necessário enviar por e-mail a aprovação do cliente Unilever, com a StormX em cópia: carolina.dobner@stormx.com.br."
+    ],
+    observacao: "O ADP atualizado com essas informações é enviado aos mídias toda segunda-feira."
+  },
+  {
+    id: "google-pmax",
+    category: "Google",
+    title: "Google — PMax",
+    statusLabel: "Regra vigente",
+    motivo: "O formato PMax não possui Ad Group. Por isso, as informações de Ad Group e Ad Name não são extraídas no banco de dados, o que impede a identificação correta dessas campanhas e faz com que essas linhas caiam como erro.",
+    solucao: "Incluir uma quebra a mais no Campaign, exclusiva para campanhas PMax, adicionando o Format Type Local. Com essa informação, o banco identifica que a linha é de uma campanha PMax e deixa de acusar erro pela ausência de Ad Group e Ad Name.",
+    taxonomyDiff: {
+      before: "CN-Code-Campaign-Name_Language_Market-Short-Name-(PCat)_Objective_Format-Type_Buy-Type_CampaignLocal|BrandName|Brandlift-YesorNo|Pilar-da-Campanha|MidiaCampaignLocal-Extra",
+      after: "CN-Code-Campaign-Name_Language_Market-Short-Name-(PCat)_Objective_Format-Type_Buy-Type_CampaignLocal|BrandName|<span class=\"seg-new\">Format-Type-Local</span>|Brandlift-YesorNo|Pilar-da-Campanha|MidiaCampaignLocal-Extra"
+    },
+    observacao: "PMax terá uma quebra a mais de freetext, o Format Type Local, reconhecida como: pmax. Preencher \"Google-pmax\" no campo inicial do ADP e selecionar o Publisher \"google-pmax\"."
+  },
+  {
+    id: "google-search",
+    category: "Google",
+    title: "Google — Search",
+    statusLabel: "Regra vigente",
+    motivo: "Padronizar a identificação de campanhas de Search no banco de dados.",
+    solucao: "O campo Publisher deve ser preenchido como google-search para esse tipo de campanha.",
+    simpleDiff: { field: "Publisher", before: "google", after: "google-search" },
+    observacao: "Aplica-se sempre que a campanha for do tipo Search."
+  },
+  {
+    id: "google-demandgen",
+    category: "Google",
+    title: "Google — Demand Gen",
+    statusLabel: "Regra vigente",
+    motivo: "Campanhas de Demand Gen podem veicular tanto em Google quanto em YouTube, e o Publisher precisa refletir corretamente essa origem para identificação no banco.",
+    solucao: "Quando Plataforma = Google, o campo Publisher varia de acordo com o Publisher original informado.",
+    mapping: [
+      { condition: "Plataforma = Google e Publisher = Google", result: "google-ads" },
+      { condition: "Plataforma = Google e Publisher = YouTube", result: "youtube" }
+    ],
+    observacao: "Verificar sempre o Publisher original antes de definir o valor final, já que os dois casos partem da mesma Plataforma."
+  },
+  {
+    id: "influencer-handle",
+    category: "Influenciadores",
+    title: "Influenciadores — Classificação e Taxonomia por Handle",
+    statusLabel: "Regra vigente",
+    motivo: "Ao preencher a RM, é importante que a classificação do influenciador esteja de acordo com a estratégia da campanha e com o link informado.",
+    definitions: [
+      { code: "BRD", desc: "Campanhas sem influenciador (Brand Say — Galileo)." },
+      { code: "INF", desc: "Campanhas com influenciador (Brand Handle + Influencer Handle — Galileo)." },
+      { code: "UGC", desc: "Campanhas com influenciador (Influencer Handle — Galileo)." }
+    ],
+    important: [
+      "Se a campanha for BRD, não deve haver link de influenciador.",
+      "Se a campanha possuir influenciador, é obrigatório informar o link correspondente e utilizar a classificação INF ou UGC, conforme a estratégia da campanha."
+    ],
+    solucao: "Quando for utilizado Influencer Handle, a quebra de Influencer Name do freetext da taxonomia cai, porque o @ do influenciador passa a ser preenchido na quebra Influencer-Handle do Galileo. A estrutura varia por plataforma, selecione abaixo para ver cada uma.",
+    taxonomyVariants: [
+      {
+        platform: "Meta",
+        labelBefore: "Sem Influencer Handle",
+        labelAfter: "Com Influencer Handle",
+        before: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Influencer-Post-Type_Influencer_[Influencer-Handle]_Position|InfluencerorBrand|<span class=\"seg-remove\">InfluencerName</span>|MidiaAdName-Extra",
+        after: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Influencer-Post-Type_Influencer_<span class=\"seg-new\">[Influencer-Handle]</span>_Position|InfluencerorBrand|MidiaAdName-Extra"
+      },
+      {
+        platform: "TikTok",
+        labelBefore: "Sem Influencer Handle",
+        labelAfter: "Com Influencer Handle",
+        before: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Add-On_Influencer-Post-Type_Influencer_[Influencer-Handle]_Creative-Exchange_Position|InfluencerorBrand|<span class=\"seg-remove\">InfluencerName</span>|MidiaAdName-Extra",
+        after: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Add-On_Influencer-Post-Type_Influencer_<span class=\"seg-new\">[Influencer-Handle]</span>_Creative-Exchange_Position|InfluencerorBrand|MidiaAdName-Extra"
+      },
+      {
+        platform: "Twitter",
+        labelBefore: "Sem Influencer Handle",
+        labelAfter: "Com Influencer Handle",
+        before: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Influencer-Post-Type_Influencer_[Influencer-Handle]_Position|InfluencerorBrand|<span class=\"seg-remove\">InfluencerName</span>|MidiaAdName-Extra",
+        after: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Influencer-Post-Type_Influencer_<span class=\"seg-new\">[Influencer-Handle]</span>_Position|InfluencerorBrand|MidiaAdName-Extra"
+      },
+      {
+        platform: "Pinterest",
+        labelBefore: "Sem Influencer Handle",
+        labelAfter: "Com Influencer Handle",
+        before: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Influencer-Post-Type_Influencer_[Influencer-Handle]_Position|InfluencerorBrand|<span class=\"seg-remove\">InfluencerName</span>|MidiaAdName-Extra",
+        after: "Creative-Name_Format-Type_Landing-Page-Type_Retailer_Format-Size_Influencer-Post-Type_Influencer_<span class=\"seg-new\">[Influencer-Handle]</span>_Position|InfluencerorBrand|MidiaAdName-Extra"
+      }
+    ],
+    observacao: "A quebra InfluencerName (destacada em laranja) some do freetext apenas quando o Influencer Handle (destacado em verde) é utilizado no Global. TikTok possui duas quebras extras (Add-On e Creative-Exchange) que as demais plataformas não têm."
+  },
+  {
+    id: "influencer-post-type",
+    category: "Influenciadores",
+    title: "Influenciadores — Influencer Post Type",
+    statusLabel: "Regra vigente",
+    motivo: "O Influencer Post Type depende do valor do campo Influencer (Galileo) e só aceita determinadas opções para cada caso.",
+    lists: [
+      { label: "Onde se aplica", items: ["Meta", "TikTok", "Pinterest", "Twitter"] },
+      { label: "Opções do campo", items: ["na", "dark", "boosted"] }
+    ],
+    definitionsLabel: "Opção permitida por Influencer",
+    definitions: [
+      { code: "bsay", desc: "Só pode usar na." },
+      { code: "bhamp", desc: "Só pode usar dark ou boosted. Não pode usar na." },
+      { code: "ihamp", desc: "Só pode usar dark ou boosted. Não pode usar na." }
+    ],
+    observacao: "O Influencer Post Type é utilizado apenas em campanhas de Social (Meta, TikTok, Pinterest e Twitter)."
+  },
+  {
+    id: "twitter-amplify",
+    category: "Twitter",
+    title: "Twitter — Amplify",
+    statusLabel: "Regra vigente",
+    motivo: "Campanhas de Twitter Amplify não possuem Ad Name preenchido, o que faz o banco não reconhecer a campanha corretamente e acusar erro.",
+    solucao: "Seguir o mesmo modelo já usado para Google. A diferença é selecionar Twitter-Amplify no Publisher, em vez de Twitter. Com isso, o banco reconhece a campanha como Twitter Amplify, extrai a informação corretamente e não acusa mais erro pela ausência do Ad Name.",
+    simpleDiff: { field: "Publisher", before: "Twitter", after: "Twitter-Amplify" },
+    ajustes: ["Selecionar \"Twitter-Amplify\" no campo Publisher para esse tipo de campanha"],
+    observacao: "Não há alteração na estrutura do Campaign, apenas na seleção do Publisher."
+  },
+  {
+    id: "tiktok-branded-mission",
+    category: "TikTok",
+    title: "TikTok — Branded Mission e Branded Buzz",
+    statusLabel: "Regra vigente",
+    motivo: "Os formatos Branded Mission e Branded Buzz não são mais preenchidos em Compra Direta. O banco de dados agora identifica a plataforma, então não é mais necessário criar dois tipos de taxonomia.",
+    solucaoLabel: "Regra",
+    solucao: "Para Branded Mission e Branded Buzz, deve ser solicitada apenas uma taxonomia, a de TikTok, que é implementada na própria plataforma.",
+    important: [
+      "Não é mais necessário solicitar a taxonomia de Compra Direta para esses formatos.",
+      "A solicitação da taxonomia deve ser feita na aba correta, ou seja, TikTok Branded Mission e Branded Buzz devem ser solicitados na aba de TikTok."
+    ]
+  },
+  {
+    id: "tiktok-shop",
+    category: "TikTok",
+    title: "TikTok — TikTok Shop",
+    statusLabel: "Regra vigente",
+    motivo: "O TikTok Shop ainda não permite extração via API. Enquanto essa extração não é possível, o time de mídia precisa preencher os dados manualmente na planilha de Compra Direta.",
+    definitions: [
+      { code: "Product GMV", desc: "Formato voltado para produtos. Format Type GL: Product Shopping Ads." },
+      { code: "Live GMV", desc: "Formato que impulsiona os produtos via live. Format Type GL: Live Shopping Ads." }
+    ],
+    solucaoLabel: "Regra",
+    solucao: "TikTok Shop só possui taxonomia de Campaign, sem Ad Group ou Ad Name. Por isso, usamos o Campaign padrão de TikTok com três campos extras: Publisher (preenchido como TikTok), Format (Product ou Live) e Location (nacional).",
+    lists: [{ label: "Onde usar cada Campaign", items: [
+      "Na implementação na plataforma TikTok, o Campaign deve ser o Campaign de TikTok Shop.",
+      "Na planilha de Compra Direta, deve ser preenchido o Campaign de TikTok (padrão). Não é permitido subir o Campaign de TikTok Shop nessa planilha."
+    ]}],
+    highlight: { label: "Format Size do Ad Name", text: "Nas linhas de TikTok Shop, o Format Size do Ad Name deve ser preenchido como <span class=\"highlight-term\">novideo</span>, pois os formatos Live e Produto não possuem secundagem definida." },
+    notUse: ["Influencer or Brand", "Seconds", "Creative Name"],
+    taxonomyDiff: {
+      labelBefore: "Campaign TikTok",
+      labelAfter: "Campaign TikTok Shop",
+      before: "CN-Code-Campaign-Name_Market-Short-Name-(PCat)_Brand-Name_Buy-Model_Objective_CampaignLocal|Brandlift-YesorNo|Pilar-da-Campanha|MidiaCampaignLocal-Extra",
+      after: "CN-Code-Campaign-Name_Market-Short-Name-(PCat)_Brand-Name_Buy-Model_Objective_CampaignLocal | Brandlift-YesorNo | <span class=\"seg-new\">Publisher</span> | <span class=\"seg-new\">Format</span> | <span class=\"seg-new\">Location</span> | Pilar-da-Campanha | MidiaCampaignLocal-Extra"
+    },
+    nota: "Assim que a extração via API for viável, essa regra deve mudar. Provavelmente será usada uma lógica parecida com o Placement da Flashtalking, mas isso ainda não foi definido.",
+    important: [
+      "É uma solução temporária, enquanto a extração via API do TikTok Shop não é possível.",
+      "A solicitação da taxonomia deve ser feita na aba de TikTok.",
+      "Position incluído para essas linhas: TikTok-Shop-Skippable.",
+      "Deve ser utilizado o Format Type GL correspondente à veiculação: \"Live Shopping Ads\" para Live e \"Product Shopping Ads\" para Produto.",
+      "O Ad Group e o Ad Name dessas linhas são preenchidos diretamente na planilha de Compra Direta, pois não é possível cadastrá-los na plataforma."
+    ]
+  },
+  {
+    id: "tiktok-search",
+    category: "TikTok",
+    title: "TikTok — TikTok Search",
+    statusLabel: "Regra vigente",
+    motivo: "Inclusão de um Position específico para as campanhas de TikTok Search.",
+    definitions: [{ code: "TikTok-Search", desc: "Position a ser utilizado nas linhas de TikTok Search." }],
+    solucaoLabel: "Regra",
+    solucao: "Para as linhas de TikTok Search, deve ser utilizado o Position \"TikTok-Search\"."
+  },
+  {
+    id: "youtube-masthead-cph",
+    category: "YouTube",
+    title: "YouTube — Masthead CPH",
+    statusLabel: "Regra vigente",
+    motivo: "O YouTube Masthead CPH não é mais preenchido em Compra Direta. O banco de dados agora identifica a plataforma, então não é mais necessário criar dois tipos de taxonomia.",
+    solucaoLabel: "Regra",
+    solucao: "Para campanhas de Masthead CPH, deve ser solicitada apenas uma taxonomia, a de YouTube, que é implementada na própria plataforma.",
+    important: [
+      "Inclusão do Buying Type: cph.",
+      "Não é mais necessário solicitar a taxonomia de Compra Direta para esse formato.",
+      "A solicitação da taxonomia deve ser feita na aba correta, ou seja, YouTube Masthead CPH deve ser solicitado na aba de YouTube."
+    ]
+  },
+  {
+    id: "kwai-eyemax",
+    category: "Kwai",
+    title: "Kwai — EyeMax",
+    statusLabel: "Regra vigente",
+    motivo: "Criação de uma regra para o Ad Group das linhas de Reserva que utilizarem o Position EyeMax.",
+    definitions: [{ code: "EyeMax-Skippable", desc: "Novo Position incluído. Short: eymx." }],
+    solucaoLabel: "Regra",
+    solucao: "Nas linhas de Reserva que utilizarem o Position \"EyeMax\", o Creative Name do Ad Group é substituído pelo valor \"eyemax\". Para as demais linhas, é enviado o Ad Group padrão.",
+    simpleDiff: { field: "Creative Name (Ad Group)", before: "Creative Name", after: "eyemax" },
+    observacao: "A substituição vale apenas para linhas de Reserva com o Position EyeMax."
+  },
+  {
+    id: "spotify-positions",
+    category: "Spotify",
+    title: "Spotify — Positions",
+    statusLabel: "Regra vigente",
+    motivo: "Inclusão de novos Positions para Spotify, todos com o mesmo Placement Global.",
+    definitions: [
+      { code: "Feed-Display", desc: "Placement Global: in-Feed." },
+      { code: "Feed-Video", desc: "Placement Global: in-Feed." },
+      { code: "Carousel", desc: "Placement Global: in-Feed." }
+    ],
+    solucaoLabel: "Regra",
+    solucao: "Os Positions Feed-Display, Feed-Video e Carousel devem ser utilizados com o Placement Global \"in-Feed\"."
+  },
+  {
+    id: "flashtalking",
+    category: "Flashtalking",
+    title: "Flashtalking — Limitações de Taxonomia via API",
+    statusLabel: "Regra vigente",
+    motivo: "Tudo o que é de compra direta e vem via API da Flashtalking não segue a estrutura de taxonomia padrão, porque a Flashtalking só reconhece o Campaign e o Placement (que seria o Ad Name), com algumas limitações e mudanças.",
+    solucaoLabel: "Regra",
+    solucao: "Como a Flashtalking não extrai a informação de Ad Group, o Ad Group e o Ad Name foram unificados em uma taxonomia só de Placement Name. Além disso, o Campaign tem limitações, sendo necessário preencher alguns campos como \"na\" no lugar da informação correta, já que algumas informações mudam.",
+    taxonomyGroups: [
+      {
+        label: "Compra Direta (padrão)",
+        items: [
+          { sublabel: "Campaign (Insertion Order)", string: "CN-Code-Campaign-Name_Brand-Name_Market-Short-Name-(PCat)_Objective_CampaignLocal | Brandlift-YesorNo | Pilar-da-Campanha | MidiaCampaignLocal-Extra" },
+          { sublabel: "Ad Group (Line Item)", string: "Placement-Type_Creative-Name_Landing-Page-Type_Retailer_Influencer_CampaignLocal | ObjetivodeOtimização | Publisher | BuyingType | Location-Type | Location | AudienceType | MidiaGroup-Extra" },
+          { sublabel: "Ad Name", string: "Creative-Name_Format-Type(freetext) | Position | Influencer-or-Brand | Influencer-Name | Seconds | MidiaAdName-extra" }
+        ]
+      },
+      {
+        label: "Flashtalking (via API)",
+        items: [
+          { sublabel: "Campaign (Insertion Order)", string: "CN-Code-Campaign-Name_Brand-Name_<span class=\"seg-remove\">na</span>_<span class=\"seg-remove\">na</span>_CampaignLocal | <span class=\"seg-remove\">na</span> | <span class=\"seg-remove\">na</span> | <span class=\"seg-remove\">na</span>" },
+          { sublabel: "Placement Name / Ad Name", string: "CN-Code-Campaign-Name_Market-Short-Name-(PCat)_Placement-Type_Creative-Name_Landing-Page-Type_Retailer_Objective_CampaignLocal | MidiaCampaignLocal-Extra | ObjetivodeOtimização | Publisher | BuyingType | Location-Type | Location | AudienceType | MidiaGroup-Extra | FormatType | Position | Influencer-or-Brand | Influencer-Name | Brandlift-YesorNo | Seconds | Pilar-da-Campanha | MidiaName-Extra" }
+        ]
+      }
+    ],
+    nota: "O Ad Group e o Ad Name da Flashtalking não seguem a estrutura de Compra Direta acima. Como a Flashtalking só reconhece um nível de Placement, essas duas quebras são unificadas em uma única taxonomia de Placement Name.",
+    observacao: "Os campos destacados em laranja (\"na\") substituem informações que mudariam entre linhas de uma mesma campanha, já que a Flashtalking reconhece cada variação como uma campanha diferente."
+  }
+];
+
+// ── STATE ──────────────────────────────────────────
+const rulesEl  = document.getElementById('rules');
+const emptyEl  = document.getElementById('empty');
+const countEl  = document.getElementById('count');
+const chipsEl  = document.getElementById('chips');
+const searchEl = document.getElementById('search');
+
+const categories = ["Todos", ...new Set(RULES.map(r => r.category))];
+let activeCategory = "Todos";
+let searchQuery = "";
+
+// ── CHIPS ──
+function renderChips() {
+  chipsEl.innerHTML = categories.map(c =>
+    `<button class="chip ${c === activeCategory ? 'active' : ''}" data-cat="${c}">${c}</button>`
+  ).join('');
+  chipsEl.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => { activeCategory = chip.dataset.cat; renderChips(); filterRules(); });
+  });
+}
+
+// ── BLOCK BUILDERS ──
+function taxDiffBlock(rule) {
+  const lb = rule.taxonomyDiff.labelBefore || "Padrão atual";
+  const la = rule.taxonomyDiff.labelAfter  || "Com a nova regra";
+  return `<div class="diff-toggle"><button class="active" data-view="before">${lb}</button><button data-view="after">${la}</button></div>
+  <div class="tax-view active" data-view="before"><div class="tax-string">${rule.taxonomyDiff.before}</div></div>
+  <div class="tax-view" data-view="after"><div class="tax-string">${rule.taxonomyDiff.after}</div></div>`;
+}
+function simpleDiffBlock(rule) {
+  const d = rule.simpleDiff;
+  return `<div class="simple-diff"><span>${d.field}:</span><span class="old">${d.before}</span><span class="arrow">→</span><span class="new">${d.after}</span></div>`;
+}
+function mappingBlock(rule) {
+  return `<div class="mapping">${rule.mapping.map(m =>
+    `<div class="mapping-row"><span class="cond">${m.condition}</span><span class="arrow" style="color:var(--muted)">→</span><span class="result">Publisher: ${m.result}</span></div>`
+  ).join('')}</div>`;
+}
+function platformTaxBlock(rule) {
+  const tabs   = rule.taxonomyVariants.map((v, i) => `<button class="ptab ${i===0?'active':''}" data-platform="${v.platform}">${v.platform}</button>`).join('');
+  const panels = rule.taxonomyVariants.map((v, i) => `
+    <div class="tax-platform-panel ${i===0?'active':''}" data-platform="${v.platform}">
+      <div class="diff-toggle"><button class="active" data-view="before">${v.labelBefore||"Padrão"}</button><button data-view="after">${v.labelAfter||"Nova regra"}</button></div>
+      <div class="tax-view active" data-view="before"><div class="tax-string">${v.before}</div></div>
+      <div class="tax-view" data-view="after"><div class="tax-string">${v.after}</div></div>
+    </div>`).join('');
+  return `<div class="platform-tabs">${tabs}</div>${panels}`;
+}
+function taxonomyGroupsBlock(rule) {
+  const opts   = rule.taxonomyGroups.map((g, i) => `<option value="${i}">${g.label}</option>`).join('');
+  const panels = rule.taxonomyGroups.map((g, i) => `
+    <div class="tax-group-panel ${i===0?'active':''}" data-group="${i}">
+      ${g.items.map(it => `<div class="tax-sublabel">${it.sublabel}</div><div class="tax-string">${it.string}</div>`).join('')}
+    </div>`).join('');
+  return `<select class="platform-select">${opts}</select>${panels}`;
+}
+function defBlock(items)  { return `<div class="definitions">${items.map(d => `<div class="def-row"><span class="def-code">${d.code}</span><span class="def-desc">${d.desc}</span></div>`).join('')}</div>`; }
+function warnBlock(items) { return items.length===1 ? `<div class="callout warn">${items[0]}</div>` : `<div class="callout warn"><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`; }
+function infoBlock(items) { return items.length===1 ? `<div class="callout info">${items[0]}</div>` : `<div class="callout info"><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`; }
+function listBlock(items) { return `<ul class="list-plain">${items.map(i=>`<li>${i}</li>`).join('')}</ul>`; }
+function limitsBlock(rows) {
+  const cls = r => r==="Sim"?"redux-sim":r==="Não"?"redux-nao":"redux-condicao";
+  return `<table class="limits-table"><thead><tr><th>Plataforma</th><th>Campo</th><th>Limite</th><th>Redução</th></tr></thead><tbody>${
+    rows.map(r=>`<tr><td class="lt-platform">${r.platform}</td><td>${r.field}</td><td class="lt-limit">${r.limit}</td><td><span class="redux-badge ${cls(r.reducao)}">${r.reducao}</span></td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+// ── RENDER RULES ──
+function renderRules(list) {
+  rulesEl.innerHTML = list.map(rule => `
+    <div class="rule" data-id="${rule.id}">
+      <div class="rule-head">
+        <div class="rule-head-left">
+          <span class="platform-dot"></span>
+          <span class="rule-title">${rule.title}</span>
+          <span class="rule-cat">${rule.category}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="status">${rule.statusLabel}</span>
+          <svg class="chevron" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="rule-body">
+        <div class="rule-body-inner">
+          <div class="section-label">Motivo</div>
+          <p class="section-text">${rule.motivo}</p>
+          ${rule.definitions   ? `<div class="section-label">${rule.definitionsLabel||"Classificações"}</div>${defBlock(rule.definitions)}`     : ''}
+          ${rule.notUse        ? `<div class="section-label">Não utilizar</div>${listBlock(rule.notUse)}`            : ''}
+          ${rule.casos         ? `<div class="section-label">Quando é permitido</div>${listBlock(rule.casos)}`       : ''}
+          ${rule.lists         ? rule.lists.map(l => `<div class="section-label">${l.label}</div>${listBlock(l.items)}`).join('') : ''}
+          ${rule.solucao       ? `<div class="section-label">${rule.solucaoLabel||"Solução proposta"}</div><p class="section-text">${rule.solucao}</p>` : ''}
+          ${rule.highlight     ? `<div class="section-label">${rule.highlight.label}</div><div class="highlight-box">${rule.highlight.text}</div>` : ''}
+          ${rule.limits        ? `<div class="section-label">Limitações por plataforma</div>${limitsBlock(rule.limits)}` : ''}
+          ${(rule.taxonomyDiff||rule.mapping||rule.simpleDiff||rule.taxonomyVariants||rule.taxonomyGroups) ? `
+            <div class="section-label">Taxonomia</div>
+            ${rule.taxonomyGroups   ? taxonomyGroupsBlock(rule) :
+              rule.taxonomyVariants ? platformTaxBlock(rule)    :
+              rule.taxonomyDiff     ? taxDiffBlock(rule)        :
+              rule.mapping          ? mappingBlock(rule)        :
+              simpleDiffBlock(rule)}` : ''}
+          ${rule.nota      ? `<div class="section-label">${rule.notaLabel||"Nota"}</div><p class="section-text">${rule.nota}</p>` : ''}
+          ${rule.exception ? `<div class="section-label">Exceção</div>${infoBlock(rule.exception)}` : ''}
+          ${rule.ajustes && rule.ajustes.length ? `<div class="section-label">Ajustes necessários</div><ul class="checklist">${rule.ajustes.map(a=>`<li>${a}</li>`).join('')}</ul>` : ''}
+          ${rule.observacao ? `<div class="section-label">Observação de preenchimento</div><p class="section-text">${rule.observacao}</p>` : ''}
+          ${rule.important  ? `<div class="section-label">Importante</div>${warnBlock(rule.important)}` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+
+  // accordion
+  rulesEl.querySelectorAll('.rule-head').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('open')));
+  // platform tabs
+  rulesEl.querySelectorAll('.platform-tabs').forEach(tabs => {
+    tabs.addEventListener('click', e => {
+      const btn = e.target.closest('.ptab'); if (!btn) return; e.stopPropagation();
+      const plat = btn.dataset.platform;
+      tabs.querySelectorAll('.ptab').forEach(b => b.classList.toggle('active', b===btn));
+      tabs.parentElement.querySelectorAll('.tax-platform-panel').forEach(p => p.classList.toggle('active', p.dataset.platform===plat));
+    });
+  });
+  // group select
+  rulesEl.querySelectorAll('.platform-select').forEach(sel => {
+    sel.addEventListener('change', e => { e.stopPropagation(); const v = sel.value; sel.parentElement.querySelectorAll('.tax-group-panel').forEach(p => p.classList.toggle('active', p.dataset.group===v)); });
+    sel.addEventListener('click', e => e.stopPropagation());
+  });
+  // diff toggle
+  rulesEl.querySelectorAll('.diff-toggle').forEach(toggle => {
+    toggle.addEventListener('click', e => {
+      const btn = e.target.closest('button'); if (!btn) return; e.stopPropagation();
+      const v = btn.dataset.view;
+      toggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b===btn));
+      toggle.parentElement.querySelectorAll('.tax-view').forEach(tv => tv.classList.toggle('active', tv.dataset.view===v));
+    });
+  });
+}
+
+// ── FILTER ──
+function filterRules() {
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = RULES.filter(r => {
+    const matchesCat = activeCategory === "Todos" || r.category === activeCategory;
+    const extra = [
+      r.definitions ? r.definitions.map(d=>`${d.code} ${d.desc}`).join(' ') : '',
+      r.important  ? r.important.join(' ')  : '',
+      r.notUse     ? r.notUse.join(' ')     : '',
+      r.casos      ? r.casos.join(' ')      : '',
+      r.exception  ? r.exception.join(' ')  : '',
+      r.lists      ? r.lists.map(l=>`${l.label} ${l.items.join(' ')}`).join(' ') : '',
+      r.nota||'', r.highlight ? `${r.highlight.label} ${r.highlight.text}` : '',
+      r.limits     ? r.limits.map(l=>`${l.platform} ${l.field} ${l.limit}`).join(' ') : ''
+    ].join(' ');
+    const hay = `${r.title} ${r.category} ${r.motivo} ${r.solucao||''} ${r.observacao||''} ${extra}`.toLowerCase();
+    return matchesCat && (q === "" || hay.includes(q));
+  });
+
+  renderRules(filtered);
+  emptyEl.classList.toggle('show', filtered.length === 0);
+  countEl.innerHTML = q || activeCategory !== "Todos"
+    ? `Exibindo <strong>${filtered.length}</strong> de ${RULES.length} regras`
+    : `<strong>${RULES.length}</strong> regras`;
+}
+
+searchEl.addEventListener('input', e => { searchQuery = e.target.value; filterRules(); });
+
+renderChips();
+filterRules();
+</script>
+</body>
+</html>

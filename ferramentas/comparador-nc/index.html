@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comparador de NC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#f8fafc;--divider:#f1f5f9;
+  --add:#16a34a;--add-bg:#f0fdf4;--rem:#dc2626;--rem-bg:#fef2f2;--mod:#d97706;--mod-bg:#fffbeb;--same:#94a3b8;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --add:#22c55e;--add-bg:rgba(22,197,94,.08);--rem:#f87171;--rem-bg:rgba(248,113,113,.08);--mod:#f59e0b;--mod-bg:rgba(245,158,11,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --add:#22c55e;--add-bg:rgba(22,197,94,.08);--rem:#f87171;--rem-bg:rgba(248,113,113,.08);--mod:#f59e0b;--mod-bg:rgba(245,158,11,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1100px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:650px){.two-col{grid-template-columns:1fr;}}
+textarea{width:100%;height:200px;resize:vertical;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;outline:none;}
+textarea:focus{border-color:var(--accent);}
+.col-label{font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+/* Result rows */
+.result-row{font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:6px;margin-bottom:3px;display:flex;align-items:center;gap:8px;border:1px solid transparent;}
+.result-row.add{background:var(--add-bg);border-color:var(--add);color:var(--add);}
+.result-row.rem{background:var(--rem-bg);border-color:var(--rem);color:var(--rem);}
+.result-row.mod{background:var(--mod-bg);border-color:var(--mod);color:var(--mod);}
+.result-row.same{background:var(--divider);color:var(--same);}
+.row-badge{font-size:10px;font-weight:800;padding:1px 7px;border-radius:10px;white-space:nowrap;background:currentColor;color:var(--card);filter:invert(0);}
+.row-badge.add{background:var(--add);color:#fff;}
+.row-badge.rem{background:var(--rem);color:#fff;}
+.row-badge.mod{background:var(--mod);color:#fff;}
+.row-badge.same{background:var(--same);color:#fff;}
+.row-val{flex:1;word-break:break-all;}
+.row-diff{color:var(--mod);font-size:11px;margin-left:auto;}
+/* Stats bar */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.stat-pill{padding:10px;border-radius:10px;text-align:center;}
+.stat-pill.add{background:var(--add-bg);color:var(--add);}
+.stat-pill.rem{background:var(--rem-bg);color:var(--rem);}
+.stat-pill.mod{background:var(--mod-bg);color:var(--mod);}
+.stat-pill.same{background:var(--divider);color:var(--same);}
+.stat-n{font-size:22px;font-weight:800;}
+.stat-l{font-size:10px;margin-top:1px;}
+/* Filter chips */
+.filter-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.chip{font-size:11px;padding:3px 10px;border-radius:14px;border:1px solid var(--border);cursor:pointer;font-weight:500;background:var(--card);}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Seg highlight */
+.seg{padding:1px 4px;border-radius:3px;margin:0 1px;}
+.seg.c0{background:#dbeafe;color:#1d4ed8;}
+.seg.c1{background:#fce7f3;color:#be185d;}
+.seg.c2{background:#dcfce7;color:#15803d;}
+.seg.c3{background:#fef3c7;color:#b45309;}
+.seg.c4{background:#ede9fe;color:#6d28d9;}
+.seg.c5{background:#cffafe;color:#0e7490;}
+.seg.c6{background:#ffe4e6;color:#be123c;}
+.seg.c7{background:#ecfdf5;color:#065f46;}
+[data-theme="dark"] .seg.c0{background:rgba(29,78,216,.2);color:#93c5fd;}
+[data-theme="dark"] .seg.c1{background:rgba(190,24,93,.2);color:#f9a8d4;}
+[data-theme="dark"] .seg.c2{background:rgba(21,128,61,.2);color:#86efac;}
+[data-theme="dark"] .seg.c3{background:rgba(180,83,9,.2);color:#fcd34d;}
+[data-theme="dark"] .seg.c4{background:rgba(109,40,217,.2);color:#c4b5fd;}
+[data-theme="dark"] .seg.c5{background:rgba(14,116,144,.2);color:#67e8f9;}
+[data-theme="dark"] .seg.c6{background:rgba(190,18,60,.2);color:#fda4af;}
+[data-theme="dark"] .seg.c7{background:rgba(6,95,70,.2);color:#6ee7b7;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🔀</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Comparador de NC</div>
+      <div style="font-size:11px;color:var(--faint)">Compare duas listas de naming conventions e veja diff detalhado</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportDiff()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="compare()">🔀 Comparar</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Inputs -->
+  <div class="two-col">
+    <div class="card">
+      <div class="col-label">
+        <span>⬅ Lista A <span style="color:var(--faint);font-weight:400">(versão antiga / referência)</span></span>
+        <button class="btn" onclick="document.getElementById('ta').value='';document.getElementById('ta').focus()" style="height:22px;padding:0 7px;font-size:10px">limpar</button>
+      </div>
+      <textarea id="ta" placeholder="Cole as NCs aqui, uma por linha&#10;&#10;ex:&#10;dove_cabelos_hidratacao_br&#10;dove_body_creme_sp&#10;dove_rosto_esfoliante_rj"></textarea>
+      <div style="font-size:10px;color:var(--faint);margin-top:5px" id="countA">0 NCs</div>
+    </div>
+    <div class="card">
+      <div class="col-label">
+        <span>➡ Lista B <span style="color:var(--faint);font-weight:400">(versão nova / comparar com)</span></span>
+        <button class="btn" onclick="document.getElementById('tb').value='';document.getElementById('tb').focus()" style="height:22px;padding:0 7px;font-size:10px">limpar</button>
+      </div>
+      <textarea id="tb" placeholder="Cole as NCs aqui, uma por linha&#10;&#10;ex:&#10;dove_cabelos_hidratacao_br&#10;dove_body_creme_sp_v2&#10;dove_rosto_esfoliante_rj&#10;dove_nova_linha_sp"></textarea>
+      <div style="font-size:10px;color:var(--faint);margin-top:5px" id="countB">0 NCs</div>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="optCase" style="accent-color:var(--accent)"> Ignorar maiúsculas/minúsculas
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="optTrim" checked style="accent-color:var(--accent)"> Ignorar espaços no início/fim
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="optHighlight" checked style="accent-color:var(--accent)"> Highlight de segmentos
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+      Separador:
+      <input type="text" id="optSep" placeholder="auto" style="width:60px;height:26px;font-size:12px;">
+    </label>
+    <div style="margin-left:auto">
+      <span id="lastCompare" style="font-size:10px;color:var(--faint)"></span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsBar" style="display:none"></div>
+
+  <!-- Results -->
+  <div id="resultsWrap" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <div class="filter-row" style="margin:0" id="filterRow"></div>
+        <input type="text" id="searchRes" placeholder="🔍 filtrar resultado…" style="height:28px;width:200px;font-size:12px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);outline:none;" oninput="renderResults()">
+      </div>
+      <div id="resultList"></div>
+    </div>
+  </div>
+
+  <div id="emptyState" style="text-align:center;padding:48px;color:var(--faint)">
+    <div style="font-size:36px;margin-bottom:10px">🔀</div>
+    <div>Cole as NCs nas duas listas e clique em <strong>Comparar</strong></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null; try{_theme=localStorage.getItem('compnc_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('compnc_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Count updates
+['ta','tb'].forEach((id,i)=>{
+  const el=document.getElementById(id);
+  const ci=document.getElementById(i===0?'countA':'countB');
+  el.addEventListener('input',()=>{
+    const lines=el.value.split('\n').filter(l=>l.trim());
+    ci.textContent=`${lines.length} NC${lines.length!==1?'s':''}`;
+  });
+});
+
+function parseSep(nc){
+  const seps=['_','-','|','.','/'];
+  for(const s of seps) if(nc.includes(s)) return s;
+  return '_';
+}
+
+function detectSep(lines){
+  const counts={};
+  for(const l of lines.slice(0,20)){
+    for(const s of ['_','-','|','.','/']) counts[s]=(counts[s]||0)+(l.split(s).length-1);
+  }
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'_';
+}
+
+function highlightSegs(nc, sep){
+  const parts=nc.split(sep);
+  return parts.map((p,i)=>`<span class="seg c${i%8}">${esc(p)}</span>`).join(`<span style="color:var(--faint)">${esc(sep)}</span>`);
+}
+
+function segDiff(a, b, sep){
+  const pa=a.split(sep), pb=b.split(sep);
+  const changes=[];
+  const max=Math.max(pa.length,pb.length);
+  for(let i=0;i<max;i++){
+    if(pa[i]===pb[i]) continue;
+    if(pa[i]===undefined) changes.push(`+seg${i+1}="${pb[i]}"`);
+    else if(pb[i]===undefined) changes.push(`-seg${i+1}="${pa[i]}"`);
+    else changes.push(`seg${i+1}: "${pa[i]}"→"${pb[i]}"`);
+  }
+  return changes.join(', ');
+}
+
+let _results=[];
+let _filter='all';
+
+function compare(){
+  const optCase=document.getElementById('optCase').checked;
+  const optTrim=document.getElementById('optTrim').checked;
+  const optHL=document.getElementById('optHighlight').checked;
+  const userSep=document.getElementById('optSep').value.trim();
+
+  const normalize=s=>{
+    let v=optTrim?s.trim():s;
+    if(optCase) v=v.toLowerCase();
+    return v;
+  };
+
+  const rawA=document.getElementById('ta').value.split('\n').filter(l=>l.trim());
+  const rawB=document.getElementById('tb').value.split('\n').filter(l=>l.trim());
+
+  if(!rawA.length && !rawB.length){showToast('Cole NCs nas duas listas');return;}
+
+  const sep=userSep||detectSep([...rawA,...rawB]);
+
+  const mapA=new Map(); rawA.forEach(nc=>{const k=normalize(nc);if(!mapA.has(k))mapA.set(k,nc);});
+  const mapB=new Map(); rawB.forEach(nc=>{const k=normalize(nc);if(!mapB.has(k))mapB.set(k,nc);});
+
+  _results=[];
+
+  // Additions (in B not in A)
+  mapB.forEach((orig,k)=>{
+    if(!mapA.has(k)) _results.push({type:'add',val:orig,sep});
+  });
+
+  // Removals (in A not in B)
+  mapA.forEach((orig,k)=>{
+    if(!mapB.has(k)) _results.push({type:'rem',val:orig,sep});
+  });
+
+  // Modified — fuzzy match by prefix (first 2 segments same, rest changed)
+  const unmatched_a=new Set([...mapA.keys()].filter(k=>!mapB.has(k)));
+  const unmatched_b=new Set([...mapB.keys()].filter(k=>!mapA.has(k)));
+
+  // For each unmatched B, check if there's an unmatched A that shares first 2 segs
+  const matched_as=new Set(), matched_bs=new Set();
+  unmatched_b.forEach(bk=>{
+    const bParts=bk.split(sep);
+    let best=null, bestScore=0;
+    unmatched_a.forEach(ak=>{
+      if(matched_as.has(ak)) return;
+      const aParts=ak.split(sep);
+      let shared=0;
+      const minLen=Math.min(aParts.length,bParts.length);
+      for(let i=0;i<minLen;i++){if(aParts[i]===bParts[i])shared++;else break;}
+      // at least 2 segs shared AND total segs similar
+      const score=shared/(Math.max(aParts.length,bParts.length));
+      if(shared>=2 && score>bestScore){best=ak;bestScore=score;}
+    });
+    if(best){
+      const diff=segDiff(mapA.get(best)||best, mapB.get(bk)||bk, sep);
+      _results.push({type:'mod',val:mapB.get(bk)||bk,valA:mapA.get(best)||best,diff,sep});
+      matched_as.add(best); matched_bs.add(bk);
+    }
+  });
+
+  // Remaining unmatched are pure add/rem — already added above; remove any that got matched
+  _results=_results.filter(r=>{
+    if(r.type==='rem') return !matched_as.has(normalize(r.val));
+    if(r.type==='add') return !matched_bs.has(normalize(r.val));
+    return true;
+  });
+
+  // Same (in both)
+  mapA.forEach((orig,k)=>{
+    if(mapB.has(k)) _results.push({type:'same',val:orig,sep});
+  });
+
+  // Sort: add, rem, mod, same; then alpha
+  const order={add:0,rem:1,mod:2,same:3};
+  _results.sort((a,b)=>order[a.type]-order[b.type]||a.val.localeCompare(b.val));
+
+  // Show
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('statsBar').style.display='grid';
+  document.getElementById('resultsWrap').style.display='block';
+  document.getElementById('lastCompare').textContent=`Comparado em ${new Date().toLocaleTimeString('pt-BR')}`;
+
+  _filter='all';
+  renderStats();
+  renderFilters();
+  renderResults();
+}
+
+function renderStats(){
+  const c={add:0,rem:0,mod:0,same:0};
+  _results.forEach(r=>c[r.type]++);
+  document.getElementById('statsBar').innerHTML=[
+    {k:'add',l:'Adicionadas',n:c.add},
+    {k:'rem',l:'Removidas',n:c.rem},
+    {k:'mod',l:'Modificadas',n:c.mod},
+    {k:'same',l:'Iguais',n:c.same},
+  ].map(x=>`<div class="stat-pill ${x.k}"><div class="stat-n">${x.n}</div><div class="stat-l">${x.l}</div></div>`).join('');
+}
+
+function renderFilters(){
+  const c={all:_results.length,add:0,rem:0,mod:0,same:0};
+  _results.forEach(r=>c[r.type]++);
+  const filters=[{k:'all',l:'Todas'},{k:'add',l:'Adicionadas'},{k:'rem',l:'Removidas'},{k:'mod',l:'Modificadas'},{k:'same',l:'Iguais'}];
+  document.getElementById('filterRow').innerHTML=filters.map(f=>
+    `<span class="chip ${_filter===f.k?'on':''}" onclick="setFilter('${f.k}')">${f.l} (${c[f.k]})</span>`
+  ).join('');
+}
+
+function setFilter(f){_filter=f;renderFilters();renderResults();}
+
+function renderResults(){
+  const q=(document.getElementById('searchRes').value||'').toLowerCase();
+  const optHL=document.getElementById('optHighlight').checked;
+  let items=_results;
+  if(_filter!=='all') items=items.filter(r=>r.type===_filter);
+  if(q) items=items.filter(r=>r.val.toLowerCase().includes(q)||(r.valA||'').toLowerCase().includes(q));
+
+  const labels={add:'+ NOVA',rem:'- REMOVIDA',mod:'± MODIF.',same:'= IGUAL'};
+  document.getElementById('resultList').innerHTML=items.length===0
+    ? `<div style="text-align:center;padding:24px;color:var(--faint)">Nenhum resultado</div>`
+    : items.map(r=>{
+        const valDisp=optHL&&r.sep?highlightSegs(r.val,r.sep):esc(r.val);
+        const valADisp=r.valA?(optHL&&r.sep?highlightSegs(r.valA,r.sep):esc(r.valA)):null;
+        return `<div class="result-row ${r.type}">
+          <span class="row-badge ${r.type}">${labels[r.type]}</span>
+          <span class="row-val">
+            ${r.type==='mod'&&valADisp?`<span style="text-decoration:line-through;opacity:.6">${valADisp}</span> → ${valDisp}`:valDisp}
+          </span>
+          ${r.diff?`<span class="row-diff" title="${esc(r.diff)}">${esc(r.diff.length>60?r.diff.slice(0,60)+'…':r.diff)}</span>`:''}
+        </div>`;
+      }).join('');
+}
+
+function exportDiff(){
+  if(!_results.length){showToast('Nenhum resultado para exportar');return;}
+  const rows=[['tipo','nc','nc_original','diff']];
+  _results.forEach(r=>rows.push([r.type,r.val,r.valA||'',r.diff||'']));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`diff_nc_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  showToast(`⬇ ${_results.length} linhas exportadas`);
+}
+
+// Keyboard shortcut: Enter to compare
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter') compare();
+});
+</script>
+</body>
+</html>

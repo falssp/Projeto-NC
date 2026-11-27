@@ -1,0 +1,48 @@
+name: Sync Audit — F2 vs GAS
+
+# Roda toda segunda-feira às 09h (horário de Brasília = 12h UTC)
+# Pode ser disparado manualmente também
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: Verificar sync F2 ↔ GAS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rodar sync audit
+        id: audit
+        run: python3 scripts/sync-audit.py
+        continue-on-error: true
+
+      - name: Criar issue se drift crítico detectado
+        if: steps.audit.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create "sync-audit" \
+            --color "#FF9800" \
+            --description "Drift detectado pelo sync-audit semanal" \
+            --force 2>/dev/null || true
+
+          BODY=$(cat /tmp/sync-drift-report.md 2>/dev/null || echo "Drift detectado — ver log da Action para detalhes.")
+          DATE=$(date +%Y-%m-%d)
+
+          gh issue create \
+            --title "⚠️ Sync Audit: Drift F2 ↔ GAS detectado ($DATE)" \
+            --body "$BODY" \
+            --label "sync-audit"
+
+      - name: Falhar se drift crítico
+        if: steps.audit.outcome == 'failure'
+        run: exit 1

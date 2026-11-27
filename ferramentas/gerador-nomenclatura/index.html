@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Nomenclatura em Lote — NC Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.3rem;font-weight:700}
+header span{font-size:.85rem;opacity:.7}
+.main{padding:28px 32px;min-width:0}
+.tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid #d6dbf2}
+.tab{padding:10px 20px;border:none;background:none;font-family:inherit;font-size:.9rem;font-weight:500;color:#666;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.active{color:#1F36C7;border-bottom-color:#1F36C7}
+.tab:hover:not(.active){color:#1a237e}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:20px;margin-bottom:20px}
+.card-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+label{font-size:.85rem;font-weight:600;color:#444;display:block;margin-bottom:4px}
+input[type=text],input[type=date],select,textarea{width:100%;padding:9px 12px;border:1.5px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.9rem;color:#1a1a2e;background:#fff;transition:border .15s}
+input[type=text]:focus,select:focus,textarea:focus{outline:none;border-color:#1F36C7}
+.row{display:grid;gap:16px}
+.row-2{grid-template-columns:1fr 1fr}
+.row-3{grid-template-columns:1fr 1fr 1fr}
+.row-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:7px;font-family:inherit;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:#1F36C7;color:#fff}.btn-primary:hover{background:#1a2ea8}
+.btn-secondary{background:#e8ecfd;color:#1F36C7}.btn-secondary:hover{background:#d6dbf2}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fecaca}
+.preview-box{background:#1a237e;color:#fff;padding:12px 16px;border-radius:8px;font-family:monospace;font-size:.9rem;word-break:break-all;margin-top:12px;min-height:40px}
+.preview-box span{color:#a5b4fc}
+.token-list{display:flex;flex-direction:column;gap:8px}
+.token-row{display:flex;align-items:center;gap:10px;background:#f4f5fb;border:1.5px solid #d6dbf2;border-radius:8px;padding:10px 12px;transition:border .15s}
+.token-row.active-token{border-color:#1F36C7;background:#e8ecfd}
+.token-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#1F36C7}
+.token-label{font-size:.85rem;font-weight:600;color:#1a237e;min-width:120px;font-family:monospace;background:#1a237e;color:#a5b4fc;padding:2px 7px;border-radius:4px;font-size:.78rem}
+.token-row input[type=text],.token-row select{flex:1;min-width:0}
+.move-btns{display:flex;flex-direction:column;gap:2px}
+.move-btn{background:#e8ecfd;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;color:#1F36C7}
+.move-btn:hover{background:#d6dbf2}
+.move-btn:disabled{opacity:.3;cursor:default}
+.conv-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.conv-name{font-weight:600;font-size:.9rem}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.78rem;font-weight:600}
+.badge-ok{background:#dcfce7;color:#15803d}
+.badge-warn{background:#fef9c3;color:#a16207}
+.badge-error{background:#fee2e2;color:#dc2626}
+.badge-info{background:#e8ecfd;color:#1F36C7}
+table{width:100%;border-collapse:collapse;font-size:.87rem}
+th{background:#f4f5fb;padding:10px 12px;text-align:left;font-weight:600;color:#444;border-bottom:2px solid #d6dbf2;position:sticky;top:0}
+td{padding:9px 12px;border-bottom:1px solid #f0f0f8;vertical-align:middle}
+tr:hover td{background:#f8f9ff}
+.tbl-wrap{max-height:420px;overflow-y:auto;border:1px solid #d6dbf2;border-radius:8px}
+.len-ok{color:#15803d;font-weight:600}
+.len-warn{color:#a16207;font-weight:600}
+.len-err{color:#dc2626;font-weight:600}
+tr.row-warn td{background:#fffbeb}
+tr.row-err td{background:#fff5f5}
+.char-meter{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.82rem}
+.meter-bar{flex:1;height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden}
+.meter-fill{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.saved-conv-list{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.conv-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1.5px solid #d6dbf2;background:#fff;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.conv-pill.active-conv{border-color:#1F36C7;background:#e8ecfd;color:#1F36C7}
+.conv-pill .del-conv{color:#dc2626;font-size:.75rem;cursor:pointer;margin-left:4px;line-height:1}
+.empty-state{text-align:center;padding:40px;color:#999;font-size:.9rem}
+.info-box{background:#e8ecfd;border:1px solid #d6dbf2;border-radius:8px;padding:12px 16px;font-size:.85rem;color:#1a237e;margin-bottom:16px}
+.sep-preview{font-family:monospace;font-size:1.1rem;font-weight:700;color:#1F36C7;background:#e8ecfd;padding:3px 10px;border-radius:5px}
+.stat-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.stat{background:#e8ecfd;border-radius:8px;padding:12px 18px;text-align:center}
+.stat-val{font-size:1.4rem;font-weight:700;color:#1F36C7}
+.stat-lbl{font-size:.78rem;color:#555;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+textarea{resize:vertical;min-height:100px}
+.val-row{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:6px;font-size:.85rem;border:1px solid #e0e0e8;margin-bottom:6px}
+.val-row.ok{border-color:#bbf7d0;background:#f0fdf4}
+.val-row.warn{border-color:#fde68a;background:#fffbeb}
+.val-row.err{border-color:#fecaca;background:#fff5f5}
+.val-name{font-family:monospace;font-weight:600;flex:1;word-break:break-all}
+.val-issues{color:#555;font-size:.8rem}
+footer{text-align:center;padding:24px;color:#999;font-size:.8rem;border-top:1px solid #d6dbf2;margin-top:40px}
+@media(max-width:768px){.row-2,.row-3,.row-4{grid-template-columns:1fr}.main{padding:16px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🏷️ Gerador de Nomenclatura em Lote</h1>
+    <span>Crie, valide e exporte nomes de anúncios em escala — NC Tool AdOps Suite</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('convencao')">1. Convenção</button>
+    <button class="tab" onclick="showTab('gerar')">2. Gerar Nomes</button>
+    <button class="tab" onclick="showTab('validar')">3. Validar</button>
+    <button class="tab" onclick="showTab('export')">4. Exportar</button>
+  </div>
+
+  <!-- TAB 1: CONVENÇÃO -->
+  <div id="tab-convencao" class="panel active">
+    <div class="card">
+      <div class="card-title">💾 Convenções salvas</div>
+      <div id="savedConvList" class="saved-conv-list"></div>
+      <div class="row row-3">
+        <div>
+          <label>Nome da convenção</label>
+          <input type="text" id="convName" placeholder="ex: Padrão AdOps 2025">
+        </div>
+        <div>
+          <label>Separador</label>
+          <select id="separator">
+            <option value="_">_ (underline)</option>
+            <option value="-">- (hífen)</option>
+            <option value="|">| (pipe)</option>
+            <option value=".">. (ponto)</option>
+          </select>
+        </div>
+        <div>
+          <label>Capitalização</label>
+          <select id="caseMode">
+            <option value="upper">MAIÚSCULAS</option>
+            <option value="lower">minúsculas</option>
+            <option value="title">Title Case</option>
+            <option value="none">Como digitado</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="saveConvention()">💾 Salvar convenção</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadDefaultConvention()">↺ Padrão AdOps</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔧 Tokens da convenção
+        <span style="font-size:.8rem;font-weight:400;color:#666">Use ↑↓ para reordenar, ☑ para incluir/excluir</span>
+      </div>
+      <div id="tokenList" class="token-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👁️ Preview da convenção</div>
+      <div class="preview-box" id="convPreview">Configure os tokens acima</div>
+      <div class="char-meter" id="charMeter" style="display:none">
+        <span style="font-size:.8rem;color:#555">Comprimento máx. estimado:</span>
+        <div class="meter-bar"><div class="meter-fill" id="meterFill"></div></div>
+        <span id="charCount" style="font-weight:600"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: GERAR -->
+  <div id="tab-gerar" class="panel">
+    <div class="info-box">💡 Preencha os valores para cada token. Use <strong>vírgulas</strong> para múltiplos valores — a ferramenta gera o produto cartesiano de todas as combinações.</div>
+    <div class="card">
+      <div class="card-title">📝 Valores por token</div>
+      <div id="genForm"></div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="generateNames()">⚡ Gerar nomes</button>
+        <span id="combCount" style="font-size:.85rem;color:#666"></span>
+      </div>
+    </div>
+
+    <div id="genResults" style="display:none">
+      <div class="stat-row" id="genStats"></div>
+      <div class="card">
+        <div class="card-title">📋 Nomes gerados</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Nome gerado</th><th>Comprimento</th><th>Status</th></tr></thead>
+            <tbody id="genTableBody"></tbody>
+          </table>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary btn-sm" onclick="copyNames()">📋 Copiar lista</button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadCSV()">⬇️ Baixar CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadTrafficking()">📊 Baixar Trafficking Sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: VALIDAR -->
+  <div id="tab-validar" class="panel">
+    <div class="card">
+      <div class="card-title">✅ Validar nomes existentes</div>
+      <div class="row row-2">
+        <div>
+          <label>Convenção para validar</label>
+          <select id="valConvSelect" style="margin-bottom:12px"></select>
+          <label>Cole os nomes (um por linha)</label>
+          <textarea id="valInput" placeholder="NIKE_AIRMAX_AWA_META_IMG_202411_v1&#10;ADIDAS_RUN_CONV_GGL_VID_202411&#10;..."></textarea>
+        </div>
+        <div>
+          <div style="margin-bottom:8px">
+            <label>Referência da convenção selecionada</label>
+            <div class="preview-box" id="valConvPreview" style="font-size:.8rem;min-height:40px"></div>
+          </div>
+          <button class="btn btn-primary" onclick="validateNames()" style="margin-top:12px">🔍 Validar</button>
+          <div id="valSummary" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+    <div id="valResults"></div>
+  </div>
+
+  <!-- TAB 4: EXPORTAR -->
+  <div id="tab-export" class="panel">
+    <div class="card">
+      <div class="card-title">📤 Exportar nomes gerados</div>
+      <div id="exportEmpty" class="empty-state">Gere nomes na aba "Gerar Nomes" primeiro.</div>
+      <div id="exportContent" style="display:none">
+        <div class="stat-row" id="exportStats"></div>
+        <div style="margin-bottom:16px">
+          <label>Pré-visualização (primeiros 10)</label>
+          <div style="background:#1a237e;color:#a5b4fc;padding:14px;border-radius:8px;font-family:monospace;font-size:.82rem;line-height:1.8" id="exportPreview"></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="copyNames()">📋 Copiar lista de nomes</button>
+          <button class="btn btn-secondary" onclick="downloadCSV()">⬇️ Baixar CSV completo</button>
+          <button class="btn btn-secondary" onclick="downloadTrafficking()">📊 Baixar Trafficking Sheet (CM360)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>NC Tool — AdOps Suite · Gerador de Nomenclatura em Lote · Offline</footer>
+
+<script>
+// ---- TOKEN DEFINITIONS ----
+const TOKEN_DEFS = [
+  {id:'ANUNCIANTE', label:'[ANUNCIANTE]', type:'text', placeholder:'ex: Nike', default:''},
+  {id:'PRODUTO', label:'[PRODUTO]', type:'text', placeholder:'ex: AirMax', default:''},
+  {id:'CAMPANHA', label:'[CAMPANHA]', type:'text', placeholder:'ex: Brand2025', default:''},
+  {id:'OBJETIVO', label:'[OBJETIVO]', type:'select', options:['AWA','CON','CONV','REM','PERF'], default:'AWA'},
+  {id:'PLATAFORMA', label:'[PLATAFORMA]', type:'select', options:['META','GGL','DV360','YT','LI','TT','CM360','PROG','OUTRO'], default:'META'},
+  {id:'TIPO_CAMPANHA', label:'[TIPO_CAMPANHA]', type:'select', options:['PROS','REM','LOOKALIKE','CRM','BRANDING'], default:'PROS'},
+  {id:'FORMATO', label:'[FORMATO]', type:'select', options:['IMG','VID','CAR','HTML5','STORIES','REELS','BUMPER','NATIVE'], default:'IMG'},
+  {id:'DIMENSAO', label:'[DIMENSAO]', type:'text', placeholder:'ex: 300x250', default:''},
+  {id:'PERIODO', label:'[PERIODO]', type:'text', placeholder:'ex: 202411', default:''},
+  {id:'VERSAO', label:'[VERSAO]', type:'text', placeholder:'ex: v1', default:''},
+  {id:'VARIANTE', label:'[VARIANTE]', type:'text', placeholder:'ex: A', default:''},
+  {id:'PUBLICO', label:'[PUBLICO]', type:'text', placeholder:'ex: RETARGETING', default:''},
+  {id:'CRIATIVO', label:'[CRIATIVO]', type:'text', placeholder:'ex: VideoHero', default:''},
+  {id:'CUSTOM', label:'[CUSTOM]', type:'text', placeholder:'texto livre', default:''},
+];
+
+// State
+let tokens = TOKEN_DEFS.map((t,i) => ({...t, enabled: i < 7, order: i}));
+let generatedNames = [];
+let savedConventions = JSON.parse(localStorage.getItem('nc_nomenclatura_convs') || '[]');
+
+// Default convention
+function loadDefaultConvention(){
+  tokens.forEach((t,i) => {
+    t.enabled = ['ANUNCIANTE','PRODUTO','OBJETIVO','PLATAFORMA','FORMATO','PERIODO','VERSAO'].includes(t.id);
+    t.order = i;
+  });
+  document.getElementById('separator').value = '_';
+  document.getElementById('caseMode').value = 'upper';
+  renderTokenList();
+  updatePreview();
+}
+
+// Render token list
+function renderTokenList(){
+  const sorted = [...tokens].sort((a,b)=>a.order-b.order);
+  const container = document.getElementById('tokenList');
+  container.innerHTML = sorted.map((tk,i) => `
+    <div class="token-row ${tk.enabled?'active-token':''}" id="tkrow-${tk.id}">
+      <input type="checkbox" ${tk.enabled?'checked':''} onchange="toggleToken('${tk.id}',this.checked)">
+      <span class="token-label">${tk.label}</span>
+      ${tk.type==='text'
+        ? `<input type="text" placeholder="${tk.placeholder}" value="${tk.valOverride||''}" onchange="setTokenVal('${tk.id}',this.value)" ${tk.enabled?'':'disabled'}>`
+        : `<select onchange="setTokenVal('${tk.id}',this.value)" ${tk.enabled?'':'disabled'}>${tk.options.map(o=>`<option ${(tk.valOverride||tk.default)===o?'selected':''}>${o}</option>`).join('')}</select>`
+      }
+      <div class="move-btns">
+        <button class="move-btn" onclick="moveToken('${tk.id}',-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="move-btn" onclick="moveToken('${tk.id}',1)" ${i===sorted.length-1?'disabled':''}>▼</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleToken(id, val){
+  tokens.find(t=>t.id===id).enabled = val;
+  renderTokenList();
+  updatePreview();
+}
+
+function setTokenVal(id, val){
+  tokens.find(t=>t.id===id).valOverride = val;
+  updatePreview();
+}
+
+function moveToken(id, dir){
+  const sorted = [...tokens].sort((a,b)=>a.order-b.order);
+  const idx = sorted.findIndex(t=>t.id===id);
+  const newIdx = idx+dir;
+  if(newIdx<0||newIdx>=sorted.length) return;
+  const tmp = sorted[idx].order;
+  sorted[idx].order = sorted[newIdx].order;
+  sorted[newIdx].order = tmp;
+  tokens.find(t=>t.id===sorted[idx].id).order = sorted[idx].order;
+  tokens.find(t=>t.id===sorted[newIdx].id).order = sorted[newIdx].order;
+  renderTokenList();
+  updatePreview();
+}
+
+function applyCase(str, mode){
+  if(mode==='upper') return str.toUpperCase();
+  if(mode==='lower') return str.toLowerCase();
+  if(mode==='title') return str.replace(/\w+/g,w=>w[0].toUpperCase()+w.slice(1).toLowerCase());
+  return str;
+}
+
+function updatePreview(){
+  const sep = document.getElementById('separator')?.value || '_';
+  const caseMode = document.getElementById('caseMode')?.value || 'upper';
+  const sorted = [...tokens].filter(t=>t.enabled).sort((a,b)=>a.order-b.order);
+  const parts = sorted.map(t => `<span>[${t.id}]</span>`);
+  const previewEl = document.getElementById('convPreview');
+  if(previewEl) previewEl.innerHTML = parts.join(`<span style="color:#fff;opacity:.5">${sep}</span>`);
+
+  // Char meter
+  const exampleParts = sorted.map(t => t.valOverride || t.default || t.id.slice(0,6));
+  const example = exampleParts.map(p=>applyCase(p,caseMode)).join(sep);
+  const len = example.length;
+  const meter = document.getElementById('charMeter');
+  if(meter && sorted.length>0){
+    meter.style.display='flex';
+    document.getElementById('charCount').textContent = len + ' chars';
+    const pct = Math.min(100,len);
+    const fill = document.getElementById('meterFill');
+    fill.style.width = pct+'%';
+    fill.style.background = len>100?'#dc2626':len>80?'#f59e0b':'#22c55e';
+    document.getElementById('charCount').style.color = len>100?'#dc2626':len>80?'#a16207':'#15803d';
+  }
+
+  updateGenForm();
+  updateValConvSelect();
+  updateExportTab();
+}
+
+// Saved conventions
+function saveConvention(){
+  const name = document.getElementById('convName').value.trim() || 'Sem nome';
+  if(savedConventions.length>=5){ alert('Máximo de 5 convenções salvas.'); return; }
+  const sep = document.getElementById('separator').value;
+  const caseMode = document.getElementById('caseMode').value;
+  const snap = {name, sep, caseMode, tokens: tokens.map(t=>({...t}))};
+  savedConventions.push(snap);
+  localStorage.setItem('nc_nomenclatura_convs', JSON.stringify(savedConventions));
+  renderSavedConventions();
+  document.getElementById('convName').value='';
+}
+
+function loadConvention(idx){
+  const c = savedConventions[idx];
+  tokens = c.tokens.map(t=>({...t}));
+  document.getElementById('separator').value = c.sep;
+  document.getElementById('caseMode').value = c.caseMode;
+  renderTokenList();
+  updatePreview();
+  renderSavedConventions(idx);
+}
+
+function deleteConvention(idx){
+  savedConventions.splice(idx,1);
+  localStorage.setItem('nc_nomenclatura_convs', JSON.stringify(savedConventions));
+  renderSavedConventions();
+}
+
+function renderSavedConventions(active=-1){
+  const el = document.getElementById('savedConvList');
+  if(savedConventions.length===0){
+    el.innerHTML = '<span style="font-size:.82rem;color:#999">Nenhuma convenção salva ainda.</span>';
+    return;
+  }
+  el.innerHTML = savedConventions.map((c,i)=>`
+    <div class="conv-pill ${i===active?'active-conv':''}" onclick="loadConvention(${i})">
+      ${c.name}
+      <span class="del-conv" onclick="event.stopPropagation();deleteConvention(${i})">✕</span>
+    </div>
+  `).join('');
+}
+
+// ---- TAB 2: GERAR ----
+function updateGenForm(){
+  const sorted = [...tokens].filter(t=>t.enabled).sort((a,b)=>a.order-b.order);
+  const container = document.getElementById('genForm');
+  if(!container) return;
+  container.innerHTML = `<div class="row row-3">` + sorted.map(tk=>`
+    <div>
+      <label><span style="font-family:monospace;background:#1a237e;color:#a5b4fc;padding:1px 6px;border-radius:3px;font-size:.75rem">[${tk.id}]</span></label>
+      <input type="text" id="gen-${tk.id}" placeholder="${tk.type==='select'?tk.options.join(', '):tk.placeholder}" value="${tk.valOverride||''}"
+        oninput="updateCombCount()">
+    </div>
+  `).join('') + `</div>`;
+  updateCombCount();
+}
+
+function getMultiVals(id){
+  const el = document.getElementById('gen-'+id);
+  if(!el) return [''];
+  return el.value.split(',').map(s=>s.trim()).filter(Boolean) || [''];
+}
+
+function updateCombCount(){
+  const sorted = [...tokens].filter(t=>t.enabled).sort((a,b)=>a.order-b.order);
+  let count = 1;
+  sorted.forEach(tk=>{ const v=getMultiVals(tk.id); count*=(v.length||1); });
+  const el = document.getElementById('combCount');
+  if(el) el.textContent = `${count} combinação${count!==1?'ões':''} será${count!==1?'ão':''} gerada${count!==1?'s':''}`;
+}
+
+function cartesian(arrays){
+  return arrays.reduce((a,b) => a.flatMap(x => b.map(y => [...x, y])), [[]]);
+}
+
+function generateNames(){
+  const sep = document.getElementById('separator').value;
+  const caseMode = document.getElementById('caseMode').value;
+  const sorted = [...tokens].filter(t=>t.enabled).sort((a,b)=>a.order-b.order);
+  const valArrays = sorted.map(tk => getMultiVals(tk.id).map(v=>v||tk.id));
+  const combos = cartesian(valArrays);
+  generatedNames = combos.map(combo => combo.map(p=>applyCase(p,caseMode)).join(sep));
+  renderGenResults();
+  document.getElementById('tab-export').style.display='';
+  updateExportTab();
+}
+
+function renderGenResults(){
+  const resultsDiv = document.getElementById('genResults');
+  resultsDiv.style.display='block';
+  let ok=0,warn=0,err=0;
+  const tbody = document.getElementById('genTableBody');
+  tbody.innerHTML = generatedNames.map((name,i) => {
+    const len = name.length;
+    let cls='', lenCls='len-ok', badge='✅ OK', rowCls='';
+    if(len>100){cls='row-err';lenCls='len-err';badge='❌ Longo demais';err++;rowCls='row-err'}
+    else if(len>80){cls='row-warn';lenCls='len-warn';badge='⚠️ Atenção';warn++;rowCls='row-warn'}
+    else ok++;
+    return `<tr class="${rowCls}"><td>${i+1}</td><td style="font-family:monospace;font-size:.82rem">${name}</td><td class="${lenCls}">${len}</td><td>${badge}</td></tr>`;
+  }).join('');
+  const stats = document.getElementById('genStats');
+  stats.innerHTML = `
+    <div class="stat"><div class="stat-val">${generatedNames.length}</div><div class="stat-lbl">Total gerado</div></div>
+    <div class="stat"><div class="stat-val" style="color:#15803d">${ok}</div><div class="stat-lbl">✅ OK</div></div>
+    <div class="stat"><div class="stat-val" style="color:#a16207">${warn}</div><div class="stat-lbl">⚠️ Atenção</div></div>
+    <div class="stat"><div class="stat-val" style="color:#dc2626">${err}</div><div class="stat-lbl">❌ Muito longos</div></div>
+  `;
+}
+
+// ---- TAB 3: VALIDAR ----
+function updateValConvSelect(){
+  const sel = document.getElementById('valConvSelect');
+  if(!sel) return;
+  const opts = [{name:'Convenção atual', key:'current'}, ...savedConventions.map((c,i)=>({name:c.name,key:i}))];
+  sel.innerHTML = opts.map(o=>`<option value="${o.key}">${o.name}</option>`).join('');
+  updateValPreview();
+}
+
+function updateValPreview(){
+  const sel = document.getElementById('valConvSelect');
+  if(!sel) return;
+  const key = sel.value;
+  let conv;
+  if(key==='current') conv = {sep:document.getElementById('separator').value, caseMode:document.getElementById('caseMode').value, tokens};
+  else conv = savedConventions[parseInt(key)];
+  if(!conv) return;
+  const sorted = [...conv.tokens].filter(t=>t.enabled).sort((a,b)=>a.order-b.order);
+  const preview = document.getElementById('valConvPreview');
+  if(preview) preview.textContent = sorted.map(t=>t.id).join(conv.sep);
+}
+
+function validateNames(){
+  const sel = document.getElementById('valConvSelect');
+  const key = sel.value;
+  let conv;
+  if(key==='current') conv = {sep:document.getElementById('separator').value, caseMode:document.getElementById('caseMode').value, tokens};
+  else conv = savedConventions[parseInt(key)];
+  const sorted = [...conv.tokens].filter(t=>t.enabled).sort((a,b)=>a.order-b.order);
+  const tokenIds = sorted.map(t=>t.id);
+  const names = document.getElementById('valInput').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!names.length){ alert('Cole ao menos um nome para validar.'); return; }
+
+  let ok=0,issues=0;
+  const html = names.map(name => {
+    const len = name.length;
+    const parts = name.split(conv.sep);
+    const errors = [];
+    if(len>100) errors.push(`📏 Muito longo (${len} chars, limite 100)`);
+    if(parts.length !== tokenIds.length) errors.push(`⚠️ ${parts.length} tokens encontrados, esperado ${tokenIds.length}`);
+    if(errors.length){ issues++; return `<div class="val-row err"><div class="val-name">${name}</div><div class="val-issues">${errors.join(' · ')}</div></div>`; }
+    ok++;
+    return `<div class="val-row ok"><div class="val-name">${name}</div><div class="val-issues">✅ Válido · ${len} chars</div></div>`;
+  }).join('');
+
+  document.getElementById('valSummary').innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="stat-val">${names.length}</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-val" style="color:#15803d">${ok}</div><div class="stat-lbl">✅ Válidos</div></div>
+      <div class="stat"><div class="stat-val" style="color:#dc2626">${issues}</div><div class="stat-lbl">❌ Com problemas</div></div>
+    </div>
+  `;
+  document.getElementById('valResults').innerHTML = `<div class="card"><div class="card-title">Resultado da validação</div>${html}</div>`;
+}
+
+// ---- TAB 4: EXPORT ----
+function updateExportTab(){
+  const empty = document.getElementById('exportEmpty');
+  const content = document.getElementById('exportContent');
+  if(!empty||!content) return;
+  if(!generatedNames.length){ empty.style.display=''; content.style.display='none'; return; }
+  empty.style.display='none'; content.style.display='';
+  document.getElementById('exportStats').innerHTML = `
+    <div class="stat"><div class="stat-val">${generatedNames.length}</div><div class="stat-lbl">Nomes gerados</div></div>
+    <div class="stat"><div class="stat-val">${generatedNames.filter(n=>n.length<=80).length}</div><div class="stat-lbl">✅ Dentro do limite</div></div>
+  `;
+  document.getElementById('exportPreview').textContent = generatedNames.slice(0,10).join('\n') + (generatedNames.length>10 ? `\n... e mais ${generatedNames.length-10}` : '');
+}
+
+function copyNames(){
+  if(!generatedNames.length){ alert('Nenhum nome gerado ainda.'); return; }
+  navigator.clipboard.writeText(generatedNames.join('\n')).then(()=>alert(`${generatedNames.length} nomes copiados!`));
+}
+
+function downloadCSV(){
+  if(!generatedNames.length){ alert('Nenhum nome gerado ainda.'); return; }
+  const rows = ['Nome,Comprimento,Status',...generatedNames.map(n=>`"${n}",${n.length},${n.length>100?'Longo demais':n.length>80?'Atenção':'OK'}`)];
+  download('nomenclatura_'+today()+'.csv', rows.join('\n'));
+}
+
+function downloadTrafficking(){
+  if(!generatedNames.length){ alert('Nenhum nome gerado ainda.'); return; }
+  const rows = ['Placement Name,Ad Name,Start Date,End Date,Impressions,CPM,Budget,Creative,Click-through URL'];
+  generatedNames.forEach(n => rows.push(`"${n}","${n}",,,,,,,""`));
+  download('trafficking_sheet_'+today()+'.csv', rows.join('\n'));
+}
+
+function download(filename, content){
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,﻿'+encodeURIComponent(content);
+  a.download = filename;
+  a.click();
+}
+
+function today(){ return new Date().toISOString().slice(0,10).replace(/-/g,''); }
+
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if(id==='gerar') updateGenForm();
+  if(id==='validar') updateValConvSelect();
+  if(id==='export') updateExportTab();
+}
+
+// INIT
+loadDefaultConvention();
+renderSavedConventions();
+document.getElementById('separator').addEventListener('change', updatePreview);
+document.getElementById('caseMode').addEventListener('change', updatePreview);
+</script>
+</body>
+</html>

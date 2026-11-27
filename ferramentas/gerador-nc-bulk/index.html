@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerador NC Bulk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#f8fafc;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.btn.danger{background:var(--rem-bg,#fef2f2);color:#dc2626;border-color:#dc2626;}
+.page{max-width:960px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+input[type=text],select,textarea{padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+/* Segment row */
+.seg-row{display:grid;grid-template-columns:140px 1fr 90px auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:7px;background:var(--input-bg);}
+@media(max-width:600px){.seg-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto;}}
+.seg-label-cell{font-size:12px;font-weight:600;}
+.seg-vals-hint{font-size:10px;color:var(--faint);margin-top:2px;}
+/* Result */
+.nc-chip{font-family:var(--mono);font-size:12px;padding:4px 10px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:5px;color:var(--accent);cursor:pointer;display:inline-block;margin:2px;transition:all .1s;}
+.nc-chip:hover{background:var(--accent);color:#fff;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Mode tab */
+.tabs{display:flex;gap:2px;background:var(--divider);border-radius:9px;padding:3px;width:fit-content;margin-bottom:14px;}
+.tab{padding:5px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--faint);}
+.tab.on{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">⚡</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Gerador NC Bulk</div>
+      <div style="font-size:11px;color:var(--faint)">Gere NCs em lote por produto cartesiano ou zip</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="copyAll()">📋 Copiar tudo</button>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="generate()">⚡ Gerar</button>
+  </div>
+</div>
+
+<div class="page">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+    <!-- Left: config -->
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700">Configuração</div>
+          <div style="display:flex;gap:7px;align-items:center">
+            <label style="font-size:11px;font-weight:600;color:var(--faint)">Separador:</label>
+            <input type="text" id="sep" value="_" style="width:40px;text-align:center">
+          </div>
+        </div>
+        <div class="tabs" id="modeTabs">
+          <div class="tab on" onclick="setMode('cartesian')">✖ Cartesiano</div>
+          <div class="tab" onclick="setMode('zip')">🤐 Zip</div>
+        </div>
+        <div id="modeDesc" style="font-size:11px;color:var(--faint);margin-bottom:12px;padding:7px 10px;background:var(--divider);border-radius:7px">
+          <strong>Cartesiano:</strong> todas as combinações possíveis (N×M×…)
+        </div>
+        <div id="segsList"></div>
+        <div style="display:flex;gap:7px;margin-top:8px">
+          <button class="btn" onclick="addSeg()" style="flex:1">+ Segmento</button>
+          <button class="btn" onclick="loadFromClient()">📂 Do cliente</button>
+        </div>
+      </div>
+      <div class="card" id="clientPanel" style="display:none">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">Carregar de cliente</div>
+        <select id="clientSelect" onchange="onClientChange()"><option value="">— selecionar —</option></select>
+        <div id="clientSegs" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Right: result -->
+    <div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700">Resultado</div>
+          <div id="countBadge" style="font-size:11px;color:var(--faint)">—</div>
+        </div>
+        <div id="warnMsg" style="display:none;padding:7px 10px;background:var(--warn-bg);border:1px solid var(--warn);border-radius:7px;font-size:11px;color:var(--warn);margin-bottom:8px"></div>
+        <div id="resultBox" style="min-height:200px">
+          <div style="text-align:center;padding:40px;color:var(--faint)">
+            <div style="font-size:30px;margin-bottom:8px">⚡</div>
+            <div>Configure os segmentos e clique em Gerar</div>
+          </div>
+        </div>
+        <textarea id="resultText" style="display:none;height:260px;margin-top:10px;resize:vertical" readonly></textarea>
+        <div style="margin-top:8px;display:flex;gap:7px">
+          <button class="btn" onclick="toggleView()" id="viewBtn">📋 Ver como texto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null; try{_theme=localStorage.getItem('gernc_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('gernc_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+let _mode='cartesian';
+let _segs=[];
+let _generated=[];
+let _viewText=false;
+
+// Seed with 2 default segments
+_segs=[
+  {id:'s1',label:'Segmento 1',vals:''},
+  {id:'s2',label:'Segmento 2',vals:''},
+];
+
+function setMode(m){
+  _mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.textContent.trim().includes(m==='cartesian'?'Cartesiano':'Zip')));
+  document.getElementById('modeDesc').innerHTML=m==='cartesian'
+    ?'<strong>Cartesiano:</strong> todas as combinações possíveis (N×M×…)'
+    :'<strong>Zip:</strong> combina posição a posição — todos os segmentos devem ter o mesmo número de valores';
+}
+
+function addSeg(){
+  const id='s'+Date.now();
+  _segs.push({id,label:'Segmento '+ (_segs.length+1),vals:''});
+  renderSegs();
+  setTimeout(()=>document.getElementById('lbl_'+id)?.focus(),50);
+}
+
+function removeSeg(id){
+  if(_segs.length<=1){showToast('Precisa de pelo menos 1 segmento');return;}
+  _segs=_segs.filter(s=>s.id!==id);
+  renderSegs();
+}
+
+function renderSegs(){
+  document.getElementById('segsList').innerHTML=_segs.map((s,i)=>`
+    <div class="seg-row" id="row_${s.id}">
+      <input type="text" id="lbl_${s.id}" value="${esc(s.label)}" placeholder="Rótulo" oninput="syncSeg('${s.id}','label',this.value)">
+      <div>
+        <input type="text" id="vals_${s.id}" value="${esc(s.vals)}" placeholder="valor1, valor2, valor3" oninput="syncSeg('${s.id}','vals',this.value)">
+        <div class="seg-vals-hint" id="hint_${s.id}">${countVals(s.vals)} valor(es)</div>
+      </div>
+      <div style="font-size:10px;color:var(--faint);text-align:center">seg ${i+1}</div>
+      <button class="btn" onclick="removeSeg('${s.id}')" style="color:var(--rem,#dc2626);border-color:transparent;background:none" title="Remover">✕</button>
+    </div>
+  `).join('');
+}
+
+function countVals(str){return str.split(',').map(v=>v.trim()).filter(v=>v).length;}
+
+function syncSeg(id,field,val){
+  const s=_segs.find(s=>s.id===id);
+  if(!s) return;
+  s[field]=val;
+  if(field==='vals'){
+    const h=document.getElementById('hint_'+id);
+    if(h) h.textContent=countVals(val)+' valor(es)';
+  }
+}
+
+function getVals(str){return str.split(',').map(v=>v.trim()).filter(v=>v);}
+
+function generate(){
+  const sep=document.getElementById('sep').value||'_';
+  const segsData=_segs.map(s=>({label:s.label,vals:getVals(s.vals)}));
+  if(segsData.some(s=>s.vals.length===0)){showToast('Preencha os valores de todos os segmentos');return;}
+
+  _generated=[];
+  const warn=document.getElementById('warnMsg');
+  warn.style.display='none';
+
+  if(_mode==='cartesian'){
+    // Cartesian product
+    let result=[[]];
+    for(const seg of segsData){
+      const newResult=[];
+      for(const existing of result) for(const v of seg.vals) newResult.push([...existing,v]);
+      result=newResult;
+      if(result.length>5000){warn.style.display='block';warn.textContent=`⚠ Combinações limitadas a 5000 (total seria maior). Reduza os valores.`;result=result.slice(0,5000);break;}
+    }
+    _generated=result.map(combo=>combo.join(sep));
+  } else {
+    // Zip
+    const lens=segsData.map(s=>s.vals.length);
+    const maxLen=Math.max(...lens);
+    if(new Set(lens).size>1){
+      warn.style.display='block';
+      warn.textContent=`⚠ Zip: segmentos com comprimentos diferentes (${lens.join(', ')}). Usando o menor como limite.`;
+    }
+    const minLen=Math.min(...lens);
+    for(let i=0;i<minLen;i++){
+      _generated.push(segsData.map(s=>s.vals[i]).join(sep));
+    }
+  }
+
+  document.getElementById('countBadge').textContent=`${_generated.length} NCs geradas`;
+
+  if(_viewText){
+    document.getElementById('resultText').value=_generated.join('\n');
+  } else {
+    document.getElementById('resultBox').innerHTML=_generated.length===0
+      ? '<div style="text-align:center;padding:24px;color:var(--faint)">Nenhuma NC gerada</div>'
+      : _generated.map(nc=>`<span class="nc-chip" onclick="copyOne('${nc.replace(/'/g,"\\'")}')" title="Clique para copiar">${esc(nc)}</span>`).join('');
+  }
+  showToast(`⚡ ${_generated.length} NCs geradas`);
+}
+
+function copyOne(nc){
+  navigator.clipboard.writeText(nc).then(()=>showToast('✓ Copiado: '+nc)).catch(()=>{});
+}
+
+function copyAll(){
+  if(!_generated.length){showToast('Gere NCs primeiro');return;}
+  navigator.clipboard.writeText(_generated.join('\n')).then(()=>showToast(`✓ ${_generated.length} NCs copiadas`)).catch(()=>{});
+}
+
+function exportCSV(){
+  if(!_generated.length){showToast('Gere NCs primeiro');return;}
+  const csv=_generated.map((nc,i)=>`"${i+1}","${nc.replace(/"/g,'""')}"`).join('\n');
+  const blob=new Blob(['\uFEFF#,nc\n'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`ncs_bulk_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+  showToast(`⬇ ${_generated.length} NCs exportadas`);
+}
+
+function toggleView(){
+  _viewText=!_viewText;
+  const box=document.getElementById('resultBox');
+  const txt=document.getElementById('resultText');
+  const btn=document.getElementById('viewBtn');
+  if(_viewText){
+    box.style.display='none';txt.style.display='block';
+    txt.value=_generated.join('\n');
+    btn.textContent='🔲 Ver como chips';
+  } else {
+    box.style.display='block';txt.style.display='none';
+    btn.textContent='📋 Ver como texto';
+  }
+}
+
+// Load from taxo_clients_v1
+function loadFromClient(){
+  document.getElementById('clientPanel').style.display='block';
+  const sel=document.getElementById('clientSelect');
+  sel.innerHTML='<option value="">— selecionar —</option>';
+  try{
+    const clients=JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');
+    clients.forEach(c=>sel.add(new Option(c.name,c.id)));
+    if(!clients.length){showToast('Nenhum cliente no Taxonomy Builder');}
+  } catch(e){showToast('Erro ao carregar clientes');}
+}
+
+function onClientChange(){
+  const sel=document.getElementById('clientSelect');
+  const id=sel.value;
+  const panel=document.getElementById('clientSegs');
+  if(!id){panel.innerHTML='';return;}
+  try{
+    const clients=JSON.parse(localStorage.getItem('taxo_clients_v1')||'[]');
+    const client=clients.find(c=>c.id===id);
+    if(!client){panel.innerHTML='';return;}
+    panel.innerHTML='<div style="font-size:11px;color:var(--faint);margin-bottom:6px">Clique em um segmento para adicionar com seus termos do dicionário</div>';
+    (client.segments||[]).forEach(seg=>{
+      const terms=((client.dictionary||{})[seg.id]||[]).map(t=>t.value).join(', ');
+      panel.innerHTML+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600">${esc(seg.name)}</div>
+          <div style="font-size:10px;color:var(--faint);font-family:var(--mono)">${terms?esc(terms.slice(0,60)+(terms.length>60?'…':'')):'sem termos'}</div>
+        </div>
+        <button class="btn" onclick="importSeg('${esc(seg.id).replace(/'/g,"\\'")}','${esc(seg.name).replace(/'/g,"\\'")}','${encodeURIComponent(terms)}')" style="font-size:11px;height:26px">+ Usar</button>
+      </div>`;
+    });
+  } catch(e){}
+}
+
+function importSeg(segId, segName, termsEnc){
+  const terms=decodeURIComponent(termsEnc);
+  _segs.push({id:'s'+Date.now(),label:segName,vals:terms});
+  renderSegs();
+  showToast(`Segmento "${segName}" importado`);
+}
+
+// Init
+renderSegs();
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')generate();});
+</script>
+</body>
+</html>

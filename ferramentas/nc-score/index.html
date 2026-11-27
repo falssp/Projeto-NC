@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Score — Qualidade de Nomenclatura</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --mono:'JetBrains Mono',monospace;--shadow:0 1px 4px rgba(0,0,0,.08);
+  --score-a:#16a34a;--score-b:#22c55e;--score-c:#d97706;--score-d:#f97316;--score-f:#dc2626;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1200px;margin:0 auto;padding:18px;display:grid;grid-template-columns:380px 1fr;gap:14px;align-items:start;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+textarea,input[type="text"],input[type="number"],select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;outline:none;width:100%;}
+textarea{resize:vertical;line-height:1.6;}
+textarea:focus,input:focus,select:focus{border-color:var(--accent);}
+/* Score badges */
+.score-badge{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;font-size:18px;font-weight:800;flex-shrink:0;}
+.grade-A{background:rgba(22,163,74,.12);color:var(--score-a);}
+.grade-B{background:rgba(34,197,94,.12);color:var(--score-b);}
+.grade-C{background:rgba(217,119,6,.12);color:var(--score-c);}
+.grade-D{background:rgba(249,115,22,.12);color:var(--score-d);}
+.grade-F{background:rgba(220,38,38,.12);color:var(--score-f);}
+/* Score bar */
+.score-bar-wrap{height:6px;background:var(--divider);border-radius:3px;overflow:hidden;margin-top:4px;}
+.score-bar{height:100%;border-radius:3px;transition:width .4s;}
+/* Issue pill */
+.issue-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.issue-err{background:var(--err-bg);color:var(--err);}
+.issue-warn{background:var(--warn-bg);color:var(--warn);}
+.issue-ok{background:var(--ok-bg);color:var(--ok);}
+/* NC result row */
+.nc-result-row{padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;}
+.nc-result-row:hover{border-color:var(--accent);}
+.nc-text{font-family:var(--mono);font-size:12px;word-break:break-all;flex:1;min-width:0;line-height:1.6;}
+.nc-issues{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+/* Aggregate */
+.agg-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--divider);font-size:12px;}
+.agg-row:last-child{border:none;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Tabs */
+.tab-row{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);}
+.tab{padding:5px 12px;border-radius:7px 7px 0 0;cursor:pointer;font-size:12px;font-weight:600;color:var(--faint);border:none;background:none;}
+.tab.active{background:var(--accent);color:#fff;}
+@media(max-width:700px){.page{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🎯</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">NC Score</div>
+      <div style="font-size:11px;color:var(--faint)">Pontuação de qualidade de nomenclatura por critério</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="openWeightsModal()">⚖ Pesos</button>
+    <button class="btn" onclick="openHistModal()">📜 Histórico</button>
+    <button class="btn" onclick="shareAsText()">📋 Resumo</button>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="scoreAll()">🎯 Pontuar</button>
+  </div>
+</div>
+
+<!-- Weights Modal -->
+<div id="weightsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center" onclick="if(event.target===this)closeWeightsModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(520px,95vw);max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:15px;font-weight:800">⚖ Pesos das penalizações</span>
+      <button onclick="closeWeightsModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--faint)">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-bottom:16px">Ajuste quanto cada problema desconta da nota. Valores de 0 (ignorar) a 50.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn" style="height:26px;font-size:11px" onclick="applyWeightPreset('padrao')">📐 Padrão</button>
+      <button class="btn" style="height:26px;font-size:11px" onclick="applyWeightPreset('rigoroso')">🔒 Rigoroso</button>
+      <button class="btn" style="height:26px;font-size:11px" onclick="applyWeightPreset('flexivel')">🌿 Flexível</button>
+    </div>
+    <div id="weightRows"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" onclick="closeWeightsModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveWeights()">✓ Salvar pesos</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Modal -->
+<div id="histModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:center;justify-content:center" onclick="if(event.target===this)closeHistModal()">
+  <div style="background:var(--card);border-radius:14px;padding:22px 24px;width:min(600px,95vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-shrink:0">
+      <span style="font-size:15px;font-weight:800">📜 Histórico de execuções</span>
+      <div style="display:flex;gap:7px">
+        <button class="btn" style="height:28px;font-size:11px" onclick="clearHist()">🗑 Limpar</button>
+        <button class="btn secondary" style="height:28px;font-size:11px" onclick="closeHistModal()">✕</button>
+      </div>
+    </div>
+    <div id="histList" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Left: config -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">Lista de NCs</div>
+      <textarea id="ncInput" rows="10" placeholder="Cole as NCs aqui, uma por linha"></textarea>
+      <div style="font-size:10px;color:var(--faint);margin-top:4px" id="inputCount">0 NCs</div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Regras de qualidade</div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Separador esperado</label>
+        <input type="text" id="cfgSep" placeholder="auto" style="width:80px">
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Número de segmentos</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="cfgSegsMin" min="1" max="20" placeholder="min" style="width:60px">
+          <span style="color:var(--faint);font-size:12px">–</span>
+          <input type="number" id="cfgSegsMax" min="1" max="20" placeholder="max" style="width:60px">
+          <span style="font-size:11px;color:var(--faint)">deixe vazio = qualquer</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Comprimento máximo (chars)</label>
+        <input type="number" id="cfgMaxLen" min="10" max="500" placeholder="ex: 100" style="width:80px">
+      </div>
+
+      <div style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Restrições adicionais</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoSpaces" checked style="accent-color:var(--accent)"> Sem espaços
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoUpper" style="accent-color:var(--accent)"> Sem letras maiúsculas
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoSpecial" checked style="accent-color:var(--accent)"> Sem caracteres especiais (<code>!@#$%^&*()</code> etc.)
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoDup" checked style="accent-color:var(--accent)"> Alertar duplicatas na lista
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="cfgNoEmpty" checked style="accent-color:var(--accent)"> Sem segmento vazio (valor "")
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: results -->
+  <div>
+    <div class="card" id="resultsPanel">
+      <div style="text-align:center;padding:40px;color:var(--faint)">
+        <div style="font-size:36px;margin-bottom:10px">🎯</div>
+        <div>Configure as regras e clique em <strong>Pontuar</strong></div>
+        <div style="font-size:11px;margin-top:6px;opacity:.7">Ctrl+Enter para pontuar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('ncscore_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('ncscore_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+document.getElementById('ncInput').addEventListener('input',function(){
+  const c=this.value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('inputCount').textContent=c+' NC'+(c!==1?'s':'');
+});
+
+function detectSep(lines){
+  const counts={};
+  for(const l of lines.slice(0,20)) for(const s of ['_','-','|','.','/']) counts[s]=(counts[s]||0)+(l.split(s).length-1);
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'_';
+}
+
+function getGrade(score){
+  if(score>=95) return 'A';
+  if(score>=80) return 'B';
+  if(score>=65) return 'C';
+  if(score>=50) return 'D';
+  return 'F';
+}
+
+function getBarColor(score){
+  if(score>=95) return 'var(--score-a)';
+  if(score>=80) return 'var(--score-b)';
+  if(score>=65) return 'var(--score-c)';
+  if(score>=50) return 'var(--score-d)';
+  return 'var(--score-f)';
+}
+
+// ── Weights system ────────────────────────────────────────────────────────
+const W_KEY='ncscore_weights_v1';
+const W_DEFS=[
+  {id:'w_sep',label:'Separador errado',default:30,sev:'err'},
+  {id:'w_segs_min',label:'Poucos segmentos',default:25,sev:'err'},
+  {id:'w_segs_max',label:'Muitos segmentos',default:25,sev:'err'},
+  {id:'w_len',label:'Comprimento excedido',default:20,sev:'err'},
+  {id:'w_spaces',label:'Contém espaços',default:25,sev:'err'},
+  {id:'w_upper',label:'Letras maiúsculas',default:15,sev:'warn'},
+  {id:'w_special',label:'Chars especiais',default:10,sev:'warn'},
+  {id:'w_empty',label:'Segmento vazio',default:20,sev:'err'},
+  {id:'w_dup',label:'Duplicata na lista',default:10,sev:'warn'},
+];
+const W_PRESETS={
+  padrao:{w_sep:30,w_segs_min:25,w_segs_max:25,w_len:20,w_spaces:25,w_upper:15,w_special:10,w_empty:20,w_dup:10},
+  rigoroso:{w_sep:40,w_segs_min:30,w_segs_max:30,w_len:25,w_spaces:35,w_upper:25,w_special:20,w_empty:30,w_dup:20},
+  flexivel:{w_sep:15,w_segs_min:10,w_segs_max:10,w_len:10,w_spaces:20,w_upper:5,w_special:5,w_empty:10,w_dup:5},
+};
+let _weights={};
+function loadWeights(){
+  try{const s=localStorage.getItem(W_KEY);return s?JSON.parse(s):{};}catch(e){return {};}
+}
+function getW(id){return _weights[id]??W_DEFS.find(d=>d.id===id)?.default??10;}
+_weights=loadWeights();
+
+function openWeightsModal(){
+  document.getElementById('weightsModal').style.display='flex';
+  renderWeightRows();
+}
+function closeWeightsModal(){document.getElementById('weightsModal').style.display='none';}
+function renderWeightRows(){
+  document.getElementById('weightRows').innerHTML=W_DEFS.map(d=>{
+    const val=getW(d.id);
+    const sevColor=d.sev==='err'?'var(--err)':'var(--warn)';
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600">${d.label}</div>
+        <div style="font-size:10px;color:${sevColor};font-weight:700">${d.sev==='err'?'ERRO':'AVISO'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" min="0" max="50" step="1" value="${val}" id="${d.id}_range"
+          oninput="document.getElementById('${d.id}_num').value=this.value" style="width:100px">
+        <input type="number" min="0" max="50" value="${val}" id="${d.id}_num" style="width:48px;font-family:var(--mono);font-size:12px;padding:4px 6px"
+          oninput="document.getElementById('${d.id}_range').value=this.value">
+      </div>
+    </div>`;
+  }).join('');
+}
+function applyWeightPreset(name){
+  const preset=W_PRESETS[name];if(!preset) return;
+  W_DEFS.forEach(d=>{
+    const r=document.getElementById(d.id+'_range');
+    const n=document.getElementById(d.id+'_num');
+    if(r&&n){r.value=preset[d.id]??d.default;n.value=preset[d.id]??d.default;}
+  });
+  showToast(`Preset "${name}" aplicado`);
+}
+function saveWeights(){
+  W_DEFS.forEach(d=>{
+    const val=parseInt(document.getElementById(d.id+'_num')?.value??d.default)||0;
+    _weights[d.id]=Math.max(0,Math.min(50,val));
+  });
+  try{localStorage.setItem(W_KEY,JSON.stringify(_weights));}catch(e){}
+  closeWeightsModal();
+  showToast('✓ Pesos salvos');
+}
+
+function scoreNC(nc, cfg, seen){
+  const issues=[];
+  let deductions=0;
+
+  // Separator consistency
+  if(cfg.sep && nc.includes(cfg.sep)===false){
+    const otherSeps=['_','-','|','.','/'].filter(s=>s!==cfg.sep);
+    const hasOther=otherSeps.some(s=>nc.includes(s));
+    if(hasOther){issues.push({type:'err',msg:'Separador errado'});deductions+=getW('w_sep');}
+    else if(nc.split(cfg.sep).length===1){
+      // Single segment — probably still valid, just 1 segment
+    }
+  }
+
+  const parts=nc.split(cfg.sep||detectSep([nc]));
+  const nSegs=parts.length;
+
+  // Segment count
+  if(cfg.segsMin!==null && nSegs < cfg.segsMin){
+    issues.push({type:'err',msg:`Poucos segmentos (${nSegs}<${cfg.segsMin})`});deductions+=getW('w_segs_min');
+  }
+  if(cfg.segsMax!==null && nSegs > cfg.segsMax){
+    issues.push({type:'err',msg:`Muitos segmentos (${nSegs}>${cfg.segsMax})`});deductions+=getW('w_segs_max');
+  }
+
+  // Max length
+  if(cfg.maxLen!==null && nc.length > cfg.maxLen){
+    const over=nc.length-cfg.maxLen;
+    issues.push({type:'err',msg:`Muito longo (+${over} chars)`});deductions+=getW('w_len');
+  }
+
+  // No spaces
+  if(cfg.noSpaces && nc.includes(' ')){
+    issues.push({type:'err',msg:'Contém espaços'});deductions+=getW('w_spaces');
+  }
+
+  // No uppercase
+  if(cfg.noUpper && /[A-Z]/.test(nc)){
+    issues.push({type:'warn',msg:'Contém maiúsculas'});deductions+=getW('w_upper');
+  }
+
+  // No special chars (excluding the separator and alphanumeric/hyphen/underscore)
+  if(cfg.noSpecial){
+    const allowRe=new RegExp(`[^a-zA-Z0-9\\-_${cfg.sep?cfg.sep.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'):''}]`,'g');
+    const matches=nc.match(allowRe)||[];
+    const special=matches.filter(c=>c!==' ');
+    if(special.length){
+      const uniq=[...new Set(special)].slice(0,5).join(' ');
+      issues.push({type:'warn',msg:`Chars especiais: ${uniq}`});deductions+=getW('w_special');
+    }
+  }
+
+  // Empty segment
+  if(cfg.noEmpty && parts.some(p=>p==='')) {
+    issues.push({type:'err',msg:'Segmento vazio'});deductions+=getW('w_empty');
+  }
+
+  // Duplicate in list
+  if(cfg.noDup){
+    const key=nc.toLowerCase();
+    if(seen.has(key)){issues.push({type:'warn',msg:'Duplicata na lista'});deductions+=getW('w_dup');}
+    seen.add(key);
+  }
+
+  const score=Math.max(0,100-deductions);
+  return {score,grade:getGrade(score),issues,parts};
+}
+
+let _results=[];
+let _resultFilter='all';
+let _sortMode='input'; // 'input'|'asc'|'desc'
+
+// Persist config
+const CFG_KEY='ncscore_cfg_v1';
+function loadCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||'null');}catch(e){return null;}}
+function saveCfg(cfg){try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}catch(e){}}
+
+// Run history
+const HIST_KEY='ncscore_hist_v1';
+const HIST_MAX=20;
+function loadHist(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch(e){return [];}}
+function saveHist(arr){try{localStorage.setItem(HIST_KEY,JSON.stringify(arr.slice(0,HIST_MAX)));}catch(e){}}
+(function(){
+  const c=loadCfg(); if(!c) return;
+  if(c.sep) document.getElementById('cfgSep').value=c.sep;
+  if(c.segsMin) document.getElementById('cfgSegsMin').value=c.segsMin;
+  if(c.segsMax) document.getElementById('cfgSegsMax').value=c.segsMax;
+  if(c.maxLen) document.getElementById('cfgMaxLen').value=c.maxLen;
+  ['cfgNoSpaces','cfgNoUpper','cfgNoSpecial','cfgNoDup','cfgNoEmpty'].forEach(id=>{
+    if(id in c) document.getElementById(id).checked=c[id];
+  });
+})();
+
+function scoreAll(){
+  const raw=document.getElementById('ncInput').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length){showToast('Cole as NCs primeiro');return;}
+
+  const sepRaw=document.getElementById('cfgSep').value.trim();
+  const sep=sepRaw||detectSep(lines);
+  const segsMinRaw=document.getElementById('cfgSegsMin').value.trim();
+  const segsMaxRaw=document.getElementById('cfgSegsMax').value.trim();
+  const maxLenRaw=document.getElementById('cfgMaxLen').value.trim();
+
+  const cfg={
+    sep,
+    segsMin:segsMinRaw?parseInt(segsMinRaw):null,
+    segsMax:segsMaxRaw?parseInt(segsMaxRaw):null,
+    maxLen:maxLenRaw?parseInt(maxLenRaw):null,
+    noSpaces:document.getElementById('cfgNoSpaces').checked,
+    noUpper:document.getElementById('cfgNoUpper').checked,
+    noSpecial:document.getElementById('cfgNoSpecial').checked,
+    noDup:document.getElementById('cfgNoDup').checked,
+    noEmpty:document.getElementById('cfgNoEmpty').checked,
+  };
+
+  const seen=new Set();
+  _results=lines.map(nc=>({nc,...scoreNC(nc,cfg,seen)}));
+  _resultFilter='all'; _sortMode='input';
+  saveCfg({sep:cfg.sep,segsMin:cfg.segsMin,segsMax:cfg.segsMax,maxLen:cfg.maxLen,
+    cfgNoSpaces:cfg.noSpaces,cfgNoUpper:cfg.noUpper,cfgNoSpecial:cfg.noSpecial,cfgNoDup:cfg.noDup,cfgNoEmpty:cfg.noEmpty});
+  renderResults();
+  // Save to history
+  const scores=_results.map(r=>r.score);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const perfect=_results.filter(r=>r.issues.length===0).length;
+  const withErr=_results.filter(r=>r.issues.some(i=>i.type==='err')).length;
+  const hist=loadHist();
+  hist.unshift({ts:Date.now(),total:_results.length,avg,perfect,withErr,sep:cfg.sep,
+    grades:{A:_results.filter(r=>r.score>=90).length,B:_results.filter(r=>r.score>=80&&r.score<90).length,
+            C:_results.filter(r=>r.score>=70&&r.score<80).length,D:_results.filter(r=>r.score>=60&&r.score<70).length,
+            F:_results.filter(r=>r.score<60).length}});
+  saveHist(hist);
+}
+
+function renderResults(){
+  let filtered=_results.filter(r=>{
+    if(_resultFilter==='ok') return r.issues.length===0;
+    if(_resultFilter==='warn') return r.issues.some(i=>i.type==='warn')&&!r.issues.some(i=>i.type==='err');
+    if(_resultFilter==='err') return r.issues.some(i=>i.type==='err');
+    return true;
+  });
+  if(_sortMode==='asc') filtered=[...filtered].sort((a,b)=>a.score-b.score);
+  else if(_sortMode==='desc') filtered=[...filtered].sort((a,b)=>b.score-a.score);
+
+  const total=_results.length;
+  const perfect=_results.filter(r=>r.issues.length===0).length;
+  const withErr=_results.filter(r=>r.issues.some(i=>i.type==='err')).length;
+  const avgScore=total?Math.round(_results.reduce((s,r)=>s+r.score,0)/total):0;
+  const avgGrade=getGrade(avgScore);
+
+  // Grade distribution
+  const gradeCount={A:0,B:0,C:0,D:0,F:0};
+  _results.forEach(r=>gradeCount[r.grade]++);
+
+  const p=document.getElementById('resultsPanel');
+  p.innerHTML=`
+    <div style="display:flex;gap:12px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <div class="score-badge grade-${avgGrade}" style="width:56px;height:56px;font-size:22px">${avgGrade}</div>
+      <div>
+        <div style="font-size:22px;font-weight:800">${avgScore}<span style="font-size:14px;font-weight:500;color:var(--faint)">/100</span></div>
+        <div style="font-size:11px;color:var(--faint)">Score médio · ${total} NC${total!==1?'s':''}</div>
+        <div class="score-bar-wrap" style="width:160px"><div class="score-bar" style="width:${avgScore}%;background:${getBarColor(avgScore)}"></div></div>
+      </div>
+      <div style="flex:1;min-width:140px">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          ${Object.entries(gradeCount).map(([g,n])=>n?`<span class="issue-pill ${n&&g==='A'||g==='B'?'issue-ok':g==='C'||g==='D'?'issue-warn':'issue-err'}" style="font-size:11px">${g}: ${n}</span>`:'').join('')}
+          <span class="issue-pill issue-ok">✓ ${perfect} perfeita${perfect!==1?'s':''}</span>
+          ${withErr?`<span class="issue-pill issue-err">✗ ${withErr} com erro${withErr!==1?'s':''}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
+      <span class="btn ${_resultFilter==='all'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('all')">Todos (${_results.length})</span>
+      <span class="btn ${_resultFilter==='ok'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('ok')">✓ Perfeitas (${perfect})</span>
+      <span class="btn ${_resultFilter==='warn'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('warn')">⚠ Avisos</span>
+      <span class="btn ${_resultFilter==='err'?'primary':''}" style="height:26px;font-size:11px;cursor:pointer" onclick="setFilter('err')">✗ Erros (${withErr})</span>
+    </div>
+    <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Ordem:</span>
+      <span class="btn ${_sortMode==='input'?'primary':''}" style="height:24px;font-size:10px;cursor:pointer" onclick="setSort('input')">Entrada</span>
+      <span class="btn ${_sortMode==='asc'?'primary':''}" style="height:24px;font-size:10px;cursor:pointer" onclick="setSort('asc')">↑ Score</span>
+      <span class="btn ${_sortMode==='desc'?'primary':''}" style="height:24px;font-size:10px;cursor:pointer" onclick="setSort('desc')">↓ Score</span>
+    </div>
+    <div style="max-height:65vh;overflow-y:auto">
+      ${filtered.map(r=>`
+        <div class="nc-result-row">
+          <div class="score-badge grade-${r.grade}" style="width:36px;height:36px;font-size:14px">${r.score}</div>
+          <div style="flex:1;min-width:0">
+            <div class="nc-text" onclick="navigator.clipboard.writeText('${esc(r.nc.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado')).catch(()=>{})" style="cursor:pointer" title="Clique para copiar">${esc(r.nc)}</div>
+            ${r.issues.length?`<div class="nc-issues">${r.issues.map(i=>`<span class="issue-pill issue-${i.type}">${i.type==='err'?'✗':'⚠'} ${esc(i.msg)}</span>`).join('')}</div>`:'<div style="font-size:10px;color:var(--ok);margin-top:3px">✓ Sem problemas</div>'}
+          </div>
+        </div>`).join('')}
+    </div>
+    ${filtered.length<_results.length?`<div style="font-size:11px;color:var(--faint);margin-top:6px">Mostrando ${filtered.length} de ${_results.length}</div>`:''}
+    <div style="font-size:11px;color:var(--faint);margin-top:4px">Clique em uma NC para copiar</div>
+  `;
+}
+
+function setFilter(f){_resultFilter=f;renderResults();}
+function setSort(m){_sortMode=m;renderResults();}
+
+function shareAsText(){
+  if(!_results.length){showToast('Pontue primeiro');return;}
+  const scores=_results.map(r=>r.score);
+  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+  const perfect=_results.filter(r=>r.issues.length===0).length;
+  const withErr=_results.filter(r=>r.issues.some(i=>i.type==='err')).length;
+  const grades={A:0,B:0,C:0,D:0,F:0};
+  _results.forEach(r=>grades[r.grade]=(grades[r.grade]||0)+1);
+  const gradeStr=Object.entries(grades).filter(([,n])=>n).map(([g,n])=>`${g}:${n}`).join(' / ');
+  const topErrors=_results.filter(r=>r.issues.some(i=>i.type==='err')).slice(0,5)
+    .map(r=>`- \`${r.nc}\` (${r.score}) — ${r.issues.filter(i=>i.type==='err').map(i=>i.msg).join(', ')}`).join('\n');
+  const text=`## NC Score — Relatório\n\n**Total:** ${_results.length} NCs · **Média:** ${avg}/100\n**Perfeitas:** ${perfect} · **Com erro:** ${withErr}\n**Distribuição:** ${gradeStr}\n${topErrors?`\n**Top erros:**\n${topErrors}`:''}`;
+  navigator.clipboard.writeText(text).then(()=>showToast('✓ Copiado como markdown')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('✓ Copiado');
+  });
+}
+
+function exportCSV(){
+  if(!_results.length){showToast('Pontue primeiro');return;}
+  const rows=[['nc','score','grade','issues']];
+  _results.forEach(r=>rows.push([r.nc,r.score,r.grade,r.issues.map(i=>i.msg).join('; ')]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nc_score.csv';a.click();
+  showToast(`⬇ ${rows.length-1} linhas exportadas`);
+}
+
+function openHistModal(){
+  renderHistList();
+  document.getElementById('histModal').style.display='flex';
+}
+function closeHistModal(){document.getElementById('histModal').style.display='none';}
+function clearHist(){if(!confirm('Limpar todo o histórico?'))return;saveHist([]);renderHistList();showToast('Histórico limpo');}
+
+function renderHistList(){
+  const hist=loadHist();
+  const el=document.getElementById('histList');
+  if(!hist.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--faint)">Nenhuma execução ainda</div>';return;}
+  el.innerHTML=hist.map((h,i)=>{
+    const dt=new Date(h.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const gradeBar=`<div style="display:flex;gap:3px;margin-top:5px">
+      ${['A','B','C','D','F'].map(g=>{
+        const n=h.grades?.[g]||0;
+        const pct=h.total?Math.round(n/h.total*100):0;
+        const colors={A:'var(--ok)',B:'#22c55e',C:'var(--warn)',D:'#f97316',F:'var(--err)'};
+        return n?`<div style="flex:${pct||1};background:${colors[g]};height:5px;border-radius:2px;opacity:.8" title="${g}: ${n} (${pct}%)"></div>`:'';
+      }).join('')}
+    </div>`;
+    return `<div style="padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-size:11px;color:var(--faint)">${dt}</span>
+        <span style="font-size:12px;font-weight:700">${h.total} NCs · média <span style="color:${h.avg>=80?'var(--ok)':h.avg>=60?'var(--warn)':'var(--err)'}">${h.avg}</span>/100</span>
+      </div>
+      <div style="font-size:11px;color:var(--faint);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+        <span>✓ ${h.perfect} perfeitas</span>
+        ${h.withErr?`<span style="color:var(--err)">✗ ${h.withErr} com erro</span>`:''}
+        <span>sep: <code style="font-family:var(--mono)">${esc(h.sep||'auto')}</code></span>
+      </div>
+      ${gradeBar}
+    </div>`;
+  }).join('');
+}
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')scoreAll();});
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<title>NC Segment Stats</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --fg:#0f172a;--fg2:#475569;--fg3:#94a3b8;
+    --accent:#06b6d4;--accent-bg:#ecfeff;--accent-border:#a5f3fc;
+    --radius:10px;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#22d3ee;--accent-bg:#083344;--accent-border:#164e63;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#22d3ee;--accent-bg:#083344;--accent-border:#164e63;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+  .workspace{display:grid;grid-template-columns:320px 1fr;gap:0;min-height:calc(100vh - 73px)}
+  @media(max-width:800px){.workspace{grid-template-columns:1fr}}
+  .sidebar{padding:20px;border-right:1px solid var(--border)}
+  .content{padding:20px 24px;overflow-x:hidden}
+  .sec{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],input[type=number]{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;min-height:220px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+  .row2{display:flex;gap:8px;margin-bottom:12px}
+  .row2>div{flex:1}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  /* kpi */
+  .kpi-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:80px}
+  .kpi-val{font-size:22px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:11px;color:var(--fg2);margin-top:2px}
+  .kpi.cyan{border-color:var(--accent-border);background:var(--accent-bg)}
+  .kpi.cyan .kpi-val{color:var(--accent)}
+  /* pos section */
+  .pos-section{margin-bottom:24px}
+  .pos-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .pos-badge{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:20px;font-size:10px;font-weight:700;padding:2px 8px}
+  /* bar chart */
+  .bar-list{display:flex;flex-direction:column;gap:4px}
+  .bar-row{display:flex;align-items:center;gap:8px;min-height:24px}
+  .bar-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--fg);min-width:120px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}
+  .bar-wrap{flex:1;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden;min-width:0}
+  .bar-fill{height:100%;border-radius:4px;background:var(--accent);opacity:.8;transition:.3s}
+  .bar-cnt{font-size:11px;color:var(--fg2);min-width:40px;text-align:right;font-family:'JetBrains Mono',monospace}
+  .bar-pct{font-size:10px;color:var(--fg3);min-width:36px;text-align:right}
+  /* stats grid */
+  .stats-mini{display:flex;gap:16px;font-size:11px;color:var(--fg2);margin-bottom:4px;flex-wrap:wrap}
+  .stats-mini span{display:flex;gap:4px;align-items:center}
+  .stats-mini b{color:var(--fg);font-weight:600}
+  /* expand toggle */
+  .expand-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;font-family:inherit;padding:0;margin-top:4px}
+  .expand-btn:hover{text-decoration:underline}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">📊</div>
+    <div>
+      <div class="title">NC Segment Stats</div>
+      <div class="subtitle">Estatísticas detalhadas de cada posição de segmento</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <div class="sidebar">
+    <div class="sec">Configuração</div>
+    <div class="row2">
+      <div>
+        <label>Separador</label>
+        <input id="cfgSep" type="text" value="_" maxlength="3" style="font-family:'JetBrains Mono',monospace">
+      </div>
+      <div>
+        <label>Top N valores</label>
+        <input id="cfgTop" type="number" min="3" max="50" value="10">
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label>NCs (uma por linha)</label>
+      <textarea id="ncInput" placeholder="camp_perf_app_venda_q1_stories&#10;camp_brand_web_lanc_q2_feed&#10;camp_perf_web_branding_q3_banner&#10;..."></textarea>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyze()">📊 Analisar</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+      <button class="btn btn-secondary" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="results"><div style="color:var(--fg3);font-size:13px;padding:20px 0">Cole suas NCs e clique em Analisar.</div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let _data = null;
+
+function analyze() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole pelo menos uma NC!'); return; }
+  const sep = document.getElementById('cfgSep').value || '_';
+  const topN = parseInt(document.getElementById('cfgTop').value) || 10;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const positions = {};
+  let maxPos = 0;
+
+  lines.forEach(nc => {
+    const segs = nc.split(sep);
+    maxPos = Math.max(maxPos, segs.length);
+    segs.forEach((val, i) => {
+      if (!positions[i]) positions[i] = { vals: {}, lengths: [] };
+      positions[i].vals[val] = (positions[i].vals[val] || 0) + 1;
+      positions[i].lengths.push(val.length);
+    });
+  });
+
+  // compute stats per position
+  const posStats = [];
+  for (let i = 0; i < maxPos; i++) {
+    if (!positions[i]) continue;
+    const vals = positions[i].vals;
+    const lengths = positions[i].lengths;
+    const total = lengths.length;
+    const uniq = Object.keys(vals).length;
+    const sorted = Object.entries(vals).sort((a,b) => b[1]-a[1]);
+    const topVals = sorted.slice(0, topN);
+    const restVals = sorted.slice(topN);
+
+    lengths.sort((a,b) => a-b);
+    const avg = lengths.reduce((s,v)=>s+v,0)/total;
+    const p25 = lengths[Math.floor(total*0.25)];
+    const p50 = lengths[Math.floor(total*0.5)];
+    const p75 = lengths[Math.floor(total*0.75)];
+    const minL = lengths[0];
+    const maxL = lengths[total-1];
+
+    // entropy (Shannon)
+    let entropy = 0;
+    for (const cnt of Object.values(vals)) {
+      const p = cnt / total;
+      entropy -= p * Math.log2(p);
+    }
+    entropy = Math.round(entropy * 100) / 100;
+
+    posStats.push({ pos: i+1, total, uniq, topVals, restVals, avgLen: Math.round(avg*10)/10, p25, p50, p75, minL, maxL, entropy, maxCnt: sorted[0][1] });
+  }
+
+  _data = { lines: lines.length, posStats, sep, topN };
+  renderResults();
+}
+
+function renderResults() {
+  const { lines, posStats } = _data;
+  const totalPos = posStats.length;
+
+  let html = `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-val">${lines}</div><div class="kpi-lbl">NCs</div></div>
+    <div class="kpi"><div class="kpi-val">${totalPos}</div><div class="kpi-lbl">posições</div></div>
+    <div class="kpi cyan"><div class="kpi-val">${posStats.reduce((s,p)=>s+p.uniq,0)}</div><div class="kpi-lbl">valores únicos total</div></div>
+  </div>`;
+
+  for (const p of posStats) {
+    const entropy_badge = p.entropy > 3 ? '🌐 alta' : p.entropy > 1.5 ? '⚡ média' : '📌 baixa';
+    html += `<div class="pos-section">
+      <div class="pos-title">
+        Posição ${p.pos}
+        <span class="pos-badge">P${p.pos}</span>
+        <span style="font-size:11px;color:var(--fg3);font-weight:400">${p.uniq} valores únicos · ${p.total} ocorrências · entropia ${p.entropy} (${entropy_badge})</span>
+      </div>
+      <div class="stats-mini">
+        <span>len avg <b>${p.avgLen}</b></span>
+        <span>P25 <b>${p.p25}</b></span>
+        <span>mediana <b>${p.p50}</b></span>
+        <span>P75 <b>${p.p75}</b></span>
+        <span>min <b>${p.minL}</b></span>
+        <span>max <b>${p.maxL}</b></span>
+      </div>
+      <div class="bar-list" id="bars-${p.pos}">`;
+
+    for (const [val, cnt] of p.topVals) {
+      const pct = Math.round(cnt/p.total*100);
+      const w = Math.round(cnt/p.maxCnt*100);
+      html += `<div class="bar-row">
+        <span class="bar-label" title="${esc(val)}">${esc(val)}</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${w}%"></div></div>
+        <span class="bar-cnt">${cnt}</span>
+        <span class="bar-pct">${pct}%</span>
+      </div>`;
+    }
+
+    if (p.restVals.length) {
+      html += `</div>
+        <button class="expand-btn" onclick="toggleRest(${p.pos})">+ ${p.restVals.length} valores a mais</button>
+        <div id="rest-${p.pos}" style="display:none" class="bar-list">`;
+      for (const [val, cnt] of p.restVals) {
+        const pct = Math.round(cnt/p.total*100);
+        const w = Math.round(cnt/p.maxCnt*100);
+        html += `<div class="bar-row">
+          <span class="bar-label" title="${esc(val)}">${esc(val)}</span>
+          <div class="bar-wrap"><div class="bar-fill" style="width:${w}%"></div></div>
+          <span class="bar-cnt">${cnt}</span>
+          <span class="bar-pct">${pct}%</span>
+        </div>`;
+      }
+      html += `</div>`;
+    } else {
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  document.getElementById('results').innerHTML = html;
+}
+
+function toggleRest(pos) {
+  const el = document.getElementById('rest-'+pos);
+  const btn = el.previousElementSibling;
+  if (el.style.display === 'none') {
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    el.style.gap = '4px';
+    btn.textContent = '− Recolher';
+  } else {
+    el.style.display = 'none';
+    btn.textContent = `+ ${el.children.length} valores a mais`;
+  }
+}
+
+function exportCSV() {
+  if (!_data) { showToast('Analise primeiro!'); return; }
+  const rows = [['posicao','valor','contagem','percentual','len_avg','p25','p50','p75','min_len','max_len','entropia']];
+  for (const p of _data.posStats) {
+    const all = [...p.topVals, ...p.restVals];
+    for (const [val, cnt] of all) {
+      const pct = Math.round(cnt/p.total*100);
+      rows.push([p.pos, val, cnt, pct+'%', p.avgLen, p.p25, p.p50, p.p75, p.minL, p.maxL, p.entropy]);
+    }
+  }
+  const csv = rows.map(r => r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nc-segment-stats.csv';
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('ncInput').value='';
+  document.getElementById('results').innerHTML='<div style="color:var(--fg3);font-size:13px;padding:20px 0">Cole suas NCs e clique em Analisar.</div>';
+  _data=null;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function toggleTheme(){const r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');}
+</script>

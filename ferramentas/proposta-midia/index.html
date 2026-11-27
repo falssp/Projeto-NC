@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Proposta de Mídia</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;
+  --surface:#fff;--text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;
+  --green:#059669;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px}
+header .icon{font-size:1.5rem}
+header h1{font-size:1.1rem;font-weight:700}
+header p{font-size:.78rem;opacity:.7;margin-top:2px}
+.wrap{display:flex;gap:0;min-height:calc(100vh - 64px)}
+.form-panel{width:420px;min-width:320px;background:var(--surface);border-right:1px solid var(--border);padding:24px;overflow-y:auto;flex-shrink:0}
+.preview-panel{flex:1;padding:24px;overflow-y:auto;min-width:0;background:var(--bg)}
+.section{margin-bottom:20px}
+.section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+label{display:block;font-size:.75rem;font-weight:600;color:var(--body);margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:inherit;font-size:.82rem;color:var(--text);background:#fff;outline:none;transition:.12s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.field{margin-bottom:11px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* placements */
+.placement{background:var(--hl);border:1.5px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;position:relative}
+.placement-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.placement-num{font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+.btn-remove{background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;line-height:1;padding:0}
+.btn-remove:hover{color:#dc2626}
+.btn-add{width:100%;padding:9px;background:var(--hl);border:1.5px dashed var(--border);border-radius:9px;
+  font-family:inherit;font-size:.8rem;font-weight:600;color:var(--accent);cursor:pointer;transition:.12s;margin-bottom:16px}
+.btn-add:hover{border-color:var(--accent);background:#dde3fb}
+.btn-gen{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;
+  font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s;margin-top:4px}
+.btn-gen:hover{background:var(--navy)}
+/* preview doc */
+.doc{background:#fff;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:40px 48px;max-width:900px;margin:0 auto;font-family:'Space Grotesk',sans-serif;color:#1a237e}
+.doc-header{margin-bottom:32px;border-bottom:3px solid #1a237e;padding-bottom:20px}
+.doc-company{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#9fa8da;margin-bottom:4px}
+.doc-title{font-size:1.6rem;font-weight:700;line-height:1.2;margin-bottom:6px}
+.doc-meta{font-size:.78rem;color:#3d4a8a;margin-top:6px}
+.doc-meta span{margin-right:20px}
+.doc-section{margin-bottom:28px}
+.doc-section h2{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9fa8da;border-bottom:1px solid #d6dbf2;padding-bottom:8px;margin-bottom:14px}
+.obj-list{display:flex;flex-wrap:wrap;gap:8px}
+.obj-chip{padding:5px 12px;background:#e8ecfd;border-radius:20px;font-size:.78rem;font-weight:600;color:#1F36C7}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.kpi-card{padding:12px;background:#f4f5fb;border:1.5px solid #d6dbf2;border-radius:10px}
+.kpi-card .kc-label{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9fa8da;margin-bottom:4px}
+.kpi-card .kc-val{font-size:.95rem;font-weight:700;color:#1a237e}
+/* placement table */
+.plt-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-bottom:16px}
+.plt-table th{background:#e8ecfd;padding:9px 12px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:#9fa8da;font-weight:700}
+.plt-table td{padding:9px 12px;border-bottom:1px solid #f4f5fb;vertical-align:top}
+.plt-table tr:last-child td{border-bottom:none}
+.plt-table td:first-child{font-weight:600}
+.total-row td{font-weight:700;background:#e8ecfd}
+/* budget bar */
+.budget-bar-wrap{margin-bottom:16px}
+.budget-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:.75rem}
+.budget-bar-label{width:140px;font-weight:600;color:#3d4a8a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.budget-bar-track{flex:1;height:12px;background:#f4f5fb;border-radius:6px;overflow:hidden}
+.budget-bar-fill{height:100%;border-radius:6px}
+.budget-bar-pct{width:40px;text-align:right;font-weight:600;color:#1F36C7;font-size:.72rem}
+.doc-footer{margin-top:32px;padding-top:16px;border-top:1px solid #d6dbf2;font-size:.72rem;color:#9fa8da;display:flex;justify-content:space-between}
+.btn-copy{padding:9px 20px;background:#e8ecfd;border:1.5px solid #d6dbf2;border-radius:8px;
+  font-family:inherit;font-size:.78rem;font-weight:600;color:#1F36C7;cursor:pointer;transition:.12s;margin-top:16px}
+.btn-copy:hover{background:#1F36C7;color:#fff;border-color:#1F36C7}
+.btn-copy.copied{background:#059669;color:#fff;border-color:#059669}
+.placeholder{text-align:center;padding:60px 24px;color:var(--muted)}
+.placeholder .ico{font-size:3rem;margin-bottom:12px}
+.placeholder p{font-size:.85rem}
+@media(max-width:800px){
+  .wrap{flex-direction:column}
+  .form-panel{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+  .doc{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="icon">📋</div>
+  <div>
+    <h1>Gerador de Proposta de Mídia</h1>
+    <p>Preencha os dados e gere uma proposta formatada pronta para apresentar ao cliente</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- FORM -->
+  <div class="form-panel">
+
+    <div class="section">
+      <div class="section-title">Informações Gerais</div>
+      <div class="field"><label>Nome do Anunciante / Cliente</label><input type="text" id="f_anunciante" placeholder="Empresa ABC"></div>
+      <div class="field"><label>Título / Produto da Campanha</label><input type="text" id="f_produto" placeholder="Lançamento Produto X"></div>
+      <div class="field"><label>Agência / Responsável</label><input type="text" id="f_agencia" placeholder="Agência XYZ"></div>
+      <div class="row2">
+        <div class="field"><label>Data Início</label><input type="date" id="f_inicio"></div>
+        <div class="field"><label>Data Fim</label><input type="date" id="f_fim"></div>
+      </div>
+      <div class="field"><label>Budget Total (R$)</label><input type="number" id="f_budget_total" placeholder="100000"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Objetivos</div>
+      <div class="field">
+        <label>Objetivo Principal</label>
+        <select id="f_objetivo">
+          <option>Awareness / Alcance</option>
+          <option>Consideração / Tráfego</option>
+          <option>Conversão / Vendas</option>
+          <option>Geração de Leads</option>
+          <option>Engajamento</option>
+          <option>App Installs</option>
+          <option>Remarketing</option>
+          <option>Lançamento de Produto</option>
+        </select>
+      </div>
+      <div class="field"><label>Público-Alvo</label><textarea id="f_publico" rows="2" placeholder="Ex: Homens e mulheres 25-45, classes A/B, interesse em tecnologia"></textarea></div>
+      <div class="field"><label>Região</label><input type="text" id="f_regiao" placeholder="Brasil (todo), São Paulo e Rio de Janeiro…"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">KPIs Esperados</div>
+      <div class="row2">
+        <div class="field"><label>Impressões alvo</label><input type="number" id="f_impr" placeholder="10000000"></div>
+        <div class="field"><label>Alcance alvo</label><input type="number" id="f_reach" placeholder="3000000"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Cliques alvo</label><input type="number" id="f_clicks" placeholder="50000"></div>
+        <div class="field"><label>Conversões / Leads alvo</label><input type="number" id="f_conv" placeholder="1000"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>CPM médio (R$)</label><input type="number" id="f_cpm" placeholder="15"></div>
+        <div class="field"><label>Freq. média</label><input type="number" id="f_freq" placeholder="3" step="0.5"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Placements / Canais</div>
+      <div id="placements"></div>
+      <button class="btn-add" onclick="addPlacement()">+ Adicionar Canal / Placement</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Criativos & Formatos</div>
+      <div class="field"><textarea id="f_criativos" rows="3" placeholder="Ex: Banner 300×250, Vídeo 15s :06, Carrossel, Stories 1080×1920…"></textarea></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Observações</div>
+      <div class="field"><textarea id="f_obs" rows="3" placeholder="Brand safety, exclusões, budget flexível, notas adicionais…"></textarea></div>
+    </div>
+
+    <button class="btn-gen" onclick="gerar()">📋 Gerar Proposta</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-panel" id="preview">
+    <div class="placeholder">
+      <div class="ico">📋</div>
+      <p>Preencha os dados ao lado e clique em <strong>Gerar Proposta</strong></p>
+    </div>
+  </div>
+</div>
+
+<script>
+let placementCount = 0;
+const PLT_COLORS = ['#1F36C7','#059669','#d97706','#7c3aed','#dc2626','#0891b2','#be185d','#65a30d'];
+
+function addPlacement(data={}){
+  placementCount++;
+  const id = placementCount;
+  const div = document.createElement('div');
+  div.className = 'placement';
+  div.id = `plt_${id}`;
+  div.innerHTML = `
+    <div class="placement-header">
+      <span class="placement-num">Canal ${id}</span>
+      <button class="btn-remove" onclick="document.getElementById('plt_${id}').remove()">✕</button>
+    </div>
+    <div class="field"><label>Plataforma</label>
+      <select class="p_plat">
+        <option>Meta Ads</option><option>Google Ads (Search)</option><option>Google Display Network</option>
+        <option>YouTube</option><option>DV360</option><option>Campaign Manager 360</option>
+        <option>TikTok Ads</option><option>LinkedIn Ads</option><option>X Ads</option>
+        <option>Pinterest Ads</option><option>Kwai</option><option>Programático (outros)</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Budget (R$)</label><input type="number" class="p_budget" placeholder="20000" oninput="syncBudget()"></div>
+      <div class="field"><label>% do total</label><input type="number" class="p_pct" placeholder="" step="1" oninput="syncPct(this,${id})"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>CPM (R$)</label><input type="number" class="p_cpm" placeholder="15" step="0.5"></div>
+      <div class="field"><label>Formato Principal</label><input type="text" class="p_format" placeholder="Video 15s, Banner…"></div>
+    </div>
+    <div class="field"><label>KPI do Canal</label>
+      <select class="p_kpi">
+        <option>Impressões</option><option>Alcance</option><option>Cliques</option>
+        <option>Leads</option><option>Conversões</option><option>Views de Vídeo</option><option>Engajamento</option>
+      </select>
+    </div>
+    <div class="field"><label>Meta do Canal</label><input type="text" class="p_meta" placeholder="Ex: 3.000.000 impressões"></div>
+  `;
+  if(data.plat) div.querySelector('.p_plat').value=data.plat;
+  if(data.budget) div.querySelector('.p_budget').value=data.budget;
+  if(data.cpm) div.querySelector('.p_cpm').value=data.cpm;
+  if(data.format) div.querySelector('.p_format').value=data.format;
+  document.getElementById('placements').appendChild(div);
+  syncBudget();
+}
+
+function syncBudget(){
+  const total = parseFloat(document.getElementById('f_budget_total').value)||0;
+  if(!total) return;
+  document.querySelectorAll('.p_budget').forEach(inp=>{
+    const pct = inp.closest('.placement').querySelector('.p_pct');
+    if(inp.value) pct.value = ((parseFloat(inp.value)/total)*100).toFixed(0);
+  });
+}
+function syncPct(el,id){
+  const total = parseFloat(document.getElementById('f_budget_total').value)||0;
+  if(!total) return;
+  const plt = document.getElementById(`plt_${id}`);
+  const budInp = plt.querySelector('.p_budget');
+  if(el.value) budInp.value = ((parseFloat(el.value)/100)*total).toFixed(0);
+}
+
+// Init with 2 placements
+addPlacement({plat:'Meta Ads',cpm:'12'});
+addPlacement({plat:'Google Display Network',cpm:'10'});
+
+function fmtR(n){if(!n||isNaN(n))return'—';return'R$ '+parseFloat(n).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+function fmtN(n){if(!n||isNaN(n))return'—';return Math.round(n).toLocaleString('pt-BR');}
+function v(id){return document.getElementById(id)?.value?.trim()||'';}
+
+function gerar(){
+  const anunciante=v('f_anunciante')||'[Anunciante]';
+  const produto=v('f_produto')||'[Produto]';
+  const agencia=v('f_agencia');
+  const inicio=v('f_inicio');
+  const fim=v('f_fim');
+  const budgetTotal=parseFloat(v('f_budget_total'))||0;
+  const objetivo=v('f_objetivo');
+  const publico=v('f_publico');
+  const regiao=v('f_regiao');
+  const imprAlvo=parseFloat(v('f_impr'))||0;
+  const reachAlvo=parseFloat(v('f_reach'))||0;
+  const clicksAlvo=parseFloat(v('f_clicks'))||0;
+  const convAlvo=parseFloat(v('f_conv'))||0;
+  const cpmMedio=parseFloat(v('f_cpm'))||0;
+  const freqMedia=parseFloat(v('f_freq'))||0;
+  const criativos=v('f_criativos');
+  const obs=v('f_obs');
+
+  // Placements
+  const plts=[];
+  document.querySelectorAll('.placement').forEach((el,i)=>{
+    plts.push({
+      num:i+1,
+      plat:el.querySelector('.p_plat').value,
+      budget:parseFloat(el.querySelector('.p_budget').value)||0,
+      pct:parseFloat(el.querySelector('.p_pct').value)||0,
+      cpm:parseFloat(el.querySelector('.p_cpm').value)||0,
+      format:el.querySelector('.p_format').value,
+      kpi:el.querySelector('.p_kpi').value,
+      meta:el.querySelector('.p_meta').value,
+    });
+  });
+
+  const sumBudget = plts.reduce((a,p)=>a+p.budget,0);
+  const maxBudget = Math.max(...plts.map(p=>p.budget));
+
+  const fmtDate = s => {if(!s)return'—';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`;};
+  const today = new Date().toLocaleDateString('pt-BR');
+
+  // KPI chips
+  const kpis = [];
+  if(imprAlvo) kpis.push({l:'Impressões',v:fmtN(imprAlvo)});
+  if(reachAlvo) kpis.push({l:'Alcance',v:fmtN(reachAlvo)});
+  if(clicksAlvo) kpis.push({l:'Cliques',v:fmtN(clicksAlvo)});
+  if(convAlvo) kpis.push({l:'Conversões/Leads',v:fmtN(convAlvo)});
+  if(cpmMedio) kpis.push({l:'CPM Médio',v:fmtR(cpmMedio)});
+  if(freqMedia) kpis.push({l:'Frequência',v:freqMedia+'×'});
+  if(cpmMedio&&budgetTotal) kpis.push({l:'Impressões proj.',v:fmtN((budgetTotal/cpmMedio)*1000)});
+
+  const kpiHtml = kpis.map(k=>`<div class="kpi-card"><div class="kc-label">${k.l}</div><div class="kc-val">${k.v}</div></div>`).join('');
+
+  // Placement table
+  const pltRows = plts.map((p,i)=>{
+    const impr = p.budget&&p.cpm ? fmtN((p.budget/p.cpm)*1000) : '—';
+    return `<tr>
+      <td style="color:${PLT_COLORS[i%PLT_COLORS.length]}">${p.plat}</td>
+      <td>${fmtR(p.budget)}</td>
+      <td>${p.pct?p.pct+'%':'—'}</td>
+      <td>${p.cpm?fmtR(p.cpm):'—'}</td>
+      <td>${impr}</td>
+      <td>${p.kpi}</td>
+      <td>${p.meta||'—'}</td>
+      <td>${p.format||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const totalImpr = plts.reduce((a,p)=>a+(p.budget&&p.cpm?(p.budget/p.cpm)*1000:0),0);
+
+  // Budget bars
+  const barsHtml = plts.map((p,i)=>{
+    const pct = maxBudget ? (p.budget/maxBudget)*100 : 0;
+    return `<div class="budget-bar-row">
+      <span class="budget-bar-label">${p.plat}</span>
+      <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${pct}%;background:${PLT_COLORS[i%PLT_COLORS.length]}"></div></div>
+      <span class="budget-bar-pct">${fmtR(p.budget)}</span>
+    </div>`;
+  }).join('');
+
+  const html = `<div class="doc" id="proposta-doc">
+    <div class="doc-header">
+      <div class="doc-company">${agencia?agencia+' · ':''}Proposta de Mídia</div>
+      <div class="doc-title">${anunciante} — ${produto}</div>
+      <div class="doc-meta">
+        <span>📅 ${fmtDate(inicio)} até ${fmtDate(fim)}</span>
+        <span>💰 Budget Total: <strong>${fmtR(budgetTotal)}</strong></span>
+        <span>🎯 ${objetivo}</span>
+      </div>
+    </div>
+
+    <div class="doc-section">
+      <h2>Objetivo & Público</h2>
+      <div class="obj-list">
+        <span class="obj-chip">🎯 ${objetivo}</span>
+        ${regiao?`<span class="obj-chip">📍 ${regiao}</span>`:''}
+      </div>
+      ${publico?`<p style="margin-top:10px;font-size:.82rem;color:#3d4a8a;line-height:1.6"><strong>Público:</strong> ${publico}</p>`:''}
+    </div>
+
+    ${kpis.length?`<div class="doc-section">
+      <h2>KPIs & Projeções</h2>
+      <div class="kpi-grid">${kpiHtml}</div>
+    </div>`:''}
+
+    <div class="doc-section">
+      <h2>Mix de Canais — Alocação de Budget</h2>
+      <div class="budget-bar-wrap">${barsHtml}</div>
+      <div style="overflow-x:auto">
+      <table class="plt-table">
+        <thead><tr><th>Canal</th><th>Budget</th><th>%</th><th>CPM</th><th>Impressões</th><th>KPI</th><th>Meta</th><th>Formato</th></tr></thead>
+        <tbody>
+          ${pltRows}
+          <tr class="total-row">
+            <td>TOTAL</td>
+            <td>${fmtR(sumBudget)}</td>
+            <td>100%</td>
+            <td>—</td>
+            <td>${totalImpr?fmtN(totalImpr):'—'}</td>
+            <td colspan="3"></td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    ${criativos?`<div class="doc-section">
+      <h2>Criativos & Formatos</h2>
+      <p style="font-size:.82rem;color:#3d4a8a;line-height:1.7">${criativos.replace(/\n/g,'<br>')}</p>
+    </div>`:''}
+
+    ${obs?`<div class="doc-section">
+      <h2>Observações</h2>
+      <p style="font-size:.82rem;color:#3d4a8a;line-height:1.7">${obs.replace(/\n/g,'<br>')}</p>
+    </div>`:''}
+
+    <div class="doc-footer">
+      <span>Proposta gerada em ${today}</span>
+      ${agencia?`<span>${agencia}</span>`:''}
+    </div>
+  </div>
+  <div style="max-width:900px;margin:0 auto;display:flex;gap:10px;margin-top:12px">
+    <button class="btn-copy" id="btnCopy" onclick="copiarProposta()">📋 Copiar Texto da Proposta</button>
+  </div>`;
+
+  document.getElementById('preview').innerHTML = html;
+  document.getElementById('preview').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function copiarProposta(){
+  const doc = document.getElementById('proposta-doc');
+  if(!doc) return;
+  const text = doc.innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.getElementById('btnCopy');
+    btn.textContent='✓ Copiado!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Copiar Texto da Proposta';btn.classList.remove('copied');},2000);
+  });
+}
+
+document.getElementById('f_budget_total').addEventListener('input', syncBudget);
+</script>
+</body>
+</html>

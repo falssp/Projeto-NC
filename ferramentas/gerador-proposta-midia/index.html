@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Proposta de Mídia</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--surface:#fff;--text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;--ok:#16a34a;--warn:#d97706;--err:#dc2626;}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+header .logo{font-size:1.35rem;font-weight:700;letter-spacing:-.5px}
+header .sub{font-size:.8rem;opacity:.7;margin-top:2px}
+.hdr-actions{display:flex;gap:10px}
+.btn{padding:9px 18px;border-radius:8px;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:.15s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#1a2ea0}
+.btn-secondary{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}.btn-secondary:hover{background:rgba(255,255,255,.25)}
+.btn-sm{padding:6px 12px;font-size:.77rem}
+.main{flex:1;display:grid;grid-template-columns:420px 1fr;gap:0;min-width:0}
+@media(max-width:960px){.main{grid-template-columns:1fr}}
+.form-col{background:var(--surface);border-right:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.preview-col{padding:24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.section-title{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.field{display:flex;flex-direction:column;gap:4px}
+label{font-size:.77rem;font-weight:600;color:var(--body)}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;color:var(--navy);background:#fafbff;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Table lines */
+.table-wrap{overflow-x:auto}
+table.media{width:100%;border-collapse:collapse;font-size:.8rem;min-width:600px}
+table.media th{background:var(--hl);color:var(--navy);font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+table.media td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.media input,table.media select{padding:6px 8px;font-size:.78rem;border-radius:6px;min-width:0}
+table.media td.pct{text-align:center;font-weight:700;font-size:.78rem;color:var(--accent)}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;padding:4px;border-radius:4px}
+.del-btn:hover{background:var(--err-bg);color:var(--err)}
+.add-row-btn{background:var(--hl);color:var(--navy);border:1px dashed var(--border);border-radius:8px;padding:8px;font-size:.8rem;font-weight:600;cursor:pointer;width:100%;margin-top:8px;transition:.15s}
+.add-row-btn:hover{background:var(--border)}
+.budget-status{font-size:.8rem;font-weight:600;padding:6px 12px;border-radius:8px;text-align:center}
+.bs-ok{background:var(--ok-bg);color:#14532d}
+.bs-warn{background:var(--warn-bg);color:#78350f}
+.bs-err{background:var(--err-bg);color:#7f1d1d}
+/* Preview */
+.proposal-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.prop-header{background:var(--navy);color:#fff;padding:20px 24px}
+.prop-header h1{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.prop-header .meta{font-size:.78rem;opacity:.75;display:flex;gap:16px;flex-wrap:wrap}
+.prop-body{padding:20px 24px}
+.prop-section{margin-bottom:18px}
+.prop-section h3{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.info-item{background:var(--hl);border-radius:8px;padding:10px 12px}
+.info-item .lbl{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.info-item .val{font-size:.88rem;font-weight:600;color:var(--navy);margin-top:2px}
+table.prop-table{width:100%;border-collapse:collapse;font-size:.8rem}
+table.prop-table th{background:var(--hl);color:var(--navy);font-weight:600;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border)}
+table.prop-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--body)}
+table.prop-table tr:last-child td{border-bottom:none}
+.prop-footer{background:var(--hl);padding:14px 24px;font-size:.78rem;color:var(--body);border-top:1px solid var(--border)}
+.total-line{font-size:1rem;font-weight:700;color:var(--navy);text-align:right;margin-top:10px}
+.empty-prop{color:var(--muted);text-align:center;padding:32px;font-size:.88rem}
+@media print{
+  header .hdr-actions,.form-col,.add-row-btn,.del-btn,.section-title,button{display:none!important}
+  .main{display:block}
+  .preview-col{padding:0}
+  .proposal-card{border:none;border-radius:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">📄 Gerador de Proposta de Mídia</div>
+    <div class="sub">Crie propostas profissionais para apresentar ao cliente</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn btn-secondary" onclick="copyProposal()">📋 Copiar</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+  </div>
+</header>
+<div class="main">
+  <!-- FORM -->
+  <div class="form-col">
+    <div class="section-title">Briefing</div>
+    <div class="field"><label>Cliente</label><input id="f_cliente" placeholder="Nome do cliente" oninput="renderPreview()"></div>
+    <div class="field"><label>Campanha</label><input id="f_campanha" placeholder="Nome da campanha" oninput="renderPreview()"></div>
+    <div class="field"><label>Objetivo</label>
+      <select id="f_objetivo" onchange="renderPreview()">
+        <option value="">Selecione...</option>
+        <option>Awareness</option><option>Consideração</option><option>Conversão</option><option>Tráfego</option><option>Engajamento</option><option>App Install</option>
+      </select>
+    </div>
+    <div class="two-col">
+      <div class="field"><label>Início</label><input type="date" id="f_inicio" oninput="renderPreview()"></div>
+      <div class="field"><label>Fim</label><input type="date" id="f_fim" oninput="renderPreview()"></div>
+    </div>
+    <div class="field"><label>Budget Total (R$)</label><input type="number" id="f_budget" placeholder="50000" oninput="renderPreview()"></div>
+    <div class="field"><label>Público-alvo</label><textarea id="f_publico" placeholder="Ex: Homens e mulheres 25-45, interessados em finanças..." oninput="renderPreview()"></textarea></div>
+    <div class="field"><label>KPI Principal</label><input id="f_kpi" placeholder="Ex: CPM < R$ 8,00 / CPC < R$ 1,50" oninput="renderPreview()"></div>
+    <div class="field"><label>Observações</label><textarea id="f_obs" placeholder="Restrições, notas, próximos passos..." oninput="renderPreview()"></textarea></div>
+
+    <div class="section-title" style="margin-top:4px">Tabela de Mídia</div>
+    <div id="budgetStatus" class="budget-status" style="display:none"></div>
+    <div class="table-wrap">
+      <table class="media" id="mediaTable">
+        <thead><tr><th>Plataforma</th><th>Formato</th><th style="width:110px">Budget (R$)</th><th style="width:60px">%</th><th>KPI</th><th>Obs</th><th></th></tr></thead>
+        <tbody id="mediaRows"></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow()">+ Adicionar linha</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-col">
+    <div style="font-size:.78rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pré-visualização da Proposta</div>
+    <div id="previewArea"><div class="proposal-card"><div class="empty-prop">Preencha o formulário ao lado para visualizar a proposta.</div></div></div>
+  </div>
+</div>
+
+<script>
+const PLATAFORMAS = ['Meta','Google Ads','DV360','CM360','TikTok Ads','LinkedIn','X Ads','YouTube','Kwai','Pinterest','Programático','Outros'];
+let rowId = 0;
+
+function addRow(){
+  rowId++;
+  const rid = rowId;
+  const tbody = document.getElementById('mediaRows');
+  const tr = document.createElement('tr');
+  tr.id = 'row_'+rid;
+  tr.innerHTML = `
+    <td><select onchange="renderPreview()" style="min-width:110px">${PLATAFORMAS.map(p=>`<option>${p}</option>`).join('')}</select></td>
+    <td><input placeholder="Formato" oninput="renderPreview()" style="min-width:90px"></td>
+    <td><input type="number" placeholder="0" oninput="updateBudgets();renderPreview()" style="min-width:90px" class="row-budget"></td>
+    <td class="pct" id="pct_${rid}">—</td>
+    <td><input placeholder="Ex: CPM < R$8" oninput="renderPreview()" style="min-width:90px"></td>
+    <td><input placeholder="Obs." oninput="renderPreview()" style="min-width:70px"></td>
+    <td><button class="del-btn" onclick="delRow(${rid})">🗑</button></td>`;
+  tbody.appendChild(tr);
+  updateBudgets();
+  renderPreview();
+}
+
+function delRow(rid){
+  const el = document.getElementById('row_'+rid);
+  if(el) el.remove();
+  updateBudgets();
+  renderPreview();
+}
+
+function updateBudgets(){
+  const budget = parseFloat(document.getElementById('f_budget').value)||0;
+  let total = 0;
+  document.querySelectorAll('.row-budget').forEach(inp=>{ total += parseFloat(inp.value)||0; });
+  document.querySelectorAll('#mediaRows tr').forEach(tr=>{
+    const budInp = tr.querySelector('.row-budget');
+    if(!budInp) return;
+    const val = parseFloat(budInp.value)||0;
+    const pctEl = tr.querySelector('[id^=pct_]');
+    if(pctEl) pctEl.textContent = budget > 0 ? (val/budget*100).toFixed(1)+'%' : '—';
+  });
+  const statusEl = document.getElementById('budgetStatus');
+  if(budget > 0 && total > 0){
+    statusEl.style.display = '';
+    const diff = total - budget;
+    if(Math.abs(diff) < 0.01){ statusEl.className='budget-status bs-ok'; statusEl.textContent='✅ Budget 100% alocado'; }
+    else if(diff < 0){ statusEl.className='budget-status bs-warn'; statusEl.textContent=`⚠️ Faltam R$ ${(budget-total).toLocaleString('pt-BR',{minimumFractionDigits:2})} para alocar`; }
+    else { statusEl.className='budget-status bs-err'; statusEl.textContent=`❌ Excede em R$ ${diff.toLocaleString('pt-BR',{minimumFractionDigits:2})}`; }
+  } else { statusEl.style.display='none'; }
+}
+
+function getRows(){
+  const rows = [];
+  document.querySelectorAll('#mediaRows tr').forEach(tr=>{
+    const inputs = tr.querySelectorAll('input,select');
+    if(inputs.length >= 5){
+      rows.push({ plataforma: inputs[0].value, formato: inputs[1].value, budget: parseFloat(inputs[2].value)||0, kpi: inputs[3].value, obs: inputs[4].value });
+    }
+  });
+  return rows;
+}
+
+function renderPreview(){
+  updateBudgets();
+  const cliente = document.getElementById('f_cliente').value||'Cliente';
+  const campanha = document.getElementById('f_campanha').value||'Campanha';
+  const objetivo = document.getElementById('f_objetivo').value||'—';
+  const inicio = document.getElementById('f_inicio').value;
+  const fim = document.getElementById('f_fim').value;
+  const budget = parseFloat(document.getElementById('f_budget').value)||0;
+  const publico = document.getElementById('f_publico').value||'—';
+  const kpi = document.getElementById('f_kpi').value||'—';
+  const obs = document.getElementById('f_obs').value;
+  const rows = getRows();
+  const totalRows = rows.reduce((s,r)=>s+r.budget,0);
+  const today = new Date().toLocaleDateString('pt-BR');
+  const fmtDate = d=>{ if(!d) return '—'; const [y,m,dy]=d.split('-'); return `${dy}/${m}/${y}`; };
+  let duracao = '—';
+  if(inicio&&fim){
+    const diff = Math.round((new Date(fim)-new Date(inicio))/(86400000))+1;
+    duracao = diff + ' dias';
+  }
+  const fmtR = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  let rowsHtml = '';
+  if(rows.length){
+    rowsHtml = rows.map(r=>`<tr><td>${r.plataforma}</td><td>${r.formato||'—'}</td><td>${fmtR(r.budget)}</td><td>${budget>0?(r.budget/budget*100).toFixed(1)+'%':'—'}</td><td>${r.kpi||'—'}</td><td>${r.obs||'—'}</td></tr>`).join('');
+  } else {
+    rowsHtml = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:14px">Adicione linhas na tabela de mídia ao lado</td></tr>';
+  }
+
+  const platList = [...new Set(rows.map(r=>r.plataforma).filter(Boolean))].join(', ')||'—';
+
+  document.getElementById('previewArea').innerHTML = `
+  <div class="proposal-card">
+    <div class="prop-header">
+      <h1>Proposta de Mídia — ${esc(campanha)}</h1>
+      <div class="meta"><span>👤 ${esc(cliente)}</span><span>📅 Emitida em ${today}</span></div>
+    </div>
+    <div class="prop-body">
+      <div class="prop-section">
+        <h3>Resumo da Campanha</h3>
+        <div class="info-grid">
+          <div class="info-item"><div class="lbl">Objetivo</div><div class="val">${esc(objetivo)}</div></div>
+          <div class="info-item"><div class="lbl">Budget Total</div><div class="val">${fmtR(budget)}</div></div>
+          <div class="info-item"><div class="lbl">Período</div><div class="val">${fmtDate(inicio)} → ${fmtDate(fim)}</div></div>
+          <div class="info-item"><div class="lbl">Duração</div><div class="val">${duracao}</div></div>
+          <div class="info-item"><div class="lbl">KPI Principal</div><div class="val">${esc(kpi)}</div></div>
+          <div class="info-item"><div class="lbl">Plataformas</div><div class="val">${esc(platList)}</div></div>
+        </div>
+      </div>
+      <div class="prop-section">
+        <h3>Público-alvo</h3>
+        <p style="font-size:.85rem;color:var(--body);line-height:1.6">${esc(publico)}</p>
+      </div>
+      <div class="prop-section">
+        <h3>Tabela de Mídia</h3>
+        <table class="prop-table">
+          <tr><th>Plataforma</th><th>Formato</th><th>Budget</th><th>%</th><th>KPI</th><th>Obs</th></tr>
+          ${rowsHtml}
+        </table>
+        <div class="total-line">Total: ${fmtR(totalRows)} ${budget>0&&Math.abs(totalRows-budget)>0.01?`<span style="font-size:.8rem;color:${totalRows>budget?'var(--err)':'var(--warn)'}">(${totalRows>budget?'+':'-'}${fmtR(Math.abs(totalRows-budget))})</span>`:''}</div>
+      </div>
+      ${obs?`<div class="prop-section"><h3>Observações</h3><p style="font-size:.85rem;color:var(--body);line-height:1.6">${esc(obs)}</p></div>`:''}
+    </div>
+    <div class="prop-footer">📌 Proposta gerada via NC Tool — sujeita a alterações. Válida por 15 dias.</div>
+  </div>`;
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function copyProposal(){
+  const cliente = document.getElementById('f_cliente').value||'Cliente';
+  const campanha = document.getElementById('f_campanha').value||'Campanha';
+  const objetivo = document.getElementById('f_objetivo').value;
+  const budget = parseFloat(document.getElementById('f_budget').value)||0;
+  const inicio = document.getElementById('f_inicio').value;
+  const fim = document.getElementById('f_fim').value;
+  const kpi = document.getElementById('f_kpi').value;
+  const obs = document.getElementById('f_obs').value;
+  const rows = getRows();
+  const fmtR = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const fmtDate = d=>{ if(!d) return '—'; const [y,m,dy]=d.split('-'); return `${dy}/${m}/${y}`; };
+  let txt = `PROPOSTA DE MÍDIA — ${campanha}\nCliente: ${cliente}\nData: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+  txt += `CAMPANHA\nObjetivo: ${objetivo}\nBudget: ${fmtR(budget)}\nPeríodo: ${fmtDate(inicio)} → ${fmtDate(fim)}\nKPI: ${kpi}\nPúblico: ${document.getElementById('f_publico').value}\n\n`;
+  txt += `TABELA DE MÍDIA\n${'─'.repeat(60)}\n`;
+  txt += rows.map(r=>`• ${r.plataforma} | ${r.formato} | ${fmtR(r.budget)} (${budget>0?(r.budget/budget*100).toFixed(1)+'%':'—'}) | KPI: ${r.kpi}`).join('\n');
+  txt += `\nTotal: ${fmtR(rows.reduce((s,r)=>s+r.budget,0))}`;
+  if(obs) txt += `\n\nObservações: ${obs}`;
+  navigator.clipboard.writeText(txt).then(()=>alert('✅ Proposta copiada!')).catch(()=>alert('Erro ao copiar.'));
+}
+
+// Init
+addRow(); addRow(); renderPreview();
+const today = new Date().toISOString().split('T')[0];
+const end = new Date(); end.setDate(end.getDate()+30);
+document.getElementById('f_inicio').value = today;
+document.getElementById('f_fim').value = end.toISOString().split('T')[0];
+renderPreview();
+</script>
+</body>
+</html>

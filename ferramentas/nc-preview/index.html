@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#f59e0b;--accent-soft:rgba(245,158,11,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--err:#dc2626;--err-bg:#fef2f2;--warn:#d97706;--warn-bg:#fffbeb;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+  --seg1:#3b82f6;--seg2:#8b5cf6;--seg3:#ec4899;--seg4:#10b981;--seg5:#f59e0b;--seg6:#ef4444;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#fbbf24;--accent-soft:rgba(251,191,36,.08);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#fbbf24;--accent-soft:rgba(251,191,36,.08);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+select{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;}
+select:focus{border-color:var(--accent);}
+.page{max-width:900px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px;}
+/* Segment slots */
+.slots{display:flex;flex-direction:column;gap:10px;}
+.slot{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:9px;background:var(--divider);}
+.slot-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.slot select{flex:1;min-width:0;}
+.slot-label{font-size:11px;color:var(--faint);min-width:70px;}
+/* NC output */
+.nc-display{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:.02em;line-height:1.4;padding:16px;border-radius:10px;background:var(--divider);border:2px solid var(--border);word-break:break-all;min-height:52px;}
+.nc-display.ok{border-color:var(--ok);background:var(--ok-bg);}
+.nc-display.err{border-color:var(--err);background:var(--err-bg);}
+/* Segment tokens in preview */
+.seg-tok{display:inline;border-radius:3px;padding:0 2px;}
+/* Validation list */
+.vl-item{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid var(--divider);font-size:12px;}
+.vl-item:last-child{border-bottom:none;}
+.vl-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+/* History */
+.hist-item{padding:7px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;margin-bottom:5px;font-family:var(--mono);font-size:12px;}
+.hist-item:hover{border-color:var(--accent);}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🔮</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">NC Preview</div>
+      <div style="font-size:11px;color:var(--faint)">Monte e valide NCs a partir dos segmentos do dicionário</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="card">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Cliente</label>
+        <select id="clientSel" onchange="onClientChange()" style="min-width:200px">
+          <option value="">— selecionar —</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Separador</label>
+        <select id="sepSel" onchange="update()">
+          <option value="_">_ (underscore)</option>
+          <option value="-">- (hífen)</option>
+          <option value=".">. (ponto)</option>
+          <option value="|">| (pipe)</option>
+        </select>
+      </div>
+      <button class="btn" style="margin-top:16px" onclick="addSlot()" id="addSlotBtn" disabled>+ Segmento</button>
+      <button class="btn" style="margin-top:16px" onclick="clearSlots()">↺ Limpar</button>
+    </div>
+
+    <div class="slots" id="slots"></div>
+  </div>
+
+  <!-- NC Output -->
+  <div class="card">
+    <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Preview da NC</div>
+    <div class="nc-display" id="ncDisplay" style="color:var(--faint)">— selecione ao menos um segmento —</div>
+    <div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap" id="actionRow" style="display:none">
+      <button class="btn primary" onclick="copyNC()">📋 Copiar NC</button>
+      <button class="btn" onclick="saveToHistory()">📌 Salvar no histórico</button>
+    </div>
+    <!-- Colored breakdown -->
+    <div id="segBreakdown" style="margin-top:10px;display:none">
+      <div style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Segmentos</div>
+      <div id="segBreakdownList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- Validations -->
+  <div class="card" id="validCard" style="display:none">
+    <div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Validações</div>
+    <div id="validList"></div>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="histCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700">Histórico de NCs</div>
+      <button class="btn" style="height:24px;font-size:10px" onclick="clearHistory()">Limpar</button>
+    </div>
+    <div id="histList"><div style="color:var(--faint);font-size:12px">Nenhuma NC salva ainda.</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TAXO_KEY='taxo_clients_v1';
+const PREV_HIST_KEY='nc_preview_hist_v1';
+const PREV_THEME='nc_preview_theme';
+const SEG_COLORS=['var(--seg1)','var(--seg2)','var(--seg3)','var(--seg4)','var(--seg5)','var(--seg6)'];
+
+let _client=null;
+let _slots=[];   // [{segId, value}]
+let _history=[];
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem(PREV_THEME);}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem(PREV_THEME,_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+function loadClients(){try{return JSON.parse(localStorage.getItem(TAXO_KEY)||'[]').filter(c=>!c.archived);}catch(e){return [];}}
+function loadHistory(){try{return JSON.parse(localStorage.getItem(PREV_HIST_KEY)||'[]');}catch(e){return [];}}
+function saveHistory(){try{localStorage.setItem(PREV_HIST_KEY,JSON.stringify(_history.slice(0,30)));}catch(e){}}
+
+function populateClients(){
+  const sel=document.getElementById('clientSel');
+  const clients=loadClients();
+  sel.innerHTML='<option value="">— selecionar —</option>'+clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+}
+
+function onClientChange(){
+  const id=document.getElementById('clientSel').value;
+  const clients=loadClients();
+  _client=clients.find(c=>c.id===id)||null;
+  _slots=[];
+  document.getElementById('addSlotBtn').disabled=!_client;
+  if(_client) addSlot();
+  update();
+}
+
+function addSlot(){
+  if(!_client) return;
+  const idx=_slots.length;
+  _slots.push({segId:'',value:''});
+  renderSlots();
+  update();
+}
+
+function removeSlot(i){
+  _slots.splice(i,1);
+  renderSlots();
+  update();
+}
+
+function renderSlots(){
+  if(!_client){document.getElementById('slots').innerHTML='';return;}
+  const sep=document.getElementById('sepSel').value;
+  const segs=_client.segments||[];
+  const html=_slots.map((slot,i)=>{
+    const color=SEG_COLORS[i%SEG_COLORS.length];
+    const terms=slot.segId?((_client.dictionary||{})[slot.segId]||[]):[];
+    return `<div class="slot">
+      <div class="slot-num" style="background:${color}">${i+1}</div>
+      <select style="min-width:120px" onchange="onSegChange(${i},this.value)">
+        <option value="">— segmento —</option>
+        ${segs.map(s=>`<option value="${esc(s.id)}" ${slot.segId===s.id?'selected':''}>${esc(s.label)}</option>`).join('')}
+      </select>
+      <select style="min-width:140px;font-family:var(--mono)" onchange="onValChange(${i},this.value)" ${!slot.segId?'disabled':''}>
+        <option value="">— valor —</option>
+        ${terms.map(t=>`<option value="${esc(t.value)}" ${slot.value===t.value?'selected':''}>${esc(t.value)}${t.label&&t.label!==t.value?' · '+esc(t.label):''}</option>`).join('')}
+      </select>
+      ${i>0?`<button class="btn" style="height:24px;font-size:10px;color:var(--err);border-color:var(--err)" onclick="removeSlot(${i})">✕</button>`:'<div style="width:52px"></div>'}
+    </div>`;
+  }).join('');
+  document.getElementById('slots').innerHTML=html;
+}
+
+function onSegChange(i,segId){
+  _slots[i].segId=segId;
+  _slots[i].value='';
+  renderSlots();
+  update();
+}
+
+function onValChange(i,val){
+  _slots[i].value=val;
+  update();
+}
+
+function getSep(){return document.getElementById('sepSel').value||'_';}
+
+function getNc(){
+  return _slots.map(s=>s.value).filter(Boolean).join(getSep());
+}
+
+function validate(nc){
+  const issues=[];
+  if(!nc) return issues;
+  if(/\s/.test(nc)) issues.push({type:'err',msg:'Contém espaços'});
+  if(/[A-Z]/.test(nc)) issues.push({type:'warn',msg:'Contém letras maiúsculas'});
+  if(/[^a-zA-Z0-9_\-.|]/.test(nc)) issues.push({type:'warn',msg:'Contém caracteres especiais inesperados'});
+  if(nc.length>80) issues.push({type:'warn',msg:`Muito longa (${nc.length} chars, recomendado ≤80)`});
+  if(nc.length<4) issues.push({type:'info',msg:'Muito curta (< 4 chars)'});
+  const sep=getSep();
+  const parts=nc.split(sep);
+  if(parts.some(p=>p==='')) issues.push({type:'err',msg:'Contém segmento vazio (separador duplo)'});
+  if(new Set(parts).size<parts.length) issues.push({type:'warn',msg:'Segmentos repetidos'});
+  if(!issues.length) issues.push({type:'ok',msg:'Nenhum problema detectado'});
+  return issues;
+}
+
+function update(){
+  const nc=getNc();
+  const display=document.getElementById('ncDisplay');
+  const actionRow=document.getElementById('actionRow');
+  const validCard=document.getElementById('validCard');
+  const validList=document.getElementById('validList');
+  const breakdown=document.getElementById('segBreakdown');
+  const breakdownList=document.getElementById('segBreakdownList');
+
+  if(!nc){
+    display.textContent='— selecione ao menos um segmento —';
+    display.className='nc-display';
+    display.style.color='var(--faint)';
+    actionRow.style.display='none';
+    validCard.style.display='none';
+    breakdown.style.display='none';
+    return;
+  }
+
+  const issues=validate(nc);
+  const hasErr=issues.some(i=>i.type==='err');
+  const hasWarn=issues.some(i=>i.type==='warn');
+  display.textContent=nc;
+  display.style.color='';
+  display.className='nc-display '+(hasErr?'err':hasWarn?'':'ok');
+  actionRow.style.display='flex';
+  validCard.style.display='block';
+
+  validList.innerHTML=issues.map(i=>{
+    const icon=i.type==='ok'?'✅':i.type==='err'?'❌':i.type==='warn'?'⚠️':'ℹ️';
+    const color=i.type==='ok'?'var(--ok)':i.type==='err'?'var(--err)':i.type==='warn'?'var(--warn)':'var(--faint)';
+    return `<div class="vl-item"><span class="vl-icon">${icon}</span><span style="color:${color}">${esc(i.msg)}</span></div>`;
+  }).join('');
+
+  // Segment breakdown
+  const filled=_slots.filter(s=>s.value);
+  if(filled.length){
+    breakdown.style.display='block';
+    breakdownList.innerHTML=filled.map((s,i)=>{
+      const color=SEG_COLORS[_slots.indexOf(s)%SEG_COLORS.length];
+      const seg=_client?.segments?.find(sg=>sg.id===s.segId);
+      const terms=(_client?.dictionary||{})[s.segId]||[];
+      const term=terms.find(t=>t.value===s.value);
+      return `<div style="padding:4px 10px;border-radius:7px;border-left:3px solid ${color};background:var(--divider);min-width:0">
+        <div style="font-size:10px;color:var(--faint);font-weight:600">${seg?esc(seg.label):'?'}</div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:${color}">${esc(s.value)}</div>
+        ${term?.label&&term.label!==s.value?`<div style="font-size:10px;color:var(--faint)">${esc(term.label)}</div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    breakdown.style.display='none';
+  }
+}
+
+function copyNC(){
+  const nc=getNc();
+  if(!nc) return;
+  navigator.clipboard.writeText(nc).then(()=>showToast('✓ NC copiada')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=nc;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('✓ NC copiada');
+  });
+}
+
+function saveToHistory(){
+  const nc=getNc();
+  if(!nc) return;
+  if(_history[0]===nc){showToast('Já está no histórico');return;}
+  _history.unshift(nc);
+  saveHistory();
+  renderHistory();
+  showToast('✓ Salva no histórico');
+}
+
+function clearSlots(){
+  _slots=[];
+  if(_client) addSlot();
+  else{document.getElementById('slots').innerHTML='';update();}
+}
+
+function clearHistory(){
+  _history=[];
+  saveHistory();
+  renderHistory();
+  showToast('Histórico limpo');
+}
+
+function renderHistory(){
+  const list=document.getElementById('histList');
+  if(!_history.length){list.innerHTML='<div style="color:var(--faint);font-size:12px">Nenhuma NC salva ainda.</div>';return;}
+  list.innerHTML=_history.map((nc,i)=>`
+    <div class="hist-item" onclick="loadFromHistory('${esc(nc)}')" title="Clique para carregar">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span>${esc(nc)}</span>
+        <button class="btn" style="height:20px;font-size:10px" onclick="event.stopPropagation();copyHistItem('${esc(nc)}')">📋</button>
+      </div>
+    </div>`).join('');
+}
+
+function copyHistItem(nc){
+  navigator.clipboard.writeText(nc).then(()=>showToast('✓ Copiado')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=nc;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();showToast('✓ Copiado');
+  });
+}
+
+function loadFromHistory(nc){
+  showToast('Use os selects para recriar a NC');
+}
+
+// Init
+populateClients();
+_history=loadHistory();
+renderHistory();
+</script>
+</body>
+</html>

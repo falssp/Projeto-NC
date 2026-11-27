@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Segment Coverage</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#06b6d4;--accent-soft:rgba(6,182,212,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+  --c0:#3b82f6;--c1:#8b5cf6;--c2:#ec4899;--c3:#10b981;--c4:#f59e0b;--c5:#ef4444;--c6:#06b6d4;--c7:#84cc16;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#22d3ee;--accent-soft:rgba(34,211,238,.08);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  --err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#22d3ee;--accent-soft:rgba(34,211,238,.08);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  --err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1100px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px;}
+textarea{background:var(--input-bg);color:var(--fg);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:12px;line-height:1.6;padding:10px;width:100%;resize:vertical;outline:none;}
+textarea:focus{border-color:var(--accent);}
+select{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;}
+select:focus{border-color:var(--accent);}
+/* Bar chart */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.bar-label{font-family:var(--mono);font-size:11px;width:160px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;height:16px;background:var(--divider);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;}
+.bar-count{font-size:11px;color:var(--faint);width:46px;text-align:right;flex-shrink:0;}
+/* Segment column headers */
+.seg-cols{display:grid;gap:14px;margin-top:14px;}
+/* KPI chips */
+.kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.kpi-chip{flex:1;min-width:110px;background:var(--divider);border-radius:10px;padding:10px 14px;text-align:center;}
+.kpi-chip .val{font-size:20px;font-weight:800;}
+.kpi-chip .lbl{font-size:11px;color:var(--faint);margin-top:2px;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📊</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Segment Coverage</div>
+      <div style="font-size:11px;color:var(--faint)">Frequência de uso por posição de segmento em NCs</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="run()">📊 Analisar</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="card">
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Separador</label>
+        <select id="sepSel">
+          <option value="_">_ underscore</option>
+          <option value="-">- hífen</option>
+          <option value=".">. ponto</option>
+          <option value="|">| pipe</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Top N por posição</label>
+        <select id="topN">
+          <option value="5">Top 5</option>
+          <option value="10" selected>Top 10</option>
+          <option value="20">Top 20</option>
+          <option value="0">Todos</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:var(--faint)">Uma NC por linha</div>
+    </div>
+    <textarea id="ncInput" rows="8" placeholder="brand_prd_awareness_cpc_google&#10;brand_prd_consideration_cpm_meta&#10;comp_srv_awareness_cpc_google&#10;brand_prd_conversion_cpc_tiktok"></textarea>
+  </div>
+
+  <div id="resultsArea">
+    <div class="card" style="text-align:center;padding:36px;color:var(--faint)">
+      <div style="font-size:36px;margin-bottom:10px">📊</div>
+      <div>Cole suas NCs acima e clique em <strong>Analisar</strong></div>
+      <div style="font-size:11px;margin-top:6px;opacity:.7">Detecta automaticamente quantas posições de segmento existem e conta a frequência de cada valor</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SC_THEME='sc_theme';
+let _result=null;
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem(SC_THEME);}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem(SC_THEME,_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+const COLORS=['var(--c0)','var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)','var(--c7)'];
+
+function run(){
+  const raw=document.getElementById('ncInput').value;
+  const sep=document.getElementById('sepSel').value;
+  const topN=parseInt(document.getElementById('topN').value)||0;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){showToast('Cole ao menos uma NC');return;}
+
+  // Find max segments
+  const parsed=lines.map(l=>l.split(sep));
+  const maxSeg=Math.max(...parsed.map(p=>p.length));
+
+  // Count per position
+  const posMap=[];
+  for(let i=0;i<maxSeg;i++) posMap.push({});
+  parsed.forEach(parts=>{
+    parts.forEach((val,i)=>{
+      if(i>=maxSeg) return;
+      posMap[i][val]=(posMap[i][val]||0)+1;
+    });
+  });
+
+  // Unique values per pos
+  const posStats=posMap.map((m,i)=>{
+    const entries=Object.entries(m).sort((a,b)=>b[1]-a[1]);
+    const total=entries.reduce((s,[,n])=>s+n,0);
+    return {pos:i,entries,total,unique:entries.length,
+      missing:lines.length-parsed.filter(p=>p.length>i).length};
+  });
+
+  _result={lines,posStats,sep,topN};
+  renderResults();
+  showToast(`✓ ${lines.length} NCs analisadas · ${maxSeg} posições`);
+}
+
+function renderResults(){
+  if(!_result) return;
+  const {lines,posStats,topN}=_result;
+  const area=document.getElementById('resultsArea');
+
+  // KPIs
+  const kpiHtml=`<div class="kpi-row">
+    <div class="kpi-chip"><div class="val">${lines.length}</div><div class="lbl">NCs analisadas</div></div>
+    <div class="kpi-chip"><div class="val">${posStats.length}</div><div class="lbl">Posições detectadas</div></div>
+    <div class="kpi-chip"><div class="val">${new Set(lines).size}</div><div class="lbl">NCs únicas</div></div>
+    <div class="kpi-chip"><div class="val">${lines.length-new Set(lines).size}</div><div class="lbl">Duplicatas</div></div>
+  </div>`;
+
+  // Per-position columns
+  const colsHtml=posStats.map((ps,pi)=>{
+    const color=COLORS[pi%COLORS.length];
+    const show=topN>0?ps.entries.slice(0,topN):ps.entries;
+    const maxCount=show.length?show[0][1]:1;
+    const coveragePct=Math.round((1-ps.missing/lines.length)*100);
+    return `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:14px;height:14px;border-radius:3px;background:${color};flex-shrink:0"></div>
+          <div style="font-size:14px;font-weight:800">Posição ${pi+1}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;background:var(--divider);padding:2px 8px;border-radius:8px">${ps.unique} valores únicos</span>
+          <span style="font-size:11px;background:${coveragePct>=90?'var(--ok-bg)':coveragePct>=70?'var(--warn-bg)':'var(--err-bg)'};padding:2px 8px;border-radius:8px;color:${coveragePct>=90?'var(--ok)':coveragePct>=70?'var(--warn)':'var(--err)'}">${coveragePct}% cobertura</span>
+          ${ps.missing?`<span style="font-size:11px;background:var(--warn-bg);padding:2px 8px;border-radius:8px;color:var(--warn)">${ps.missing} sem valor</span>`:''}
+        </div>
+      </div>
+      ${show.map(([val,cnt])=>{
+        const pct=Math.round(cnt/maxCount*100);
+        const freq=Math.round(cnt/lines.length*100);
+        return `<div class="bar-row">
+          <div class="bar-label" title="${esc(val)}">${esc(val)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};opacity:.8"></div></div>
+          <div class="bar-count">${cnt} <span style="font-size:9px;opacity:.7">(${freq}%)</span></div>
+        </div>`;
+      }).join('')}
+      ${ps.entries.length>show.length?`<div style="font-size:11px;color:var(--faint);margin-top:6px">+${ps.entries.length-show.length} valores adicionais…</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Heatmap: which combinations appear most
+  const combMap={};
+  _result.lines.forEach(nc=>combMap[nc]=(combMap[nc]||0)+1);
+  const topDups=Object.entries(combMap).filter(([,n])=>n>1).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  const dupHtml=topDups.length?`<div class="card">
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">NCs duplicadas (top 10)</div>
+    ${topDups.map(([nc,cnt])=>`<div class="bar-row">
+      <div style="font-family:var(--mono);font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${esc(nc)}</div>
+      <div style="font-size:11px;color:var(--warn);font-weight:700;flex-shrink:0;margin-left:8px">×${cnt}</div>
+    </div>`).join('')}
+  </div>`:'';
+
+  area.innerHTML=kpiHtml+`<div class="seg-cols" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${colsHtml}</div>`+dupHtml;
+}
+
+function exportCSV(){
+  if(!_result){showToast('Analise primeiro');return;}
+  const {posStats,lines}=_result;
+  const rows=[['posicao','valor','ocorrencias','frequencia_pct']];
+  posStats.forEach(ps=>{
+    ps.entries.forEach(([val,cnt])=>{
+      rows.push([ps.pos+1,val,cnt,Math.round(cnt/lines.length*100)+'%']);
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='segment_coverage.csv';a.click();
+  showToast(`⬇ ${rows.length-1} linhas exportadas`);
+}
+</script>
+</body>
+</html>

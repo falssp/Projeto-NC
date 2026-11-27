@@ -1,0 +1,305 @@
+<title>NC Case Checker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --bg:#ffffff;--bg2:#f8fafc;--bg3:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --fg:#0f172a;--fg2:#475569;--fg3:#94a3b8;
+    --accent:#b45309;--accent-bg:#fffbeb;--accent-border:#fde68a;
+    --ok:#16a34a;--ok-bg:#f0fdf4;--ok-border:#bbf7d0;
+    --err:#dc2626;--err-bg:#fef2f2;--err-border:#fecaca;
+    --warn:#d97706;--warn-bg:#fffbeb;--warn-border:#fde68a;
+    --radius:10px;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#fbbf24;--accent-bg:#1c1407;--accent-border:#78350f;
+    --ok:#4ade80;--ok-bg:#052e16;--ok-border:#14532d;
+    --err:#f87171;--err-bg:#1a0404;--err-border:#7f1d1d;
+    --warn:#fbbf24;--warn-bg:#1c1407;--warn-border:#78350f;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+    --border:#334155;--border2:#475569;
+    --fg:#f1f5f9;--fg2:#94a3b8;--fg3:#64748b;
+    --accent:#fbbf24;--accent-bg:#1c1407;--accent-border:#78350f;
+    --ok:#4ade80;--ok-bg:#052e16;--ok-border:#14532d;
+    --err:#f87171;--err-bg:#1a0404;--err-border:#7f1d1d;
+    --warn:#fbbf24;--warn-bg:#1c1407;--warn-border:#78350f;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+  .workspace{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 73px)}
+  @media(max-width:800px){.workspace{grid-template-columns:1fr}}
+  .left{padding:20px 24px;border-right:1px solid var(--border)}
+  .right{padding:20px 24px}
+  .sec{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;margin-top:16px}
+  .sec:first-child{margin-top:0}
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,select:focus{border-color:var(--accent)}
+  textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);color:var(--fg);font-family:'JetBrains Mono',monospace;font-size:12px;padding:12px;resize:vertical;outline:none;line-height:1.6}
+  textarea:focus{border-color:var(--accent)}
+  textarea::placeholder{color:var(--fg3)}
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  /* pos rules */
+  .pos-rule{display:grid;grid-template-columns:60px 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+  .pos-rule:last-child{border-bottom:none}
+  .pos-lbl{font-size:11px;font-weight:700;color:var(--fg2);text-align:right}
+  /* kpi */
+  .kpi-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;flex:1;min-width:70px}
+  .kpi-val{font-size:18px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:10px;color:var(--fg2);margin-top:2px}
+  .kpi.ok .kpi-val{color:var(--ok)}
+  .kpi.err .kpi-val{color:var(--err)}
+  .kpi.warn .kpi-val{color:var(--warn)}
+  /* filter btns */
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .filter-btn{background:var(--bg2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;font-family:inherit;color:var(--fg2)}
+  .filter-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+  /* nc rows */
+  .nc-row{padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px}
+  .nc-row.ok{border-color:var(--ok-border);background:var(--ok-bg)}
+  .nc-row.err{border-color:var(--err-border);background:var(--err-bg)}
+  .nc-row.warn{border-color:var(--warn-border);background:var(--warn-bg)}
+  .nc-text{font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all}
+  .nc-status{font-size:10px;font-weight:700;margin-top:4px}
+  .nc-status.ok{color:var(--ok)}
+  .nc-status.err{color:var(--err)}
+  .nc-status.warn{color:var(--warn)}
+  .seg-tokens{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+  .seg-tok{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border)}
+  .seg-tok.ok{border-color:var(--ok-border);background:var(--ok-bg);color:var(--ok)}
+  .seg-tok.err{border-color:var(--err-border);background:var(--err-bg);color:var(--err)}
+  .seg-tok.any{background:var(--bg3);color:var(--fg2)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">🔡</div>
+    <div>
+      <div class="title">NC Case Checker</div>
+      <div class="subtitle">Valida o case (lower / upper / title / mixed) de cada segmento da NC por posição</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="sec">Configuração</div>
+    <div style="margin-bottom:8px">
+      <label>Separador</label>
+      <input id="cfgSep" type="text" value="_" maxlength="3" style="width:70px;font-family:'JetBrains Mono',monospace">
+    </div>
+
+    <div class="sec">Regra de Case por Posição</div>
+    <p style="font-size:11px;color:var(--fg2);margin-bottom:8px">Define o case esperado para cada posição (1-based). "qualquer" ignora a posição.</p>
+    <div id="posRules"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+      <input id="addPosNum" type="text" placeholder="Pos" style="width:48px;font-family:'JetBrains Mono',monospace">
+      <select id="addPosCase" style="width:120px">
+        <option value="lower">lowercase</option>
+        <option value="upper">UPPERCASE</option>
+        <option value="title">TitleCase</option>
+        <option value="any">qualquer</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="addRule()">+ Adicionar</button>
+    </div>
+
+    <div class="sec" style="margin-top:14px">NCs</div>
+    <label>Cole NCs (uma por linha)</label>
+    <textarea id="ncInput" rows="10" placeholder="camp_perf_App_venda_q1&#10;CAMP_PERF_app_VENDA_Q1&#10;camp_perf_app_venda_q1&#10;..."></textarea>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="analyze()">🔍 Verificar</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">↓ CSV</button>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+    <div id="kpiRow" class="kpi-row" style="display:none"></div>
+    <div class="filters" id="filterBtns" style="display:none">
+      <button class="filter-btn active" onclick="setFilter('all',this)">Todas</button>
+      <button class="filter-btn" onclick="setFilter('ok',this)">✓ OK</button>
+      <button class="filter-btn" onclick="setFilter('err',this)">✗ Erro</button>
+      <button class="filter-btn" onclick="setFilter('warn',this)">⚠ Aviso</button>
+    </div>
+    <div id="results"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const STORE_KEY = 'nccasechecker_v1';
+let rules = {}; // pos (1-based) -> 'lower'|'upper'|'title'|'any'
+let results = [];
+let activeFilter = 'all';
+
+function loadRules() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    rules = saved.rules || { 1:'lower', 2:'lower', 3:'lower', 4:'lower', 5:'lower' };
+  } catch(e) {
+    rules = { 1:'lower', 2:'lower', 3:'lower', 4:'lower', 5:'lower' };
+  }
+}
+
+function saveRules() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ rules })); } catch(e) {}
+}
+
+function renderRules() {
+  const container = document.getElementById('posRules');
+  const positions = Object.keys(rules).map(Number).sort((a,b)=>a-b);
+  if (!positions.length) {
+    container.innerHTML = '<p style="font-size:11px;color:var(--fg3)">Nenhuma regra. Adicione posições abaixo.</p>';
+    return;
+  }
+  container.innerHTML = positions.map(pos => `
+    <div class="pos-rule">
+      <span class="pos-lbl">P${pos}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select onchange="rules[${pos}]=this.value;saveRules()" style="flex:1">
+          <option value="lower" ${rules[pos]==='lower'?'selected':''}>lowercase</option>
+          <option value="upper" ${rules[pos]==='upper'?'selected':''}>UPPERCASE</option>
+          <option value="title" ${rules[pos]==='title'?'selected':''}>TitleCase</option>
+          <option value="any" ${rules[pos]==='any'?'selected':''}>qualquer</option>
+        </select>
+        <button onclick="delRule(${pos})" style="background:none;border:none;cursor:pointer;color:var(--fg3);font-size:14px">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addRule() {
+  const pos = parseInt(document.getElementById('addPosNum').value);
+  const cas = document.getElementById('addPosCase').value;
+  if (!pos || pos < 1) { showToast('Informe a posição!'); return; }
+  rules[pos] = cas;
+  saveRules();
+  renderRules();
+  document.getElementById('addPosNum').value = '';
+}
+
+function delRule(pos) {
+  delete rules[pos];
+  saveRules();
+  renderRules();
+}
+
+function checkCase(seg, expected) {
+  if (expected === 'any') return 'any';
+  if (expected === 'lower') return seg === seg.toLowerCase() ? 'ok' : 'err';
+  if (expected === 'upper') return seg === seg.toUpperCase() ? 'ok' : 'err';
+  if (expected === 'title') {
+    const titled = seg.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase());
+    return seg === titled ? 'ok' : 'err';
+  }
+  return 'any';
+}
+
+function analyze() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole NCs!'); return; }
+  const sep = document.getElementById('cfgSep').value || '_';
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  results = lines.map(nc => {
+    const segs = nc.split(sep);
+    const segResults = segs.map((seg, i) => {
+      const pos = i + 1;
+      const expected = rules[pos];
+      if (!expected) return { seg, status: 'any', expected: null };
+      const status = checkCase(seg, expected);
+      return { seg, status, expected };
+    });
+    const hasErr = segResults.some(s => s.status === 'err');
+    const hasWarn = false; // future: mixed case positions
+    const status = hasErr ? 'err' : 'ok';
+    const errors = segResults.filter(s=>s.status==='err').map(s=>`P${segs.indexOf(s.seg)+1}:"${s.seg}" esperado ${s.expected}`);
+    return { nc, segs, segResults, status, errors };
+  });
+
+  const ok = results.filter(r=>r.status==='ok').length;
+  const err = results.filter(r=>r.status==='err').length;
+
+  document.getElementById('kpiRow').style.display = 'flex';
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><div class="kpi-val">${results.length}</div><div class="kpi-lbl">NCs</div></div>
+    <div class="kpi ok"><div class="kpi-val">${ok}</div><div class="kpi-lbl">OK</div></div>
+    <div class="kpi err"><div class="kpi-val">${err}</div><div class="kpi-lbl">Erros</div></div>
+  `;
+  document.getElementById('filterBtns').style.display = 'flex';
+  renderResults();
+}
+
+function renderResults() {
+  const container = document.getElementById('results');
+  const visible = activeFilter === 'all' ? results : results.filter(r => r.status === activeFilter);
+  if (!visible.length) {
+    container.innerHTML = `<p style="font-size:12px;color:var(--fg3);padding:12px 0">Nenhuma NC neste filtro.</p>`;
+    return;
+  }
+  container.innerHTML = visible.map(r => {
+    const statusLabel = r.status === 'ok' ? '✓ OK' : '✗ Erro de case';
+    const errMsg = r.errors.length ? r.errors.join('; ') : '';
+    const tokens = r.segResults.map((s, i) =>
+      `<span class="seg-tok ${s.status}" title="P${i+1}: ${s.expected||'qualquer'}">${esc(s.seg)}</span>`
+    ).join('');
+    return `<div class="nc-row ${r.status}">
+      <div class="nc-text">${esc(r.nc)}</div>
+      <div class="seg-tokens">${tokens}</div>
+      <div class="nc-status ${r.status}">${statusLabel}${errMsg?' — '+esc(errMsg):''}</div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderResults();
+}
+
+function exportCSV() {
+  if (!results.length) { showToast('Analise primeiro!'); return; }
+  const rows = [['nc','status','erros']];
+  results.forEach(r => rows.push([r.nc, r.status, r.errors.join(' | ')]));
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url;a.download='nc-case-checker.csv';a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado!');
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function toggleTheme(){const r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');}
+
+loadRules();
+renderRules();
+</script>

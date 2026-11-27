@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Performance — AdOps Suite</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --header:#1a237e;--accent:#1F36C7;--hl-bg:#e8ecfd;--border:#d6dbf2;--page:#f4f5fb;
+  --good:#1b8c4e;--good-bg:#e6f4ec;--bad:#c0392b;--bad-bg:#fdecea;--warn:#b7860a;--warn-bg:#fef9e7;
+  --neutral:#555;--white:#fff;--text:#1a1a2e;--muted:#6b7280;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 6px rgba(0,0,0,.04);
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--page);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--header);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+header .logo{font-size:1.1rem;font-weight:700;letter-spacing:.5px}
+header .sub{font-size:.8rem;opacity:.7;margin-top:2px}
+.main{display:flex;flex:1;min-width:0;overflow:hidden}
+/* LEFT PANEL */
+.panel-left{width:40%;min-width:320px;border-right:1px solid var(--border);overflow-y:auto;padding:20px 24px;background:#fff;display:flex;flex-direction:column;gap:16px}
+/* RIGHT PANEL */
+.panel-right{flex:1;min-width:0;overflow-y:auto;padding:24px 28px;background:var(--page);display:flex;flex-direction:column;gap:16px}
+/* SECTION */
+.section{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+.section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);margin-bottom:12px}
+/* FORM */
+.form-row{display:grid;gap:10px;margin-bottom:10px}
+.form-row.cols2{grid-template-columns:1fr 1fr}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr}
+label{display:flex;flex-direction:column;gap:4px;font-size:.82rem;font-weight:500;color:var(--neutral)}
+input[type=text],input[type=date],input[type=number],select,textarea{
+  border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:inherit;font-size:.85rem;color:var(--text);background:#fff;width:100%;transition:border-color .15s
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+/* METRICS GRID */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.metric-check{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;border:1px solid var(--border);cursor:pointer;transition:background .1s;font-size:.82rem;user-select:none}
+.metric-check:hover{background:var(--hl-bg)}
+.metric-check input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+/* DATA INPUTS */
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.data-table th{background:var(--hl-bg);color:var(--accent);font-weight:600;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);font-size:.75rem;text-transform:uppercase;letter-spacing:.5px}
+.data-table td{padding:5px 6px;border-bottom:1px solid #f0f1f8;vertical-align:middle}
+.data-table td:first-child{font-weight:500;color:var(--neutral);font-size:.8rem;padding-left:10px}
+.data-table input{border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:100%;font-size:.82rem;text-align:right}
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.85rem;font-weight:500}
+.toggle{position:relative;width:36px;height:20px;background:var(--border);border-radius:10px;transition:background .2s;flex-shrink:0}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle.on{background:var(--accent)}
+.toggle.on::after{transform:translateX(16px)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:6px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--header)}
+.btn-outline{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+.btn-outline:hover{background:var(--hl-bg)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+/* REPORT PREVIEW */
+.report-box{background:#fff;border:1px solid var(--border);border-radius:8px;padding:28px 32px;font-size:.85rem;line-height:1.6;min-height:400px}
+.report-header{text-align:center;padding-bottom:16px;margin-bottom:20px;border-bottom:2px solid var(--header)}
+.report-title{font-size:1.1rem;font-weight:700;color:var(--header);letter-spacing:.5px;text-transform:uppercase}
+.report-meta{font-size:.78rem;color:var(--muted);margin-top:4px}
+.report-section{margin-bottom:22px}
+.report-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.report-summary{background:var(--hl-bg);border-left:3px solid var(--accent);padding:12px 14px;border-radius:0 6px 6px 0;font-size:.84rem;line-height:1.6;color:var(--text)}
+/* PERF TABLE IN REPORT */
+.perf-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.perf-table th{background:var(--hl-bg);color:var(--accent);font-weight:600;padding:7px 12px;text-align:right;border:1px solid var(--border);font-size:.75rem}
+.perf-table th:first-child{text-align:left}
+.perf-table td{padding:7px 12px;text-align:right;border:1px solid #f0f1f8}
+.perf-table td:first-child{text-align:left;font-weight:500}
+.perf-table tr:hover{background:#fafbff}
+.delta{font-weight:700;padding:2px 6px;border-radius:4px;font-size:.78rem}
+.delta.up-good{color:var(--good);background:var(--good-bg)}
+.delta.down-good{color:var(--good);background:var(--good-bg)}
+.delta.up-bad{color:var(--bad);background:var(--bad-bg)}
+.delta.down-bad{color:var(--bad);background:var(--bad-bg)}
+.delta.neutral{color:var(--neutral);background:#f0f1f8}
+/* TREND BARS */
+.trend-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8rem}
+.trend-label{width:130px;color:var(--neutral);font-weight:500;flex-shrink:0}
+.trend-bar-wrap{flex:1;height:16px;background:#f0f1f8;border-radius:8px;position:relative;overflow:visible}
+.trend-bar-prev{position:absolute;top:0;left:0;height:100%;background:var(--border);border-radius:8px}
+.trend-bar-curr{position:absolute;top:0;left:0;height:100%;background:var(--accent);border-radius:8px;opacity:.85}
+.trend-bar-line{position:absolute;top:-3px;height:22px;width:2px;background:var(--header);z-index:2}
+.trend-badge{padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600;flex-shrink:0}
+/* BULLET LISTS IN REPORT */
+.report-bullets{list-style:none;padding:0}
+.report-bullets li{padding:4px 0 4px 18px;position:relative;font-size:.84rem;border-bottom:1px solid #f8f9ff}
+.report-bullets li::before{content:'•';position:absolute;left:0;color:var(--accent);font-weight:700}
+/* AUTO-ALERT */
+.auto-alert{background:var(--warn-bg);border-left:3px solid var(--warn);padding:8px 12px;border-radius:0 6px 6px 0;font-size:.8rem;color:#7a5900;margin-bottom:6px}
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .icon{font-size:3rem;margin-bottom:12px;opacity:.4}
+.empty-state p{font-size:.9rem}
+/* PRINT */
+@media print{
+  header,.panel-left,.btn-row{display:none!important}
+  .main{display:block}
+  .panel-right{padding:0}
+  .report-box{border:none;padding:0;box-shadow:none}
+}
+/* RESPONSIVE */
+@media(max-width:900px){
+  .main{flex-direction:column}
+  .panel-left{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+  .form-row.cols3{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">📊 Relatório de Performance</div>
+    <div class="sub">AdOps Suite — NC Tool</div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- LEFT: INPUT -->
+  <div class="panel-left" id="panelLeft">
+
+    <!-- CONFIG -->
+    <div class="section">
+      <div class="section-title">Configuração</div>
+      <div class="form-row">
+        <label>Cliente / Campanha
+          <input type="text" id="cliente" placeholder="Ex: Unilever — Campanha Verão 2026">
+        </label>
+      </div>
+      <div class="form-row cols2">
+        <label>Tipo de relatório
+          <select id="tipoRel" onchange="autoFillPeriodo()">
+            <option value="semanal">Semanal</option>
+            <option value="diario">Diário</option>
+            <option value="mensal">Mensal</option>
+            <option value="personalizado">Personalizado</option>
+          </select>
+        </label>
+        <label>Responsável
+          <input type="text" id="responsavel" placeholder="Seu nome">
+        </label>
+      </div>
+      <div class="form-row cols2">
+        <label>Período atual — Início
+          <input type="date" id="atualIni" onchange="autoFillPeriodo()">
+        </label>
+        <label>Período atual — Fim
+          <input type="date" id="atualFim" onchange="autoFillPeriodo()">
+        </label>
+      </div>
+      <div class="form-row cols2">
+        <label>Período anterior — Início
+          <input type="date" id="antIni">
+        </label>
+        <label>Período anterior — Fim
+          <input type="date" id="antFim">
+        </label>
+      </div>
+    </div>
+
+    <!-- METRICS SELECTOR -->
+    <div class="section">
+      <div class="section-title">Métricas a incluir</div>
+      <div class="metrics-grid" id="metricsGrid"></div>
+    </div>
+
+    <!-- DATA INPUT TABLE -->
+    <div class="section">
+      <div class="section-title">Dados do período atual</div>
+      <table class="data-table" id="dataAtual">
+        <thead><tr><th>Métrica</th><th>Valor</th></tr></thead>
+        <tbody id="tbodyAtual"></tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Dados do período anterior</div>
+      <table class="data-table" id="dataAnterior">
+        <thead><tr><th>Métrica</th><th>Valor</th></tr></thead>
+        <tbody id="tbodyAnterior"></tbody>
+      </table>
+    </div>
+
+    <!-- META TOGGLE -->
+    <div class="section">
+      <div class="toggle-row" onclick="toggleMeta()">
+        <div class="toggle" id="toggleMeta"></div>
+        <span>Comparar com meta planejada</span>
+      </div>
+      <div id="metaSection" style="display:none;margin-top:12px">
+        <table class="data-table">
+          <thead><tr><th>Métrica</th><th>Meta</th></tr></thead>
+          <tbody id="tbodyMeta"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DESTAQUES / ATENÇÃO -->
+    <div class="section">
+      <div class="section-title">Destaques do período</div>
+      <textarea id="destaques" placeholder="• Destaque 1&#10;• Destaque 2&#10;• Destaque 3"></textarea>
+    </div>
+    <div class="section">
+      <div class="section-title">Pontos de atenção</div>
+      <textarea id="atencao" placeholder="• Ponto de atenção 1&#10;• Ponto de atenção 2"></textarea>
+    </div>
+
+    <!-- GENERATE BUTTON -->
+    <button class="btn btn-primary" onclick="gerarRelatorio()" style="width:100%;justify-content:center;padding:12px">
+      ▶ Gerar Relatório
+    </button>
+    <button class="btn btn-outline btn-sm" onclick="limparTudo()" style="width:100%;justify-content:center">
+      Limpar tudo
+    </button>
+
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="panel-right">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div style="font-size:.85rem;color:var(--muted);font-weight:500">Preview do Relatório</div>
+      <div class="btn-row" id="actionBtns" style="display:none">
+        <button class="btn btn-outline btn-sm" onclick="imprimirRel()">🖨️ Imprimir / PDF</button>
+        <button class="btn btn-outline btn-sm" onclick="copiarHTML()">📋 Copiar HTML</button>
+        <button class="btn btn-outline btn-sm" onclick="copiarTexto()">📝 Copiar como texto</button>
+      </div>
+    </div>
+    <div class="report-box" id="reportBox">
+      <div class="empty-state">
+        <div class="icon">📊</div>
+        <p>Preencha os dados ao lado e clique em <strong>Gerar Relatório</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── METRICS DEFINITION ──────────────────────────────────────────────
+const METRICS = [
+  {id:'impressoes',label:'Impressões',fmt:'number',dir:'neutral',unit:''},
+  {id:'alcance',label:'Alcance',fmt:'number',dir:'neutral',unit:''},
+  {id:'frequencia',label:'Frequência',fmt:'decimal',dir:'neutral',unit:'x'},
+  {id:'cliques',label:'Cliques',fmt:'number',dir:'up_good',unit:''},
+  {id:'ctr',label:'CTR',fmt:'percent',dir:'up_good',unit:'%'},
+  {id:'investimento',label:'Investimento',fmt:'currency',dir:'neutral',unit:'R$'},
+  {id:'cpm',label:'CPM',fmt:'currency',dir:'down_good',unit:'R$'},
+  {id:'cpc',label:'CPC',fmt:'currency',dir:'down_good',unit:'R$'},
+  {id:'conversoes',label:'Conversões',fmt:'number',dir:'up_good',unit:''},
+  {id:'cpa',label:'CPA',fmt:'currency',dir:'down_good',unit:'R$'},
+  {id:'roas',label:'ROAS',fmt:'decimal',dir:'up_good',unit:'x'},
+  {id:'views',label:'Visualizações de Vídeo',fmt:'number',dir:'up_good',unit:''},
+  {id:'vtr',label:'VTR',fmt:'percent',dir:'up_good',unit:'%'},
+  {id:'viewability',label:'Viewability',fmt:'percent',dir:'up_good',unit:'%'},
+];
+const DEFAULT_ON = ['impressoes','alcance','frequencia','cliques','ctr','investimento','cpm','cpc','conversoes','cpa'];
+
+let metaOn = false;
+let activeMetrics = new Set(DEFAULT_ON);
+
+// ── INIT ─────────────────────────────────────────────────────────────
+function init(){
+  renderMetricsGrid();
+  renderDataTables();
+  loadFromStorage();
+  // set today as default
+  const today = new Date().toISOString().split('T')[0];
+  if(!document.getElementById('atualFim').value) document.getElementById('atualFim').value = today;
+  // auto inputs trigger rebuild on input
+  document.querySelectorAll('input,select,textarea').forEach(el=>{
+    el.addEventListener('input', saveToStorage);
+  });
+}
+
+function renderMetricsGrid(){
+  const grid = document.getElementById('metricsGrid');
+  grid.innerHTML = METRICS.map(m=>`
+    <label class="metric-check">
+      <input type="checkbox" id="chk_${m.id}" ${activeMetrics.has(m.id)?'checked':''} onchange="toggleMetric('${m.id}',this.checked)">
+      ${m.label}
+    </label>`).join('');
+}
+
+function toggleMetric(id, on){
+  if(on) activeMetrics.add(id); else activeMetrics.delete(id);
+  renderDataTables();
+  saveToStorage();
+}
+
+function renderDataTables(){
+  const active = METRICS.filter(m=>activeMetrics.has(m.id));
+  ['Atual','Anterior','Meta'].forEach(suffix=>{
+    const tbody = document.getElementById('tbody'+suffix);
+    if(!tbody) return;
+    tbody.innerHTML = active.map(m=>`
+      <tr>
+        <td>${m.label}</td>
+        <td><input type="number" id="inp${suffix}_${m.id}" step="any" placeholder="0" oninput="saveToStorage()" style="width:100%"></td>
+      </tr>`).join('');
+  });
+}
+
+// ── AUTO-FILL PERÍODO ANTERIOR ───────────────────────────────────────
+function autoFillPeriodo(){
+  const tipo = document.getElementById('tipoRel').value;
+  const ini = document.getElementById('atualIni').value;
+  const fim = document.getElementById('atualFim').value;
+  if(!ini || !fim) return;
+  const dIni = new Date(ini+'T00:00:00');
+  const dFim = new Date(fim+'T00:00:00');
+  let aIni, aFim;
+  const diff = Math.round((dFim-dIni)/(1000*60*60*24));
+  if(tipo==='semanal'){
+    aFim = new Date(dIni); aFim.setDate(aFim.getDate()-1);
+    aIni = new Date(aFim); aIni.setDate(aIni.getDate()-6);
+  } else if(tipo==='diario'){
+    aFim = new Date(dIni); aFim.setDate(aFim.getDate()-1);
+    aIni = new Date(aFim);
+  } else if(tipo==='mensal'){
+    aFim = new Date(dIni); aFim.setDate(aFim.getDate()-1);
+    aIni = new Date(aFim.getFullYear(),aFim.getMonth(),1);
+  } else {
+    aFim = new Date(dIni); aFim.setDate(aFim.getDate()-1);
+    aIni = new Date(aFim); aIni.setDate(aIni.getDate()-diff);
+  }
+  document.getElementById('antIni').value = aIni.toISOString().split('T')[0];
+  document.getElementById('antFim').value = aFim.toISOString().split('T')[0];
+}
+
+// ── TOGGLE META ───────────────────────────────────────────────────────
+function toggleMeta(){
+  metaOn = !metaOn;
+  document.getElementById('toggleMeta').classList.toggle('on',metaOn);
+  document.getElementById('metaSection').style.display = metaOn?'block':'none';
+}
+
+// ── FORMAT HELPERS ───────────────────────────────────────────────────
+function fmtNum(v){
+  if(v===null||v===undefined||isNaN(v)||v==='') return '—';
+  return Number(v).toLocaleString('pt-BR');
+}
+function fmtCur(v){
+  if(v===null||v===undefined||isNaN(v)||v==='') return '—';
+  return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtPct(v){
+  if(v===null||v===undefined||isNaN(v)||v==='') return '—';
+  return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+}
+function fmtDec(v,unit=''){
+  if(v===null||v===undefined||isNaN(v)||v==='') return '—';
+  return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+(unit?unit:'');
+}
+function fmtVal(m,v){
+  if(v===''||v===null||v===undefined) return '—';
+  const n=parseFloat(v);
+  if(isNaN(n)) return '—';
+  if(m.fmt==='currency') return fmtCur(n);
+  if(m.fmt==='percent') return fmtPct(n);
+  if(m.fmt==='decimal') return fmtDec(n,m.unit||'');
+  return fmtNum(n)+(m.unit||'');
+}
+function fmtDate(d){
+  if(!d) return '?';
+  const [y,m,day]=d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+// ── DELTA CALC ────────────────────────────────────────────────────────
+function calcDelta(curr,prev,dir){
+  if(curr===''||prev===''||curr===null||prev===null) return null;
+  const c=parseFloat(curr),p=parseFloat(prev);
+  if(isNaN(c)||isNaN(p)||p===0) return null;
+  const pct=((c-p)/Math.abs(p))*100;
+  return {pct, up: c>p};
+}
+function deltaClass(delta,dir){
+  if(!delta) return 'neutral';
+  const up=delta.up;
+  if(dir==='up_good') return up?'up-good':'down-bad';
+  if(dir==='down_good') return up?'up-bad':'down-good';
+  return 'neutral';
+}
+function deltaHtml(delta,dir){
+  if(!delta) return '<span class="delta neutral">—</span>';
+  const sign=delta.pct>=0?'+':'';
+  const cls=deltaClass(delta,dir);
+  const arrow=delta.up?'↑':'↓';
+  return `<span class="delta ${cls}">${arrow} ${sign}${Math.abs(delta.pct).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}%</span>`;
+}
+
+// ── AUTO-ALERTS ───────────────────────────────────────────────────────
+function buildAutoAlerts(){
+  const alerts=[];
+  const active=METRICS.filter(m=>activeMetrics.has(m.id));
+  active.forEach(m=>{
+    const c=document.getElementById('inpAtual_'+m.id)?.value;
+    const p=document.getElementById('inpAnterior_'+m.id)?.value;
+    const d=calcDelta(c,p,m.dir);
+    if(!d) return;
+    if(m.id==='ctr'&&!d.up&&Math.abs(d.pct)>15) alerts.push(`CTR caiu ${Math.abs(d.pct).toFixed(1)}% vs período anterior — avaliar rotação de criativos`);
+    if(m.id==='cpm'&&d.up&&d.pct>20) alerts.push(`CPM aumentou ${d.pct.toFixed(1)}% — verificar leilão e competição no período`);
+    if(m.id==='conversoes'&&!d.up&&Math.abs(d.pct)>20) alerts.push(`Queda de ${Math.abs(d.pct).toFixed(1)}% em conversões — verificar pixel e landing page`);
+    if(m.id==='cpa'&&d.up&&d.pct>20) alerts.push(`CPA aumentou ${d.pct.toFixed(1)}% — avaliar qualidade do tráfego e segmentação`);
+    if(m.id==='viewability'&&parseFloat(c)<50) alerts.push(`Viewability abaixo de 50% — solicitar relatório por placement e renegociar posições`);
+  });
+  return alerts;
+}
+
+// ── AUTO-RESUMO ───────────────────────────────────────────────────────
+function buildResumo(){
+  const tipo = document.getElementById('tipoRel').value;
+  const ini=document.getElementById('atualIni').value, fim=document.getElementById('atualFim').value;
+  const periodo = ini&&fim ? `de ${fmtDate(ini)} a ${fmtDate(fim)}` : 'do período';
+  const tipoLabel={semanal:'semana',diario:'dia',mensal:'mês',personalizado:'período'}[tipo]||'período';
+
+  const imp=parseFloat(document.getElementById('inpAtual_impressoes')?.value)||0;
+  const inv=parseFloat(document.getElementById('inpAtual_investimento')?.value)||0;
+  const conv=parseFloat(document.getElementById('inpAtual_conversoes')?.value)||0;
+
+  const impP=parseFloat(document.getElementById('inpAnterior_impressoes')?.value)||0;
+  const invP=parseFloat(document.getElementById('inpAnterior_investimento')?.value)||0;
+
+  let resumo = `Na ${tipoLabel} ${periodo}, a campanha`;
+  if(imp) resumo += ` entregou ${fmtNum(imp)} impressões`;
+  if(inv) resumo += ` com investimento de ${fmtCur(inv)}`;
+  if(conv) resumo += `, gerando ${fmtNum(conv)} conversão${conv!==1?'ões':''}`;
+  resumo += '.';
+
+  if(imp&&impP){
+    const delta=((imp-impP)/impP*100);
+    const sentido=delta>=0?'crescimento':'queda';
+    resumo += ` Em comparação ao período anterior, as impressões apresentaram ${sentido} de ${Math.abs(delta).toFixed(1)}%.`;
+  }
+  return resumo;
+}
+
+// ── PRÓXIMA SEMANA ────────────────────────────────────────────────────
+function buildProxima(){
+  const autoAlerts=buildAutoAlerts();
+  if(autoAlerts.length>0){
+    const first=autoAlerts[0].toLowerCase();
+    if(first.includes('criativo')) return 'O foco será na rotação e teste de criativos para recuperar CTR.';
+    if(first.includes('cpm')||first.includes('leilão')) return 'O foco será na revisão de estratégia de lances para controle de CPM.';
+    if(first.includes('conversão')||first.includes('pixel')) return 'O foco será na verificação técnica de pixel e otimização da landing page.';
+  }
+  return 'O foco será na continuidade das otimizações e monitoramento de pacing e performance por canal.';
+}
+
+// ── TREND BARS ────────────────────────────────────────────────────────
+function buildTrends(active){
+  return active.map(m=>{
+    const c=parseFloat(document.getElementById('inpAtual_'+m.id)?.value)||0;
+    const p=parseFloat(document.getElementById('inpAnterior_'+m.id)?.value)||0;
+    if(!c&&!p) return '';
+    const max=Math.max(c,p,0.001);
+    const wC=Math.min(100,(c/max)*100);
+    const wP=Math.min(100,(p/max)*100);
+    const delta=p?((c-p)/p*100):null;
+    let badgeClass='',badgeText='';
+    if(delta!==null){
+      const good = m.dir==='up_good'?(c>=p):m.dir==='down_good'?(c<=p):null;
+      if(good===true){badgeClass='up-good';badgeText=`+${delta>=0?delta.toFixed(1):(-delta).toFixed(1)}% ↑`}
+      else if(good===false){badgeClass='up-bad';badgeText=`${delta>=0?'+'+delta.toFixed(1):delta.toFixed(1)}% ${delta>=0?'↑':'↓'}`}
+      else{badgeClass='neutral';badgeText=`${delta>=0?'+':''}${delta.toFixed(1)}%`}
+    }
+    return `<div class="trend-row">
+      <div class="trend-label">${m.label}</div>
+      <div class="trend-bar-wrap">
+        <div class="trend-bar-prev" style="width:${wP}%"></div>
+        <div class="trend-bar-curr" style="width:${wC}%"></div>
+        <div class="trend-bar-line" style="left:${wP}%"></div>
+      </div>
+      ${delta!==null?`<span class="delta ${badgeClass}">${badgeText}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── GENERATE REPORT ───────────────────────────────────────────────────
+function gerarRelatorio(){
+  const cliente=document.getElementById('cliente').value||'Cliente';
+  const resp=document.getElementById('responsavel').value||'AdOps';
+  const tipo=document.getElementById('tipoRel').value;
+  const tipoLabel={semanal:'Semanal',diario:'Diário',mensal:'Mensal',personalizado:'Personalizado'}[tipo];
+  const ini=document.getElementById('atualIni').value,fim=document.getElementById('atualFim').value;
+  const aIni=document.getElementById('antIni').value,aFim=document.getElementById('antFim').value;
+  const periodoAtual=ini&&fim?`${fmtDate(ini)} – ${fmtDate(fim)}`:'Período atual';
+  const periodoAnt=aIni&&aFim?`${fmtDate(aIni)} – ${fmtDate(aFim)}`:'Período anterior';
+  const hoje=new Date().toLocaleDateString('pt-BR');
+
+  const active=METRICS.filter(m=>activeMetrics.has(m.id));
+
+  // Build performance table rows
+  const tableRows=active.map(m=>{
+    const c=document.getElementById('inpAtual_'+m.id)?.value??'';
+    const p=document.getElementById('inpAnterior_'+m.id)?.value??'';
+    const delta=calcDelta(c,p,m.dir);
+    let metaCell='';
+    if(metaOn){
+      const mt=document.getElementById('inpMeta_'+m.id)?.value??'';
+      metaCell=`<td>${fmtVal(m,mt)}</td>`;
+    }
+    return `<tr>
+      <td>${m.label}</td>
+      <td>${fmtVal(m,c)}</td>
+      <td>${fmtVal(m,p)}</td>
+      ${metaCell}
+      <td>${deltaHtml(delta,m.dir)}</td>
+    </tr>`;
+  }).join('');
+
+  const metaHeader = metaOn ? '<th>Meta</th>' : '';
+
+  // Auto-alerts
+  const alerts=buildAutoAlerts();
+  const alertHtml=alerts.map(a=>`<div class="auto-alert">⚠️ ${a}</div>`).join('');
+
+  // Destaques / atenção
+  const destRaw=document.getElementById('destaques').value.trim();
+  const atencRaw=document.getElementById('atencao').value.trim();
+
+  function bulletize(raw){
+    if(!raw) return '<li style="color:var(--muted);font-style:italic">Nenhum item informado.</li>';
+    return raw.split('\n').filter(l=>l.trim()).map(l=>`<li>${l.replace(/^[•\-\*]\s*/,'')}</li>`).join('');
+  }
+
+  // Trends
+  const trendsHtml=buildTrends(active);
+
+  // Resumo
+  const resumo=buildResumo();
+  const proxima=buildProxima();
+
+  document.getElementById('reportBox').innerHTML = `
+    <div class="report-header">
+      <div class="report-title">Relatório de Performance — ${tipoLabel}</div>
+      <div class="report-meta">${cliente}</div>
+      <div class="report-meta">${periodoAtual} &nbsp;|&nbsp; Comparativo: ${periodoAnt}</div>
+      <div class="report-meta">Preparado por: ${resp} &nbsp;|&nbsp; ${hoje}</div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Resumo do período</div>
+      <div class="report-summary">${resumo}</div>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Performance detalhada</div>
+      ${alertHtml}
+      <table class="perf-table">
+        <thead><tr><th>Métrica</th><th>${periodoAtual}</th><th>${periodoAnt}</th>${metaHeader}<th>Δ Variação</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+
+    ${trendsHtml?`<div class="report-section">
+      <div class="report-section-title">Tendência (atual vs anterior)</div>
+      <div style="padding:4px 0">${trendsHtml}</div>
+    </div>`:''}
+
+    <div class="report-section">
+      <div class="report-section-title">Destaques do período</div>
+      <ul class="report-bullets">${bulletize(destRaw)}</ul>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Pontos de atenção</div>
+      <ul class="report-bullets">${bulletize(atencRaw)}</ul>
+    </div>
+
+    <div class="report-section">
+      <div class="report-section-title">Foco para o próximo período</div>
+      <div class="report-summary">${proxima}</div>
+    </div>
+
+    <div style="margin-top:20px;padding-top:12px;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted);text-align:center">
+      Relatório gerado por NC Tool — AdOps Suite &nbsp;|&nbsp; ${hoje}
+    </div>
+  `;
+  document.getElementById('actionBtns').style.display='flex';
+  saveToStorage();
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────
+function imprimirRel(){ window.print(); }
+function copiarHTML(){
+  const html=document.getElementById('reportBox').innerHTML;
+  navigator.clipboard.writeText(html).then(()=>showToast('HTML copiado!'));
+}
+function copiarTexto(){
+  const txt=document.getElementById('reportBox').innerText;
+  navigator.clipboard.writeText(txt).then(()=>showToast('Texto copiado!'));
+}
+function showToast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',background:var_('--header'),color:'#fff',padding:'10px 18px',borderRadius:'6px',fontFamily:'inherit',fontSize:'.85rem',fontWeight:'600',zIndex:9999,opacity:'1',transition:'opacity .3s'});
+  t.style.background='#1a237e';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2000);
+}
+function var_(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+// ── LIMPAR ────────────────────────────────────────────────────────────
+function limparTudo(){
+  if(!confirm('Limpar todos os dados?')) return;
+  localStorage.removeItem('relatorio_perf_v1');
+  location.reload();
+}
+
+// ── LOCALSTORAGE ──────────────────────────────────────────────────────
+function saveToStorage(){
+  try{
+    const data={
+      cliente: document.getElementById('cliente').value,
+      resp: document.getElementById('responsavel').value,
+      tipo: document.getElementById('tipoRel').value,
+      ini: document.getElementById('atualIni').value,
+      fim: document.getElementById('atualFim').value,
+      aIni: document.getElementById('antIni').value,
+      aFim: document.getElementById('antFim').value,
+      activeMetrics: [...activeMetrics],
+      metaOn,
+      destaques: document.getElementById('destaques').value,
+      atencao: document.getElementById('atencao').value,
+    };
+    METRICS.forEach(m=>{
+      ['Atual','Anterior','Meta'].forEach(s=>{
+        const el=document.getElementById('inp'+s+'_'+m.id);
+        if(el) data['inp_'+s+'_'+m.id]=el.value;
+      });
+    });
+    localStorage.setItem('relatorio_perf_v1',JSON.stringify(data));
+  }catch(e){}
+}
+
+function loadFromStorage(){
+  try{
+    const raw=localStorage.getItem('relatorio_perf_v1');
+    if(!raw) return;
+    const d=JSON.parse(raw);
+    if(d.activeMetrics){activeMetrics=new Set(d.activeMetrics);renderMetricsGrid();renderDataTables();}
+    if(d.cliente) document.getElementById('cliente').value=d.cliente;
+    if(d.resp) document.getElementById('responsavel').value=d.resp;
+    if(d.tipo) document.getElementById('tipoRel').value=d.tipo;
+    if(d.ini) document.getElementById('atualIni').value=d.ini;
+    if(d.fim) document.getElementById('atualFim').value=d.fim;
+    if(d.aIni) document.getElementById('antIni').value=d.aIni;
+    if(d.aFim) document.getElementById('antFim').value=d.aFim;
+    if(d.destaques) document.getElementById('destaques').value=d.destaques;
+    if(d.atencao) document.getElementById('atencao').value=d.atencao;
+    if(d.metaOn){metaOn=true;document.getElementById('toggleMeta').classList.add('on');document.getElementById('metaSection').style.display='block';}
+    METRICS.forEach(m=>{
+      ['Atual','Anterior','Meta'].forEach(s=>{
+        const val=d['inp_'+s+'_'+m.id];
+        if(val!==undefined){const el=document.getElementById('inp'+s+'_'+m.id);if(el)el.value=val;}
+      });
+    });
+  }catch(e){}
+}
+
+init();
+</script>
+</body>
+</html>

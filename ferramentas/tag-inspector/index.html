@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Inspector</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;
+  --surface:#fff;--text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;
+  --green:#059669;--yellow:#d97706;--red:#dc2626;--orange:#ea580c;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px}
+header .icon{font-size:1.5rem}
+header h1{font-size:1.1rem;font-weight:700}
+header p{font-size:.78rem;opacity:.7;margin-top:2px}
+.main{padding:24px 32px;min-width:0}
+.top-bar{display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:20px;align-items:end}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--body);margin-bottom:5px}
+textarea{width:100%;height:140px;padding:12px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:'Courier New',monospace;font-size:.78rem;color:var(--text);background:#fff;resize:vertical;outline:none;line-height:1.5}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted)}
+.btn{padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;
+  font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
+.btn:hover{background:var(--navy)}
+.btn.secondary{background:var(--hl);color:var(--accent);border:1.5px solid var(--border)}
+.btn.secondary:hover{background:var(--border)}
+.platform-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.chip{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;font-size:.72rem;font-weight:600;cursor:pointer;background:var(--surface);color:var(--body);transition:.12s}
+.chip:hover,.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px}
+.card-title{font-size:.78rem;font-weight:700;color:var(--body);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-title .dot{width:8px;height:8px;border-radius:50%}
+/* platform badge */
+.plt-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.72rem;font-weight:700;margin-bottom:12px}
+/* params table */
+.params-table{width:100%;border-collapse:collapse;font-size:.75rem}
+.params-table th{background:var(--hl);padding:7px 10px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.params-table td{padding:6px 10px;border-bottom:1px solid var(--hl);vertical-align:top}
+.params-table tr:last-child td{border-bottom:none}
+.params-table td:first-child{font-weight:600;color:var(--accent);font-family:'Courier New',monospace;font-size:.72rem}
+.params-table td:last-child{color:var(--body);max-width:220px;word-break:break-all}
+.param-desc{font-size:.68rem;color:var(--muted);margin-top:2px}
+/* flags */
+.flags{display:flex;flex-direction:column;gap:6px}
+.flag{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;font-size:.77rem}
+.flag.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.flag.warn{background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.flag.error{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
+.flag.info{background:var(--hl);border:1px solid var(--border);color:var(--body)}
+.flag-icon{flex-shrink:0;font-size:.85rem}
+/* tag highlight */
+.tag-display{background:#1e1e2e;color:#cdd6f4;border-radius:10px;padding:14px;font-family:'Courier New',monospace;font-size:.72rem;line-height:1.6;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.h-attr{color:#89b4fa}.h-val{color:#a6e3a1}.h-url{color:#fab387;text-decoration:underline;cursor:pointer}
+.h-key{color:#f38ba8}.h-comment{color:#6c7086;font-style:italic}
+.placeholder{text-align:center;padding:60px 24px;color:var(--muted)}
+.placeholder .ico{font-size:3rem;margin-bottom:12px}
+.placeholder p{font-size:.85rem}
+.score-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.score-num{font-size:1.6rem;font-weight:700}
+.score-label{font-size:.78rem}
+.score-bar-track{flex:1;height:8px;background:var(--hl);border-radius:4px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:4px}
+.full-col{grid-column:1/-1}
+@media(max-width:900px){.results-grid{grid-template-columns:1fr}.top-bar{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="icon">🔬</div>
+  <div>
+    <h1>Tag Inspector</h1>
+    <p>Analisa e valida tags de ad server, pixel de conversão e rastreamento</p>
+  </div>
+</header>
+
+<div class="main">
+  <div class="top-bar">
+    <div>
+      <label>Cole a tag, pixel ou script aqui</label>
+      <textarea id="tagInput" placeholder="<!-- Cole aqui um iframe tag do CM360, script do Meta Pixel, TikTok Pixel, Floodlight, GA4, etc. -->"></textarea>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:0">
+      <button class="btn" onclick="inspect()">🔍 Inspecionar</button>
+      <button class="btn secondary" onclick="clearAll()">Limpar</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px">
+    <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Ou carregue um exemplo:</div>
+    <div class="platform-chips">
+      <div class="chip" onclick="loadExample('cm360_iframe')">CM360 iframe</div>
+      <div class="chip" onclick="loadExample('cm360_script')">CM360 JS</div>
+      <div class="chip" onclick="loadExample('floodlight')">Floodlight</div>
+      <div class="chip" onclick="loadExample('meta')">Meta Pixel</div>
+      <div class="chip" onclick="loadExample('tiktok')">TikTok Pixel</div>
+      <div class="chip" onclick="loadExample('ga4')">GA4</div>
+      <div class="chip" onclick="loadExample('utm')">URL com UTM</div>
+      <div class="chip" onclick="loadExample('dv360')">DV360</div>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="placeholder">
+      <div class="ico">🔬</div>
+      <p>Cole uma tag acima e clique em <strong>Inspecionar</strong></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const EXAMPLES = {
+  cm360_iframe: `<iframe src="https://5678901.fls.doubleclick.net/activityi;src=5678901;type=purchase;cat=trans;qty=1;cost=[Revenue];dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=[OrderID]?" width="1" height="1" frameborder="0" style="display:none">
+</iframe>`,
+  cm360_script: `<script type="text/javascript">
+var axel = Math.random() + "";
+var a = axel * 10000000000000;
+document.write('<img src="https://ad.doubleclick.net/ddm/activity/src=5678901;type=purchase;cat=trans;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=' + a + '?" width="1" height="1" alt=""/>');
+<\/script><noscript>
+<img src="https://ad.doubleclick.net/ddm/activity/src=5678901;type=purchase;cat=trans;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=1?" width="1" height="1" alt=""/>
+</noscript>`,
+  floodlight: `<!-- Floodlight Tag: Compra | Advertiser: Marca ABC -->
+<iframe src="https://9876543.fls.doubleclick.net/activityi;src=9876543;type=vendas;cat=compr0;qty=1;cost=129.90;dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=;gdpr=;gdpr_consent=;ord=TXN12345?" width="1" height="1" frameborder="0" style="display:none"></iframe>`,
+  meta: `<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '123456789012345');
+fbq('track', 'PageView');
+<\/script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=123456789012345&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->`,
+  tiktok: `<script>
+!function (w, d, t) {
+  w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=document.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
+  ttq.load('CXXXXXXXXXXXXXXXXX');
+  ttq.page();
+}(window, document, 'ttq');
+<\/script>`,
+  ga4: `<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+<\/script>`,
+  utm: `https://www.seusite.com.br/produto?utm_source=facebook&utm_medium=paid_social&utm_campaign=marca_awareness_nov26&utm_content=video_15s_broad&utm_term=&fbclid=IwAR0abc123xyz`,
+  dv360: `<ins class='dcmads' style='display:inline-block;width:300px;height:250px'
+  data-dcm-placement='N1234567/SITE_NAME_300x250'
+  data-dcm-rendering-mode='script'
+  data-dcm-click-tracker='${CLICK_URL}'
+  data-dcm-limit-ad-tracking=0
+  data-dcm-resettable-device-id=''
+  data-dcm-app-id=''>
+<script src='https://www.googletagservices.com/dcm/dcmads.js'><\/script>
+</ins>`
+};
+
+function loadExample(key){
+  document.getElementById('tagInput').value = EXAMPLES[key];
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  event.target.classList.add('active');
+}
+function clearAll(){
+  document.getElementById('tagInput').value='';
+  document.getElementById('results').innerHTML=`<div class="placeholder"><div class="ico">🔬</div><p>Cole uma tag acima e clique em <strong>Inspecionar</strong></p></div>`;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+}
+
+function inspect(){
+  const raw = document.getElementById('tagInput').value.trim();
+  if(!raw){alert('Cole uma tag primeiro.');return;}
+  const result = analyzeTag(raw);
+  renderResults(result);
+}
+
+function detectPlatform(raw){
+  const r = raw.toLowerCase();
+  if(r.includes('doubleclick.net')||r.includes('fls.doubleclick')||r.includes('ad.doubleclick')) return {name:'Campaign Manager 360',short:'CM360',color:'#1565C0',bg:'#e3f2fd',emoji:'🎯'};
+  if(r.includes('facebook.net')||r.includes('fbevents')||r.includes('fbq(')||r.includes('facebook.com/tr')) return {name:'Meta Pixel',short:'Meta',color:'#1877F2',bg:'#e7f3ff',emoji:'📘'};
+  if(r.includes('tiktok')||r.includes('analytics.tiktok')) return {name:'TikTok Pixel',short:'TikTok',color:'#010101',bg:'#f0f0f0',emoji:'🎵'};
+  if(r.includes('googletagmanager')||r.includes('gtag(')||r.includes('gtag/js')) return {name:'Google Analytics 4',short:'GA4',color:'#E37400',bg:'#fff8e1',emoji:'📊'};
+  if(r.includes('googletagservices')||r.includes('dcmads')||r.includes('data-dcm')) return {name:'DV360 / CM360',short:'DV360',color:'#1a73e8',bg:'#e8f0fe',emoji:'📺'};
+  if(r.includes('linkedin')||r.includes('snap.licdn')) return {name:'LinkedIn Insight',short:'LinkedIn',color:'#0A66C2',bg:'#e8f4fc',emoji:'💼'};
+  if(r.includes('twitter')||r.includes('ads-twitter')||r.includes('twq(')) return {name:'X (Twitter) Pixel',short:'X Ads',color:'#000',bg:'#f7f7f7',emoji:'𝕏'};
+  if(r.includes('utm_source')||r.includes('utm_medium')) return {name:'URL com UTM',short:'UTM URL',color:'#059669',bg:'#f0fdf4',emoji:'🔗'};
+  if(r.includes('<iframe')||r.includes('<script')||r.includes('<img')) return {name:'Tag Genérica',short:'HTML',color:'#6b21a8',bg:'#faf5ff',emoji:'🏷️'};
+  return {name:'Desconhecido',short:'?',color:'#6b7280',bg:'#f9fafb',emoji:'❓'};
+}
+
+function parseParams(raw){
+  const params = [];
+  // URL params
+  const urlMatch = raw.match(/(?:src|href|url)=["']([^"']+)["']|https?:\/\/[^\s"'<>]+/gi);
+  if(urlMatch){
+    urlMatch.forEach(m=>{
+      const urlStr = m.replace(/^(?:src|href|url)=["']/i,'').replace(/["']$/,'');
+      try{
+        const u = new URL(urlStr.startsWith('http')?urlStr:'https://x.com'+urlStr);
+        u.searchParams.forEach((v,k)=>{
+          params.push({key:k,value:v||'(vazio)',source:'URL param',url:urlStr.substring(0,60)});
+        });
+        // Also parse semicolon params (CM360 style)
+        const sc = u.pathname+u.search;
+        const semi = sc.split(';').slice(1);
+        semi.forEach(p=>{
+          const [k,v] = p.split('=');
+          if(k&&k.length>0&&k.length<40) params.push({key:k,value:v||'(vazio)',source:'Semicolon param (CM360)'});
+        });
+      }catch(e){}
+    });
+  }
+  // data-* attributes
+  const dataAttrs = raw.matchAll(/data-[\w-]+=["']([^"']*)["']/g);
+  for(const m of dataAttrs){
+    const full = m[0];
+    const k = full.split('=')[0];
+    params.push({key:k,value:m[1]||'(vazio)',source:'HTML data-attr'});
+  }
+  // JS function calls like fbq('track','Purchase',{value:...})
+  const jsCalls = raw.matchAll(/(\w+)\s*\(\s*(['"][\w.]+['"](?:\s*,\s*['"][\w.]+['"])?)/g);
+  for(const m of jsCalls){
+    params.push({key:m[1]+'()',value:m[2].replace(/['"]/g,''),source:'JS call'});
+  }
+  return params.slice(0,50); // cap
+}
+
+const PARAM_DOCS = {
+  'utm_source':['Origem do tráfego','Ex: facebook, google, newsletter'],
+  'utm_medium':['Mídia / canal','Ex: cpc, paid_social, email'],
+  'utm_campaign':['Nome da campanha','Ex: marca_awareness_2026'],
+  'utm_content':['Variante do criativo','Ex: banner_300x250_v1'],
+  'utm_term':['Palavra-chave (Search)','Usado principalmente em Google Ads'],
+  'src':['ID do advertiser (CM360)','Floodlight configuration ID'],
+  'type':['Activity group tag (CM360)','Corresponde ao grupo de atividade'],
+  'cat':['Activity tag (CM360)','Tag da atividade Floodlight'],
+  'ord':['Cache-buster','Número aleatório para evitar cache'],
+  'cost':['Valor de receita','Para cálculo de ROAS'],
+  'qty':['Quantidade','Número de itens da transação'],
+  'dc_lat':['Limit Ad Tracking','0=opt-in, 1=opt-out'],
+  'dc_rdid':['Device ID para retargeting','IDFA/GAID do dispositivo'],
+  'npa':['Non-personalized Ads','1=sem personalização'],
+  'gdpr':['Consentimento GDPR','1=usuário no EEA'],
+  'gdpr_consent':['String de consentimento TCF','IAB Transparency & Consent Framework'],
+  'id':['ID do pixel/conta','Identificador único do pixel'],
+  'ev':['Evento a ser disparado','Ex: PageView, Purchase, Lead'],
+  'fbclid':['Facebook Click ID','Parâmetro de atribuição automático do Meta'],
+  'gclid':['Google Click ID','Parâmetro de atribuição automático do Google'],
+  'ttclid':['TikTok Click ID','Parâmetro de atribuição automático do TikTok'],
+};
+
+function getParamInfo(key){
+  const k = key.toLowerCase().replace(/^data-dcm-/,'').replace(/-/g,'_');
+  for(const [pk,info] of Object.entries(PARAM_DOCS)){
+    if(k===pk||k.includes(pk)) return info;
+  }
+  return null;
+}
+
+function analyzeTag(raw){
+  const platform = detectPlatform(raw);
+  const params = parseParams(raw);
+  const flags = [];
+  const r = raw.toLowerCase();
+
+  // Scoring
+  let score = 100;
+
+  // Check GDPR/consent
+  if(r.includes('doubleclick')||r.includes('floodlight')){
+    if(!r.includes('gdpr=')) {flags.push({type:'warn',msg:'Parâmetro gdpr= não encontrado. Necessário para campanhas com tráfego europeu.'});score-=10;}
+    if(!r.includes('gdpr_consent=')) {flags.push({type:'warn',msg:'gdpr_consent= ausente. TCF string obrigatória em mercados com GDPR.'});score-=10;}
+    if(!r.includes('npa=')) flags.push({type:'info',msg:'npa= não definido. Recomendado para Non-Personalized Ads.'});
+    if(r.includes('ord=?')||r.includes('ord=1?')||r.includes("ord='+a+'")) flags.push({type:'ok',msg:'Cache-buster (ord=) presente e dinâmico ✓'});
+    else flags.push({type:'warn',msg:'ord= pode ser estático — verificar se é gerado dinamicamente.'});
+  }
+
+  if(r.includes('utm_source')){
+    if(!r.includes('utm_medium')) {flags.push({type:'error',msg:'utm_medium ausente — parâmetro obrigatório para analytics.'});score-=15;}
+    if(!r.includes('utm_campaign')) {flags.push({type:'warn',msg:'utm_campaign não encontrado.'});score-=10;}
+    if(r.includes('utm_source=facebook')&&!r.includes('utm_medium=')) flags.push({type:'info',msg:'URL do Meta — considerar utm_medium=paid_social.'});
+    if(r.includes('fbclid=')) flags.push({type:'ok',msg:'fbclid= presente — atribuição automática Meta ativa ✓'});
+    if(r.includes(' ')) flags.push({type:'error',msg:'URL contém espaços — deve ser URL-encoded (%20).'});
+    if(/utm_[a-z]+=\s*[&"']/i.test(raw)) {flags.push({type:'error',msg:'Parâmetro UTM com valor vazio detectado.'});score-=20;}
+  }
+
+  if(r.includes('fbq(')){
+    if(!r.includes("fbq('init")){flags.push({type:'error',msg:"fbq('init') não encontrado — pixel não está sendo inicializado."});score-=20;}
+    if(!r.includes("fbq('track")){flags.push({type:'warn',msg:"Nenhum evento fbq('track') encontrado."});score-=10;}
+    if(r.match(/fbq\('init',\s*'[0-9]{15,16}'\)/)) flags.push({type:'ok',msg:'Pixel ID com formato válido (15-16 dígitos) ✓'});
+    if(!r.includes('noscript')) flags.push({type:'warn',msg:'Tag <noscript> ausente — usuários sem JS não serão rastreados.'});
+  }
+
+  if(r.includes('gtag(')){
+    if(!r.includes("gtag('config")) {flags.push({type:'error',msg:"gtag('config') não encontrado."});score-=20;}
+    const gid = raw.match(/['"]G-[A-Z0-9]+['"]/);
+    if(gid) flags.push({type:'ok',msg:`Measurement ID GA4 detectado: ${gid[0].replace(/['"]/g,'')} ✓`});
+    else flags.push({type:'warn',msg:'Measurement ID GA4 (G-XXXXXXXX) não encontrado.'});
+    if(!r.includes('async')) flags.push({type:'warn',msg:'Script sem atributo async — pode impactar performance da página.'});
+  }
+
+  if(r.includes('tiktok')||r.includes('ttq.')){
+    if(!r.includes('ttq.load')) {flags.push({type:'error',msg:'ttq.load() não encontrado — pixel não carregado.'});score-=20;}
+    if(!r.includes('ttq.page()')) flags.push({type:'warn',msg:'ttq.page() ausente — evento de pageview não rastreado.'});
+    const pid = raw.match(/ttq\.load\s*\(\s*['"]([A-Z0-9]+)['"]/);
+    if(pid) flags.push({type:'ok',msg:`Pixel ID TikTok: ${pid[1]} ✓`});
+  }
+
+  if(r.includes('data-dcm')){
+    if(!r.includes('data-dcm-placement')) {flags.push({type:'error',msg:'data-dcm-placement ausente.'});score-=15;}
+    if(!r.includes('data-dcm-click-tracker')) flags.push({type:'warn',msg:'Click tracker não definido — cliques não serão rastreados pelo CM360.'});
+    if(r.includes('${click_url}')||r.includes('%%click_url%%')) flags.push({type:'ok',msg:'Click macro presente ✓'});
+  }
+
+  if(flags.length===0) flags.push({type:'ok',msg:'Tag dentro dos padrões esperados.'});
+
+  score = Math.max(0,Math.min(100,score));
+  return {platform, params, flags, score, raw};
+}
+
+function highlight(raw){
+  return raw
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(https?:\/\/[^\s&"'<>]+)/g,'<span class="h-url">$1</span>')
+    .replace(/([a-zA-Z_-]+=)["']([^"']*)["']/g,'<span class="h-attr">$1</span><span class="h-val">"$2"</span>')
+    .replace(/(\/\*[\s\S]*?\*\/|\/\/[^\n]*|<!--[\s\S]*?-->)/g,'<span class="h-comment">$1</span>');
+}
+
+function renderResults(r){
+  const scoreColor = r.score>=80?'var(--green)':r.score>=60?'var(--yellow)':'var(--red)';
+  const pct = r.score;
+
+  let paramsHtml = '';
+  if(r.params.length){
+    const rows = r.params.map(p=>{
+      const info = getParamInfo(p.key);
+      return `<tr>
+        <td>${p.key}<div class="param-desc">${p.source}</div></td>
+        <td style="word-break:break-all">${p.value}</td>
+        <td>${info?`<strong>${info[0]}</strong><div class="param-desc">${info[1]}</div>`:'-'}</td>
+      </tr>`;
+    }).join('');
+    paramsHtml = `<div class="card">
+      <div class="card-title"><div class="dot" style="background:var(--accent)"></div>Parâmetros Detectados (${r.params.length})</div>
+      <div style="overflow-x:auto"><table class="params-table">
+        <thead><tr><th>Parâmetro</th><th>Valor</th><th>Descrição</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  const flagsHtml = r.flags.map(f=>`<div class="flag ${f.type}"><span class="flag-icon">${f.type==='ok'?'✅':f.type==='warn'?'⚠️':f.type==='error'?'❌':'ℹ️'}</span><span>${f.msg}</span></div>`).join('');
+
+  document.getElementById('results').innerHTML = `
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span class="plt-badge" style="background:${r.platform.bg};color:${r.platform.color};border:1.5px solid ${r.platform.color}30">${r.platform.emoji} ${r.platform.name}</span>
+    <div class="score-row" style="margin:0;flex:1;min-width:200px">
+      <span class="score-num" style="color:${scoreColor}">${r.score}</span>
+      <div style="flex:1">
+        <div class="score-label" style="color:${scoreColor};font-weight:700;margin-bottom:3px">Score de Qualidade</div>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%;background:${scoreColor}"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="results-grid">
+    <div class="card">
+      <div class="card-title"><div class="dot" style="background:${r.flags.some(f=>f.type==='error')?'var(--red)':r.flags.some(f=>f.type==='warn')?'var(--yellow)':'var(--green)'}"></div>Validações (${r.flags.length})</div>
+      <div class="flags">${flagsHtml}</div>
+    </div>
+    ${paramsHtml}
+    <div class="card full-col">
+      <div class="card-title"><div class="dot" style="background:#89b4fa"></div>Tag Formatada</div>
+      <div class="tag-display">${highlight(r.raw)}</div>
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>

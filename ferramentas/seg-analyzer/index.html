@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisador de Segmentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --mono:'JetBrains Mono',monospace;--shadow:0 1px 4px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1100px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+/* Tabs */
+.tab-bar{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;}
+.tab-btn{padding:7px 14px;font-size:12px;font-weight:600;border:none;background:none;color:var(--faint);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+/* Health bar */
+.health-bar{height:8px;border-radius:4px;background:var(--divider);overflow:hidden;}
+.health-fill{height:100%;border-radius:4px;transition:width .3s;}
+/* Issue badges */
+.issue-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.ib-ok{background:var(--ok-bg);color:var(--ok);}
+.ib-warn{background:var(--warn-bg);color:var(--warn);}
+.ib-err{background:var(--err-bg);color:var(--err);}
+/* Table */
+.seg-table{width:100%;border-collapse:collapse;font-size:12px;}
+.seg-table th{text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+.seg-table td{padding:7px 10px;border-bottom:1px solid var(--divider);vertical-align:middle;}
+.seg-table tr:hover td{background:var(--accent-soft);}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.no-data{text-align:center;padding:40px;color:var(--faint)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🔬</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Analisador de Segmentos</div>
+      <div style="font-size:11px;color:var(--faint)">Cobertura e lacunas do dicionário no Taxonomy Builder</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="runAnalysis()">🔄 Analisar</button>
+  </div>
+</div>
+
+<div class="page" id="mainPage">
+  <!-- KPI row -->
+  <div id="kpiRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-overview" onclick="showTab('overview')">Visão Geral</button>
+    <button class="tab-btn" id="tab-empty" onclick="showTab('empty')">Segmentos Vazios</button>
+    <button class="tab-btn" id="tab-low" onclick="showTab('low')">Poucos Termos</button>
+    <button class="tab-btn" id="tab-unused" onclick="showTab('unused')">Nunca Usados</button>
+    <button class="tab-btn" id="tab-clients" onclick="showTab('clients')">Por Cliente</button>
+  </div>
+
+  <!-- Tab content -->
+  <div id="tab-content-overview"></div>
+  <div id="tab-content-empty" style="display:none"></div>
+  <div id="tab-content-low" style="display:none"></div>
+  <div id="tab-content-unused" style="display:none"></div>
+  <div id="tab-content-clients" style="display:none"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CLIENTS_KEY='taxo_clients_v1';
+const BUILDER_HIST_KEY='taxo_builder_hist_v1';
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('seg_analyzer_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('seg_analyzer_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Data
+function loadClients(){try{return JSON.parse(localStorage.getItem(CLIENTS_KEY)||'[]');}catch(e){return[];}}
+function loadHist(){try{return JSON.parse(localStorage.getItem(BUILDER_HIST_KEY)||'[]');}catch(e){return[];}}
+
+let _analysis=null;
+let _currentTab='overview';
+
+const LOW_THRESHOLD=3; // segments with fewer than this many terms are "low coverage"
+
+function buildUsageMap(clients, hist){
+  // Map: clientId -> segIndex -> usageCount
+  const map={};
+  clients.forEach(c=>{map[c.id]={};c.segments.forEach((_,i)=>{map[c.id][i]=0;});});
+  hist.forEach(entry=>{
+    const nc=typeof entry==='string'?entry:(entry?.nc||'');
+    if(!nc) return;
+    // Find matching client by trying each client's separator
+    clients.forEach(c=>{
+      const sep=c.separator||'_';
+      const parts=nc.split(sep);
+      parts.forEach((p,i)=>{
+        if(i<c.segments.length && map[c.id]){
+          map[c.id][i]=(map[c.id][i]||0)+1;
+        }
+      });
+    });
+  });
+  return map;
+}
+
+function runAnalysis(){
+  const clients=loadClients().filter(c=>!c.archived);
+  const hist=loadHist();
+  const usageMap=buildUsageMap(clients, hist);
+
+  const rows=[]; // flat list of {client, seg, segIdx, termCount, usageCount, issues[]}
+
+  clients.forEach(c=>{
+    const segs=c.segments||[];
+    segs.forEach((s,i)=>{
+      const terms=(c.dictionary?.[s.id]||[]).length;
+      const usage=(usageMap[c.id]?.[i])||0;
+      const issues=[];
+      if(terms===0) issues.push('empty');
+      else if(terms<LOW_THRESHOLD) issues.push('low');
+      if(usage===0) issues.push('unused');
+      rows.push({clientId:c.id, clientName:c.name, seg:s.name, segIdx:i, termCount:terms, usageCount:usage, issues, required:s.required||false});
+    });
+  });
+
+  _analysis={clients, hist, rows, usageMap, generated:new Date().toLocaleString('pt-BR')};
+  renderAll();
+}
+
+function renderAll(){
+  if(!_analysis){renderNoData();return;}
+  renderKPIs();
+  renderOverview();
+  renderEmpty();
+  renderLow();
+  renderUnused();
+  renderByClient();
+}
+
+function renderNoData(){
+  ['overview','empty','low','unused','clients'].forEach(t=>{
+    document.getElementById('tab-content-'+t).innerHTML=`<div class="no-data"><div class="empty-icon">🔬</div><div>Clique em "Analisar" para carregar dados do Taxonomy Builder.</div></div>`;
+  });
+}
+
+function renderKPIs(){
+  const {rows,clients}=_analysis;
+  const totalSegs=rows.length;
+  const emptySegs=rows.filter(r=>r.issues.includes('empty')).length;
+  const lowSegs=rows.filter(r=>r.issues.includes('low')&&!r.issues.includes('empty')).length;
+  const unusedSegs=rows.filter(r=>r.issues.includes('unused')).length;
+  const healthySegs=rows.filter(r=>!r.issues.length).length;
+  const healthPct=totalSegs?Math.round((healthySegs/totalSegs)*100):0;
+  document.getElementById('kpiRow').innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;min-width:100px">
+      <div style="font-size:22px;font-weight:800">${clients.length}</div><div style="color:var(--faint)">clientes</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;min-width:100px">
+      <div style="font-size:22px;font-weight:800">${totalSegs}</div><div style="color:var(--faint)">segmentos</div>
+    </div>
+    <div style="background:var(--ok-bg);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:10px 14px;font-size:12px;min-width:100px">
+      <div style="font-size:22px;font-weight:800;color:var(--ok)">${healthPct}%</div><div style="color:var(--faint)">saudáveis</div>
+    </div>
+    <div style="background:var(--err-bg);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:10px 14px;font-size:12px;min-width:100px">
+      <div style="font-size:22px;font-weight:800;color:var(--err)">${emptySegs}</div><div style="color:var(--faint)">vazios</div>
+    </div>
+    <div style="background:var(--warn-bg);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:10px 14px;font-size:12px;min-width:100px">
+      <div style="font-size:22px;font-weight:800;color:var(--warn)">${lowSegs}</div><div style="color:var(--faint)">poucos termos</div>
+    </div>
+    <div style="background:var(--divider);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;min-width:100px">
+      <div style="font-size:22px;font-weight:800;color:var(--faint)">${unusedSegs}</div><div style="color:var(--faint)">nunca usados</div>
+    </div>
+  `;
+}
+
+function issueBadges(issues,required){
+  const bs=[];
+  if(issues.includes('empty')) bs.push(`<span class="issue-badge ib-err">⛔ vazio</span>`);
+  if(issues.includes('low')&&!issues.includes('empty')) bs.push(`<span class="issue-badge ib-warn">⚠ poucos termos</span>`);
+  if(issues.includes('unused')) bs.push(`<span class="issue-badge" style="background:var(--divider);color:var(--faint)">💤 nunca usado</span>`);
+  if(required&&issues.includes('empty')) bs.push(`<span class="issue-badge ib-err">🔒 obrigatório</span>`);
+  return bs.join(' ');
+}
+
+function renderOverview(){
+  const {rows,clients}=_analysis;
+  // Per-client summary
+  const clientSummary=clients.map(c=>{
+    const cRows=rows.filter(r=>r.clientId===c.id);
+    const total=cRows.length;
+    const empty=cRows.filter(r=>r.issues.includes('empty')).length;
+    const low=cRows.filter(r=>r.issues.includes('low')&&!r.issues.includes('empty')).length;
+    const unused=cRows.filter(r=>r.issues.includes('unused')).length;
+    const healthy=cRows.filter(r=>!r.issues.length).length;
+    const pct=total?Math.round((healthy/total)*100):0;
+    const color=pct>=80?'var(--ok)':pct>=50?'var(--warn)':'var(--err)';
+    return {id:c.id,name:c.name,total,empty,low,unused,healthy,pct,color};
+  }).sort((a,b)=>a.pct-b.pct);
+
+  document.getElementById('tab-content-overview').innerHTML=`
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px">Saúde por Cliente</div>
+      <table class="seg-table">
+        <thead><tr>
+          <th>Cliente</th><th>Segmentos</th><th>Vazios</th><th>Poucos</th><th>N. usados</th><th>Saudáveis</th><th style="width:120px">Cobertura</th>
+        </tr></thead>
+        <tbody>${clientSummary.map(c=>`<tr>
+          <td style="font-weight:600">${esc(c.name)}</td>
+          <td>${c.total}</td>
+          <td>${c.empty?`<span style="color:var(--err);font-weight:700">${c.empty}</span>`:0}</td>
+          <td>${c.low?`<span style="color:var(--warn);font-weight:700">${c.low}</span>`:0}</td>
+          <td style="color:var(--faint)">${c.unused}</td>
+          <td style="color:var(--ok);font-weight:700">${c.healthy}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="health-bar" style="flex:1"><div class="health-fill" style="width:${c.pct}%;background:${c.color}"></div></div>
+              <span style="font-size:11px;font-weight:700;color:${c.color};min-width:32px">${c.pct}%</span>
+            </div>
+          </td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderEmpty(){
+  const rows=_analysis.rows.filter(r=>r.issues.includes('empty')).sort((a,b)=>a.clientName.localeCompare(b.clientName));
+  if(!rows.length){document.getElementById('tab-content-empty').innerHTML=`<div class="no-data"><div class="empty-icon">✅</div><div>Nenhum segmento vazio!</div></div>`;return;}
+  document.getElementById('tab-content-empty').innerHTML=`
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px">Segmentos sem nenhum termo (${rows.length})</div>
+      <table class="seg-table">
+        <thead><tr><th>Cliente</th><th>Segmento</th><th>Pos.</th><th>Obrigatório</th><th>Issues</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td style="font-weight:600">${esc(r.clientName)}</td>
+          <td>${esc(r.seg)}</td>
+          <td style="color:var(--faint);font-size:11px">#${r.segIdx+1}</td>
+          <td>${r.required?'<span style="color:var(--err);font-weight:700">🔒 Sim</span>':'<span style="color:var(--faint)">—</span>'}</td>
+          <td>${issueBadges(r.issues,r.required)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderLow(){
+  const rows=_analysis.rows.filter(r=>r.issues.includes('low')&&!r.issues.includes('empty')).sort((a,b)=>a.termCount-b.termCount);
+  if(!rows.length){document.getElementById('tab-content-low').innerHTML=`<div class="no-data"><div class="empty-icon">✅</div><div>Nenhum segmento com poucos termos (mínimo ${LOW_THRESHOLD}).</div></div>`;return;}
+  document.getElementById('tab-content-low').innerHTML=`
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">Segmentos com menos de ${LOW_THRESHOLD} termos (${rows.length})</div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:14px">Segmentos com pelo menos 1 termo, mas abaixo do mínimo recomendado.</div>
+      <table class="seg-table">
+        <thead><tr><th>Cliente</th><th>Segmento</th><th>Pos.</th><th>Termos</th><th>Usos no builder</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td style="font-weight:600">${esc(r.clientName)}</td>
+          <td>${esc(r.seg)}</td>
+          <td style="color:var(--faint);font-size:11px">#${r.segIdx+1}</td>
+          <td><span style="color:var(--warn);font-weight:700">${r.termCount}</span></td>
+          <td style="color:var(--faint)">${r.usageCount}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderUnused(){
+  const rows=_analysis.rows.filter(r=>r.issues.includes('unused')&&!r.issues.includes('empty')).sort((a,b)=>b.termCount-a.termCount);
+  const histLen=_analysis.hist.length;
+  if(!rows.length){
+    const msg=histLen?'Todos os segmentos com termos foram usados no builder.':'Nenhum histórico de builder encontrado. Use o Builder para gerar NCs primeiro.';
+    document.getElementById('tab-content-unused').innerHTML=`<div class="no-data"><div class="empty-icon">${histLen?'✅':'📭'}</div><div>${msg}</div></div>`;return;
+  }
+  document.getElementById('tab-content-unused').innerHTML=`
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">Segmentos nunca usados no Builder (${rows.length})</div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:14px">Baseado em ${histLen} NCs no histórico do builder.</div>
+      <table class="seg-table">
+        <thead><tr><th>Cliente</th><th>Segmento</th><th>Pos.</th><th>Termos</th><th>Issues extras</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td style="font-weight:600">${esc(r.clientName)}</td>
+          <td>${esc(r.seg)}</td>
+          <td style="color:var(--faint);font-size:11px">#${r.segIdx+1}</td>
+          <td>${r.termCount}</td>
+          <td>${issueBadges(r.issues.filter(i=>i!=='unused'),r.required)||'<span style="color:var(--faint)">—</span>'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderByClient(){
+  const {rows,clients}=_analysis;
+  const html=clients.map(c=>{
+    const cRows=rows.filter(r=>r.clientId===c.id);
+    const total=cRows.length;
+    const healthy=cRows.filter(r=>!r.issues.length).length;
+    const pct=total?Math.round((healthy/total)*100):0;
+    return `
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-weight:800;font-size:14px">${esc(c.name)}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:11px;color:var(--faint)">${total} segmentos · ${c.separator||'_'} como sep.</div>
+            <span style="font-size:12px;font-weight:700;color:${pct>=80?'var(--ok)':pct>=50?'var(--warn)':'var(--err)'}">${pct}% saudável</span>
+          </div>
+        </div>
+        <table class="seg-table">
+          <thead><tr><th>#</th><th>Segmento</th><th>Termos</th><th>Usos</th><th>Status</th></tr></thead>
+          <tbody>${cRows.map(r=>`<tr>
+            <td style="color:var(--faint);font-size:11px">${r.segIdx+1}</td>
+            <td>${esc(r.seg)}${r.required?'<span style="font-size:9px;color:var(--err);margin-left:4px">🔒</span>':''}</td>
+            <td>${r.termCount===0?`<span style="color:var(--err);font-weight:700">0</span>`:r.termCount<LOW_THRESHOLD?`<span style="color:var(--warn);font-weight:700">${r.termCount}</span>`:r.termCount}</td>
+            <td style="color:var(--faint)">${r.usageCount}</td>
+            <td>${r.issues.length?issueBadges(r.issues,r.required):'<span class="issue-badge ib-ok">✅ ok</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('tab-content-clients').innerHTML=html||'<div class="no-data"><div class="empty-icon">👥</div><div>Nenhum cliente encontrado.</div></div>';
+}
+
+function showTab(name){
+  _currentTab=name;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.id==='tab-'+name));
+  ['overview','empty','low','unused','clients'].forEach(t=>{
+    document.getElementById('tab-content-'+t).style.display=t===name?'':'none';
+  });
+}
+
+function exportCSV(){
+  if(!_analysis){showToast('Execute a análise primeiro');return;}
+  const rows=_analysis.rows;
+  const header=['cliente','segmento','posicao','termos','usos_builder','vazio','poucos_termos','nunca_usado','obrigatorio'];
+  const lines=rows.map(r=>[r.clientName,r.seg,r.segIdx+1,r.termCount,r.usageCount,r.issues.includes('empty')?1:0,r.issues.includes('low')?1:0,r.issues.includes('unused')?1:0,r.required?1:0]);
+  const csv=[header,...lines].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='seg_analysis.csv';a.click();
+  showToast(`⬇ ${lines.length} segmentos exportados`);
+}
+
+// Auto-run on load if data exists
+(function(){
+  const clients=loadClients().filter(c=>!c.archived);
+  if(clients.length) runAnalysis();
+  else renderNoData();
+})();
+</script>
+</body>
+</html>

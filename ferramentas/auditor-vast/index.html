@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditor de Tag VAST — NC Tool</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--white:#fff;--green:#2e7d32;--yellow:#f57f17;--red:#c62828;--gray:#666;--radius:10px}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:#222;min-height:100vh}
+header{background:var(--blue);color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.25rem;font-weight:700}
+header span{font-size:.85rem;opacity:.7}
+.main{padding:28px 32px;min-width:0}
+.input-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+.input-section h2{font-size:1rem;font-weight:600;color:var(--blue);margin-bottom:12px}
+textarea{width:100%;height:160px;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:.82rem;resize:vertical;outline:none;background:#fafbff}
+textarea:focus{border-color:var(--accent)}
+.btn-row{display:flex;gap:10px;margin-top:12px;align-items:center}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{background:var(--blue)}
+.btn-secondary{background:var(--hl);color:var(--accent);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--border)}
+#parse-status{font-size:.85rem;color:var(--gray)}
+.results{display:none}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab{padding:10px 20px;cursor:pointer;font-size:.88rem;font-weight:500;color:var(--gray);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* Score gauge */
+.score-section{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:24px}
+.score-gauge{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;min-width:200px}
+.gauge-circle{width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--accent) 0deg, var(--border) 0deg);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;position:relative;font-size:2rem;font-weight:700;color:var(--blue)}
+.gauge-circle::after{content:'';position:absolute;width:88px;height:88px;border-radius:50%;background:var(--white)}
+.gauge-num{position:relative;z-index:1}
+.score-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:.85rem;font-weight:600}
+.badge-excellent{background:#e8f5e9;color:#2e7d32}
+.badge-good{background:#e3f2fd;color:#1565c0}
+.badge-warning{background:#fff8e1;color:#f57f17}
+.badge-critical{background:#ffebee;color:#c62828}
+.issues-summary{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.issue-pill{padding:5px 14px;border-radius:20px;font-size:.82rem;font-weight:600}
+.pill-red{background:#ffebee;color:#c62828}
+.pill-yellow{background:#fff8e1;color:#f57f17}
+.pill-blue{background:var(--hl);color:var(--accent)}
+/* Info cards */
+.info-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.info-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:14px}
+.info-card .label{font-size:.75rem;color:var(--gray);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.info-card .value{font-size:1rem;font-weight:600;color:var(--blue);word-break:break-all}
+/* Tables */
+.table-wrap{overflow-x:auto;margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--hl);color:var(--blue);padding:9px 12px;text-align:left;font-weight:600;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.url-cell{font-size:.75rem;font-family:monospace;word-break:break-all;max-width:400px;color:#444}
+.status-ok{color:var(--green);font-weight:600}
+.status-miss{color:var(--red);font-weight:600}
+.status-opt{color:var(--yellow);font-weight:600}
+.status-info{color:var(--accent);font-weight:600}
+/* Checklist */
+.check-section{margin-bottom:20px}
+.check-section h3{font-size:.9rem;font-weight:700;color:var(--blue);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.check-item{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid #f0f1f8;font-size:.85rem}
+.check-item:last-child{border-bottom:none}
+.check-icon{font-size:1rem;flex-shrink:0;width:20px}
+.check-label{flex:1}
+.check-desc{font-size:.78rem;color:var(--gray);margin-top:2px}
+/* XML highlight */
+.xml-output{background:#1e1e2e;border-radius:8px;padding:16px;overflow:auto;max-height:600px;font-family:monospace;font-size:.78rem;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+.xml-tag{color:#89b4fa}
+.xml-attr{color:#cba6f7}
+.xml-val{color:#a6e3a1}
+.xml-comment{color:#6c7086;font-style:italic}
+.xml-text{color:#cdd6f4}
+/* URL mode */
+.url-info{background:var(--hl);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:.88rem}
+.url-info h3{color:var(--blue);margin-bottom:8px;font-size:.95rem}
+.url-info code{background:var(--white);padding:2px 6px;border-radius:4px;font-size:.82rem;word-break:break-all}
+.devtools-steps{margin-top:10px;padding-left:18px;font-size:.83rem;color:#444;line-height:1.8}
+/* Section box */
+.section-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.section-box h3{font-size:.9rem;font-weight:600;color:var(--blue);margin-bottom:12px}
+.kv-row{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #f0f1f8;font-size:.85rem}
+.kv-row:last-child{border-bottom:none}
+.kv-key{font-weight:500;min-width:160px;color:#444;flex-shrink:0}
+.kv-val{color:#222;font-family:monospace;font-size:.8rem;word-break:break-all}
+.empty-state{text-align:center;padding:40px;color:var(--gray);font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎬 Auditor de Tag VAST</h1>
+    <span>NC Tool — AdOps Suite</span>
+  </div>
+</header>
+<div class="main">
+  <div class="input-section">
+    <h2>Cole sua tag VAST</h2>
+    <textarea id="vast-input" placeholder="Cole aqui a tag VAST XML ou URL do VAST...
+
+Exemplo:
+&lt;VAST version=&quot;3.0&quot;&gt;
+  &lt;Ad id=&quot;1234&quot;&gt;
+    &lt;InLine&gt;...
+  &lt;/Ad&gt;
+&lt;/VAST&gt;"></textarea>
+    <div class="btn-row">
+      <button class="btn" onclick="analyze()">🔍 Analisar</button>
+      <button class="btn btn-secondary" onclick="loadDemo()">Carregar exemplo</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+      <span id="parse-status"></span>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="tabs" id="tabs">
+      <div class="tab active" onclick="switchTab(0)">Resumo</div>
+      <div class="tab" onclick="switchTab(1)">Tracking Events</div>
+      <div class="tab" onclick="switchTab(2)">MediaFiles</div>
+      <div class="tab" onclick="switchTab(3)">Validação</div>
+      <div class="tab" onclick="switchTab(4)">XML Formatado</div>
+    </div>
+
+    <!-- Tab 0: Resumo -->
+    <div class="tab-content active" id="tab-0">
+      <div class="score-section">
+        <div class="score-gauge">
+          <div class="gauge-circle" id="gauge-circle"><span class="gauge-num" id="gauge-num">0</span></div>
+          <div><span class="score-badge" id="score-badge">—</span></div>
+          <div class="issues-summary" id="issues-summary"></div>
+        </div>
+        <div style="flex:1">
+          <div class="info-cards" id="info-cards"></div>
+        </div>
+      </div>
+      <div id="summary-details"></div>
+    </div>
+
+    <!-- Tab 1: Tracking Events -->
+    <div class="tab-content" id="tab-1">
+      <div class="section-box">
+        <h3>Eventos de Tracking</h3>
+        <div class="table-wrap">
+          <table id="tracking-table">
+            <thead><tr><th>Evento</th><th>Tipo</th><th>URL</th><th>Status</th></tr></thead>
+            <tbody id="tracking-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: MediaFiles -->
+    <div class="tab-content" id="tab-2">
+      <div class="section-box">
+        <h3>Arquivos de Mídia</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tipo MIME</th><th>Delivery</th><th>Dimensões</th><th>Bitrate</th><th>Codec</th><th>URL</th><th>Status</th></tr></thead>
+            <tbody id="media-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="section-box" id="click-section" style="display:none">
+        <h3>URLs de Clique</h3>
+        <div id="click-body"></div>
+      </div>
+      <div class="section-box" id="companion-section" style="display:none">
+        <h3>Companion Ads</h3>
+        <div id="companion-body"></div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Validação -->
+    <div class="tab-content" id="tab-3">
+      <div class="section-box">
+        <h3>Verificações Obrigatórias <span style="font-size:.8rem;color:var(--gray)">(60 pts)</span></h3>
+        <div id="req-checks"></div>
+      </div>
+      <div class="section-box">
+        <h3>Verificações Recomendadas <span style="font-size:.8rem;color:var(--gray)">(30 pts)</span></h3>
+        <div id="rec-checks"></div>
+      </div>
+      <div class="section-box">
+        <h3>Boas Práticas <span style="font-size:.8rem;color:var(--gray)">(10 pts)</span></h3>
+        <div id="bp-checks"></div>
+      </div>
+    </div>
+
+    <!-- Tab 4: XML -->
+    <div class="tab-content" id="tab-4">
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button class="btn btn-secondary" onclick="copyReport()">📋 Copiar relatório</button>
+        <button class="btn btn-secondary" onclick="copyXML()">📋 Copiar XML formatado</button>
+      </div>
+      <div class="xml-output" id="xml-output"></div>
+    </div>
+  </div>
+
+  <!-- URL mode -->
+  <div id="url-info-box" style="display:none">
+    <div class="url-info">
+      <h3>🔗 URL VAST detectada</h3>
+      <p>Para analisar a estrutura completa, faça o fetch da URL e cole o XML aqui. URLs VAST geralmente requerem servidor com permissão CORS.</p>
+      <p style="margin-top:8px"><strong>URL:</strong> <code id="detected-url"></code></p>
+      <div style="margin-top:10px"><button class="btn btn-secondary" onclick="copyDetectedUrl()">📋 Copiar URL</button></div>
+      <p style="margin-top:14px;font-weight:600">Como obter o XML via DevTools:</p>
+      <ol class="devtools-steps">
+        <li>Abra o Chrome e pressione <strong>F12</strong> para abrir o DevTools</li>
+        <li>Vá para a aba <strong>Network</strong></li>
+        <li>Cole a URL do VAST em uma nova aba e carregue</li>
+        <li>Na aba Network, clique na requisição do VAST</li>
+        <li>Vá em <strong>Response</strong> e copie o conteúdo XML</li>
+        <li>Cole aqui na textarea e clique em <strong>Analisar</strong></li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<script>
+let vastData = null;
+let rawXml = '';
+
+const DEMO_VAST = `<?xml version="1.0" encoding="UTF-8"?>
+<VAST version="3.0">
+  <Ad id="ad_12345">
+    <InLine>
+      <AdSystem>CM360</AdSystem>
+      <AdTitle>Minha Campanha Video 15s</AdTitle>
+      <Advertiser>Marca Exemplo</Advertiser>
+      <Error><![CDATA[https://ad.doubleclick.net/ddm/trackclk/N1234.5678/B99999999.1234;dc_trk_aid=111;dc_trk_cid=222;ord=[timestamp];dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=]]></Error>
+      <Impression id="imp1"><![CDATA[https://ad.doubleclick.net/ddm/trackimp/N1234.5678/B99999999.1234;dc_trk_aid=111;dc_trk_cid=222;ord=[timestamp];dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;gdpr=\${GDPR};gdpr_consent=\${GDPR_CONSENT_755}]]></Impression>
+      <Creatives>
+        <Creative id="cr_001" sequence="1">
+          <Linear>
+            <Duration>00:00:15</Duration>
+            <TrackingEvents>
+              <Tracking event="start"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/start]]></Tracking>
+              <Tracking event="firstQuartile"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/q1]]></Tracking>
+              <Tracking event="midpoint"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/mid]]></Tracking>
+              <Tracking event="thirdQuartile"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/q3]]></Tracking>
+              <Tracking event="complete"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/complete]]></Tracking>
+              <Tracking event="mute"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/mute]]></Tracking>
+              <Tracking event="unmute"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/unmute]]></Tracking>
+            </TrackingEvents>
+            <VideoClicks>
+              <ClickThrough id="ct1"><![CDATA[https://www.marcaexemplo.com.br/campanha]]></ClickThrough>
+              <ClickTracking id="track1"><![CDATA[https://ad.doubleclick.net/ddm/trackclk/clicktracking]]></ClickTracking>
+            </VideoClicks>
+            <MediaFiles>
+              <MediaFile id="mf1" delivery="progressive" type="video/mp4" width="1920" height="1080" bitrate="2500"><![CDATA[https://cdn.example.com/video_hd.mp4]]></MediaFile>
+              <MediaFile id="mf2" delivery="progressive" type="video/mp4" width="1280" height="720" bitrate="1500"><![CDATA[https://cdn.example.com/video_md.mp4]]></MediaFile>
+              <MediaFile id="mf3" delivery="streaming" type="application/x-mpegURL" width="1920" height="1080" bitrate="0"><![CDATA[https://cdn.example.com/video.m3u8]]></MediaFile>
+            </MediaFiles>
+          </Linear>
+        </Creative>
+      </Creatives>
+    </InLine>
+  </Ad>
+</VAST>`;
+
+function loadDemo() {
+  document.getElementById('vast-input').value = DEMO_VAST;
+  analyze();
+}
+
+function clearAll() {
+  document.getElementById('vast-input').value = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('url-info-box').style.display = 'none';
+  document.getElementById('parse-status').textContent = '';
+  vastData = null; rawXml = '';
+}
+
+function switchTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-content').forEach((t,i)=>t.classList.toggle('active',i===n));
+}
+
+function getText(el) {
+  if (!el) return '';
+  return (el.textContent||'').replace(/<!\[CDATA\[|\]\]>/g,'').trim();
+}
+
+function formatXml(xml) {
+  // Simple XML syntax highlight
+  return xml
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/&lt;(!--[\s\S]*?--)&gt;/g,'<span class="xml-comment">&lt;$1&gt;</span>')
+    .replace(/&lt;(\/?)([A-Za-z][A-Za-z0-9_:-]*)([\s\S]*?)(\/?)?&gt;/g, (m,sl,tag,attrs,sc)=>{
+      const fAttrs = attrs.replace(/([A-Za-z][A-Za-z0-9_:-]*)="([^"]*)"/g,
+        '<span class="xml-attr">$1</span>=<span class="xml-val">"$2"</span>');
+      return `<span class="xml-tag">&lt;${sl}${tag}${fAttrs}${sc||''}&gt;</span>`;
+    });
+}
+
+function analyze() {
+  const raw = document.getElementById('vast-input').value.trim();
+  if (!raw) { setStatus('⚠️ Cole uma tag VAST ou URL primeiro.'); return; }
+
+  rawXml = raw;
+  document.getElementById('url-info-box').style.display = 'none';
+
+  // Check if URL
+  if (/^https?:\/\//i.test(raw) && !/<VAST/i.test(raw)) {
+    document.getElementById('detected-url').textContent = raw;
+    document.getElementById('url-info-box').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    setStatus('🔗 URL VAST detectada');
+    return;
+  }
+
+  // Parse XML
+  let doc;
+  try {
+    const parser = new DOMParser();
+    doc = parser.parseFromString(raw, 'text/xml');
+    const err = doc.querySelector('parsererror');
+    if (err) throw new Error('XML inválido: ' + err.textContent.slice(0,100));
+  } catch(e) {
+    setStatus('❌ Erro ao parsear XML: ' + e.message);
+    return;
+  }
+
+  vastData = parseVAST(doc);
+  renderResults(vastData);
+  document.getElementById('results').style.display = 'block';
+  setStatus(`✅ ${vastData.adType} VAST ${vastData.version} — ${vastData.adCount} anúncio(s)`);
+  switchTab(0);
+}
+
+function parseVAST(doc) {
+  const vast = doc.querySelector('VAST');
+  const version = vast ? (vast.getAttribute('version')||'?') : '?';
+  const ads = doc.querySelectorAll('Ad');
+  const adCount = ads.length;
+
+  let adType = 'Desconhecido';
+  if (doc.querySelector('InLine')) adType = 'InLine';
+  else if (doc.querySelector('Wrapper')) adType = 'Wrapper';
+
+  const adId = ads[0] ? (ads[0].getAttribute('id')||'—') : '—';
+  const adSystem = getText(doc.querySelector('AdSystem'));
+  const adTitle = getText(doc.querySelector('AdTitle'));
+  const advertiser = getText(doc.querySelector('Advertiser'));
+  const errorUrl = getText(doc.querySelector('Error'));
+
+  // Impression
+  const impressions = [...doc.querySelectorAll('Impression')].map(el=>getText(el)).filter(Boolean);
+
+  // Duration
+  const duration = getText(doc.querySelector('Duration'));
+
+  // Tracking events
+  const trackingMap = {};
+  doc.querySelectorAll('Tracking').forEach(el=>{
+    const ev = el.getAttribute('event');
+    const url = getText(el);
+    if (ev) {
+      if (!trackingMap[ev]) trackingMap[ev] = [];
+      trackingMap[ev].push(url);
+    }
+  });
+
+  // MediaFiles
+  const mediaFiles = [...doc.querySelectorAll('MediaFile')].map(el=>({
+    type: el.getAttribute('type')||'',
+    delivery: el.getAttribute('delivery')||'',
+    width: el.getAttribute('width')||'',
+    height: el.getAttribute('height')||'',
+    bitrate: el.getAttribute('bitrate')||'',
+    codec: el.getAttribute('codec')||'',
+    url: getText(el)
+  }));
+
+  // Clicks
+  const clickThrough = getText(doc.querySelector('ClickThrough'));
+  const clickTracking = [...doc.querySelectorAll('ClickTracking')].map(el=>getText(el));
+
+  // Companions
+  const companions = [...doc.querySelectorAll('Companion')].map(el=>({
+    width: el.getAttribute('width')||'',
+    height: el.getAttribute('height')||'',
+    resource: getText(el.querySelector('StaticResource,IFrameResource,HTMLResource')),
+    clickUrl: getText(el.querySelector('CompanionClickThrough'))
+  }));
+
+  // Extensions
+  const extensions = [...doc.querySelectorAll('Extension')].map(el=>({
+    type: el.getAttribute('type')||'custom',
+    content: el.innerHTML.trim().slice(0,120)
+  }));
+
+  // Creative ID
+  const creativeEl = doc.querySelector('Creative');
+  const creativeId = creativeEl ? (creativeEl.getAttribute('id')||'—') : '—';
+
+  // Skip offset
+  const linearEl = doc.querySelector('Linear');
+  const skipOffset = linearEl ? linearEl.getAttribute('skipoffset') : null;
+
+  return {version,adCount,adType,adId,adSystem,adTitle,advertiser,errorUrl,
+    impressions,duration,trackingMap,mediaFiles,clickThrough,clickTracking,
+    companions,extensions,creativeId,skipOffset};
+}
+
+function renderResults(d) {
+  renderScore(d);
+  renderInfoCards(d);
+  renderSummaryDetails(d);
+  renderTracking(d);
+  renderMedia(d);
+  renderValidation(d);
+  renderXml();
+}
+
+function calcScore(d) {
+  let req=0, rec=0, bp=0;
+  const checks = getChecks(d);
+  checks.required.forEach(c=>{ if(c.pass) req+=c.pts||0; });
+  checks.recommended.forEach(c=>{ if(c.pass) rec+=c.pts||0; });
+  checks.bp.forEach(c=>{ if(c.pass) bp+=c.pts||0; });
+  return {score:req+rec+bp, req, rec, bp, checks};
+}
+
+function getChecks(d) {
+  const hasMp4 = d.mediaFiles.some(m=>m.type==='video/mp4');
+  const hasMultiBitrate = d.mediaFiles.length >= 2;
+  const hasProgressive = d.mediaFiles.some(m=>m.delivery==='progressive'||m.delivery==='streaming');
+  const durationValid = /^\d{2}:\d{2}:\d{2}$/.test(d.duration);
+  const durationSecs = durationToSecs(d.duration);
+
+  return {
+    required: [
+      {label:'Versão VAST presente', pass:d.version!=='?', pts:8, desc:`Versão detectada: ${d.version}`},
+      {label:'Elemento <Ad> presente', pass:d.adCount>0, pts:8, desc:`${d.adCount} anúncio(s) encontrado(s)`},
+      {label:'URL de Impressão presente', pass:d.impressions.length>0, pts:10, desc:`${d.impressions.length} URL(s) de impressão`},
+      {label:'MediaFile com entrega válida', pass:hasProgressive, pts:10, desc:'delivery="progressive" ou "streaming"'},
+      {label:'Duration presente e válida', pass:durationValid, pts:8, desc:`Valor: ${d.duration||'—'}`},
+      {label:'ClickThrough URL presente', pass:!!d.clickThrough, pts:8, desc:d.clickThrough?'URL de destino presente':'Ausente'},
+      {label:'Evento "start" presente', pass:!!d.trackingMap['start'], pts:4, desc:'Tracking de início do vídeo'},
+      {label:'Evento "complete" presente', pass:!!d.trackingMap['complete'], pts:4, desc:'Tracking de conclusão do vídeo'},
+    ],
+    recommended: [
+      {label:'Evento "firstQuartile" presente', pass:!!d.trackingMap['firstQuartile'], pts:5, desc:'25% do vídeo'},
+      {label:'Evento "thirdQuartile" presente', pass:!!d.trackingMap['thirdQuartile'], pts:5, desc:'75% do vídeo'},
+      {label:'URL de Error presente', pass:!!d.errorUrl, pts:5, desc:'Para monitoramento de erros de renderização'},
+      {label:'AdTitle presente', pass:!!d.adTitle, pts:5, desc:'Identificação do anúncio'},
+      {label:'Ad ID presente', pass:d.adId!=='—'&&!!d.adId, pts:5, desc:`ID: ${d.adId}`},
+      {label:'MediaFile tipo MP4', pass:hasMp4, pts:5, desc:'Compatibilidade máxima com players'},
+    ],
+    bp: [
+      {label:'Múltiplos bitrates de MediaFile', pass:hasMultiBitrate, pts:3, desc:'Melhora compatibilidade com diferentes conexões'},
+      {label:'VAST versão 3.0 ou superior', pass:parseFloat(d.version)>=3, pts:3, desc:`Versão atual: ${d.version}`},
+      {label:'Duração ≤ 30s ou long-form declarado', pass:durationSecs<=30||durationSecs===0, pts:2, desc:durationSecs>30?`⚠️ ${d.duration} — conteúdo long-form`:'Duração dentro do padrão'},
+      {label:'ClickTracking presente', pass:d.clickTracking.length>0, pts:2, desc:'Rastreamento de cliques além do ClickThrough'},
+    ]
+  };
+}
+
+function durationToSecs(dur) {
+  if (!dur) return 0;
+  const p = dur.split(':');
+  if (p.length!==3) return 0;
+  return parseInt(p[0])*3600+parseInt(p[1])*60+parseInt(p[2]);
+}
+
+function renderScore(d) {
+  const {score, checks} = calcScore(d);
+  const circle = document.getElementById('gauge-circle');
+  const numEl = document.getElementById('gauge-num');
+  const badge = document.getElementById('score-badge');
+  const summary = document.getElementById('issues-summary');
+
+  numEl.textContent = score;
+  const deg = Math.round(score/100*360);
+  let color = '#2e7d32';
+  if (score<50) color='#c62828';
+  else if (score<70) color='#f57f17';
+  else if (score<85) color='#1565c0';
+  circle.style.background = `conic-gradient(${color} ${deg}deg, #d6dbf2 ${deg}deg)`;
+
+  let label='Crítico', cls='badge-critical';
+  if(score>=85){label='Excelente';cls='badge-excellent';}
+  else if(score>=70){label='Bom';cls='badge-good';}
+  else if(score>=50){label='Atenção';cls='badge-warning';}
+  badge.textContent = label; badge.className='score-badge '+cls;
+
+  const crit = [...checks.required].filter(c=>!c.pass).length;
+  const warn = [...checks.recommended].filter(c=>!c.pass).length;
+  const info = [...checks.bp].filter(c=>!c.pass).length;
+  summary.innerHTML = `
+    <span class="issue-pill pill-red">❌ ${crit} crítico(s)</span>
+    <span class="issue-pill pill-yellow">⚠️ ${warn} aviso(s)</span>
+    <span class="issue-pill pill-blue">ℹ️ ${info} info</span>`;
+}
+
+function renderInfoCards(d) {
+  const durationSecs = durationToSecs(d.duration);
+  const cards = [
+    {label:'Versão VAST', value:d.version},
+    {label:'Tipo de Ad', value:d.adType},
+    {label:'Duração', value:d.duration||'—'},
+    {label:'Tracking Events', value:Object.keys(d.trackingMap).length+' tipos'},
+    {label:'MediaFiles', value:d.mediaFiles.length+' arquivo(s)'},
+    {label:'Skippable', value:d.skipOffset?('Sim ('+d.skipOffset+')'):'Não'},
+    {label:'Companion Ads', value:d.companions.length||'0'},
+    {label:'Ad ID', value:d.adId},
+  ];
+  document.getElementById('info-cards').innerHTML = cards.map(c=>
+    `<div class="info-card"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`
+  ).join('');
+}
+
+function renderSummaryDetails(d) {
+  const el = document.getElementById('summary-details');
+  const rows = [
+    ['Sistema de Ad', d.adSystem||'—'],
+    ['Título do Ad', d.adTitle||'—'],
+    ['Anunciante', d.advertiser||'—'],
+    ['Creative ID', d.creativeId],
+    ['Impressões', d.impressions.length>0?d.impressions[0].slice(0,80)+'...':'—'],
+    ['Error URL', d.errorUrl?d.errorUrl.slice(0,80)+'...':'—'],
+    ['ClickThrough', d.clickThrough?d.clickThrough.slice(0,80)+'...':'—'],
+  ];
+  el.innerHTML = `<div class="section-box"><h3>Detalhes do Anúncio</h3>${
+    rows.map(r=>`<div class="kv-row"><span class="kv-key">${r[0]}</span><span class="kv-val">${r[1]}</span></div>`).join('')
+  }</div>`;
+  if (d.extensions.length>0) {
+    el.innerHTML += `<div class="section-box"><h3>Extensions (${d.extensions.length})</h3>${
+      d.extensions.map(e=>`<div class="kv-row"><span class="kv-key">${e.type}</span><span class="kv-val">${e.content}</span></div>`).join('')
+    }</div>`;
+  }
+}
+
+function renderTracking(d) {
+  const ALL_EVENTS = [
+    {name:'impression',type:'Impressão',req:'required'},
+    {name:'start',type:'Vídeo',req:'required'},
+    {name:'firstQuartile',type:'Vídeo',req:'recommended'},
+    {name:'midpoint',type:'Vídeo',req:'recommended'},
+    {name:'thirdQuartile',type:'Vídeo',req:'recommended'},
+    {name:'complete',type:'Vídeo',req:'required'},
+    {name:'mute',type:'Interação',req:'optional'},
+    {name:'unmute',type:'Interação',req:'optional'},
+    {name:'pause',type:'Interação',req:'optional'},
+    {name:'resume',type:'Interação',req:'optional'},
+    {name:'fullscreen',type:'Interação',req:'optional'},
+    {name:'skip',type:'Interação',req:'optional'},
+    {name:'acceptInvitation',type:'Interação',req:'optional'},
+    {name:'close',type:'Interação',req:'optional'},
+    {name:'progress',type:'Vídeo',req:'optional'},
+    {name:'creativeView',type:'Vídeo',req:'optional'},
+  ];
+
+  // Add impression separately
+  const rows = [];
+  if (d.impressions.length>0) {
+    rows.push(`<tr><td>impression</td><td>Impressão</td><td class="url-cell">${d.impressions[0]||'—'}</td><td class="status-ok">✅ Presente</td></tr>`);
+  } else {
+    rows.push(`<tr><td>impression</td><td>Impressão</td><td class="url-cell">—</td><td class="status-miss">❌ Ausente</td></tr>`);
+  }
+
+  ALL_EVENTS.filter(e=>e.name!=='impression').forEach(ev=>{
+    const urls = d.trackingMap[ev.name]||[];
+    const url = urls[0]||'';
+    let status, stClass;
+    if (urls.length>0) { status='✅ Presente'; stClass='status-ok'; }
+    else if (ev.req==='required') { status='❌ Ausente'; stClass='status-miss'; }
+    else if (ev.req==='recommended') { status='⚠️ Recomendado'; stClass='status-opt'; }
+    else { status='— Opcional'; stClass='status-info'; }
+    rows.push(`<tr><td>${ev.name}</td><td>${ev.type}</td><td class="url-cell">${url||'—'}</td><td class="${stClass}">${status}</td></tr>`);
+  });
+
+  // Add click tracking
+  d.clickTracking.forEach((url,i)=>{
+    rows.push(`<tr><td>clickTracking${i>0?` (${i+1})`:''}</td><td>Clique</td><td class="url-cell">${url}</td><td class="status-ok">✅ Presente</td></tr>`);
+  });
+
+  document.getElementById('tracking-body').innerHTML = rows.join('');
+}
+
+function renderMedia(d) {
+  if (d.mediaFiles.length===0) {
+    document.getElementById('media-body').innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum MediaFile encontrado</td></tr>';
+  } else {
+    document.getElementById('media-body').innerHTML = d.mediaFiles.map(m=>{
+      const ok = m.type&&m.delivery&&m.url;
+      return `<tr>
+        <td>${m.type||'—'}</td>
+        <td>${m.delivery||'—'}</td>
+        <td>${m.width&&m.height?m.width+'×'+m.height:'—'}</td>
+        <td>${m.bitrate?m.bitrate+' kbps':'—'}</td>
+        <td>${m.codec||'—'}</td>
+        <td class="url-cell">${m.url||'—'}</td>
+        <td class="${ok?'status-ok':'status-opt'}">${ok?'✅ OK':'⚠️ Incompleto'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (d.clickThrough||d.clickTracking.length>0) {
+    document.getElementById('click-section').style.display='block';
+    document.getElementById('click-body').innerHTML = `
+      ${d.clickThrough?`<div class="kv-row"><span class="kv-key">ClickThrough</span><span class="kv-val">${d.clickThrough}</span></div>`:''}
+      ${d.clickTracking.map((u,i)=>`<div class="kv-row"><span class="kv-key">ClickTracking ${i+1}</span><span class="kv-val">${u}</span></div>`).join('')}
+    `;
+  }
+
+  if (d.companions.length>0) {
+    document.getElementById('companion-section').style.display='block';
+    document.getElementById('companion-body').innerHTML = d.companions.map(c=>`
+      <div class="kv-row"><span class="kv-key">Dimensões</span><span class="kv-val">${c.width}×${c.height}</span></div>
+      <div class="kv-row"><span class="kv-key">Resource</span><span class="kv-val">${c.resource||'—'}</span></div>
+      <div class="kv-row"><span class="kv-key">Click URL</span><span class="kv-val">${c.clickUrl||'—'}</span></div>
+    `).join('<hr style="border:none;border-top:1px solid var(--border);margin:8px 0">');
+  }
+}
+
+function renderValidation(d) {
+  const {checks} = calcScore(d);
+  const renderSection = (items) => items.map(c=>{
+    let icon, cls;
+    if(c.pass){icon='✅';cls='status-ok';}
+    else if(c.pts>=8){icon='❌';cls='status-miss';}
+    else{icon='⚠️';cls='status-opt';}
+    // For bp items that pass or info items
+    if(!c.pass && c.pts<=3){icon='ℹ️';cls='status-info';}
+    return `<div class="check-item">
+      <span class="check-icon">${icon}</span>
+      <div class="check-label">
+        <div class="${cls}">${c.label}</div>
+        <div class="check-desc">${c.desc}</div>
+      </div>
+      <span style="font-size:.78rem;color:var(--gray);flex-shrink:0">${c.pts} pts</span>
+    </div>`;
+  }).join('');
+  document.getElementById('req-checks').innerHTML = renderSection(checks.required);
+  document.getElementById('rec-checks').innerHTML = renderSection(checks.recommended);
+  document.getElementById('bp-checks').innerHTML = renderSection(checks.bp);
+}
+
+function renderXml() {
+  const formatted = formatXml(rawXml);
+  document.getElementById('xml-output').innerHTML = formatted;
+}
+
+function setStatus(msg) { document.getElementById('parse-status').textContent = msg; }
+
+function copyDetectedUrl() {
+  const url = document.getElementById('detected-url').textContent;
+  navigator.clipboard.writeText(url).catch(()=>{});
+}
+
+function copyXML() {
+  navigator.clipboard.writeText(rawXml).catch(()=>{});
+}
+
+function copyReport() {
+  if (!vastData) return;
+  const d = vastData;
+  const {score, checks} = calcScore(d);
+  let report = `RELATÓRIO DE AUDITORIA VAST\n${'='.repeat(40)}\n`;
+  report += `Score: ${score}/100\n`;
+  report += `Versão: ${d.version} | Tipo: ${d.adType} | Duração: ${d.duration||'—'}\n`;
+  report += `Ad: ${d.adTitle||d.adId} | Sistema: ${d.adSystem||'—'}\n\n`;
+  report += `VERIFICAÇÕES OBRIGATÓRIAS\n${'-'.repeat(30)}\n`;
+  checks.required.forEach(c=>report+=`${c.pass?'✅':'❌'} ${c.label} — ${c.desc}\n`);
+  report += `\nVERIFICAÇÕES RECOMENDADAS\n${'-'.repeat(30)}\n`;
+  checks.recommended.forEach(c=>report+=`${c.pass?'✅':'⚠️'} ${c.label} — ${c.desc}\n`);
+  report += `\nBOAS PRÁTICAS\n${'-'.repeat(30)}\n`;
+  checks.bp.forEach(c=>report+=`${c.pass?'✅':'ℹ️'} ${c.label} — ${c.desc}\n`);
+  report += `\nMediaFiles: ${d.mediaFiles.length}\n`;
+  report += `Tracking Events: ${Object.keys(d.trackingMap).join(', ')||'—'}\n`;
+  report += `\nGerado por NC Tool — Auditor de Tag VAST`;
+  navigator.clipboard.writeText(report).catch(()=>{});
+  alert('Relatório copiado para a área de transferência!');
+}
+</script>
+</body>
+</html>

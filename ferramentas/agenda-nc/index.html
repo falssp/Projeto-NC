@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agenda de NC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --mono:'JetBrains Mono',monospace;--shadow:0 1px 4px rgba(0,0,0,.08);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.btn.danger{color:var(--err);border-color:var(--err-bg);background:var(--err-bg);}
+.page{max-width:1100px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+input,select,textarea{padding:7px 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+/* Add form */
+.add-grid{display:grid;grid-template-columns:1fr 1fr 120px 120px 100px auto;gap:8px;align-items:end;margin-bottom:14px;}
+/* Platform colors */
+.plat-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.plat-google{background:#fef3c7;color:#92400e;}
+.plat-meta{background:#ede9fe;color:#5b21b6;}
+.plat-tiktok{background:#fce7f3;color:#9d174d;}
+.plat-linkedin{background:#dbeafe;color:#1e40af;}
+.plat-outros{background:#f1f5f9;color:#475569;}
+/* Status */
+.status-ativo{color:var(--ok);}
+.status-futuro{color:var(--warn);}
+.status-encerrado{color:var(--faint);}
+/* Table */
+.agenda-table{width:100%;border-collapse:collapse;font-size:12px;}
+.agenda-table th{text-align:left;padding:7px 10px;border-bottom:2px solid var(--border);font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+.agenda-table td{padding:7px 10px;border-bottom:1px solid var(--divider);vertical-align:middle;}
+.agenda-table tr:hover td{background:var(--accent-soft);}
+.nc-mono{font-family:var(--mono);font-size:11px;word-break:break-all;}
+/* Timeline bar */
+.timeline-bar{height:6px;border-radius:3px;min-width:4px;}
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;align-items:center;justify-content:center;}
+.modal-box{background:var(--card);border-radius:14px;width:min(560px,96vw);padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.2);}
+/* Filters */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.fc{padding:3px 10px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--card);}
+.fc.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:700px){.add-grid{grid-template-columns:1fr 1fr;}.agenda-table th:nth-child(5),.agenda-table td:nth-child(5){display:none;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📅</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Agenda de NC</div>
+      <div style="font-size:11px;color:var(--faint)">Calendário de lançamento de campanhas por NC</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px;flex-wrap:wrap">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="openAddModal()">+ Adicionar</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Summary KPIs -->
+  <div id="kpiRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"></div>
+
+  <!-- Filters -->
+  <div class="filter-row" id="filterRow">
+    <span style="font-size:11px;font-weight:700;color:var(--faint)">Status:</span>
+    <span class="fc active" onclick="setFilter('status','all')">Todos</span>
+    <span class="fc" onclick="setFilter('status','ativo')">🟢 Ativo</span>
+    <span class="fc" onclick="setFilter('status','futuro')">🟡 Futuro</span>
+    <span class="fc" onclick="setFilter('status','encerrado')">⚫ Encerrado</span>
+    <span style="font-size:11px;font-weight:700;color:var(--faint);margin-left:8px">Plataforma:</span>
+    <span class="fc active" onclick="setFilter('plat','all')">Todas</span>
+    <span class="fc" onclick="setFilter('plat','Google Ads')">Google</span>
+    <span class="fc" onclick="setFilter('plat','Meta')">Meta</span>
+    <span class="fc" onclick="setFilter('plat','TikTok')">TikTok</span>
+    <span class="fc" onclick="setFilter('plat','LinkedIn')">LinkedIn</span>
+    <span class="fc" onclick="setFilter('plat','Outros')">Outros</span>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="overflow-x:auto">
+    <table class="agenda-table" id="agendaTable">
+      <thead>
+        <tr>
+          <th style="width:36px">#</th>
+          <th>NC / Campanha</th>
+          <th>Plataforma</th>
+          <th>Início</th>
+          <th>Fim</th>
+          <th>Status</th>
+          <th>Timeline</th>
+          <th>Notas</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody id="agendaBody"></tbody>
+    </table>
+    <div id="agendaEmpty" style="text-align:center;padding:40px;color:var(--faint);display:none">
+      <div style="font-size:36px;margin-bottom:10px">📅</div>
+      <div>Nenhuma NC na agenda ainda.</div>
+      <button class="btn primary" style="margin-top:12px" onclick="openAddModal()">+ Adicionar primeira</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:800" id="modalTitle">+ Adicionar NC</div>
+      <button onclick="closeAddModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--faint)">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div style="grid-column:1/-1">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">NC / Nome da campanha *</label>
+        <input id="fNc" type="text" placeholder="ex: dove_cabelos_hidratacao_br_awareness_youtube" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Plataforma</label>
+        <select id="fPlat" style="width:100%">
+          <option>Google Ads</option>
+          <option>Meta</option>
+          <option>TikTok</option>
+          <option>LinkedIn</option>
+          <option>Outros</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Cliente / Projeto</label>
+        <input id="fClient" type="text" placeholder="ex: Dove BR" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Data de início *</label>
+        <input id="fStart" type="date" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Data de fim</label>
+        <input id="fEnd" type="date" style="width:100%">
+      </div>
+      <div style="grid-column:1/-1">
+        <label style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px">Notas</label>
+        <textarea id="fNotes" rows="2" placeholder="Observações, links, etc." style="width:100%;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn secondary" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveEntry()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY='agenda_nc_v1';
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('agenda_nc_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('agenda_nc_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Data
+function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}
+function save(data){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch(e){}}
+
+let _data=load();
+let _editId=null;
+let _filterStatus='all';
+let _filterPlat='all';
+
+function getStatus(entry){
+  const now=new Date();now.setHours(0,0,0,0);
+  const start=entry.start?new Date(entry.start+' 00:00'):null;
+  const end=entry.end?new Date(entry.end+' 00:00'):null;
+  if(!start) return 'futuro';
+  if(start>now) return 'futuro';
+  if(end&&end<now) return 'encerrado';
+  return 'ativo';
+}
+
+function platClass(plat){
+  if(plat==='Google Ads') return 'plat-google';
+  if(plat==='Meta') return 'plat-meta';
+  if(plat==='TikTok') return 'plat-tiktok';
+  if(plat==='LinkedIn') return 'plat-linkedin';
+  return 'plat-outros';
+}
+
+function platEmoji(plat){
+  if(plat==='Google Ads') return '🔵';
+  if(plat==='Meta') return '🟣';
+  if(plat==='TikTok') return '🎵';
+  if(plat==='LinkedIn') return '🔷';
+  return '⚙️';
+}
+
+function durationDays(start,end){
+  if(!start) return null;
+  const s=new Date(start+' 00:00');
+  const e=end?new Date(end+' 00:00'):new Date();
+  return Math.max(0,Math.round((e-s)/86400000));
+}
+
+function timelineBar(entry){
+  const now=new Date();now.setHours(0,0,0,0);
+  if(!entry.start) return '';
+  const start=new Date(entry.start+' 00:00');
+  const end=entry.end?new Date(entry.end+' 00:00'):null;
+  const st=getStatus(entry);
+  const color=st==='ativo'?'var(--ok)':st==='futuro'?'var(--warn)':'var(--faint)';
+  if(!end){
+    return `<div class="timeline-bar" style="width:60px;background:${color};opacity:.7"></div>`;
+  }
+  const total=Math.max(1,(end-start)/86400000);
+  const elapsed=Math.min(total,Math.max(0,(now-start)/86400000));
+  const pct=Math.round((elapsed/total)*100);
+  return `<div style="width:80px;height:6px;border-radius:3px;background:var(--divider);overflow:hidden" title="${pct}% (${Math.round(elapsed)}d de ${Math.round(total)}d)"><div class="timeline-bar" style="width:${pct}%;background:${color}"></div></div>`;
+}
+
+function render(){
+  let filtered=_data.filter(e=>{
+    const st=getStatus(e);
+    if(_filterStatus!=='all'&&st!==_filterStatus) return false;
+    if(_filterPlat!=='all'&&e.plat!==_filterPlat) return false;
+    return true;
+  }).sort((a,b)=>{ // sort: active first, then future, then ended; within same, by start date
+    const order={ativo:0,futuro:1,encerrado:2};
+    const sa=order[getStatus(a)]??1,sb=order[getStatus(b)]??1;
+    if(sa!==sb) return sa-sb;
+    return (a.start||'').localeCompare(b.start||'');
+  });
+
+  const body=document.getElementById('agendaBody');
+  const empty=document.getElementById('agendaEmpty');
+  if(!filtered.length){body.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+
+  body.innerHTML=filtered.map((e,i)=>{
+    const st=getStatus(e);
+    const days=durationDays(e.start,e.end);
+    return `<tr>
+      <td style="color:var(--faint);font-size:11px">${i+1}</td>
+      <td>
+        <div class="nc-mono" onclick="navigator.clipboard.writeText('${esc(e.nc.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado')).catch(()=>{})" style="cursor:pointer" title="Clique para copiar">${esc(e.nc.length>60?e.nc.slice(0,58)+'…':e.nc)}</div>
+        ${e.client?`<div style="font-size:10px;color:var(--faint);margin-top:2px">${esc(e.client)}</div>`:''}
+      </td>
+      <td><span class="plat-badge ${platClass(e.plat)}">${platEmoji(e.plat)} ${esc(e.plat)}</span></td>
+      <td style="font-size:11px;white-space:nowrap">${e.start||'—'}</td>
+      <td style="font-size:11px;white-space:nowrap">${e.end||'em aberto'}</td>
+      <td><span class="status-${st}" style="font-size:11px;font-weight:600">${st==='ativo'?'🟢 Ativo':st==='futuro'?'🟡 Futuro':'⚫ Encerrado'}</span>${days!==null?`<div style="font-size:10px;color:var(--faint)">${days}d</div>`:''}</td>
+      <td>${timelineBar(e)}</td>
+      <td style="font-size:11px;color:var(--faint);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(e.notes||'')}">${esc(e.notes||'')}</td>
+      <td style="display:flex;gap:4px;white-space:nowrap">
+        <button class="btn" style="height:24px;padding:0 7px;font-size:11px" onclick="editEntry('${e.id}')">✏️</button>
+        <button class="btn danger" style="height:24px;padding:0 7px;font-size:11px" onclick="deleteEntry('${e.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // KPI
+  const total=_data.length;
+  const ativos=_data.filter(e=>getStatus(e)==='ativo').length;
+  const futuros=_data.filter(e=>getStatus(e)==='futuro').length;
+  const encerrados=_data.filter(e=>getStatus(e)==='encerrado').length;
+  const platMap={};_data.forEach(e=>{platMap[e.plat]=(platMap[e.plat]||0)+1;});
+  const topPlat=Object.entries(platMap).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('kpiRow').innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px"><div style="font-size:22px;font-weight:800">${total}</div><div style="color:var(--faint)">total</div></div>
+    <div style="background:var(--ok-bg);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:10px 14px;font-size:12px"><div style="font-size:22px;font-weight:800;color:var(--ok)">${ativos}</div><div style="color:var(--faint)">ativos</div></div>
+    <div style="background:var(--warn-bg);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:10px 14px;font-size:12px"><div style="font-size:22px;font-weight:800;color:var(--warn)">${futuros}</div><div style="color:var(--faint)">futuros</div></div>
+    <div style="background:var(--divider);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px"><div style="font-size:22px;font-weight:800;color:var(--faint)">${encerrados}</div><div style="color:var(--faint)">encerrados</div></div>
+    ${topPlat?`<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px"><div style="font-size:14px;font-weight:800">${platEmoji(topPlat[0])} ${topPlat[0]}</div><div style="color:var(--faint)">${topPlat[1]} NC${topPlat[1]!==1?'s':''}</div></div>`:''}
+  `;
+}
+
+function setFilter(type,val){
+  if(type==='status') _filterStatus=val;
+  if(type==='plat') _filterPlat=val;
+  // Update chip styles
+  document.querySelectorAll('.fc').forEach(el=>{
+    const cb=el.getAttribute('onclick')||'';
+    if(cb.includes(`'status',`)) el.classList.toggle('active',cb.includes(`'${_filterStatus}'`));
+    if(cb.includes(`'plat',`)) el.classList.toggle('active',cb.includes(`'${_filterPlat}'`));
+  });
+  render();
+}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function openAddModal(){
+  _editId=null;
+  document.getElementById('modalTitle').textContent='+ Adicionar NC';
+  document.getElementById('fNc').value='';
+  document.getElementById('fPlat').value='Google Ads';
+  document.getElementById('fClient').value='';
+  document.getElementById('fStart').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fEnd').value='';
+  document.getElementById('fNotes').value='';
+  document.getElementById('addModal').style.display='flex';
+  document.body.style.overflow='hidden';
+  setTimeout(()=>document.getElementById('fNc').focus(),50);
+}
+function closeAddModal(){
+  document.getElementById('addModal').style.display='none';
+  document.body.style.overflow='';
+}
+function editEntry(id){
+  const e=_data.find(x=>x.id===id); if(!e) return;
+  _editId=id;
+  document.getElementById('modalTitle').textContent='✏️ Editar NC';
+  document.getElementById('fNc').value=e.nc||'';
+  document.getElementById('fPlat').value=e.plat||'Google Ads';
+  document.getElementById('fClient').value=e.client||'';
+  document.getElementById('fStart').value=e.start||'';
+  document.getElementById('fEnd').value=e.end||'';
+  document.getElementById('fNotes').value=e.notes||'';
+  document.getElementById('addModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function saveEntry(){
+  const nc=document.getElementById('fNc').value.trim();
+  if(!nc){showToast('NC é obrigatória');return;}
+  const entry={
+    id:_editId||uid(),
+    nc,
+    plat:document.getElementById('fPlat').value,
+    client:document.getElementById('fClient').value.trim(),
+    start:document.getElementById('fStart').value,
+    end:document.getElementById('fEnd').value,
+    notes:document.getElementById('fNotes').value.trim(),
+    createdAt:_editId?(_data.find(x=>x.id===_editId)?.createdAt||Date.now()):Date.now(),
+  };
+  if(_editId){
+    const idx=_data.findIndex(x=>x.id===_editId);
+    if(idx>=0) _data[idx]=entry;
+  } else { _data.push(entry); }
+  save(_data);
+  closeAddModal();
+  render();
+  showToast(_editId?'✅ Atualizado':'✅ NC adicionada à agenda');
+}
+function deleteEntry(id){
+  const e=_data.find(x=>x.id===id); if(!e) return;
+  if(!confirm(`Remover "${e.nc.slice(0,40)}…" da agenda?`)) return;
+  _data=_data.filter(x=>x.id!==id);
+  save(_data);
+  render();
+  showToast('🗑 Removido');
+}
+
+function exportCSV(){
+  if(!_data.length){showToast('Agenda vazia');return;}
+  const rows=[['nc','plataforma','cliente','inicio','fim','status','duracao_dias','notas']];
+  _data.forEach(e=>rows.push([e.nc,e.plat,e.client,e.start,e.end,getStatus(e),durationDays(e.start,e.end)??'',e.notes]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='agenda_nc.csv';a.click();
+  showToast(`⬇ ${rows.length-1} entradas exportadas`);
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeAddModal();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de ROAS e Break-even</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--white:#fff;--red:#d32f2f;--yellow:#f57c00;--green:#2e7d32;--gray:#607d8b}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:#1a1a2e;min-height:100vh}
+header{background:var(--blue);color:#fff;padding:18px 32px}
+header h1{font-size:1.25rem;font-weight:700}
+header .subtitle{font-size:.8rem;opacity:.7;margin-top:2px}
+.main{padding:28px 32px;min-width:0}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:28px}
+.tab{padding:10px 20px;border:none;background:transparent;font-family:inherit;font-size:.88rem;font-weight:600;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;border-radius:6px 6px 0 0}
+.tab:hover{background:var(--hl);color:var(--accent)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--hl)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:22px}
+.panel-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1.5px solid var(--border)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--gray);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.field input,.field select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--white)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+.field .hint{font-size:.74rem;color:var(--gray);margin-top:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.kpi-label{font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi-value{font-size:1.35rem;font-weight:700}
+.kpi-value.green{color:var(--green)}
+.kpi-value.red{color:var(--red)}
+.kpi-value.yellow{color:var(--yellow)}
+.kpi-value.accent{color:var(--accent)}
+.kpi-sub{font-size:.74rem;color:var(--gray);margin-top:2px}
+.result-box{border-radius:12px;padding:16px 20px;margin-bottom:14px}
+.result-box.green{background:#e8f5e9;border:1.5px solid #a5d6a7}
+.result-box.red{background:#ffebee;border:1.5px solid #ef9a9a}
+.result-box.yellow{background:#fff8e1;border:1.5px solid #ffe082}
+.result-box.blue{background:var(--hl);border:1.5px solid var(--border)}
+.result-box .title{font-size:.88rem;font-weight:700;margin-bottom:6px}
+.result-box .body{font-size:.82rem;line-height:1.6}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.scenario-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;font-size:.82rem}
+.scenario-row.header{font-weight:700;color:var(--accent);font-size:.75rem;text-transform:uppercase}
+.scenario-cell{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;text-align:center}
+.scenario-cell.highlight{background:var(--hl);border-color:var(--accent);font-weight:700;color:var(--accent)}
+.scenario-cell.green{background:#e8f5e9;border-color:#a5d6a7;color:var(--green);font-weight:700}
+.scenario-cell.red{background:#ffebee;border-color:#ef9a9a;color:var(--red)}
+.chart-wrap{padding:12px 0}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:.8rem}
+.bar-label{min-width:80px;text-align:right;color:var(--gray);font-size:.75rem}
+.bar-bg{flex:1;height:22px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
+.bar-fill span{color:#fff;font-size:.72rem;font-weight:700}
+.bar-val{min-width:60px;font-weight:600;font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>💰 Calculadora de ROAS e Break-even</h1>
+  <div class="subtitle">Calcule ROAS mínimo, break-even e lucratividade de campanhas</div>
+</header>
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab(0)">ROAS & Break-even</button>
+    <button class="tab" onclick="switchTab(1)">Simulador de Cenários</button>
+    <button class="tab" onclick="switchTab(2)">Calculadora de CPA Máximo</button>
+  </div>
+
+  <!-- Tab 0: ROAS & Break-even -->
+  <div class="tab-panel active" id="panel0">
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">Dados da Campanha</div>
+          <div class="field">
+            <label>Ticket Médio (R$)</label>
+            <input type="number" id="ticket" value="150" oninput="calcROAS()">
+            <div class="hint">Valor médio por pedido/conversão</div>
+          </div>
+          <div class="field">
+            <label>Margem de Lucro Bruta (%)</label>
+            <input type="number" id="margin" value="40" min="1" max="100" oninput="calcROAS()">
+            <div class="hint">Ex: produto custa R$90, vende R$150 → margem 40%</div>
+          </div>
+          <div class="field">
+            <label>Custo Fixo por Pedido (R$)</label>
+            <input type="number" id="fixedCost" value="15" min="0" oninput="calcROAS()">
+            <div class="hint">Frete, embalagem, atendimento, etc.</div>
+          </div>
+          <div class="field">
+            <label>Taxa de Plataforma / Marketplace (%)</label>
+            <input type="number" id="platformFee" value="8" min="0" max="50" oninput="calcROAS()">
+            <div class="hint">Taxa da plataforma de e-commerce ou marketplace</div>
+          </div>
+          <div class="divider"></div>
+          <div class="field">
+            <label>Budget de Mídia (R$)</label>
+            <input type="number" id="mediaBudget" value="5000" oninput="calcROAS()">
+          </div>
+          <div class="field">
+            <label>Receita Esperada/Realizada (R$)</label>
+            <input type="number" id="actualRevenue" value="18000" oninput="calcROAS()">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-title">Resultados</div>
+          <div id="roasResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 1: Cenários -->
+  <div class="tab-panel" id="panel1">
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">Parâmetros Base</div>
+          <div class="field">
+            <label>Ticket Médio (R$)</label>
+            <input type="number" id="s_ticket" value="150" oninput="calcScenarios()">
+          </div>
+          <div class="field">
+            <label>Margem Bruta (%)</label>
+            <input type="number" id="s_margin" value="40" oninput="calcScenarios()">
+          </div>
+          <div class="field">
+            <label>Custo Fixo por Pedido (R$)</label>
+            <input type="number" id="s_fixed" value="15" oninput="calcScenarios()">
+          </div>
+          <div class="field">
+            <label>Taxa Plataforma (%)</label>
+            <input type="number" id="s_fee" value="8" oninput="calcScenarios()">
+          </div>
+          <div class="field">
+            <label>Budget de Mídia (R$)</label>
+            <input type="number" id="s_budget" value="5000" oninput="calcScenarios()">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-title">Cenários de ROAS</div>
+          <div id="scenariosResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: CPA Máximo -->
+  <div class="tab-panel" id="panel2">
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">Dados de Conversão</div>
+          <div class="field">
+            <label>Ticket Médio (R$)</label>
+            <input type="number" id="c_ticket" value="150" oninput="calcCPA()">
+          </div>
+          <div class="field">
+            <label>Margem Bruta (%)</label>
+            <input type="number" id="c_margin" value="40" oninput="calcCPA()">
+          </div>
+          <div class="field">
+            <label>Custo Fixo por Pedido (R$)</label>
+            <input type="number" id="c_fixed" value="15" oninput="calcCPA()">
+          </div>
+          <div class="field">
+            <label>Taxa Plataforma (%)</label>
+            <input type="number" id="c_fee" value="8" oninput="calcCPA()">
+          </div>
+          <div class="field">
+            <label>% da Margem para Mídia (meta)</label>
+            <input type="number" id="c_pct" value="30" min="1" max="100" oninput="calcCPA()">
+            <div class="hint">Quanto da margem líquida pode ser gasto em mídia</div>
+          </div>
+          <div class="divider"></div>
+          <div class="field">
+            <label>CPA Atual (R$) — para comparação</label>
+            <input type="number" id="c_actual_cpa" value="0" oninput="calcCPA()">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-title">CPA Máximo</div>
+          <div id="cpaResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(i) {
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.tab-panel').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+
+function getN(id,def=0){return parseFloat(document.getElementById(id)?.value)||def;}
+function fmtBRL(n){return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtPct(n){return n.toFixed(2)+'%';}
+
+function calcNetMargin(ticket,marginPct,fixedCost,feePct){
+  const grossProfit = ticket*(marginPct/100);
+  const platformCost = ticket*(feePct/100);
+  return grossProfit - fixedCost - platformCost;
+}
+
+function calcROAS() {
+  const ticket = getN('ticket',150);
+  const margin = getN('margin',40);
+  const fixed = getN('fixedCost',15);
+  const fee = getN('platformFee',8);
+  const budget = getN('mediaBudget',5000);
+  const revenue = getN('actualRevenue',18000);
+
+  const netPerOrder = calcNetMargin(ticket, margin, fixed, fee);
+  const breakevenROAS = ticket > 0 && netPerOrder > 0 ? ticket / netPerOrder : 0;
+  const targetROAS = breakevenROAS * 1.3; // 30% profit above breakeven
+  const actualROAS = budget > 0 ? revenue / budget : 0;
+  const profit = budget > 0 && revenue > 0 ? (revenue / ticket * netPerOrder) - budget : 0;
+  const profitMarginPct = revenue > 0 ? (profit / revenue * 100) : 0;
+  const orders = ticket > 0 ? Math.round(revenue / ticket) : 0;
+
+  const statusROAS = actualROAS >= targetROAS ? 'green' : actualROAS >= breakevenROAS ? 'yellow' : 'red';
+  const statusLabel = actualROAS >= targetROAS ? '✅ Lucrativo' : actualROAS >= breakevenROAS ? '⚠️ No limite' : '🔴 Prejuízo';
+
+  document.getElementById('roasResults').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">ROAS Break-even</div><div class="kpi-value accent">${breakevenROAS.toFixed(2)}x</div><div class="kpi-sub">mínimo para não ter prejuízo</div></div>
+      <div class="kpi"><div class="kpi-label">ROAS Alvo (+30%)</div><div class="kpi-value accent">${targetROAS.toFixed(2)}x</div><div class="kpi-sub">para 30% de margem líquida</div></div>
+      <div class="kpi"><div class="kpi-label">ROAS Atual</div><div class="kpi-value ${statusROAS}">${actualROAS.toFixed(2)}x</div><div class="kpi-sub">${statusLabel}</div></div>
+      <div class="kpi"><div class="kpi-label">Lucro / Prejuízo</div><div class="kpi-value ${profit>=0?'green':'red'}">${fmtBRL(profit)}</div><div class="kpi-sub">${fmtPct(profitMarginPct)} da receita</div></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Margem Líq./Pedido</div><div class="kpi-value accent">${fmtBRL(netPerOrder)}</div><div class="kpi-sub">de ${fmtBRL(ticket)} ticket médio</div></div>
+      <div class="kpi"><div class="kpi-label">Pedidos Estimados</div><div class="kpi-value accent">${orders.toLocaleString('pt-BR')}</div><div class="kpi-sub">a ${fmtBRL(ticket)}/pedido</div></div>
+    </div>
+    <div class="result-box ${profit>=0?'green':'red'}">
+      <div class="title">${profit>=0?'💰 Campanha Lucrativa':'⚠️ Campanha no Prejuízo'}</div>
+      <div class="body">
+        Com ROAS de ${actualROAS.toFixed(2)}x e break-even em ${breakevenROAS.toFixed(2)}x, a campanha ${profit>=0?'está gerando lucro de '+fmtBRL(profit):'está no prejuízo de '+fmtBRL(Math.abs(profit))}.
+        ${actualROAS < breakevenROAS ? ` Para atingir break-even, a receita precisa ser de pelo menos ${fmtBRL(budget*breakevenROAS)}.` : ''}
+      </div>
+    </div>
+    <div class="result-box blue">
+      <div class="title">📊 Composição de custos por pedido</div>
+      <div class="chart-wrap">
+        ${[
+          {label:'Custo dos produtos',val:ticket*(1-margin/100),pct:(1-margin/100)*100,color:'#c62828'},
+          {label:'Taxa plataforma',val:ticket*(fee/100),pct:fee,color:'#f57c00'},
+          {label:'Custo fixo',val:fixed,pct:fixed/ticket*100,color:'#ff8f00'},
+          {label:'Margem líquida',val:netPerOrder,pct:netPerOrder/ticket*100,color:'#2e7d32'},
+        ].map(r=>`<div class="bar-row">
+          <span class="bar-label">${r.label}</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.max(0,Math.min(100,r.pct))}%;background:${r.color}"><span>${r.pct.toFixed(0)}%</span></div></div>
+          <span class="bar-val">${fmtBRL(r.val)}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function calcScenarios() {
+  const ticket = getN('s_ticket',150);
+  const margin = getN('s_margin',40);
+  const fixed = getN('s_fixed',15);
+  const fee = getN('s_fee',8);
+  const budget = getN('s_budget',5000);
+  const net = calcNetMargin(ticket,margin,fixed,fee);
+  const be = ticket>0&&net>0?ticket/net:0;
+
+  const scenarios = [1.0,1.5,2.0,2.5,3.0,4.0,5.0].map(mult=>{
+    const roas = be * mult;
+    const revenue = budget * roas;
+    const orders = ticket>0?Math.round(revenue/ticket):0;
+    const profit = orders*net - budget;
+    const roi = budget>0?profit/budget*100:0;
+    const type = mult===1?'be':mult<1.5?'below':'above';
+    return {roas,revenue,orders,profit,roi,mult,type};
+  });
+
+  document.getElementById('scenariosResults').innerHTML = `
+    <div class="result-box blue" style="margin-bottom:16px">
+      <div class="title">Break-even ROAS: <strong>${be.toFixed(2)}x</strong></div>
+      <div class="body">Margem líquida: ${fmtBRL(net)}/pedido (${(net/ticket*100).toFixed(1)}% do ticket)</div>
+    </div>
+    <div class="scenario-row header"><div>ROAS</div><div>Receita</div><div>Lucro</div><div>ROI</div></div>
+    ${scenarios.map(s=>`<div class="scenario-row">
+      <div class="scenario-cell ${s.mult===1?'highlight':s.profit>0?'green':'red'}">${s.roas.toFixed(2)}x ${s.mult===1?'(BE)':s.mult===1.5?'':s.mult===2?'':s.mult===3?'(meta)':''}</div>
+      <div class="scenario-cell">${fmtBRL(s.revenue)}</div>
+      <div class="scenario-cell ${s.profit>0?'green':s.profit===0?'':' red'}">${fmtBRL(s.profit)}</div>
+      <div class="scenario-cell ${s.roi>0?'green':'red'}">${s.roi.toFixed(0)}%</div>
+    </div>`).join('')}`;
+}
+
+function calcCPA() {
+  const ticket = getN('c_ticket',150);
+  const margin = getN('c_margin',40);
+  const fixed = getN('c_fixed',15);
+  const fee = getN('c_fee',8);
+  const pct = getN('c_pct',30);
+  const actualCPA = getN('c_actual_cpa',0);
+
+  const net = calcNetMargin(ticket,margin,fixed,fee);
+  const maxCPA = net * (pct/100);
+  const breakevenCPA = net;
+  const status = actualCPA>0 ? (actualCPA<=maxCPA?'green':actualCPA<=breakevenCPA?'yellow':'red') : null;
+
+  document.getElementById('cpaResults').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">CPA Máximo (${pct}% margem)</div><div class="kpi-value accent">${fmtBRL(maxCPA)}</div><div class="kpi-sub">mantendo lucro</div></div>
+      <div class="kpi"><div class="kpi-label">CPA Break-even</div><div class="kpi-value accent">${fmtBRL(breakevenCPA)}</div><div class="kpi-sub">limite absoluto</div></div>
+      ${actualCPA>0?`<div class="kpi"><div class="kpi-label">CPA Atual</div><div class="kpi-value ${status}">${fmtBRL(actualCPA)}</div><div class="kpi-sub">${status==='green'?'✅ Dentro do alvo':status==='yellow'?'⚠️ Atenção':'🔴 Acima do limite'}</div></div>`:''}
+      <div class="kpi"><div class="kpi-label">Margem Líq./Pedido</div><div class="kpi-value accent">${fmtBRL(net)}</div><div class="kpi-sub">${(net/ticket*100).toFixed(1)}% do ticket</div></div>
+    </div>
+    <div class="result-box blue">
+      <div class="title">📊 Intervalos de CPA</div>
+      <div class="body">
+        🟢 <strong>Ótimo:</strong> CPA ≤ ${fmtBRL(maxCPA)} (${pct}% da margem para mídia)<br>
+        🟡 <strong>Atenção:</strong> ${fmtBRL(maxCPA)} &lt; CPA ≤ ${fmtBRL(breakevenCPA)}<br>
+        🔴 <strong>Prejuízo:</strong> CPA &gt; ${fmtBRL(breakevenCPA)}
+      </div>
+    </div>
+    ${actualCPA>0&&status==='red'?`<div class="result-box red"><div class="title">⚠️ CPA acima do break-even</div><div class="body">O CPA atual de ${fmtBRL(actualCPA)} excede o break-even de ${fmtBRL(breakevenCPA)}. Cada conversão gera prejuízo de ${fmtBRL(actualCPA-breakevenCPA)}. Reduza lances ou revise a segmentação.</div></div>`:''}
+    <div class="result-box blue">
+      <div class="title">📈 Meta de bidding por plataforma</div>
+      <div class="body">
+        <strong>Google Ads (tCPA):</strong> R$ ${(maxCPA*0.95).toLocaleString('pt-BR',{maximumFractionDigits:2})}<br>
+        <strong>Meta (Cost Cap):</strong> R$ ${(maxCPA*0.90).toLocaleString('pt-BR',{maximumFractionDigits:2})}<br>
+        <em style="font-size:.78rem;color:var(--gray)">Usar 90-95% do CPA máximo como meta inicial para dar margem ao algoritmo</em>
+      </div>
+    </div>`;
+}
+
+calcROAS();
+calcScenarios();
+calcCPA();
+</script>
+</body>
+</html>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Tag Floodlight em Lote</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.3rem;font-weight:700}
+header span{font-size:.85rem;opacity:.7;margin-left:auto}
+.main{min-width:0;padding:24px 32px;display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:20px}
+.card h2{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e8ecfd}
+label{display:block;font-size:.8rem;font-weight:600;color:#444;margin-bottom:4px;margin-top:12px}
+label:first-of-type{margin-top:0}
+input[type=text],input[type=number],select{width:100%;padding:8px 10px;border:1px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.85rem;background:#fff;color:#1a1a2e;outline:none;transition:border .2s}
+input:focus,select:focus{border-color:#1F36C7;box-shadow:0 0 0 3px #e8ecfd}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.checkbox-row input{width:auto}
+.checkbox-row label{margin:0;font-size:.85rem;font-weight:500;color:#333}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:#1F36C7;color:#fff}
+.btn-primary:hover{background:#1a2eaa}
+.btn-secondary{background:#e8ecfd;color:#1a237e}
+.btn-secondary:hover{background:#d6dbf2}
+.btn-danger{background:#fee;color:#c0392b;border:1px solid #fcc}
+.btn-danger:hover{background:#fdd}
+.btn-sm{padding:5px 12px;font-size:.78rem}
+.btn-block{width:100%;justify-content:center;margin-top:12px}
+.activities-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.activity-row{background:#f8f9ff;border:1px solid #d6dbf2;border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
+.activity-row-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.activity-num{background:#1a237e;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0}
+.activity-name-display{font-size:.85rem;font-weight:600;color:#1a237e;flex:1}
+.activity-row .remove-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:#c0392b;font-size:1.1rem;line-height:1;padding:2px 6px;border-radius:4px}
+.activity-row .remove-btn:hover{background:#fee}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.u-vars{margin-top:10px}
+.u-vars-title{font-size:.78rem;font-weight:600;color:#666;margin-bottom:6px}
+.u-var-row{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center}
+.u-var-row input{font-size:.78rem;padding:6px 8px}
+.u-var-row button{background:none;border:none;cursor:pointer;color:#c0392b;font-size:1rem;padding:0 4px}
+.add-uvar-btn{font-size:.75rem;color:#1F36C7;background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600}
+.add-uvar-btn:hover{text-decoration:underline}
+/* Output area */
+.output-area{}
+.output-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.output-top h2{font-size:1rem;font-weight:700;color:#1a237e}
+.export-btns{display:flex;gap:8px}
+.activity-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.act-tab{padding:6px 14px;border-radius:20px;border:1px solid #d6dbf2;background:#fff;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;color:#555;transition:all .2s}
+.act-tab.active{background:#1F36C7;color:#fff;border-color:#1F36C7}
+.act-tab.error{border-color:#e74c3c;color:#e74c3c}
+.tag-panel{display:none}
+.tag-panel.active{display:block}
+.subtabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid #e8ecfd}
+.subtab{padding:8px 20px;border:none;background:none;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.subtab.active{color:#1F36C7;border-bottom-color:#1F36C7}
+.subtab-content{display:none;padding:16px 0}
+.subtab-content.active{display:block}
+.code-block{background:#1a1a2e;border-radius:8px;padding:16px;position:relative;overflow-x:auto}
+.code-block pre{font-family:'Courier New',monospace;font-size:.78rem;line-height:1.6;color:#a8b4d8;white-space:pre;margin:0}
+.copy-btn{position:absolute;top:10px;right:10px;background:#1F36C7;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit}
+.copy-btn:hover{background:#1a2eaa}
+.copy-btn.copied{background:#27ae60}
+/* Syntax highlight */
+.hl-attr{color:#79b8ff}
+.hl-val{color:#9ecbff}
+.hl-tag{color:#85e89d}
+.hl-comment{color:#6a737d;font-style:italic}
+.hl-str{color:#f97583}
+.hl-key{color:#b392f0}
+/* Validation */
+.validation-msg{padding:10px 14px;border-radius:8px;font-size:.82rem;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start}
+.validation-msg.error{background:#fee;border:1px solid #fcc;color:#c0392b}
+.validation-msg.warn{background:#fff8e1;border:1px solid #ffe082;color:#b8860b}
+.validation-msg.ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
+.empty-state{text-align:center;padding:60px 20px;color:#888}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}
+.empty-state p{font-size:.9rem}
+.tag-info{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tag-badge{background:#e8ecfd;color:#1a237e;border-radius:20px;padding:3px 10px;font-size:.75rem;font-weight:600}
+.tag-badge.sales{background:#fff3e0;color:#e65100}
+.tag-badge.counter{background:#e8f5e9;color:#1b5e20}
+@media(max-width:900px){.main{grid-template-columns:1fr;padding:16px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div style="font-size:.75rem;opacity:.6;margin-bottom:2px">AdOps Tools</div>
+    <h1>🏷️ Gerador de Tag Floodlight em Lote</h1>
+  </div>
+  <span>CM360 · Img Tag &amp; gtag.js</span>
+</header>
+
+<div class="main">
+  <!-- LEFT: Config -->
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <h2>⚙️ Configuração Global</h2>
+      <label>Advertiser ID (src) *</label>
+      <input type="number" id="g-src" placeholder="ex: 12345678" oninput="onConfigChange()">
+      <div class="checkbox-row" style="margin-top:14px">
+        <input type="checkbox" id="g-gdpr" checked onchange="onConfigChange()">
+        <label for="g-gdpr">Incluir macros GDPR (<code>${GDPR}</code> e <code>${GDPR_CONSENT_755}</code>)</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="g-ord" checked onchange="onConfigChange()">
+        <label for="g-ord">Incluir cache buster (<code>ord=</code>)</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="activities-header">
+        <h2 style="margin-bottom:0;border:none;padding:0">📋 Atividades</h2>
+        <button class="btn btn-secondary btn-sm" onclick="addActivity()">+ Adicionar</button>
+      </div>
+      <div id="activities-list"></div>
+      <button class="btn btn-primary btn-block" onclick="generateAll()">🔧 Gerar Tags</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="output-area">
+    <div class="output-top">
+      <h2>📄 Tags Geradas</h2>
+      <div class="export-btns">
+        <button class="btn btn-secondary btn-sm" onclick="copyAll()">📋 Copiar Todas</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadTxt()">⬇️ .txt</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadCsv()">⬇️ CSV</button>
+      </div>
+    </div>
+    <div id="validation-area"></div>
+    <div id="activity-tabs" class="activity-tabs"></div>
+    <div id="output-panels">
+      <div class="empty-state">
+        <div class="icon">🏷️</div>
+        <p>Configure as atividades e clique em <strong>Gerar Tags</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let activities = [];
+let generated = [];
+let activeActTab = 0;
+
+function uid(){ return Math.random().toString(36).slice(2,8); }
+
+function addActivity(){
+  if(activities.length >= 20){ alert('Máximo de 20 atividades.'); return; }
+  activities.push({
+    id: uid(),
+    name: 'Atividade '+(activities.length+1),
+    type: '', cat: '', tagType: 'counter',
+    salesQty: false, salesCost: false,
+    uvars: [],
+    ordCustom: ''
+  });
+  renderActivities();
+  saveState();
+}
+
+function removeActivity(id){
+  activities = activities.filter(a=>a.id!==id);
+  renderActivities();
+  saveState();
+}
+
+function addUvar(id){
+  const a = activities.find(x=>x.id===id);
+  if(a && a.uvars.length < 5){ a.uvars.push({k:'',v:''}); renderActivities(); }
+}
+
+function removeUvar(id, idx){
+  const a = activities.find(x=>x.id===id);
+  if(a){ a.uvars.splice(idx,1); renderActivities(); }
+}
+
+function renderActivities(){
+  const el = document.getElementById('activities-list');
+  if(activities.length === 0){
+    el.innerHTML = '<p style="font-size:.82rem;color:#888;text-align:center;padding:16px 0">Nenhuma atividade. Clique em + Adicionar.</p>';
+    return;
+  }
+  el.innerHTML = activities.map((a,i) => `
+    <div class="activity-row" data-id="${a.id}">
+      <button class="remove-btn" onclick="removeActivity('${a.id}')" title="Remover">✕</button>
+      <div class="activity-row-header">
+        <div class="activity-num">${i+1}</div>
+        <input type="text" value="${esc(a.name)}" onchange="updateField('${a.id}','name',this.value)" style="font-weight:600;color:#1a237e;border-color:transparent;background:transparent;padding:4px 6px" placeholder="Nome da atividade">
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>Activity Group (type) *</label>
+          <input type="text" value="${esc(a.type)}" onchange="updateField('${a.id}','type',this.value)" placeholder="ex: pageview">
+        </div>
+        <div>
+          <label>Activity Tag (cat) *</label>
+          <input type="text" value="${esc(a.cat)}" onchange="updateField('${a.id}','cat',this.value)" placeholder="ex: homepage">
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:10px">
+        <div>
+          <label>Tipo de tag</label>
+          <select onchange="updateField('${a.id}','tagType',this.value)">
+            <option value="counter"${a.tagType==='counter'?' selected':''}>Counter</option>
+            <option value="sales"${a.tagType==='sales'?' selected':''}>Sales</option>
+          </select>
+        </div>
+        <div>
+          <label>ord= (opcional)</label>
+          <input type="text" value="${esc(a.ordCustom)}" onchange="updateField('${a.id}','ordCustom',this.value)" placeholder="deixe vazio para auto">
+        </div>
+      </div>
+      ${a.tagType==='sales'?`
+      <div class="checkbox-row" style="margin-top:8px">
+        <input type="checkbox" id="qty-${a.id}" ${a.salesQty?'checked':''} onchange="updateField('${a.id}','salesQty',this.checked)">
+        <label for="qty-${a.id}">Incluir qty= e cost= (Sales)</label>
+      </div>`:''}
+      <div class="u-vars">
+        <div class="u-vars-title">U-Variables ${a.uvars.length>0?'('+a.uvars.length+'/5)':'(opcional)'}</div>
+        ${a.uvars.map((uv,ui)=>`
+          <div class="u-var-row">
+            <input type="text" value="${esc(uv.k)}" onchange="updateUvar('${a.id}',${ui},'k',this.value)" placeholder="u${ui+1}=nome">
+            <input type="text" value="${esc(uv.v)}" onchange="updateUvar('${a.id}',${ui},'v',this.value)" placeholder="VALOR_DINAMICO">
+            <button onclick="removeUvar('${a.id}',${ui})">✕</button>
+          </div>`).join('')}
+        ${a.uvars.length<5?`<button class="add-uvar-btn" onclick="addUvar('${a.id}')">+ u-variable</button>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateField(id, field, value){
+  const a = activities.find(x=>x.id===id);
+  if(a){ a[field]=value; if(field==='name'){}; saveState(); }
+}
+
+function updateUvar(id, idx, key, value){
+  const a = activities.find(x=>x.id===id);
+  if(a && a.uvars[idx]){ a.uvars[idx][key]=value; saveState(); }
+}
+
+function onConfigChange(){ saveState(); }
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+// ---- GENERATION ----
+
+function validate(){
+  const msgs = [];
+  const src = document.getElementById('g-src').value.trim();
+  if(!src){ msgs.push({type:'error',text:'Advertiser ID (src) é obrigatório.'}); }
+  else if(!/^\d+$/.test(src)){ msgs.push({type:'error',text:'Advertiser ID deve conter apenas números.'}); }
+
+  const gdpr = document.getElementById('g-gdpr').checked;
+  if(!gdpr){ msgs.push({type:'warn',text:'Macros GDPR não incluídas. Certifique-se de que o anunciante não atende usuários europeus.'}); }
+
+  if(activities.length===0){ msgs.push({type:'error',text:'Adicione ao menos uma atividade.'}); }
+
+  activities.forEach((a,i)=>{
+    if(!a.type){ msgs.push({type:'error',text:`Atividade ${i+1} "${a.name}": Activity Group (type) é obrigatório.`}); }
+    else if(!/^[a-zA-Z0-9_-]+$/.test(a.type)){ msgs.push({type:'error',text:`Atividade ${i+1}: type "${a.type}" contém caracteres inválidos.`}); }
+    if(!a.cat){ msgs.push({type:'error',text:`Atividade ${i+1} "${a.name}": Activity Tag (cat) é obrigatório.`}); }
+    else if(!/^[a-zA-Z0-9_-]+$/.test(a.cat)){ msgs.push({type:'error',text:`Atividade ${i+1}: cat "${a.cat}" contém caracteres inválidos.`}); }
+    else if(/[A-Z]/.test(a.cat)){ msgs.push({type:'warn',text:`Atividade ${i+1}: cat "${a.cat}" contém letras maiúsculas. CM360 é case-sensitive — confirme se é intencional.`}); }
+  });
+
+  return msgs;
+}
+
+function buildImgTag(a, src, useGdpr, useOrd){
+  const ord = a.ordCustom || (useOrd ? (a.tagType==='counter' ? '[timestamp]' : '1') : '1');
+  const gdprPart = useGdpr ? ';gdpr=${GDPR};gdpr_consent=${GDPR_CONSENT_755}' : '';
+  const salesPart = a.tagType==='sales' && a.salesQty ? ';qty=QUANTITY;cost=REVENUE' : '';
+  const upart = a.uvars.filter(u=>u.k).map(u=>`;${u.k}=${u.v||'VALOR'}`).join('');
+  return `<!-- ${a.name} - Floodlight ${a.tagType==='counter'?'Counter':'Sales'} -->
+<img src="https://ad.doubleclick.net/ddm/activity/src=${src};type=${a.type};cat=${a.cat};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=${gdprPart}${salesPart}${upart};ord=${ord}?" width="1" height="1" alt=""/>`;
+}
+
+function buildGtagTag(a, src, useGdpr, useOrd){
+  const ord = a.ordCustom || (useOrd ? (a.tagType==='counter' ? 'Math.random()' : '1') : '1');
+  const gdprPart = useGdpr ? `\n    // GDPR: \${GDPR} / \${GDPR_CONSENT_755}` : '';
+  const sendTo = `DC-${src}/${a.type}/${a.cat}+${a.tagType==='counter'?'standard':'unique'}`;
+  const salesPart = a.tagType==='sales' && a.salesQty
+    ? `,\n    'value': REVENUE,\n    'currency': 'BRL',\n    'transaction_id': TRANSACTION_ID`
+    : '';
+  const upart = a.uvars.filter(u=>u.k).map(u=>`,\n    '${u.k}': '${u.v||'VALOR'}'`).join('');
+  return `<!-- Global Site Tag (gtag.js) - ${a.name} -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=DC-${src}"><\/script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());${gdprPart}
+  gtag('config', 'DC-${src}');
+  gtag('event', 'conversion', {
+    'allow_custom_scripts': true,
+    'send_to': '${sendTo}'${salesPart}${upart}
+  });
+<\/script>
+<noscript>
+  <img src="https://ad.doubleclick.net/ddm/activity/src=${src};type=${a.type};cat=${a.cat};dc_lat=;dc_rdid=;tag_for_child_directed_treatment=;tfua=;npa=${useGdpr?';gdpr=${GDPR};gdpr_consent=${GDPR_CONSENT_755}':''}${a.tagType==='sales'&&a.salesQty?';qty=QUANTITY;cost=REVENUE':''};ord=${a.tagType==='counter'?'[timestamp]':'1'}?" width="1" height="1" alt=""/>
+</noscript>`;
+}
+
+function syntaxHighlight(code){
+  return code
+    .replace(/(&lt;!--[\s\S]*?--&gt;)/g,'<span class="hl-comment">$1</span>')
+    .replace(/(&lt;\/?script[^&]*&gt;)/g,'<span class="hl-tag">$1</span>')
+    .replace(/(&lt;img[^&]*)/g,'<span class="hl-tag">$1</span>')
+    .replace(/(src|type|cat|ord|dc_lat|dc_rdid|tfua|npa|gdpr|gdpr_consent|qty|cost|width|height|alt|async)=/g,'<span class="hl-attr">$1</span>=')
+    .replace(/(DC-\d+\/[^\s'"]+)/g,'<span class="hl-val">$1</span>')
+    .replace(/'([^']+)'/g,"'<span class=\"hl-str\">$1</span>'")
+    .replace(/(allow_custom_scripts|send_to|value|currency|transaction_id)/g,'<span class="hl-key">$1</span>');
+}
+
+function generateAll(){
+  const msgs = validate();
+  const errMsgs = msgs.filter(m=>m.type==='error');
+  const warnMsgs = msgs.filter(m=>m.type==='warn');
+
+  const valArea = document.getElementById('validation-area');
+  valArea.innerHTML = [...errMsgs,...warnMsgs].map(m=>`
+    <div class="validation-msg ${m.type}">
+      <span>${m.type==='error'?'❌':'⚠️'}</span>
+      <span>${m.text}</span>
+    </div>`).join('');
+
+  if(errMsgs.length > 0) return;
+
+  const src = document.getElementById('g-src').value.trim();
+  const useGdpr = document.getElementById('g-gdpr').checked;
+  const useOrd = document.getElementById('g-ord').checked;
+
+  generated = activities.map(a=>({
+    a,
+    img: buildImgTag(a, src, useGdpr, useOrd),
+    gtag: buildGtagTag(a, src, useGdpr, useOrd)
+  }));
+
+  renderOutput();
+}
+
+function renderOutput(){
+  const tabsEl = document.getElementById('activity-tabs');
+  const panelsEl = document.getElementById('output-panels');
+
+  if(generated.length===0) return;
+
+  tabsEl.innerHTML = generated.map((g,i)=>`
+    <button class="act-tab${i===activeActTab?' active':''}" onclick="switchActTab(${i})">${g.a.name}</button>
+  `).join('');
+
+  panelsEl.innerHTML = generated.map((g,i)=>`
+    <div class="tag-panel${i===activeActTab?' active':''}" id="panel-${i}">
+      <div class="tag-info">
+        <span class="tag-badge ${g.a.tagType}">${g.a.tagType==='counter'?'Counter':'Sales'}</span>
+        <span class="tag-badge">type=${g.a.type||'—'}</span>
+        <span class="tag-badge">cat=${g.a.cat||'—'}</span>
+        ${g.a.uvars.filter(u=>u.k).map(u=>`<span class="tag-badge">${u.k}</span>`).join('')}
+      </div>
+      <div class="subtabs">
+        <button class="subtab active" onclick="switchSubtab(${i},0,this)">🖼️ Img Tag (legado)</button>
+        <button class="subtab" onclick="switchSubtab(${i},1,this)">⚡ gtag.js (moderno)</button>
+      </div>
+      <div class="subtab-content active" id="sub-${i}-0">
+        <p style="font-size:.78rem;color:#666;margin-bottom:8px">Tag de imagem 1×1px. Compatível com qualquer implementação.</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this,'img-${i}')">Copiar</button>
+          <pre id="img-${i}">${escHtml(g.img)}</pre>
+        </div>
+      </div>
+      <div class="subtab-content" id="sub-${i}-1">
+        <p style="font-size:.78rem;color:#666;margin-bottom:8px">Global Site Tag com fallback noscript. Recomendado para novos sites.</p>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode(this,'gtag-${i}')">Copiar</button>
+          <pre id="gtag-${i}">${escHtml(g.gtag)}</pre>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function switchActTab(i){
+  activeActTab = i;
+  document.querySelectorAll('.act-tab').forEach((t,idx)=>t.classList.toggle('active',idx===i));
+  document.querySelectorAll('.tag-panel').forEach((p,idx)=>p.classList.toggle('active',idx===i));
+}
+
+function switchSubtab(panelIdx, subIdx, btn){
+  const panel = document.getElementById('panel-'+panelIdx);
+  panel.querySelectorAll('.subtab').forEach((t,i)=>t.classList.toggle('active',i===subIdx));
+  panel.querySelectorAll('.subtab-content').forEach((c,i)=>c.classList.toggle('active',i===subIdx));
+}
+
+function copyCode(btn, preId){
+  const pre = document.getElementById(preId);
+  const text = pre.innerText || pre.textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='Copiado!'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent='Copiar'; btn.classList.remove('copied'); },2000);
+  });
+}
+
+function copyAll(){
+  const all = generated.map(g=>`/* ${g.a.name} */\n\n/* IMG TAG */\n${g.img}\n\n/* GTAG.JS */\n${g.gtag}`).join('\n\n' + '='.repeat(60) + '\n\n');
+  if(!all){ alert('Gere as tags primeiro.'); return; }
+  navigator.clipboard.writeText(all).then(()=>alert('Todas as tags copiadas!'));
+}
+
+function downloadTxt(){
+  if(!generated.length){ alert('Gere as tags primeiro.'); return; }
+  const all = generated.map(g=>`/* ${g.a.name} */\n\n/* IMG TAG */\n${g.img}\n\n/* GTAG.JS */\n${g.gtag}`).join('\n\n' + '='.repeat(60) + '\n\n');
+  const blob = new Blob([all],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'floodlight-tags.txt';
+  a.click();
+}
+
+function downloadCsv(){
+  if(!generated.length){ alert('Gere as tags primeiro.'); return; }
+  const rows = [['nome','type','cat','tag_type','img_tag','gtag_js']];
+  generated.forEach(g=>{
+    rows.push([g.a.name, g.a.type, g.a.cat, g.a.tagType,
+      '"'+g.img.replace(/"/g,'""')+'"',
+      '"'+g.gtag.replace(/"/g,'""')+'"'
+    ]);
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'floodlight-tags.csv';
+  a.click();
+}
+
+// ---- STATE ----
+function saveState(){
+  try{
+    const src = document.getElementById('g-src')?.value||'';
+    const gdpr = document.getElementById('g-gdpr')?.checked;
+    const ord = document.getElementById('g-ord')?.checked;
+    localStorage.setItem('fl_gen_state', JSON.stringify({src,gdpr,ord,activities}));
+  }catch(e){}
+}
+
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem('fl_gen_state')||'null');
+    if(!s) return false;
+    document.getElementById('g-src').value = s.src||'';
+    document.getElementById('g-gdpr').checked = s.gdpr!==false;
+    document.getElementById('g-ord').checked = s.ord!==false;
+    if(Array.isArray(s.activities) && s.activities.length){
+      activities = s.activities;
+      renderActivities();
+    }
+    return true;
+  }catch(e){ return false; }
+}
+
+// INIT
+document.addEventListener('DOMContentLoaded',()=>{
+  if(!loadState()){
+    addActivity();
+  }
+});
+</script>
+</body>
+</html>

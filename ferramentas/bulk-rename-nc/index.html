@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renomeador NC em Massa</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.btn.danger{background:var(--err-bg);color:var(--err);border-color:transparent;}
+.page{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:380px 1fr;gap:14px;align-items:start;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+textarea{width:100%;resize:vertical;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;line-height:1.6;outline:none;}
+textarea:focus{border-color:var(--accent);}
+input[type="text"]{height:30px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-family:var(--mono);font-size:12px;outline:none;width:100%;}
+input[type="text"]:focus{border-color:var(--accent);}
+/* Rule rows */
+.rule-row{display:grid;grid-template-columns:60px 1fr 24px 1fr 30px;gap:6px;align-items:center;margin-bottom:6px;}
+.rule-pos{font-size:11px;font-weight:700;color:var(--faint);text-align:center;}
+.rule-sep{font-size:14px;color:var(--faint);text-align:center;}
+.rule-del{background:none;border:none;cursor:pointer;color:var(--faint);font-size:16px;line-height:1;padding:0 4px;}
+.rule-del:hover{color:var(--err);}
+/* Results */
+.diff-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--divider);font-family:var(--mono);font-size:11px;line-height:1.5;}
+.diff-row:last-child{border-bottom:none;}
+.diff-old{flex:1;color:var(--faint);text-decoration:line-through;}
+.diff-arrow{color:var(--accent);font-size:14px;flex-shrink:0;}
+.diff-new{flex:1;font-weight:600;}
+.diff-same{flex:1;color:var(--faint);font-style:italic;}
+.diff-unchanged{color:var(--ok);}
+.diff-seg{display:inline;padding:0 2px;border-radius:2px;}
+.changed{background:rgba(124,58,237,.12);color:var(--accent);}
+/* Stats */
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.stat-chip{font-size:11px;padding:3px 10px;border-radius:12px;font-weight:600;background:var(--divider);}
+/* Filter */
+.filter-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.fc{padding:3px 9px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--card);}
+.fc.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* Presets */
+.preset-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.preset-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:var(--divider);font-size:11px;font-weight:600;cursor:pointer;max-width:160px;}
+.preset-chip:hover{border-color:var(--accent);color:var(--accent);}
+.preset-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.preset-chip .pdel{color:var(--faint);font-size:14px;line-height:1;padding:0 2px;flex-shrink:0;}
+.preset-chip .pdel:hover{color:var(--err);}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:700px){.page{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">✏️</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Renomeador NC em Massa</div>
+      <div style="font-size:11px;color:var(--faint)">Substitui valores por posição de segmento em toda a lista de NCs</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="copyOutput()">📋 Copiar resultado</button>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="run()">✏️ Renomear</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Left: config -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">Lista de NCs</div>
+      <textarea id="ncInput" rows="10" placeholder="Cole as NCs aqui, uma por linha&#10;&#10;ex:&#10;dove_cabelos_hidratacao_br&#10;dove_body_creme_br"></textarea>
+      <div style="font-size:10px;color:var(--faint);margin-top:4px" id="inputCount">0 NCs</div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700">Separador</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="sepInput" placeholder="auto" style="width:70px">
+        <span style="font-size:11px;color:var(--faint)" id="sepDetected"></span>
+      </div>
+      <div style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer">
+          <input type="checkbox" id="optCase" style="accent-color:var(--accent)"> Substituição case-insensitive
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700">Regras de substituição</div>
+        <button class="btn" onclick="addRule()" style="height:26px;font-size:11px">+ Regra</button>
+      </div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:8px">
+        Posição 0 = todos os segmentos. Use * para curinga.
+      </div>
+      <div style="display:grid;grid-template-columns:60px 1fr 24px 1fr 30px;gap:6px;margin-bottom:4px">
+        <span style="font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase">Pos</span>
+        <span style="font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase">De</span>
+        <span></span>
+        <span style="font-size:10px;font-weight:700;color:var(--faint);text-transform:uppercase">Para</span>
+        <span></span>
+      </div>
+      <div id="rulesContainer"></div>
+      <button class="btn" onclick="addRule()" style="margin-top:6px;height:26px;font-size:11px;width:100%">+ Adicionar regra</button>
+      <!-- Preset bar -->
+      <div class="preset-bar" id="presetBar">
+        <button class="btn" onclick="saveCurrentAsPreset()" style="height:24px;font-size:11px;flex-shrink:0">💾 Salvar preset</button>
+        <div id="presetChips" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: results -->
+  <div>
+    <div class="card" id="resultsPanel">
+      <div style="text-align:center;padding:40px;color:var(--faint)">
+        <div style="font-size:36px;margin-bottom:10px">✏️</div>
+        <div>Cole as NCs, configure as regras e clique em <strong>Renomear</strong></div>
+        <div style="font-size:11px;margin-top:6px;opacity:.7">Ctrl+Enter para renomear</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem('bulkrename_theme');}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem('bulkrename_theme',_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Persist rules
+let _rules=[];
+try{_rules=JSON.parse(localStorage.getItem('bulkrename_rules')||'[]');}catch(e){}
+if(!_rules.length) _rules=[{pos:'',from:'',to:''}];
+
+let _results=[];
+let _filter='all';
+
+function saveRules(){
+  try{localStorage.setItem('bulkrename_rules',JSON.stringify(_rules));}catch(e){}
+}
+
+function renderRules(){
+  const c=document.getElementById('rulesContainer');
+  c.innerHTML=_rules.map((r,i)=>`
+    <div class="rule-row" data-idx="${i}">
+      <input type="text" class="rule-pos" placeholder="1–N / 0" value="${esc(r.pos)}"
+        oninput="_rules[${i}].pos=this.value;saveRules()" title="Posição do segmento (1-based). 0 ou vazio = todos."
+        style="width:100%;text-align:center;font-weight:700">
+      <input type="text" class="rule-from" placeholder="de…" value="${esc(r.from)}"
+        oninput="_rules[${i}].from=this.value;saveRules()">
+      <span class="rule-sep">→</span>
+      <input type="text" class="rule-to" placeholder="para…" value="${esc(r.to)}"
+        oninput="_rules[${i}].to=this.value;saveRules()">
+      <button class="rule-del" onclick="removeRule(${i})" title="Remover regra">×</button>
+    </div>`).join('');
+}
+
+function addRule(){
+  _rules.push({pos:'',from:'',to:''});
+  saveRules(); renderRules();
+  // Focus last from input
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll('.rule-from');
+    inputs[inputs.length-1]?.focus();
+  },50);
+}
+function removeRule(i){
+  _rules.splice(i,1);
+  if(!_rules.length) _rules=[{pos:'',from:'',to:''}];
+  saveRules(); renderRules();
+}
+
+renderRules();
+
+document.getElementById('ncInput').addEventListener('input',function(){
+  const c=this.value.split('\n').filter(l=>l.trim()).length;
+  document.getElementById('inputCount').textContent=c+' NC'+(c!==1?'s':'');
+  // Auto-detect separator
+  const lines=this.value.split('\n').filter(l=>l.trim()).slice(0,20);
+  if(lines.length>0&&!document.getElementById('sepInput').value.trim()){
+    const counts={};
+    for(const l of lines) for(const s of ['_','-','|','.','/']) counts[s]=(counts[s]||0)+(l.split(s).length-1);
+    const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    if(best&&best[1]>0) document.getElementById('sepDetected').textContent=`detectado: "${best[0]}"`;
+  }
+});
+
+function getSep(){
+  const v=document.getElementById('sepInput').value.trim();
+  if(v) return v;
+  // Auto from text
+  const lines=document.getElementById('ncInput').value.split('\n').filter(l=>l.trim()).slice(0,20);
+  if(!lines.length) return '_';
+  const counts={};
+  for(const l of lines) for(const s of ['_','-','|','.','/']) counts[s]=(counts[s]||0)+(l.split(s).length-1);
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'_';
+}
+
+function applyRules(nc, sep, rules, caseInsensitive){
+  const parts=nc.split(sep);
+  const changed=new Set();
+  rules.forEach(r=>{
+    if(!r.from.trim()) return;
+    const posRaw=parseInt(r.pos)||0;
+    const from=r.from.trim();
+    const to=r.to;
+    for(let i=0;i<parts.length;i++){
+      const applies=posRaw===0||(posRaw-1===i);
+      if(!applies) continue;
+      const match=caseInsensitive?parts[i].toLowerCase()===from.toLowerCase():parts[i]===from;
+      if(match){parts[i]=to;changed.add(i);}
+    }
+  });
+  return {nc:parts.join(sep), changed};
+}
+
+function run(){
+  const raw=document.getElementById('ncInput').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length){showToast('Cole as NCs primeiro');return;}
+  const sep=getSep();
+  const caseIns=document.getElementById('optCase').checked;
+  const rules=_rules.filter(r=>r.from.trim());
+  if(!rules.length){showToast('Adicione pelo menos uma regra');return;}
+
+  _results=lines.map(nc=>{
+    const {nc:newNc,changed}=applyRules(nc,sep,rules,caseIns);
+    return {old:nc,new:newNc,changed:[...changed],modified:nc!==newNc};
+  });
+  _filter='all';
+  renderResults(sep);
+}
+
+function renderResults(sep){
+  const changed=_results.filter(r=>r.modified).length;
+  const unchanged=_results.filter(r=>!r.modified).length;
+
+  const filtered=_results.filter(r=>{
+    if(_filter==='changed') return r.modified;
+    if(_filter==='unchanged') return !r.modified;
+    return true;
+  });
+
+  const p=document.getElementById('resultsPanel');
+  p.innerHTML=`
+    <div class="stat-row">
+      <span class="stat-chip" style="background:rgba(22,163,74,.1);color:var(--ok)">✓ ${changed} renomeada${changed!==1?'s':''}</span>
+      <span class="stat-chip" style="background:var(--divider);color:var(--faint)">${unchanged} sem alteração</span>
+      <span class="stat-chip">Total: ${_results.length}</span>
+    </div>
+    <div class="filter-chips">
+      <span class="fc ${_filter==='all'?'active':''}" onclick="setFilter('all')">Todos (${_results.length})</span>
+      <span class="fc ${_filter==='changed'?'active':''}" onclick="setFilter('changed')">✓ Alteradas (${changed})</span>
+      <span class="fc ${_filter==='unchanged'?'active':''}" onclick="setFilter('unchanged')">Sem alteração (${unchanged})</span>
+    </div>
+    <div style="max-height:65vh;overflow-y:auto">
+      ${filtered.map(r=>{
+        if(!r.modified) return `<div class="diff-row"><span class="diff-same diff-unchanged">${esc(r.old)}</span></div>`;
+        // Highlight changed segments
+        const oldParts=r.old.split(sep);
+        const newParts=r.new.split(sep);
+        const oldHl=oldParts.map((p,i)=>r.changed.includes(i)?`<span class="diff-seg changed">${esc(p)}</span>`:esc(p)).join(esc(sep));
+        const newHl=newParts.map((p,i)=>r.changed.includes(i)?`<span class="diff-seg changed">${esc(p)}</span>`:esc(p)).join(esc(sep));
+        return `<div class="diff-row">
+          <span class="diff-old">${oldHl}</span>
+          <span class="diff-arrow">→</span>
+          <span class="diff-new" onclick="navigator.clipboard.writeText('${esc(r.new.replace(/'/g,"\\'"))}').then(()=>showToast('✓ Copiado')).catch(()=>{})" style="cursor:pointer" title="Clique para copiar">${newHl}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-top:6px">Clique em um resultado para copiar</div>
+  `;
+}
+
+function setFilter(f){
+  _filter=f;
+  const sep=getSep();
+  renderResults(sep);
+}
+
+function copyOutput(){
+  if(!_results.length){showToast('Renomeie primeiro');return;}
+  const out=_results.map(r=>r.new).join('\n');
+  navigator.clipboard.writeText(out).then(()=>showToast(`✓ ${_results.length} NCs copiadas`)).catch(()=>showToast('Não foi possível copiar'));
+}
+
+function exportCSV(){
+  if(!_results.length){showToast('Renomeie primeiro');return;}
+  const rows=[['nc_original','nc_nova','alterada']];
+  _results.forEach(r=>rows.push([r.old,r.new,r.modified?'sim':'não']));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bulk_rename_nc.csv';a.click();
+  showToast(`⬇ ${rows.length-1} linhas exportadas`);
+}
+
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')run();});
+
+// ── Presets ───────────────────────────────────────────────────────────────
+const PRESETS_KEY='bulkrename_presets_v1';
+
+function getPresets(){
+  try{return JSON.parse(localStorage.getItem(PRESETS_KEY)||'[]');}catch(e){return [];}
+}
+function savePresets(arr){
+  try{localStorage.setItem(PRESETS_KEY,JSON.stringify(arr));}catch(e){}
+}
+
+function renderPresetBar(){
+  const presets=getPresets();
+  const chips=document.getElementById('presetChips');
+  if(!chips) return;
+  if(!presets.length){chips.innerHTML='<span style="font-size:11px;color:var(--faint);font-style:italic">Nenhum preset salvo</span>';return;}
+  chips.innerHTML=presets.map(p=>`
+    <div class="preset-chip" title="Carregar preset '${esc(p.name)}'">
+      <span onclick="loadPreset('${esc(p.id)}')">${esc(p.name)}</span>
+      <span class="pdel" onclick="deletePreset('${esc(p.id)}')" title="Excluir">×</span>
+    </div>`).join('');
+}
+
+function saveCurrentAsPreset(){
+  const rules=_rules.filter(r=>r.from.trim()||r.to.trim()||r.pos.trim());
+  if(!rules.length){showToast('Adicione regras antes de salvar');return;}
+  const name=prompt('Nome do preset:','');
+  if(!name||!name.trim()) return;
+  const presets=getPresets();
+  // Max 15 presets
+  if(presets.length>=15){showToast('Limite de 15 presets atingido — exclua um antes');return;}
+  presets.push({
+    id: Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6),
+    name: name.trim(),
+    sep: document.getElementById('sepInput').value,
+    caseIns: document.getElementById('optCase').checked,
+    rules: JSON.parse(JSON.stringify(_rules)),
+    createdAt: new Date().toISOString()
+  });
+  savePresets(presets);
+  renderPresetBar();
+  showToast(`💾 Preset "${name.trim()}" salvo`);
+}
+
+function loadPreset(id){
+  const preset=getPresets().find(p=>p.id===id);
+  if(!preset){showToast('Preset não encontrado');return;}
+  _rules=JSON.parse(JSON.stringify(preset.rules));
+  if(!_rules.length) _rules=[{pos:'',from:'',to:''}];
+  document.getElementById('sepInput').value=preset.sep||'';
+  document.getElementById('optCase').checked=!!preset.caseIns;
+  saveRules();
+  renderRules();
+  showToast(`📂 Preset "${preset.name}" carregado`);
+}
+
+function deletePreset(id){
+  const presets=getPresets();
+  const idx=presets.findIndex(p=>p.id===id);
+  if(idx<0) return;
+  const name=presets[idx].name;
+  presets.splice(idx,1);
+  savePresets(presets);
+  renderPresetBar();
+  showToast(`🗑 Preset "${name}" excluído`);
+}
+
+renderPresetBar();
+</script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<title>Dict Cross</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ===== TOKENS ===== */
+:root {
+  --bg:          #f1f4f9;
+  --fg:          #1a1d23;
+  --card:        #ffffff;
+  --card-border: rgba(0,0,0,.08);
+  --header:      #0d1117;
+  --header-fg:   #e6edf3;
+  --accent:      #2563eb;
+  --accent-soft: rgba(37,99,235,.1);
+  --ok:          #22c55e;
+  --warn:        #f59e0b;
+  --erro:        #ef4444;
+  --faint:       rgba(0,0,0,.38);
+  --pill:        #e2e8f0;
+  --input-bg:    #ffffff;
+  --input-border:rgba(0,0,0,.18);
+  --shadow:      0 1px 4px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.06);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,.18);
+  color-scheme: light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1117;--fg:#e6edf3;--card:#161b22;--card-border:rgba(255,255,255,.08);
+    --faint:rgba(255,255,255,.38);--pill:#21262d;--input-bg:#0d1117;
+    --input-border:rgba(255,255,255,.18);--accent-soft:rgba(37,99,235,.18);
+    --shadow:0 1px 4px rgba(0,0,0,.3),0 2px 10px rgba(0,0,0,.25);
+    --shadow-lg:0 8px 32px rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1117;--fg:#e6edf3;--card:#161b22;--card-border:rgba(255,255,255,.08);
+  --faint:rgba(255,255,255,.38);--pill:#21262d;--input-bg:#0d1117;
+  --input-border:rgba(255,255,255,.18);--accent-soft:rgba(37,99,235,.18);
+  --shadow:0 1px 4px rgba(0,0,0,.3),0 2px 10px rgba(0,0,0,.25);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.55);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* Header */
+.header{background:var(--header);color:var(--header-fg);padding:0 20px;height:52px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50;}
+.header-logo{font-weight:800;font-size:16px;letter-spacing:-.5px;color:#38bdf8;}
+.header-title{font-size:14px;font-weight:600;opacity:.85;}
+.header-sep{opacity:.3;font-size:16px;}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+
+/* Layout */
+.container{max-width:1100px;margin:0 auto;padding:20px 20px 60px;}
+
+/* Controls bar */
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px;}
+.search-input{padding:7px 12px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:13px;width:220px;outline:none;font-family:inherit;}
+.search-input:focus{border-color:var(--accent);}
+select.filter-select{padding:7px 10px;border:1px solid var(--input-border);border-radius:8px;background:var(--input-bg);color:var(--fg);font-size:13px;outline:none;cursor:pointer;font-family:inherit;}
+select.filter-select:focus{border-color:var(--accent);}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,opacity .15s;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.primary{background:var(--accent);color:#fff;}
+.btn.primary:hover:not(:disabled){background:#1d4ed8;}
+.btn.secondary{background:var(--pill);color:var(--fg);border:1px solid var(--card-border);}
+.btn.secondary:hover:not(:disabled){background:var(--input-border);}
+
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+.kpi-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
+.kpi-val{font-size:26px;font-weight:800;color:var(--accent);line-height:1;}
+.kpi-label{font-size:11px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;}
+
+/* Table */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--card-border);background:var(--card);box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;padding:9px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);border-bottom:1px solid var(--card-border);background:var(--card);position:sticky;top:52px;z-index:5;white-space:nowrap;}
+thead th.sortable{cursor:pointer;user-select:none;}
+thead th.sortable:hover{color:var(--fg);}
+thead th.sort-asc::after{content:' ↑';}
+thead th.sort-desc::after{content:' ↓';}
+tbody tr{border-bottom:1px solid var(--card-border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--accent-soft);}
+td{padding:9px 14px;vertical-align:top;}
+td.val{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--accent);}
+td.count{font-weight:700;color:var(--fg);}
+.client-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600;background:var(--pill);border:1px solid var(--card-border);margin:2px 2px 2px 0;}
+.client-chip .seg{font-weight:400;color:var(--faint);margin-left:2px;}
+.label-chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;background:rgba(37,99,235,.1);color:var(--accent);border:1px solid rgba(37,99,235,.2);margin:1px;}
+.diff-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px;}
+.diff-same{background:rgba(34,197,94,.1);color:#15803d;border:1px solid rgba(34,197,94,.2);}
+.diff-diff{background:rgba(245,158,11,.1);color:#92400e;border:1px solid rgba(245,158,11,.2);}
+
+/* Empty / loading */
+.empty-state{text-align:center;padding:60px 20px;color:var(--faint);}
+.empty-state .icon{font-size:40px;margin-bottom:12px;}
+.empty-state .msg{font-size:15px;font-weight:600;}
+.empty-state .sub{font-size:13px;margin-top:4px;}
+
+/* Theme toggle */
+.theme-btn{background:none;border:1px solid rgba(255,255,255,.2);border-radius:7px;color:var(--header-fg);cursor:pointer;padding:4px 10px;font-size:13px;}
+.theme-btn:hover{background:rgba(255,255,255,.1);}
+
+/* Toast */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:#1e293b;color:#fff;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9000;transition:transform .22s ease,opacity .22s ease;opacity:0;pointer-events:none;}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+@media(max-width:600px){
+  .kpi-row{grid-template-columns:repeat(2,1fr);}
+  .controls{gap:8px;}
+  .search-input{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-logo">NC</span>
+  <span class="header-sep">|</span>
+  <span class="header-title">🔗 Dict Cross — termos compartilhados</span>
+  <div class="header-actions">
+    <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌓</button>
+    <button class="btn secondary" onclick="exportCSV()" id="btnExport" disabled>⬇ CSV</button>
+    <button class="btn primary" onclick="runAnalysis()">🔄 Atualizar</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card"><div class="kpi-val" id="kpiTerms">—</div><div class="kpi-label">Termos compartilhados</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="kpiClients">—</div><div class="kpi-label">Clientes analisados</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="kpiMax">—</div><div class="kpi-label">Máx. clientes/termo</div></div>
+    <div class="kpi-card"><div class="kpi-val" id="kpiDiff">—</div><div class="kpi-label">Labels divergentes</div></div>
+  </div>
+
+  <div class="controls">
+    <input type="text" class="search-input" id="searchInput" placeholder="Buscar valor de termo…" oninput="applyFilters()">
+    <select class="filter-select" id="minClients" onchange="applyFilters()">
+      <option value="2">≥ 2 clientes</option>
+      <option value="3">≥ 3 clientes</option>
+      <option value="4">≥ 4 clientes</option>
+      <option value="5">≥ 5 clientes</option>
+    </select>
+    <select class="filter-select" id="filterDiff" onchange="applyFilters()">
+      <option value="all">Todos</option>
+      <option value="diff">Labels divergentes</option>
+      <option value="same">Labels iguais</option>
+    </select>
+    <span id="countLabel" style="font-size:12px;color:var(--faint);margin-left:4px"></span>
+  </div>
+
+  <div class="table-wrap" id="tableWrap">
+    <div class="empty-state">
+      <div class="icon">🔗</div>
+      <div class="msg">Cruzando dicionários…</div>
+      <div class="sub">Aguarde um momento</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===== HELPERS ===== */
+function esc(s){ const d=document.createElement('div'); d.textContent=String(s??''); return d.innerHTML; }
+
+function showToast(msg,ms=2200){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid=setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+/* ===== THEME ===== */
+function toggleTheme(){
+  const r=document.documentElement;
+  const cur=r.getAttribute('data-theme');
+  const next=cur==='dark'?'light':'dark';
+  r.setAttribute('data-theme',next);
+  try{localStorage.setItem('dict_cross_theme',next);}catch(e){}
+}
+(()=>{
+  try{
+    const t=localStorage.getItem('dict_cross_theme');
+    if(t) document.documentElement.setAttribute('data-theme',t);
+  }catch(e){}
+})();
+
+/* ===== DATA ===== */
+const CLIENTS_KEY='taxo_clients_v1';
+
+function getClients(){
+  try{ return JSON.parse(localStorage.getItem(CLIENTS_KEY)||'[]'); }catch(e){ return []; }
+}
+
+/* ===== ANALYSIS ===== */
+let _rows=[]; // flat filtered rows for table
+let _allRows=[]; // all computed cross-ref rows
+
+function runAnalysis(){
+  const clients=getClients().filter(c=>!c.archived);
+  if(!clients.length){
+    document.getElementById('tableWrap').innerHTML=`<div class="empty-state">
+      <div class="icon">📭</div>
+      <div class="msg">Nenhum cliente encontrado</div>
+      <div class="sub">Adicione clientes no <a href="../taxonomy-builder/" style="color:var(--accent)">Taxonomy Builder</a></div>
+    </div>`;
+    updateKPIs([],clients.length);
+    document.getElementById('btnExport').disabled=true;
+    return;
+  }
+
+  // Build cross-reference map: term_value → [{clientId, clientName, segId, segLabel, label, desc, notes}]
+  const crossMap={}; // key = term.value.toLowerCase()
+
+  clients.forEach(client=>{
+    if(!client.dictionary) return;
+    (client.segments||[]).forEach(seg=>{
+      const terms=client.dictionary[seg.id]||[];
+      terms.forEach(term=>{
+        const key=term.value.toLowerCase().trim();
+        if(!key) return;
+        if(!crossMap[key]) crossMap[key]={value:term.value, entries:[]};
+        crossMap[key].entries.push({
+          clientId:client.id,
+          clientName:client.name,
+          segId:seg.id,
+          segLabel:seg.label||seg.name||seg.id,
+          label:term.label||'',
+          desc:term.desc||'',
+          notes:term.notes||'',
+        });
+      });
+    });
+  });
+
+  // Build rows: only terms appearing in 2+ clients
+  _allRows=[];
+  Object.values(crossMap).forEach(item=>{
+    // Distinct clients
+    const clientIds=[...new Set(item.entries.map(e=>e.clientId))];
+    if(clientIds.length<2) return;
+    // Check label divergence
+    const labels=[...new Set(item.entries.map(e=>e.label.toLowerCase().trim()))].filter(Boolean);
+    const labelsDiv=labels.length>1;
+    _allRows.push({
+      value:item.value,
+      clientCount:clientIds.length,
+      entries:item.entries,
+      labelsDiv,
+      labels:[...new Set(item.entries.map(e=>e.label).filter(Boolean))],
+    });
+  });
+
+  // Sort by clientCount desc, then value asc
+  _allRows.sort((a,b)=>b.clientCount-a.clientCount||a.value.localeCompare(b.value,'pt-BR'));
+
+  // Update KPIs
+  const maxCount=_allRows.length?Math.max(..._allRows.map(r=>r.clientCount)):0;
+  const diffCount=_allRows.filter(r=>r.labelsDiv).length;
+  updateKPIs(_allRows,clients.length,maxCount,diffCount);
+
+  document.getElementById('btnExport').disabled=!_allRows.length;
+  applyFilters();
+}
+
+function updateKPIs(rows,clientCount,maxCount=0,diffCount=0){
+  document.getElementById('kpiTerms').textContent=rows.length||'—';
+  document.getElementById('kpiClients').textContent=clientCount||'—';
+  document.getElementById('kpiMax').textContent=maxCount||'—';
+  document.getElementById('kpiDiff').textContent=rows.length?diffCount:'—';
+}
+
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const minC=parseInt(document.getElementById('minClients').value)||2;
+  const filterDiff=document.getElementById('filterDiff').value;
+
+  _rows=_allRows.filter(r=>{
+    if(r.clientCount<minC) return false;
+    if(q && !r.value.toLowerCase().includes(q)) return false;
+    if(filterDiff==='diff' && !r.labelsDiv) return false;
+    if(filterDiff==='same' && r.labelsDiv) return false;
+    return true;
+  });
+
+  document.getElementById('countLabel').textContent=`${_rows.length} termo${_rows.length!==1?'s':''}`;
+  renderTable(_rows);
+}
+
+function renderTable(rows){
+  const wrap=document.getElementById('tableWrap');
+  if(!rows.length){
+    wrap.innerHTML=`<div class="empty-state">
+      <div class="icon">🔍</div>
+      <div class="msg">Nenhum resultado</div>
+      <div class="sub">Ajuste os filtros acima</div>
+    </div>`;
+    return;
+  }
+
+  let html=`<table>
+  <thead><tr>
+    <th class="sortable" onclick="sortBy('value')">Valor</th>
+    <th class="sortable" onclick="sortBy('count')">Clientes</th>
+    <th>Labels</th>
+    <th>Aparece em</th>
+  </tr></thead>
+  <tbody>`;
+
+  rows.forEach(r=>{
+    // Labels: show unique labels
+    const uniqueLabels=[...new Set(r.entries.map(e=>e.label).filter(Boolean))];
+    const labelsHtml=uniqueLabels.map(l=>`<span class="label-chip">${esc(l)}</span>`).join('')||'<span style="color:var(--faint);font-size:11px">—</span>';
+    const divBadge=r.labelsDiv
+      ?`<span class="diff-badge diff-diff" title="Labels divergem entre clientes">⚠ diverge</span>`
+      :`<span class="diff-badge diff-same" title="Label igual em todos os clientes">✓ uniforme</span>`;
+
+    // Entries grouped by client
+    const byClient={};
+    r.entries.forEach(e=>{
+      if(!byClient[e.clientId]) byClient[e.clientId]={name:e.clientName,segs:[]};
+      byClient[e.clientId].segs.push(e.segLabel);
+    });
+    const clientsHtml=Object.values(byClient).map(c=>
+      `<span class="client-chip">${esc(c.name)}<span class="seg">${c.segs.map(s=>esc(s)).join(', ')}</span></span>`
+    ).join('');
+
+    html+=`<tr>
+      <td class="val">${esc(r.value)}</td>
+      <td class="count">${r.clientCount} ${divBadge}</td>
+      <td>${labelsHtml}</td>
+      <td>${clientsHtml}</td>
+    </tr>`;
+  });
+
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
+}
+
+/* ===== SORT ===== */
+let _sortKey='count', _sortAsc=false;
+function sortBy(key){
+  if(_sortKey===key) _sortAsc=!_sortAsc;
+  else { _sortKey=key; _sortAsc=key==='value'; }
+  _allRows.sort((a,b)=>{
+    let v=0;
+    if(key==='value') v=a.value.localeCompare(b.value,'pt-BR');
+    else if(key==='count') v=a.clientCount-b.clientCount;
+    return _sortAsc?v:-v;
+  });
+  applyFilters();
+}
+
+/* ===== CSV EXPORT ===== */
+function exportCSV(){
+  if(!_rows.length){ showToast('Nada para exportar'); return; }
+  const escCsv=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const header=['valor','qtd_clientes','labels_unicas','labels_divergem','clientes','segmentos'];
+  const dataRows=_rows.map(r=>{
+    const uniqueLabels=[...new Set(r.entries.map(e=>e.label).filter(Boolean))].join(' | ');
+    const clients=[...new Set(r.entries.map(e=>e.clientName))].join(' | ');
+    const segs=[...new Set(r.entries.map(e=>e.segLabel))].join(' | ');
+    return [r.value,r.clientCount,uniqueLabels,r.labelsDiv?'sim':'nao',clients,segs];
+  });
+  const csv=[header,...dataRows].map(row=>row.map(escCsv).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`dict-cross-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSV exportado');
+}
+
+/* ===== INIT ===== */
+runAnalysis();
+</script>
+</body>
+</html>

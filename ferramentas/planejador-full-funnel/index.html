@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planejador de Campanha Full-Funnel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --header: #1a237e;
+  --accent: #1F36C7;
+  --bg-highlight: #e8ecfd;
+  --border: #d6dbf2;
+  --page-bg: #f4f5fb;
+  --white: #ffffff;
+  --text: #1a1a2e;
+  --text-muted: #5c6080;
+  --success: #2e7d32;
+  --warning: #e65100;
+  --danger: #c62828;
+  --green-bg: #e8f5e9;
+  --orange-bg: #fff3e0;
+  --red-bg: #ffebee;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--page-bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  background: var(--header);
+  color: white;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+header .icon { font-size: 28px; }
+header h1 { font-size: 20px; font-weight: 700; }
+header p { font-size: 13px; opacity: .75; margin-top: 2px; }
+
+.main {
+  min-width: 0;
+  padding: 28px 32px;
+}
+
+/* Wizard Steps */
+.wizard-steps {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.step-tab {
+  flex: 1;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  transition: background .2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.step-tab:last-child { border-right: none; }
+.step-tab.active {
+  background: var(--bg-highlight);
+  color: var(--accent);
+}
+.step-tab.done { color: var(--success); }
+.step-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  flex-shrink: 0;
+}
+.step-tab.active .step-num { background: var(--accent); color: white; }
+.step-tab.done .step-num { background: var(--success); color: white; }
+
+/* Sections */
+.section { display: none; }
+.section.active { display: block; }
+
+/* Cards */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--header);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Form grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+.form-group input,
+.form-group select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: white;
+  transition: border-color .2s;
+}
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(31,54,199,.1);
+}
+
+/* Funnel Stage Cards */
+.stage-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) { .stage-cards { grid-template-columns: 1fr; } }
+
+.stage-card {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  transition: border-color .2s;
+}
+.stage-card.topo { border-top: 4px solid #1a237e; }
+.stage-card.meio { border-top: 4px solid #1F36C7; }
+.stage-card.fundo { border-top: 4px solid #42a5f5; }
+
+.stage-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.stage-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.stage-budget-display {
+  background: var(--bg-highlight);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.stage-budget-display .label { font-size: 11px; color: var(--text-muted); }
+.stage-budget-display .amount { font-size: 18px; font-weight: 700; color: var(--accent); }
+.stage-budget-display .pct { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+
+.slider-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.slider-wrap input[type=range] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  cursor: pointer;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+.slider-pct { font-size: 15px; font-weight: 700; color: var(--accent); min-width: 42px; text-align: right; }
+
+.sum-warning {
+  background: var(--red-bg);
+  border: 1px solid #ef9a9a;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  margin-bottom: 14px;
+  display: none;
+}
+.sum-ok {
+  background: var(--green-bg);
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--success);
+  margin-bottom: 14px;
+}
+
+.channel-select select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+}
+.channel-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+
+/* Scenario slider */
+.scenario-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-highlight);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+.scenario-wrap label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.scenario-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.scenario-val { font-size: 15px; font-weight: 700; color: var(--accent); min-width: 80px; }
+
+/* Results */
+.kpi-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.kpi-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+.kpi-card .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.kpi-card .kpi-value { font-size: 22px; font-weight: 700; color: var(--accent); }
+.kpi-card .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* Funnel visual */
+.funnel-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  margin: 20px auto;
+  max-width: 520px;
+}
+.funnel-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+.funnel-shape {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 4px;
+  padding: 10px 0;
+  transition: width .4s;
+  min-width: 60px;
+  text-align: center;
+  flex-direction: column;
+  gap: 2px;
+}
+.funnel-shape .f-label { font-size: 11px; opacity: .85; font-weight: 400; }
+.funnel-shape .f-value { font-size: 14px; font-weight: 700; }
+.funnel-arrow { font-size: 20px; color: var(--text-muted); text-align: center; width: 100%; margin: -2px 0; }
+.funnel-drop { font-size: 12px; color: var(--text-muted); min-width: 80px; }
+
+/* Results table */
+.results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.results-table th {
+  background: var(--bg-highlight);
+  color: var(--accent);
+  font-weight: 700;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.results-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.results-table tr:last-child td { border-bottom: none; font-weight: 700; background: var(--bg-highlight); }
+.results-table tr:hover td { background: #f8f9ff; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-topo { background: #e8eaf6; color: #1a237e; }
+.badge-meio { background: #e3f2fd; color: #1565c0; }
+.badge-fundo { background: #e1f5fe; color: #01579b; }
+
+/* Nav buttons */
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+}
+.btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #1628a0; }
+.btn-secondary { background: white; color: var(--accent); border: 1.5px solid var(--accent); }
+.btn-secondary:hover { background: var(--bg-highlight); }
+.btn-success { background: #2e7d32; color: white; }
+.btn-success:hover { background: #1b5e20; }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-ghost:hover { background: white; }
+
+.roas-status {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 14px;
+  font-weight: 600;
+}
+.roas-ok { background: var(--green-bg); color: var(--success); border: 1px solid #a5d6a7; }
+.roas-warn { background: var(--orange-bg); color: #bf360c; border: 1px solid #ffcc80; }
+.roas-bad { background: var(--red-bg); color: var(--danger); border: 1px solid #ef9a9a; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="icon">🎯</div>
+  <div>
+    <h1>Planejador de Campanha Full-Funnel</h1>
+    <p>Distribua budget por etapa do funil e projete KPIs com benchmarks de mercado BR</p>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Wizard Tabs -->
+  <div class="wizard-steps">
+    <div class="step-tab active" id="tab1" onclick="goStep(1)">
+      <div class="step-num">1</div>
+      <div>
+        <div>Configuração</div>
+      </div>
+    </div>
+    <div class="step-tab" id="tab2" onclick="goStep(2)">
+      <div class="step-num">2</div>
+      <div>
+        <div>Distribuição</div>
+      </div>
+    </div>
+    <div class="step-tab" id="tab3" onclick="goStep(3)">
+      <div class="step-num">3</div>
+      <div>
+        <div>Projeção de KPIs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Configuração -->
+  <div class="section active" id="section1">
+    <div class="card">
+      <div class="card-title">⚙️ Dados da Campanha</div>
+      <div class="form-grid">
+        <div class="form-group" style="grid-column: span 2;">
+          <label>Nome da Campanha</label>
+          <input type="text" id="campName" placeholder="Ex: Campanha Black Friday 2024" />
+        </div>
+        <div class="form-group">
+          <label>Objetivo Final</label>
+          <select id="objetivo">
+            <option value="vendas">Vendas / E-commerce</option>
+            <option value="leads">Leads / Cadastros</option>
+            <option value="instalacoes">Instalações de App</option>
+            <option value="branding">Branding / Awareness</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vertical</label>
+          <select id="vertical">
+            <option value="ecommerce">E-commerce</option>
+            <option value="servicos">Serviços B2C</option>
+            <option value="b2b">B2B</option>
+            <option value="app">Aplicativo</option>
+            <option value="financeiro">Financeiro</option>
+            <option value="educacao">Educação</option>
+            <option value="automotivo">Automotivo</option>
+            <option value="varejo">Varejo físico</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Budget Total (R$)</label>
+          <input type="text" id="budgetTotal" placeholder="50.000,00" oninput="formatBRL(this)" />
+        </div>
+        <div class="form-group">
+          <label>Período (dias)</label>
+          <input type="number" id="periodo" placeholder="30" min="1" max="365" value="30" />
+        </div>
+        <div class="form-group">
+          <label>Ticket Médio (R$)</label>
+          <input type="text" id="ticketMedio" placeholder="150,00" oninput="formatBRL(this)" />
+        </div>
+        <div class="form-group">
+          <label>Meta de ROAS (opcional)</label>
+          <input type="number" id="metaRoas" placeholder="4" step="0.1" min="0" />
+        </div>
+      </div>
+    </div>
+    <div class="nav-buttons">
+      <div></div>
+      <button class="btn btn-primary" onclick="goStep(2)">Próximo: Distribuição →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Distribuição -->
+  <div class="section" id="section2">
+
+    <div id="sumWarning" class="sum-warning">⚠️ A soma das etapas deve ser 100%. Ajuste os sliders.</div>
+    <div id="sumOk" class="sum-ok">✅ Distribuição equilibrada — 100% alocado.</div>
+
+    <div class="stage-cards">
+
+      <!-- TOPO -->
+      <div class="stage-card topo">
+        <div class="stage-title">🔼 Topo do Funil</div>
+        <div class="stage-desc">Awareness — Gerar massa de audiência</div>
+        <div class="stage-budget-display">
+          <div>
+            <div class="label">Budget alocado</div>
+            <div class="amount" id="budgetTopo">R$ 0</div>
+          </div>
+          <div class="pct" id="pctTopo">40%</div>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="sliderTopo" min="0" max="100" value="40" oninput="updateSliders('topo')" />
+          <span class="slider-pct" id="spTopo">40%</span>
+        </div>
+        <div class="channel-label">Canal principal</div>
+        <div class="channel-select">
+          <select id="canalTopo">
+            <option value="youtube">YouTube</option>
+            <option value="dv360">DV360 Display</option>
+            <option value="meta_reach">Meta Ads (Alcance)</option>
+            <option value="meta_video">Meta Ads (Vídeo)</option>
+            <option value="programatico">Programático Open</option>
+          </select>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+          Métricas: Impressões · Alcance · CPM · Frequência
+        </div>
+      </div>
+
+      <!-- MEIO -->
+      <div class="stage-card meio">
+        <div class="stage-title">➡️ Meio do Funil</div>
+        <div class="stage-desc">Consideração — Qualificar interesse</div>
+        <div class="stage-budget-display">
+          <div>
+            <div class="label">Budget alocado</div>
+            <div class="amount" id="budgetMeio">R$ 0</div>
+          </div>
+          <div class="pct" id="pctMeio">35%</div>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="sliderMeio" min="0" max="100" value="35" oninput="updateSliders('meio')" />
+          <span class="slider-pct" id="spMeio">35%</span>
+        </div>
+        <div class="channel-label">Canal principal</div>
+        <div class="channel-select">
+          <select id="canalMeio">
+            <option value="meta_traffic">Meta Ads (Tráfego)</option>
+            <option value="google_display">Google Display</option>
+            <option value="youtube">YouTube</option>
+            <option value="meta_engagement">Meta Ads (Engajamento)</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+          Métricas: Cliques · CTR · Visualizações · Sessões
+        </div>
+      </div>
+
+      <!-- FUNDO -->
+      <div class="stage-card fundo">
+        <div class="stage-title">🔽 Fundo do Funil</div>
+        <div class="stage-desc">Conversão — Fechar vendas/leads</div>
+        <div class="stage-budget-display">
+          <div>
+            <div class="label">Budget alocado</div>
+            <div class="amount" id="budgetFundo">R$ 0</div>
+          </div>
+          <div class="pct" id="pctFundo">25%</div>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="sliderFundo" min="0" max="100" value="25" oninput="updateSliders('fundo')" />
+          <span class="slider-pct" id="spFundo">25%</span>
+        </div>
+        <div class="channel-label">Canal principal</div>
+        <div class="channel-select">
+          <select id="canalFundo">
+            <option value="google_search">Google Search</option>
+            <option value="meta_conv">Meta Ads (Conversões)</option>
+            <option value="remarketing">Remarketing (Display)</option>
+            <option value="meta_remarketing">Meta Remarketing</option>
+          </select>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+          Métricas: Conversões · CPA · ROAS · CVR
+        </div>
+      </div>
+
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-ghost" onclick="goStep(1)">← Voltar</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Calcular Projeção →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Projeção -->
+  <div class="section" id="section3">
+
+    <!-- Scenario -->
+    <div class="scenario-wrap">
+      <label>🎚️ Cenário:</label>
+      <div style="flex:1">
+        <input type="range" id="scenarioSlider" min="0" max="2" step="1" value="1"
+          oninput="updateScenario()" style="width:100%; -webkit-appearance:none; height:6px; border-radius:3px; background: var(--border); cursor:pointer;" />
+        <div class="scenario-labels"><span>Conservador (×0,7)</span><span>Realista (×1,0)</span><span>Otimista (×1,3)</span></div>
+      </div>
+      <span class="scenario-val" id="scenarioLabel">Realista</span>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-cards" id="kpiCards"></div>
+
+    <!-- Funnel Visual -->
+    <div class="card">
+      <div class="card-title">📊 Fluxo do Funil</div>
+      <div class="funnel-visual" id="funnelVisual"></div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card">
+      <div class="card-title">📋 Projeção por Etapa</div>
+      <div style="overflow-x:auto;">
+        <table class="results-table" id="resultsTable"></table>
+      </div>
+    </div>
+
+    <!-- ROAS status -->
+    <div id="roasStatus"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-ghost" onclick="goStep(2)">← Voltar</button>
+      <button class="btn btn-success" onclick="copiarPlano()">📋 Copiar Plano</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---- Benchmarks ----
+const BENCHMARKS = {
+  // CPM em R$
+  cpm: {
+    youtube: 22, dv360: 8, meta_reach: 12, meta_video: 18, programatico: 5,
+    meta_traffic: 14, google_display: 6, meta_engagement: 10, linkedin: 50,
+    google_search: null, meta_conv: 16, remarketing: 8, meta_remarketing: 15
+  },
+  // CTR médio
+  ctr: {
+    youtube: 0.008, dv360: 0.0008, meta_reach: 0.009, meta_video: 0.012, programatico: 0.0007,
+    meta_traffic: 0.013, google_display: 0.001, meta_engagement: 0.008, linkedin: 0.005,
+    google_search: 0.05, meta_conv: 0.013, remarketing: 0.0012, meta_remarketing: 0.014
+  },
+  // CVR por vertical (clique → conversão)
+  cvr: {
+    ecommerce: 0.025, servicos: 0.04, b2b: 0.01, app: 0.08,
+    financeiro: 0.018, educacao: 0.035, automotivo: 0.007, varejo: 0.025
+  }
+};
+
+// Adjust CVR by funnel stage
+const CVR_STAGE_MULT = { topo: 0.1, meio: 0.3, fundo: 1.0 };
+
+const SCENARIO_MULT = [0.7, 1.0, 1.3];
+const SCENARIO_NAMES = ['Conservador', 'Realista', 'Otimista'];
+
+function formatBRL(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (!v) { el.value = ''; return; }
+  let n = parseInt(v, 10);
+  el.value = n.toLocaleString('pt-BR');
+}
+
+function parseBRL(str) {
+  if (!str) return 0;
+  return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+}
+
+function fmtBRL(n) {
+  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function fmtPct(n) { return (n * 100).toFixed(2) + '%'; }
+function fmtNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+
+// Wizard navigation
+function goStep(n) {
+  if (n === 3) calcProjection();
+  [1,2,3].forEach(i => {
+    document.getElementById('section' + i).classList.toggle('active', i === n);
+    const tab = document.getElementById('tab' + i);
+    tab.classList.toggle('active', i === n);
+    tab.classList.toggle('done', i < n);
+  });
+}
+
+// Slider sync
+let sliders = { topo: 40, meio: 35, fundo: 25 };
+function updateSliders(changed) {
+  sliders[changed] = parseInt(document.getElementById('slider' + cap(changed)).value);
+  const others = ['topo', 'meio', 'fundo'].filter(s => s !== changed);
+  const remaining = 100 - sliders[changed];
+  const total = sliders[others[0]] + sliders[others[1]];
+  if (total > 0) {
+    sliders[others[0]] = Math.round(remaining * sliders[others[0]] / total);
+    sliders[others[1]] = 100 - sliders[changed] - sliders[others[0]];
+  } else {
+    sliders[others[0]] = Math.round(remaining / 2);
+    sliders[others[1]] = remaining - sliders[others[0]];
+  }
+  ['topo','meio','fundo'].forEach(s => {
+    document.getElementById('slider' + cap(s)).value = sliders[s];
+    document.getElementById('sp' + cap(s)).textContent = sliders[s] + '%';
+    document.getElementById('pct' + cap(s)).textContent = sliders[s] + '%';
+  });
+  renderBudgetAmounts();
+  const sum = sliders.topo + sliders.meio + sliders.fundo;
+  document.getElementById('sumWarning').style.display = sum !== 100 ? 'block' : 'none';
+  document.getElementById('sumOk').style.display = sum === 100 ? 'block' : 'none';
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function renderBudgetAmounts() {
+  const total = parseBRL(document.getElementById('budgetTotal').value);
+  ['topo','meio','fundo'].forEach(s => {
+    document.getElementById('budget' + cap(s)).textContent = fmtBRL(total * sliders[s] / 100);
+  });
+}
+
+function updateScenario() {
+  const v = parseInt(document.getElementById('scenarioSlider').value);
+  document.getElementById('scenarioLabel').textContent = SCENARIO_NAMES[v];
+  calcProjection();
+}
+
+function calcProjection() {
+  const total = parseBRL(document.getElementById('budgetTotal').value) || 50000;
+  const ticket = parseBRL(document.getElementById('ticketMedio').value) || 150;
+  const metaRoas = parseFloat(document.getElementById('metaRoas').value) || 0;
+  const vertical = document.getElementById('vertical').value;
+  const objetivo = document.getElementById('objetivo').value;
+  const mult = SCENARIO_MULT[parseInt(document.getElementById('scenarioSlider').value)];
+
+  const stages = [
+    { key: 'topo', label: 'Topo', canal: document.getElementById('canalTopo').value, badge: 'badge-topo' },
+    { key: 'meio', label: 'Meio', canal: document.getElementById('canalMeio').value, badge: 'badge-meio' },
+    { key: 'fundo', label: 'Fundo', canal: document.getElementById('canalFundo').value, badge: 'badge-fundo' },
+  ];
+
+  let totalImpr = 0, totalCliques = 0, totalConv = 0, totalReceita = 0;
+  const rows = [];
+
+  stages.forEach(st => {
+    const budget = total * sliders[st.key] / 100;
+    const cpm = (BENCHMARKS.cpm[st.canal] || 10) * mult;
+    const ctr = (BENCHMARKS.ctr[st.canal] || 0.01) * mult;
+    const baseCvr = BENCHMARKS.cvr[vertical] || 0.025;
+    const cvr = baseCvr * CVR_STAGE_MULT[st.key] * mult;
+
+    const impr = cpm > 0 ? (budget / cpm) * 1000 : 0;
+    const cliques = impr * ctr;
+    const conv = cliques * cvr;
+    const receita = objetivo !== 'branding' ? conv * ticket : 0;
+    const cpa = conv > 0 ? budget / conv : 0;
+
+    totalImpr += impr;
+    totalCliques += cliques;
+    totalConv += conv;
+    totalReceita += receita;
+
+    rows.push({ ...st, budget, cpm, ctr, cvr, impr, cliques, conv, receita, cpa });
+  });
+
+  const roas = totalReceita > 0 ? totalReceita / total : 0;
+  const cpaMedio = totalConv > 0 ? total / totalConv : 0;
+
+  // KPI Cards
+  document.getElementById('kpiCards').innerHTML = [
+    { label: 'Impressões Est.', value: fmtNum(totalImpr), sub: 'Total do funil' },
+    { label: 'Cliques Est.', value: fmtNum(totalCliques), sub: 'CTR médio: ' + fmtPct(totalCliques / totalImpr) },
+    { label: 'Conversões Est.', value: fmtNum(totalConv), sub: objetivo !== 'branding' ? '' : 'N/A p/ branding' },
+    { label: 'CPA Médio Est.', value: objetivo !== 'branding' ? fmtBRL(cpaMedio) : 'N/A', sub: 'por conversão' },
+    { label: 'Receita Est.', value: objetivo !== 'branding' ? fmtBRL(totalReceita) : 'N/A', sub: 'ticket R$ ' + parseBRL(document.getElementById('ticketMedio').value || '0').toLocaleString('pt-BR') },
+    { label: 'ROAS Est.', value: objetivo !== 'branding' ? roas.toFixed(1) + ':1' : 'N/A', sub: 'retorno sobre ad spend' },
+  ].map(k => `<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  // Funnel Visual
+  const funnelData = [
+    { label: 'Impressões', value: totalImpr, color: '#1a237e' },
+    { label: 'Cliques', value: totalCliques, color: '#283593' },
+    { label: 'Conversões', value: totalConv, color: '#1F36C7' },
+    { label: 'Receita', value: totalReceita, color: '#42a5f5', prefix: 'R$ ', isMoney: true },
+  ];
+  const maxVal = funnelData[0].value;
+  document.getElementById('funnelVisual').innerHTML = funnelData.map((f, i) => {
+    const pct = Math.max(20, Math.round((f.value / maxVal) * 100));
+    const displayVal = f.isMoney ? (objetivo !== 'branding' ? fmtBRL(f.value) : 'N/A') : fmtNum(f.value);
+    const dropPct = i > 0 && funnelData[i-1].value > 0 ? (f.value / funnelData[i-1].value * 100).toFixed(1) + '%' : '';
+    return `
+      ${i > 0 ? `<div class="funnel-arrow">↓ <span style="font-size:12px">${dropPct} chegam</span></div>` : ''}
+      <div class="funnel-row">
+        <div class="funnel-shape" style="width:${pct}%; background:${f.color}; margin: 0 auto;">
+          <span class="f-label">${f.label}</span>
+          <span class="f-value">${displayVal}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Results Table
+  const headers = ['Etapa','Canal','Budget','Impressões','CTR','Cliques','CVR','Conversões','CPA','Receita'];
+  let tbody = rows.map(r => `<tr>
+    <td><span class="badge ${r.badge}">${r.label}</span></td>
+    <td>${canalName(r.canal)}</td>
+    <td>${fmtBRL(r.budget)}</td>
+    <td>${fmtNum(r.impr)}</td>
+    <td>${fmtPct(r.ctr)}</td>
+    <td>${fmtNum(r.cliques)}</td>
+    <td>${fmtPct(r.cvr)}</td>
+    <td>${fmtNum(r.conv)}</td>
+    <td>${r.conv > 0 ? fmtBRL(r.cpa) : '—'}</td>
+    <td>${objetivo !== 'branding' ? fmtBRL(r.receita) : '—'}</td>
+  </tr>`).join('');
+  tbody += `<tr>
+    <td colspan="2">TOTAL</td>
+    <td>${fmtBRL(total)}</td>
+    <td>${fmtNum(totalImpr)}</td>
+    <td>${fmtPct(totalCliques/totalImpr)}</td>
+    <td>${fmtNum(totalCliques)}</td>
+    <td>${fmtPct(totalConv/totalCliques)}</td>
+    <td>${fmtNum(totalConv)}</td>
+    <td>${fmtBRL(cpaMedio)}</td>
+    <td>${objetivo !== 'branding' ? fmtBRL(totalReceita) : '—'}</td>
+  </tr>`;
+  document.getElementById('resultsTable').innerHTML =
+    '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>' + tbody + '</tbody>';
+
+  // ROAS status
+  if (metaRoas > 0 && objetivo !== 'branding') {
+    let cls, msg;
+    if (roas >= metaRoas) { cls = 'roas-ok'; msg = `✅ ROAS estimado de ${roas.toFixed(1)}:1 está acima da sua meta de ${metaRoas}:1.`; }
+    else if (roas >= metaRoas * 0.7) { cls = 'roas-warn'; msg = `⚠️ ROAS estimado de ${roas.toFixed(1)}:1 está abaixo da meta de ${metaRoas}:1 — considere ajustar distribuição ou ticket médio.`; }
+    else { cls = 'roas-bad'; msg = `❌ ROAS estimado de ${roas.toFixed(1)}:1 está muito abaixo da meta de ${metaRoas}:1 — revise budget ou objetivos.`; }
+    document.getElementById('roasStatus').innerHTML = `<div class="roas-status ${cls}">${msg}</div>`;
+  } else {
+    document.getElementById('roasStatus').innerHTML = '';
+  }
+}
+
+function canalName(c) {
+  const names = {
+    youtube:'YouTube', dv360:'DV360 Display', meta_reach:'Meta Alcance',
+    meta_video:'Meta Vídeo', programatico:'Programático',
+    meta_traffic:'Meta Tráfego', google_display:'Google Display',
+    meta_engagement:'Meta Engajamento', linkedin:'LinkedIn',
+    google_search:'Google Search', meta_conv:'Meta Conversões',
+    remarketing:'Remarketing Display', meta_remarketing:'Meta Remarketing'
+  };
+  return names[c] || c;
+}
+
+function copiarPlano() {
+  const name = document.getElementById('campName').value || 'Campanha';
+  const total = parseBRL(document.getElementById('budgetTotal').value);
+  const mult = SCENARIO_MULT[parseInt(document.getElementById('scenarioSlider').value)];
+  const scenario = SCENARIO_NAMES[parseInt(document.getElementById('scenarioSlider').value)];
+  const vertical = document.getElementById('vertical').value;
+  const ticket = parseBRL(document.getElementById('ticketMedio').value);
+
+  let lines = [
+    `📋 PLANO DE CAMPANHA FULL-FUNNEL`,
+    `Campanha: ${name}`,
+    `Cenário: ${scenario}  |  Budget total: ${fmtBRL(total)}`,
+    ``,
+    `DISTRIBUIÇÃO POR ETAPA:`,
+    `• 🔼 Topo (Awareness): ${sliders.topo}% → ${fmtBRL(total * sliders.topo / 100)}`,
+    `• ➡️ Meio (Consideração): ${sliders.meio}% → ${fmtBRL(total * sliders.meio / 100)}`,
+    `• 🔽 Fundo (Conversão): ${sliders.fundo}% → ${fmtBRL(total * sliders.fundo / 100)}`,
+    ``,
+  ];
+
+  const kpis = document.querySelectorAll('.kpi-card');
+  lines.push('KPIs ESTIMADOS:');
+  kpis.forEach(k => {
+    const lbl = k.querySelector('.kpi-label').textContent;
+    const val = k.querySelector('.kpi-value').textContent;
+    lines.push(`• ${lbl}: ${val}`);
+  });
+
+  lines.push(``, `Gerado em: ${new Date().toLocaleDateString('pt-BR')}`);
+  lines.push(`Ferramenta: Planejador Full-Funnel — falssp.github.io/Projeto-NC/ferramentas/planejador-full-funnel/`);
+
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copiado!';
+    setTimeout(() => { btn.textContent = '📋 Copiar Plano'; }, 2000);
+  });
+}
+
+// Init
+window.onload = () => {
+  updateSliders('topo');
+  document.getElementById('sumOk').style.display = 'block';
+  document.getElementById('sumWarning').style.display = 'none';
+};
+</script>
+</body>
+</html>

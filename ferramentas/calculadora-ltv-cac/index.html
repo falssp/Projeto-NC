@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de LTV e CAC</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:16px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.3rem;font-weight:600}
+header p{font-size:.85rem;opacity:.8;margin-top:2px}
+.tabs-nav{background:#fff;border-bottom:2px solid #d6dbf2;padding:0 32px;display:flex;gap:4px}
+.tab-btn{padding:14px 20px;border:none;background:none;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:500;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab-btn.active{color:#1F36C7;border-bottom-color:#1F36C7}
+.tab-btn:hover{color:#1F36C7}
+.main{min-width:0;padding:28px 32px}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:24px}
+.card h2{font-size:1rem;font-weight:600;color:#1a237e;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #e8ecfd}
+.card h3{font-size:.9rem;font-weight:600;color:#333;margin-bottom:12px}
+label{display:block;font-size:.8rem;font-weight:500;color:#555;margin-bottom:4px;margin-top:12px}
+label:first-of-type{margin-top:0}
+input[type=number],input[type=text],select{width:100%;padding:9px 12px;border:1px solid #d6dbf2;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:.9rem;background:#fff;color:#1a1a2e;transition:border .2s}
+input:focus,select:focus{outline:none;border-color:#1F36C7}
+.btn{background:#1F36C7;color:#fff;border:none;padding:11px 24px;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:background .2s}
+.btn:hover{background:#1a237e}
+.btn-outline{background:#fff;color:#1F36C7;border:2px solid #1F36C7}
+.btn-outline:hover{background:#e8ecfd}
+.metric-card{background:#e8ecfd;border:1px solid #d6dbf2;border-radius:10px;padding:16px;text-align:center}
+.metric-card .label{font-size:.75rem;color:#555;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.metric-card .value{font-size:1.6rem;font-weight:700;color:#1a237e;margin:4px 0}
+.metric-card .sub{font-size:.78rem;color:#666}
+.metric-card.critical{background:#ffeef0;border-color:#f5c2c7} .metric-card.critical .value{color:#dc3545}
+.metric-card.warning{background:#fff8e1;border-color:#ffe082} .metric-card.warning .value{color:#e65100}
+.metric-card.good{background:#e8f5e9;border-color:#a5d6a7} .metric-card.good .value{color:#2e7d32}
+.metric-card.excellent{background:#e3f2fd;border-color:#90caf9} .metric-card.excellent .value{color:#1565c0}
+.gauge-wrap{margin:20px 0}
+.gauge-label{display:flex;justify-content:space-between;font-size:.75rem;color:#888;margin-bottom:4px}
+.gauge-track{height:14px;border-radius:7px;background:linear-gradient(to right,#dc3545 0%,#dc3545 20%,#e65100 20%,#e65100 40%,#2e7d32 40%,#2e7d32 70%,#1565c0 70%,#1565c0 100%);position:relative}
+.gauge-marker{position:absolute;top:-4px;width:4px;height:22px;background:#1a237e;border-radius:2px;transform:translateX(-50%);transition:left .4s}
+.gauge-marker-label{position:absolute;top:20px;transform:translateX(-50%);font-size:.75rem;font-weight:700;color:#1a237e;white-space:nowrap}
+.insight{background:#e8ecfd;border-left:4px solid #1F36C7;border-radius:0 8px 8px 0;padding:12px 16px;font-size:.88rem;margin-top:16px}
+.cohort-row{background:#fff;border:1px solid #d6dbf2;border-radius:10px;padding:16px;margin-bottom:12px}
+.cohort-row .cohort-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.cohort-row .cohort-header h4{font-weight:600;font-size:.9rem;color:#1a237e}
+.cohort-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.cohort-result{margin-top:12px;padding:10px 14px;background:#f4f5fb;border-radius:8px;font-size:.82rem}
+.bar-wrap{margin-top:8px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:.78rem}
+.bar-row span:first-child{width:60px;text-align:right;color:#666}
+.bar{height:16px;background:#1F36C7;border-radius:0 4px 4px 0;transition:width .4s;min-width:2px}
+.bar.break{background:#2e7d32}
+.bar-val{font-size:.75rem;color:#333;white-space:nowrap}
+.channel-row{display:grid;grid-template-columns:140px 80px 1fr 120px 80px 80px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0}
+.channel-row:last-child{border-bottom:none}
+.channel-name{font-weight:600;font-size:.85rem}
+.status-badge{padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600;text-align:center}
+.st-ok{background:#e8f5e9;color:#2e7d32}
+.st-warn{background:#fff8e1;color:#e65100}
+.st-bad{background:#ffeef0;color:#dc3545}
+.collapsible-btn{background:none;border:none;width:100%;text-align:left;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:600;color:#1F36C7;padding:10px 0;display:flex;justify-content:space-between}
+.collapsible-content{display:none}
+.collapsible-content.open{display:block}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}
+th{background:#e8ecfd;padding:8px 12px;text-align:left;font-weight:600;color:#1a237e;border:1px solid #d6dbf2}
+td{padding:8px 12px;border:1px solid #d6dbf2}
+tr:nth-child(even) td{background:#f9f9ff}
+.section-title{font-size:1rem;font-weight:700;color:#1a237e;margin-bottom:16px}
+.flex-end{display:flex;justify-content:flex-end;margin-top:16px}
+.tip{font-size:.78rem;color:#888;font-style:italic;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 Calculadora de LTV e CAC</h1>
+    <p>Lifetime Value · Customer Acquisition Cost · LTV:CAC Ratio · Payback Period</p>
+  </div>
+</header>
+
+<div class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab('basico')">LTV e CAC Básico</button>
+  <button class="tab-btn" onclick="switchTab('cohort')">Análise por Cohort</button>
+  <button class="tab-btn" onclick="switchTab('canais')">Meta de CPA por Canal</button>
+</div>
+
+<!-- TAB 1 -->
+<div class="main">
+<div id="tab-basico" class="tab-pane active">
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <h2>🧾 Dados do Cliente</h2>
+        <label>Ticket médio (R$)</label>
+        <input type="number" id="ticket" value="150" min="0" step="0.01" oninput="calcBasico()">
+        <label>Frequência de compra por ano</label>
+        <input type="number" id="freq" value="4" min="0" step="0.1" oninput="calcBasico()">
+        <label>Taxa de retenção anual (%)</label>
+        <input type="number" id="retencao" value="60" min="0" max="99" step="0.1" oninput="calcBasico()">
+        <label>Margem bruta (%)</label>
+        <input type="number" id="margem" value="40" min="0" max="100" step="0.1" oninput="calcBasico()">
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>💰 Dados de Aquisição</h2>
+        <label>Custo total de aquisição no período (R$)</label>
+        <input type="number" id="custo_total" value="50000" min="0" step="1" oninput="calcBasico()">
+        <label>Clientes adquiridos no período</label>
+        <input type="number" id="clientes" value="200" min="1" step="1" oninput="calcBasico()">
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>📈 Resultado</h2>
+        <div class="grid2" id="metric-cards" style="margin-bottom:16px"></div>
+        <div class="gauge-wrap">
+          <div class="gauge-label"><span>Crítico (&lt;1)</span><span>Atenção (1–3)</span><span>Saudável (3–5)</span><span>Excelente (&gt;5)</span></div>
+          <div class="gauge-track" id="gauge">
+            <div class="gauge-marker" id="gauge-marker" style="left:0%">
+              <div class="gauge-marker-label" id="gauge-label">—</div>
+            </div>
+          </div>
+        </div>
+        <div id="insight-basico" class="insight"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>📅 Receita Acumulada por Cliente</h2>
+        <div id="timeline-bars" class="bar-wrap"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2 -->
+<div id="tab-cohort" class="tab-pane">
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <h2>📋 Dados por Cohort (até 4)</h2>
+        <p class="tip">Preencha a receita acumulada por cohort em cada mês</p>
+        <div id="cohorts-container"></div>
+        <div class="flex-end" style="gap:8px;margin-top:12px">
+          <button class="btn btn-outline" onclick="addCohort()">+ Adicionar Cohort</button>
+          <button class="btn" onclick="calcCohorts()">Calcular</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>📊 Análise dos Cohorts</h2>
+        <div id="cohort-results"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3 -->
+<div id="tab-canais" class="tab-pane">
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <h2>🎯 Configuração</h2>
+        <label>LTV calculado (R$) — preencha o Tab 1 ou insira manualmente</label>
+        <input type="number" id="ltv_manual" value="" placeholder="Calculado automaticamente do Tab 1" min="0" step="0.01" oninput="calcCanais()">
+        <label>Ratio LTV:CAC alvo</label>
+        <input type="number" id="ratio_alvo" value="3" min="0.1" step="0.1" oninput="calcCanais()">
+        <div id="cac_max_display" class="insight" style="margin-top:16px"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>📡 Distribuição por Canal (%)</h2>
+        <p class="tip">Distribua o investimento entre os canais (soma pode ser ≠ 100%)</p>
+        <div id="canais-input"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>✅ Meta de CPA por Canal</h2>
+        <div class="channel-row" style="font-weight:700;font-size:.8rem;color:#1a237e;border-bottom:2px solid #d6dbf2">
+          <span>Canal</span><span>Mix %</span><span>CPA Máximo</span><span>CPA Atual (R$)</span><span>Status</span><span></span>
+        </div>
+        <div id="canais-results"></div>
+        <div id="insight-canais" class="insight" style="margin-top:16px"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <button class="collapsible-btn" onclick="toggleRef()">📚 Benchmarks LTV:CAC por Vertical <span id="ref-arrow">▼</span></button>
+        <div class="collapsible-content" id="ref-table">
+          <table>
+            <tr><th>Vertical</th><th>Mínimo viável</th><th>Saudável</th><th>Excelente</th></tr>
+            <tr><td>E-commerce</td><td>1.5:1</td><td>3:1</td><td>5:1+</td></tr>
+            <tr><td>SaaS</td><td>2:1</td><td>4:1</td><td>8:1+</td></tr>
+            <tr><td>Serviços B2C</td><td>2:1</td><td>3:1</td><td>5:1+</td></tr>
+            <tr><td>Financeiro</td><td>3:1</td><td>5:1</td><td>10:1+</td></tr>
+            <tr><td>Educação</td><td>2:1</td><td>4:1</td><td>7:1+</td></tr>
+            <tr><td>Saúde</td><td>2.5:1</td><td>4:1</td><td>8:1+</td></tr>
+          </table>
+          <p class="tip" style="margin-top:8px">Fonte: benchmarks de mercado B2C/B2B Brasil 2024/2025</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function fmt(v){if(isNaN(v)||!isFinite(v))return'—';return'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtN(v,d=2){if(isNaN(v)||!isFinite(v))return'—';return v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function fmtRatio(v){if(isNaN(v)||!isFinite(v))return'—';return fmtN(v,2)+':1'}
+
+function switchTab(t){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  event.target.classList.add('active');
+  if(t==='canais')calcCanais();
+}
+
+// ---- TAB 1 ----
+let _ltv=0,_cac=0;
+function calcBasico(){
+  const ticket=+document.getElementById('ticket').value||0;
+  const freq=+document.getElementById('freq').value||0;
+  const ret=(+document.getElementById('retencao').value||0)/100;
+  const mar=(+document.getElementById('margem').value||0)/100;
+  const custo=+document.getElementById('custo_total').value||0;
+  const cli=+document.getElementById('clientes').value||1;
+
+  const denom=1-ret;
+  const ltv=denom>0?(ticket*freq*mar)/denom:0;
+  const cac=cli>0?custo/cli:0;
+  const ratio=cac>0?ltv/cac:0;
+  const payback=cac>0&&ticket>0&&freq>0&&mar>0?cac/(ticket*(freq/12)*mar):0;
+
+  _ltv=ltv; _cac=cac;
+
+  // metric cards
+  let ratioClass='good';
+  if(ratio<1)ratioClass='critical';
+  else if(ratio<3)ratioClass='warning';
+  else if(ratio>=5)ratioClass='excellent';
+
+  let payClass='good';
+  if(payback>24)payClass='critical';
+  else if(payback>12)payClass='warning';
+
+  document.getElementById('metric-cards').innerHTML=`
+    <div class="metric-card"><div class="label">LTV</div><div class="value">${fmt(ltv)}</div><div class="sub">por cliente</div></div>
+    <div class="metric-card"><div class="label">CAC</div><div class="value">${fmt(cac)}</div><div class="sub">custo de aquisição</div></div>
+    <div class="metric-card ${ratioClass}"><div class="label">LTV : CAC</div><div class="value">${fmtRatio(ratio)}</div><div class="sub">${ratio<1?'Crítico':ratio<3?'Atenção':ratio<5?'Saudável':'Excelente'}</div></div>
+    <div class="metric-card ${payClass}"><div class="label">Payback</div><div class="value">${isFinite(payback)&&payback>0?fmtN(payback,1)+' meses':'—'}</div><div class="sub">para recuperar CAC</div></div>
+  `;
+
+  // gauge — clamp ratio to 0–8 for display, map to 0–100%
+  const maxGauge=8;
+  const pct=Math.min(ratio/maxGauge*100,100);
+  document.getElementById('gauge-marker').style.left=pct+'%';
+  document.getElementById('gauge-label').textContent=fmtRatio(ratio);
+
+  // insight
+  let ins='';
+  if(ratio<1)ins=`⚠️ Ratio crítico — cada cliente adquirido custa mais do que vale. Revise margem, retenção ou reduza o CAC urgentemente.`;
+  else if(ratio<3)ins=`💡 Ratio em zona de atenção. O negócio é viável mas a margem é apertada. Meta recomendada: ratio ≥ 3:1.`;
+  else if(ratio<5)ins=`✅ Ratio saudável. CPA de ${fmt(cac)} é sustentável com LTV de ${fmt(ltv)}. Payback em ${fmtN(payback,1)} meses.`;
+  else ins=`🏆 Ratio excelente! O canal está gerando clientes altamente rentáveis. Considere escalar investimento.`;
+  document.getElementById('insight-basico').innerHTML=ins;
+
+  // timeline bars
+  const months=[1,3,6,12,24,36];
+  let bars='';
+  let maxRev=0;
+  const revData=months.map(m=>{
+    const rev=ticket*(freq/12)*m*mar*(Math.pow(ret,m/12));
+    if(rev>maxRev)maxRev=rev;
+    return{m,rev};
+  });
+  // cumulative
+  let cum=0;
+  const cumData=months.map(m=>{
+    cum+=ticket*(freq/12)*mar*(Math.pow(ret,m/12));
+    return{m,cum};
+  });
+  if(maxRev===0)maxRev=1;
+  const maxCum=cumData[cumData.length-1].cum||1;
+  bars=cumData.map(d=>{
+    const pct=Math.min(d.cum/maxCum*100,100);
+    const broke=d.cum>=cac;
+    return`<div class="bar-row"><span>${d.m}m</span><div class="bar ${broke?'break':''}" style="width:${pct}%"></div><span class="bar-val">${fmt(d.cum)}${broke&&cac>0?' ✅':''}</span></div>`;
+  }).join('');
+  document.getElementById('timeline-bars').innerHTML=`<p style="font-size:.8rem;color:#555;margin-bottom:8px">Receita acumulada por cliente (barra verde = payback atingido)</p>`+bars;
+
+  // update Tab 3 LTV
+  const manualLtv=document.getElementById('ltv_manual');
+  if(!manualLtv.value)calcCanais();
+}
+
+// ---- TAB 2 ----
+let cohortCount=0;
+function addCohort(){
+  if(cohortCount>=4)return;
+  cohortCount++;
+  const id=cohortCount;
+  const div=document.createElement('div');
+  div.className='cohort-row';
+  div.id='cohort-'+id;
+  div.innerHTML=`
+    <div class="cohort-header">
+      <h4>Cohort ${id}</h4>
+    </div>
+    <div class="cohort-grid">
+      <div><label>Mês de aquisição</label><input type="text" placeholder="Jan/2024" id="ch-mes-${id}"></div>
+      <div><label>Clientes adquiridos</label><input type="number" placeholder="100" id="ch-cli-${id}" min="1"></div>
+      <div><label>Custo de aquisição (R$)</label><input type="number" placeholder="10000" id="ch-custo-${id}" min="0"></div>
+      <div><label>Receita mês 1 (R$)</label><input type="number" placeholder="5000" id="ch-r1-${id}" min="0"></div>
+      <div><label>Receita mês 2 (R$)</label><input type="number" placeholder="" id="ch-r2-${id}" min="0"></div>
+      <div><label>Receita mês 3 (R$)</label><input type="number" placeholder="" id="ch-r3-${id}" min="0"></div>
+      <div><label>Receita mês 6 (R$)</label><input type="number" placeholder="" id="ch-r6-${id}" min="0"></div>
+      <div><label>Receita mês 12 (R$)</label><input type="number" placeholder="" id="ch-r12-${id}" min="0"></div>
+    </div>
+  `;
+  document.getElementById('cohorts-container').appendChild(div);
+}
+function calcCohorts(){
+  let html='';
+  let bestRatio=0,bestId=0;
+  const months=[1,2,3,6,12];
+  const results=[];
+  for(let i=1;i<=cohortCount;i++){
+    const mes=document.getElementById('ch-mes-'+i)?.value||'Cohort '+i;
+    const cli=+document.getElementById('ch-cli-'+i)?.value||1;
+    const custo=+document.getElementById('ch-custo-'+i)?.value||0;
+    const recs=months.map(m=>(+document.getElementById('ch-r'+m+'-'+i)?.value||0));
+    const cumRev=[];let c=0;
+    recs.forEach(r=>{c+=r;cumRev.push(c);});
+    const cac=custo/cli;
+    const ltv12=cumRev[4]/cli;
+    const ratio=cac>0?ltv12/cac:0;
+    // breakeven month
+    let beMonth='> 12 meses';
+    for(let j=0;j<months.length;j++){
+      if(cumRev[j]>=custo){beMonth='Mês '+months[j];break;}
+    }
+    if(ratio>bestRatio){bestRatio=ratio;bestId=i;}
+    results.push({mes,cac,ltv12,ratio,beMonth,cumRev,cli,i});
+  }
+  if(results.length===0){document.getElementById('cohort-results').innerHTML='<p style="color:#888">Adicione cohorts e clique em Calcular.</p>';return;}
+  const maxCum=Math.max(...results.map(r=>r.cumRev[r.cumRev.length-1]/r.cli))||1;
+  html=results.map(r=>{
+    const isBest=r.i===bestId;
+    const bars=months.map((m,j)=>{
+      const pct=Math.min((r.cumRev[j]/r.cli)/maxCum*100,100);
+      return`<div class="bar-row"><span>Mês ${m}</span><div class="bar" style="width:${pct}%;background:${isBest?'#1a237e':'#1F36C7'}"></div><span class="bar-val">${fmt(r.cumRev[j]/r.cli)}</span></div>`;
+    }).join('');
+    return`<div style="border:1px solid ${isBest?'#1a237e':'#d6dbf2'};border-radius:10px;padding:14px;margin-bottom:12px;background:${isBest?'#e8ecfd':'#fff'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>${r.mes}${isBest?' 🏆 Melhor cohort':''}</strong>
+        <span style="font-size:.8rem;color:#555">CAC: ${fmt(r.cac)} | LTV 12m: ${fmt(r.ltv12)} | Ratio: ${fmtRatio(r.ratio)}</span>
+      </div>
+      <div class="cohort-result">Breakeven: <strong>${r.beMonth}</strong></div>
+      ${bars}
+    </div>`;
+  }).join('');
+  document.getElementById('cohort-results').innerHTML=html;
+}
+// init cohorts
+addCohort();addCohort();
+
+// ---- TAB 3 ----
+const CANAIS=[
+  {id:'meta',name:'Meta Ads',icon:'📘'},
+  {id:'google',name:'Google Ads',icon:'🔵'},
+  {id:'linkedin',name:'LinkedIn',icon:'💼'},
+  {id:'tiktok',name:'TikTok',icon:'🎵'},
+  {id:'prog',name:'Programático',icon:'📡'},
+];
+function initCanais(){
+  document.getElementById('canais-input').innerHTML=CANAIS.map(c=>`
+    <div style="display:grid;grid-template-columns:140px 80px 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0">
+      <span style="font-size:.85rem;font-weight:600">${c.icon} ${c.name}</span>
+      <input type="number" id="mix-${c.id}" value="${c.id==='meta'?40:c.id==='google'?30:c.id==='linkedin'?10:c.id==='tiktok'?10:10}" min="0" max="100" step="1" oninput="calcCanais()" style="text-align:center">
+      <span style="font-size:.75rem;color:#888">% do budget</span>
+    </div>
+  `).join('');
+  document.getElementById('canais-results').innerHTML=CANAIS.map(c=>`
+    <div class="channel-row" id="cres-${c.id}"></div>
+  `).join('');
+}
+function calcCanais(){
+  const ltvManual=+document.getElementById('ltv_manual')?.value||0;
+  const ltv=ltvManual>0?ltvManual:_ltv;
+  const ratioAlvo=+document.getElementById('ratio_alvo')?.value||3;
+  const maxCac=ratioAlvo>0?ltv/ratioAlvo:0;
+  document.getElementById('cac_max_display').innerHTML=
+    `Se o LTV for <strong>${fmt(ltv)}</strong> e a meta LTV:CAC for <strong>${fmtRatio(ratioAlvo)}</strong>, o CAC máximo sustentável é <strong>${fmt(maxCac)}</strong>.`;
+  let insLines=[];
+  CANAIS.forEach(c=>{
+    const mix=(+document.getElementById('mix-'+c.id)?.value||0)/100;
+    const maxCpa=maxCac; // same max CPA regardless of mix (CPA = per customer not per channel spend)
+    const cpaAtual=0; // placeholder — user enters per row
+    const row=document.getElementById('cres-'+c.id);
+    if(!row)return;
+    row.innerHTML=`
+      <span class="channel-name">${c.icon} ${c.name}</span>
+      <span style="font-size:.85rem">${(mix*100).toFixed(0)}%</span>
+      <span style="font-size:.85rem;font-weight:600;color:#1a237e">${fmt(maxCpa)}</span>
+      <input type="number" placeholder="CPA atual" id="cpa-atual-${c.id}" min="0" step="0.01" oninput="checkCpa('${c.id}',${maxCpa})" style="font-size:.82rem;padding:6px 8px">
+      <span id="st-${c.id}" class="status-badge" style="font-size:.72rem">—</span>
+      <span></span>
+    `;
+  });
+  document.getElementById('insight-canais').innerHTML=`CPA máximo sustentável: <strong>${fmt(maxCac)}</strong> por cliente. Insira o CPA atual de cada canal para ver o status.`;
+}
+function checkCpa(id,maxCpa){
+  const v=+document.getElementById('cpa-atual-'+id)?.value||0;
+  if(!v)return;
+  const st=document.getElementById('st-'+id);
+  if(!st)return;
+  const ratio=maxCpa>0?v/maxCpa:0;
+  if(ratio<=0.8){st.textContent='✅ OK';st.className='status-badge st-ok';}
+  else if(ratio<=1){st.textContent='⚠️ Limite';st.className='status-badge st-warn';}
+  else{st.textContent='❌ Acima';st.className='status-badge st-bad';}
+}
+function toggleRef(){
+  const el=document.getElementById('ref-table');
+  const ar=document.getElementById('ref-arrow');
+  el.classList.toggle('open');
+  ar.textContent=el.classList.contains('open')?'▲':'▼';
+}
+
+initCanais();
+calcBasico();
+</script>
+</body>
+</html>

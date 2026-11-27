@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Term Health Check</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#7c3aed;--accent-soft:rgba(124,58,237,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#a78bfa;--accent-soft:rgba(167,139,250,.1);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);--err:#f87171;--err-bg:rgba(248,113,113,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+.page{max-width:1100px;margin:0 auto;padding:18px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px;}
+select{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--fg);font-size:12px;outline:none;}
+select:focus{border-color:var(--accent);}
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+.kpi-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);}
+.kpi-val{font-size:22px;font-weight:800;line-height:1;}
+.kpi-lbl{font-size:11px;color:var(--faint);margin-top:4px;}
+/* Score ring */
+.score-ring{width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;}
+/* Issue list */
+.issue-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
+.issue-row:hover{border-color:var(--accent);}
+.severity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sev-err{background:var(--err);}
+.sev-warn{background:var(--warn);}
+.sev-info{background:var(--ok);}
+.issue-term{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);}
+.issue-seg{font-size:11px;color:var(--faint);}
+/* Category headers */
+.cat-header{display:flex;align-items:center;gap:8px;margin:16px 0 8px;cursor:pointer;user-select:none;}
+.cat-header h3{font-size:13px;font-weight:700;}
+.cat-count{font-size:11px;background:var(--divider);padding:2px 8px;border-radius:10px;color:var(--faint);}
+/* Fill bar */
+.fill-bar-wrap{height:8px;background:var(--divider);border-radius:4px;overflow:hidden;margin-top:4px;}
+.fill-bar{height:100%;border-radius:4px;}
+/* Filter chips */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fc{padding:3px 10px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--card);}
+.fc.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">🏥</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">Term Health Check</div>
+      <div style="font-size:11px;color:var(--faint)">Diagnóstico de qualidade do dicionário de termos</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="runCheck()">🏥 Analisar</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <div>
+      <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Cliente</label>
+      <select id="clientSel" onchange="onClientChange()" style="min-width:200px">
+        <option value="">— selecionar —</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px">Segmento</label>
+      <select id="segSel" style="min-width:160px">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-top:16px">Dados lidos do Taxonomy Builder (localStorage)</div>
+  </div>
+
+  <div id="resultsArea">
+    <div class="card" style="text-align:center;padding:40px;color:var(--faint)">
+      <div style="font-size:36px;margin-bottom:10px">🏥</div>
+      <div>Selecione um cliente e clique em <strong>Analisar</strong></div>
+      <div style="font-size:11px;margin-top:6px;opacity:.7">Detecta termos incompletos, duplicados, muito curtos/longos e outros problemas</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TAXO_KEY='taxo_clients_v1';
+const THC_THEME_KEY='thc_theme';
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem(THC_THEME_KEY);}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem(THC_THEME_KEY,_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+function loadClients(){try{return JSON.parse(localStorage.getItem(TAXO_KEY)||'[]').filter(c=>!c.archived);}catch(e){return [];}}
+
+function populateClients(){
+  const sel=document.getElementById('clientSel');
+  const clients=loadClients();
+  sel.innerHTML='<option value="">— selecionar —</option>'+
+    clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+}
+
+function onClientChange(){
+  const id=document.getElementById('clientSel').value;
+  const clients=loadClients();
+  const c=clients.find(x=>x.id===id);
+  const segSel=document.getElementById('segSel');
+  if(!c){segSel.innerHTML='<option value="">Todos</option>';return;}
+  segSel.innerHTML='<option value="">Todos os segmentos</option>'+
+    c.segments.map(s=>`<option value="${esc(s.id)}">${esc(s.label)} (${(c.dictionary[s.id]||[]).length})</option>`).join('');
+}
+
+populateClients();
+
+// ── Issue definitions ─────────────────────────────────────────────────────
+const CHECKS=[
+  {id:'no_label',sev:'warn',label:'Sem label',desc:'Valor sem label definido',
+   test:t=>!t.label||!t.label.trim()},
+  {id:'no_desc',sev:'info',label:'Sem descrição',desc:'Termo sem campo de descrição',
+   test:t=>!t.desc||!t.desc.trim()},
+  {id:'too_short',sev:'warn',label:'Muito curto',desc:'Valor com menos de 2 caracteres',
+   test:t=>t.value.trim().length<2},
+  {id:'too_long',sev:'warn',label:'Muito longo',desc:'Valor com mais de 40 caracteres',
+   test:t=>t.value.trim().length>40},
+  {id:'has_spaces',sev:'err',label:'Contém espaços',desc:'Valor com espaço — pode quebrar naming conventions',
+   test:t=>/\s/.test(t.value)},
+  {id:'uppercase',sev:'warn',label:'Letras maiúsculas',desc:'Valor com caractere maiúsculo',
+   test:t=>/[A-Z]/.test(t.value)},
+  {id:'special_chars',sev:'warn',label:'Caracteres especiais',desc:'Valor com caractere não-alfanumérico além de _ - .',
+   test:t=>/[^a-zA-Z0-9_\-.]/.test(t.value)},
+  {id:'label_equals_value',sev:'info',label:'Label = Valor',desc:'Label idêntico ao valor (sem humanização)',
+   test:t=>t.label&&t.label.trim()&&t.label.trim().toLowerCase()===t.value.trim().toLowerCase()},
+  {id:'zero_uses',sev:'info',label:'Nunca usado',desc:'Termo com contador de uso em zero',
+   test:t=>(t.uses||0)===0},
+  {id:'no_fav_seg',sev:'info',label:'Sem favorito',desc:'Nenhum favorito neste segmento (informativo)',
+   test:()=>false}, // handled at segment level
+];
+
+// ── Main analysis ─────────────────────────────────────────────────────────
+let _issues=[];
+let _filter='all';
+
+function runCheck(){
+  const clientId=document.getElementById('clientSel').value;
+  const segId=document.getElementById('segSel').value;
+  if(!clientId){showToast('Selecione um cliente');return;}
+  const clients=loadClients();
+  const c=clients.find(x=>x.id===clientId);
+  if(!c){showToast('Cliente não encontrado');return;}
+
+  _issues=[];
+  const segs=segId?c.segments.filter(s=>s.id===segId):c.segments;
+
+  for(const seg of segs){
+    const terms=c.dictionary[seg.id]||[];
+    const valSet={};
+    // Collect issues per term
+    for(const t of terms){
+      // Duplicate check
+      const key=t.value.trim().toLowerCase();
+      valSet[key]=(valSet[key]||0)+1;
+      for(const chk of CHECKS){
+        if(chk.id==='no_fav_seg') continue;
+        if(chk.test(t)){
+          _issues.push({sev:chk.sev,check:chk.id,label:chk.label,
+            term:t.value,termLabel:t.label||'',seg:seg.label,segId:seg.id,
+            hint:chk.desc});
+        }
+      }
+    }
+    // Duplicate values
+    Object.entries(valSet).forEach(([val,cnt])=>{
+      if(cnt>1){
+        _issues.push({sev:'err',check:'duplicate',label:'Valor duplicado',
+          term:val,termLabel:'',seg:seg.label,segId:seg.id,
+          hint:`"${val}" aparece ${cnt}× neste segmento`});
+      }
+    });
+    // Segment with no favorites
+    if(terms.length>0&&!terms.some(t=>t.fav)){
+      _issues.push({sev:'info',check:'no_fav_seg',label:'Sem favorito',
+        term:'(segmento)',termLabel:'',seg:seg.label,segId:seg.id,
+        hint:'Nenhum termo marcado como favorito neste segmento'});
+    }
+  }
+
+  _filter='all';
+  renderResults(c,segs);
+  showToast(`✓ ${_issues.length} problema(s) encontrado(s)`);
+}
+
+function renderResults(c,segs){
+  const area=document.getElementById('resultsArea');
+  const totalTerms=segs.reduce((s,sg)=>s+(c.dictionary[sg.id]||[]).length,0);
+  const errors=_issues.filter(i=>i.sev==='err').length;
+  const warns=_issues.filter(i=>i.sev==='warn').length;
+  const infos=_issues.filter(i=>i.sev==='info').length;
+
+  // Health score: start 100, -5 per error, -2 per warn, -0.5 per info
+  const raw=100-errors*5-warns*2-infos*0.5;
+  const score=Math.max(0,Math.min(100,Math.round(raw)));
+  const scoreColor=score>=80?'var(--ok)':score>=60?'var(--warn)':'var(--err)';
+  const scoreBg=score>=80?'var(--ok-bg)':score>=60?'var(--warn-bg)':'var(--err-bg)';
+
+  // Fill rates
+  const allTerms=segs.flatMap(sg=>c.dictionary[sg.id]||[]);
+  const labelFill=allTerms.length?Math.round(allTerms.filter(t=>t.label&&t.label.trim()).length/allTerms.length*100):0;
+  const descFill=allTerms.length?Math.round(allTerms.filter(t=>t.desc&&t.desc.trim()).length/allTerms.length*100):0;
+
+  // Category breakdown
+  const catMap={};
+  _issues.forEach(i=>{catMap[i.check]=(catMap[i.check]||[]);catMap[i.check].push(i);});
+
+  const checkMeta={
+    no_label:{label:'Sem label',sev:'warn'},
+    no_desc:{label:'Sem descrição',sev:'info'},
+    too_short:{label:'Muito curto',sev:'warn'},
+    too_long:{label:'Muito longo',sev:'warn'},
+    has_spaces:{label:'Contém espaços',sev:'err'},
+    uppercase:{label:'Letras maiúsculas',sev:'warn'},
+    special_chars:{label:'Caracteres especiais',sev:'warn'},
+    label_equals_value:{label:'Label = Valor',sev:'info'},
+    zero_uses:{label:'Nunca usado',sev:'info'},
+    duplicate:{label:'Valor duplicado',sev:'err'},
+    no_fav_seg:{label:'Sem favorito (seg)',sev:'info'},
+  };
+
+  // Filter
+  const filtered=_issues.filter(i=>{
+    if(_filter==='err') return i.sev==='err';
+    if(_filter==='warn') return i.sev==='warn';
+    if(_filter==='info') return i.sev==='info';
+    return true;
+  });
+
+  area.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi-box" style="display:flex;align-items:center;gap:12px">
+        <div class="score-ring" style="background:${scoreBg};color:${scoreColor}">${score}</div>
+        <div>
+          <div class="kpi-val" style="font-size:14px;color:${scoreColor}">${score>=80?'Saudável':score>=60?'Atenção':'Crítico'}</div>
+          <div class="kpi-lbl">Saúde geral</div>
+        </div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val">${totalTerms}</div>
+        <div class="kpi-lbl">Termos analisados</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val" style="color:${errors?'var(--err)':'var(--ok)'}">${errors}</div>
+        <div class="kpi-lbl">Erros críticos</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val" style="color:${warns?'var(--warn)':'var(--ok)'}">${warns}</div>
+        <div class="kpi-lbl">Avisos</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val">${infos}</div>
+        <div class="kpi-lbl">Sugestões</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val">${labelFill}%</div>
+        <div class="kpi-lbl">Cobertura label</div>
+        <div class="fill-bar-wrap"><div class="fill-bar" style="width:${labelFill}%;background:${labelFill>=80?'var(--ok)':labelFill>=50?'var(--warn)':'var(--err)'}"></div></div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-val">${descFill}%</div>
+        <div class="kpi-lbl">Cobertura desc.</div>
+        <div class="fill-bar-wrap"><div class="fill-bar" style="width:${descFill}%;background:${descFill>=60?'var(--ok)':descFill>=30?'var(--warn)':'var(--err)'}"></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="filter-row">
+        <span class="fc ${_filter==='all'?'active':''}" onclick="setFilter('all')">Todos (${_issues.length})</span>
+        <span class="fc ${_filter==='err'?'active':''}" onclick="setFilter('err')" style="${errors?'':'opacity:.5'}">✗ Erros (${errors})</span>
+        <span class="fc ${_filter==='warn'?'active':''}" onclick="setFilter('warn')" style="${warns?'':'opacity:.5'}">⚠ Avisos (${warns})</span>
+        <span class="fc ${_filter==='info'?'active':''}" onclick="setFilter('info')">ℹ Sugestões (${infos})</span>
+      </div>
+      ${!filtered.length?`<div style="text-align:center;padding:28px;color:var(--ok);font-weight:700">✅ Nenhum problema nesta categoria</div>`:
+        filtered.map(i=>{
+          const sevClass=i.sev==='err'?'sev-err':i.sev==='warn'?'sev-warn':'sev-info';
+          return `<div class="issue-row">
+            <div class="severity-dot ${sevClass}"></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span class="issue-term">${esc(i.term)}</span>
+                ${i.termLabel?`<span style="font-size:11px;color:var(--faint)">${esc(i.termLabel)}</span>`:''}
+                <span style="font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;background:${i.sev==='err'?'var(--err-bg)':i.sev==='warn'?'var(--warn-bg)':'var(--accent-soft)'};color:${i.sev==='err'?'var(--err)':i.sev==='warn'?'var(--warn)':'var(--accent)'}">${esc(i.label)}</span>
+              </div>
+              <div style="font-size:11px;color:var(--faint);margin-top:2px">
+                <span class="issue-seg">${esc(i.seg)}</span>
+                ${i.hint&&i.hint!==i.label?` · ${esc(i.hint)}`:''}
+              </div>
+            </div>
+          </div>`;
+        }).join('')
+      }
+    </div>
+
+    ${Object.keys(catMap).length?`
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">Por categoria</div>
+      ${Object.entries(catMap).sort((a,b)=>{
+        const sevOrder={err:0,warn:1,info:2};
+        const ma=checkMeta[a[0]]||{sev:'info'};
+        const mb=checkMeta[b[0]]||{sev:'info'};
+        return (sevOrder[ma.sev]||2)-(sevOrder[mb.sev]||2);
+      }).map(([chk,items])=>{
+        const meta=checkMeta[chk]||{label:chk,sev:'info'};
+        const pct=totalTerms?Math.round(items.length/totalTerms*100):0;
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:140px;font-size:12px;font-weight:600;flex-shrink:0">${esc(meta.label)}</div>
+          <div style="flex:1;background:var(--divider);border-radius:3px;overflow:hidden;height:10px">
+            <div style="width:${pct}%;background:${meta.sev==='err'?'var(--err)':meta.sev==='warn'?'var(--warn)':'var(--ok)'};height:100%;border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;color:var(--faint);width:50px;text-align:right;flex-shrink:0">${items.length} (${pct}%)</span>
+        </div>`;
+      }).join('')}
+    </div>`:''}
+  `;
+}
+
+function setFilter(f){_filter=f;
+  const clientId=document.getElementById('clientSel').value;
+  const segId=document.getElementById('segSel').value;
+  const clients=loadClients();
+  const c=clients.find(x=>x.id===clientId);
+  if(!c) return;
+  const segs=segId?c.segments.filter(s=>s.id===segId):c.segments;
+  renderResults(c,segs);
+}
+
+function exportCSV(){
+  if(!_issues.length){showToast('Analise primeiro');return;}
+  const rows=[['segmento','termo','label','severidade','problema','detalhe']];
+  _issues.forEach(i=>rows.push([i.seg,i.term,i.termLabel,i.sev,i.label,i.hint||'']));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='term_health_report.csv';a.click();
+  showToast(`⬇ ${rows.length-1} problemas exportados`);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<title>NC Segment Normalizer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:#ffffff; --bg2:#f8fafc; --bg3:#f1f5f9;
+    --border:#e2e8f0; --border2:#cbd5e1;
+    --fg:#0f172a; --fg2:#475569; --fg3:#94a3b8;
+    --accent:#8b5cf6; --accent-bg:#faf5ff; --accent-border:#ddd6fe;
+    --ok:#10b981; --ok-bg:#f0fdf4; --ok-border:#a7f3d0;
+    --warn:#f59e0b; --warn-bg:#fffbeb; --warn-border:#fde68a;
+    --radius:10px;
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f172a; --bg2:#1e293b; --bg3:#334155;
+    --border:#334155; --border2:#475569;
+    --fg:#f1f5f9; --fg2:#94a3b8; --fg3:#64748b;
+    --accent:#a78bfa; --accent-bg:#2e1065; --accent-border:#4c1d95;
+    --ok:#34d399; --ok-bg:#022c22; --ok-border:#064e3b;
+    --warn:#fbbf24; --warn-bg:#451a03; --warn-border:#78350f;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f172a; --bg2:#1e293b; --bg3:#334155;
+    --border:#334155; --border2:#475569;
+    --fg:#f1f5f9; --fg2:#94a3b8; --fg3:#64748b;
+    --accent:#a78bfa; --accent-bg:#2e1065; --accent-border:#4c1d95;
+    --ok:#34d399; --ok-bg:#022c22; --ok-border:#064e3b;
+    --warn:#fbbf24; --warn-bg:#451a03; --warn-border:#78350f;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5}
+
+  .header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .header-left{display:flex;align-items:center;gap:10px}
+  .logo{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;font-size:16px;flex-shrink:0}
+  .title{font-size:16px;font-weight:700;color:var(--fg)}
+  .subtitle{font-size:12px;color:var(--fg2)}
+  .btn-theme{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--fg2);cursor:pointer;font-size:14px;padding:4px 8px}
+  .btn-theme:hover{background:var(--bg3)}
+
+  .workspace{display:grid;grid-template-columns:380px 1fr;gap:0;min-height:calc(100vh - 73px)}
+  @media(max-width:900px){.workspace{grid-template-columns:1fr}}
+
+  .sidebar{padding:20px 20px;border-right:1px solid var(--border);overflow-y:auto}
+  .content{padding:20px 24px;overflow-y:auto}
+  .section-title{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+
+  label{font-size:12px;color:var(--fg2);font-weight:500;display:block;margin-bottom:4px}
+  input[type=text],select,textarea{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:12px;padding:6px 10px;outline:none;font-family:inherit}
+  input[type=text]:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  textarea{font-family:'JetBrains Mono',monospace;resize:vertical;line-height:1.6}
+  input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+
+  .sep-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
+  .sep-row input{width:60px;text-align:center;font-family:'JetBrains Mono',monospace}
+
+  /* rule list */
+  .rules-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .rule-row{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+  .rule-row-top{display:flex;align-items:center;gap:6px}
+  .rule-name{font-size:12px;font-weight:600;color:var(--fg);flex:1}
+  .rule-toggle{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--fg2);cursor:pointer}
+  .rule-detail{display:flex;flex-direction:column;gap:4px}
+  .rule-desc{font-size:11px;color:var(--fg3)}
+  .rule-input-row{display:flex;gap:6px;align-items:center}
+  .rule-input-row label{margin:0;white-space:nowrap}
+  .rule-input-row input{font-family:'JetBrains Mono',monospace}
+
+  /* custom replace table */
+  .repl-table{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px}
+  .repl-table table{width:100%;border-collapse:collapse}
+  .repl-table th{background:var(--bg3);font-size:11px;color:var(--fg2);font-weight:600;padding:6px 10px;text-align:left}
+  .repl-table td{padding:4px 6px;border-top:1px solid var(--border)}
+  .repl-table input{border:1px solid transparent;border-radius:4px;background:transparent;padding:3px 6px}
+  .repl-table input:focus{border-color:var(--accent);background:var(--bg)}
+  .repl-table .del-btn{background:none;border:none;color:var(--fg3);cursor:pointer;font-size:14px;padding:0 4px}
+  .repl-table .del-btn:hover{color:#ef4444}
+
+  .btn{border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{opacity:.88}
+  .btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--fg2)}
+  .btn-secondary:hover{background:var(--bg2)}
+  .btn-sm{font-size:11px;padding:4px 10px;font-weight:500}
+  .btn-xs{font-size:10px;padding:3px 8px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+  .kpi-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;flex:1;min-width:80px}
+  .kpi-val{font-size:22px;font-weight:700;line-height:1}
+  .kpi-lbl{font-size:11px;color:var(--fg2);margin-top:2px}
+  .kpi.purple{border-color:var(--accent-border);background:var(--accent-bg)}
+  .kpi.purple .kpi-val{color:var(--accent)}
+  .kpi.ok .kpi-val{color:var(--ok)}
+
+  .diff-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+  .diff-table th{background:var(--bg3);font-size:11px;color:var(--fg2);font-weight:600;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)}
+  .diff-table td{padding:6px 12px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:top;word-break:break-all}
+  .diff-table tr:last-child td{border-bottom:none}
+  .diff-table .changed{background:var(--accent-bg)}
+  .diff-table .same{color:var(--fg3)}
+  .arrow{color:var(--fg3);font-size:12px}
+  .changed-mark{color:var(--accent);font-weight:700;font-size:10px;margin-left:4px}
+
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:var(--bg);border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+  #toast.show{opacity:1}
+</style>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">⚙️</div>
+    <div>
+      <div class="title">NC Segment Normalizer</div>
+      <div class="subtitle">Padroniza e limpa valores de segmento em lotes de NCs</div>
+    </div>
+  </div>
+  <button class="btn-theme" onclick="toggleTheme()">◑</button>
+</div>
+
+<div class="workspace">
+  <!-- SIDEBAR: rules + input -->
+  <div class="sidebar">
+    <div class="section-title">Configuração</div>
+    <div class="sep-row">
+      <div>
+        <label>Separador</label>
+        <input id="cfgSep" type="text" value="_" maxlength="3" style="width:60px">
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:4px">Regras de Normalização</div>
+    <div class="rules-list" id="rulesList"></div>
+
+    <div class="section-title" style="margin-top:14px">Substituições Personalizadas</div>
+    <div class="repl-table">
+      <table>
+        <thead><tr><th>De (valor exato)</th><th>Para</th><th></th></tr></thead>
+        <tbody id="replBody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-secondary btn-xs" onclick="addRepl()">+ Adicionar par</button>
+
+    <div style="margin-top:16px">
+      <label>NCs (uma por linha)</label>
+      <textarea id="ncInput" rows="10" placeholder="Camp_Perf_App_Venda_Q1_Stories&#10;CAMP_BRAND_WEB_LANC_Q2&#10;camp-perf-app-venda-q1-feed&#10;..."></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="run()">⚙️ Normalizar</button>
+      <button class="btn btn-secondary" onclick="clearAll()">Limpar</button>
+    </div>
+  </div>
+
+  <!-- CONTENT: results -->
+  <div class="content">
+    <div class="section-title">Resultado</div>
+    <div id="results"><div style="color:var(--fg3);font-size:13px;padding:20px 0">Configure as regras e cole suas NCs.</div></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const RULES = [
+  { id:'lowercase',  name:'Minúsculas',      desc:'Converte todos os segmentos para minúsculas',          enabled:true,  hasInput:false },
+  { id:'uppercase',  name:'Maiúsculas',       desc:'Converte todos os segmentos para maiúsculas',          enabled:false, hasInput:false },
+  { id:'trim',       name:'Trim whitespace',  desc:'Remove espaços no início/fim de cada segmento',       enabled:true,  hasInput:false },
+  { id:'sep_norm',   name:'Normalizar separador', desc:'Substitui separadores alternativos pelo padrão',  enabled:true,  hasInput:true, inputLabel:'Separadores alt.', inputPlaceholder:'-,/,|', inputId:'altSeps', inputVal:'-,/,|, ' },
+  { id:'strip_acc',  name:'Remover acentos',  desc:'Converte á→a, ç→c, etc.',                             enabled:false, hasInput:false },
+  { id:'rm_special', name:'Remover especiais',desc:'Remove caracteres não alfanuméricos (exceto separador)',enabled:false, hasInput:false },
+  { id:'dedupe_seg', name:'Deduplicar segmentos', desc:'Remove segmentos consecutivos idênticos',         enabled:false, hasInput:false },
+  { id:'rm_empty',   name:'Remover vazios',   desc:'Exclui segmentos em branco após outras transformações',enabled:true,  hasInput:false },
+];
+
+const ruleState = {};
+RULES.forEach(r => { ruleState[r.id] = { enabled: r.enabled, inputVal: r.inputVal||'' }; });
+
+let replPairs = [];
+let _results = [];
+
+function renderRules() {
+  const list = document.getElementById('rulesList');
+  list.innerHTML = '';
+  RULES.forEach(r => {
+    const enabled = ruleState[r.id].enabled;
+    const div = document.createElement('div');
+    div.className = 'rule-row';
+    div.innerHTML = `
+      <div class="rule-row-top">
+        <span class="rule-name">${r.name}</span>
+        <label class="rule-toggle">
+          <input type="checkbox" ${enabled?'checked':''} onchange="toggleRule('${r.id}',this.checked)">
+          ${enabled?'<span style="color:var(--ok)">on</span>':'<span>off</span>'}
+        </label>
+      </div>
+      <div class="rule-desc">${r.desc}</div>
+      ${r.hasInput && enabled ? `<div class="rule-input-row"><label>${r.inputLabel}</label><input id="${r.inputId}" type="text" value="${esc(ruleState[r.id].inputVal)}" placeholder="${r.inputPlaceholder}" style="width:140px" oninput="ruleState['${r.id}'].inputVal=this.value"></div>` : ''}
+    `;
+    list.appendChild(div);
+  });
+}
+
+function toggleRule(id, val) {
+  ruleState[id].enabled = val;
+  // mutual exclusion lowercase/uppercase
+  if (id === 'lowercase' && val) ruleState['uppercase'].enabled = false;
+  if (id === 'uppercase' && val) ruleState['lowercase'].enabled = false;
+  renderRules();
+}
+
+function addRepl() {
+  replPairs.push({from:'', to:''});
+  renderRepl();
+}
+
+function delRepl(i) {
+  replPairs.splice(i, 1);
+  renderRepl();
+}
+
+function renderRepl() {
+  const body = document.getElementById('replBody');
+  body.innerHTML = '';
+  if (replPairs.length === 0) {
+    body.innerHTML = '<tr><td colspan="3" style="font-size:11px;color:var(--fg3);padding:8px 10px">Nenhuma substituição definida.</td></tr>';
+    return;
+  }
+  replPairs.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${esc(p.from)}" placeholder="valor_antigo" oninput="replPairs[${i}].from=this.value"></td>
+      <td><input type="text" value="${esc(p.to)}" placeholder="valor_novo" oninput="replPairs[${i}].to=this.value"></td>
+      <td><button class="del-btn" onclick="delRepl(${i})">×</button></td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+// --- normalization pipeline ---
+function removeAccents(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
+function normalizeNC(nc, sep) {
+  const altSeps = ruleState['sep_norm'].enabled
+    ? ruleState['sep_norm'].inputVal.split(',').map(s=>s.trim()).filter(Boolean)
+    : [];
+
+  let working = nc;
+
+  // 1. normalize separators
+  if (ruleState['sep_norm'].enabled && altSeps.length) {
+    const pattern = altSeps.map(s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+    working = working.replace(new RegExp(pattern,'g'), sep);
+  }
+
+  // 2. split to segments
+  let segs = working.split(sep);
+
+  // 3. trim
+  if (ruleState['trim'].enabled) segs = segs.map(s => s.trim());
+
+  // 4. remove accents
+  if (ruleState['strip_acc'].enabled) segs = segs.map(removeAccents);
+
+  // 5. remove special chars
+  if (ruleState['rm_special'].enabled) {
+    segs = segs.map(s => s.replace(/[^a-zA-Z0-9]/g, ''));
+  }
+
+  // 6. case
+  if (ruleState['lowercase'].enabled) segs = segs.map(s => s.toLowerCase());
+  if (ruleState['uppercase'].enabled) segs = segs.map(s => s.toUpperCase());
+
+  // 7. custom replacements
+  const validRepls = replPairs.filter(p => p.from.trim());
+  if (validRepls.length) {
+    segs = segs.map(s => {
+      const r = validRepls.find(p => p.from.trim() === s);
+      return r ? r.to : s;
+    });
+  }
+
+  // 8. dedupe consecutive
+  if (ruleState['dedupe_seg'].enabled) {
+    segs = segs.filter((s, i) => i === 0 || s !== segs[i-1]);
+  }
+
+  // 9. remove empty
+  if (ruleState['rm_empty'].enabled) segs = segs.filter(Boolean);
+
+  return segs.join(sep);
+}
+
+function run() {
+  const raw = document.getElementById('ncInput').value.trim();
+  if (!raw) { showToast('Cole suas NCs!'); return; }
+  const sep = document.getElementById('cfgSep').value || '_';
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+
+  _results = lines.map(nc => {
+    const out = normalizeNC(nc, sep);
+    return { original: nc, normalized: out, changed: nc !== out };
+  });
+
+  const changed = _results.filter(r => r.changed).length;
+  const total = _results.length;
+
+  let html = `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">NCs processadas</div></div>
+    <div class="kpi purple"><div class="kpi-val">${changed}</div><div class="kpi-lbl">modificadas</div></div>
+    <div class="kpi"><div class="kpi-val">${total - changed}</div><div class="kpi-lbl">sem alteração</div></div>
+  </div>`;
+
+  html += `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-secondary btn-sm" onclick="copyAll()">Copiar NCs normalizadas</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">↓ CSV comparativo</button>
+    <button class="btn btn-secondary btn-sm" onclick="copyChanged()">Copiar apenas modificadas</button>
+  </div>`;
+
+  html += `<div style="overflow-x:auto"><table class="diff-table">
+    <thead><tr><th>Original</th><th></th><th>Normalizada</th></tr></thead>
+    <tbody>`;
+
+  for (const r of _results) {
+    const cls = r.changed ? 'changed' : 'same';
+    const mark = r.changed ? '<span class="changed-mark">✎</span>' : '';
+    html += `<tr class="${cls}">
+      <td>${esc(r.original)}</td>
+      <td class="arrow">→</td>
+      <td>${esc(r.normalized)}${mark}</td>
+    </tr>`;
+  }
+
+  html += '</tbody></table></div>';
+  document.getElementById('results').innerHTML = html;
+}
+
+function copyAll() {
+  if (!_results.length) { showToast('Nada para copiar'); return; }
+  navigator.clipboard.writeText(_results.map(r => r.normalized).join('\n'))
+    .then(() => showToast('Copiado!'))
+    .catch(() => showToast('Erro'));
+}
+
+function copyChanged() {
+  const changed = _results.filter(r => r.changed).map(r => r.normalized);
+  if (!changed.length) { showToast('Nenhuma modificada'); return; }
+  navigator.clipboard.writeText(changed.join('\n'))
+    .then(() => showToast(`${changed.length} NCs copiadas!`))
+    .catch(() => showToast('Erro'));
+}
+
+function exportCSV() {
+  if (!_results.length) { showToast('Normalize primeiro!'); return; }
+  const rows = [['original','normalizada','modificada']];
+  for (const r of _results) {
+    rows.push([r.original, r.normalized, r.changed ? 'sim' : 'não']);
+  }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nc-normalized.csv';
+  a.click();
+}
+
+function clearAll() {
+  document.getElementById('ncInput').value = '';
+  _results = [];
+  document.getElementById('results').innerHTML = '<div style="color:var(--fg3);font-size:13px;padding:20px 0">Configure as regras e cole suas NCs.</div>';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function toggleTheme() {
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+}
+
+// init
+renderRules();
+renderRepl();
+</script>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA Checklist Pré-Launch</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;
+  --white:#fff;--text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;
+  --ok:#059669;--warn:#d97706;--err:#dc2626;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+/* HEADER */
+.header{background:var(--navy);color:#fff;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.header-left{display:flex;align-items:center;gap:14px}
+.header h1{font-size:1.15rem;font-weight:700;letter-spacing:-.3px}
+.header p{font-size:.8rem;opacity:.7;margin-top:2px}
+.badge-pill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:4px 12px;font-size:.72rem;font-weight:600;color:#fff;white-space:nowrap}
+/* TABS */
+.tabs-wrap{background:var(--navy);border-bottom:3px solid var(--accent);padding:0 32px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs-wrap::-webkit-scrollbar{display:none}
+.tab{padding:10px 18px;font-size:.82rem;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-3px;white-space:nowrap;transition:all .15s;user-select:none;display:flex;align-items:center;gap:6px}
+.tab:hover{color:rgba(255,255,255,.85)}
+.tab.active{color:#fff;border-bottom-color:#fff}
+.tab .tab-pct{font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:10px;background:rgba(255,255,255,.18)}
+.tab.done .tab-pct{background:#059669;color:#fff}
+/* MAIN */
+.main{padding:28px 32px;min-width:0}
+/* PROGRESS BAR */
+.progress-box{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:20px}
+.progress-info{flex:1;min-width:0}
+.progress-label{font-size:.82rem;font-weight:600;color:var(--body);margin-bottom:6px;display:flex;justify-content:space-between}
+.progress-label span{color:var(--accent);font-weight:700}
+.bar-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.bar-fill.done{background:var(--ok)}
+.pct-big{font-size:2rem;font-weight:700;color:var(--accent);line-height:1;min-width:56px;text-align:right}
+.pct-big.done{color:var(--ok)}
+/* ACTION BUTTONS */
+.actions{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.btn{padding:9px 18px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--navy)}
+.btn-outline{background:var(--white);color:var(--accent);border:1.5px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent);background:var(--hl)}
+.btn-danger{background:var(--white);color:var(--err);border:1.5px solid var(--border)}
+.btn-danger:hover{border-color:var(--err);background:#fff5f5}
+.copy-ok{background:#ecfdf5;color:var(--ok);border-color:#a7f3d0}
+/* SECTION */
+.section{background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.section-header{padding:14px 20px;background:var(--hl);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.section-header:hover{background:#dde3f9}
+.section-title{font-size:.9rem;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
+.section-pct{font-size:.75rem;font-weight:700;color:var(--muted);background:var(--border);padding:2px 8px;border-radius:10px}
+.section-pct.full{background:#d1fae5;color:var(--ok)}
+.chevron{font-size:.7rem;color:var(--muted);transition:transform .2s}
+.section.collapsed .chevron{transform:rotate(-90deg)}
+.items-list{padding:8px 0}
+.section.collapsed .items-list{display:none}
+/* ITEM */
+.item{display:flex;align-items:flex-start;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.item:last-child{border-bottom:none}
+.item:hover{background:#fafbff}
+.item.checked{background:#f0fdf4}
+.item.checked:hover{background:#e8faf0}
+.cb{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:var(--white)}
+.item.checked .cb{background:var(--ok);border-color:var(--ok)}
+.cb-check{color:#fff;font-size:.7rem;font-weight:900;display:none}
+.item.checked .cb-check{display:block}
+.item-label{font-size:.85rem;color:var(--body);line-height:1.4}
+.item.checked .item-label{color:var(--muted);text-decoration:line-through}
+/* PLATFORM PANEL */
+.platform-panel{display:none}
+.platform-panel.active{display:block}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:.85rem;font-weight:600;opacity:0;transform:translateY(10px);transition:all .2s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+/* EMPTY */
+.all-done{padding:40px 24px;text-align:center}
+.all-done .icon{font-size:2.5rem;margin-bottom:12px}
+.all-done p{color:var(--ok);font-weight:700;font-size:1rem}
+.all-done small{color:var(--muted);font-size:.82rem}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div>
+      <h1>✅ QA Checklist Pré-Launch</h1>
+      <p>Verifique cada item antes de ativar a campanha</p>
+    </div>
+  </div>
+  <div class="badge-pill">AdOps Suite</div>
+</div>
+
+<div class="tabs-wrap" id="tabsWrap"></div>
+<div class="main" id="mainContent"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = {
+  geral: {
+    label: 'Geral', emoji: '📋',
+    sections: [
+      { title: 'Briefing & Aprovação', items: [
+        'Briefing de campanha recebido e aprovado pelo cliente',
+        'Datas de início e término confirmadas',
+        'Budget total e por período definido e aprovado',
+        'KPIs e metas numéricas definidos',
+        'Responsável pelo QA final identificado',
+      ]},
+      { title: 'Criativos', items: [
+        'Todos os criativos recebidos dentro do prazo',
+        'Dimensões e pesos conferidos contra specs da plataforma',
+        'Criativos aprovados internamente (AdOps + cliente)',
+        'Copies (títulos, descrições, CTAs) revisados e aprovados',
+        'Criativos sem erro de ortografia ou gramática',
+        'Logo e identidade visual corretos',
+        'CTA condiz com a oferta da landing page',
+      ]},
+      { title: 'URLs & Tracking', items: [
+        'URL de destino testada e funcionando',
+        'URL de destino abre corretamente em mobile',
+        'Parâmetros UTM implementados e validados (utm_source, utm_medium, utm_campaign)',
+        'UTMs testados no GA4 / ferramenta de analytics',
+        'URL não redireciona para página 404 ou erro',
+        'Landing page carrega em menos de 3 segundos',
+      ]},
+    ]
+  },
+  meta: {
+    label: 'Meta Ads', emoji: '🔵',
+    sections: [
+      { title: 'Conta & Estrutura', items: [
+        'Ad Account correto selecionado',
+        'Campanha criada no Business Manager correto',
+        'Nomenclatura de campanha, ad set e anúncio seguindo padrão definido',
+        'Objetivo de campanha correto (Awareness, Tráfego, Conversão, etc.)',
+        'Estratégia de lance configurada (CBO ou ABO)',
+      ]},
+      { title: 'Pixel & Conversão', items: [
+        'Meta Pixel instalado e ativo no site',
+        'Evento de conversão configurado e testado (Meta Pixel Helper)',
+        'Conversions API (CAPI) ativa (se aplicável)',
+        'Janela de atribuição definida (padrão: 7d clique, 1d view)',
+        'Evento de otimização do ad set correto',
+      ]},
+      { title: 'Público & Segmentação', items: [
+        'Público-alvo configurado (interesse, custom audience ou lookalike)',
+        'Tamanho de público adequado ao objetivo (não muito restrito)',
+        'Exclusões de público configuradas (clientes atuais, se necessário)',
+        'Localização geográfica correta',
+        'Faixa etária e gênero conferidos',
+      ]},
+      { title: 'Entrega & Budget', items: [
+        'Data de início e término corretas no ad set',
+        'Budget diário ou total correto',
+        'Frequency cap configurado (se aplicável)',
+        'Horário de veiculação (dayparting) revisado',
+      ]},
+      { title: 'Criativos', items: [
+        'Formato de anúncio correto para o placement',
+        'Preview do anúncio validado em todos os placements selecionados',
+        'Texto principal dentro do limite de caracteres',
+        'Título dentro do limite de caracteres',
+        'Anúncio aprovado pela política de anúncios do Meta',
+      ]},
+    ]
+  },
+  google: {
+    label: 'Google Ads', emoji: '🟢',
+    sections: [
+      { title: 'Conta & Estrutura', items: [
+        'Conta Google Ads correta',
+        'Campanha criada no MCC correto (se agência)',
+        'Nomenclatura de campanha e ad group seguindo padrão',
+        'Tipo de campanha correto (Search, Display, Performance Max, etc.)',
+        'Meta de campanha correta',
+      ]},
+      { title: 'Conversão & Tracking', items: [
+        'Tag Google Ads instalada no site',
+        'Ação de conversão configurada e funcionando',
+        'Importação de conversões do GA4 (se aplicável)',
+        'Janela de conversão revisada',
+        'Google Tag Manager testado (se GTM for o método de implementação)',
+      ]},
+      { title: 'Segmentação — Search', items: [
+        'Lista de palavras-chave revisada e aprovada',
+        'Tipos de correspondência corretos (Ampla, Frase, Exata)',
+        'Palavras-chave negativas configuradas',
+        'Grupos de anúncios temáticos e coerentes',
+      ]},
+      { title: 'Segmentação — Display / PMax', items: [
+        'Públicos-alvo configurados',
+        'Exclusões de conteúdo (brand safety) configuradas',
+        'Canais e tópicos revisados (se Display)',
+      ]},
+      { title: 'Criativos', items: [
+        'RSAs com pelo menos 10 títulos e 4 descrições distintos',
+        'Assets de imagem e logo carregados (Display/PMax)',
+        'Preview dos anúncios validado',
+        'Extensões configuradas (sitelinks, callouts, snippet)',
+      ]},
+    ]
+  },
+  cm360: {
+    label: 'CM360', emoji: '🟡',
+    sections: [
+      { title: 'Estrutura da Conta', items: [
+        'Advertiser correto selecionado',
+        'Campaign criada com datas corretas',
+        'Nomenclatura seguindo padrão (Advertiser > Campaign > Placement > Ad)',
+      ]},
+      { title: 'Configuração de Placements', items: [
+        'Placements criados para cada posição/formato comprado',
+        'Dimensões dos placements corretas',
+        'Datas de início e término dos placements corretas',
+        'Pricing type e custo configurados (se aplicável)',
+        'Site/publisher correto associado ao placement',
+      ]},
+      { title: 'Criativos & Ads', items: [
+        'Criativos upados com dimensões corretas',
+        'Display-URL do criativo configurada',
+        'Landing page configurada no nível correto (criativo ou ad)',
+        'Ad associado ao placement correto',
+        'Rotação de criativos configurada (se múltiplos)',
+      ]},
+      { title: 'Tags & Implementação', items: [
+        'Tags geradas para todos os placements',
+        'Tipo de tag correto (iFrame, JS, VAST para vídeo)',
+        'Tags enviadas ao publisher/veículo',
+        'Confirmação de implementação recebida do publisher',
+        'Tag tester executado e aprovado',
+      ]},
+      { title: 'Floodlights', items: [
+        'Floodlight de conversão configurado (se objetivo de conversão)',
+        'Floodlight tag implementada no site e testada',
+        'Grupo de atividades do Floodlight correto',
+      ]},
+    ]
+  },
+  dv360: {
+    label: 'DV360', emoji: '🔷',
+    sections: [
+      { title: 'Estrutura', items: [
+        'Partner e Advertiser corretos',
+        'Insertion Order com datas e budget corretos',
+        'Line Items com datas e budget por LI corretos',
+        'Nomenclatura seguindo padrão',
+      ]},
+      { title: 'Inventário & Deals', items: [
+        'Tipo de inventário correto (Open Auction, PMP, PG)',
+        'Deal IDs configurados (se PMP ou PG)',
+        'Publisher whitelist/blocklist aplicada',
+        'Brand Safety configurado (IAS/DV integração ou nativo)',
+      ]},
+      { title: 'Segmentação', items: [
+        'Públicos-alvo configurados (Google Audiences, 1P, Lookalike)',
+        'Segmentação geográfica correta',
+        'Frequency cap definido por LI',
+        'Dayparting configurado (se aplicável)',
+      ]},
+      { title: 'Criativos & Integração CM360', items: [
+        'Criativos associados via CM360',
+        'Floodlight de conversão vinculado ao LI',
+        'Preview de entrega simulado',
+      ]},
+    ]
+  },
+  linkedin: {
+    label: 'LinkedIn', emoji: '🔗',
+    sections: [
+      { title: 'Conta & Estrutura', items: [
+        'Campaign Group com datas e budget corretos',
+        'Campaign com objetivo correto',
+        'Nomenclatura seguindo padrão',
+      ]},
+      { title: 'Segmentação', items: [
+        'Critérios de segmentação profissional revisados (cargo, setor, empresa, senioridade)',
+        'Tamanho de audiência adequado (mín. 50k para campanhas de escala)',
+        'LinkedIn Insight Tag instalada (se retargeting ou conversão)',
+        'Matched Audience configurada (se aplicável)',
+      ]},
+      { title: 'Criativos', items: [
+        'Formato correto para o objetivo (Single Image, Video, Carousel, Document)',
+        'Texto do anúncio dentro do limite',
+        'Imagem/vídeo dentro das specs (1200×627 para single image)',
+        'Lead Gen Form configurado e testado (se aplicável)',
+      ]},
+    ]
+  },
+  tiktok: {
+    label: 'TikTok', emoji: '🎵',
+    sections: [
+      { title: 'Conta & Estrutura', items: [
+        'TikTok Ads Manager correto',
+        'Campaign com objetivo correto',
+        'Ad Group com segmentação revisada',
+      ]},
+      { title: 'Pixel & Conversão', items: [
+        'TikTok Pixel instalado e testado',
+        'Evento de conversão configurado',
+        'TikTok Events API configurada (se aplicável)',
+      ]},
+      { title: 'Criativos', items: [
+        'Vídeo em formato 9:16 (vertical), mín. 720p',
+        'Duração entre 9s e 60s (recomendado até 15s)',
+        'Primeiros 3 segundos capturam atenção',
+        'Música/áudio verificado (direitos autorais)',
+        'Texto sobreposto fora da zona segura (centro da tela)',
+        'CTA configurado',
+      ]},
+    ]
+  },
+  xads: {
+    label: 'X Ads', emoji: '✖️',
+    sections: [
+      { title: 'Conta & Estrutura', items: [
+        'Conta de anúncios correta',
+        'Campaign com objetivo correto',
+        'Nomenclatura seguindo padrão',
+      ]},
+      { title: 'Segmentação', items: [
+        'Segmentação por keywords, interesses ou followers revisada',
+        'Localização geográfica correta',
+        'Tamanho de audiência adequado',
+      ]},
+      { title: 'Criativos', items: [
+        'Tweet/post criado e aprovado',
+        'Imagem ou vídeo dentro das specs',
+        'Website Card configurada (se objetivo de tráfego)',
+        'X Website Tag instalada (se conversão)',
+      ]},
+    ]
+  },
+};
+
+const PLATFORMS = Object.keys(DATA);
+let currentPlatform = 'geral';
+
+// --- State helpers ---
+function stateKey(pid){ return `qa_state_${pid}`; }
+function loadState(pid){
+  try{ return JSON.parse(localStorage.getItem(stateKey(pid))||'{}'); }catch(e){ return {}; }
+}
+function saveState(pid, state){
+  try{ localStorage.setItem(stateKey(pid), JSON.stringify(state)); }catch(e){}
+}
+function itemKey(si, ii){ return `${si}_${ii}`; }
+
+function countFor(pid){
+  const state = loadState(pid);
+  const p = DATA[pid];
+  let total=0, checked=0;
+  p.sections.forEach((s,si)=>{
+    s.items.forEach((_,ii)=>{
+      total++;
+      if(state[itemKey(si,ii)]) checked++;
+    });
+  });
+  return {total, checked};
+}
+
+// --- Render tabs ---
+function renderTabs(){
+  const wrap = document.getElementById('tabsWrap');
+  wrap.innerHTML = PLATFORMS.map(pid=>{
+    const {total,checked} = countFor(pid);
+    const pct = total ? Math.round(checked/total*100) : 0;
+    const done = pct===100;
+    return `<div class="tab${pid===currentPlatform?' active':''}${done?' done':''}" onclick="switchTab('${pid}')">
+      ${DATA[pid].emoji} ${DATA[pid].label}
+      <span class="tab-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// --- Render platform ---
+function renderPlatform(pid){
+  const p = DATA[pid];
+  const state = loadState(pid);
+  const {total, checked} = countFor(pid);
+  const pct = total ? Math.round(checked/total*100) : 0;
+  const done = pct===100;
+
+  let html = `
+  <div class="progress-box">
+    <div class="progress-info">
+      <div class="progress-label">Progresso — ${p.label} <span>${checked}/${total} itens</span></div>
+      <div class="bar-track"><div class="bar-fill${done?' done':''}" style="width:${pct}%"></div></div>
+    </div>
+    <div class="pct-big${done?' done':''}">${pct}%</div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="copyResult('${pid}')">📋 Copiar resultado</button>
+    <button class="btn btn-outline" onclick="markAll('${pid}')">✅ Marcar tudo</button>
+    <button class="btn btn-danger" onclick="resetPlatform('${pid}')">🔄 Reiniciar</button>
+  </div>`;
+
+  if(done){
+    html += `<div class="section"><div class="all-done"><div class="icon">🎉</div><p>Tudo conferido!</p><small>${p.label} está pronta para ir ao ar.</small></div></div>`;
+  } else {
+    p.sections.forEach((sec, si)=>{
+      const secTotal = sec.items.length;
+      const secChecked = sec.items.filter((_,ii)=>state[itemKey(si,ii)]).length;
+      const secDone = secChecked===secTotal;
+      html += `<div class="section" id="sec_${pid}_${si}">
+        <div class="section-header" onclick="toggleSection('${pid}',${si})">
+          <div class="section-title">
+            ${secDone?'✅':''} ${sec.title}
+            <span class="section-pct${secDone?' full':''}">${secChecked}/${secTotal}</span>
+          </div>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="items-list">
+          ${sec.items.map((item, ii)=>{
+            const ck = state[itemKey(si,ii)];
+            return `<div class="item${ck?' checked':''}" onclick="toggleItem('${pid}',${si},${ii})">
+              <div class="cb"><span class="cb-check">✓</span></div>
+              <span class="item-label">${item}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// --- Actions ---
+function switchTab(pid){
+  currentPlatform = pid;
+  renderTabs();
+  renderPlatform(pid);
+}
+
+function toggleItem(pid, si, ii){
+  const state = loadState(pid);
+  const k = itemKey(si,ii);
+  state[k] = !state[k];
+  saveState(pid, state);
+  renderTabs();
+  renderPlatform(pid);
+  // scroll to same position roughly
+}
+
+function toggleSection(pid, si){
+  const el = document.getElementById(`sec_${pid}_${si}`);
+  if(el) el.classList.toggle('collapsed');
+}
+
+function resetPlatform(pid){
+  saveState(pid, {});
+  renderTabs();
+  renderPlatform(pid);
+  showToast('Checklist reiniciado');
+}
+
+function markAll(pid){
+  const p = DATA[pid];
+  const state = {};
+  p.sections.forEach((sec,si)=>sec.items.forEach((_,ii)=>{ state[itemKey(si,ii)]=true; }));
+  saveState(pid, state);
+  renderTabs();
+  renderPlatform(pid);
+  showToast('Todos os itens marcados');
+}
+
+function copyResult(pid){
+  const p = DATA[pid];
+  const state = loadState(pid);
+  const {total, checked} = countFor(pid);
+  const pct = total ? Math.round(checked/total*100) : 0;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR');
+  let lines = [`QA CHECKLIST — ${p.label.toUpperCase()}`, `Data: ${dateStr}`, `Progresso: ${checked}/${total} itens (${pct}%)`, ''];
+  p.sections.forEach((sec,si)=>{
+    const secChecked = sec.items.filter((_,ii)=>state[itemKey(si,ii)]).length;
+    const secDone = secChecked===sec.items.length;
+    lines.push(`${secDone?'✅':'⬜'} ${sec.title}`);
+    sec.items.forEach((item,ii)=>{
+      const ck = state[itemKey(si,ii)];
+      lines.push(`  ${ck?'✅':'❌'} ${item}`);
+    });
+    lines.push('');
+  });
+  const pending = total-checked;
+  if(pending>0) lines.push(`⚠️ Itens pendentes: ${pending}`);
+  else lines.push('✅ Todos os itens conferidos — campanha pronta para ir ao ar!');
+
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    showToast('Copiado para a área de transferência!');
+  }).catch(()=>{
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = lines.join('\n');
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copiado!');
+  });
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// --- Init ---
+renderTabs();
+renderPlatform(currentPlatform);
+</script>
+</body>
+</html>

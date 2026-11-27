@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Campanha de Vídeo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:#f4f5fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a237e;color:#fff;padding:18px 32px;display:flex;align-items:center;gap:16px}
+header h1{font-size:1.3rem;font-weight:700}
+header span{font-size:.85rem;opacity:.75;margin-left:4px}
+.main{min-width:0;padding:24px 32px;display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}
+.card{background:#fff;border:1px solid #d6dbf2;border-radius:12px;padding:20px}
+.card h2{font-size:.95rem;font-weight:700;color:#1a237e;margin-bottom:16px;text-transform:uppercase;letter-spacing:.05em}
+label{display:block;font-size:.8rem;font-weight:600;color:#444;margin-bottom:4px;margin-top:12px}
+label:first-of-type{margin-top:0}
+input[type=number],input[type=text],select{width:100%;padding:8px 10px;border:1px solid #d6dbf2;border-radius:7px;font-family:inherit;font-size:.88rem;background:#fff;color:#1a1a2e;outline:none}
+input:focus,select:focus{border-color:#1F36C7;box-shadow:0 0 0 3px rgba(31,54,199,.12)}
+.duration-btns{display:flex;gap:6px;flex-wrap:wrap}
+.duration-btn{padding:6px 14px;border:1px solid #d6dbf2;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;background:#fff;color:#444;transition:.15s}
+.duration-btn.active{background:#1F36C7;color:#fff;border-color:#1F36C7}
+.section-title{font-size:.8rem;font-weight:700;color:#1a237e;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;padding-top:12px;border-top:1px solid #e8ecfd}
+.platform-row{display:grid;grid-template-columns:16px 22px 1fr 56px 20px;align-items:center;gap:6px;margin-bottom:8px;padding:10px 12px;background:#f4f5fb;border-radius:8px;border:1px solid #e8ecfd}
+.platform-row.disabled{opacity:.45}
+.platform-row .plat-emoji{font-size:1rem;line-height:1;text-align:center}
+.platform-row label{margin:0;font-size:.82rem;font-weight:600;cursor:pointer;white-space:normal;word-break:break-word;line-height:1.3}
+.platform-row input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#1F36C7;justify-self:center}
+.pct-input{width:100%;padding:5px 6px;font-size:.82rem;border:1px solid #d6dbf2;border-radius:6px;text-align:right;box-sizing:border-box}
+.pct-label{font-size:.78rem;color:#666;white-space:nowrap}
+.pct-total{font-size:.8rem;font-weight:700;padding:6px 10px;border-radius:6px;background:#e8ecfd;color:#1a237e;text-align:center}
+.pct-total.over{background:#fde8e8;color:#c0392b}
+.btn-calc{width:100%;margin-top:16px;padding:12px;background:#1F36C7;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.95rem;font-weight:700;cursor:pointer;transition:.15s}
+.btn-calc:hover{background:#162abf}
+/* Tabs */
+.tabs-nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e8ecfd;padding-bottom:0}
+.tab-btn{padding:8px 16px;border:none;background:none;font-family:inherit;font-size:.85rem;font-weight:600;color:#666;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab-btn.active{color:#1F36C7;border-bottom-color:#1F36C7}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:#e8ecfd;color:#1a237e;font-weight:700;padding:9px 10px;text-align:left;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f4f5fb}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.73rem;font-weight:700}
+.badge-green{background:#e8f5e9;color:#2e7d32}
+.badge-yellow{background:#fff9e6;color:#b8860b}
+.badge-blue{background:#e3f2fd;color:#1565c0}
+/* KPI Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;align-items:stretch}
+.kpi{background:#e8ecfd;border-radius:9px;padding:12px 14px;display:flex;flex-direction:column}
+.kpi .label{font-size:.72rem;font-weight:600;color:#1a237e;text-transform:uppercase;letter-spacing:.04em;line-height:1.3;min-height:2.4em}
+.kpi .value{font-size:1.3rem;font-weight:700;color:#1a237e;margin-top:6px;white-space:nowrap}
+.kpi .sub{font-size:.73rem;color:#555;margin-top:2px}
+/* Reach curve */
+.reach-curve{margin-top:12px}
+.curve-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:.8rem}
+.curve-row .grp-label{width:80px;color:#555;text-align:right;flex-shrink:0}
+.curve-bar-wrap{flex:1;background:#e8ecfd;border-radius:4px;overflow:hidden;height:18px}
+.curve-bar{height:100%;background:#1F36C7;border-radius:4px;transition:.4s;min-width:2px}
+.curve-row .pct-val{width:46px;font-weight:700;color:#1a237e;flex-shrink:0}
+/* CPV bars */
+.cpv-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.82rem}
+.cpv-row .plat-label{width:150px;flex-shrink:0;font-weight:600}
+.cpv-bar-wrap{flex:1;background:#e8ecfd;border-radius:4px;overflow:hidden;height:18px}
+.cpv-bar{height:100%;background:#1F36C7;border-radius:4px;transition:.4s}
+.cpv-val{width:70px;text-align:right;font-weight:700;color:#1a237e;flex-shrink:0}
+.best-badge{display:inline-block;padding:1px 7px;background:#e8f5e9;color:#2e7d32;border-radius:10px;font-size:.7rem;font-weight:700;margin-left:4px}
+/* Recommendation */
+.rec-box{background:#e8ecfd;border-left:4px solid #1F36C7;border-radius:8px;padding:14px 16px;font-size:.88rem;line-height:1.6;margin-bottom:16px}
+.mix-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mix-label{width:140px;font-size:.82rem;font-weight:600;flex-shrink:0}
+.mix-bar-wrap{flex:1;background:#e8ecfd;border-radius:4px;overflow:hidden;height:18px}
+.mix-bar{height:100%;border-radius:4px;transition:.4s}
+.mix-pct{width:40px;text-align:right;font-size:.82rem;font-weight:700;color:#1a237e}
+.mix-colors{background:#1F36C7}
+.mix-col2{background:#3d5afe}
+.mix-col3{background:#536dfe}
+.mix-col4{background:#82b1ff}
+.mix-col5{background:#bbceff}
+.empty-state{text-align:center;padding:40px 20px;color:#888;font-size:.88rem}
+.btn-copy{padding:9px 20px;background:#e8ecfd;border:1px solid #d6dbf2;color:#1a237e;border-radius:7px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s}
+.btn-copy:hover{background:#d6dbf2}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:.83rem}
+.info-row:last-child{border-bottom:none}
+.info-row span:first-child{color:#666}
+.info-row span:last-child{font-weight:600;color:#1a237e}
+@media(max-width:900px){.main{grid-template-columns:1fr;padding:16px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎬 Simulador de Campanha de Vídeo</h1>
+    <span>Planejamento, GRP digital, alcance e mix por plataforma</span>
+  </div>
+</header>
+<div class="main">
+  <!-- PAINEL ESQUERDO -->
+  <div>
+    <div class="card">
+      <h2>Configuração</h2>
+
+      <label>Objetivo da campanha</label>
+      <select id="objetivo">
+        <option value="branding">Branding / Awareness</option>
+        <option value="consideration">Consideração / Engajamento</option>
+        <option value="conversao">Conversão / Performance</option>
+      </select>
+
+      <label>Universo (tamanho do público-alvo)</label>
+      <input type="number" id="universo" value="5000000" min="1000">
+
+      <label>Budget total (R$)</label>
+      <input type="number" id="budget" value="50000" min="0" step="100">
+
+      <label>Período da campanha (dias)</label>
+      <input type="number" id="periodo" value="30" min="1" max="365">
+
+      <label>Duração do vídeo</label>
+      <div class="duration-btns">
+        <button class="duration-btn" data-dur="6">6s</button>
+        <button class="duration-btn active" data-dur="15">15s</button>
+        <button class="duration-btn" data-dur="30">30s</button>
+        <button class="duration-btn" data-dur="31">+30s</button>
+      </div>
+
+      <label>Meta de frequência (vizualizações/usuário único)</label>
+      <input type="number" id="meta-freq" value="3" min="1" max="20" step="0.5">
+
+      <label>Meta de alcance (% do universo)</label>
+      <input type="number" id="meta-alcance" value="40" min="1" max="100">
+
+      <div class="section-title">Plataformas e Distribuição de Budget</div>
+
+      <div id="platforms-list"></div>
+
+      <div class="pct-total" id="pct-total">Total: 100%</div>
+
+      <button class="btn-calc" onclick="calcular()">▶ Simular Campanha</button>
+    </div>
+  </div>
+
+  <!-- PAINEL DIREITO -->
+  <div class="card">
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="showTab('projecao')">📊 Projeção</button>
+      <button class="tab-btn" onclick="showTab('grp')">📡 GRP &amp; Alcance</button>
+      <button class="tab-btn" onclick="showTab('cpv')">💰 CPV</button>
+      <button class="tab-btn" onclick="showTab('mix')">🎯 Mix Recomendado</button>
+    </div>
+
+    <div id="tab-projecao" class="tab-pane active">
+      <div id="out-projecao"><div class="empty-state">Configure os parâmetros e clique em Simular.</div></div>
+    </div>
+    <div id="tab-grp" class="tab-pane">
+      <div id="out-grp"><div class="empty-state">Configure os parâmetros e clique em Simular.</div></div>
+    </div>
+    <div id="tab-cpv" class="tab-pane">
+      <div id="out-cpv"><div class="empty-state">Configure os parâmetros e clique em Simular.</div></div>
+    </div>
+    <div id="tab-mix" class="tab-pane">
+      <div id="out-mix"><div class="empty-state">Configure os parâmetros e clique em Simular.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const PLATFORMS = [
+  {id:'yt_skip',  name:'YouTube Pre-roll Skip',   group:'YouTube', emoji:'▶️',
+   cpm_min:18, cpm_max:25, vtr_base:{6:.97,15:.30,30:.25,31:.20}, quality:{6:.6,15:.8,30:1,31:1.2}},
+  {id:'yt_nonskip',name:'YouTube Non-Skip',       group:'YouTube', emoji:'▶️',
+   cpm_min:22, cpm_max:35, vtr_base:{6:.97,15:.97,30:.97,31:.97}, quality:{6:1.5,15:1.5,30:1.5,31:1.5}},
+  {id:'yt_bumper',name:'YouTube Bumper 6s',       group:'YouTube', emoji:'▶️',
+   cpm_min:10, cpm_max:15, vtr_base:{6:.97,15:.97,30:.97,31:.97}, quality:{6:.6,15:.6,30:.6,31:.6}},
+  {id:'meta_feed',name:'Meta Feed Vídeo',         group:'Meta',    emoji:'📘',
+   cpm_min:12, cpm_max:18, vtr_base:{6:.25,15:.20,30:.17,31:.13}, quality:{6:.6,15:.8,30:1,31:1.2}},
+  {id:'meta_reels',name:'Meta Reels',             group:'Meta',    emoji:'📘',
+   cpm_min:15, cpm_max:22, vtr_base:{6:.35,15:.28,30:.22,31:.17}, quality:{6:.7,15:.9,30:1.1,31:1.3}},
+  {id:'meta_stories',name:'Meta Stories',         group:'Meta',    emoji:'📘',
+   cpm_min:10, cpm_max:16, vtr_base:{6:.30,15:.23,30:.18,31:.13}, quality:{6:.6,15:.8,30:1,31:1.1}},
+  {id:'tiktok',   name:'TikTok In-Feed',          group:'TikTok',  emoji:'🎵',
+   cpm_min:18, cpm_max:28, vtr_base:{6:.42,15:.35,30:.28,31:.22}, quality:{6:.6,15:.85,30:1,31:1.1}},
+  {id:'dv360',    name:'DV360 Programático',      group:'DV360',   emoji:'🖥️',
+   cpm_min:20, cpm_max:35, vtr_base:{6:.35,15:.30,30:.25,31:.20}, quality:{6:.6,15:.8,30:1,31:1.2}},
+  {id:'ctv',      name:'CTV / OTT',               group:'CTV',     emoji:'📺',
+   cpm_min:35, cpm_max:60, vtr_base:{6:.90,15:.90,30:.90,31:.88}, quality:{6:.8,15:1.2,30:1.5,31:1.5}},
+];
+
+const DEFAULT_CHECKED = ['yt_skip','meta_feed','meta_reels','tiktok'];
+const DEFAULT_PCTS = {yt_skip:40,meta_feed:25,meta_reels:20,tiktok:15};
+
+let duracao = 15;
+let results = null;
+
+// ========== INIT ==========
+function buildPlatforms(){
+  const list = document.getElementById('platforms-list');
+  list.innerHTML = '';
+  PLATFORMS.forEach(p=>{
+    const checked = DEFAULT_CHECKED.includes(p.id);
+    const pct = DEFAULT_PCTS[p.id]||0;
+    const row = document.createElement('div');
+    row.className = 'platform-row'+(checked?'':' disabled');
+    row.id = 'row-'+p.id;
+    row.innerHTML = `
+      <input type="checkbox" id="chk-${p.id}" ${checked?'checked':''} onchange="togglePlatform('${p.id}')">
+      <span class="plat-emoji" aria-hidden="true">${p.emoji}</span>
+      <label for="chk-${p.id}" title="${p.name}">${p.name}</label>
+      <input type="number" class="pct-input" id="pct-${p.id}" value="${pct}" min="0" max="100" ${checked?'':'disabled'} onchange="updateTotal()">
+      <span class="pct-label">%</span>`;
+    list.appendChild(row);
+  });
+  updateTotal();
+}
+
+function togglePlatform(id){
+  const chk = document.getElementById('chk-'+id);
+  const row = document.getElementById('row-'+id);
+  const inp = document.getElementById('pct-'+id);
+  if(chk.checked){row.classList.remove('disabled');inp.disabled=false;}
+  else{row.classList.add('disabled');inp.disabled=true;inp.value=0;}
+  updateTotal();
+}
+
+function updateTotal(){
+  let sum=0;
+  PLATFORMS.forEach(p=>{
+    const v=parseFloat(document.getElementById('pct-'+p.id).value)||0;
+    sum+=v;
+  });
+  const el=document.getElementById('pct-total');
+  el.textContent='Total: '+fmtNum(sum,0)+'%';
+  el.className='pct-total'+(Math.abs(sum-100)>1?' over':'');
+}
+
+document.querySelectorAll('.duration-btn').forEach(b=>{
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.duration-btn').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    duracao=parseInt(this.dataset.dur);
+  });
+});
+
+// ========== UTILS ==========
+function fmtBRL(n){
+  if(!isFinite(n)||isNaN(n))return'—';
+  return'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtNum(n,dec=0){
+  if(!isFinite(n)||isNaN(n))return'—';
+  return n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function fmtPct(n,dec=1){
+  if(!isFinite(n)||isNaN(n))return'—';
+  return fmtNum(n,dec)+'%';
+}
+
+// ========== CALC ==========
+function calcular(){
+  const objetivo = document.getElementById('objetivo').value;
+  const universo = parseFloat(document.getElementById('universo').value)||5000000;
+  const budget   = parseFloat(document.getElementById('budget').value)||50000;
+  const periodo  = parseInt(document.getElementById('periodo').value)||30;
+  const metaFreq = parseFloat(document.getElementById('meta-freq').value)||3;
+  const metaAlc  = parseFloat(document.getElementById('meta-alcance').value)||40;
+
+  const durKey = duracao<=6?6:duracao<=15?15:duracao<=30?30:31;
+
+  const rows = [];
+  PLATFORMS.forEach(p=>{
+    const chk = document.getElementById('chk-'+p.id);
+    if(!chk.checked)return;
+    const pct = parseFloat(document.getElementById('pct-'+p.id).value)||0;
+    if(pct===0)return;
+    const budgetP = budget*(pct/100);
+    const cpmMid  = (p.cpm_min+p.cpm_max)/2;
+    const imps    = (budgetP/cpmMid)*1000;
+    const vtr     = p.vtr_base[durKey]||p.vtr_base[15];
+    const views   = imps*vtr;
+    const cpv     = views>0?budgetP/views:0;
+    const qual    = p.quality[durKey]||p.quality[15];
+    const eff     = budget>0?(views*qual)/budgetP:0;
+    // reach estimate (logarithmic)
+    const k=0.7;
+    const reach   = universo*(1-Math.exp(-k*(imps/universo)));
+    rows.push({p,pct,budgetP,cpmMid,imps,vtr,views,cpv,reach,qual,eff});
+  });
+
+  results = {objetivo,universo,budget,periodo,metaFreq,metaAlc,durKey,rows};
+
+  renderProjecao(results);
+  renderGRP(results);
+  renderCPV(results);
+  renderMix(results);
+}
+
+// ===== TAB 1: PROJEÇÃO =====
+function renderProjecao(r){
+  if(!r.rows.length){document.getElementById('out-projecao').innerHTML='<div class="empty-state">Nenhuma plataforma selecionada.</div>';return;}
+
+  const totalImps   = r.rows.reduce((s,x)=>s+x.imps,0);
+  const totalViews  = r.rows.reduce((s,x)=>s+x.views,0);
+  const totalReach  = r.universo*(1-Math.exp(-0.7*(totalImps/r.universo)));
+  const totalFreq   = totalReach>0?totalImps/totalReach:0;
+  const totalCPV    = totalViews>0?r.budget/totalViews:0;
+
+  let kpis=`<div class="kpi-grid">
+    <div class="kpi"><div class="label">Total Impressões</div><div class="value">${fmtNum(totalImps/1e6,2)}M</div></div>
+    <div class="kpi"><div class="label">Visualizações Completas</div><div class="value">${fmtNum(totalViews/1e6,2)}M</div></div>
+    <div class="kpi"><div class="label">Alcance Estimado</div><div class="value">${fmtPct(totalReach/r.universo*100)}</div><div class="sub">${fmtNum(totalReach/1e6,2)}M pessoas</div></div>
+    <div class="kpi"><div class="label">Freq. Média</div><div class="value">${fmtNum(totalFreq,1)}x</div></div>
+    <div class="kpi"><div class="label">CPV Médio</div><div class="value">${fmtBRL(totalCPV)}</div></div>
+    <div class="kpi"><div class="label">Budget Total</div><div class="value">${fmtBRL(r.budget)}</div></div>
+  </div>`;
+
+  let rows = r.rows.map(x=>`
+    <tr>
+      <td><strong>${x.p.name}</strong><br><span style="font-size:.73rem;color:#888">${x.p.group}</span></td>
+      <td>${fmtBRL(x.budgetP)}<br><span class="badge badge-blue">${fmtNum(x.pct,0)}%</span></td>
+      <td>${fmtBRL(x.cpmMid)}</td>
+      <td>${fmtNum(x.imps/1e6,2)}M</td>
+      <td>${fmtPct(x.vtr*100)}</td>
+      <td>${fmtNum(x.views/1e3,0)}k</td>
+      <td>${fmtBRL(x.cpv)}</td>
+      <td>${fmtPct(x.reach/r.universo*100)}</td>
+    </tr>`).join('');
+
+  document.getElementById('out-projecao').innerHTML = kpis+`
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Plataforma</th><th>Budget</th><th>CPM est.</th><th>Impressões</th><th>VTR est.</th><th>Visualizações</th><th>CPV</th><th>Alcance est.</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div style="margin-top:12px;text-align:right">
+      <button class="btn-copy" onclick="copiarProjecao()">📋 Copiar projeção</button>
+    </div>`;
+}
+
+// ===== TAB 2: GRP & ALCANCE =====
+function renderGRP(r){
+  if(!r.rows.length){document.getElementById('out-grp').innerHTML='<div class="empty-state">Nenhuma plataforma selecionada.</div>';return;}
+
+  const totalImps = r.rows.reduce((s,x)=>s+x.imps,0);
+  const grpTotal  = (totalImps/r.universo)*100;
+  const k=0.7;
+  const reachPct  = (1-Math.exp(-k*(totalImps/r.universo)))*100;
+  const reachAbs  = r.universo*(1-Math.exp(-k*(totalImps/r.universo)));
+  const freq      = reachAbs>0?totalImps/reachAbs:0;
+
+  // curve at different GRP levels
+  const grpLevels = [10,25,50,75,100,150,200,grpTotal].sort((a,b)=>a-b);
+  const uniqueLevels = [...new Set(grpLevels.map(g=>Math.round(g)))];
+
+  const curveRows = uniqueLevels.map(g=>{
+    const impsG = (g/100)*r.universo;
+    const rPct  = (1-Math.exp(-k*(impsG/r.universo)))*100;
+    const isHere= Math.abs(g-grpTotal)<5;
+    return `<div class="curve-row">
+      <span class="grp-label">${fmtNum(g,0)} GRPs</span>
+      <div class="curve-bar-wrap"><div class="curve-bar" style="width:${Math.min(rPct,100)}%"></div></div>
+      <span class="pct-val">${fmtNum(rPct,1)}% ${isHere?'<span class="best-badge">atual</span>':''}</span>
+    </div>`;
+  }).join('');
+
+  // grps needed for target
+  const grpsNeeded = -Math.log(1-r.metaAlc/100)/k*100;
+  const impsNeeded = (grpsNeeded/100)*r.universo;
+  const budgetNeeded= r.rows.length>0?impsNeeded/(r.rows.reduce((s,x)=>s+x.imps,0)/r.budget):0;
+
+  document.getElementById('out-grp').innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">GRP Digital Total</div><div class="value">${fmtNum(grpTotal,1)}</div><div class="sub">pontos brutos</div></div>
+      <div class="kpi"><div class="label">Alcance Estimado</div><div class="value">${fmtNum(reachPct,1)}%</div><div class="sub">${fmtNum(reachAbs/1e6,2)}M pessoas</div></div>
+      <div class="kpi"><div class="label">Frequência Média</div><div class="value">${fmtNum(freq,1)}x</div></div>
+      <div class="kpi"><div class="label">Total Impressões</div><div class="value">${fmtNum(totalImps/1e6,2)}M</div></div>
+    </div>
+    <div style="background:#fff9e6;border-left:4px solid #f0a500;border-radius:8px;padding:12px 14px;font-size:.85rem;margin-bottom:16px">
+      Para atingir <strong>${fmtNum(r.metaAlc,0)}% de alcance</strong> com frequência média ${fmtNum(r.metaFreq,1)}x,
+      são necessários <strong>${fmtNum(grpsNeeded,0)} GRPs</strong>
+      (~${fmtNum(impsNeeded/1e6,2)}M impressões · budget estimado ${fmtBRL(budgetNeeded)}).
+      ${reachPct>=r.metaAlc
+        ?'<br>✅ <strong>Meta de alcance atingida</strong> com o budget atual.'
+        :'<br>⚠️ Budget atual projeta <strong>'+fmtNum(reachPct,1)+'%</strong> de alcance — abaixo da meta.'}
+    </div>
+    <h3 style="font-size:.85rem;font-weight:700;color:#1a237e;margin-bottom:8px">Curva de Alcance por GRP</h3>
+    <div class="reach-curve">${curveRows}</div>`;
+}
+
+// ===== TAB 3: CPV =====
+function renderCPV(r){
+  if(!r.rows.length){document.getElementById('out-cpv').innerHTML='<div class="empty-state">Nenhuma plataforma selecionada.</div>';return;}
+
+  const sorted=[...r.rows].sort((a,b)=>a.cpv-b.cpv);
+  const maxCPV=Math.max(...sorted.map(x=>x.cpv));
+  const maxEff=Math.max(...sorted.map(x=>x.eff));
+  const best=sorted[0];
+
+  const cpvRows=sorted.map((x,i)=>`
+    <div class="cpv-row">
+      <span class="plat-label">${x.p.emoji} ${x.p.name}${i===0?'<span class="best-badge">🏆 melhor</span>':''}</span>
+      <div class="cpv-bar-wrap"><div class="cpv-bar" style="width:${maxCPV>0?(1-x.cpv/maxCPV)*100:0}%;background:${i===0?'#2e7d32':'#1F36C7'}"></div></div>
+      <span class="cpv-val">${fmtBRL(x.cpv)}</span>
+    </div>`).join('');
+
+  const effRows=sorted.map((x,i)=>`
+    <div class="cpv-row">
+      <span class="plat-label">${x.p.emoji} ${x.p.name}</span>
+      <div class="cpv-bar-wrap"><div class="cpv-bar" style="width:${maxEff>0?x.eff/maxEff*100:0}%;background:${i===0?'#1565c0':'#1F36C7'}"></div></div>
+      <span class="cpv-val">${fmtNum(x.eff,2)}</span>
+    </div>`).join('');
+
+  document.getElementById('out-cpv').innerHTML=`
+    <div class="rec-box">
+      🏆 Melhor CPV: <strong>${best.p.name}</strong> com ${fmtBRL(best.cpv)} por visualização completa.
+      Score de eficiência (vizualizações × peso de qualidade / budget): <strong>${fmtNum(best.eff,2)}</strong>.
+    </div>
+    <h3 style="font-size:.85rem;font-weight:700;color:#1a237e;margin-bottom:10px">CPV — Custo por Visualização Completa <span style="font-size:.75rem;color:#888;font-weight:400">(menor = melhor)</span></h3>
+    ${cpvRows}
+    <h3 style="font-size:.85rem;font-weight:700;color:#1a237e;margin:16px 0 10px">Score de Eficiência <span style="font-size:.75rem;color:#888;font-weight:400">(maior = melhor · pondera duração do vídeo)</span></h3>
+    ${effRows}
+    <div style="margin-top:10px;font-size:.75rem;color:#888">Pesos de qualidade: 6s=0,6 · 15s=0,8 · 30s=1,0 · +30s=1,2 · Non-skip=1,5</div>`;
+}
+
+// ===== TAB 4: MIX =====
+function renderMix(r){
+  const objetivo = r.objetivo;
+  const dur = r.durKey;
+  const budget = r.budget;
+
+  // recommended mix by objective
+  const mixes = {
+    branding: {
+      rec:[
+        {id:'yt_nonskip',pct:35,reason:'alto VTR garantido'},
+        {id:'yt_skip',pct:25,reason:'maior alcance YouTube'},
+        {id:'meta_reels',pct:20,reason:'alcance mobile nativo'},
+        {id:'tiktok',pct:10,reason:'engajamento jovem'},
+        {id:'ctv',pct:10,reason:'qualidade premium / TV'},
+      ],
+      nota:'Para branding, priorize formatos com alto VTR (non-skip, CTV) e alcance amplo.'
+    },
+    consideration: {
+      rec:[
+        {id:'yt_skip',pct:30,reason:'intenção de busca + VTR ok'},
+        {id:'meta_reels',pct:30,reason:'engajamento nativo'},
+        {id:'tiktok',pct:25,reason:'alta atenção orgânica'},
+        {id:'meta_feed',pct:15,reason:'remarketing e consideração'},
+      ],
+      nota:'Para consideração, equilibre alcance com formatos que geram engajamento real.'
+    },
+    conversao: {
+      rec:[
+        {id:'meta_feed',pct:35,reason:'alta CVR + retargeting'},
+        {id:'yt_skip',pct:25,reason:'intenção + remarketing'},
+        {id:'tiktok',pct:20,reason:'CPC competitivo'},
+        {id:'meta_reels',pct:20,reason:'catálogo dinâmico'},
+      ],
+      nota:'Para conversão, foque em retargeting e formatos com call-to-action claro.'
+    }
+  };
+
+  const mix = mixes[objetivo];
+  const totalImps = r.rows.reduce((s,x)=>s+x.imps,0);
+  const totalViews= r.rows.reduce((s,x)=>s+x.views,0);
+  const reach = r.universo*(1-Math.exp(-0.7*(totalImps/r.universo)));
+  const grp   = (totalImps/r.universo)*100;
+  const objs  = {branding:'Branding',consideration:'Consideração',conversao:'Conversão'};
+  const durs  = {6:'6s',15:'15s',30:'30s',31:'+30s'};
+  const mixColors=['mix-col1','mix-col2','mix-col3','mix-col4','mix-col5'];
+
+  const mixBars = mix.rec.map((m,i)=>{
+    const pd = PLATFORMS.find(x=>x.id===m.id);
+    return `<div class="mix-row">
+      <span class="mix-label">${pd?pd.emoji+' '+pd.name:m.id}</span>
+      <div class="mix-bar-wrap"><div class="mix-bar ${mixColors[i]||'mix-colors'}" style="width:${m.pct}%"></div></div>
+      <span class="mix-pct">${m.pct}%</span>
+      <span style="font-size:.75rem;color:#666;margin-left:6px">${m.reason}</span>
+    </div>`;
+  }).join('');
+
+  const infoRows=[
+    ['Objetivo',objs[objetivo]],
+    ['Duração do vídeo',durs[dur]],
+    ['Budget total',fmtBRL(budget)],
+    ['GRP Digital projetado',fmtNum(grp,1)+' pontos'],
+    ['Alcance estimado',fmtPct(reach/r.universo*100)+' ('+fmtNum(reach/1e6,2)+'M pessoas)'],
+    ['Visualizações completas',fmtNum(totalViews/1e3,0)+'k'],
+  ].map(([k,v])=>`<div class="info-row"><span>${k}</span><span>${v}</span></div>`).join('');
+
+  document.getElementById('out-mix').innerHTML=`
+    <div class="rec-box">
+      Para uma campanha de <strong>${objs[objetivo]}</strong> de ${fmtBRL(budget)} com vídeo de <strong>${durs[dur]}</strong>,
+      recomendamos o mix abaixo. Projeção: <strong>${fmtNum(grp,0)} GRPs</strong>,
+      <strong>${fmtPct(reach/r.universo*100)}</strong> de alcance,
+      <strong>${fmtNum(totalViews/1e3,0)}}k</strong> visualizações completas.
+    </div>
+    <h3 style="font-size:.85rem;font-weight:700;color:#1a237e;margin-bottom:10px">Mix Recomendado</h3>
+    ${mixBars}
+    <p style="font-size:.8rem;color:#555;margin:12px 0 16px;line-height:1.5">${mix.nota}</p>
+    <h3 style="font-size:.85rem;font-weight:700;color:#1a237e;margin-bottom:8px">Resumo do Plano Atual</h3>
+    ${infoRows}
+    <div style="margin-top:16px;text-align:right">
+      <button class="btn-copy" onclick="copiarPlano()">📋 Copiar plano de mídia</button>
+    </div>`;
+}
+
+// ===== EXPORT =====
+function copiarProjecao(){
+  if(!results)return;
+  let txt='PROJEÇÃO DE CAMPANHA DE VÍDEO\n'+'='.repeat(40)+'\n\n';
+  results.rows.forEach(x=>{
+    txt+=`${x.p.name}\n  Budget: ${fmtBRL(x.budgetP)} (${x.pct}%)\n  CPM: ${fmtBRL(x.cpmMid)}\n  Impressões: ${fmtNum(x.imps/1e6,2)}M\n  VTR: ${fmtPct(x.vtr*100)}\n  Visualizações: ${fmtNum(x.views/1e3,0)}k\n  CPV: ${fmtBRL(x.cpv)}\n\n`;
+  });
+  navigator.clipboard.writeText(txt).then(()=>alert('Copiado!'));
+}
+
+function copiarPlano(){
+  if(!results)return;
+  const r=results;
+  const totalImps=r.rows.reduce((s,x)=>s+x.imps,0);
+  const totalViews=r.rows.reduce((s,x)=>s+x.views,0);
+  const reach=r.universo*(1-Math.exp(-0.7*(totalImps/r.universo)));
+  const grp=(totalImps/r.universo)*100;
+  const objs={branding:'Branding',consideration:'Consideração',conversao:'Conversão'};
+  let txt=`PLANO DE MÍDIA DE VÍDEO\n${'='.repeat(40)}\nObjetivo: ${objs[r.objetivo]}\nBudget: ${fmtBRL(r.budget)}\nPeríodo: ${r.periodo} dias\nGRP Digital: ${fmtNum(grp,1)}\nAlcance: ${fmtPct(reach/r.universo*100)} (${fmtNum(reach/1e6,2)}M)\nVisualizações: ${fmtNum(totalViews/1e3,0)}k\n\nDISTRIBUIÇÃO:\n`;
+  r.rows.forEach(x=>{ txt+=`- ${x.p.name}: ${fmtBRL(x.budgetP)} (${x.pct}%)\n`; });
+  navigator.clipboard.writeText(txt).then(()=>alert('Copiado!'));
+}
+
+// ===== TABS =====
+function showTab(id){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+buildPlatforms();
+calcular();
+</script>
+</body>
+</html>

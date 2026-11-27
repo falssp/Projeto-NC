@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Pacing</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;
+  --surface:#fff;--text:#1a237e;--body:#3d4a8a;--muted:#9fa8da;
+  --green:#059669;--yellow:#d97706;--red:#dc2626;--orange:#ea580c;
+}
+body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px}
+header .icon{font-size:1.5rem}
+header h1{font-size:1.1rem;font-weight:700;letter-spacing:-.01em}
+header p{font-size:.78rem;opacity:.7;margin-top:2px}
+.wrap{display:flex;gap:0;min-height:calc(100vh - 64px)}
+.panel-left{width:360px;min-width:280px;background:var(--surface);border-right:1px solid var(--border);padding:24px;overflow-y:auto;flex-shrink:0}
+.panel-right{flex:1;padding:24px;overflow-y:auto;min-width:0}
+.section{margin-bottom:20px}
+.section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+label{display:block;font-size:.78rem;font-weight:600;color:var(--body);margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],select{
+  width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:inherit;font-size:.82rem;color:var(--text);background:#fff;outline:none;
+  transition:border .15s
+}
+input:focus,select:focus{border-color:var(--accent)}
+.field{margin-bottom:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.checkboxes{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chk-day{display:flex;align-items:center;gap:4px;font-size:.78rem;cursor:pointer;
+  background:var(--hl);border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;
+  transition:.12s}
+.chk-day input{accent-color:var(--accent)}
+.chk-day.off{opacity:.45}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.toggle{position:relative;width:38px;height:20px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.slider-tog{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.2s}
+.slider-tog::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.slider-tog{background:var(--accent)}
+.toggle input:checked+.slider-tog::before{transform:translateX(18px)}
+.weight-sliders{display:none;padding:12px;background:var(--hl);border-radius:10px;margin-bottom:12px}
+.weight-sliders.show{display:block}
+.wslider{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.78rem}
+.wslider span{width:28px;font-weight:600}
+.wslider input[type=range]{flex:1;accent-color:var(--accent)}
+.wslider .val{width:38px;text-align:right;font-weight:600;color:var(--accent)}
+.btn-calc{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;
+  font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s;margin-top:4px}
+.btn-calc:hover{background:var(--navy)}
+/* results */
+.placeholder{text-align:center;padding:60px 24px;color:var(--muted)}
+.placeholder .ico{font-size:3rem;margin-bottom:12px}
+.placeholder p{font-size:.85rem}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px}
+.card .clabel{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.card .cval{font-size:1.1rem;font-weight:700;color:var(--text)}
+.card .csub{font-size:.72rem;color:var(--body);margin-top:2px}
+.card.status-ok{border-color:var(--green);background:#f0fdf4}
+.card.status-warn{border-color:var(--yellow);background:#fffbeb}
+.card.status-bad{border-color:var(--red);background:#fef2f2}
+.card.status-over{border-color:var(--orange);background:#fff7ed}
+.gauge-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px}
+.gauge-title{font-size:.78rem;font-weight:700;color:var(--body);margin-bottom:10px}
+.gauge-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.gauge-label{font-size:.72rem;font-weight:600;width:70px;color:var(--body)}
+.gauge-track{flex:1;height:16px;background:var(--hl);border-radius:8px;overflow:hidden;position:relative}
+.gauge-fill{height:100%;border-radius:8px;transition:.4s}
+.gauge-fill.esperado{background:var(--accent)}
+.gauge-fill.real{background:var(--green)}
+.gauge-fill.real.over{background:var(--orange)}
+.gauge-fill.real.bad{background:var(--red)}
+.gauge-pct{font-size:.78rem;font-weight:700;width:48px;text-align:right}
+.alerts{margin-bottom:20px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;font-size:.8rem;line-height:1.5;margin-bottom:8px}
+.alert.warn{background:#fffbeb;border:1.5px solid #fcd34d;color:#92400e}
+.alert.danger{background:#fef2f2;border:1.5px solid #fca5a5;color:#991b1b}
+.alert.ok{background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
+/* chart */
+.chart-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;overflow-x:auto}
+.chart-title{font-size:.78rem;font-weight:700;color:var(--body);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.chart-legend{display:flex;gap:16px;font-size:.7rem}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:3px}
+.chart-inner{display:flex;align-items:flex-end;gap:4px;height:120px;min-width:600px;padding-bottom:24px;position:relative;border-bottom:2px solid var(--border)}
+.chart-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:28px;position:relative}
+.chart-col .bar-group{display:flex;gap:2px;align-items:flex-end;width:100%}
+.bar{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:.3s;cursor:pointer;position:relative}
+.bar.esp{background:var(--accent);opacity:.5}
+.bar.real-bar{background:var(--green)}
+.bar.real-bar.over-bar{background:var(--orange)}
+.bar .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--navy);color:#fff;padding:5px 8px;border-radius:6px;font-size:.68rem;
+  white-space:nowrap;z-index:10;pointer-events:none}
+.bar:hover .tip{display:block}
+.chart-col .xlbl{position:absolute;bottom:-20px;font-size:.6rem;color:var(--muted);white-space:nowrap;transform:rotate(-30deg);transform-origin:top left;left:50%}
+.today-line{position:absolute;bottom:0;width:2px;background:var(--red);opacity:.7;top:0;z-index:5}
+.today-label{position:absolute;top:0;background:var(--red);color:#fff;font-size:.6rem;padding:1px 4px;border-radius:3px;white-space:nowrap;transform:translateX(-50%)}
+/* table */
+.table-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.table-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.table-header span{font-size:.78rem;font-weight:700;color:var(--body)}
+.btn-copy{padding:6px 12px;background:var(--hl);border:1.5px solid var(--border);border-radius:7px;
+  font-family:inherit;font-size:.72rem;font-weight:600;color:var(--accent);cursor:pointer;transition:.15s}
+.btn-copy:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-copy.copied{background:var(--green);color:#fff;border-color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:.75rem}
+th{background:var(--hl);padding:8px 12px;text-align:left;font-weight:700;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+td{padding:7px 12px;border-bottom:1px solid var(--hl);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.today-row td{background:#eff6ff;font-weight:600}
+tr.past-row td{color:var(--muted)}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.65rem;font-weight:700}
+.badge.ok{background:#dcfce7;color:#166534}
+.badge.warn{background:#fef9c3;color:#854d0e}
+.badge.bad{background:#fee2e2;color:#991b1b}
+.badge.over{background:#ffedd5;color:#9a3412}
+.badge.fut{background:var(--hl);color:var(--muted)}
+@media(max-width:800px){
+  .wrap{flex-direction:column}
+  .panel-left{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+  .row2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="icon">📉</div>
+  <div>
+    <h1>Simulador de Pacing</h1>
+    <p>Projeta entrega diária e identifica problemas de pacing antes que aconteçam</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT: FORM -->
+  <div class="panel-left">
+
+    <div class="section">
+      <div class="section-title">Campanha</div>
+      <div class="field">
+        <label>Nome da Campanha</label>
+        <input type="text" id="nome" placeholder="Ex: Marca_Produto_Awareness_Nov26">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Data Início</label>
+          <input type="date" id="dtInicio">
+        </div>
+        <div class="field">
+          <label>Data Fim</label>
+          <input type="date" id="dtFim">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Budget Total (R$)</label>
+          <input type="number" id="budget" placeholder="10000" min="0" step="100">
+        </div>
+        <div class="field">
+          <label>Já Gasto Hoje (R$)</label>
+          <input type="number" id="gasto" placeholder="0" min="0" step="100" value="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Configuração de Entrega</div>
+      <div class="row2">
+        <div class="field">
+          <label>CPM Médio (R$)</label>
+          <input type="number" id="cpm" placeholder="15.00" min="0.01" step="0.5">
+        </div>
+        <div class="field">
+          <label>Frequência Esperada</label>
+          <input type="number" id="freq" placeholder="3.0" min="1" step="0.5" value="3">
+        </div>
+      </div>
+      <div class="field">
+        <label>Ritmo de Entrega</label>
+        <select id="ritmo">
+          <option value="uniforme">Uniforme</option>
+          <option value="frente">Frente-pesado (mais entrega no início)</option>
+          <option value="fundo">Fundo-pesado (mais entrega no fim)</option>
+          <option value="custom">Customizado por dia da semana</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Dias da Semana Ativos</label>
+        <div class="checkboxes" id="diasSemana">
+          <label class="chk-day"><input type="checkbox" value="0" checked> Seg</label>
+          <label class="chk-day"><input type="checkbox" value="1" checked> Ter</label>
+          <label class="chk-day"><input type="checkbox" value="2" checked> Qua</label>
+          <label class="chk-day"><input type="checkbox" value="3" checked> Qui</label>
+          <label class="chk-day"><input type="checkbox" value="4" checked> Sex</label>
+          <label class="chk-day"><input type="checkbox" value="5" checked> Sáb</label>
+          <label class="chk-day"><input type="checkbox" value="6" checked> Dom</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Sazonalidade</div>
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="toggleSazon" onchange="toggleSazon()">
+          <span class="slider-tog"></span>
+        </label>
+        <span style="font-size:.8rem;font-weight:600">Aplicar pesos por dia da semana</span>
+      </div>
+      <div class="weight-sliders" id="weightSliders">
+        <div id="slidersList"></div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:4px">100% = peso neutro. Dias com maior peso recebem mais budget.</div>
+      </div>
+    </div>
+
+    <button class="btn-calc" onclick="calcular()">▶ Simular Pacing</button>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div class="panel-right" id="results">
+    <div class="placeholder">
+      <div class="ico">📊</div>
+      <p>Preencha os dados da campanha e clique em <strong>Simular Pacing</strong></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const DIAS_FULL = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+
+// Init sliders
+const sliders = {};
+const sl = document.getElementById('slidersList');
+DIAS.forEach((d,i)=>{
+  const row = document.createElement('div');
+  row.className = 'wslider';
+  row.innerHTML = `<span>${d}</span><input type="range" min="10" max="200" value="100" id="w${i}" oninput="document.getElementById('wv${i}').textContent=this.value+'%'"><span class="val" id="wv${i}">100%</span>`;
+  sl.appendChild(row);
+  sliders[i] = ()=>parseInt(document.getElementById('w'+i).value);
+});
+
+function toggleSazon(){
+  document.getElementById('weightSliders').classList.toggle('show', document.getElementById('toggleSazon').checked);
+}
+
+// Checkbox style
+document.querySelectorAll('.chk-day input').forEach(cb=>{
+  cb.addEventListener('change',()=>{
+    cb.closest('.chk-day').classList.toggle('off',!cb.checked);
+  });
+});
+
+function fmt(n,dec=2){
+  if(isNaN(n)||n===null) return '—';
+  return 'R$ '+n.toFixed(dec).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function fmtN(n,dec=0){
+  if(isNaN(n)||n===null) return '—';
+  return Math.round(n).toLocaleString('pt-BR');
+}
+function fmtDate(d){
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+}
+function fmtDateShort(d){
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}).replace('/','/');
+}
+function dayOfWeek(d){ // 0=Mon..6=Sun
+  return (d.getDay()+6)%7;
+}
+
+function getWeight(dow, ritmo, totalDays, dayIdx, useSazon){
+  let w = 1;
+  if(ritmo==='frente') w = 1 + (totalDays - dayIdx - 1) / totalDays;
+  else if(ritmo==='fundo') w = 1 + dayIdx / totalDays;
+  else if(ritmo==='custom'||useSazon) w = sliders[dow]() / 100;
+  return w;
+}
+
+function calcular(){
+  const nome = document.getElementById('nome').value||'Campanha';
+  const dtI = document.getElementById('dtInicio').value;
+  const dtF = document.getElementById('dtFim').value;
+  const budget = parseFloat(document.getElementById('budget').value);
+  const gasto = parseFloat(document.getElementById('gasto').value)||0;
+  const cpm = parseFloat(document.getElementById('cpm').value);
+  const freq = parseFloat(document.getElementById('freq').value)||3;
+  const ritmo = document.getElementById('ritmo').value;
+  const useSazon = document.getElementById('toggleSazon').checked;
+
+  if(!dtI||!dtF||!budget||!cpm){
+    alert('Preencha: data início, data fim, budget e CPM.');
+    return;
+  }
+
+  const activeDays = new Set();
+  document.querySelectorAll('#diasSemana input:checked').forEach(cb=>activeDays.add(parseInt(cb.value)));
+  if(!activeDays.size){alert('Selecione ao menos um dia da semana.');return;}
+
+  const start = new Date(dtI+'T00:00:00');
+  const end = new Date(dtF+'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  if(end<=start){alert('Data fim deve ser após data início.');return;}
+
+  // Build day list
+  const days=[];
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
+    const dow = dayOfWeek(d);
+    if(activeDays.has(dow)) days.push({date:new Date(d), dow});
+  }
+  if(!days.length){alert('Nenhum dia ativo no período.');return;}
+
+  const totalDays = days.length;
+
+  // Weights
+  const weights = days.map((d,i)=>{
+    if(ritmo==='custom') return sliders[d.dow]()/100;
+    if(useSazon) return sliders[d.dow]()/100;
+    if(ritmo==='frente') return 1+(totalDays-i-1)/totalDays;
+    if(ritmo==='fundo') return 1+i/totalDays;
+    return 1;
+  });
+  const weightSum = weights.reduce((a,b)=>a+b,0);
+  const dailyBudgets = weights.map(w=>(w/weightSum)*budget);
+
+  // Today index
+  const todayIdx = days.findIndex(d=>d.date.getTime()===today.getTime());
+  const isInFlight = todayIdx>=0;
+  const daysElapsed = isInFlight ? todayIdx+1 : (today>end?totalDays:0);
+  const daysRemaining = Math.max(0, totalDays-daysElapsed);
+
+  // Expected spend at today
+  const expectedToday = dailyBudgets.slice(0,daysElapsed).reduce((a,b)=>a+b,0);
+  const paceRatio = expectedToday>0 ? gasto/expectedToday : (gasto>0?2:1);
+  const projectedEnd = expectedToday>0 ? (gasto/expectedToday)*budget : budget;
+  const delta = projectedEnd - budget;
+  const deltaPct = (delta/budget)*100;
+
+  // Status
+  let statusKey='ok', statusLabel='🟢 On Pace', statusClass='status-ok';
+  if(paceRatio<0.85){statusKey='bad';statusLabel='🔴 Underpacing';statusClass='status-bad';}
+  else if(paceRatio<0.92){statusKey='warn';statusLabel='🟡 Leve Underpacing';statusClass='status-warn';}
+  else if(paceRatio>1.1){statusKey='over';statusLabel='🟠 Overpacing';statusClass='status-over';}
+
+  // Total impressions
+  const totalImpr = (budget/cpm)*1000;
+  const reach = totalImpr/freq;
+
+  // Build results HTML
+  const res = document.getElementById('results');
+
+  // 1. Cards
+  let cardsHtml = `<div class="cards-grid">
+    <div class="card"><div class="clabel">Budget Total</div><div class="cval">${fmt(budget)}</div></div>
+    <div class="card"><div class="clabel">Dias de Voo</div><div class="cval">${totalDays}</div><div class="csub">dias ativos</div></div>
+    <div class="card"><div class="clabel">Dias Restantes</div><div class="cval">${daysRemaining}</div></div>
+    <div class="card"><div class="clabel">CPM Médio</div><div class="cval">${fmt(cpm)}</div></div>
+    <div class="card"><div class="clabel">Impressões Totais</div><div class="cval">${fmtN(totalImpr)}</div></div>
+    <div class="card"><div class="clabel">Alcance Estimado</div><div class="cval">${fmtN(reach)}</div><div class="csub">freq. ${freq}×</div></div>
+    <div class="card"><div class="clabel">Esperado até Hoje</div><div class="cval">${fmt(expectedToday)}</div></div>
+    <div class="card"><div class="clabel">Gasto Real</div><div class="cval">${fmt(gasto)}</div></div>
+    <div class="card ${statusClass}"><div class="clabel">Status de Pacing</div><div class="cval" style="font-size:.88rem">${statusLabel}</div><div class="csub">${paceRatio>0?(paceRatio*100).toFixed(0)+'% do esperado':''}</div></div>
+  </div>`;
+
+  // 2. Gauge
+  const expPct = Math.min(100,(expectedToday/budget)*100);
+  const realPct = Math.min(100,(gasto/budget)*100);
+  const realCls = statusKey==='bad'?'bad':statusKey==='over'?'over-bar':'';
+  let gaugeHtml = `<div class="gauge-wrap">
+    <div class="gauge-title">📊 Progresso do Budget</div>
+    <div class="gauge-row"><span class="gauge-label">Esperado</span><div class="gauge-track"><div class="gauge-fill esperado" style="width:${expPct}%"></div></div><span class="gauge-pct" style="color:var(--accent)">${expPct.toFixed(1)}%</span></div>
+    <div class="gauge-row"><span class="gauge-label">Real</span><div class="gauge-track"><div class="gauge-fill real ${realCls}" style="width:${realPct}%"></div></div><span class="gauge-pct" style="color:var(--green)">${realPct.toFixed(1)}%</span></div>
+  </div>`;
+
+  // 3. Alerts
+  let alertsHtml = '<div class="alerts">';
+  if(!isInFlight && today<start){
+    alertsHtml += `<div class="alert ok">✅ Campanha ainda não iniciou. Início em ${fmtDate(start)}.</div>`;
+  } else if(today>end){
+    alertsHtml += `<div class="alert ok">🏁 Campanha encerrada em ${fmtDate(end)}. Gasto registrado: ${fmt(gasto)} de ${fmt(budget)}.</div>`;
+  } else {
+    if(deltaPct < -10){
+      const leftover = budget - projectedEnd;
+      const bidIncrease = ((1/(paceRatio||.01))-1)*100;
+      alertsHtml += `<div class="alert warn">⚠️ <strong>Underpacing:</strong> Campanha deve encerrar com ~${fmt(leftover)} não entregue (${Math.abs(deltaPct).toFixed(0)}% abaixo do budget). Sugestão: aumentar CPM bid em ~${bidIncrease.toFixed(0)}% ou expandir segmentação.</div>`;
+    } else if(deltaPct > 10){
+      const daysLeft = budget/(gasto/Math.max(1,daysElapsed));
+      const endDate = new Date(start); endDate.setDate(start.getDate()+Math.round(daysLeft));
+      alertsHtml += `<div class="alert danger">⚠️ <strong>Overpacing:</strong> Budget pode se esgotar ~${daysRemaining} dias antes do fim. Sugestão: reduzir CPM bid em ~${deltaPct.toFixed(0)}% ou adicionar frequency cap.</div>`;
+    } else {
+      alertsHtml += `<div class="alert ok">✅ Campanha dentro do ritmo esperado (${(paceRatio*100).toFixed(0)}% do projetado).</div>`;
+    }
+  }
+  alertsHtml += '</div>';
+
+  // 4. Chart (CSS bars, max 60 days shown)
+  const maxBars = 60;
+  const step = days.length>maxBars ? Math.ceil(days.length/maxBars) : 1;
+  const chartDays = days.filter((_,i)=>i%step===0);
+  const chartBudgets = dailyBudgets.filter((_,i)=>i%step===0);
+  const maxBud = Math.max(...chartBudgets)*1.1||1;
+
+  let barsHtml = '';
+  chartDays.forEach((d,ci)=>{
+    const origIdx = ci*step;
+    const bud = chartBudgets[ci];
+    const isToday = d.date.getTime()===today.getTime();
+    const isPast = d.date < today;
+    const h = Math.round((bud/maxBud)*100);
+    // For past/today, show real proportional bar
+    const realH = isPast||isToday ? Math.round(((gasto/Math.max(1,daysElapsed))/maxBud)*100) : 0;
+    const realBarCls = statusKey==='over'?'over-bar':statusKey==='bad'?'':'';
+    const todayMark = isToday ? `<div class="today-line"></div>` : '';
+    barsHtml += `<div class="chart-col">
+      ${todayMark}
+      <div class="bar-group">
+        <div class="bar esp" style="height:${h}px"><span class="tip">Esp: ${fmt(bud)}<br>${fmtDate(d.date)}</span></div>
+        ${isPast||isToday ? `<div class="bar real-bar ${realBarCls}" style="height:${realH}px"><span class="tip">Real/dia: ${fmt(gasto/Math.max(1,daysElapsed))}<br>${fmtDate(d.date)}</span></div>` : ''}
+      </div>
+      <span class="xlbl">${fmtDateShort(d.date)}</span>
+    </div>`;
+  });
+
+  let chartHtml = `<div class="chart-wrap">
+    <div class="chart-title">
+      Projeção de Budget Diário
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--accent);opacity:.5"></div> Esperado</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div> Real</div>
+      </div>
+    </div>
+    <div class="chart-inner">${barsHtml}</div>
+  </div>`;
+
+  // 5. Table (show up to 90 rows)
+  const maxRows = 90;
+  let tableRows = '';
+  days.slice(0,maxRows).forEach((d,i)=>{
+    const bud = dailyBudgets[i];
+    const impr = (bud/cpm)*1000;
+    const cumBud = dailyBudgets.slice(0,i+1).reduce((a,b)=>a+b,0);
+    const pct = (cumBud/budget*100).toFixed(1);
+    const isToday = d.date.getTime()===today.getTime();
+    const isPast = d.date < today;
+    const isFut = d.date > today;
+    let st='', stClass='';
+    if(isToday){
+      const pace=(gasto/Math.max(0.01,expectedToday));
+      if(pace>=0.92&&pace<=1.1){st='On Pace';stClass='ok';}
+      else if(pace<0.85){st='Underpacing';stClass='bad';}
+      else if(pace<0.92){st='Leve Under';stClass='warn';}
+      else{st='Overpacing';stClass='over';}
+    } else if(isPast){st='Estimado';stClass=''}
+    else{st='Projeção';stClass='fut';}
+    const rowCls = isToday?'today-row':isPast?'past-row':'';
+    tableRows += `<tr class="${rowCls}">
+      <td>${fmtDate(d.date)}</td>
+      <td>${DIAS[d.dow]}</td>
+      <td>${fmt(bud)}</td>
+      <td>${fmtN(impr)}</td>
+      <td>${fmt(cumBud)}</td>
+      <td>${pct}%</td>
+      <td>${stClass?`<span class="badge ${stClass}">${st}</span>`:st}</td>
+    </tr>`;
+  });
+  if(days.length>maxRows) tableRows+=`<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.72rem;padding:10px">+${days.length-maxRows} dias omitidos</td></tr>`;
+
+  let tableHtml = `<div class="table-wrap">
+    <div class="table-header">
+      <span>📅 Projeção Dia a Dia</span>
+      <button class="btn-copy" id="btnCopy" onclick="copiarRelatorio()">Copiar Relatório</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Data</th><th>Dia</th><th>Budget Diário</th><th>Impressões</th><th>Budget Acum.</th><th>% Total</th><th>Status</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    </div>
+  </div>`;
+
+  res.innerHTML = cardsHtml + gaugeHtml + alertsHtml + chartHtml + tableHtml;
+
+  // Store for copy
+  window._reportData = {nome,dtI,dtF,budget,gasto,cpm,freq,totalDays,daysRemaining,totalImpr,reach,expectedToday,paceRatio,statusLabel,projectedEnd,delta,deltaPct,days,dailyBudgets};
+}
+
+function copiarRelatorio(){
+  const r = window._reportData;
+  if(!r){return;}
+  const lines = [
+    `RELATÓRIO DE PACING — ${r.nome}`,
+    `Data: ${new Date().toLocaleDateString('pt-BR')}`,
+    `Período: ${r.dtI} a ${r.dtF}`,
+    ``,
+    `RESUMO`,
+    `Budget Total: ${fmt(r.budget)}`,
+    `Gasto Real: ${fmt(r.gasto)}`,
+    `Esperado até hoje: ${fmt(r.expectedToday)}`,
+    `Pacing: ${(r.paceRatio*100).toFixed(0)}% do esperado — ${r.statusLabel}`,
+    `Projeção de encerramento: ${fmt(r.projectedEnd)} (${r.deltaPct>0?'+':''}${r.deltaPct.toFixed(1)}%)`,
+    ``,
+    `MÉTRICAS`,
+    `Dias de Voo: ${r.totalDays}  |  Restantes: ${r.daysRemaining}`,
+    `CPM: ${fmt(r.cpm)}  |  Impressões: ${fmtN(r.totalImpr)}  |  Alcance est.: ${fmtN(r.reach)}`,
+    ``,
+    `PROJEÇÃO DIÁRIA`,
+    `Data       | Dia | Budget Diário | Impressões | Acumulado  | %`,
+    `-----------|-----|---------------|------------|------------|------`,
+  ];
+  r.days.forEach((d,i)=>{
+    const bud=r.dailyBudgets[i];
+    const impr=(bud/r.cpm)*1000;
+    const cum=r.dailyBudgets.slice(0,i+1).reduce((a,b)=>a+b,0);
+    const pct=(cum/r.budget*100).toFixed(1);
+    lines.push(`${fmtDate(d.date).padEnd(10)} | ${DIAS[d.dow].padEnd(3)} | ${fmt(bud).padEnd(13)} | ${fmtN(impr).padEnd(10)} | ${fmt(cum).padEnd(10)} | ${pct}%`);
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    const btn=document.getElementById('btnCopy');
+    btn.textContent='✓ Copiado!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copiar Relatório';btn.classList.remove('copied');},2000);
+  });
+}
+
+function fmt(n,dec=2){
+  if(isNaN(n)||n===null) return '—';
+  return 'R$ '+n.toFixed(dec).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function fmtN(n){return Math.round(n).toLocaleString('pt-BR');}
+function fmtDate(d){return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});}
+function fmtDateShort(d){return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});}
+</script>
+</body>
+</html>

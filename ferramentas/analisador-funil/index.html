@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisador de Funil de Conversão</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1a237e;--accent:#1F36C7;--hl:#e8ecfd;--border:#d6dbf2;--bg:#f4f5fb;--white:#fff;--red:#d32f2f;--yellow:#f57c00;--green:#2e7d32;--gray:#607d8b}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:#1a1a2e;min-height:100vh}
+header{background:var(--blue);color:#fff;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+header h1{font-size:1.25rem;font-weight:700}
+header .subtitle{font-size:.8rem;opacity:.7;margin-top:2px}
+.main{padding:28px 32px;min-width:0;display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+@media(max-width:1000px){.main{grid-template-columns:1fr}}
+.panel{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px}
+.panel-title{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1.5px solid var(--border)}
+.field-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.field-row label{font-size:.8rem;font-weight:600;color:var(--gray);min-width:36px}
+.field-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0}
+.stage-row{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;transition:border-color .15s}
+.stage-row.disabled{opacity:.45}
+.stage-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.stage-top input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent)}
+.stage-name{font-size:.88rem;font-weight:600;flex:1}
+.stage-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stage-inputs label{font-size:.75rem;font-weight:600;color:var(--gray);display:block;margin-bottom:3px}
+.stage-inputs input{width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem;background:var(--white)}
+.stage-inputs input:focus{outline:none;border-color:var(--accent)}
+.vertical-row{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.vertical-row label{font-size:.8rem;font-weight:600;color:var(--gray)}
+.vertical-row select{padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--white)}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-family:inherit;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:12px}
+.btn-primary:hover{background:#1629a0}
+.results{display:flex;flex-direction:column;gap:20px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:800px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;text-align:center}
+.kpi-label{font-size:.72rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi-value{font-size:1.4rem;font-weight:700;color:var(--accent)}
+.kpi-sub{font-size:.75rem;color:var(--gray);margin-top:2px}
+.funnel-wrap{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px}
+.funnel-svg-area{display:flex;flex-direction:column;gap:4px;padding:0 20px}
+.funnel-stage{position:relative;display:flex;align-items:center;gap:12px}
+.funnel-bar-wrap{flex:1;position:relative;height:40px}
+.funnel-bar{height:100%;border-radius:6px;transition:width .4s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:10px}
+.funnel-bar span{font-size:.8rem;font-weight:700;color:#fff;white-space:nowrap}
+.funnel-label{min-width:160px;font-size:.82rem;font-weight:600;text-align:right}
+.funnel-pct{min-width:60px;font-size:.8rem;text-align:right;color:var(--gray)}
+.funnel-arrow{text-align:center;font-size:.7rem;color:var(--gray);padding:1px 0;margin-left:172px}
+.table-wrap{background:var(--white);border:1.5px solid var(--border);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--hl);color:var(--accent);font-weight:700;padding:10px 14px;text-align:left;white-space:nowrap}
+td{padding:9px 14px;border-top:1px solid var(--border)}
+tr:hover td{background:var(--bg)}
+.badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.badge-green{background:#e8f5e9;color:#2e7d32}
+.badge-yellow{background:#fff8e1;color:#f57c00}
+.badge-red{background:#ffebee;color:#c62828}
+.alert-box{background:#fff8e1;border:1.5px solid #ffe082;border-radius:10px;padding:14px 16px}
+.alert-box.red{background:#ffebee;border-color:#ef9a9a}
+.alert-title{font-size:.85rem;font-weight:700;margin-bottom:6px}
+.alert-box ul{padding-left:16px;font-size:.82rem;line-height:1.7}
+.placeholder{background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center;color:var(--gray);font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 Analisador de Funil de Conversão</h1>
+    <div class="subtitle">Identifique gargalos e otimize a performance do seu funil digital</div>
+  </div>
+</header>
+<div class="main">
+  <!-- Left: Inputs -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Configuração do Funil</div>
+      <div class="vertical-row">
+        <label>Vertical:</label>
+        <select id="vertical" onchange="analyze()">
+          <option value="ecom">E-commerce</option>
+          <option value="lead">Lead Generation</option>
+          <option value="app">App Install</option>
+          <option value="brand">Branding / Awareness</option>
+        </select>
+      </div>
+      <div id="stagesContainer"></div>
+      <div class="panel-title" style="margin-top:20px">Investimento (opcional)</div>
+      <div class="field-row">
+        <label style="min-width:100px;font-size:.8rem;font-weight:600;color:var(--gray)">Budget total (R$)</label>
+        <input type="number" id="budget" placeholder="Ex: 10000" oninput="analyze()" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem">
+      </div>
+      <div class="field-row">
+        <label style="min-width:100px;font-size:.8rem;font-weight:600;color:var(--gray)">Receita gerada (R$)</label>
+        <input type="number" id="revenue" placeholder="Ex: 25000" oninput="analyze()" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem">
+      </div>
+    </div>
+  </div>
+  <!-- Right: Results -->
+  <div class="results" id="results">
+    <div class="placeholder">📊 Preencha os dados do funil à esquerda para visualizar a análise.</div>
+  </div>
+</div>
+<script>
+const STAGES_DEF = [
+  {id:'imp',   label:'Impressões',         icon:'👁️',  enabled:true,  hasCost:false},
+  {id:'click', label:'Cliques',            icon:'🖱️',  enabled:true,  hasCost:false},
+  {id:'lp',    label:'Visitas à Landing',  icon:'📄',  enabled:true,  hasCost:false},
+  {id:'prod',  label:'Visualiz. Produto',  icon:'🏷️',  enabled:true,  hasCost:false},
+  {id:'cart',  label:'Add to Cart',        icon:'🛒',  enabled:true,  hasCost:false},
+  {id:'check', label:'Início Checkout',    icon:'💳',  enabled:true,  hasCost:false},
+  {id:'conv',  label:'Conversões',         icon:'✅',  enabled:true,  hasCost:false},
+];
+
+// Benchmarks: [min_ok%, warn_below%] for each stage transition
+const BENCH = {
+  ecom:  {click:[1.0,0.3], lp:[80,50], prod:[40,20], cart:[15,8], check:[60,30], conv:[60,30]},
+  lead:  {click:[2.0,0.5], lp:[85,60], prod:[50,25], cart:[30,15], check:[70,40], conv:[70,40]},
+  app:   {click:[3.0,1.0], lp:[60,30], prod:[40,20], cart:[20,10], check:[50,25], conv:[50,25]},
+  brand: {click:[0.3,0.1], lp:[70,40], prod:[30,15], cart:[10,5], check:[50,25], conv:[50,25]},
+};
+
+const RECS = {
+  click: ['Revisar CTAs nos criativos','Testar novos formatos (vídeo vs display)','Segmentação muito ampla — refinar audience','Checar posicionamentos com CTR mais alto'],
+  lp:    ['Landing page lenta — otimizar velocidade','Mensagem do criativo vs landing desalinhada','Formulário acima da dobra','Remover distrações do layout'],
+  prod:  ['Melhora na arquitetura de informação do site','Fotos e descrições de produto insuficientes','Trabalhar categorias e filtros','Personalização por segmento'],
+  cart:  ['Preço ou frete como obstáculo','Adicionar prova social (reviews, avaliações)','Exit-intent pop-up com oferta','Remarketing dinâmico para abandonadores'],
+  check: ['Simplificar processo de checkout','Oferecer mais opções de pagamento','Guest checkout sem cadastro obrigatório','Transparência em frete e prazo'],
+  conv:  ['Recuperação de carrinho abandonado','E-mail de lembrete automático','Oferta de urgência (tempo limitado)','Remarketing para quase-conversores'],
+};
+
+function buildStages() {
+  const c = document.getElementById('stagesContainer');
+  c.innerHTML = '';
+  STAGES_DEF.forEach((s,i) => {
+    const div = document.createElement('div');
+    div.className = 'stage-row' + (s.enabled?'':' disabled');
+    div.id = 'strow_'+s.id;
+    div.innerHTML = `
+      <div class="stage-top">
+        <input type="checkbox" ${s.enabled?'checked':''} onchange="toggleStage('${s.id}',this.checked)" id="en_${s.id}">
+        <span class="stage-name">${s.icon} ${s.label}</span>
+      </div>
+      <div class="stage-inputs">
+        <div>
+          <label>Volume</label>
+          <input type="number" id="vol_${s.id}" placeholder="0" oninput="analyze()" min="0">
+        </div>
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+function toggleStage(id, checked) {
+  const s = STAGES_DEF.find(x=>x.id===id);
+  s.enabled = checked;
+  document.getElementById('strow_'+id).className = 'stage-row'+(checked?'':' disabled');
+  analyze();
+}
+
+function getVal(id) { return parseFloat(document.getElementById('vol_'+id)?.value)||0; }
+
+function analyze() {
+  const vertical = document.getElementById('vertical').value;
+  const bench = BENCH[vertical];
+  const active = STAGES_DEF.filter(s=>s.enabled);
+  if (active.length < 2) { showPlaceholder(); return; }
+
+  const vals = active.map(s=>({...s, vol: getVal(s.id)}));
+  if (!vals.some(v=>v.vol>0)) { showPlaceholder(); return; }
+
+  // Compute rates
+  const rates = [];
+  for (let i=1;i<vals.length;i++) {
+    const prev = vals[i-1].vol, cur = vals[i].vol;
+    const rate = prev > 0 ? (cur/prev*100) : 0;
+    const dropoff = 100 - rate;
+    const bKey = vals[i].id;
+    const bm = bench[bKey] || [30,10];
+    const status = rate >= bm[0] ? 'green' : rate >= bm[1] ? 'yellow' : 'red';
+    rates.push({from:vals[i-1].label, to:vals[i].label, toId:vals[i].id, rate, dropoff, status, bm});
+  }
+
+  const budget = parseFloat(document.getElementById('budget').value)||0;
+  const revenue = parseFloat(document.getElementById('revenue').value)||0;
+  const impressions = vals[0].vol;
+  const conversions = vals[vals.length-1].vol;
+  const clicks = vals.find(v=>v.id==='click')?.vol || 0;
+
+  const globalRate = impressions>0 ? (conversions/impressions*100) : 0;
+  const ctr = impressions>0&&clicks>0 ? (clicks/impressions*100) : 0;
+  const cpa = budget>0&&conversions>0 ? budget/conversions : 0;
+  const roas = budget>0&&revenue>0 ? revenue/budget : 0;
+
+  // Bottleneck
+  const reds = rates.filter(r=>r.status==='red');
+  const bottleneck = reds.length>0 ? reds.reduce((a,b)=>a.dropoff>b.dropoff?a:b) : null;
+
+  // Max vol for funnel width
+  const maxVol = Math.max(...vals.map(v=>v.vol));
+
+  const html = `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Taxa de Conv. Global</div><div class="kpi-value">${globalRate.toFixed(3)}%</div><div class="kpi-sub">${fmtNum(conversions)} / ${fmtNum(impressions)}</div></div>
+      <div class="kpi"><div class="kpi-label">CTR</div><div class="kpi-value">${ctr.toFixed(2)}%</div><div class="kpi-sub">${fmtNum(clicks)} cliques</div></div>
+      ${budget>0?`<div class="kpi"><div class="kpi-label">CPA</div><div class="kpi-value">${budget>0&&conversions>0?'R$ '+fmtBRL(cpa):'—'}</div><div class="kpi-sub">por conversão</div></div>`:'<div class="kpi"><div class="kpi-label">Conversões</div><div class="kpi-value">${fmtNum(conversions)}</div><div class="kpi-sub">total</div></div>'}
+      ${revenue>0&&budget>0?`<div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-value">${roas.toFixed(2)}x</div><div class="kpi-sub">R$ ${fmtBRL(revenue)} receita</div></div>`:`<div class="kpi"><div class="kpi-label">Etapas Ativas</div><div class="kpi-value">${vals.length}</div><div class="kpi-sub">do funil</div></div>`}
+    </div>
+
+    <div class="funnel-wrap">
+      <div class="panel-title">Visualização do Funil</div>
+      <div class="funnel-svg-area">
+        ${vals.map((v,i)=>{
+          const w = maxVol>0 ? Math.max(10, v.vol/maxVol*100) : 50;
+          const color = i===0?'#1a237e': rates[i-1]? (rates[i-1].status==='green'?'#2e7d32':rates[i-1].status==='yellow'?'#f57c00':'#c62828') : '#1a237e';
+          const arrow = i>0&&i<vals.length?`<div class="funnel-arrow">▼ ${rates[i-1].rate.toFixed(1)}%</div>`:'';
+          return `${arrow}<div class="funnel-stage">
+            <div class="funnel-label">${v.icon} ${v.label}</div>
+            <div class="funnel-bar-wrap">
+              <div class="funnel-bar" style="width:${w}%;background:${color}"><span>${fmtNum(v.vol)}</span></div>
+            </div>
+            <div class="funnel-pct">${i>0&&maxVol>0?(v.vol/vals[0].vol*100).toFixed(1)+'%':''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Transição</th><th>Taxa de Conv.</th><th>Drop-off</th><th>Benchmark</th><th>Status</th></tr></thead>
+        <tbody>
+          ${rates.map(r=>`<tr>
+            <td>${r.from} → ${r.to}</td>
+            <td><strong>${r.rate.toFixed(1)}%</strong></td>
+            <td>${r.dropoff.toFixed(1)}%</td>
+            <td>≥ ${r.bm[0]}% ótimo / ≥ ${r.bm[1]}% ok</td>
+            <td><span class="badge badge-${r.status}">${r.status==='green'?'✅ Ótimo':r.status==='yellow'?'⚠️ Atenção':'🔴 Crítico'}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${bottleneck ? `<div class="alert-box red">
+      <div class="alert-title">🚨 Gargalo identificado: ${bottleneck.from} → ${bottleneck.to}</div>
+      <div style="font-size:.82rem;margin-bottom:8px">Taxa atual: <strong>${bottleneck.rate.toFixed(1)}%</strong> (benchmark: ≥${bottleneck.bm[0]}%). Drop-off de <strong>${bottleneck.dropoff.toFixed(1)}%</strong> nesta etapa.</div>
+      <strong style="font-size:.8rem">Recomendações:</strong>
+      <ul>${(RECS[bottleneck.toId]||RECS.conv).map(r=>`<li>${r}</li>`).join('')}</ul>
+    </div>` : rates.length>0 ? `<div class="alert-box"><div class="alert-title">✅ Funil com boa performance</div><div style="font-size:.82rem">Nenhuma etapa crítica detectada. Continue monitorando as taxas de conversão e compare com períodos anteriores para identificar tendências.</div></div>` : ''}
+  `;
+  document.getElementById('results').innerHTML = html;
+}
+
+function showPlaceholder() {
+  document.getElementById('results').innerHTML = '<div class="placeholder">📊 Preencha os dados do funil à esquerda para visualizar a análise.</div>';
+}
+
+function fmtNum(n) { return n ? n.toLocaleString('pt-BR') : '0'; }
+function fmtBRL(n) { return n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+buildStages();
+</script>
+</body>
+</html>

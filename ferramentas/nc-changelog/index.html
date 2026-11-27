@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NC Changelog</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8fafc;--fg:#0f172a;--card:#fff;--accent:#0ea5e9;--accent-soft:rgba(14,165,233,.08);
+  --border:#e2e8f0;--faint:#64748b;--input-bg:#fff;--divider:#f1f5f9;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--warn:#d97706;--warn-bg:#fffbeb;--err:#dc2626;--err-bg:#fef2f2;
+  --info:#7c3aed;--info-bg:rgba(124,58,237,.07);
+  --shadow:0 1px 4px rgba(0,0,0,.08);--mono:'JetBrains Mono',monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#38bdf8;--accent-soft:rgba(56,189,248,.08);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  --err:#f87171;--err-bg:rgba(248,113,113,.08);--info:#a78bfa;--info-bg:rgba(167,139,250,.08);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--fg:#f1f5f9;--card:#1e293b;--accent:#38bdf8;--accent-soft:rgba(56,189,248,.08);
+  --border:#334155;--faint:#94a3b8;--input-bg:#0f172a;--divider:#1e293b;
+  --ok:#22c55e;--ok-bg:rgba(22,197,94,.08);--warn:#f59e0b;--warn-bg:rgba(245,158,11,.08);
+  --err:#f87171;--err-bg:rgba(248,113,113,.08);--info:#a78bfa;--info-bg:rgba(167,139,250,.08);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;}
+.header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.btn{height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--fg);font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{background:var(--border);}
+.btn.primary{background:var(--accent);color:#fff;border-color:transparent;}
+input,textarea,select{background:var(--input-bg);color:var(--fg);border:1px solid var(--border);border-radius:7px;font-family:inherit;font-size:13px;outline:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+.page{max-width:980px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 320px;gap:16px;}
+@media(max-width:720px){.page{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);}
+/* Type badges */
+.type-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;}
+.type-create{background:var(--ok-bg);color:var(--ok);}
+.type-rename{background:var(--info-bg);color:var(--info);}
+.type-deprecate{background:var(--err-bg);color:var(--err);}
+.type-fix{background:var(--warn-bg);color:var(--warn);}
+.type-note{background:var(--divider);color:var(--faint);}
+/* Timeline */
+.timeline{position:relative;}
+.timeline::before{content:'';position:absolute;left:18px;top:8px;bottom:8px;width:2px;background:var(--border);border-radius:1px;}
+.tl-entry{display:flex;gap:14px;margin-bottom:14px;position:relative;}
+.tl-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--card);flex-shrink:0;margin-top:3px;position:relative;z-index:1;}
+.tl-dot-create{background:var(--ok);}
+.tl-dot-rename{background:var(--info);}
+.tl-dot-deprecate{background:var(--err);}
+.tl-dot-fix{background:var(--warn);}
+.tl-dot-note{background:var(--faint);}
+.tl-body{flex:1;min-width:0;}
+.tl-nc{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);}
+.tl-meta{font-size:11px;color:var(--faint);margin-top:2px;}
+.tl-justif{font-size:12px;color:var(--fg);margin-top:5px;line-height:1.5;}
+/* Filter chips */
+.fc{padding:3px 10px;border-radius:10px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--card);}
+.fc.active{background:var(--accent);color:#fff;border-color:transparent;}
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#f1f5f9;padding:8px 16px;border-radius:10px;font-size:13px;pointer-events:none;opacity:0;transition:all .3s;z-index:9999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;width:min(520px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px;}
+.form-row{margin-bottom:12px;}
+.form-row label{display:block;font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.form-row input,.form-row textarea,.form-row select{width:100%;padding:7px 10px;}
+.form-row textarea{resize:vertical;min-height:70px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px">📋</span>
+    <div>
+      <div style="font-size:15px;font-weight:800">NC Changelog</div>
+      <div style="font-size:11px;color:var(--faint)">Histórico de mudanças no naming convention</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:7px">
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn" onclick="toggleTheme()">🌙</button>
+    <button class="btn primary" onclick="openAddModal()">+ Registrar mudança</button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Left: timeline -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <input id="searchBox" type="search" placeholder="Buscar NC, autor, justificativa…" style="flex:1;min-width:140px;height:30px;padding:0 10px" oninput="renderTimeline()">
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <span class="fc active" onclick="setFilter('all')" id="fc-all">Todos</span>
+        <span class="fc" onclick="setFilter('create')" id="fc-create">✦ Criação</span>
+        <span class="fc" onclick="setFilter('rename')" id="fc-rename">↩ Rename</span>
+        <span class="fc" onclick="setFilter('deprecate')" id="fc-deprecate">✕ Deprecação</span>
+        <span class="fc" onclick="setFilter('fix')" id="fc-fix">⚑ Correção</span>
+        <span class="fc" onclick="setFilter('note')" id="fc-note">✎ Nota</span>
+      </div>
+    </div>
+    <div id="timeline" class="timeline"></div>
+  </div>
+
+  <!-- Right: stats -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">Resumo</div>
+      <div id="statsGrid"></div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Por tipo</div>
+      <div id="typeBreakdown"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Entry Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h3>📋 Registrar mudança</h3>
+    <div class="form-row">
+      <label>Tipo</label>
+      <select id="eType" style="width:100%;padding:7px 10px;height:34px">
+        <option value="create">✦ Criação — nova NC adicionada</option>
+        <option value="rename">↩ Rename — NC renomeada</option>
+        <option value="deprecate">✕ Deprecação — NC removida/desativada</option>
+        <option value="fix">⚑ Correção — typo ou formato corrigido</option>
+        <option value="note">✎ Nota — observação geral</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>NC (valor)</label>
+      <input id="eNc" type="text" placeholder="ex: brand_prd_awareness" style="font-family:var(--mono)">
+    </div>
+    <div id="eOldNcRow" class="form-row" style="display:none">
+      <label>NC anterior (rename)</label>
+      <input id="eOldNc" type="text" placeholder="ex: brand_produto_awareness" style="font-family:var(--mono)">
+    </div>
+    <div class="form-row">
+      <label>Autor / Responsável</label>
+      <input id="eAuthor" type="text" placeholder="Nome ou squad">
+    </div>
+    <div class="form-row">
+      <label>Justificativa / Detalhe</label>
+      <textarea id="eJustif" placeholder="Por que essa mudança foi feita?"></textarea>
+    </div>
+    <div class="form-row">
+      <label>Data</label>
+      <input id="eDate" type="date">
+    </div>
+    <div class="form-row">
+      <label>Tags (separadas por vírgula)</label>
+      <input id="eTags" type="text" placeholder="ex: brand, search, q1-2025">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+      <button class="btn" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveEntry()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CL_KEY='nc_changelog_v1';
+const CL_THEME='nc_changelog_theme';
+let _filter='all';
+let _entries=[];
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// Theme
+let _theme=null;try{_theme=localStorage.getItem(CL_THEME);}catch(e){}
+if(_theme) document.documentElement.setAttribute('data-theme',_theme);
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  _theme=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',_theme);
+  try{localStorage.setItem(CL_THEME,_theme);}catch(e){}
+  document.querySelector('.btn[onclick="toggleTheme()"]').textContent=_theme==='dark'?'☀️':'🌙';
+}
+(function(){const cur=document.documentElement.getAttribute('data-theme');const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);const btn=document.querySelector('.btn[onclick="toggleTheme()"]');if(btn)btn.textContent=isDark?'☀️':'🌙';})();
+
+// Persistence
+function loadEntries(){try{return JSON.parse(localStorage.getItem(CL_KEY)||'[]');}catch(e){return [];}}
+function saveEntries(){try{localStorage.setItem(CL_KEY,JSON.stringify(_entries));}catch(e){}}
+
+// Type meta
+const TYPE_META={
+  create:{label:'Criação',emoji:'✦',cls:'create'},
+  rename:{label:'Rename',emoji:'↩',cls:'rename'},
+  deprecate:{label:'Deprecação',emoji:'✕',cls:'deprecate'},
+  fix:{label:'Correção',emoji:'⚑',cls:'fix'},
+  note:{label:'Nota',emoji:'✎',cls:'note'},
+};
+
+function setFilter(f){
+  _filter=f;
+  document.querySelectorAll('.fc').forEach(el=>el.classList.remove('active'));
+  document.getElementById('fc-'+f)?.classList.add('active');
+  renderTimeline();
+}
+
+function renderTimeline(){
+  const q=(document.getElementById('searchBox').value||'').toLowerCase();
+  let entries=[..._entries].sort((a,b)=>b.ts-a.ts);
+  if(_filter!=='all') entries=entries.filter(e=>e.type===_filter);
+  if(q) entries=entries.filter(e=>(e.nc+e.author+e.justif+(e.tags||'')).toLowerCase().includes(q));
+
+  const tl=document.getElementById('timeline');
+  if(!entries.length){
+    tl.innerHTML=`<div class="card" style="text-align:center;padding:36px;color:var(--faint)"><div style="font-size:30px;margin-bottom:8px">📋</div><div>${_entries.length?'Sem resultados para este filtro':'Nenhuma entrada ainda'}</div><div style="font-size:11px;margin-top:6px">Clique em <strong>+ Registrar mudança</strong> para começar</div></div>`;
+    return;
+  }
+
+  // Group by date
+  const groups={};
+  entries.forEach(e=>{
+    const d=new Date(e.ts);
+    const key=d.toISOString().slice(0,10);
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(e);
+  });
+
+  tl.innerHTML=Object.entries(groups).map(([date,ents])=>{
+    const d=new Date(date+'T12:00:00');
+    const label=d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+    return `<div style="margin-bottom:4px"><div style="font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-left:36px">${label}</div>
+    ${ents.map(e=>{
+      const tm=TYPE_META[e.type]||TYPE_META.note;
+      const tags=e.tags?e.tags.split(',').map(t=>t.trim()).filter(Boolean):[];
+      return `<div class="tl-entry">
+        <div class="tl-dot tl-dot-${tm.cls}" style="margin-left:12px"></div>
+        <div class="tl-body">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <span class="type-badge type-${tm.cls}">${tm.emoji} ${tm.label}</span>
+            <span class="tl-nc">${esc(e.nc)}</span>
+            ${e.oldNc?`<span style="font-size:11px;color:var(--faint)">← <span style="font-family:var(--mono)">${esc(e.oldNc)}</span></span>`:''}
+          </div>
+          <div class="tl-meta">${esc(e.author||'—')} · ${new Date(e.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+          ${e.justif?`<div class="tl-justif">${esc(e.justif)}</div>`:''}
+          ${tags.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${tags.map(t=>`<span style="font-size:10px;padding:1px 7px;border-radius:7px;background:var(--accent-soft);color:var(--accent);font-weight:600">${esc(t)}</span>`).join('')}</div>`:''}
+          <button class="btn" style="height:22px;font-size:10px;margin-top:6px;color:var(--err);border-color:var(--err)" onclick="deleteEntry('${e.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('')}
+    </div>`;
+  }).join('');
+
+  renderStats();
+}
+
+function renderStats(){
+  const grid=document.getElementById('statsGrid');
+  const breakdown=document.getElementById('typeBreakdown');
+  const total=_entries.length;
+  const thisMonth=_entries.filter(e=>{const d=new Date(e.ts);const n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length;
+  const authors=new Set(_entries.map(e=>e.author).filter(Boolean)).size;
+
+  grid.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="text-align:center;padding:10px;background:var(--divider);border-radius:8px">
+        <div style="font-size:20px;font-weight:800">${total}</div>
+        <div style="font-size:11px;color:var(--faint)">Entradas</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:var(--divider);border-radius:8px">
+        <div style="font-size:20px;font-weight:800">${thisMonth}</div>
+        <div style="font-size:11px;color:var(--faint)">Este mês</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:var(--divider);border-radius:8px;grid-column:1/-1">
+        <div style="font-size:20px;font-weight:800">${authors}</div>
+        <div style="font-size:11px;color:var(--faint)">Autores distintos</div>
+      </div>
+    </div>`;
+
+  const counts={};
+  _entries.forEach(e=>counts[e.type]=(counts[e.type]||0)+1);
+  const max=Math.max(1,...Object.values(counts));
+  breakdown.innerHTML=Object.entries(TYPE_META).map(([k,m])=>{
+    const n=counts[k]||0;
+    const pct=Math.round(n/max*100);
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <span class="type-badge type-${m.cls}" style="width:80px;justify-content:center">${m.emoji} ${m.label}</span>
+      <div style="flex:1;background:var(--divider);border-radius:3px;overflow:hidden;height:8px">
+        <div style="width:${pct}%;background:var(--accent);height:100%;border-radius:3px"></div>
+      </div>
+      <span style="font-size:11px;color:var(--faint);width:20px;text-align:right">${n}</span>
+    </div>`;
+  }).join('');
+}
+
+// Modal
+function openAddModal(){
+  document.getElementById('eDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('eType').onchange=function(){
+    document.getElementById('eOldNcRow').style.display=this.value==='rename'?'block':'none';
+  };
+  document.getElementById('addModal').classList.add('open');
+}
+function closeAddModal(){document.getElementById('addModal').classList.remove('open');}
+document.getElementById('addModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAddModal();});
+
+function saveEntry(){
+  const nc=document.getElementById('eNc').value.trim();
+  if(!nc){showToast('Informe a NC');return;}
+  const type=document.getElementById('eType').value;
+  const dateVal=document.getElementById('eDate').value;
+  const ts=dateVal?new Date(dateVal+'T12:00:00').getTime():Date.now();
+  const entry={
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    type,nc,ts,
+    oldNc:type==='rename'?(document.getElementById('eOldNc').value.trim()||''):'',
+    author:document.getElementById('eAuthor').value.trim(),
+    justif:document.getElementById('eJustif').value.trim(),
+    tags:document.getElementById('eTags').value.trim(),
+  };
+  _entries.unshift(entry);
+  saveEntries();
+  // Reset fields
+  ['eNc','eOldNc','eAuthor','eJustif','eTags'].forEach(id=>document.getElementById(id).value='');
+  closeAddModal();
+  renderTimeline();
+  showToast('✓ Entrada registrada');
+}
+
+function deleteEntry(id){
+  _entries=_entries.filter(e=>e.id!==id);
+  saveEntries();
+  renderTimeline();
+  showToast('Entrada removida');
+}
+
+function exportCSV(){
+  if(!_entries.length){showToast('Nenhuma entrada para exportar');return;}
+  const rows=[['data','tipo','nc','nc_anterior','autor','justificativa','tags']];
+  _entries.forEach(e=>rows.push([
+    new Date(e.ts).toLocaleDateString('pt-BR'),
+    e.type,e.nc,e.oldNc||'',e.author||'',e.justif||'',e.tags||''
+  ]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='nc_changelog.csv';a.click();
+  showToast(`⬇ ${_entries.length} entradas exportadas`);
+}
+
+// Init
+_entries=loadEntries();
+renderTimeline();
+</script>
+</body>
+</html>
