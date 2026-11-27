@@ -11,29 +11,5 @@ Versão mais recente do treinamento RM → ADP na plataforma StormX — Unilever
 
 ## Sobre esta versão
 
-- **v3** (Nov/26) — PowerPoint com 35 slides (fluxo, preenchimento, validação, SLAs e regras de taxonomia por plataforma) e apresentação HTML no mesmo modelo visual da v2.
-
-## Conteúdo do HTML (20 telas + regras de taxonomia)
-
-1. Capa
-2. Agenda
-3. Fluxo completo
-4. RM_STORMX × ADP
-5. Importando o plano de mídia
-6. Selecionando a aba correta
-7. Código de cores do RM
-8. Coluna Linha G
-9. De onde vêm os dropdowns
-10. Validando a string de taxonomia
-11. Erros recorrentes
-12. Regras importantes
-13. Responsabilidades
-14. BRD / INF / UGC
-15. Datas e alterações de taxonomia
-16. SLAs: RM completa
-17. SLAs: Flashtalking
-18. Checklist final
-19. Regras de taxonomia (interativo, por categoria: Geral, Google, Influenciadores, Twitter, TikTok, YouTube, Kwai, Spotify, Flashtalking)
-20. Recap
-
-Navegação: setas do teclado, botões, toque/deslize ou clique nos pontos; `F` para tela cheia.
+- **v3** (Nov/26) — apresentação HTML idêntica ao PowerPoint: os 36 slides, na mesma ordem e com o mesmo conteúdo. As imagens dos slides ficam em `slides/`.
+- Navegação: setas do teclado, botões, toque/deslize ou pontos; `F` para tela cheia.
