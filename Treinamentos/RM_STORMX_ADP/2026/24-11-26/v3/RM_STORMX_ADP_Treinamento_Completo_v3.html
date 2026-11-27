@@ -481,11 +481,18 @@ body {
 #backBtn{display:none;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:6px;background:rgba(79,224,200,.08);border:1px solid rgba(79,224,200,.3);color:var(--teal);font:600 11px 'Inter',sans-serif;cursor:pointer;flex-shrink:0}
 #backBtn:hover{background:rgba(79,224,200,.16)}
 #backBtn.on{display:inline-flex}
+/* tela cheia sem margens */
+#navbar{position:fixed!important;left:0;right:0;bottom:0;background:rgba(18,18,28,.85)!important;backdrop-filter:blur(10px);transition:opacity .3s,transform .3s}
+#navbar.hide{opacity:0;transform:translateY(100%);pointer-events:none}
+#viewport{background:#000}
+#ambient{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(50px) brightness(.8) saturate(1.2);transform:scale(1.1);z-index:0;transition:background-image .3s}
+#scaler{z-index:1}
 </style>
 </head>
 <body>
 <div id="deck">
   <div id="viewport">
+    <div id="ambient"></div>
     <div id="scaler">
 <div class="slide active" id="s1"><img data-src="slides/slide-01.jpg" alt="Slide 1: Olá, somos | Operação Unilever | Novembro/ 2026" draggable="false"></div>
 <div class="slide" id="s2"><img data-src="slides/slide-02.jpg" alt="Slide 2: Treinamento | RM_STORMX e ADP | Como preencher cada campo, evitar erros comuns e garantir a qualidade do banco de dados. | Unilever BR  //  Camphouse  →  RM_STORMX  →  StormX" draggable="false"></div>
@@ -550,7 +557,7 @@ body {
 <script>
 (function(){
   const scaler=document.getElementById('scaler'),W=1280,H=720;
-  function resize(){const s=Math.min(window.innerWidth/W,(window.innerHeight-52)/H);scaler.style.transform=`translate(${-W/2}px,${-H/2}px) scale(${s})`;}
+  function resize(){const s=Math.min(window.innerWidth/W,window.innerHeight/H);scaler.style.transform=`translate(${-W/2}px,${-H/2}px) scale(${s})`;}
   window.addEventListener('resize',resize);resize();
   const all=Array.from(document.querySelectorAll('.slide')),total=all.length,IDX=21;
   const main=all.filter(s=>!s.dataset.cat);              // slides 1-21, 35, 36
@@ -562,7 +569,8 @@ body {
   main.forEach((s,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' active':'');d.addEventListener('click',()=>{if(taxOn)leaveTax(false);goMain(i);});dotsWrap.appendChild(d);});
   const dots=Array.from(dotsWrap.children);
   let cur=0,taxOn=false,taxSlides=[],taxI=0;
-  function paint(){const n=main.length;let t=pad(cur+1)+' / '+pad(n);if(taxOn){t+='  ·  '+taxSlides[taxI].dataset.cat+' '+(taxI+1)+'/'+taxSlides.length;}counter.textContent=t;fill.style.width=((cur+1)/n*100)+'%';}
+  function amb(){const s=taxOn?taxSlides[taxI]:main[cur],im=s.querySelector('img'),u=im&&(im.src||im.dataset.src);if(u)document.getElementById('ambient').style.backgroundImage='url('+u+')';}
+  function paint(){amb();const n=main.length;let t=pad(cur+1)+' / '+pad(n);if(taxOn){t+='  ·  '+taxSlides[taxI].dataset.cat+' '+(taxI+1)+'/'+taxSlides.length;}counter.textContent=t;fill.style.width=((cur+1)/n*100)+'%';}
   function swap(from,to,dir){from.classList.remove('active');from.classList.toggle('prevslide',dir>0);to.classList.remove('prevslide');to.classList.add('active');load(to);}
   function goMain(i){if(i<0||i>=main.length||i===cur)return;swap(main[cur],main[i],i>cur?1:-1);dots[cur].classList.remove('active');dots[i].classList.add('active');cur=i;paint();}
   function openCat(c){const ss=all.filter(s=>s.dataset.cat===c);if(!ss.length)return;taxOn=true;taxSlides=ss;taxI=0;main[cur].classList.remove('active');ss[0].classList.remove('prevslide');ss[0].classList.add('active');load(ss[0]);back.classList.add('on');paint();}
@@ -576,6 +584,9 @@ body {
   let tx=null;document.addEventListener('touchstart',e=>tx=e.touches[0].clientX);document.addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>60)(dx<0?next:prev)();tx=null;});
   function fs(){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen();}
   document.getElementById('fsBtn').addEventListener('click',fs);
+  const nav=document.getElementById('navbar');let hideT=null;
+  function showNav(){nav.classList.remove('hide');clearTimeout(hideT);hideT=setTimeout(()=>{if(!nav.matches(':hover'))nav.classList.add('hide');},2500);}
+  ['mousemove','mousedown','touchstart','keydown'].forEach(ev=>document.addEventListener(ev,showNav,{passive:true}));showNav();
   paint();load(main[0]);
 })();
 </script>
