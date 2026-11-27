@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RM STORMX ADP — Treinamento Completo v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────────────────── */
+:root {
+  --bg:       #0D0D14;
+  --bg2:      #12121C;
+  --bg3:      #1A1A28;
+  --surface:  #1E1E2E;
+  --border:   #2A2A3E;
+  --teal:     #4FE0C8;
+  --blue:     #3FB6FF;
+  --purple:   #6C7BFF;
+  --violet:   #A35CFF;
+  --lilac:    #E08BFF;
+  --yellow:   #EBFF24;
+  --white:    #F7F7F4;
+  --muted:    #CFCBE0;
+  --dim:      #7A7898;
+  --amber:    #FFAB40;
+
+  --slide-w: 1280px;
+  --slide-h: 720px;
+  --nav-h: 52px;
+}
+
+/* ─── RESET ──────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+}
+
+/* ─── LAYOUT ─────────────────────────────────────────────── */
+#deck {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+}
+#viewport {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+#scaler {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: var(--slide-w);
+  height: var(--slide-h);
+  transform-origin: center center;
+}
+
+/* ─── NAV BAR ────────────────────────────────────────────── */
+#navbar {
+  height: var(--nav-h);
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 20px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.nav-brand {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .08em;
+  color: var(--teal);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+.nav-sep { width: 1px; height: 20px; background: var(--border); }
+#counter {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px; font-weight: 500;
+  color: var(--muted); min-width: 48px;
+}
+#progress-track {
+  flex: 1; height: 2px;
+  background: var(--border); border-radius: 2px; overflow: hidden;
+}
+#progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--teal), var(--blue));
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+#dots {
+  display: flex; gap: 5px; align-items: center;
+}
+.dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--border); transition: background .2s, transform .2s;
+  cursor: pointer;
+}
+.dot.active { background: var(--teal); transform: scale(1.5); }
+.nav-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.nav-btn:hover { background: var(--border); color: var(--white); }
+.nav-btn svg { width: 14px; height: 14px; pointer-events: none; }
+#fsBtn { margin-left: 4px; }
+
+/* ─── SLIDE BASE ─────────────────────────────────────────── */
+.slide {
+  position: absolute; inset: 0;
+  background: var(--bg);
+  overflow: hidden;
+  opacity: 0; pointer-events: none;
+  transform: translateX(32px);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.slide.active {
+  opacity: 1; pointer-events: all; transform: translateX(0);
+}
+.slide.prevslide {
+  opacity: 0; transform: translateX(-32px);
+}
+
+/* ─── FOOTER ─────────────────────────────────────────────── */
+.slide-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 36px; padding: 0 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.slide-footer .sf-left {
+  font-size: 9px; color: var(--dim); letter-spacing: .04em;
+}
+.slide-footer .sf-right {
+  font-size: 9px; color: var(--dim); letter-spacing: .04em;
+  text-align: right;
+}
+
+/* ─── SLIDE CONTENT AREA ─────────────────────────────────── */
+.s-body {
+  position: absolute; inset: 0 0 36px;
+  padding: 48px 72px 40px;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+}
+.s-tag {
+  font-size: 11px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--teal);
+  margin-bottom: 10px;
+}
+.s-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 48px; font-weight: 700; line-height: 1.1;
+  color: var(--white);
+}
+.s-subtitle {
+  font-size: 16px; color: var(--muted);
+  margin-top: 12px; line-height: 1.6;
+}
+.s-head {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px; font-weight: 700; line-height: 1.2;
+  color: var(--white); margin-bottom: 24px;
+  flex-shrink: 0;
+}
+.s-head .accent { color: var(--teal); }
+.s-head .accent-b { color: var(--blue); }
+.s-head .accent-p { color: var(--purple); }
+
+/* ─── DECORATIVE BG SHAPES ───────────────────────────────── */
+.bg-glow {
+  position: absolute; border-radius: 50%;
+  filter: blur(100px); pointer-events: none; z-index: 0;
+}
+.s-body, .s-head, .s-tag, .s-title, .s-subtitle,
+.s-content, .columns { position: relative; z-index: 1; }
+
+/* ─── PILL / BADGE ───────────────────────────────────────── */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+  border: 1px solid;
+}
+.pill-teal  { color: var(--teal);   border-color: rgba(79,224,200,.3);  background: rgba(79,224,200,.08); }
+.pill-blue  { color: var(--blue);   border-color: rgba(63,182,255,.3);  background: rgba(63,182,255,.08); }
+.pill-purple{ color: var(--purple); border-color: rgba(108,123,255,.3); background: rgba(108,123,255,.08); }
+.pill-violet{ color: var(--violet); border-color: rgba(163,92,255,.3);  background: rgba(163,92,255,.08); }
+.pill-amber { color: var(--amber);  border-color: rgba(255,171,64,.3);  background: rgba(255,171,64,.08); }
+.pill-yellow{ color: var(--yellow); border-color: rgba(235,255,36,.3);  background: rgba(235,255,36,.08); }
+
+/* ─── LIST ITEMS ─────────────────────────────────────────── */
+.item-list { display: flex; flex-direction: column; gap: 14px; }
+.item-list li {
+  list-style: none;
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 15px; color: var(--muted); line-height: 1.65;
+}
+.item-list li::before {
+  content: '';
+  flex-shrink: 0; margin-top: 7px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--teal);
+}
+
+/* ─── COLUMNS ────────────────────────────────────────────── */
+.columns {
+  display: grid; gap: 24px;
+}
+.col-2 { grid-template-columns: 1fr 1fr; }
+.col-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+/* ─── CARD ───────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 22px;
+}
+.card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px; font-weight: 600;
+  margin-bottom: 10px;
+}
+.card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.card .item-list { margin-top: 8px; }
+
+/* ─── STEP CHAIN ─────────────────────────────────────────── */
+.step-chain {
+  display: flex; align-items: stretch; gap: 0;
+  margin-top: 16px;
+}
+.step-node {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; text-align: center; position: relative;
+}
+.step-node::after {
+  content: '';
+  position: absolute; top: 20px; left: 50%;
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, var(--teal) 0%, var(--blue) 100%);
+}
+.step-node:last-child::after { display: none; }
+.step-num {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px; font-weight: 700;
+  background: var(--bg3); border: 2px solid var(--teal);
+  color: var(--teal); position: relative; z-index: 1;
+}
+.step-label {
+  margin-top: 10px; font-size: 12px; color: var(--muted);
+  line-height: 1.4; max-width: 120px;
+}
+
+/* ─── SWATCH ─────────────────────────────────────────────── */
+.swatch-row { display: flex; gap: 12px; }
+.swatch-item { flex: 1; }
+.swatch-color {
+  height: 48px; border-radius: 6px; margin-bottom: 6px;
+}
+.swatch-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+.swatch-hex { font-size: 10px; color: var(--dim); font-family: monospace; }
+
+/* ─── RULE BOX ───────────────────────────────────────────── */
+.rule-box {
+  background: var(--bg3);
+  border-left: 3px solid var(--blue);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 18px;
+  font-size: 14px; color: var(--muted); line-height: 1.65;
+}
+.rule-box.warn { border-left-color: var(--amber); }
+.rule-box.tip  { border-left-color: var(--teal);  }
+.rule-box strong { color: var(--white); }
+
+/* ─── SLA TABLE ─────────────────────────────────────────── */
+.sla-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.sla-table th {
+  text-align: left; padding: 10px 14px;
+  font-size: 11px; font-weight: 600; letter-spacing: .07em;
+  color: var(--dim); border-bottom: 1px solid var(--border);
+}
+.sla-table td {
+  padding: 10px 14px;
+  color: var(--muted); border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.sla-table td:first-child { color: var(--white); font-weight: 500; }
+.sla-table td .hi { color: var(--teal); font-weight: 600; }
+
+/* ─── VCARD (veículo card) ───────────────────────────────── */
+.vcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.vcard {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 20px 22px;
+}
+.vcard-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px; font-weight: 600; color: var(--white);
+  margin-bottom: 8px;
+}
+.vcard p { font-size: 13px; color: var(--dim); line-height: 1.6; }
+
+/* ─── TAXONOMY INTRO — CATEGORY CARDS (S19) ──────────────── */
+.tax-cat-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  grid-template-rows: repeat(3,136px); gap: 8px;
+  flex-shrink: 0;
+}
+.tax-cat-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0 24px; display: flex; align-items: center; gap: 14px;
+  height: 136px;
+}
+.tax-cat-dot {
+  width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+}
+.tax-cat-name { font-size: 16px; font-weight: 600; color: var(--white); flex: 1; }
+.tax-cat-count {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px; font-weight: 700; line-height: 1;
+}
+
+/* ─── TAXONOMY CATEGORY SLIDES (generated) ──────────────── */
+/* back-to-index button */
+.tax-back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(79,224,200,.08); border: 1px solid rgba(79,224,200,.25);
+  border-radius: 8px; padding: 6px 14px;
+  font-size: 11px; font-weight: 600; color: var(--teal);
+  cursor: pointer; transition: all .15s; flex-shrink: 0;
+  font-family: 'Inter', sans-serif;
+}
+.tax-back-btn:hover { background: rgba(79,224,200,.15); }
+/* page indicator e.g. "1 / 2" */
+.tax-page-ind {
+  font-size: 11px; color: var(--dim);
+  font-family: 'IBM Plex Mono', monospace;
+  flex-shrink: 0;
+}
+/* rule card — full detail, always visible */
+.tax-rule-card {
+  border-left: 3px solid var(--rule-color, #4FE0C8);
+  background: var(--bg3);
+  border-radius: 0 10px 10px 0;
+  padding: 14px 20px 14px 18px;
+  display: flex; flex-direction: column; gap: 0;
+}
+.tax-rule-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--white);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.tax-rule-title-dot { display: none; }
+/* field label inside rule card */
+.tax-field-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--dim); margin: 10px 0 3px;
+}
+.tax-field-label:first-of-type { margin-top: 0; }
+.tax-field-text {
+  font-size: 12px; line-height: 1.6; color: var(--muted); margin: 0;
+}
+/* attention / callout */
+.tax-callout {
+  border-left: 3px solid var(--amber);
+  background: rgba(255,171,64,.07);
+  border-radius: 0 6px 6px 0;
+  padding: 7px 12px; margin-top: 4px;
+}
+.tax-callout li {
+  font-size: 11px; line-height: 1.55; color: var(--amber);
+  padding: 2px 0 2px 14px; position: relative; list-style: none;
+}
+.tax-callout li::before {
+  content: "!"; position: absolute; left: 0; top: 2px;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 10px;
+}
+/* not-use list */
+.tax-notuse {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+}
+.tax-notuse span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  background: rgba(255,171,64,.1); color: var(--amber);
+  border: 1px solid rgba(255,171,64,.25);
+}
+/* limits mini-table */
+.tax-limits-table {
+  width: 100%; border-collapse: collapse; font-size: 10px;
+  margin-top: 4px;
+}
+.tax-limits-table th {
+  text-align: left; padding: 4px 8px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--dim); border-bottom: 1px solid var(--border);
+}
+.tax-limits-table td {
+  padding: 4px 8px; border-bottom: 1px solid rgba(255,255,255,.04);
+  color: var(--muted); vertical-align: top;
+}
+.tax-limits-table tr:last-child td { border-bottom: none; }
+/* grid for rule cards on a slide */
+.tax-rules-grid {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; justify-content: space-evenly; gap: 0;
+}
+
+/* make S19 cat cards clickable feel */
+.tax-cat-card { cursor: pointer; transition: border-color .15s, background .15s; }
+.tax-cat-card:hover { border-color: rgba(79,224,200,.4); background: rgba(79,224,200,.06); }
+
+/* ─── REVEAL ANIMATION ───────────────────────────────────── */
+.reveal {
+  animation: fadeUp .5s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal:nth-child(1) { animation-delay: .05s; }
+.reveal:nth-child(2) { animation-delay: .15s; }
+.reveal:nth-child(3) { animation-delay: .25s; }
+.reveal:nth-child(4) { animation-delay: .35s; }
+.reveal:nth-child(5) { animation-delay: .45s; }
+.reveal:nth-child(6) { animation-delay: .55s; }
+
+/* ─── UTILITY ────────────────────────────────────────────── */
+.mt-auto { margin-top: auto; }
+.mt-8  { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+.gap-8  { gap: 8px; }
+.gap-12 { gap: 12px; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.text-teal   { color: var(--teal); }
+.text-blue   { color: var(--blue); }
+.text-purple { color: var(--purple); }
+.text-violet { color: var(--violet); }
+.text-amber  { color: var(--amber); }
+.text-yellow { color: var(--yellow); }
+.text-white  { color: var(--white); }
+.text-muted  { color: var(--muted); }
+.text-dim    { color: var(--dim); }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.fs-11  { font-size: 12px; }
+.fs-12  { font-size: 13px; }
+.fs-13  { font-size: 14px; }
+.fs-14  { font-size: 15px; }
+.font-sg { font-family: 'Space Grotesk', sans-serif; }
+
+/* ─── COLUMN CHILDREN HEIGHT FILL ───────────────────────── */
+.columns > div { display: flex; flex-direction: column; }
+.columns > div > div { flex: 1; }
+</style>
+</head>
+<body>
+<div id="deck">
+  <div id="viewport">
+    <div id="scaler">
+<div class="slide active" id="s1">
+  <div class="bg-glow" style="width:600px;height:600px;top:-200px;left:-100px;background:rgba(79,224,200,.07)"></div><div class="bg-glow" style="width:500px;height:500px;bottom:-200px;right:-100px;background:rgba(108,123,255,.07)"></div>
+  <div class="s-body" style="justify-content:center;">
+    <div class="reveal"><div style="display:flex;gap:8px;margin-bottom:20px;">
+      <span class="pill pill-teal">RM_STORMX</span><span class="pill pill-purple">ADP</span><span class="pill pill-blue">Operação Unilever</span><span class="pill pill-amber">Novembro/2026</span>
+    </div></div>
+    <div class="reveal"><div style="font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;line-height:1.05;color:var(--white);max-width:760px;">
+      Treinamento<br><span style="color:var(--teal);">RM_STORMX</span> e <span style="color:var(--blue);">ADP</span>
+    </div></div>
+    <div class="reveal" style="margin-top:28px;"><div style="font-size:15px;color:var(--muted);max-width:560px;line-height:1.7;">
+      Como preencher cada campo, evitar erros comuns e garantir a qualidade do banco de dados.
+    </div></div>
+    <div class="reveal" style="margin-top:40px;"><div style="display:flex;align-items:center;gap:0;">
+      <div style="text-align:center;padding:14px 24px;background:var(--surface);border:1px solid var(--border);border-radius:8px 0 0 8px;">
+        <div style="font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Origem</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--teal);">Unilever BR // Camphouse</div></div>
+      <div style="width:40px;height:1px;background:linear-gradient(90deg,var(--teal),var(--blue));position:relative;"><div style="position:absolute;right:-4px;top:-4px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--blue);"></div></div>
+      <div style="text-align:center;padding:14px 24px;background:var(--surface);border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Ferramenta</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--blue);">RM_STORMX</div></div>
+      <div style="width:40px;height:1px;background:linear-gradient(90deg,var(--blue),var(--purple));position:relative;"><div style="position:absolute;right:-4px;top:-4px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:8px solid var(--purple);"></div></div>
+      <div style="text-align:center;padding:14px 24px;background:var(--surface);border:1px solid var(--border);border-radius:0 8px 8px 0;">
+        <div style="font-size:10px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">Destino</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;color:var(--purple);">StormX</div></div>
+    </div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s2">
+  <div class="bg-glow" style="width:400px;height:400px;top:-100px;right:-100px;background:rgba(63,182,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Agenda</div>
+    <div class="s-head reveal">O que vamos <span class="accent">ver hoje</span></div>
+    <div class="columns col-2 mt-16" style="flex:1;align-items:stretch;gap:12px;">
+      <div class="reveal" style="display:flex;flex-direction:column;gap:10px;"><div class="card" style="border-left:3px solid var(--teal);"><div class="card-title text-teal">01 &nbsp;Fluxo Completo</div><p>Camphouse → RM_STORMX → ADP → StormX → QA</p></div><div class="card" style="border-left:3px solid var(--blue);"><div class="card-title text-blue">02 &nbsp;RM × ADP</div><p>Diferenças e responsabilidades de cada planilha</p></div><div class="card" style="border-left:3px solid var(--purple);"><div class="card-title text-purple">03 &nbsp;Importação do Plano</div><p>Exportar, copiar e colar como valores</p></div><div class="card" style="border-left:3px solid var(--violet);"><div class="card-title text-violet">04 &nbsp;Abas e Plataformas</div><p>Selecionando a aba correta para cada plataforma</p></div></div>
+      <div class="reveal" style="display:flex;flex-direction:column;gap:10px;"><div class="card" style="border-left:3px solid var(--teal);"><div class="card-title text-teal">05 &nbsp;Código de Cores</div><p>O que editar e o que nunca alterar</p></div><div class="card" style="border-left:3px solid var(--blue);"><div class="card-title text-blue">06 &nbsp;Validação e Erros</div><p>Linha G, dropdowns, string e erros recorrentes</p></div><div class="card" style="border-left:3px solid var(--purple);"><div class="card-title text-purple">07 &nbsp;SLAs e Prazos</div><p>Regras de entrega por volume de linhas</p></div></div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s3">
+  <div class="bg-glow" style="width:500px;height:500px;top:-150px;left:300px;background:rgba(79,224,200,.05)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Processo</div>
+    <div class="s-head reveal">Fluxo <span class="accent">completo</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;" class="reveal">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch;"><div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--teal);border-radius:8px;padding:18px 14px;text-align:center;">
+      <div style="margin:0 auto 12px;width:36px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(79,224,200,.12);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0;">1</div></div>
+      <div class="font-sg fw-600 fs-13 text-white" style="margin-bottom:8px;">Camphouse</div>
+      <p style="font-size:12px;color:var(--dim);line-height:1.5;">Fonte das informações do plano de mídia</p></div><div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--blue);border-radius:8px;padding:18px 14px;text-align:center;">
+      <div style="margin:0 auto 12px;width:36px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(63,182,255,.12);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--blue);flex-shrink:0;">2</div></div>
+      <div class="font-sg fw-600 fs-13 text-white" style="margin-bottom:8px;">RM_STORMX</div>
+      <p style="font-size:12px;color:var(--dim);line-height:1.5;">Mídia preenche e envia para StormX</p></div><div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--purple);border-radius:8px;padding:18px 14px;text-align:center;">
+      <div style="margin:0 auto 12px;width:36px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(108,123,255,.12);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--purple);flex-shrink:0;">3</div></div>
+      <div class="font-sg fw-600 fs-13 text-white" style="margin-bottom:8px;">ADP</div>
+      <p style="font-size:12px;color:var(--dim);line-height:1.5;">StormX gerencia a taxonomia e IDs</p></div><div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--violet);border-radius:8px;padding:18px 14px;text-align:center;">
+      <div style="margin:0 auto 12px;width:36px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(163,92,255,.12);border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--violet);flex-shrink:0;">4</div></div>
+      <div class="font-sg fw-600 fs-13 text-white" style="margin-bottom:8px;">StormX</div>
+      <p style="font-size:12px;color:var(--dim);line-height:1.5;">Implementação e QA das campanhas</p></div><div style="background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--yellow);border-radius:8px;padding:18px 14px;text-align:center;">
+      <div style="margin:0 auto 12px;width:36px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(235,255,36,.12);border:2px solid var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--yellow);flex-shrink:0;">5</div></div>
+      <div class="font-sg fw-600 fs-13 text-white" style="margin-bottom:8px;">QA Final</div>
+      <p style="font-size:12px;color:var(--dim);line-height:1.5;">Validação da string e banco de dados</p></div></div>
+      <div class="rule-box tip mt-24"><strong>Dica</strong> &nbsp;Qualquer campanha urgente sem taxonomia criada deve ser comunicada à StormX por e-mail com autorização do cliente. Prazo máximo de 24h para regularização.</div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s4">
+  <div class="bg-glow" style="width:450px;height:450px;top:-100px;right:-100px;background:rgba(163,92,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Comparativo</div>
+    <div class="s-head reveal">RM_STORMX <span class="accent-b">×</span> ADP</div>
+    <div class="columns col-2 reveal" style="flex:1;align-items:stretch;gap:20px;">
+      <div><div class="card" style="border-top:3px solid var(--blue);">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;"><span class="font-sg fw-700 text-blue" style="font-size:22px;">RM_STORMX</span><span class="pill pill-blue">Mídia preenche</span></div>
+        <ul style="display:flex;flex-direction:column;gap:14px;padding:0;"><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--blue);font-weight:700;">✓</span>Plano de mídia importado do Camphouse</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--blue);font-weight:700;">✓</span>Campos de campanha, ad group e ad name</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--blue);font-weight:700;">✓</span>Datas de início e término</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--blue);font-weight:700;">✓</span>Orçamento e investimento por linha</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--blue);font-weight:700;">✓</span>Plataforma e formato de compra</li></ul></div></div>
+      <div><div class="card" style="border-top:3px solid var(--violet);">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;"><span class="font-sg fw-700 text-violet" style="font-size:22px;">ADP</span><span class="pill pill-violet">StormX gerencia</span></div>
+        <ul style="display:flex;flex-direction:column;gap:14px;padding:0;"><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--violet);font-weight:700;">✓</span>Taxonomia criada pela StormX</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--violet);font-weight:700;">✓</span>Campaign Names aprovados pela Unilever</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--violet);font-weight:700;">✓</span>IDs únicos por ad group e ad name</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--violet);font-weight:700;">✓</span>Atualizado toda segunda-feira</li><li style="list-style:none;display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);line-height:1.5;"><span style="color:var(--violet);font-weight:700;">✓</span>Referência para preenchimento do RM</li></ul></div></div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s5">
+  <div class="bg-glow" style="width:450px;height:450px;bottom:-150px;left:-100px;background:rgba(63,182,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Passo a passo</div>
+    <div class="s-head reveal">Importando o <span class="accent">Plano de Mídia</span></div>
+    <div class="columns col-3 reveal" style="gap:16px;margin-top:8px;"><div class="card" style="border-top:3px solid var(--teal);padding:24px 22px;"><div style="margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(79,224,200,.12);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0;">01</div></div>
+      <div class="card-title text-white" style="font-size:17px;">Exportar do Camphouse</div><p>Baixe o plano de mídia atualizado em formato Excel. Certifique-se de que todos os campos obrigatórios estão preenchidos.</p></div><div class="card" style="border-top:3px solid var(--blue);padding:24px 22px;"><div style="margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(63,182,255,.12);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--blue);flex-shrink:0;">02</div></div>
+      <div class="card-title text-white" style="font-size:17px;">Copiar para o RM</div><p>Copie as linhas do plano exportado. Selecione as células correspondentes na aba correta do RM_STORMX.</p></div><div class="card" style="border-top:3px solid var(--purple);padding:24px 22px;"><div style="margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(108,123,255,.12);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--purple);flex-shrink:0;">03</div></div>
+      <div class="card-title text-white" style="font-size:17px;">Colar como Valores</div><p>Use Colar Especial > Valores (Ctrl+Shift+V ou Alt+E+S+V). Nunca cole com formatação.</p></div></div>
+    <div class="rule-box warn reveal" style="margin-top:auto;"><strong>Atenção</strong> &nbsp;Nunca copie e cole com formatação. Isso quebra fórmulas e campos calculados do RM_STORMX.</div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s6">
+  <div class="bg-glow" style="width:450px;height:450px;top:-120px;right:-80px;background:rgba(108,123,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Plataformas</div>
+    <div class="s-head reveal">Selecionando a <span class="accent">Aba Correta</span></div>
+    <div class="vcards reveal" style="gap:16px;margin-top:8px;"><div class="vcard" style="border-top:3px solid var(--teal);"><div style="margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(79,224,200,.12);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0;">01</div></div><div class="vcard-name" style="font-size:16px;">Google Ads</div><p style="font-size:13px;">Campanhas de Search, Display, PMax e Demand Gen</p></div><div class="vcard" style="border-top:3px solid var(--blue);"><div style="margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(63,182,255,.12);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--blue);flex-shrink:0;">02</div></div><div class="vcard-name" style="font-size:16px;">Programmatic/DV360</div><p style="font-size:13px;">Campanhas de Display & Video programáticas</p></div><div class="vcard" style="border-top:3px solid var(--purple);"><div style="margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(108,123,255,.12);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--purple);flex-shrink:0;">03</div></div><div class="vcard-name" style="font-size:16px;">YouTube</div><p style="font-size:13px;">Campanhas de YouTube, incluindo Masthead CPH</p></div><div class="vcard" style="border-top:3px solid var(--violet);"><div style="margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(163,92,255,.12);border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--violet);flex-shrink:0;">04</div></div><div class="vcard-name" style="font-size:16px;">Meta + TikTok</div><p style="font-size:13px;">Campanhas de redes sociais Meta e TikTok</p></div><div class="vcard" style="border-top:3px solid var(--yellow);"><div style="margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(235,255,36,.12);border:2px solid var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--yellow);flex-shrink:0;">05</div></div><div class="vcard-name" style="font-size:16px;">Pinterest + Snap + X</div><p style="font-size:13px;">Campanhas em Pinterest, Snapchat e Twitter/X</p></div><div class="vcard" style="border-top:3px solid var(--lilac);"><div style="margin-bottom:12px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(224,139,255,.12);border:2px solid var(--lilac);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--lilac);flex-shrink:0;">06</div></div><div class="vcard-name" style="font-size:16px;">Flashtalking</div><p style="font-size:13px;">Campanhas de Compra Direta via API Flashtalking</p></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s7">
+  <div class="bg-glow" style="width:500px;height:500px;bottom:-200px;right:-100px;background:rgba(163,92,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Referência visual</div>
+    <div class="s-head reveal">Código de <span class="accent">Cores do RM</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:8px;" class="reveal"><div class="card" style="padding:0;overflow:hidden;"><div style="height:56px;background:#A35CFF;"></div><div style="padding:18px 20px;">
+      <div class="font-sg fw-700 text-white" style="font-size:20px;">Roxo</div><div style="font-size:12px;font-weight:600;color:#A35CFF;margin:4px 0 10px;">Dropdown, obrigatório</div><p>Campos com lista suspensa. Selecione uma das opções disponíveis. Preenchimento obrigatório.</p></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="height:56px;background:#EBFF24;"></div><div style="padding:18px 20px;">
+      <div class="font-sg fw-700 text-white" style="font-size:20px;">Amarelo</div><div style="font-size:12px;font-weight:600;color:#EBFF24;margin:4px 0 10px;">Texto livre, digitar</div><p>Campos de preenchimento livre. Digite o valor correto conforme o plano de mídia.</p></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="height:56px;background:#3FB6FF;"></div><div style="padding:18px 20px;">
+      <div class="font-sg fw-700 text-white" style="font-size:20px;">Azul</div><div style="font-size:12px;font-weight:600;color:#3FB6FF;margin:4px 0 10px;">Automático, não editar</div><p>Campos calculados ou preenchidos automaticamente pelo sistema. Nunca editar manualmente.</p></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="height:56px;background:#8A8AA0;"></div><div style="padding:18px 20px;">
+      <div class="font-sg fw-700 text-white" style="font-size:20px;">Cinza</div><div style="font-size:12px;font-weight:600;color:var(--muted);margin:4px 0 10px;">StormX, não editar</div><p>Campos gerenciados exclusivamente pela StormX. Mídia não deve alterar esses campos.</p></div></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s8">
+  <div class="bg-glow" style="width:450px;height:450px;top:-150px;right:-100px;background:rgba(79,224,200,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Campo crítico</div>
+    <div class="s-head reveal">Coluna <span class="accent">Linha G</span></div>
+    <div class="columns col-2 reveal" style="flex:1;gap:28px;align-items:stretch;">
+      <div style="gap:14px;">
+        <div class="card" style="flex:0 0 auto;border-left:3px solid var(--teal);"><div class="card-title text-teal">O que é</div><p>O campo Linha G identifica o tipo de linha no plano de mídia. Cada linha representa uma configuração única de campanha, ad group e ad name na plataforma.</p></div>
+        <div class="card" style="flex:0 0 auto;border-left:3px solid var(--amber);background:rgba(255,171,64,.06);"><div class="card-title text-amber">⚠ Erro mais comum</div><p>Usar o mesmo Linha G para ad groups diferentes. Isso gera duplicidade no banco e impede a correta leitura dos dados.</p></div>
+        <div class="rule-box tip" style="flex:0 0 auto;"><strong>Por que é crítico</strong> &nbsp;garante a rastreabilidade de cada anúncio no banco de dados.</div>
+      </div>
+      <div style="gap:0;"><div style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;">Como preencher</div>
+        <div style="display:flex;flex-direction:column;gap:10px;flex:0 0 auto;"><div style="display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;"><span class="font-sg fw-700 text-teal" style="font-size:13px;">01</span><span style="font-size:14px;color:var(--muted);">Verificar no ADP o ID correto para cada linha</span></div><div style="display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;"><span class="font-sg fw-700 text-teal" style="font-size:13px;">02</span><span style="font-size:14px;color:var(--muted);">Cada linha do plano = um ID único</span></div><div style="display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;"><span class="font-sg fw-700 text-teal" style="font-size:13px;">03</span><span style="font-size:14px;color:var(--muted);">Nunca repetir o mesmo ID em ad groups diferentes</span></div><div style="display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;"><span class="font-sg fw-700 text-teal" style="font-size:13px;">04</span><span style="font-size:14px;color:var(--muted);">Solicitar novo ID à StormX se não encontrar</span></div><div style="display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;"><span class="font-sg fw-700 text-teal" style="font-size:13px;">05</span><span style="font-size:14px;color:var(--muted);">Validar antes de enviar o RM completo</span></div></div></div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s9">
+  <div class="bg-glow" style="width:450px;height:450px;bottom:-150px;left:200px;background:rgba(63,182,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Referência</div>
+    <div class="s-head reveal">De onde vêm os <span class="accent">Dropdowns</span></div>
+    <div class="vcards reveal" style="gap:14px;margin-top:4px;"><div class="vcard" style="border-top:3px solid var(--teal);"><div class="vcard-name" style="font-size:15px;color:var(--teal);">Mandated Dimensions</div><p style="font-size:13px;">Dimensões obrigatórias definidas pela Unilever Global para toda a taxonomia.</p></div><div class="vcard" style="border-top:3px solid var(--blue);"><div class="vcard-name" style="font-size:15px;color:var(--blue);">Galileo</div><p style="font-size:13px;">Ferramenta global de nomenclatura. Define a parte global da taxonomia, separada por _.</p></div><div class="vcard" style="border-top:3px solid var(--purple);"><div class="vcard-name" style="font-size:15px;color:var(--purple);">Brand Pos Level</div><p style="font-size:13px;">Nível de posicionamento da marca. Definido pelo Global, reflete a estratégia de marca.</p></div><div class="vcard" style="border-top:3px solid var(--violet);"><div class="vcard-name" style="font-size:15px;color:var(--violet);">Freetext</div><p style="font-size:13px;">Parte local da taxonomia, separada por |. Pode ser alterado sem aprovação do Global.</p></div><div class="vcard" style="border-top:3px solid var(--yellow);"><div class="vcard-name" style="font-size:15px;color:var(--yellow);">Campaign by Brand Pos</div><p style="font-size:13px;">Campanhas agrupadas por posicionamento de marca. Atualizado toda sexta pelo Global.</p></div><div class="vcard" style="border-top:3px solid var(--lilac);"><div class="vcard-name" style="font-size:15px;color:var(--lilac);">Documentação UL</div><p style="font-size:13px;">Documentação oficial da Unilever Brasil. Fonte de verdade para regras e exceções.</p></div></div>
+    <div class="rule-box tip reveal" style="margin-top:auto;"><strong>Dica</strong> &nbsp;O Galileo é a parte Global (separada por _) e o Freetext é a parte Local (separada por |). O Local pode ser alterado com aprovação UL Brasil.</div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s10">
+  <div class="bg-glow" style="width:450px;height:450px;top:-150px;left:-100px;background:rgba(108,123,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Qualidade</div>
+    <div class="s-head reveal">Validando a <span class="accent">String de Taxonomia</span></div>
+    <div class="columns col-3 reveal" style="gap:16px;margin-top:8px;"><div class="card" style="border-top:3px solid var(--teal);padding:24px 22px;"><div style="margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(79,224,200,.12);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0;">01</div></div><div class="card-title text-white" style="font-size:16px;">Verificar Campos Obrigatórios</div><p>Confirme que todos os campos roxos (dropdown obrigatório) estão preenchidos. Nenhum campo pode estar vazio ou com valor inválido.</p></div><div class="card" style="border-top:3px solid var(--blue);padding:24px 22px;"><div style="margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(63,182,255,.12);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--blue);flex-shrink:0;">02</div></div><div class="card-title text-white" style="font-size:16px;">Verificar Caracteres Especiais</div><p>Revise todos os campos de texto livre. Remova acentos, apóstrofos, travessões e caracteres especiais. Use apenas letras sem acento, números e hífen.</p></div><div class="card" style="border-top:3px solid var(--purple);padding:24px 22px;"><div style="margin-bottom:14px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(108,123,255,.12);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--purple);flex-shrink:0;">03</div></div><div class="card-title text-white" style="font-size:16px;">Confirmar na NC Tool</div><p>Cole a string gerada na NC Tool para validação final. Aguarde a confirmação de que não há erros antes de implementar na plataforma.</p></div></div>
+    <div class="rule-box warn reveal" style="margin-top:auto;"><strong>Atenção</strong> &nbsp;Nunca implemente uma campanha sem validar a string na NC Tool. Erros de taxonomia sujam o banco e geram retrabalho.</div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s11">
+  <div class="bg-glow" style="width:450px;height:450px;bottom:-150px;right:-100px;background:rgba(255,171,64,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Atenção</div>
+    <div class="s-head reveal">Erros <span class="accent">Recorrentes</span></div>
+    <div class="reveal" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px;"><div class="card" style="border-left:3px solid var(--amber);"><div class="card-title text-amber" style="font-size:15px;">✕ &nbsp;Ad Name Duplicado</div><p>Usar o mesmo Ad Name em mais de um Ad Group. Sempre solicitar um novo ID à StormX para cada linha.</p></div><div class="card" style="border-left:3px solid var(--amber);"><div class="card-title text-amber" style="font-size:15px;">✕ &nbsp;Cópia Sem Nova Taxonomia</div><p>Duplicar Ad Groups na plataforma sem solicitar novo ID. Sempre solicitar nova taxonomia à StormX.</p></div><div class="card" style="border-left:3px solid var(--amber);"><div class="card-title text-amber" style="font-size:15px;">✕ &nbsp;Caractere Especial</div><p>Incluir acentos, apóstrofos ou símbolos. Usar apenas letras sem acento, números e hífen.</p></div><div class="card" style="border-left:3px solid var(--amber);"><div class="card-title text-amber" style="font-size:15px;">✕ &nbsp;"Verificar Plano de Mídia"</div><p>Deixar campos com esse placeholder. Substituir por informações reais antes de implementar.</p></div><div class="card" style="border-left:3px solid var(--amber);"><div class="card-title text-amber" style="font-size:15px;">✕ &nbsp;Taxonomia de Plataforma Errada</div><p>Aplicar a taxonomia de uma plataforma em outra. Cada plataforma tem sua estrutura específica.</p></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s12">
+  <div class="bg-glow" style="width:450px;height:450px;top:-150px;right:-100px;background:rgba(79,224,200,.05)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Regras</div>
+    <div class="s-head reveal">Regras <span class="accent">Importantes</span></div>
+    <div class="reveal" style="display:flex;flex-direction:column;gap:10px;"><div style="display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:8px;padding:14px 20px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(79,224,200,.12);border:2px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--teal);flex-shrink:0;">01</div><div><div class="font-sg fw-600 text-white" style="font-size:16px;margin-bottom:3px;">Proibido subir sem taxonomia</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Nenhuma campanha pode ser implementada na plataforma sem taxonomia criada pela StormX.</div></div></div><div style="display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:14px 20px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(63,182,255,.12);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--blue);flex-shrink:0;">02</div><div><div class="font-sg fw-600 text-white" style="font-size:16px;margin-bottom:3px;">Nunca reduzir por conta própria</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Qualquer ajuste no plano de mídia deve ser comunicado à StormX antes de ser implementado.</div></div></div><div style="display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:8px;padding:14px 20px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(108,123,255,.12);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--purple);flex-shrink:0;">03</div><div><div class="font-sg fw-600 text-white" style="font-size:16px;margin-bottom:3px;">Campaign Name genérico é temporário</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Always On Non Search só é aceito quando o Campaign Name oficial ainda não foi aprovado pelo Global.</div></div></div><div style="display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--violet);border-radius:8px;padding:14px 20px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(163,92,255,.12);border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--violet);flex-shrink:0;">04</div><div><div class="font-sg fw-600 text-white" style="font-size:16px;margin-bottom:3px;">Campaign Local = Campaign Name global</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">O Campaign Local deve sempre ser idêntico ao Campaign Name global enviado pela Unilever.</div></div></div><div style="display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:8px;padding:14px 20px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(235,255,36,.12);border:2px solid var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--yellow);flex-shrink:0;">05</div><div><div class="font-sg fw-600 text-white" style="font-size:16px;margin-bottom:3px;">Genérica em feriado: corrigir em 24h</div><div style="font-size:13px;color:var(--muted);line-height:1.5;">Taxonomia genérica usada em feriados ou finais de semana deve ser corrigida em até 24 horas úteis.</div></div></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s13">
+  <div class="bg-glow" style="width:450px;height:450px;bottom:-150px;left:-100px;background:rgba(163,92,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Papéis</div>
+    <div class="s-head reveal"><span class="accent">Responsabilidades</span></div>
+    <div class="columns col-3 reveal" style="gap:16px;margin-top:8px;"><div class="card" style="border-top:3px solid var(--teal);padding:24px 22px;"><div class="font-sg fw-700 text-teal" style="font-size:20px;margin-bottom:14px;">Mídia</div><ul class="item-list" style="padding:0;"><li>Preenche o RM_STORMX</li><li>Importa o plano do Camphouse</li><li>Solicita taxonomia via Jira</li><li>Implementa na plataforma</li></ul></div><div class="card" style="border-top:3px solid var(--blue);padding:24px 22px;"><div class="font-sg fw-700 text-blue" style="font-size:20px;margin-bottom:14px;">StormX AdOps</div><ul class="item-list" style="padding:0;"><li>Cria a taxonomia</li><li>Gera os IDs únicos</li><li>Atualiza o ADP</li><li>Revisa a string de taxonomia</li></ul></div><div class="card" style="border-top:3px solid var(--violet);padding:24px 22px;"><div class="font-sg fw-700 text-violet" style="font-size:20px;margin-bottom:14px;">Unilever Global</div><ul class="item-list" style="padding:0;"><li>Aprova os Campaign Names</li><li>Define as Mandated Dimensions</li><li>Envia atualizações toda sexta-feira</li><li>Fonte de verdade para nomenclatura</li></ul></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s14">
+  <div class="bg-glow" style="width:450px;height:450px;top:-150px;left:300px;background:rgba(224,139,255,.05)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Classificação</div>
+    <div class="s-head reveal">BRD / INF / <span class="accent">UGC</span></div>
+    <div class="columns col-3 reveal" style="gap:16px;margin-top:8px;"><div class="card" style="border-top:3px solid var(--teal);padding:24px 22px;"><div class="font-sg fw-700 text-teal" style="font-size:44px;line-height:1;">BRD</div><div class="font-sg fw-600 text-white" style="font-size:15px;margin:8px 0 12px;">Brand Say</div><p>Conteúdo patrocinado pela marca sem influenciador. Não deve haver link de influenciador associado.</p></div><div class="card" style="border-top:3px solid var(--blue);padding:24px 22px;"><div class="font-sg fw-700 text-blue" style="font-size:44px;line-height:1;">INF</div><div class="font-sg fw-600 text-white" style="font-size:15px;margin:8px 0 12px;">Com Influenciador</div><p>Campanha com influenciador. É obrigatório informar o link correspondente ao conteúdo do influenciador.</p></div><div class="card" style="border-top:3px solid var(--violet);padding:24px 22px;"><div class="font-sg fw-700 text-violet" style="font-size:44px;line-height:1;">UGC</div><div class="font-sg fw-600 text-white" style="font-size:15px;margin:8px 0 12px;">User Generated</div><p>Conteúdo do influenciador com @handle. O link é obrigatório. O Influencer Handle substitui o Influencer Name.</p></div></div>
+    <div class="rule-box warn reveal" style="margin-top:auto;"><strong>Atenção</strong> &nbsp;INF e UGC exigem link obrigatório. Sem o link, a taxonomia fica incompleta e o banco não identifica o influenciador corretamente.</div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s15">
+  <div class="bg-glow" style="width:450px;height:450px;bottom:-150px;right:-100px;background:rgba(63,182,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Prazos</div>
+    <div class="s-head reveal">Datas e <span class="accent">Alterações de Taxonomia</span></div>
+    <div class="columns col-3 reveal" style="gap:16px;margin-top:8px;"><div class="card" style="border-top:3px solid var(--teal);padding:24px 22px;"><div style="font-size:26px;margin-bottom:10px;color:var(--teal);">◷</div><div class="card-title text-white" style="font-size:16px;">Taxonomia genérica → 24h</div><p>Qualquer campanha que utilize taxonomia genérica (feriados, urgências) deve ter a taxonomia corrigida para a versão oficial em até 24 horas úteis após a implementação.</p></div><div class="card" style="border-top:3px solid var(--blue);padding:24px 22px;"><div style="font-size:26px;margin-bottom:10px;color:var(--blue);">◷</div><div class="card-title text-white" style="font-size:16px;">Campaign Name oficial substitui</div><p>Assim que o Global enviar o Campaign Name oficial, todas as taxonomias relacionadas devem ser atualizadas para refletir o nome correto, independentemente do volume de linhas.</p></div><div class="card" style="border-top:3px solid var(--violet);padding:24px 22px;"><div style="font-size:26px;margin-bottom:10px;color:var(--violet);">◷</div><div class="card-title text-white" style="font-size:16px;">Twitter Amplify → correção retroativa</div><p>Campanhas de Twitter Amplify implementadas sem o Publisher correto (Twitter-Amplify) devem ser corrigidas retroativamente no banco. Contatar a StormX para regularização.</p></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s16">
+  <div class="bg-glow" style="width:450px;height:450px;top:-150px;right:-100px;background:rgba(79,224,200,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">SLAs</div>
+    <div class="s-head reveal">SLAs: <span class="accent">RM Completa</span></div>
+    <div class="reveal" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:8px;"><div class="card" style="text-align:center;border-top:3px solid var(--teal);padding:26px 12px;"><div class="font-sg fw-700 text-teal" style="font-size:56px;line-height:1;">1</div><div style="font-size:13px;color:var(--muted);margin:6px 0 16px;">dia útil</div><div class="pill pill-teal">Até 10 linhas</div></div><div class="card" style="text-align:center;border-top:3px solid var(--blue);padding:26px 12px;"><div class="font-sg fw-700 text-blue" style="font-size:56px;line-height:1;">2</div><div style="font-size:13px;color:var(--muted);margin:6px 0 16px;">dias úteis</div><div class="pill pill-blue">11 a 40 linhas</div></div><div class="card" style="text-align:center;border-top:3px solid var(--purple);padding:26px 12px;"><div class="font-sg fw-700 text-purple" style="font-size:56px;line-height:1;">3</div><div style="font-size:13px;color:var(--muted);margin:6px 0 16px;">dias úteis</div><div class="pill pill-purple">41 a 100 linhas</div></div><div class="card" style="text-align:center;border-top:3px solid var(--violet);padding:26px 12px;"><div class="font-sg fw-700 text-violet" style="font-size:56px;line-height:1;">4</div><div style="font-size:13px;color:var(--muted);margin:6px 0 16px;">dias úteis</div><div class="pill pill-violet">101 a 200 linhas</div></div><div class="card" style="text-align:center;border-top:3px solid var(--yellow);padding:26px 12px;"><div class="font-sg fw-700 text-yellow" style="font-size:56px;line-height:1;">5</div><div style="font-size:13px;color:var(--muted);margin:6px 0 16px;">dias úteis</div><div class="pill pill-yellow">201 a 500 linhas</div></div></div>
+    <div class="rule-box warn reveal" style="margin-top:auto;"><strong>Atenção</strong> &nbsp;SLAs contados em dias úteis. Para RMs acima de 500 linhas, o prazo deve ser combinado com a StormX.</div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s17">
+  <div class="bg-glow" style="width:450px;height:450px;bottom:-150px;left:-100px;background:rgba(108,123,255,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">SLAs específicos</div>
+    <div class="s-head reveal">SLAs: <span class="accent">Flashtalking</span></div>
+    <div class="columns col-2 reveal" style="flex:1;gap:24px;align-items:stretch;">
+      <div><div class="card" style="padding:12px 18px;"><table class="sla-table" style="font-size:15px;"><thead><tr><th>VOLUME</th><th>PRAZO</th></tr></thead><tbody><tr><td>Até 10 linhas</td><td><span class="hi">2 dias úteis</span></td></tr><tr><td>11 a 50 linhas</td><td><span class="hi">3 dias úteis</span></td></tr><tr><td>51 a 150 linhas</td><td><span class="hi">5 dias úteis</span></td></tr><tr><td>151+ linhas</td><td><span class="hi">A combinar</span></td></tr></tbody></table></div></div>
+      <div><div class="card" style="border-top:3px solid var(--blue);"><div class="card-title text-blue" style="font-size:16px;margin-bottom:14px;">Regras gerais</div><ul class="item-list" style="padding:0;"><li>SLAs em dias úteis, excluindo feriados</li><li>Envio do RM até as 12h para SLA no mesmo dia</li><li>RMs incompletos reiniciam o prazo</li><li>Urgências comunicadas por e-mail com aprovação do cliente</li><li>Prazos maiores negociados diretamente com a StormX</li></ul></div></div>
+    </div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s18">
+  <div class="bg-glow" style="width:450px;height:450px;top:-150px;right:-100px;background:rgba(79,224,200,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Validação</div>
+    <div class="s-head reveal">Checklist <span class="accent">Final</span></div>
+    <div class="columns col-2 reveal" style="gap:20px;">
+      <div><div class="card" style="border-top:3px solid var(--teal);"><div class="card-title text-teal" style="font-size:16px;">Preenchimento</div><ul style="padding:0;"><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--teal);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Plano importado corretamente do Camphouse</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--teal);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Aba correta selecionada para a plataforma</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--teal);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Todos os campos roxos preenchidos</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--teal);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Nenhum caractere especial ou acento</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--teal);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Ad Names únicos por Ad Group</li></ul></div></div>
+      <div><div class="card" style="border-top:3px solid var(--violet);"><div class="card-title text-violet" style="font-size:16px;">Validação e envio</div><ul style="padding:0;"><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--violet);color:var(--violet);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Campaign Name conforme o ADP</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--violet);color:var(--violet);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Campaign Local = Campaign Name Global</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--violet);color:var(--violet);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>Links de influenciador informados (INF/UGC)</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--violet);color:var(--violet);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>String validada na NC Tool</li><li style="list-style:none;display:flex;gap:12px;align-items:center;font-size:14px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="width:20px;height:20px;border-radius:5px;border:1.5px solid var(--violet);color:var(--violet);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</span>RM enviado para StormX com antecedência</li></ul></div></div>
+    </div>
+    <div class="rule-box tip reveal" style="margin-top:auto;text-align:center;font-family:'Space Grotesk',sans-serif;font-size:15px;"><strong>RM validada</strong> &nbsp;=&nbsp; taxonomia correta &nbsp;=&nbsp; banco limpo &nbsp;=&nbsp; relatório confiável</div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<div class="slide" id="s19">
+  <div class="bg-glow" style="width:500px;height:500px;top:-150px;right:-80px;background:rgba(79,224,200,.07)"></div>
+  <div class="s-body" style="padding:28px 56px 20px;display:flex;flex-direction:column;justify-content:flex-start;height:calc(100% - 32px);overflow:hidden;">
+    <div style="flex-shrink:0;margin-bottom:12px;" class="reveal">
+      <div class="s-tag">Referência por plataforma</div>
+      <div class="s-head">Regras de <span class="accent">Taxonomia</span></div>
+    </div>
+    <div class="reveal" style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-shrink:0;">
+      <div style="background:linear-gradient(135deg,rgba(79,224,200,.12),rgba(63,182,255,.08));border:1px solid rgba(79,224,200,.25);border-radius:10px;padding:12px 24px;display:flex;align-items:center;gap:14px;flex-shrink:0;">
+        <div id="taxTotal" style="font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:700;color:var(--teal);line-height:1;">19</div>
+        <div><div style="font-size:14px;font-weight:600;color:var(--white);">regras vigentes</div><div style="font-size:12px;color:var(--dim);margin-top:3px;">9 categorias</div></div>
+      </div>
+      <div style="flex:1;font-size:12px;color:var(--dim);line-height:1.6;">
+        Como preencher, nomear ou adaptar a taxonomia em cenários específicos. Seguir essas regras garante banco limpo e relatórios confiáveis.<br>
+        <span style="color:var(--teal);font-size:11px;margin-top:4px;display:inline-block;">↓ Toque em qualquer categoria para ver os detalhes</span>
+      </div>
+    </div>
+    <div class="tax-cat-grid reveal" id="taxCatGrid" style="cursor:pointer;"></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+<!-- category rule slides injected here by JS -->
+<div id="tax-slides-anchor"></div>
+
+<div class="slide" id="s20">
+  <div class="bg-glow" style="width:600px;height:600px;top:-200px;right:-100px;background:rgba(108,123,255,.08)"></div><div class="bg-glow" style="width:400px;height:400px;bottom:-100px;left:-50px;background:rgba(79,224,200,.06)"></div>
+  <div class="s-body" style="justify-content:flex-start;">
+    <div class="s-tag reveal">Resumo</div>
+    <div class="s-head reveal">Recap <span class="accent">Final</span></div>
+    <div class="reveal" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;"><div class="card" style="border-top:3px solid var(--teal);padding:24px 24px;"><div class="font-sg fw-700 text-teal" style="font-size:18px;margin-bottom:10px;">Fluxo Completo</div><p style="font-size:14px;">Camphouse → RM_STORMX → ADP → StormX → QA. Cada etapa tem um responsável definido.</p></div><div class="card" style="border-top:3px solid var(--blue);padding:24px 24px;"><div class="font-sg fw-700 text-blue" style="font-size:18px;margin-bottom:10px;">Regras de Preenchimento</div><p style="font-size:14px;">Sem taxonomia, sem implementação. Caracteres especiais proibidos. Campaign Local = Campaign Name Global.</p></div><div class="card" style="border-top:3px solid var(--purple);padding:24px 24px;"><div class="font-sg fw-700 text-purple" style="font-size:18px;margin-bottom:10px;">SLAs e Prazos</div><p style="font-size:14px;">RM até 10 linhas: 1 dia. Flashtalking 51 a 150 linhas: 5 dias. Urgências por e-mail com aprovação.</p></div><div class="card" style="border-top:3px solid var(--violet);padding:24px 24px;"><div class="font-sg fw-700 text-violet" style="font-size:18px;margin-bottom:10px;">Responsabilidades</div><p style="font-size:14px;">Mídia preenche e envia. StormX cria taxonomia e gera IDs. Unilever Global aprova Campaign Names.</p></div></div>
+  </div>
+  <div class="slide-footer">
+    <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+    <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+  </div>
+</div>
+
+    </div><!-- /scaler -->
+  </div><!-- /viewport -->
+
+  <!-- NAV -->
+  <div id="navbar">
+    <span class="nav-brand">RM STORMX ADP</span>
+    <div class="nav-sep"></div>
+    <span id="counter">01 / 20</span>
+    <div id="progress-track"><div id="progress-fill"></div></div>
+    <div id="dots"></div>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" id="prevBtn" title="Anterior (←)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="nav-btn" id="nextBtn" title="Próximo (→)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <button class="nav-btn" id="fsBtn" title="Tela cheia (F)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    </button>
+  </div>
+</div><!-- /deck -->
+
+<script>
+/* ─── SCALER ────────────────────────────────────────────── */
+(function(){
+  const scaler = document.getElementById('scaler');
+  const W = 1280, H = 720;
+  function resize(){
+    const vw = window.innerWidth;
+    const vh = window.innerHeight - 52; // nav height only
+    const scale = Math.min(vw / W, vh / H);
+    // top:50% left:50% puts the top-left corner at center;
+    // then we translate by -50% of the scaled size to truly center it.
+    const tx = -(W / 2);
+    const ty = -(H / 2);
+    scaler.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+})();
+
+/* ─── DECK CONTROLLER ───────────────────────────────────── */
+/* Called by initTax() after category slides are injected   */
+window.__initDeck = function(){
+  // Separate static slides (deck) from taxonomy slides (sub-nav)
+  const allSlides    = Array.from(document.querySelectorAll('.slide'));
+  const staticSlides = allSlides.filter(s => !s.dataset.catSlide);
+  const total  = staticSlides.length;
+  let current  = 0;
+
+  // Taxonomy slides: hidden from main deck, managed by taxController
+  allSlides.filter(s => s.dataset.catSlide).forEach(s => {
+    s.classList.remove('active','prevslide');
+  });
+
+  const counter      = document.getElementById('counter');
+  const progressFill = document.getElementById('progress-fill');
+  const dotsWrap     = document.getElementById('dots');
+  dotsWrap.innerHTML = '';
+
+  staticSlides.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' active':'');
+    d.addEventListener('click', () => goTo(i));
+    dotsWrap.appendChild(d);
+  });
+  const dots = Array.from(dotsWrap.children);
+
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+  function restartReveals(slide){
+    slide.querySelectorAll('.reveal').forEach(el => {
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+    });
+  }
+
+  function goTo(i){
+    if(i < 0 || i >= total || i === current) return;
+    const dir = i > current ? 1 : -1;
+    staticSlides[current].classList.remove('active');
+    staticSlides[current].classList.toggle('prevslide', dir === 1);
+    staticSlides[i].classList.remove('prevslide');
+    staticSlides[i].classList.add('active');
+    restartReveals(staticSlides[i]);
+    dots[current].classList.remove('active');
+    dots[i].classList.add('active');
+    current = i;
+    counter.textContent = pad(current+1) + ' / ' + pad(total);
+    progressFill.style.width = ((current+1)/total*100) + '%';
+  }
+
+  // ── Taxonomy sub-controller ─────────────────────────────
+  // Manages navigation inside a category block (outside main deck)
+  let taxActive = false;      // true while viewing taxonomy slides
+  let taxSlides  = [];        // current category's slides in order
+  let taxCurrent = 0;         // index within taxSlides
+
+  function taxShow(slides, startIdx){
+    taxSlides  = slides;
+    taxCurrent = startIdx || 0;
+    taxActive  = true;
+    // Hide current static slide, show first tax slide
+    staticSlides[current].classList.remove('active');
+    taxSlides[taxCurrent].classList.add('active');
+    taxSlides[taxCurrent].classList.remove('prevslide');
+  }
+
+  function taxGoToSlide(i){
+    if(i < 0){
+      // ← before first slide → back to index (S19)
+      taxClose();
+      return;
+    }
+    if(i >= taxSlides.length){
+      // → after last slide → back to index (S19)
+      taxClose();
+      return;
+    }
+    if(i === taxCurrent) return;
+    const dir = i > taxCurrent ? 1 : -1;
+    taxSlides[taxCurrent].classList.remove('active');
+    taxSlides[taxCurrent].classList.toggle('prevslide', dir === 1);
+    taxSlides[i].classList.remove('prevslide');
+    taxSlides[i].classList.add('active');
+    taxCurrent = i;
+  }
+
+  function taxClose(){
+    // Hide all tax slides, restore S19 static slide
+    taxSlides.forEach(s => { s.classList.remove('active','prevslide'); });
+    taxActive  = false;
+    taxSlides  = [];
+    taxCurrent = 0;
+    // Go back to S19 in main deck
+    const s19i = staticSlides.findIndex(s => s.id === 's19');
+    const target = s19i >= 0 ? s19i : current;
+    staticSlides[target].classList.add('active');
+    dots[current].classList.remove('active');
+    dots[target].classList.add('active');
+    current = target;
+    counter.textContent = pad(current+1) + ' / ' + pad(total);
+    progressFill.style.width = ((current+1)/total*100) + '%';
+  }
+
+  // Open a category: gather its slides and jump to first
+  window.__taxGoTo = function(cat){
+    const catSlides = allSlides.filter(s => s.dataset.catSlide === cat);
+    if(!catSlides.length) return;
+    taxShow(catSlides, 0);
+  };
+
+  // Back button (← Índice) calls taxClose
+  window.__taxClose = taxClose;
+
+  function handleNext(){
+    if(taxActive){ taxGoToSlide(taxCurrent + 1); }
+    else { goTo(current + 1); }
+  }
+  function handlePrev(){
+    if(taxActive){ taxGoToSlide(taxCurrent - 1); }
+    else { goTo(current - 1); }
+  }
+
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  prevBtn.addEventListener('click', function(e){ e.stopPropagation(); handlePrev(); }, true);
+  nextBtn.addEventListener('click', function(e){ e.stopPropagation(); handleNext(); }, true);
+
+  document.addEventListener('keydown', e => {
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); handleNext(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); handlePrev(); }
+    else if(e.key === 'Escape' && taxActive){ taxClose(); }
+    else if(e.key === 'Home' && !taxActive){ goTo(0); }
+    else if(e.key === 'End'  && !taxActive){ goTo(total-1); }
+    else if(e.key.toLowerCase() === 'f'){ toggleFullscreen(); }
+  });
+
+  let touchStartX = null;
+  document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+  document.addEventListener('touchend', e => {
+    if(touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 60){ dx < 0 ? handleNext() : handlePrev(); }
+    touchStartX = null;
+  });
+
+  function toggleFullscreen(){
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+    else{ document.exitFullscreen(); }
+  }
+  document.getElementById('fsBtn').addEventListener('click', toggleFullscreen);
+
+  counter.textContent = pad(1) + ' / ' + pad(total);
+  progressFill.style.width = (1/total*100) + '%';
+  restartReveals(staticSlides[0]);
+};
+</script>
+
+<script>
+/* ─── TAXONOMY RULES ────────────────────────────────────── */
+(function(){
+const TAX_RULES = [
+ {
+  "id": "taxonomia-por-plataforma",
+  "category": "Geral",
+  "title": "Geral — Taxonomia por Plataforma",
+  "motivo": "Cada plataforma possui sua própria estrutura de quebra de taxonomia, e elas não são intercambiáveis.",
+  "solucao": "Não é permitido, em nenhuma hipótese, utilizar a taxonomia de uma plataforma em outra.",
+  "important": [
+   "Proibido subir campanha sem a taxonomia criada pela StormX."
+  ],
+  "exception": [
+   "Campanha urgente: comunicar a StormX por e-mail com autorização do cliente. Prazo de até 24h."
+  ],
+  "observacao": "Confirme sempre a estrutura de taxonomia específica da plataforma antes de implementar."
+ },
+ {
+  "id": "ad-name-duplicado",
+  "category": "Geral",
+  "title": "Geral — Ad Name Duplicado entre Ad Groups",
+  "motivo": "Cada Ad Group deve ter seu próprio Ad Name, com um ID correspondente e exclusivo.",
+  "solucao": "Não é permitido utilizar o mesmo Ad Name em mais de um Ad Group, mesmo quando o asset é idêntico."
+ },
+ {
+  "id": "copia-ad-group-name",
+  "category": "Geral",
+  "title": "Geral — Cópia de Ad Group ou Ad Name",
+  "motivo": "Duplicar Ad Groups ou Ad Names diretamente na plataforma descaracteriza a taxonomia da StormX.",
+  "solucao": "Mesmo quando a configuração é a mesma, é obrigatório solicitar uma nova taxonomia à StormX.",
+  "important": [
+   "Não duplicar Ad Groups ou Ad Names.",
+   "Sempre solicitar nova taxonomia à StormX."
+  ]
+ },
+ {
+  "id": "caracteres-especiais",
+  "category": "Geral",
+  "title": "Geral — Proibição de Caractere Especial",
+  "motivo": "Acentuação e caracteres especiais comprometem a estrutura da taxonomia.",
+  "notUse": [
+   "Acentos (á, é, í, ó, ú)",
+   "Apóstrofo (')",
+   "Travessão"
+  ],
+  "important": [
+   "Para duração, use 's'. Ex: 10s, não 10'.",
+   "Use apenas hífen (-), nunca travessão."
+  ]
+ },
+ {
+  "id": "taxonomia-generica",
+  "category": "Geral",
+  "title": "Geral — Taxonomia Genérica",
+  "motivo": "Ad Names sem taxonomia comprometem o banco. Taxonomia genérica aceita apenas em casos específicos.",
+  "casos": [
+   "Implementação em feriado/final de semana sem informações completas.",
+   "Campanha urgente sem informações ou criativo disponível."
+  ],
+  "observacao": "Obrigatório solicitar ajuste para versão correta em até 24h úteis."
+ },
+ {
+  "id": "campaign-name-local",
+  "category": "Geral",
+  "title": "Geral — Campaign Name e Campaign Local",
+  "motivo": "O Campaign Name é o nome global, definido pela Unilever. O Campaign Local deve ser igual ao Campaign Name global.",
+  "important": [
+   "Proibido Campaign Name genérico, exceto quando não aprovado pelo Global.",
+   "Assim que o Global enviar o nome oficial, ajustar todas as taxonomias."
+  ],
+  "exception": [
+   "Se o Campaign Local precisar ser diferente, enviar aprovação do cliente para carolina.dobner@stormx.com.br."
+  ]
+ },
+ {
+  "id": "google-pmax",
+  "category": "Google",
+  "title": "Google — PMax",
+  "motivo": "O PMax não possui Ad Group, impedindo identificação correta no banco.",
+  "solucao": "Incluir Format Type Local no Campaign. Preencher 'Google-pmax' no ADP, Publisher: google-pmax.",
+  "observacao": "PMax terá uma quebra a mais de freetext, o Format Type Local: pmax."
+ },
+ {
+  "id": "google-search",
+  "category": "Google",
+  "title": "Google — Search",
+  "motivo": "Padronizar a identificação de campanhas de Search.",
+  "solucao": "O campo Publisher deve ser preenchido como google-search."
+ },
+ {
+  "id": "google-demandgen",
+  "category": "Google",
+  "title": "Google — Demand Gen",
+  "motivo": "Demand Gen pode veicular em Google e YouTube, e o Publisher precisa refletir essa origem.",
+  "solucao": "Quando Plataforma = Google: Google → google-ads | YouTube → youtube.",
+  "observacao": "Verificar sempre o Publisher original antes de definir o valor final."
+ },
+ {
+  "id": "influencer-handle",
+  "category": "Influenciadores",
+  "title": "Influenciadores — Classificação e Taxonomia por Handle",
+  "motivo": "A classificação deve estar de acordo com a estratégia da campanha.",
+  "solucao": "Com Influencer Handle, a quebra Influencer Name cai; o @ passa para Influencer-Handle do Galileo.",
+  "important": [
+   "Se BRD, não deve haver link de influenciador.",
+   "Se houver influenciador, informar link e usar INF ou UGC."
+  ]
+ },
+ {
+  "id": "influencer-post-type",
+  "category": "Influenciadores",
+  "title": "Influenciadores — Influencer Post Type",
+  "motivo": "O Influencer Post Type aceita opções específicas por valor de Influencer.",
+  "solucao": "bsay: só na  |  bhamp: dark ou boosted  |  ihamp: dark ou boosted",
+  "observacao": "Usado em Social: Meta, TikTok, Pinterest e Twitter."
+ },
+ {
+  "id": "twitter-amplify",
+  "category": "Twitter",
+  "title": "Twitter — Amplify",
+  "motivo": "Campanhas Twitter Amplify sem Ad Name não são reconhecidas corretamente.",
+  "solucao": "Selecionar Twitter-Amplify no Publisher. Sem alteração no Campaign."
+ },
+ {
+  "id": "tiktok-branded-mission",
+  "category": "TikTok",
+  "title": "TikTok — Branded Mission e Branded Buzz",
+  "motivo": "Esses formatos não são mais preenchidos em Compra Direta.",
+  "solucao": "Solicitar apenas taxonomia de TikTok, implementada na própria plataforma.",
+  "important": [
+   "Não é mais necessário solicitar taxonomia de Compra Direta.",
+   "Solicitar na aba de TikTok."
+  ]
+ },
+ {
+  "id": "tiktok-shop",
+  "category": "TikTok",
+  "title": "TikTok — TikTok Shop",
+  "motivo": "TikTok Shop ainda não permite extração via API; dados preenchidos manualmente.",
+  "solucao": "Só possui taxonomia de Campaign. Usar Campaign padrão de TikTok com Publisher, Format e Location.",
+  "important": [
+   "Solução temporária.",
+   "Solicitar na aba de TikTok.",
+   "Position: TikTok-Shop-Skippable."
+  ]
+ },
+ {
+  "id": "tiktok-search",
+  "category": "TikTok",
+  "title": "TikTok — TikTok Search",
+  "motivo": "Inclusão de Position específico para TikTok Search.",
+  "solucao": "Usar o Position 'TikTok-Search'."
+ },
+ {
+  "id": "youtube-masthead-cph",
+  "category": "YouTube",
+  "title": "YouTube — Masthead CPH",
+  "motivo": "YouTube Masthead CPH não é mais preenchido em Compra Direta.",
+  "solucao": "Solicitar apenas taxonomia de YouTube, implementada na plataforma.",
+  "important": [
+   "Inclusão do Buying Type: cph.",
+   "Não é mais necessário solicitar Compra Direta.",
+   "Solicitar na aba de YouTube."
+  ]
+ },
+ {
+  "id": "kwai-eyemax",
+  "category": "Kwai",
+  "title": "Kwai — EyeMax",
+  "motivo": "Regra para Ad Group de Reserva com Position EyeMax.",
+  "solucao": "Nas linhas de Reserva com Position 'EyeMax', o Creative Name do Ad Group é substituído por 'eyemax'.",
+  "observacao": "Substituição válida apenas para Reserva com Position EyeMax."
+ },
+ {
+  "id": "spotify-positions",
+  "category": "Spotify",
+  "title": "Spotify — Positions",
+  "motivo": "Novos Positions para Spotify com mesmo Placement Global.",
+  "solucao": "Feed-Display, Feed-Video e Carousel devem ser usados com Placement Global 'in-Feed'."
+ },
+ {
+  "id": "flashtalking",
+  "category": "Flashtalking",
+  "title": "Flashtalking — Limitações de Taxonomia via API",
+  "motivo": "Compra direta via API da Flashtalking não segue estrutura padrão; só reconhece Campaign e Placement.",
+  "solucao": "Ad Group e Ad Name unificados em Placement Name. Campaign tem limitações; alguns campos preenchidos como 'na'.",
+  "observacao": "Os campos 'na' substituem informações que mudariam entre linhas de uma mesma campanha."
+ }
+];
+
+/* ── Category meta (order determines slide sequence) ───── */
+const CAT_META = {
+  'Geral':          { color: '#4FE0C8' },
+  'Google':         { color: '#3FB6FF' },
+  'Influenciadores':{ color: '#E08BFF' },
+  'Twitter':        { color: '#74C0FC' },
+  'TikTok':         { color: '#EBFF24' },
+  'YouTube':        { color: '#FF6B6B' },
+  'Kwai':           { color: '#FFB340' },
+  'Spotify':        { color: '#1DB954' },
+  'Flashtalking':   { color: '#A35CFF' }
+};
+
+/* ── Helpers ────────────────────────────────────────────── */
+function shortTitle(rule){
+  const sep = rule.title.indexOf(' — ');
+  return sep > -1 ? rule.title.slice(sep + 3) : rule.title;
+}
+
+/* How many "lines" a rule occupies (rough estimate for paging) */
+function ruleWeight(rule){
+  let w = 2; // title always
+  if(rule.motivo)    w += Math.ceil(rule.motivo.length / 120) + 1;
+  if(rule.solucao)   w += Math.ceil(rule.solucao.length / 120) + 1;
+  if(rule.nota)      w += Math.ceil(rule.nota.length / 120) + 1;
+  if(rule.notUse)    w += rule.notUse.length + 1;
+  if(rule.important) w += rule.important.length + 1;
+  if(rule.exception) w += rule.exception.length + 1;
+  if(rule.observacao)w += Math.ceil(rule.observacao.length / 120) + 1;
+  if(rule.casos)     w += rule.casos.length + 1;
+  if(rule.limits)    w += Math.min(rule.limits.length, 6) + 2;
+  return w;
+}
+
+/* Render all detail for one rule (fully expanded, no accordion) */
+function renderRuleDetail(rule, color){
+  const c = color || CAT_META[rule.category]?.color || '#4FE0C8';
+  let html = `<div class="tax-rule-card" style="--rule-color:${c};">
+    <div class="tax-rule-title" style="color:${c};">
+      ${shortTitle(rule)}
+    </div>`;
+
+  if(rule.motivo){
+    html += `<p class="tax-field-label">Motivo</p><p class="tax-field-text">${rule.motivo}</p>`;
+  }
+  if(rule.solucao){
+    html += `<p class="tax-field-label">${rule.solucaoLabel||'Regra'}</p><p class="tax-field-text">${rule.solucao}</p>`;
+  }
+  if(rule.nota){
+    html += `<p class="tax-field-label">${rule.notaLabel||'Nota'}</p><p class="tax-field-text">${rule.nota}</p>`;
+  }
+  if(rule.casos && rule.casos.length){
+    html += `<p class="tax-field-label">Quando se aplica</p>`;
+    rule.casos.forEach(c2 => { html += `<p class="tax-field-text" style="margin-bottom:3px;">• ${c2}</p>`; });
+  }
+  if(rule.notUse && rule.notUse.length){
+    html += `<p class="tax-field-label">Não utilizar</p>
+      <div class="tax-notuse">${rule.notUse.map(x=>`<span>${x}</span>`).join('')}</div>`;
+  }
+  if(rule.important && rule.important.length){
+    html += `<p class="tax-field-label">Atenção</p>
+      <ul class="tax-callout">${rule.important.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+  }
+  if(rule.exception && rule.exception.length){
+    html += `<p class="tax-field-label">Exceção</p>`;
+    rule.exception.forEach(e2 => { html += `<p class="tax-field-text" style="margin-bottom:3px;">• ${e2}</p>`; });
+  }
+  if(rule.observacao){
+    html += `<p class="tax-field-label">Observação</p><p class="tax-field-text">${rule.observacao}</p>`;
+  }
+  if(rule.limits && rule.limits.length){
+    html += `<p class="tax-field-label">Limites por plataforma</p>
+      <table class="tax-limits-table">
+        <thead><tr>
+          <th>Plataforma</th><th>Campo</th><th>Limite</th><th>Redução</th>
+        </tr></thead>
+        <tbody>${rule.limits.slice(0,10).map(l=>`<tr>
+          <td style="font-weight:600;color:var(--white);">${l.platform}</td>
+          <td>${l.field||'—'}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;">${l.limit}</td>
+          <td style="color:${l.reducao==='Sim'?'var(--amber)':l.reducao==='Não'?'var(--teal)':'var(--dim)'};">${l.reducao}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+/* Split rules of a category into pages (max ~28 weight per page) */
+function paginateRules(rules){
+  const MAX = 28;
+  const pages = [];
+  let cur = [], curW = 0;
+  rules.forEach(r => {
+    const w = ruleWeight(r);
+    if(cur.length && curW + w > MAX){ pages.push(cur); cur = []; curW = 0; }
+    cur.push(r); curW += w;
+  });
+  if(cur.length) pages.push(cur);
+  return pages;
+}
+
+/* Build one slide element for a category page */
+function buildCatSlide(cat, pageRules, pageNum, totalPages, color, slideIdx){
+  const colsClass = 'cols-1';
+  const pageLabel = totalPages > 1 ? ` ${pageNum} / ${totalPages}` : '';
+
+  const div = document.createElement('div');
+  div.className = 'slide';
+  div.id = `s-tax-${cat.toLowerCase().replace(/\s+/g,'-')}-${pageNum}`;
+  div.dataset.catSlide = cat;
+
+  div.innerHTML = `
+    <div class="s-body" style="padding:24px 44px 20px;display:flex;flex-direction:column;justify-content:flex-start;height:calc(100% - 32px);overflow:hidden;">
+      <div style="flex-shrink:0;display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+        <button class="tax-back-btn" data-back-idx="0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Índice
+        </button>
+        <div style="flex:1;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:${color};margin-bottom:2px;">${cat}</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--white);">Regras de <span style="color:${color};">Taxonomia</span></div>
+        </div>
+        ${totalPages > 1 ? `<div class="tax-page-ind">${pageNum} / ${totalPages}</div>` : ''}
+      </div>
+      <div class="tax-rules-grid ${colsClass}">
+        ${pageRules.map(r => renderRuleDetail(r, color)).join('')}
+      </div>
+    </div>
+    <div class="slide-footer">
+      <span class="sf-left">All rights reserved to Stormx @2026 // Digital Forward</span>
+      <span class="sf-right">Stormx Aprove | Creative | Marketing</span>
+    </div>`;
+  return div;
+}
+
+/* ── S19 intro: category index cards ───────────────────── */
+function renderCatGrid(){
+  const grid = document.getElementById('taxCatGrid');
+  if(!grid) return;
+  const tt = document.getElementById('taxTotal'); if(tt) tt.textContent = TAX_RULES.length;
+
+  // count rules per category
+  const counts = {};
+  TAX_RULES.forEach(r => { counts[r.category] = (counts[r.category]||0) + 1; });
+
+  grid.innerHTML = Object.entries(CAT_META).map(([cat, m]) => `
+    <div class="tax-cat-card" data-cat-jump="${cat}">
+      <div class="tax-cat-dot" style="background:${m.color};box-shadow:0 0 6px ${m.color}60;"></div>
+      <div class="tax-cat-name">${cat}</div>
+      <div class="tax-cat-count" style="color:${m.color};">${counts[cat]||0}</div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.tax-cat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const cat = card.dataset.catJump;
+      if(window.__taxGoTo) window.__taxGoTo(cat); // pass category name string
+    });
+  });
+}
+
+/* ── Inject category slides into DOM ───────────────────── */
+function buildCategorySlides(){
+  const anchor = document.getElementById('tax-slides-anchor');
+  if(!anchor) return;
+
+  // group rules by category preserving CAT_META order
+  const byCategory = {};
+  Object.keys(CAT_META).forEach(c => byCategory[c] = []);
+  TAX_RULES.forEach(r => { if(byCategory[r.category]) byCategory[r.category].push(r); });
+
+  Object.entries(byCategory).forEach(([cat, rules]) => {
+    if(!rules.length) return;
+    const color = CAT_META[cat].color;
+    const pages = paginateRules(rules);
+    pages.forEach((pageRules, pi) => {
+      const el = buildCatSlide(cat, pageRules, pi+1, pages.length, color, 0);
+      anchor.parentNode.insertBefore(el, anchor);
+    });
+  });
+
+  // remove anchor placeholder
+  anchor.remove();
+}
+
+/* ── Wire up deck controller to know about injected slides  */
+window.__taxGoTo  = null; // set by __initDeck: takes category name string
+window.__taxClose = null; // set by __initDeck: returns to S19
+
+function initTax(){
+  buildCategorySlides();   // inject category slides into DOM first
+  renderCatGrid();         // build index grid
+  if(window.__initDeck) window.__initDeck(); // init deck (staticSlides only)
+
+  // Wire back buttons — they call __taxClose to return to S19
+  setTimeout(() => {
+    document.querySelectorAll('.tax-back-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(window.__taxClose) window.__taxClose();
+      });
+    });
+  }, 50);
+}
+
+if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initTax); }
+else { initTax(); }
+})();
+</script>
+</body>
+</html>
